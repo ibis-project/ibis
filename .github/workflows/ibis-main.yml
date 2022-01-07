@@ -275,46 +275,6 @@ jobs:
         working-directory: ibis-project.org
         run: git push --tags -f origin master
 
-  conda_package:
-    # TODO: fully automate the conda-forge PR submission on release
-    name: Conda Package ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version:
-          - "3.7"
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: update recipe file
-        run: |
-          set -euxo pipefail
-
-          IBIS_PATH=`pwd`
-          sed -i "s|url:.*|path: $IBIS_PATH|g" ci/recipe/meta.yaml
-          IBIS_VERSION=$(grep -Po '(?<=^version = ").+(?=")' pyproject.toml)
-          sed -i "s/{{ version }}/$IBIS_VERSION/g" ci/recipe/meta.yaml
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          mamba-version: "*"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
-          channel-priority: strict
-          activate-environment: ibis
-          python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
-
-      - name: install boa
-        run: mamba install boa
-
-      - name: build recipe
-        run: conda mambabuild -c conda-forge --python "${{ matrix.python-version }}" ci/recipe/meta.yaml
-
   simulate_release:
     runs-on: ubuntu-latest
     needs:
@@ -323,7 +283,6 @@ jobs:
       - test_no_backends
       - benchmarks
       - docs
-      - conda_package
     steps:
       - name: checkout
         uses: actions/checkout@v2
