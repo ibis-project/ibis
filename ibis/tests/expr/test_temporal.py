@@ -327,21 +327,7 @@ def test_offset_months():
 )
 def test_interval(literal):
     assert isinstance(literal, ir.IntervalScalar)
-
-
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (api.interval(weeks=3), "Literal[interval<int8>(unit='W')]\n  3"),
-        (api.interval(months=3), "Literal[interval<int8>(unit='M')]\n  3"),
-        (
-            api.interval(seconds=-10),
-            "Literal[interval<int8>(unit='s')]\n  -10",
-        ),
-    ],
-)
-def test_interval_repr(expr, expected):
-    assert repr(expr) == expected
+    repr(literal)  # repr() must return in a reasonable amount of time
 
 
 def test_timestamp_arithmetics():
