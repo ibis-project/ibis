@@ -259,6 +259,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          git add .
           git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
 
       - name: tag docs if this is a release
