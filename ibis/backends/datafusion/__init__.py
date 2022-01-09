@@ -83,6 +83,20 @@ class Backend(BaseBackend):
         return tables
 
     def table(self, name, schema=None):
+        """Get an ibis expression representing a DataFusion table.
+
+        Parameters
+        ---------
+        name
+            The name of the table to retreive
+        schema
+            An optional schema
+
+        Returns
+        -------
+        ibis.expr.types.TableExpr
+            A table expression
+        """
         catalog = self._context.catalog()
         database = catalog.database('public')
         table = database.table(name)
@@ -90,9 +104,31 @@ class Backend(BaseBackend):
         return self.table_class(name, schema, self).to_expr()
 
     def register_csv(self, name, path, schema=None):
+        """Register a CSV file with with `name` located at `path`.
+
+        Parameters
+        ----------
+        name
+            The name of the table
+        path
+            The path to the CSV file
+        schema
+            An optional schema
+        """
         self._context.register_csv(name, path, schema=schema)
 
     def register_parquet(self, name, path, schema=None):
+        """Register a parquet file with with `name` located at `path`.
+
+        Parameters
+        ----------
+        name
+            The name of the table
+        path
+            The path to the parquet file
+        schema
+            An optional schema
+        """
         self._context.register_parquet(name, path, schema=schema)
 
     def execute(
