@@ -603,7 +603,7 @@ def test_column_access_after_sort(alltypes, df, column):
     tm.assert_series_equal(result, expected)
 
 
-def test_materialized_join(con):
+def test_simple_join(con):
     con.raw_sql('CREATE TABLE mj1 (id1 INTEGER, val1 REAL)')
     con.raw_sql('INSERT INTO mj1 VALUES (1, 10), (2, 20)')
     con.raw_sql('CREATE TABLE mj2 (id2 INTEGER, val2 REAL)')
@@ -611,7 +611,7 @@ def test_materialized_join(con):
 
     t1 = con.table('mj1', database="main")
     t2 = con.table('mj2', database="main")
-    joined = t1.join(t2, t1.id1 == t2.id2).materialize()
+    joined = t1.join(t2, t1.id1 == t2.id2)
     result = joined.val2.execute()
     assert len(result) == 2
 
@@ -642,7 +642,10 @@ def test_identical_to(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=AttributeError, reason='NYI')
+@pytest.mark.xfail(
+    raises=AttributeError,
+    reason="truncate method is not yet implemented",
+)
 def test_truncate_method(con, alltypes):
     expr = alltypes.limit(5)
     name = str(uuid.uuid4())
@@ -724,10 +727,10 @@ def test_date_extract_field(alltypes, attr, expected):
     assert set(result) == expected
 
 
-def test_scalar_parameter(db):
+def test_scalar_parameter(alltypes):
     start = ibis.param(dt.date)
     end = ibis.param(dt.date)
-    t = db.functional_alltypes
+    t = alltypes
     col = t.date_string_col.cast('date')
     expr = col.between(start, end)
     start_string, end_string = '2009-03-01', '2010-07-03'
@@ -755,8 +758,8 @@ def test_compile_twice(dbpath):
     assert result1 == result2
 
 
-def test_count_on_order_by(db):
-    t = db.batting
+def test_count_on_order_by(con):
+    t = con.table("batting")
     sort_key = ibis.desc(t.playerID)
     sorted_table = t.sort_by(sort_key)
     expr = sorted_table.count()

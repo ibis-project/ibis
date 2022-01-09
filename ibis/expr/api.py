@@ -3844,37 +3844,58 @@ _join_classes = {
 }
 
 
-def join(left, right, predicates=(), how='inner'):
-    """Perform a relational join between two tables. Does not resolve resulting
-    table schema.
+def join(
+    left: ir.TableExpr,
+    right: ir.TableExpr,
+    predicates=(),
+    how: str = "inner",
+    *,
+    suffixes: tuple[str, str] = ("_x", "_y"),
+):
+    """Join two tables.
 
     Parameters
     ----------
-    left : TableExpr
-    right : TableExpr
-    predicates : join expression(s)
-    how : string, default 'inner'
-      - 'inner': inner join
-      - 'left': left join
-      - 'outer': full outer join
-      - 'right': right outer join
-      - 'semi' or 'left_semi': left semi join
-      - 'anti': anti join
-
-    Returns
-    -------
-    joined : TableExpr
-        Note that the schema is not materialized yet
+    left
+        Left table to join
+    right
+        Right table to join
+    predicates
+        Boolean or column names to join on
+    how
+        Join method
+    suffixes
+        Left and right suffixes that will be used to rename overlapping
+        columns.
     """
     klass = _join_classes[how.lower()]
     if isinstance(predicates, Expr):
         predicates = _L.flatten_predicate(predicates)
 
-    op = klass(left, right, predicates)
-    return op.to_expr()
+    expr = klass(left, right, predicates).to_expr()
+
+    # semi/anti join only give access to the left table's fields, so
+    # there's never overlap
+    if how in ("semi", "anti"):
+        return expr
+
+    return ops.relations._dedup_join_columns(
+        expr,
+        left=left,
+        right=right,
+        suffixes=suffixes,
+    )
 
 
-def asof_join(left, right, predicates=(), by=(), tolerance=None):
+def asof_join(
+    left,
+    right,
+    predicates=(),
+    by=(),
+    tolerance=None,
+    *,
+    suffixes: tuple[str, str] = ("_x", "_y"),
+):
     """Perform an asof join between two tables.  Similar to a left join
     except that the match is done on nearest key rather than equal keys.
 
@@ -3889,23 +3910,40 @@ def asof_join(left, right, predicates=(), by=(), tolerance=None):
         column to group by before joining
     tolerance : interval
         Amount of time to look behind when joining
-
-    Returns
-    -------
-    joined : TableExpr
-        Note that the schema is not materialized yet
+    suffixes
+        Left and right suffixes that will be used to rename overlapping
+        columns.
     """
-    return ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
+    expr = ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
+    return ops.relations._dedup_join_columns(
+        expr,
+        left=left,
+        right=right,
+        suffixes=suffixes,
+    )
 
 
-def cross_join(left, right, *rest, **kwargs):
+def cross_join(
+    left,
+    right,
+    *rest,
+    suffixes: tuple[str, str] = ("_x", "_y"),
+):
     """
     Perform a cross join (cartesian product) amongst a list of tables, with
     optional set of prefixes to apply to overlapping column names
 
     Parameters
     ----------
-    tables : ibis.expr.types.TableExpr
+    left
+        Left table
+    right
+        Right table
+    rest
+        Additional tables to cross join
+    suffixes
+        Left and right suffixes that will be used to rename overlapping
+        columns.
 
     Returns
     -------
@@ -3963,13 +4001,17 @@ def cross_join(left, right, *rest, **kwargs):
           right:
             Table: ref_4
     """
-    if 'prefixes' in kwargs:
-        raise NotImplementedError(
-            "`prefixes` keyword argument not implemented"
-        )
-    reducer = functools.partial(ir.TableExpr.cross_join, **kwargs)
-    op = ops.CrossJoin(left, functools.reduce(reducer, rest, right), [])
-    return op.to_expr()
+    expr = ops.CrossJoin(
+        left,
+        functools.reduce(ir.TableExpr.cross_join, rest, right),
+        [],
+    ).to_expr()
+    return ops.relations._dedup_join_columns(
+        expr,
+        left=left,
+        right=right,
+        suffixes=suffixes,
+    )
 
 
 def _table_count(self):
@@ -4111,7 +4153,7 @@ def _table_set_column(table, name, expr):
 
 
 def _regular_join_method(name, how, doc=None):
-    def f(self, other, predicates=()):
+    def f(self, other, predicates=(), rename_left=None, rename_right=None):
         return self.join(other, predicates, how=how)
 
     if doc:
@@ -4330,18 +4372,6 @@ def _table_to_array(self):
         )
 
     return ops.TableArrayView(self).to_expr()
-
-
-def _table_materialize(table):
-    """
-    Force schema resolution for a joined table, selecting all fields from
-    all tables.
-    """
-    if table._is_materialized():
-        return table
-
-    op = ops.MaterializedJoin(table)
-    return op.to_expr()
 
 
 def _safe_get_name(expr):
@@ -4639,7 +4669,6 @@ _table_methods = {
     'head': _head,
     'set_column': _table_set_column,
     'filter': filter,
-    'materialize': _table_materialize,
     'mutate': mutate,
     'projection': projection,
     'select': projection,

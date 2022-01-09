@@ -68,10 +68,6 @@ def test_attach_file(dbpath):
     assert foo_tables == bar_tables
 
 
-def test_database_layer(con, db):
-    assert db.list_tables() == con.list_tables()
-
-
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
 

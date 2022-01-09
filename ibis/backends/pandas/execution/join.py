@@ -3,7 +3,6 @@ import operator
 import pandas as pd
 
 import ibis.expr.operations as ops
-import ibis.util
 
 from ..core import execute
 from ..dispatch import execute_node
@@ -32,26 +31,13 @@ def execute_cross_join(op, left, right, **kwargs):
     by cross join.
 
     """
-    # generate a unique name for the temporary join key
-    key = f"cross_join_{ibis.util.guid()}"
-    join_key = {key: True}
-    new_left = left.assign(**join_key)
-    new_right = right.assign(**join_key)
-
-    # inner/outer doesn't matter because every row matches every other row
-    result = pd.merge(
-        new_left,
-        new_right,
-        how='inner',
-        on=key,
+    return pd.merge(
+        left,
+        right,
+        how='cross',
         copy=False,
         suffixes=constants.JOIN_SUFFIXES,
     )
-
-    # remove the generated key
-    del result[key]
-
-    return result
 
 
 @execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
@@ -91,11 +77,6 @@ def execute_join(op, left, right, **kwargs):
         right_on=on[right_op],
         suffixes=constants.JOIN_SUFFIXES,
     )
-    return df
-
-
-@execute_node.register(ops.MaterializedJoin, pd.DataFrame)
-def execute_materialized_join(op, df, **kwargs):
     return df
 
 

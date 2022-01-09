@@ -642,8 +642,6 @@ def apply_filter(expr, predicates):
             )
 
             return ir.TableExpr(result)
-    elif isinstance(op, ops.Join):
-        expr = expr.materialize()
 
     result = ops.Selection(expr, [], predicates)
     return ir.TableExpr(result)
@@ -771,7 +769,10 @@ class _PushdownValidate:
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
 
-                lifted_node = substitute_parents(expr).op()
+                lifted_node = substitute_parents(
+                    expr,
+                    past_projection=False,
+                ).op()
 
                 is_valid = col_table.equals(
                     node.table.op()

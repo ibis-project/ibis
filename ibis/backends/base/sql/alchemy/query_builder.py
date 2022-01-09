@@ -59,6 +59,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             else:
                 raise NotImplementedError(jtype)
 
+        self.context.set_ref(self.expr, result)
         return result
 
     def _get_join_type(self, op):
@@ -192,7 +193,6 @@ class AlchemySelect(Select):
                 if expr.equals(self.table_set):
                     cached_table = self.context.get_ref(expr)
                     if cached_table is None:
-                        # the select * case from materialized join
                         has_select_star = True
                         continue
                     else:

@@ -165,6 +165,7 @@ line_length = 79
 multi_line_output = 3
 include_trailing_comma = true
 profile = "black"
+skip_glob = ["result*"]
 
 [tool.pydocstyle]
 inherit = false

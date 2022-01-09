@@ -755,13 +755,6 @@ aggregated, it will be *fully materialized*:
    joined = t1.left_join(t2, t1.key1 == t2.key3)
    print(ibis.impala.compile(joined))
 
-You can do this explicitly using the ``materialize`` method:
-
-.. ipython:: python
-
-   expr = joined.materialize()
-   print(ibis.impala.compile(expr))
-
 Multiple joins
 ~~~~~~~~~~~~~~
 

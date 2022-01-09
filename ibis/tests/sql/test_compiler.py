@@ -318,7 +318,7 @@ class ExprTestCases:
 
         return projected
 
-    def _case_join_just_materialized(self):
+    def _case_join_compose(self):
         t1 = self.con.table('tpch_nation')
         t2 = self.con.table('tpch_region')
         t3 = self.con.table('tpch_customer')
@@ -879,20 +879,26 @@ FROM star1 t0
     def test_multiple_joins(self):
         what = self._case_multiple_joins()
 
-        result_sql = Compiler.to_sql(what)
-        expected_sql = """SELECT t0.*, t1.`value1`, t2.`value2`
-FROM star1 t0
-  LEFT OUTER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`
-  INNER JOIN star3 t2
-    ON t0.`bar_id` = t2.`bar_id`"""
-        assert result_sql == expected_sql
+        result = Compiler.to_sql(what)
+        expected = """\
+SELECT *, `value1`, t1.`value2`
+FROM (
+  SELECT t2.`c`, t2.`f`, t2.`foo_id` AS `foo_id_x`, t2.`bar_id`,
+         t3.`foo_id` AS `foo_id_y`, t3.`value1`, t3.`value3`
+  FROM star1 t2
+    LEFT OUTER JOIN star2 t3
+      ON t2.`foo_id` = t3.`foo_id`
+) t0
+  INNER JOIN star3 t1
+    ON `bar_id` = t1.`bar_id`"""
+        assert result == expected
 
     def test_join_between_joins(self):
         projected = self._case_join_between_joins()
 
         result = Compiler.to_sql(projected)
-        expected = """SELECT t0.*, t1.`value3`, t1.`value4`
+        expected = """\
+SELECT t0.*, `value3`, `value4`
 FROM (
   SELECT t2.*, t3.`value2`
   FROM `first` t2
@@ -908,10 +914,11 @@ FROM (
     ON t0.`key2` = t1.`key2`"""
         assert result == expected
 
-    def test_join_just_materialized(self):
-        joined = self._case_join_just_materialized()
+    def test_join_compose(self):
+        joined = self._case_join_compose()
         result = Compiler.to_sql(joined)
-        expected = """SELECT *
+        expected = """\
+SELECT *
 FROM tpch_nation t0
   INNER JOIN tpch_region t1
     ON t0.`n_regionkey` = t1.`r_regionkey`
@@ -919,7 +926,7 @@ FROM tpch_nation t0
     ON t0.`n_nationkey` = t2.`c_nationkey`"""
         assert result == expected
 
-        result = Compiler.to_sql(joined.materialize())
+        result = Compiler.to_sql(joined)
         assert result == expected
 
     def test_semi_anti_joins(self):
@@ -980,11 +987,6 @@ WHERE (`f` > 0) AND
       (`c` < (`f` * 2))"""
         assert result == expected
 
-    def test_where_in_array_literal(self):
-        # e.g.
-        # where string_col in (v1, v2, v3)
-        raise unittest.SkipTest
-
     def test_where_with_join(self):
         e1 = self._case_where_with_join()
 
@@ -996,36 +998,6 @@ WHERE (t0.`f` > 0) AND
       (t1.`value3` < 1000)"""
 
         result_sql = Compiler.to_sql(e1)
-        assert result_sql == expected_sql
-
-        # result2_sql = to_sql(e2)
-        # assert result2_sql == expected_sql
-
-    def test_where_no_pushdown_possible(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        joined = t1.inner_join(t2, [t1.foo_id == t2.foo_id])[
-            t1, (t1.f - t2.value1).name('diff')
-        ]
-
-        filtered = joined[joined.diff > 1]
-
-        # TODO: I'm not sure if this is exactly what we want
-        expected_sql = """SELECT *
-FROM (
-  SELECT t0.*, t0.`f` - t1.`value1` AS `diff`
-  FROM star1 t0
-    INNER JOIN star2 t1
-      ON t0.`foo_id` = t1.`foo_id`
-  WHERE t0.`f` > 0 AND
-        t1.`value3` < 1000
-)
-WHERE `diff` > 1"""
-
-        raise unittest.SkipTest
-
-        result_sql = Compiler.to_sql(filtered)
         assert result_sql == expected_sql
 
     def test_where_with_between(self):
@@ -1160,42 +1132,6 @@ FROM (
         query = _get_query(expr)
         context = query.context
         assert not context.need_aliases()
-
-    def test_table_names_overlap_default_aliases(self):
-        # see discussion in #104; this actually is not needed for query
-        # correctness, and only makes the generated SQL nicer
-        raise unittest.SkipTest
-
-        t0 = api.table([('key', 'string'), ('v1', 'double')], 't1')
-
-        t1 = api.table([('key', 'string'), ('v2', 'double')], 't0')
-
-        expr = t0.join(t1, t0.key == t1.key)[t0.key, t0.v1, t1.v2]
-
-        result = Compiler.to_sql(expr)
-        expected = """\
-SELECT t2.`key`, t2.`v1`, t3.`v2`
-FROM t0 t2
-  INNER JOIN t1 t3
-    ON t2.`key` = t3.`key`"""
-
-        assert result == expected
-
-    def test_context_aliases_multiple_join(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-        t3 = self.con.table('star3')
-
-        expr = t1.left_join(t2, [t1['foo_id'] == t2['foo_id']]).inner_join(
-            t3, [t1['bar_id'] == t3['bar_id']]
-        )[[t1, t2['value1'], t3['value2']]]
-
-        query = _get_query(expr)
-        context = query.context
-
-        assert context.get_ref(t1) == 't0'
-        assert context.get_ref(t2) == 't1'
-        assert context.get_ref(t3) == 't2'
 
     def test_fuse_projections(self):
         table = api.table(
@@ -1429,15 +1365,21 @@ GROUP BY 1"""
         expr = self._case_subquery_used_for_self_join()
 
         result = Compiler.to_sql(expr)
-        expected = """WITH t0 AS (
+        expected = """\
+WITH t0 AS (
   SELECT `g`, `a`, `b`, sum(`f`) AS `total`
   FROM alltypes
   GROUP BY 1, 2, 3
 )
-SELECT t0.`g`, max(t0.`total` - t1.`total`) AS `metric`
-FROM t0
-  INNER JOIN t0 t1
-    ON t0.`a` = t1.`b`
+SELECT t0.`g`, max(t0.`total` - `total`) AS `metric`
+FROM (
+  SELECT t0.`g` AS `g_x`, t0.`a` AS `a_x`, t0.`b` AS `b_x`,
+         t0.`total` AS `total_x`, t3.`g` AS `g_y`, t3.`a` AS `a_y`,
+         t3.`b` AS `b_y`, t3.`total` AS `total_y`
+  FROM t0
+    INNER JOIN t0 t3
+      ON t0.`a` = t3.`b`
+) t1
 GROUP BY 1"""
         assert result == expected
 
@@ -1512,7 +1454,7 @@ WITH t0 AS (
     INNER JOIN tpch_nation t3
       ON t2.`r_regionkey` = t3.`n_regionkey`
 )
-SELECT t0.`r_name`, t1.`n_name`
+SELECT `r_name`, t1.`n_name`
 FROM t0
   INNER JOIN t0 t1
     ON t0.`r_regionkey` = t1.`r_regionkey`"""
@@ -1529,9 +1471,31 @@ FROM t0
         result = Compiler.to_sql(expr)
         expected = """\
 SELECT count(*) AS `count`
-FROM functional_alltypes t0
-  INNER JOIN functional_alltypes t1
-    ON t0.`tinyint_col` < extract(t1.`timestamp_col`, 'minute')"""
+FROM (
+  SELECT t1.`id` AS `id_x`, t1.`bool_col` AS `bool_col_x`,
+         t1.`tinyint_col` AS `tinyint_col_x`,
+         t1.`smallint_col` AS `smallint_col_x`,
+         t1.`int_col` AS `int_col_x`, t1.`bigint_col` AS `bigint_col_x`,
+         t1.`float_col` AS `float_col_x`,
+         t1.`double_col` AS `double_col_x`,
+         t1.`date_string_col` AS `date_string_col_x`,
+         t1.`string_col` AS `string_col_x`,
+         t1.`timestamp_col` AS `timestamp_col_x`, t1.`year` AS `year_x`,
+         t1.`month` AS `month_x`, t2.`id` AS `id_y`,
+         t2.`bool_col` AS `bool_col_y`,
+         t2.`tinyint_col` AS `tinyint_col_y`,
+         t2.`smallint_col` AS `smallint_col_y`,
+         t2.`int_col` AS `int_col_y`, t2.`bigint_col` AS `bigint_col_y`,
+         t2.`float_col` AS `float_col_y`,
+         t2.`double_col` AS `double_col_y`,
+         t2.`date_string_col` AS `date_string_col_y`,
+         t2.`string_col` AS `string_col_y`,
+         t2.`timestamp_col` AS `timestamp_col_y`, t2.`year` AS `year_y`,
+         t2.`month` AS `month_y`
+  FROM functional_alltypes t1
+    INNER JOIN functional_alltypes t2
+      ON t1.`tinyint_col` < extract(t2.`timestamp_col`, 'minute')
+) t0"""
         assert result == expected
 
     def test_cte_factor_distinct_but_equal(self):
@@ -1604,7 +1568,8 @@ WHERE `f` > (
         filtered, filtered2 = self._case_topk_operation()
 
         query = Compiler.to_sql(filtered)
-        expected = """SELECT t0.*
+        expected = """\
+SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
@@ -1621,7 +1586,8 @@ FROM tbl t0
         assert query == expected
 
         query = Compiler.to_sql(filtered2)
-        expected = """SELECT t0.*
+        expected = """\
+SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
@@ -2409,15 +2375,19 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT t0.`a`, t0.`b2`
+  SELECT `a`, `b2`
   FROM t0
-  WHERE t0.`a` < 100
 )
-SELECT t1.*
-FROM t1
-WHERE t1.`a` = (
-  SELECT max(`a`) AS `blah`
+SELECT t2.*
+FROM (
+  SELECT t1.*
   FROM t1
+  WHERE t1.`a` < 100
+) t2
+WHERE t2.`a` = (
+  SELECT max(t1.`a`) AS `blah`
+  FROM t1
+  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -2435,15 +2405,19 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT t0.`a`, t0.`b2`
+  SELECT `a`, `b2`
   FROM t0
-  WHERE t0.`a` < 100
 )
-SELECT t1.*
-FROM t1
-WHERE t1.`a` = (
-  SELECT max(`a`) AS `blah`
+SELECT t2.*
+FROM (
+  SELECT t1.*
   FROM t1
+  WHERE t1.`a` < 100
+) t2
+WHERE t2.`a` = (
+  SELECT max(t1.`a`) AS `blah`
+  FROM t1
+  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -2476,20 +2450,23 @@ def test_table_drop_with_filter():
     #     ON t0.`b` = t1.`b`
     # WHERE t0.`a` < 1.0
     expected = """\
-SELECT t0.`a`
+SELECT t0.*
 FROM (
-  SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
+  SELECT t2.`a`
   FROM (
-    SELECT *
+    SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
     FROM (
-      SELECT `a`, `b`, `c` AS `C`
-      FROM t
-    ) t3
-    WHERE `C` = '2018-01-01 00:00:00'
+      SELECT *
+      FROM (
+        SELECT `a`, `b`, `c` AS `C`
+        FROM t
+      ) t5
+      WHERE `C` = '2018-01-01 00:00:00'
+    ) t4
   ) t2
+    INNER JOIN s t1
+      ON t2.`b` = t1.`b`
 ) t0
-  INNER JOIN s t1
-    ON t0.`b` = t1.`b`
 WHERE t0.`a` < 1.0"""
     assert result == expected
 
@@ -2514,3 +2491,37 @@ def test_table_drop_consistency():
     assert "b" not in expected.columns
     assert "a" in result_1.columns
     assert "c" in result_2.columns
+
+
+def test_subquery_where_location():
+    t = ibis.table(
+        [
+            ("float_col", "float32"),
+            ("timestamp_col", "timestamp"),
+            ("int_col", "int32"),
+            ("string_col", "string"),
+        ],
+        name="alltypes",
+    )
+    param = ibis.param("timestamp").name("my_param")
+    expr = (
+        t[["float_col", "timestamp_col", "int_col", "string_col"]][
+            lambda t: t.timestamp_col < param
+        ]
+        .groupby("string_col")
+        .aggregate(foo=lambda t: t.float_col.sum())
+        .foo.count()
+    )
+    result = Compiler.to_sql(expr, params={param: "20140101"})
+    expected = """\
+SELECT count(`foo`) AS `count`
+FROM (
+  SELECT `string_col`, sum(`float_col`) AS `foo`
+  FROM (
+    SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
+    FROM alltypes
+  ) t1
+  WHERE `timestamp_col` < '20140101'
+  GROUP BY 1
+) t0"""
+    assert result == expected

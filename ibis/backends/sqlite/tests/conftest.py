@@ -42,11 +42,6 @@ def con(dbpath):
 
 
 @pytest.fixture
-def db(con):
-    return con.database()
-
-
-@pytest.fixture
 def dialect():
     import sqlalchemy as sa
 
@@ -73,8 +68,8 @@ def sqla_compile(dialect):
 
 
 @pytest.fixture
-def alltypes(db):
-    return db.functional_alltypes
+def alltypes(con):
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture

@@ -630,11 +630,6 @@ class SelectBuilder:
 
         # hm, is this the best place for this?
         root_op = source_expr.op()
-        if isinstance(root_op, ops.Join) and not isinstance(
-            root_op, ops.MaterializedJoin
-        ):
-            # Unmaterialized join
-            source_expr = source_expr.materialize()
 
         if isinstance(root_op, ops.TableNode):
             self._collect(source_expr, toplevel=True)

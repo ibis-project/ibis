@@ -6,7 +6,6 @@ from pandas import Timedelta, date_range
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 
 # Note - computations in this file use the single threadsed scheduler (instead
 # of the default multithreaded scheduler) in order to avoid a flaky interaction
@@ -426,10 +425,6 @@ def test_keyed_asof_join_with_tolerance(
         pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
     ],
 )
-@pytest.mark.xfail(
-    raises=(com.IbisError, AttributeError),
-    reason="Select from unambiguous joins not implemented",
-)
 def test_select_on_unambiguous_join(how, func, npartitions):
     df_t = dd.from_pandas(
         pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")}),
@@ -464,10 +459,6 @@ def test_select_on_unambiguous_join(how, func, npartitions):
         pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
     ],
 )
-@pytest.mark.xfail(
-    raises=(com.IbisError, AttributeError),
-    reason="Select from unambiguous joins not implemented",
-)
 @merge_asof_minversion
 def test_select_on_unambiguous_asof_join(func, npartitions):
     df_t = dd.from_pandas(
@@ -498,7 +489,7 @@ def test_select_on_unambiguous_asof_join(func, npartitions):
     )
 
 
-def test_materialized_join(npartitions):
+def test_outer_join(npartitions):
     df = dd.from_pandas(
         pd.DataFrame({"test": [1, 2, 3], "name": ["a", "b", "c"]}),
         npartitions=npartitions,
@@ -517,7 +508,6 @@ def test_materialized_join(npartitions):
         ibis_table_2,
         predicates=ibis_table_1["test"] == ibis_table_2["test_2"],
     )
-    joined = joined.materialize()
     result = joined.compile()
     expected = dd.merge(
         df,
