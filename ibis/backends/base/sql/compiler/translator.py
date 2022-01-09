@@ -1,10 +1,12 @@
+from __future__ import annotations
+
+import itertools
 import operator
-from typing import Callable, Dict
+from typing import Callable, Iterator
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.format as fmt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import (
@@ -21,22 +23,15 @@ class QueryContext:
     parameters are tracked here.
     """
 
-    def __init__(
-        self, compiler, indent=2, parent=None, memo=None, params=None
-    ):
+    def __init__(self, compiler, indent=2, parent=None, params=None):
         self.compiler = compiler
-        self._table_refs = {}
+        self.table_refs = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
         self.indent = indent
         self.parent = parent
-
         self.always_alias = False
-
         self.query = None
-
-        self._table_key_memo = {}
-        self.memo = memo or fmt.FormatMemo()
         self.params = params if params is not None else {}
 
     def _compile_subquery(self, expr):
@@ -73,8 +68,10 @@ class QueryContext:
         this = self.top_context
 
         key = self._get_table_key(expr)
-        if key in this.subquery_memo:
+        try:
             return this.subquery_memo[key]
+        except KeyError:
+            pass
 
         op = expr.op()
         if isinstance(op, ops.SQLQueryResult):
@@ -86,46 +83,64 @@ class QueryContext:
         return result
 
     def make_alias(self, expr):
-        i = len(self._table_refs)
+        i = len(self.table_refs)
 
         key = self._get_table_key(expr)
 
         # Get total number of aliases up and down the tree at this point; if we
         # find the table prior-aliased along the way, however, we reuse that
         # alias
-        ctx = self
-        while ctx.parent is not None:
-            ctx = ctx.parent
-
-            if key in ctx._table_refs:
-                alias = ctx._table_refs[key]
+        for ctx in itertools.islice(self._contexts(), 1, None):
+            try:
+                alias = ctx.table_refs[key]
+            except KeyError:
+                pass
+            else:
                 self.set_ref(expr, alias)
                 return
 
-            i += len(ctx._table_refs)
+            i += len(ctx.table_refs)
 
         alias = f't{i:d}'
         self.set_ref(expr, alias)
 
     def need_aliases(self, expr=None):
-        return self.always_alias or len(self._table_refs) > 1
+        return self.always_alias or len(self.table_refs) > 1
+
+    def _contexts(
+        self,
+        *,
+        parents: bool = True,
+    ) -> Iterator[QueryContext]:
+        ctx = self
+        yield ctx
+        while parents and ctx.parent is not None:
+            ctx = ctx.parent
+            yield ctx
 
     def has_ref(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
-        return self._key_in(
-            key, '_table_refs', parent_contexts=parent_contexts
+        return any(
+            key in ctx.table_refs
+            for ctx in self._contexts(parents=parent_contexts)
         )
 
     def set_ref(self, expr, alias):
         key = self._get_table_key(expr)
-        self._table_refs[key] = alias
+        self.table_refs[key] = alias
 
     def get_ref(self, expr):
         """
         Get the alias being used throughout a query to refer to a particular
         table or inline view
         """
-        return self._get_table_item('_table_refs', expr)
+        key = self._get_table_key(expr)
+        top = self.top_context
+
+        if self.is_extracted(expr):
+            return top.table_refs.get(key)
+
+        return self.table_refs.get(key)
 
     def is_extracted(self, expr):
         key = self._get_table_key(expr)
@@ -161,37 +176,12 @@ class QueryContext:
         validator = ExprValidator(exprs)
         return not validator.validate(expr)
 
-    def _get_table_item(self, item, expr):
-        key = self._get_table_key(expr)
-        top = self.top_context
-
-        if self.is_extracted(expr):
-            return getattr(top, item).get(key)
-
-        return getattr(self, item).get(key)
-
     def _get_table_key(self, table):
         if isinstance(table, ir.TableExpr):
-            table = table.op()
-
-        try:
-            return self._table_key_memo[table]
-        except KeyError:
-            val = table._repr()
-            self._table_key_memo[table] = val
-            return val
-
-    def _key_in(self, key, memo_attr, parent_contexts=False):
-        if key in getattr(self, memo_attr):
-            return True
-
-        ctx = self
-        while parent_contexts and ctx.parent is not None:
-            ctx = ctx.parent
-            if key in getattr(ctx, memo_attr):
-                return True
-
-        return False
+            return table.op()
+        elif isinstance(table, ops.TableNode):
+            return table
+        raise TypeError(f"invalid table expression: {type(table)}")
 
 
 class ExprTranslator:
@@ -201,7 +191,7 @@ class ExprTranslator:
     """
 
     _registry = operation_registry
-    _rewrites: Dict[ops.Node, Callable] = {}
+    _rewrites: dict[ops.Node, Callable] = {}
 
     def __init__(self, expr, context, named=False, permit_subquery=False):
         self.expr = expr
