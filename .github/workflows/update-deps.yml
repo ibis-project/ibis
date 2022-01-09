@@ -4,6 +4,11 @@ on:
     # run every 24 hours at midnight
     - cron: "0 */24 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   generate_updates:
     runs-on: ubuntu-latest
