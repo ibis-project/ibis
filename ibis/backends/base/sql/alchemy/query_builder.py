@@ -97,7 +97,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                     self_ref = (
                         alias if hasattr(alias, "name") else table.alias(alias)
                     )
-                    ctx.set_ref(expr, alias)
+                    ctx.set_ref(expr, self_ref)
                     return self_ref
                 else:
                     return ctx.get_ref(expr)
