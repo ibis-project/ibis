@@ -22,6 +22,8 @@ jobs:
 
   niv_update:
     runs-on: ubuntu-latest
+    needs:
+      - generate_updates
     strategy:
       matrix: ${{ fromJSON(needs.generate_updates.outputs.matrix) }}
     steps:
