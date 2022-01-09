@@ -622,6 +622,87 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._compare_sqla(expr, ex)
 
+    def test_where_correlated_subquery_with_join(self):
+        # GH3163
+        # ibis code
+        part = ibis.table([("p_partkey", "int64")], name="part")
+        partsupp = ibis.table(
+            [
+                ("ps_partkey", "int64"),
+                ("ps_supplycost", "float64"),
+                ("ps_suppkey", "int64"),
+            ],
+            name="partsupp",
+        )
+        supplier = ibis.table([("s_suppkey", "int64")], name="supplier")
+
+        q = part.join(partsupp, part.p_partkey == partsupp.ps_partkey)
+        q = q[
+            part.p_partkey,
+            partsupp.ps_supplycost,
+        ]
+        subq = partsupp.join(
+            supplier, supplier.s_suppkey == partsupp.ps_suppkey
+        )
+        subq = subq.projection([partsupp.ps_partkey, partsupp.ps_supplycost])
+        subq = subq[subq.ps_partkey == q.p_partkey]
+
+        expr = q[q.ps_supplycost == subq.ps_supplycost.min()]
+
+        # sqlalchemy code
+        part = sa.table("part", sa.column("p_partkey"))
+        supplier = sa.table("supplier", sa.column("s_suppkey"))
+        partsupp = sa.table(
+            "partsupp",
+            sa.column("ps_partkey"),
+            sa.column("ps_supplycost"),
+            sa.column("ps_suppkey"),
+        )
+
+        part_t1 = part.alias("t1")
+        partsupp_t2 = partsupp.alias("t2")
+
+        t0 = (
+            sa.select([part_t1.c.p_partkey, partsupp_t2.c.ps_supplycost])
+            .select_from(
+                part_t1.join(
+                    partsupp_t2,
+                    onclause=part_t1.c.p_partkey == partsupp_t2.c.ps_partkey,
+                )
+            )
+            .alias("t0")
+        )
+
+        partsupp_t2 = partsupp.alias("t2")
+        supplier_t5 = supplier.alias("t5")
+        t3 = (
+            sa.select([partsupp_t2.c.ps_partkey, partsupp_t2.c.ps_supplycost])
+            .select_from(
+                partsupp_t2.join(
+                    supplier_t5,
+                    onclause=supplier_t5.c.s_suppkey
+                    == partsupp_t2.c.ps_suppkey,
+                )
+            )
+            .alias("t3")
+        )
+
+        ex = (
+            sa.select([t0.c.p_partkey, t0.c.ps_supplycost])
+            .select_from(t0)
+            .where(
+                t0.c.ps_supplycost
+                == (
+                    sa.select([sa.func.min(t3.c.ps_supplycost).label("min")])
+                    .select_from(t3)
+                    .where(t3.c.ps_partkey == t0.c.p_partkey)
+                    .as_scalar()
+                )
+            )
+        )
+
+        self._compare_sqla(expr, ex)
+
     def _compare_sqla(self, expr, sqla):
         context = AlchemyContext(compiler=AlchemyCompiler)
         result_sqla = AlchemyCompiler.to_sql(expr, context)

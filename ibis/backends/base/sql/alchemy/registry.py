@@ -77,7 +77,7 @@ def _varargs_call(sa_func, t, expr):
 
 
 def get_sqla_table(ctx, table):
-    if ctx.has_ref(table):
+    if ctx.has_ref(table, parent_contexts=True):
         ctx_level = ctx
         sa_table = ctx_level.get_ref(table)
         while sa_table is None and ctx_level.parent is not ctx_level:
