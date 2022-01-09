@@ -9,10 +9,6 @@ from .registry import fixed_arity, sqlalchemy_operation_registry
 
 
 class AlchemyContext(QueryContext):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._table_objects = {}
-
     def collapse(self, queries):
         if isinstance(queries, str):
             return queries
@@ -24,29 +20,11 @@ class AlchemyContext(QueryContext):
         return queries[0]
 
     def subcontext(self):
-        return type(self)(
-            compiler=self.compiler, parent=self, params=self.params
+        return self.__class__(
+            compiler=self.compiler,
+            parent=self,
+            params=self.params,
         )
-
-    def _compile_subquery(self, expr):
-        sub_ctx = self.subcontext()
-        return self._to_sql(expr, sub_ctx)
-
-    def has_table(self, expr, parent_contexts=False):
-        key = self._get_table_key(expr)
-        return self._key_in(
-            key, '_table_objects', parent_contexts=parent_contexts
-        )
-
-    def set_table(self, expr, obj):
-        key = self._get_table_key(expr)
-        self._table_objects[key] = obj
-
-    def get_table(self, expr):
-        """
-        Get the memoized SQLAlchemy expression object
-        """
-        return self._get_table_item('_table_objects', expr)
 
 
 class AlchemyExprTranslator(ExprTranslator):
