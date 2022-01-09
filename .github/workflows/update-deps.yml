@@ -61,16 +61,23 @@ jobs:
 
       - uses: tibdex/github-app-token@v1
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
-        id: generate_token
+        id: generate_pr_token
         with:
           app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - uses: tibdex/github-app-token@v1
+        if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
+        id: generate_pr_approval_token
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - uses: cpcloud/compare-commits-action@v5.0.13
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         id: compare_commits
         with:
-          token: ${{ steps.generate_token.outputs.token }}
+          token: ${{ steps.generate_pr_token.outputs.token }}
           owner: ${{ steps.get_new_commit.outputs.owner }}
           repo: ${{ steps.get_new_commit.outputs.repo }}
           basehead: ${{ steps.get_current_commit.outputs.rev }}...${{ steps.get_new_commit.outputs.rev }}
@@ -80,7 +87,7 @@ jobs:
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         id: create_pr
         with:
-          token: ${{ steps.generate_token.outputs.token }}
+          token: ${{ steps.generate_pr_token.outputs.token }}
           commit-message: "chore(deps/${{ matrix.dep }}): update"
           branch: "create-pull-request/update-${{ matrix.dep }}"
           delete-branch: true
@@ -92,12 +99,12 @@ jobs:
       - uses: juliangruber/approve-pull-request-action@v1.1.0
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         with:
-          github-token: ${{ steps.generate_token.outputs.token }}
+          github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
           number: ${{ steps.create_pr.outputs.pull-request-number }}
 
       - uses: peter-evans/enable-pull-request-automerge@v1
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         with:
-          token: ${{ steps.generate_token.outputs.token }}
+          token: ${{ steps.generate_pr_token.outputs.token }}
           pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
           merge-method: rebase
