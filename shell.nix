@@ -30,6 +30,7 @@ let
 
   # postgresql is the client, not the server
   postgresDeps = [ pkgs.postgresql ];
+  geospatialDeps = [ pkgs.proj ];
 
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
@@ -38,6 +39,7 @@ let
     ++ vizDeps
     ++ pysparkDeps
     ++ docDeps
+    ++ geospatialDeps
     ++ postgresDeps
     ++ sqliteDeps;
 

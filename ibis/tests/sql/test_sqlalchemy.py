@@ -233,21 +233,20 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             expected = sa.select([nt]).select_from(joined_sqla)
             self._compare_sqla(ibis_joined, expected)
 
-    def test_join_just_materialized(self):
-        joined = self._case_join_just_materialized()
+    def test_join_compose(self):
+        joined = self._case_join_compose()
 
-        rt, nt, ct = self._sqla_tables(
+        region, nation, customer = self._sqla_tables(
             ['tpch_region', 'tpch_nation', 'tpch_customer']
         )
-        nt = nt.alias('t0')
-        rt = rt.alias('t1')
-        ct = ct.alias('t2')
-
-        sqla_joined = nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey).join(
-            ct, nt.c.n_nationkey == ct.c.c_nationkey
+        t0 = nation.alias('t0')
+        t1 = region.alias('t1')
+        t2 = customer.alias('t2')
+        expected = sa.select([t0, t1, t2]).select_from(
+            t0.join(t1, onclause=t0.c.n_regionkey == t1.c.r_regionkey).join(
+                t2, onclause=t0.c.n_nationkey == t2.c.c_nationkey
+            )
         )
-
-        expected = sa.select([sqla_joined])
 
         self._compare_sqla(joined, expected)
 

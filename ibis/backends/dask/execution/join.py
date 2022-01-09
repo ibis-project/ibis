@@ -15,11 +15,6 @@ from ..dispatch import execute_node
 from ..execution import constants
 
 
-@execute_node.register(ops.MaterializedJoin, dd.DataFrame)
-def execute_materialized_join(op, df, **kwargs):
-    return df
-
-
 @execute_node.register(
     ops.AsOfJoin, dd.DataFrame, dd.DataFrame, (Timedelta, type(None))
 )

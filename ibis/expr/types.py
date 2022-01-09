@@ -514,10 +514,7 @@ class TableExpr(Expr):
             raise AttributeError(key)
 
     def __dir__(self):
-        attrs = dir(type(self))
-        if self._is_materialized():
-            attrs = frozenset(attrs + self.schema().names)
-        return sorted(attrs)
+        return sorted(frozenset(dir(type(self)) + self.columns))
 
     def _resolve(self, exprs):
         exprs = util.promote_list(exprs)
@@ -585,13 +582,7 @@ class TableExpr(Expr):
         -------
         schema : Schema
         """
-        if not self._is_materialized():
-            raise com.IbisError('Table operation is not yet materialized')
         return self.op().schema
-
-    def _is_materialized(self):
-        # The operation produces a known schema
-        return self.op().has_schema()
 
     def group_by(self, by=None, **additional_grouping_expressions):
         """

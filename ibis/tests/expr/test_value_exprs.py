@@ -1377,10 +1377,6 @@ def test_nullif_fail(left, right):
         ),
     ],
 )
-@pytest.mark.xfail(
-    raises=(com.IbisError, AttributeError),
-    reason="Select from unambiguous joins not implemented",
-)
 def test_select_on_unambiguous_join(join_method):
     t = ibis.table([("a0", dt.int64), ("b1", dt.string)], name="t")
     s = ibis.table([("a1", dt.int64), ("b2", dt.string)], name="s")

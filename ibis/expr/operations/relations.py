@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import collections
 import itertools
-from typing import List
 
 from cached_property import cached_property
 from public import public
@@ -164,30 +165,13 @@ class Join(TableNode):
         )
         super().__init__(left, right, predicates)
 
-    def _get_schema(self):
+    @property
+    def schema(self):
         # For joins retaining both table schemas, merge them together here
-        left = self.left
-        right = self.right
-
-        if not left._is_materialized():
-            left = left.materialize()
-
-        if not right._is_materialized():
-            right = right.materialize()
-
-        sleft = left.schema()
-        sright = right.schema()
-
-        overlap = set(sleft.names) & set(sright.names)
-        if overlap:
-            raise com.RelationError(
-                'Joined tables have overlapping names: %s' % str(list(overlap))
-            )
-
-        return sleft.append(sright)
+        return self.left.schema().append(self.right.schema())
 
     def has_schema(self):
-        return False
+        return not set(self.left.columns) & set(self.right.columns)
 
     def root_tables(self):
         if util.all_of([self.left.op(), self.right.op()], (Join, Selection)):
@@ -229,39 +213,21 @@ class AnyLeftJoin(Join):
 
 @public
 class LeftSemiJoin(Join):
-    def _get_schema(self):
+    @property
+    def schema(self):
         return self.left.schema()
 
 
 @public
 class LeftAntiJoin(Join):
-    def _get_schema(self):
+    @property
+    def schema(self):
         return self.left.schema()
 
 
 @public
 class CrossJoin(Join):
     pass
-
-
-@public
-class MaterializedJoin(TableNode, sch.HasSchema):
-    join = rlz.table
-
-    def _validate(self):
-        assert isinstance(self.join.op(), Join)
-        # check whether the underlying schema has overlapping columns or not
-        assert self.schema
-
-    @cached_property
-    def schema(self):
-        return self.join.op()._get_schema()
-
-    def root_tables(self):
-        return self.join.op().root_tables()
-
-    def blocks(self):
-        return True
 
 
 @public
@@ -290,7 +256,7 @@ class AsOfJoin(Join):
 
         self._validate_args(['by', 'tolerance'])
 
-    def _validate_args(self, args: List[str]):
+    def _validate_args(self, args: list[str]):
         # this should be removed altogether
         for arg in args:
             argument = self.__signature__.parameters[arg]
@@ -816,3 +782,36 @@ class DropNa(TableNode, sch.HasSchema):
     @cached_property
     def schema(self):
         return self.table.schema()
+
+
+def _dedup_join_columns(
+    expr: ir.TableExpr,
+    *,
+    left: ir.TableExpr,
+    right: ir.TableExpr,
+    suffixes: tuple[str, str],
+):
+    right_columns = frozenset(right.columns)
+    overlap = frozenset(
+        column for column in left.columns if column in right_columns
+    )
+
+    if not overlap:
+        return expr
+
+    left_suffix, right_suffix = suffixes
+
+    left_projections = [
+        left[column].name(f"{column}{left_suffix}")
+        if column in overlap
+        else left[column]
+        for column in left.columns
+    ]
+
+    right_projections = [
+        right[column].name(f"{column}{right_suffix}")
+        if column in overlap
+        else right[column]
+        for column in right.columns
+    ]
+    return expr.projection(left_projections + right_projections)

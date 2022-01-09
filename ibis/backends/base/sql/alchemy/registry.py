@@ -99,7 +99,24 @@ def _table_column(t, expr):
     table = op.table
 
     sa_table = get_sqla_table(ctx, table)
-    out_expr = getattr(sa_table.c, op.name)
+    colname = op.name
+
+    try:
+        out_expr = sa_table.c[colname]
+    except KeyError:
+        # Here we create a "deferred" column
+        #
+        # This is to handle the case when selecting a column from a join, which
+        # happens when a join expression is cached during join traversal
+        #
+        # We'd like to avoid generating a subquery just for selection but in
+        # sqlalchemy the Join object is not selectable. However, at this point
+        # know that the column can be referred to unambiguously
+        #
+        # Later the expression is assembled into
+        # `sa.select([sa.column(colname)]).select_from(table_set)` (roughly)
+        # where `table_set` is `sa_table` above.
+        out_expr = sa.column(colname)
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery

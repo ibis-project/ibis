@@ -73,8 +73,7 @@ def test_multiple_join_deeper_reference():
     joined2 = joined.inner_join(table3, [table1['key2'] == table3['key4']])
 
     # it works, what more should we test here?
-    materialized = joined2.materialize()
-    repr(materialized)
+    repr(joined2)
 
 
 def test_filter_on_projected_field(con):
@@ -166,9 +165,6 @@ def test_filter_self_join():
     cond = left.region == right.region
     joined = left.join(right, cond)
 
-    # unmodified by analysis
-    assert_equal(joined.op().predicates[0], cond)
-
     metric = (left.total - right.total).name('diff')
     what = [left.region, metric]
     projected = joined.projection(what)
@@ -178,9 +174,6 @@ def test_filter_self_join():
     # proj exprs unaffected by analysis
     assert_equal(proj_exprs[0], left.region)
     assert_equal(proj_exprs[1], metric)
-
-
-# Refactoring deadpool
 
 
 def test_no_rewrite(con):
@@ -300,7 +293,13 @@ def test_select_filter_mutate_fusion():
         .equals(first_selection['col'].cast('int32').name('col'))
     )
 
-    assert len(first_selection.op().selections) == 1
+    # we don't look past the projection when a filter is encountered, so the
+    # number of selections in the first projection (`first_selection`) is 0
+    #
+    # previously we did, but this was buggy when executing against the pandas
+    # backend
+    #
+    # eventually we will bring this back, but we're trading off the ability
+    # to remove materialize for some performance in the short term
+    assert len(first_selection.op().selections) == 0
     assert len(first_selection.op().predicates) == 1
-    assert first_selection.op().selections[0].equals(t['col'])
-    assert first_selection.op().predicates[0].equals(t['col'].isnan())

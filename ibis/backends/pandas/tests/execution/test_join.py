@@ -4,7 +4,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 from ibis.backends.pandas import Backend
 
 join_type = pytest.mark.parametrize(
@@ -361,10 +360,6 @@ def test_keyed_asof_join_with_tolerance(
         pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
     ],
 )
-@pytest.mark.xfail(
-    raises=(com.IbisError, AttributeError),
-    reason="Select from unambiguous joins not implemented",
-)
 def test_select_on_unambiguous_join(how, func):
     df_t = pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")})
     df_s = pd.DataFrame({'a1': [2, 3, 4], 'b2': list("abc")})
@@ -390,10 +385,6 @@ def test_select_on_unambiguous_join(how, func):
         pytest.param(lambda join: join.select(["a0", "a1"]), id="select"),
     ],
 )
-@pytest.mark.xfail(
-    raises=(com.IbisError, AttributeError),
-    reason="Select from unambiguous joins not implemented",
-)
 @merge_asof_minversion
 def test_select_on_unambiguous_asof_join(func):
     df_t = pd.DataFrame(
@@ -415,7 +406,7 @@ def test_select_on_unambiguous_asof_join(func):
     tm.assert_frame_equal(result, expected)
 
 
-def test_materialized_join():
+def test_outer_join():
     df = pd.DataFrame({"test": [1, 2, 3], "name": ["a", "b", "c"]})
     df_2 = pd.DataFrame({"test_2": [1, 5, 6], "name_2": ["d", "e", "f"]})
 
@@ -428,7 +419,6 @@ def test_materialized_join():
         ibis_table_2,
         predicates=ibis_table_1["test"] == ibis_table_2["test_2"],
     )
-    joined = joined.materialize()
     result = joined.execute()
     expected = pd.merge(
         df,
@@ -437,4 +427,63 @@ def test_materialized_join():
         right_on="test_2",
         how="outer",
     )
+    tm.assert_frame_equal(result, expected)
+
+
+def test_mutate_after_join():
+    # GH3090
+    df = pd.DataFrame(
+        {
+            "p_Order_Priority": ["C", "H", "L", "M"],
+            "p_count": [9, 9, 15, 11],
+            "p_density": [0.204545, 0.204545, 0.340909, 0.250000],
+        }
+    )
+    df_2 = pd.DataFrame(
+        {
+            "q_Order_Priority": ["C", "H", "L", "M"],
+            "q_count": [13, 21, 12, 10],
+            "q_density": [0.232143, 0.375000, 0.214286, 0.178571],
+        }
+    )
+
+    conn = ibis.pandas.connect({"df": df, "df_2": df_2})
+
+    ibis_table_1 = conn.table("df")
+    ibis_table_2 = conn.table("df_2")
+
+    joined = ibis_table_1.outer_join(
+        ibis_table_2,
+        predicates=(
+            ibis_table_1["p_Order_Priority"]
+            == ibis_table_2["q_Order_Priority"]
+        ),
+    )
+
+    joined = joined.mutate(
+        bins=(
+            joined["p_Order_Priority"]
+            .isnull()
+            .ifelse(joined["q_Order_Priority"], joined["p_Order_Priority"])
+        ),
+        p_count=joined["p_count"].fillna(0),
+        q_count=joined["q_count"].fillna(0),
+        p_density=joined.p_density.fillna(1e-10),
+        q_density=joined.q_density.fillna(1e-10),
+        features="Order_Priority",
+    )
+
+    expected = pd.DataFrame(
+        {
+            "p_Order_Priority": list("CHLM"),
+            "p_count": [9, 9, 15, 11],
+            "p_density": [0.204545, 0.204545, 0.340909, 0.250000],
+            "q_Order_Priority": list("CHLM"),
+            "q_count": [13, 21, 12, 10],
+            "q_density": [0.232143, 0.375000, 0.214286, 0.178571],
+            "bins": list("CHLM"),
+            "features": ["Order_Priority"] * 4,
+        }
+    )
+    result = joined.execute()
     tm.assert_frame_equal(result, expected)

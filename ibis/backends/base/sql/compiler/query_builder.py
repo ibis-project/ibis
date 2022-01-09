@@ -347,7 +347,6 @@ class Select(DML):
                 if context.need_aliases(expr):
                     alias = context.get_ref(expr)
 
-                    # materialized join will not have an alias. see #491
                     expr_str = f'{alias}.*' if alias else '*'
                 else:
                     expr_str = '*'

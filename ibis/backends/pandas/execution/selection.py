@@ -249,10 +249,7 @@ def _compute_predicates(
             mapping = remap_overlapping_column_names(
                 table_op, root_table, data_columns
             )
-            if mapping is not None:
-                new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
-            else:
-                new_data = data
+            new_data = map_new_column_names_to_data(mapping, data)
             additional_scope = additional_scope.merge_scope(
                 Scope({root_table: new_data}, timecontext)
             )
