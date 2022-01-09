@@ -19,6 +19,7 @@ For more information on a specific backend, check the next backend pages:
    pyspark
    pandas
    dask
+   datafusion
 
 
 .. _classes_of_backends:
