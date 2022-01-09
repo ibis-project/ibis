@@ -16,7 +16,6 @@ from typing import Optional
 
 import pytest
 
-import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
@@ -39,6 +38,17 @@ MOCK_TABLES = {
         ('i', 'timestamp'),
         ('j', 'date'),
         ('k', 'time'),
+    ],
+    "t1": [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
+    "t2": [('key1', 'string'), ('key2', 'string'), ('value2', 'double')],
+    "t3": [('key2', 'string'), ('key3', 'string'), ('value3', 'double')],
+    "t4": [('key3', 'string'), ('value4', 'double')],
+    "bar": [('x', 'double'), ('job', 'string')],
+    "foo": [
+        ('job', 'string'),
+        ('dept_id', 'string'),
+        ('year', 'int32'),
+        ('y', 'double'),
     ],
     'star1': [
         ('c', 'int32'),
@@ -394,6 +404,7 @@ class MockBackend(BaseSQLBackend):
 
 class MockAlchemyBackend(MockBackend):
     compiler = AlchemyCompiler
+    table_class = AlchemyTable
 
     def __init__(self):
         super().__init__()
@@ -405,13 +416,12 @@ class MockAlchemyBackend(MockBackend):
         return self._inject_table(name, schema)
 
     def _inject_table(self, name, schema):
-        if name in self.meta.tables:
+        try:
             table = self.meta.tables[name]
-        else:
+        except KeyError:
             table = table_from_schema(name, self.meta, schema)
 
-        node = AlchemyTable(table, self)
-        return ir.TableExpr(node)
+        return self.table_class(table, self).to_expr()
 
 
 GEO_TABLE = {
