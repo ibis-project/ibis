@@ -99,8 +99,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                     )
                     ctx.set_ref(expr, self_ref)
                     return self_ref
-                else:
-                    return ctx.get_ref(expr)
+                return alias
 
             alias = ctx.get_ref(expr)
             result = ctx.get_compiled_expr(expr)
