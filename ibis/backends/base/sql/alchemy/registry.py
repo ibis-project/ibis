@@ -79,10 +79,10 @@ def _varargs_call(sa_func, t, expr):
 def get_sqla_table(ctx, table):
     if ctx.has_ref(table):
         ctx_level = ctx
-        sa_table = ctx_level.get_table(table)
+        sa_table = ctx_level.get_ref(table)
         while sa_table is None and ctx_level.parent is not ctx_level:
             ctx_level = ctx_level.parent
-            sa_table = ctx_level.get_table(table)
+            sa_table = ctx_level.get_ref(table)
     else:
         op = table.op()
         if isinstance(op, AlchemyTable):

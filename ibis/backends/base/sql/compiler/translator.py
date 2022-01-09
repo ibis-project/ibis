@@ -152,7 +152,7 @@ class QueryContext:
         self.make_alias(expr)
 
     def subcontext(self):
-        return type(self)(
+        return self.__class__(
             compiler=self.compiler,
             indent=self.indent,
             parent=self,
