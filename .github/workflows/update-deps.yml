@@ -70,8 +70,8 @@ jobs:
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         id: generate_pr_approval_token
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
+          private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
       - uses: cpcloud/compare-commits-action@v5.0.13
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
