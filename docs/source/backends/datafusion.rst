@@ -7,11 +7,23 @@
 
    The Datafusion backend is experimental
 
+Install
+-------
+
 Install ibis along with its dependencies for the datafusion backend:
 
 ::
 
   pip install 'ibis-framework[datafusion]'
+
+or
+
+::
+
+  conda install -c conda-forge ibis-datafusion
+
+Connect
+-------
 
 Create a client by passing a dictionary that maps table names to paths to
 :func:`ibis.datafusion.connect`:

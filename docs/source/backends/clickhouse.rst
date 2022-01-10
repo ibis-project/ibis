@@ -1,13 +1,25 @@
 .. _install.clickhouse:
 
 `Clickhouse <https://clickhouse.yandex/>`_
-------------------------------------------
+==========================================
+
+Install
+-------
 
 Install dependencies for Ibis's Clickhouse dialect(minimal supported version is `0.1.3`):
 
 ::
 
   pip install 'ibis-framework[clickhouse]'
+
+or
+
+::
+
+  conda install -c conda-forge ibis-clickhouse
+
+Connect
+-------
 
 Create a client by passing in database connection parameters such as ``host``,
 ``port``, ``database``, and ``user`` to :func:`ibis.clickhouse.connect`:
@@ -20,7 +32,7 @@ Create a client by passing in database connection parameters such as ``host``,
 .. _api.clickhouse:
 
 API
-===
+---
 .. currentmodule:: ibis.backends.clickhouse
 
 The ClickHouse client is accessible through the ``ibis.clickhouse`` namespace.
