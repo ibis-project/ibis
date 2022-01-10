@@ -1,0 +1,172 @@
+# vim: filetype=yaml
+name: Ibis Docs and Linting
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: lint commits
+        run: nix shell -L --keep-going -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: pre-commit checks
+        run: nix-shell --pure --keep-going --run 'pre-commit run --all-files'
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          path: ibis
+
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: build docs
+        working-directory: ibis
+        run: nix-shell --pure --run 'sphinx-build -b html docs/source docs/web/docs -W -T'
+
+      - name: build website
+        working-directory: ibis
+        run: nix-shell --pure --run 'mkdocs build -f docs/mkdocs.yml'
+
+      - name: Add config to docs
+        working-directory: ibis
+        run: |
+          set -euo pipefail
+
+          touch docs/site/.nojekyll
+          echo "ibis-project.org" > docs/site/CNAME
+
+      - name: Generate a GitHub token
+        if: ${{ github.event_name == 'push' }}
+        uses: tibdex/github-app-token@v1
+        id: generate_token
+        with:
+          app_id: ${{ secrets.DOCS_BOT_APP_ID }}
+          private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
+          repository: ibis-project/ibis-project.org
+
+      - name: checkout
+        uses: actions/checkout@v2
+        if: ${{ github.event_name == 'push' }}
+        with:
+          repository: ibis-project/ibis-project.org
+          token: ${{ steps.generate_token.outputs.token }}
+          path: ibis-project.org
+
+      - name: checkout
+        uses: actions/checkout@v2
+        if: ${{ github.event_name != 'push' }}
+        with:
+          repository: ibis-project/ibis-project.org
+          path: ibis-project.org
+
+      - name: Copy docbuild to checkout
+        working-directory: ibis
+        run: |
+          set -euo pipefail
+
+          # the trailing slash matters here; it means "everything underneath
+          # docbuild, but not docbuild itself"
+          rsync --delete --exclude=.git -avz docs/site/ ../ibis-project.org
+
+      - name: Configure git info
+        working-directory: ibis-project.org
+        run: |
+          set -euo pipefail
+
+          git config user.name 'ibis-docs-bot[bot]'
+          git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
+
+      - name: Commit docs
+        working-directory: ibis-project.org
+        run: |
+          set -euo pipefail
+
+          git add .
+          git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
+
+      - name: tag docs if this is a release
+        if: ${{ startsWith(github.ref, 'refs/tags') }}
+        working-directory: ibis-project.org
+        run: |
+          set -euo pipefail
+
+          git tag "${GITHUB_REF##*/}"
+
+      - name: Push docs
+        if: ${{ github.event_name == 'push' }}
+        working-directory: ibis-project.org
+        run: git push --tags -f origin master
+
+  simulate_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: run semantic-release
+        run: ./ci/release/dry_run.sh
