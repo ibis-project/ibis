@@ -44,7 +44,7 @@ geopandas = { version = ">=0.6,<0.11", optional = true }
 graphviz = { version = ">=0.16,<0.20", optional = true }
 hdfs = { version = ">=2,<3", optional = true, extras = ["kerberos"] }
 impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
-psycopg2 = { version = ">=2.7.6,<3", optional = true }
+psycopg2 = { version = ">=2.7,<3", optional = true }
 pyarrow = { version = ">=1,<7", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=2.4.3,<4", optional = true }
