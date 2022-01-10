@@ -122,7 +122,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "bitarray"
-version = "2.3.4"
+version = "2.3.5"
 description = "efficient arrays of booleans -- C extension"
 category = "main"
 optional = true
@@ -422,7 +422,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "decorator"
-version = "5.1.0"
+version = "5.1.1"
 description = "Decorators for Humans"
 category = "main"
 optional = false
@@ -540,7 +540,7 @@ ssh = ["paramiko"]
 
 [[package]]
 name = "geoalchemy2"
-version = "0.10.1"
+version = "0.10.2"
 description = "Using SQLAlchemy with Spatial Databases"
 category = "main"
 optional = true
@@ -1012,7 +1012,7 @@ test = ["mkdocs-macros-test", "mkdocs-material (>=6.2)", "mkdocs-include-markdow
 
 [[package]]
 name = "mkdocs-material"
-version = "8.1.4"
+version = "8.1.5"
 description = "A Material Design theme for MkDocs"
 category = "dev"
 optional = false
@@ -2162,7 +2162,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "urllib3"
-version = "1.26.7"
+version = "1.26.8"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -2292,7 +2292,7 @@ beautifulsoup4 = [
     {file = "beautifulsoup4-4.10.0.tar.gz", hash = "sha256:c23ad23c521d818955a4151a67d81580319d4bf548d3d49f4223ae041ff98891"},
 ]
 bitarray = [
-    {file = "bitarray-2.3.4.tar.gz", hash = "sha256:f19c62425576d3d1821ed711b94d1a4e5ede8f05ca121e99b6d978ed49c7a765"},
+    {file = "bitarray-2.3.5.tar.gz", hash = "sha256:60285184cb02fdba5e1cc8605ac84e150a50f940e9383ab43564e5258d1f47bb"},
 ]
 black = [
     {file = "black-21.12b0-py3-none-any.whl", hash = "sha256:a615e69ae185e08fdd73e4715e260e2479c861b5740057fde6e8b4e3b7dd589f"},
@@ -2567,8 +2567,8 @@ decli = [
     {file = "decli-0.5.2.tar.gz", hash = "sha256:f2cde55034a75c819c630c7655a844c612f2598c42c21299160465df6ad463ad"},
 ]
 decorator = [
-    {file = "decorator-5.1.0-py3-none-any.whl", hash = "sha256:7b12e7c3c6ab203a29e157335e9122cb03de9ab7264b137594103fd4a683b374"},
-    {file = "decorator-5.1.0.tar.gz", hash = "sha256:e59913af105b9860aa2c8d3272d9de5a56a4e608db9a2f167a8480b323d529a7"},
+    {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
+    {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
 ]
 defusedxml = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
@@ -2609,8 +2609,8 @@ fsspec = [
     {file = "fsspec-2021.11.1.tar.gz", hash = "sha256:03683e606651d5e4bd9180525d57477bd5430e5dc68d2e459835dc14cecc3dd4"},
 ]
 geoalchemy2 = [
-    {file = "GeoAlchemy2-0.10.1-py2.py3-none-any.whl", hash = "sha256:7501211256c135d0988087283c2516b80c5c2d66dea401e1734356cef73f88c6"},
-    {file = "GeoAlchemy2-0.10.1.tar.gz", hash = "sha256:3b51f4d0558b7effb9add93aaa813c7a160ed293c346f5379a6fa1c8049af062"},
+    {file = "GeoAlchemy2-0.10.2-py2.py3-none-any.whl", hash = "sha256:22350c34c4c31faead91b2f0146b68835dcd66c34122ba1f2277a9dfb6543baa"},
+    {file = "GeoAlchemy2-0.10.2.tar.gz", hash = "sha256:3db833746e11bc802b754751ec94eaab81009a9ad8fe647d461fe76d1a47a3fd"},
 ]
 geopandas = [
     {file = "geopandas-0.10.2-py2.py3-none-any.whl", hash = "sha256:1722853464441b603d9be3d35baf8bde43831424a891e82a8545eb8997b65d6c"},
@@ -2915,8 +2915,8 @@ mkdocs-macros-plugin = [
     {file = "mkdocs_macros_plugin-0.6.3-py3-none-any.whl", hash = "sha256:c86e96e205c8c30e9bbdde37178cdd9564eb57248257131d185a846f9a94d8bb"},
 ]
 mkdocs-material = [
-    {file = "mkdocs-material-8.1.4.tar.gz", hash = "sha256:b310be0f69503214406afe2e0495449f135503fe084467b607f860f4ed01f09e"},
-    {file = "mkdocs_material-8.1.4-py2.py3-none-any.whl", hash = "sha256:6d615457ae18fd6e6a890a6f70d5681f3a6b931da67c2de7df1b273f8f702b4d"},
+    {file = "mkdocs-material-8.1.5.tar.gz", hash = "sha256:cab1fc730d72fd17ae59d9c59361b7161f8ffc3e8d40d7156b756d6492f6d6e8"},
+    {file = "mkdocs_material-8.1.5-py2.py3-none-any.whl", hash = "sha256:98dd282d81129a99b540cd56769d6879367e1096cf5a0a89b46279d8fba9accb"},
 ]
 mkdocs-material-extensions = [
     {file = "mkdocs-material-extensions-1.0.3.tar.gz", hash = "sha256:bfd24dfdef7b41c312ede42648f9eb83476ea168ec163b613f9abd12bbfddba2"},
@@ -3769,8 +3769,8 @@ unidecode = [
     {file = "Unidecode-1.3.2.tar.gz", hash = "sha256:669898c1528912bcf07f9819dc60df18d057f7528271e31f8ec28cc88ef27504"},
 ]
 urllib3 = [
-    {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
-    {file = "urllib3-1.26.7.tar.gz", hash = "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece"},
+    {file = "urllib3-1.26.8-py2.py3-none-any.whl", hash = "sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed"},
+    {file = "urllib3-1.26.8.tar.gz", hash = "sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c"},
 ]
 watchdog = [
     {file = "watchdog-2.1.6-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:9693f35162dc6208d10b10ddf0458cc09ad70c30ba689d9206e02cd836ce28a3"},
