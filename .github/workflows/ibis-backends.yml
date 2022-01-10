@@ -1,10 +1,17 @@
+# vim: filetype=yaml
 name: Backends
 
 on:
   push:
+    # Skip the backend suite if all changes are in the docs directory
+    paths-ignore:
+      - 'docs/**'
     branches:
       - master
   pull_request:
+    # Skip the backend suite if all changes are in the docs directory
+    paths-ignore:
+      - 'docs/**'
     branches:
       - master
 
