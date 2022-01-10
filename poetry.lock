@@ -354,20 +354,6 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "cytoolz"
-version = "0.11.2"
-description = "Cython implementation of Toolz: High performance functional utilities"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-
-[package.dependencies]
-toolz = ">=0.8.0"
-
-[package.extras]
-cython = ["cython"]
-
-[[package]]
 name = "dask"
 version = "2021.12.0"
 description = "Parallel PyData with Task Scheduling"
@@ -2232,7 +2218,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "1b88ab78ddcf876a9c3e1a28cba6cf28d20dd0fd0d3545f4b7e081da7080924d"
+content-hash = "fae98f2006e6a14f68f07ea1b687d2e21f71d23614b8a3fffad404ee58f36df7"
 
 [metadata.files]
 alabaster = [
@@ -2525,9 +2511,6 @@ css-html-js-minify = [
     {file = "css-html-js-minify-2.5.5.zip", hash = "sha256:4a9f11f7e0496f5284d12111f3ba4ff5ff2023d12f15d195c9c48bd97013746c"},
     {file = "css_html_js_minify-2.5.5-py2.py3-none-any.whl", hash = "sha256:3da9d35ac0db8ca648c1b543e0e801d7ca0bab9e6bfd8418fee59d5ae001727a"},
     {file = "css_html_js_minify-2.5.5-py3.6.egg", hash = "sha256:4704e04a0cd6dd56d61bbfa3bfffc630da6b2284be33519be0b456672e2a2438"},
-]
-cytoolz = [
-    {file = "cytoolz-0.11.2.tar.gz", hash = "sha256:ea23663153806edddce7e4153d1d407d62357c05120a4e8485bddf1bd5ab22b4"},
 ]
 dask = [
     {file = "dask-2021.12.0-py3-none-any.whl", hash = "sha256:47041fe1874e64c395e7be772173999e50b5c61a577084158083b9ef4b4175b2"},
