@@ -3,11 +3,23 @@
 `PostgreSQL <https://www.postgresql.org/>`_
 ===========================================
 
+Install
+-------
+
 Install dependencies for Ibis's PostgreSQL dialect:
 
 ::
 
   pip install 'ibis-framework[postgres]'
+
+or
+
+::
+
+  conda install -c conda-forge ibis-postgres
+
+Connect
+-------
 
 Create a client by passing a connection string to the ``url`` parameter or
 individual parameters to :func:`ibis.postgres.connect`:

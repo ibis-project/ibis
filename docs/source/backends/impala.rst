@@ -2,16 +2,15 @@
 
 .. _backends.impala:
 
-******
-Impala
-******
+`Impala <https://impala.apache.org/>`_
+=======================================
 
 One goal of Ibis is to provide an integrated Python API for an Impala cluster
 without requiring you to switch back and forth between Python code and the
 Impala shell (where one would be using a mix of DDL and SQL statements).
 
 If you find an Impala task that you cannot perform with Ibis, please get in
-touch on the `GitHub issue tracker <http://github.com/pandas-dev/ibis>`_.
+touch on the `GitHub issue tracker <http://github.com/ibis-project/ibis>`_.
 
 While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
@@ -19,14 +18,24 @@ can use pandas with Ibis and Impala.
 
 .. _install.impala:
 
-`Impala <https://impala.apache.org/>`_ Quickstart
--------------------------------------------------
+Install
+-------
 
 Install dependencies for Ibis's Impala dialect:
 
 ::
 
   pip install 'ibis-framework[impala]'
+
+or
+
+::
+
+  conda install -c conda-forge ibis-impala
+
+
+Connect
+-------
 
 To create an Ibis client, you must first connect your services and assemble the
 client using :func:`ibis.impala.connect`:

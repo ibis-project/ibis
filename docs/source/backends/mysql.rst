@@ -3,11 +3,24 @@
 `MySQL <https://www.mysql.com/>`_
 =================================
 
+Install
+-------
+
 Install dependencies for Ibis's MySQL dialect:
 
 ::
 
   pip install 'ibis-framework[mysql]'
+
+
+or
+
+::
+
+  conda install -c conda-forge ibis-mysql
+
+Connect
+-------
 
 Create a client by passing a connection string or individual parameters to
 :func:`ibis.mysql.connect`:

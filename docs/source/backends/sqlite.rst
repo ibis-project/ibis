@@ -3,11 +3,23 @@
 `SQLite <https://www.sqlite.org/>`_
 ===================================
 
+Install
+-------
+
 Install dependencies for Ibis's SQLite dialect:
 
 ::
 
   pip install 'ibis-framework[sqlite]'
+
+or
+
+::
+
+  conda install -c conda-forge ibis-sqlite
+
+Connect
+-------
 
 Create a client by passing a path to a SQLite database to
 :func:`ibis.sqlite.connect`:
