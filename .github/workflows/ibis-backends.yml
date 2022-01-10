@@ -16,6 +16,7 @@ jobs:
   test_simple_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    path: '!docs/**'
     strategy:
       fail-fast: false
       matrix:
@@ -117,6 +118,7 @@ jobs:
   test_postgres:
     name: PostgreSQL ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    path: '!docs/**'
     strategy:
       fail-fast: false
       matrix:
@@ -197,6 +199,7 @@ jobs:
   test_pyspark:
     name: PySpark ${{ matrix.pyspark.version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    path: '!docs/**'
     strategy:
       fail-fast: false
       matrix:
@@ -272,6 +275,7 @@ jobs:
   test_impala:
     name: Impala ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    path: '!docs/**'
     env:
       IBIS_TEST_NN_HOST: localhost
       IBIS_TEST_IMPALA_HOST: localhost
@@ -379,6 +383,7 @@ jobs:
   test_mysql_clickhouse:
     name: ${{ matrix.backend.title }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    path: '!docs/**'
     strategy:
       fail-fast: false
       matrix:
@@ -453,6 +458,7 @@ jobs:
   test_datafusion:
     name: DataFusion ${{ matrix.datafusion-version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    path: '!docs/**'
     strategy:
       fail-fast: false
       matrix:
@@ -537,6 +543,7 @@ jobs:
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
+    path: '!docs/**'
     needs:
       - test_impala
       - test_mysql_clickhouse
