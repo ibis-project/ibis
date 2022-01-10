@@ -3,18 +3,14 @@ import functools
 from contextlib import suppress
 from itertools import product, starmap
 
+from toolz import compose, curry, identity
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.signature as sig
 import ibis.expr.types as ir
 import ibis.util as util
-
-try:
-    from cytoolz import compose, curry, identity
-except ImportError:
-    from toolz import compose, curry, identity
-
 
 optional = sig.Optional
 
