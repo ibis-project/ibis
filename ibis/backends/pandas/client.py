@@ -1,10 +1,7 @@
 """The pandas client implementation."""
-from functools import partial
 
-import dateutil.parser
 import numpy as np
 import pandas as pd
-import pytz
 import toolz
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
@@ -248,50 +245,8 @@ def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
-def convert_timezone(obj, timezone):
-    """Convert `obj` to the timezone `timezone`.
-
-    Parameters
-    ----------
-    obj : datetime.date or datetime.datetime
-
-    Returns
-    -------
-    type(obj)
-    """
-    if timezone is None:
-        return obj.replace(tzinfo=None)
-    return pytz.timezone(timezone).localize(obj)
-
-
 PANDAS_STRING_TYPES = {'string', 'unicode', 'bytes'}
 PANDAS_DATE_TYPES = {'datetime', 'datetime64', 'date'}
-
-
-@sch.convert.register(np.dtype, dt.Timestamp, pd.Series)
-def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
-    if in_dtype.type == np.datetime64:
-        return column.astype(out_dtype.to_pandas(), errors='ignore')
-    try:
-        series = pd.to_datetime(column, utc=True)
-    except pd.errors.OutOfBoundsDatetime:
-        inferred_dtype = infer_pandas_dtype(column, skipna=True)
-        if inferred_dtype in PANDAS_DATE_TYPES:
-            # not great, but not really any other option
-            return column.map(
-                partial(convert_timezone, timezone=out_dtype.timezone)
-            )
-        if inferred_dtype not in PANDAS_STRING_TYPES:
-            raise TypeError(
-                (
-                    'Conversion to timestamp not supported for Series of type '
-                    '{!r}'
-                ).format(inferred_dtype)
-            )
-        return column.map(dateutil.parser.parse)
-    else:
-        utc_dtype = DatetimeTZDtype('ns', 'UTC')
-        return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
 @sch.convert.register(np.dtype, dt.Interval, pd.Series)

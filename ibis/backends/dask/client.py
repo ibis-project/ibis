@@ -1,8 +1,6 @@
 """The dask client implementation."""
-from functools import partial
 
 import dask.dataframe as dd
-import dateutil.parser
 import numpy as np
 import pandas as pd
 from pandas.api.types import DatetimeTZDtype
@@ -15,7 +13,6 @@ from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
     _inferable_pandas_dtypes,
-    convert_timezone,
     ibis_dtype_to_pandas,
     ibis_schema_to_pandas,
 )
@@ -82,33 +79,6 @@ def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
 
 DASK_STRING_TYPES = PANDAS_STRING_TYPES
 DASK_DATE_TYPES = PANDAS_DATE_TYPES
-
-
-@sch.convert.register(np.dtype, dt.Timestamp, dd.Series)
-def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
-    if in_dtype.type == np.datetime64:
-        return column.astype(out_dtype.to_dask())
-    try:
-        # TODO - check this?
-        series = pd.to_datetime(column, utc=True)
-    except pd.errors.OutOfBoundsDatetime:
-        inferred_dtype = infer_dask_dtype(column, skipna=True)
-        if inferred_dtype in DASK_DATE_TYPES:
-            # not great, but not really any other option
-            return column.map(
-                partial(convert_timezone, timezone=out_dtype.timezone)
-            )
-        if inferred_dtype not in DASK_STRING_TYPES:
-            raise TypeError(
-                (
-                    'Conversion to timestamp not supported for Series of type '
-                    '{!r}'
-                ).format(inferred_dtype)
-            )
-        return column.map(dateutil.parser.parse)
-    else:
-        utc_dtype = DatetimeTZDtype('ns', 'UTC')
-        return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
 @sch.convert.register(np.dtype, dt.Interval, dd.Series)
