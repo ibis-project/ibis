@@ -79,12 +79,12 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps || 'no-deps' }}-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps || 'no-deps' }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
 
@@ -111,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps, '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps || fromJSON('["no-deps"]'), '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
   test_postgres:
@@ -123,8 +123,6 @@ jobs:
         python-version:
           - "3.7"
           - "3.9"
-        deps:
-          - []
         include:
           - python-version: "3.7"
             deps:
@@ -157,17 +155,17 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
 
       - name: install minimum postgres dependencies
-        if: ${{ toJSON(matrix.deps) != '[]' }}
+        if: ${{ matrix.deps != null }}
         run: |
           set -euo pipefail
 
@@ -193,7 +191,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: postgres-geospatial-${{ join(matrix.deps, '-') }}-${{ matrix.python-version }}
+          name: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ matrix.python-version }}
           path: junit.xml
 
   test_pyspark:
@@ -207,18 +205,18 @@ jobs:
           - "3.10"
         pyspark:
           - version: "2.4.3"
-            jdk: "8"
+            jdk: 8
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 1
           - version: null
-            jdk: "11"
+            jdk: 11
             env:
               ARROW_PRE_0_15_IPC_FORMAT: 0
         exclude:
           - python-version: "3.10"
             pyspark:
               version: "2.4.3"
-              jdk: "8"
+              jdk: 8
               env:
                 ARROW_PRE_0_15_IPC_FORMAT: 1
     steps:
@@ -239,12 +237,12 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: pyspark-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: pyspark-${{ matrix.pyspark-version }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: pyspark-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
 
@@ -268,7 +266,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
+          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
           path: junit.xml
 
   test_impala:
@@ -491,22 +489,19 @@ jobs:
 
       - name: restore virtualenv
         uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
         with:
           requirement_files: ibis/poetry.lock
-          custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: datafusion-${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
 
       - name: upgrade pip
         run: pip install -U pip
 
       - uses: syphar/restore-pip-download-cache@v1
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         with:
           requirement_files: ibis/poetry.lock
-          custom_cache_key_element: ${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: datafusion-${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install maturin and poetry
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         run: pip install poetry maturin
 
       - name: install datafusion
@@ -515,7 +510,6 @@ jobs:
         run: maturin develop
 
       - name: install ibis
-        if: ${{ !fromJSON(steps.cache-virtualenv.outputs.cache-hit) }}
         working-directory: ibis
         run: poetry install --extras datafusion
 
