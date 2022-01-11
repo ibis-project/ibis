@@ -21,7 +21,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.7.1,<3.11"
-atpublic = ">=2.3,<3"
+atpublic = ">=2.3,<4"
 cached_property = ">=1,<2"
 importlib-metadata = { version = ">=4,<5", python = "<3.8" }
 multipledispatch = ">=0.6,<0.7"
