@@ -262,18 +262,10 @@ jobs:
           git add .
           git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
 
-      - name: tag docs if this is a release
-        if: ${{ startsWith(github.ref, 'refs/tags') }}
-        working-directory: ibis-project.org
-        run: |
-          set -euo pipefail
-
-          git tag "${GITHUB_REF##*/}"
-
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
         working-directory: ibis-project.org
-        run: git push --tags -f origin master
+        run: git push -f origin master
 
   simulate_release:
     runs-on: ubuntu-latest
