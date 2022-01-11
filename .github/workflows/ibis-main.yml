@@ -199,7 +199,7 @@ jobs:
 
       - name: build docs
         working-directory: ibis
-        run: nix-shell --pure --run 'sphinx-build -b html docs/source docs/web/docs -W -T'
+        run: nix-shell --pure --run "sphinx-build -b html docs/source docs/web/docs -W -T -j $(nproc)"
 
       - name: build website
         working-directory: ibis

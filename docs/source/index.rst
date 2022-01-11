@@ -115,7 +115,6 @@ Learning Resources
    user_guide/index
    api
    backends/index
-   release/index
 
 We collect Jupyter notebooks for learning how to use ibis here:
 https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks/tutorial.

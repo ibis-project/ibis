@@ -7,7 +7,7 @@
     [
       "@semantic-release/changelog",
       {
-        "changelogTitle": "# Release Notes",
+        "changelogTitle": "Release Notes\n---",
         "changelogFile": "docs/web/release_notes.md"
       }
     ],
