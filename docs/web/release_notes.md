@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [2.1.1](https://github.com/ibis-project/ibis/compare/2.1.0...2.1.1) (2022-01-12)
+
+
+### Bug Fixes
+
+* **setup.py:** set the correct version number for 2.1.0 ([f3d267b](https://github.com/ibis-project/ibis/commit/f3d267b96b9f14d3616c17b8f7bdeb8d0a6fc2cf))
+
 # [2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
 
 
