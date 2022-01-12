@@ -1,6 +1,39 @@
 Release Notes
 ---
 
+# [2.1.0](https://github.com/ibis-project/ibis/compare/2.0.0...2.1.0) (2022-01-12)
+
+
+### Bug Fixes
+
+* consider all packages' entry points ([b495cf6](https://github.com/ibis-project/ibis/commit/b495cf6c9f568ab5fd45f4d5a8a80dde2f14d897))
+* **datatypes:** infer bytes literal as binary [#2915](https://github.com/ibis-project/ibis/issues/2915) ([#3124](https://github.com/ibis-project/ibis/issues/3124)) ([887efbd](https://github.com/ibis-project/ibis/commit/887efbd4c9d0657f5639638eebea53906044b78f))
+* **deps:** bump minimum dask version to 2021.10.0 ([e6b5c09](https://github.com/ibis-project/ibis/commit/e6b5c095e562a0f1f1386efe578ca4562062154a))
+* **deps:** constrain numpy to ensure wheels are used on windows ([70c308b](https://github.com/ibis-project/ibis/commit/70c308b7d2dcd5e8b537b2f5ccf496ace6328979))
+* **deps:** update dependency clickhouse-driver to ^0.1 || ^0.2.0 ([#3061](https://github.com/ibis-project/ibis/issues/3061)) ([a839d54](https://github.com/ibis-project/ibis/commit/a839d544f1bf74b4eea8e2e99d81de0be8cd8aa7))
+* **deps:** update dependency geoalchemy2 to >=0.6,<0.11 ([4cede9d](https://github.com/ibis-project/ibis/commit/4cede9d7a08ce9914c048b25a5858480d6a40254))
+* **deps:** update dependency pyarrow to v6 ([#3092](https://github.com/ibis-project/ibis/issues/3092)) ([61e52b5](https://github.com/ibis-project/ibis/commit/61e52b51478354354dc59878a5a9987ad312b19b))
+* don't force backends to override do_connect until 3.0.0 ([4b46973](https://github.com/ibis-project/ibis/commit/4b46973930e113dce345240a47906a92bb1cf24e))
+* execute materialized joins in the pandas and dask backends ([#3086](https://github.com/ibis-project/ibis/issues/3086)) ([9ed937a](https://github.com/ibis-project/ibis/commit/9ed937a9aef71acaf5df86c88e013d9fe3ff7cce))
+* **literal:** allow creating ibis literal with uuid ([#3131](https://github.com/ibis-project/ibis/issues/3131)) ([b0f4f44](https://github.com/ibis-project/ibis/commit/b0f4f44a182644bd2389c1f52338e690f7d50da7))
+* restore the ability to have more than two option levels ([#3151](https://github.com/ibis-project/ibis/issues/3151)) ([fb4a944](https://github.com/ibis-project/ibis/commit/fb4a9449022bde322e7f17996e339638af40335e))
+* **sqlalchemy:** fix correlated subquery compilation ([43b9010](https://github.com/ibis-project/ibis/commit/43b9010c600d30ac8fdb79b59c05391fed75e589))
+* **sqlite:** defer db connection until needed ([#3127](https://github.com/ibis-project/ibis/issues/3127)) ([5467afa](https://github.com/ibis-project/ibis/commit/5467afaf22ded02bc79efe4c7956957cc1457e96)), closes [#64](https://github.com/ibis-project/ibis/issues/64)
+
+
+### Features
+
+* allow column_of to take a column expression ([dbc34bb](https://github.com/ibis-project/ibis/commit/dbc34bbe7c3506f1f4e881eaabf928890d9477ca))
+* **ci:** More readable workflow job titles  ([#3111](https://github.com/ibis-project/ibis/issues/3111)) ([d8fd7d9](https://github.com/ibis-project/ibis/commit/d8fd7d9691612379c29d6e745b4041a3dab85636))
+* **datafusion:** initial implementation for Arrow Datafusion backend ([3a67840](https://github.com/ibis-project/ibis/commit/3a67840155a928bb9c0feff5d1bf9e2cbfe70d91)), closes [#2627](https://github.com/ibis-project/ibis/issues/2627)
+* **datafusion:** initial implementation for Arrow Datafusion backend ([75876d9](https://github.com/ibis-project/ibis/commit/75876d9718e22de46763d01a6e272f95645d60bc)), closes [#2627](https://github.com/ibis-project/ibis/issues/2627)
+* make dayofweek impls conform to pandas semantics ([#3161](https://github.com/ibis-project/ibis/issues/3161)) ([9297828](https://github.com/ibis-project/ibis/commit/92978286f1fd009ee490befab236442fd1c7a095))
+
+
+### Reverts
+
+* "ci: install gdal for fiona" ([8503361](https://github.com/ibis-project/ibis/commit/850336100a271ee2b6043b92a1ceeb1d1d7b30f2))
+
 # [2.0.0](https://github.com/ibis-project/ibis/releases/tag/2.0.0) (2021-10-06)
 
 ## Features
