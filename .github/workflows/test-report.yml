@@ -18,11 +18,12 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: ${{ github.event.workflow_run.workflow_id }}
-          pr: ${{ github.event.pull_request.number }}
+          workflow_conclusion: completed
+          commit: ${{ github.event.workflow_run.head_sha }}
           path: artifacts
 
       - name: publish test report
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          commit: ${{ github.event.pull_request.head_sha }}
+          commit: ${{ github.event.workflow_run.head_sha }}
           files: artifacts/**/junit.xml
