@@ -14,6 +14,8 @@
 import glob
 import os
 
+import ibis
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -65,7 +67,7 @@ copyright = '2014-2022, Ibis Developers'
 # built documents.
 #
 # The short X.Y version.
-version = '2.0.0'
+version = ibis.__version__
 
 # The full version, including alpha/beta/rc tags.
 release = version
