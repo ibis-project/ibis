@@ -130,6 +130,8 @@ jobs:
         python-version:
           - "3.7"
           - "3.9"
+        deps:
+          - null
         include:
           - python-version: "3.7"
             deps:
