@@ -58,9 +58,6 @@ class Schema:
         self._name_locs = {v: i for i, v in enumerate(self.names)}
 
         if len(self._name_locs) < len(self.names):
-            duplicate_names = list(self.names)
-            for v in self._name_locs.keys():
-                duplicate_names.remove(v)
             raise com.IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
