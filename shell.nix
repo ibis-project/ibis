@@ -11,6 +11,8 @@ let
     nix-linter
     nixpkgs-fmt
     poetry
+    pre-commit
+    prettierTOML
     shellcheck
     shfmt
   ];
@@ -43,7 +45,6 @@ pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
 
   shellHook = ''
-    ${(import ./pre-commit.nix).pre-commit-check.shellHook}
     data_dir="ci/ibis-testing-data"
     mkdir -p "$data_dir"
     chmod u+rwx "$data_dir"

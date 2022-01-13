@@ -4,8 +4,8 @@
 
 There are two primary ways to setup a development environment.
 
-* `nix`: fewer steps, isolated
-* `conda`: more steps, not isolated
+- `nix`: fewer steps, isolated
+- `conda`: more steps, not isolated
 
 ### Initial steps
 
@@ -46,7 +46,7 @@ There are two primary ways to setup a development environment.
         ```
 
     1. Run `nix-shell` in the checkout directory:
-       
+
         ```sh
         cd ibis
 
@@ -99,8 +99,7 @@ All contributions are welcome! Code, docs, and constructive feedback are all
 great contributions to the project.
 
 If you don't have a particular issue in mind head over to the GitHub issue
-tracker for Ibis and look for open issues with the label [`good first
-issue`](https://github.com/ibis-project/ibis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
+tracker for Ibis and look for open issues with the label [`good first issue`](https://github.com/ibis-project/ibis/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
 
 Feel free to help with other issues that aren't labeled as such, but they may be more challenging.
 
@@ -195,79 +194,79 @@ You should see a series of prompts about actions to take next:
 
 1. Select the type of change you're committing. In this case, we're committing a bug fix, so we'll select fix:
 
-    ```console
-    ? Select the type of change you are committing (Use arrow keys)
-     » fix: A bug fix. Correlates with PATCH in SemVer
-       feat: A new feature. Correlates with MINOR in SemVer
-       docs: Documentation only changes
-       style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
-       refactor: A code change that neither fixes a bug nor adds a feature
-       perf: A code change that improves performance
-       test: Adding missing or correcting existing tests
-       build: Changes that affect the build system or external dependencies (example scopes: pip, docker, npm)
-       ci: Changes to our CI configuration files and scripts (example scopes: GitLabCI)
-    ```
+   ```console
+   ? Select the type of change you are committing (Use arrow keys)
+    » fix: A bug fix. Correlates with PATCH in SemVer
+      feat: A new feature. Correlates with MINOR in SemVer
+      docs: Documentation only changes
+      style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+      refactor: A code change that neither fixes a bug nor adds a feature
+      perf: A code change that improves performance
+      test: Adding missing or correcting existing tests
+      build: Changes that affect the build system or external dependencies (example scopes: pip, docker, npm)
+      ci: Changes to our CI configuration files and scripts (example scopes: GitLabCI)
+   ```
 
-    Generally you don't need to think too hard about what category to select, but note that:
+   Generally you don't need to think too hard about what category to select, but note that:
 
-    * `feat` will cause a minor version bump
-    * `fix` will cause a patch version bump
-    * everything else will **not** cause a version bump, **unless it's a breaking
-       change** (continue reading these instructions for more info on that)
+   - `feat` will cause a minor version bump
+   - `fix` will cause a patch version bump
+   - everything else will **not** cause a version bump, **unless it's a breaking
+     change** (continue reading these instructions for more info on that)
 
 2. Next, you're asked what the scope of this change is:
 
-    ```console
-    ? What is the scope of this change? (class or file name): (press [enter] to skip)
-    ```
+   ```console
+   ? What is the scope of this change? (class or file name): (press [enter] to skip)
+   ```
 
-    This is optional, but if there's a clear component or single file that is
-    modified you should put it. In our case, let's assume the bug fixed a type
-    inference problem, so we'd type in `type-inference` at this prompt.
+   This is optional, but if there's a clear component or single file that is
+   modified you should put it. In our case, let's assume the bug fixed a type
+   inference problem, so we'd type in `type-inference` at this prompt.
 
 3. You'll then be asked to type in a short description of the change which will be the commit message title:
 
-    ```console
-    ? Write a short and imperative summary of the code changes: (lower case and no period)
-     fix a type inference issue where floats were incorrectly cast to ints
-    ```
+   ```console
+   ? Write a short and imperative summary of the code changes: (lower case and no period)
+    fix a type inference issue where floats were incorrectly cast to ints
+   ```
 
-    Let's say there was a problem with spurious casting of float to integers, so
-    we type in the message above.  That number on the left (here `(69)`) is the
-    length of description you've typed in.
+   Let's say there was a problem with spurious casting of float to integers, so
+   we type in the message above. That number on the left (here `(69)`) is the
+   length of description you've typed in.
 
 4. Next you'll be asked for a longer description, which is entirely optional
    **unless the change is a breaking change**, or you feel like a bit of prose
 
-    ```console
-    ? Provide additional contextual information about the code changes: (press [enter] to skip)
-     A bug was triggered by some incorrect code that caused floats to be incorrectly cast to integers.
-    ```
+   ```console
+   ? Provide additional contextual information about the code changes: (press [enter] to skip)
+    A bug was triggered by some incorrect code that caused floats to be incorrectly cast to integers.
+   ```
 
-    For non breaking changes, this isn't strictly necessary but it can be very
-    helpful when a change is large, obscure, or complex. For this example let's just reiterate
-    most of what the commit title says.
+   For non breaking changes, this isn't strictly necessary but it can be very
+   helpful when a change is large, obscure, or complex. For this example let's just reiterate
+   most of what the commit title says.
 
 5. Next you're asked about breaking changes:
 
-    ```console
-    ? Is this a BREAKING CHANGE? Correlates with MAJOR in SemVer (y/N)
-    ```
+   ```console
+   ? Is this a BREAKING CHANGE? Correlates with MAJOR in SemVer (y/N)
+   ```
 
-    If you answer `y`, then you'll get an additional prompt asking you to
-    describe the breaking changes. This description will ultimately make its way
-    into the user-facing release notes. If there aren't any breaking changes, press enter.
-    Let's say this bug fix does **not** introduce a breaking change.
+   If you answer `y`, then you'll get an additional prompt asking you to
+   describe the breaking changes. This description will ultimately make its way
+   into the user-facing release notes. If there aren't any breaking changes, press enter.
+   Let's say this bug fix does **not** introduce a breaking change.
 
 6. Finally, you're asked whether this change affects any open issues (ignore
    the bit about breaking changes) and if yes then to reference them:
 
-    ```console
-    ? Footer. Information about Breaking Changes and reference issues that this commit closes: (press [enter] to skip)
-     fixes #424242
-    ```
+   ```console
+   ? Footer. Information about Breaking Changes and reference issues that this commit closes: (press [enter] to skip)
+    fixes #424242
+   ```
 
-    Here we typed `fixes #424242` to indicate that we fixed issue #9000.
+   Here we typed `fixes #424242` to indicate that we fixed issue #9000.
 
 Whew! Seems like a lot, but it's rather quick once you get used to it. After
 that you should have a commit that looks roughly like this, ready to be automatically rolled into the next release:
@@ -338,16 +337,16 @@ Updates of minor and patch versions of dependencies are handled automatically by
 
 The following tools are run in both CI and `pre-commit` checks to ensure codebase hygiene:
 
-|Tool|Purpose|
-|----:|:------|
-| [`black`](https://github.com/psf/black) | Formatting Python code |
-| [`isort`](https://github.com/PyCQA/isort) | Formatting and sorting `import` statements |
-| [`flake8`](https://flake8.pycqa.org/en/latest/) | Linting Python code |
-| [`nix-linter`](https://github.com/Synthetica9/nix-linter) | Linting nix files |
-| [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt)| Formatting nix files |
-| [`shellcheck`](https://github.com/koalaman/shellcheck) | Linting shell scripts |
-| [`shfmt`](https://github.com/mvdan/sh) | Formatting shell scripts |
-| [`pyupgrade`](https://github.com/asottile/pyupgrade) | Ensuring the latest available Python syntax is used |
+|                                                          Tool | Purpose                                             |
+| ------------------------------------------------------------: | :-------------------------------------------------- |
+|                       [`black`](https://github.com/psf/black) | Formatting Python code                              |
+|                     [`isort`](https://github.com/PyCQA/isort) | Formatting and sorting `import` statements          |
+|               [`flake8`](https://flake8.pycqa.org/en/latest/) | Linting Python code                                 |
+|     [`nix-linter`](https://github.com/Synthetica9/nix-linter) | Linting nix files                                   |
+| [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) | Formatting nix files                                |
+|        [`shellcheck`](https://github.com/koalaman/shellcheck) | Linting shell scripts                               |
+|                        [`shfmt`](https://github.com/mvdan/sh) | Formatting shell scripts                            |
+|          [`pyupgrade`](https://github.com/asottile/pyupgrade) | Ensuring the latest available Python syntax is used |
 
 !!! tip
 
@@ -370,15 +369,15 @@ Github Issue per Pull Request is a good rule of thumb.
 Maintainers should be performing a minimum number of tasks, deferring to automation
 as much as possible:
 
-* Reviewing pull requests
-* Merging pull requests
+- Reviewing pull requests
+- Merging pull requests
 
 A number of tasks that are typically associated with maintenance are partially
 or fully automated:
 
-* Updating library dependencies: this is handled automatically by WhiteSource Renovate
-* Updating github-actions: this is handled automatically by WhiteSource Renovate
-* Updating nix dependencies: this is a job run at a regular cadence to update nix dependencies
+- Updating library dependencies: this is handled automatically by WhiteSource Renovate
+- Updating github-actions: this is handled automatically by WhiteSource Renovate
+- Updating nix dependencies: this is a job run at a regular cadence to update nix dependencies
 
 Occasionally you may need to manually lock poetry dependencies, which can be done by running
 

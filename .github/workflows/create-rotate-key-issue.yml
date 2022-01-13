@@ -22,8 +22,8 @@ jobs:
       - name: create issue to rotate key
         uses: peter-evans/create-issue-from-file@v3
         with:
-           token: ${{ steps.generate_token.outputs.token }}
-           title: "chore: rotate ibis bot keys"
-           content-filepath: .github/rotate-key-template.md
-           labels: ci
-           assignees: cpcloud,jreback
+          token: ${{ steps.generate_token.outputs.token }}
+          title: "chore: rotate ibis bot keys"
+          content-filepath: .github/rotate-key-template.md
+          labels: ci
+          assignees: cpcloud,jreback
