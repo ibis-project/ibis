@@ -87,3 +87,4 @@ requirements.txt
 # generated mkdocs website
 docs/site
 docs/web/docs
+.benchmarks

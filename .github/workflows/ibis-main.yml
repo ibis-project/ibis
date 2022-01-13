@@ -107,7 +107,7 @@ jobs:
           python-version: "3.10"
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
+        run: sudo apt-get install -qq -y build-essential krb5-config libkrb5-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
@@ -124,17 +124,23 @@ jobs:
       - name: install ibis
         run: poetry install --extras impala
 
-      - name: benchmark
-        run: |
-          set -euo pipefail
+      - run: mkdir .benchmarks
 
-          poetry run asv machine --yes
-          poetry run asv dev
-  main:
-    runs-on: ubuntu-latest
-    needs:
-      - nix-lint
-      - test_no_backends
-      - benchmarks
-    steps:
-      - run: exit 0
+      - name: benchmark
+        run: poetry run pytest --benchmark-enable --benchmark-only --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
+
+      - uses: tibdex/github-app-token@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        id: generate-token
+        with:
+          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - name: store benchmark results in gh-pages
+        uses: benchmark-action/github-action-benchmark@v1
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          tool: pytest
+          github-token: ${{ steps.generate-token.outputs.token }}
+          output-file-path: .benchmarks/output.json
+          auto-push: true
