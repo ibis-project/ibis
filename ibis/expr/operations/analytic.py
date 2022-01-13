@@ -3,7 +3,6 @@ from public import public
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from ..window import propagate_down_window
 from .core import ValueOp, distinct_roots
 
@@ -15,8 +14,8 @@ class AnalyticOp(ValueOp):
 
 @public
 class WindowOp(ValueOp):
-    expr = Arg(rlz.analytic)
-    window = Arg(rlz.window(from_base_table_of="expr"))
+    expr = rlz.analytic
+    window = rlz.window(from_base_table_of="expr")
     output_type = rlz.array_like('expr')
 
     display_argnames = False
@@ -41,9 +40,9 @@ class WindowOp(ValueOp):
 
 @public
 class ShiftBase(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
-    offset = Arg(rlz.one_of((rlz.integer, rlz.interval)), default=None)
-    default = Arg(rlz.any, default=None)
+    arg = rlz.column(rlz.any)
+    offset = rlz.optional(rlz.one_of((rlz.integer, rlz.interval)))
+    default = rlz.optional(rlz.any)
     output_type = rlz.typeof('arg')
 
 
@@ -85,7 +84,7 @@ class MinRank(RankBase):
     """
 
     # Equivalent to SQL RANK()
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
 
 
 @public
@@ -110,7 +109,7 @@ class DenseRank(RankBase):
     """
 
     # Equivalent to SQL DENSE_RANK()
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
 
 
 @public
@@ -143,7 +142,7 @@ class CumulativeOp(AnalyticOp):
 class CumulativeSum(CumulativeOp):
     """Cumulative sum. Requires an order window."""
 
-    arg = Arg(rlz.column(rlz.numeric))
+    arg = rlz.column(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg, ir.BooleanValue):
@@ -157,7 +156,7 @@ class CumulativeSum(CumulativeOp):
 class CumulativeMean(CumulativeOp):
     """Cumulative mean. Requires an order window."""
 
-    arg = Arg(rlz.column(rlz.numeric))
+    arg = rlz.column(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -171,7 +170,7 @@ class CumulativeMean(CumulativeOp):
 class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
 
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.array_like('arg')
 
 
@@ -179,39 +178,39 @@ class CumulativeMax(CumulativeOp):
 class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
 
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.array_like('arg')
 
 
 @public
 class PercentRank(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.shape_like('arg', dt.double)
 
 
 @public
 class NTile(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
-    buckets = Arg(rlz.integer)
+    arg = rlz.column(rlz.any)
+    buckets = rlz.integer
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 @public
 class FirstValue(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.typeof('arg')
 
 
 @public
 class LastValue(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.typeof('arg')
 
 
 @public
 class NthValue(AnalyticOp):
-    arg = Arg(rlz.column(rlz.any))
-    nth = Arg(rlz.integer)
+    arg = rlz.column(rlz.any)
+    nth = rlz.integer
     output_type = rlz.typeof('arg')
 
 
@@ -220,7 +219,7 @@ class Any(ValueOp):
 
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
-    arg = Arg(rlz.column(rlz.boolean))
+    arg = rlz.column(rlz.boolean)
 
     @property
     def _reduction(self):
@@ -245,11 +244,11 @@ class NotAny(Any):
 
 @public
 class CumulativeAny(CumulativeOp):
-    arg = Arg(rlz.column(rlz.boolean))
+    arg = rlz.column(rlz.boolean)
     output_type = rlz.typeof('arg')
 
 
 @public
 class CumulativeAll(CumulativeOp):
-    arg = Arg(rlz.column(rlz.boolean))
+    arg = rlz.column(rlz.boolean)
     output_type = rlz.typeof('arg')

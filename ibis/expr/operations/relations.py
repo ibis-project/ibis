@@ -10,7 +10,6 @@ from ...common import exceptions as com
 from .. import rules as rlz
 from .. import schema as sch
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import Node, all_equal, distinct_roots
 from .sortkeys import _maybe_convert_sort_keys
 
@@ -68,15 +67,15 @@ class PhysicalTable(TableNode, sch.HasSchema):
 
 @public
 class UnboundTable(PhysicalTable):
-    schema = Arg(sch.Schema)
-    name = Arg(str, default=genname)
+    schema = rlz.instance_of(sch.Schema)
+    name = rlz.optional(rlz.instance_of(str), default=genname)
 
 
 @public
 class DatabaseTable(PhysicalTable):
-    name = Arg(str)
-    schema = Arg(sch.Schema)
-    source = Arg(rlz.client)
+    name = rlz.instance_of(str)
+    schema = rlz.instance_of(sch.Schema)
+    source = rlz.client
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
@@ -86,9 +85,9 @@ class DatabaseTable(PhysicalTable):
 class SQLQueryResult(TableNode, sch.HasSchema):
     """A table sourced from the result set of a select query"""
 
-    query = Arg(str)
-    schema = Arg(sch.Schema)
-    source = Arg(rlz.client)
+    query = rlz.instance_of(str)
+    schema = rlz.instance_of(sch.Schema)
+    source = rlz.client
 
     def blocks(self):
         return True
@@ -155,9 +154,9 @@ def _validate_join_predicates(left, right, predicates):
 
 @public
 class Join(TableNode):
-    left = Arg(rlz.table)
-    right = Arg(rlz.table)
-    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
+    left = rlz.table
+    right = rlz.table
+    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
 
     def __init__(self, left, right, predicates):
         left, right, predicates = _make_distinct_join_predicates(
@@ -247,7 +246,7 @@ class CrossJoin(Join):
 
 @public
 class MaterializedJoin(TableNode, sch.HasSchema):
-    join = Arg(rlz.table)
+    join = rlz.table
 
     def _validate(self):
         assert isinstance(self.join.op(), Join)
@@ -267,10 +266,10 @@ class MaterializedJoin(TableNode, sch.HasSchema):
 
 @public
 class AsOfJoin(Join):
-    left = Arg(rlz.table)
-    right = Arg(rlz.table)
-    predicates = Arg(rlz.list_of(rlz.boolean))
-    by = Arg(
+    left = rlz.table
+    right = rlz.table
+    predicates = rlz.list_of(rlz.boolean)
+    by = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -282,7 +281,7 @@ class AsOfJoin(Join):
         ),
         default=[],
     )
-    tolerance = Arg(rlz.interval, default=None)
+    tolerance = rlz.optional(rlz.interval)
 
     def __init__(self, left, right, predicates, by, tolerance):
         super().__init__(left, right, predicates)
@@ -301,8 +300,8 @@ class AsOfJoin(Join):
 
 @public
 class SetOp(TableNode, sch.HasSchema):
-    left = Arg(rlz.table)
-    right = Arg(rlz.table)
+    left = rlz.table
+    right = rlz.table
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
@@ -320,7 +319,7 @@ class SetOp(TableNode, sch.HasSchema):
 
 @public
 class Union(SetOp):
-    distinct = Arg(rlz.instance_of(bool), default=False)
+    distinct = rlz.optional(rlz.instance_of(bool), default=False)
 
 
 @public
@@ -335,9 +334,9 @@ class Difference(SetOp):
 
 @public
 class Limit(TableNode):
-    table = Arg(rlz.table)
-    n = Arg(rlz.instance_of(int))
-    offset = Arg(rlz.instance_of(int))
+    table = rlz.table
+    n = rlz.instance_of(int)
+    offset = rlz.instance_of(int)
 
     def blocks(self):
         return True
@@ -355,7 +354,7 @@ class Limit(TableNode):
 
 @public
 class SelfReference(TableNode, sch.HasSchema):
-    table = Arg(rlz.table)
+    table = rlz.table
 
     @cached_property
     def schema(self):
@@ -373,8 +372,8 @@ class SelfReference(TableNode, sch.HasSchema):
 
 @public
 class Selection(TableNode, sch.HasSchema):
-    table = Arg(rlz.table)
-    selections = Arg(
+    table = rlz.table
+    selections = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -388,8 +387,8 @@ class Selection(TableNode, sch.HasSchema):
         ),
         default=[],
     )
-    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
-    sort_keys = Arg(
+    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
+    sort_keys = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -597,8 +596,8 @@ class Aggregation(TableNode, sch.HasSchema):
     where : pre-aggregation predicate
     """
 
-    table = Arg(rlz.table)
-    metrics = Arg(
+    table = rlz.table
+    metrics = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -618,7 +617,7 @@ class Aggregation(TableNode, sch.HasSchema):
         ),
         default=[],
     )
-    by = Arg(
+    by = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -630,7 +629,7 @@ class Aggregation(TableNode, sch.HasSchema):
         ),
         default=[],
     )
-    having = Arg(
+    having = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -643,8 +642,8 @@ class Aggregation(TableNode, sch.HasSchema):
         ),
         default=[],
     )
-    predicates = Arg(rlz.list_of(rlz.boolean), default=[])
-    sort_keys = Arg(
+    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
+    sort_keys = rlz.optional(
         rlz.list_of(
             rlz.one_of(
                 (
@@ -756,7 +755,7 @@ class Distinct(TableNode, sch.HasSchema):
     FROM table
     """
 
-    table = Arg(rlz.table)
+    table = rlz.table
 
     def _validate(self):
         # check whether schema has overlapping columns or not
@@ -772,8 +771,8 @@ class Distinct(TableNode, sch.HasSchema):
 
 @public
 class ExistsSubquery(Node):
-    foreign_table = Arg(rlz.table)
-    predicates = Arg(rlz.list_of(rlz.boolean))
+    foreign_table = rlz.table
+    predicates = rlz.list_of(rlz.boolean)
 
     def output_type(self):
         return ir.ExistsExpr
@@ -781,8 +780,8 @@ class ExistsSubquery(Node):
 
 @public
 class NotExistsSubquery(Node):
-    foreign_table = Arg(rlz.table)
-    predicates = Arg(rlz.list_of(rlz.boolean))
+    foreign_table = rlz.table
+    predicates = rlz.list_of(rlz.boolean)
 
     def output_type(self):
         return ir.ExistsExpr
@@ -792,14 +791,12 @@ class NotExistsSubquery(Node):
 class FillNa(TableNode, sch.HasSchema):
     """Fill null values in the table."""
 
-    table = Arg(rlz.table)
-    replacements = Arg(
-        rlz.one_of(
-            (
-                rlz.numeric,
-                rlz.string,
-                rlz.instance_of(collections.abc.Mapping),
-            )
+    table = rlz.table
+    replacements = rlz.one_of(
+        (
+            rlz.numeric,
+            rlz.string,
+            rlz.instance_of(collections.abc.Mapping),
         )
     )
 
@@ -812,9 +809,9 @@ class FillNa(TableNode, sch.HasSchema):
 class DropNa(TableNode, sch.HasSchema):
     """Drop null values in the table."""
 
-    table = Arg(rlz.table)
-    how = Arg(rlz.isin({'any', 'all'}))
-    subset = Arg(rlz.list_of(rlz.column_from("table")), default=[])
+    table = rlz.table
+    how = rlz.isin({'any', 'all'})
+    subset = rlz.optional(rlz.list_of(rlz.column_from("table")), default=[])
 
     @cached_property
     def schema(self):

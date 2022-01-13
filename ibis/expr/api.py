@@ -599,7 +599,7 @@ def group_concat(arg, sep=',', where=None):
     -------
     concatenated : string scalar
     """
-    return ops.GroupConcat(arg, sep, where).to_expr()
+    return ops.GroupConcat(arg, sep=sep, where=where).to_expr()
 
 
 def arbitrary(arg, where=None, how=None):
@@ -618,7 +618,7 @@ def arbitrary(arg, where=None, how=None):
     -------
     arbitrary element : scalar type of caller
     """
-    return ops.Arbitrary(arg, how, where).to_expr()
+    return ops.Arbitrary(arg, how=how, where=where).to_expr()
 
 
 def _binop_expr(name, klass):
@@ -1370,9 +1370,11 @@ def quantile(arg, quantile, interpolation='linear'):
         if array input, list of scalar type
     """
     if isinstance(quantile, collections.abc.Sequence):
-        op = ops.MultiQuantile(arg, quantile, interpolation)
+        op = ops.MultiQuantile(
+            arg, quantile=quantile, interpolation=interpolation
+        )
     else:
-        op = ops.Quantile(arg, quantile, interpolation)
+        op = ops.Quantile(arg, quantile=quantile, interpolation=interpolation)
     return op.to_expr()
 
 
@@ -1537,7 +1539,7 @@ def std(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = ops.StandardDev(arg, how, where).to_expr()
+    expr = ops.StandardDev(arg, how=how, where=where).to_expr()
     expr = expr.name('std')
     return expr
 
@@ -1554,7 +1556,7 @@ def variance(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = ops.Variance(arg, how, where).to_expr()
+    expr = ops.Variance(arg, how=how, where=where).to_expr()
     expr = expr.name('var')
     return expr
 
@@ -1571,7 +1573,7 @@ def correlation(left, right, where=None, how='sample'):
     -------
     corr : double scalar
     """
-    expr = ops.Correlation(left, right, how, where).to_expr()
+    expr = ops.Correlation(left, right, how=how, where=where).to_expr()
     return expr
 
 
@@ -1587,7 +1589,7 @@ def covariance(left, right, where=None, how='sample'):
     -------
     cov : double scalar
     """
-    expr = ops.Covariance(left, right, how, where).to_expr()
+    expr = ops.Covariance(left, right, how=how, where=where).to_expr()
     return expr
 
 

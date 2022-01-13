@@ -6,14 +6,13 @@ from ... import util
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import BinaryOp, UnaryOp, ValueOp
 
 
 @public
 class NumericBinaryOp(BinaryOp):
-    left = Arg(rlz.numeric)
-    right = Arg(rlz.numeric)
+    left = rlz.numeric
+    right = rlz.numeric
 
 
 @public
@@ -57,7 +56,7 @@ class Modulus(NumericBinaryOp):
 
 @public
 class Negate(UnaryOp):
-    arg = Arg(rlz.one_of((rlz.numeric, rlz.interval)))
+    arg = rlz.one_of((rlz.numeric, rlz.interval))
     output_type = rlz.typeof('arg')
 
 
@@ -75,19 +74,19 @@ class NullIfZero(ValueOp):
     maybe_nulled : type of caller
     """
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
     output_type = rlz.typeof('arg')
 
 
 @public
 class IsNan(ValueOp):
-    arg = Arg(rlz.floating)
+    arg = rlz.floating
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
 @public
 class IsInf(ValueOp):
-    arg = Arg(rlz.floating)
+    arg = rlz.floating
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -111,7 +110,7 @@ class Ceil(UnaryOp):
       Other numeric values: yield integer (int32)
     """
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
@@ -132,7 +131,7 @@ class Floor(UnaryOp):
       Other numeric values: yield integer (int32)
     """
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
@@ -142,8 +141,8 @@ class Floor(UnaryOp):
 
 @public
 class Round(ValueOp):
-    arg = Arg(rlz.numeric)
-    digits = Arg(rlz.numeric, default=None)
+    arg = rlz.numeric
+    digits = rlz.optional(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -156,17 +155,17 @@ class Round(ValueOp):
 
 @public
 class Clip(ValueOp):
-    arg = Arg(rlz.strict_numeric)
-    lower = Arg(rlz.strict_numeric, default=None)
-    upper = Arg(rlz.strict_numeric, default=None)
+    arg = rlz.strict_numeric
+    lower = rlz.optional(rlz.strict_numeric)
+    upper = rlz.optional(rlz.strict_numeric)
     output_type = rlz.typeof('arg')
 
 
 @public
 class BaseConvert(ValueOp):
-    arg = Arg(rlz.one_of([rlz.integer, rlz.string]))
-    from_base = Arg(rlz.integer)
-    to_base = Arg(rlz.integer)
+    arg = rlz.one_of([rlz.integer, rlz.string])
+    from_base = rlz.integer
+    to_base = rlz.integer
 
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
@@ -174,7 +173,7 @@ class BaseConvert(ValueOp):
 
 @public
 class MathUnaryOp(UnaryOp):
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
     def output_type(self):
         arg = self.arg
@@ -201,7 +200,7 @@ class Exp(ExpandingTypeMathUnaryOp):
 
 @public
 class Sign(UnaryOp):
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
     output_type = rlz.typeof('arg')
 
 
@@ -212,13 +211,13 @@ class Sqrt(MathUnaryOp):
 
 @public
 class Logarithm(MathUnaryOp):
-    arg = Arg(rlz.strict_numeric)
+    arg = rlz.strict_numeric
 
 
 @public
 class Log(Logarithm):
-    arg = Arg(rlz.strict_numeric)
-    base = Arg(rlz.strict_numeric, default=None)
+    arg = rlz.strict_numeric
+    base = rlz.optional(rlz.strict_numeric)
 
 
 @public
@@ -240,14 +239,14 @@ class Log10(Logarithm):
 class Degrees(ExpandingTypeMathUnaryOp):
     """Converts radians to degrees"""
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
 
 @public
 class Radians(MathUnaryOp):
     """Converts degrees to radians"""
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
 
 # TRIGONOMETRIC OPERATIONS
@@ -257,15 +256,15 @@ class Radians(MathUnaryOp):
 class TrigonometricUnary(MathUnaryOp):
     """Trigonometric base unary"""
 
-    arg = Arg(rlz.numeric)
+    arg = rlz.numeric
 
 
 @public
 class TrigonometricBinary(BinaryOp):
     """Trigonometric base binary"""
 
-    left = Arg(rlz.numeric)
-    right = Arg(rlz.numeric)
+    left = rlz.numeric
+    right = rlz.numeric
     output_type = rlz.shape_like('args', dt.float64)
 
 

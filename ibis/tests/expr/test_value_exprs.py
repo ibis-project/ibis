@@ -21,7 +21,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import literal
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.signature import Argument as Arg
 from ibis.tests.util import assert_equal
 
 
@@ -1143,7 +1142,7 @@ def test_custom_type_binary_operations():
         __radd__ = __add__
 
     class FooNode(ops.ValueOp):
-        value = Arg(rlz.integer)
+        value = rlz.integer
 
         def output_type(self):
             return functools.partial(Foo, dtype=dt.int64)
@@ -1166,7 +1165,7 @@ def test_empty_array_as_argument():
         pass
 
     class FooNode(ops.ValueOp):
-        value = Arg(rlz.value(dt.Array(dt.int64)))
+        value = rlz.value(dt.Array(dt.int64))
 
         def output_type(self):
             return Foo

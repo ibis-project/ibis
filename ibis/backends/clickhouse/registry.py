@@ -184,14 +184,14 @@ def _varargs(func_name):
 
 
 def _arbitrary(translator, expr):
-    arg, how, where = expr.op().args
+    op = expr.op()
     functions = {
         None: 'any',
         'first': 'any',
         'last': 'anyLast',
         'heavy': 'anyHeavy',
     }
-    return _aggregate(translator, functions[how], arg, where=where)
+    return _aggregate(translator, functions[op.how], op.arg, where=op.where)
 
 
 def _substring(translator, expr):

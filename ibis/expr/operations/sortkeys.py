@@ -4,7 +4,6 @@ from ... import util
 from ...common import exceptions as com
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import Node, _safe_repr
 
 
@@ -58,8 +57,8 @@ def _maybe_convert_sort_keys(tables, exprs):
 
 @public
 class SortKey(Node):
-    expr = Arg(rlz.column(rlz.any))
-    ascending = Arg(
+    expr = rlz.column(rlz.any)
+    ascending = rlz.optional(
         rlz.map_to(
             {
                 True: True,

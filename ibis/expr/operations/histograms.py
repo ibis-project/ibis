@@ -2,7 +2,6 @@ from public import public
 
 from .. import datatypes as dt
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .core import ValueOp
 
 
@@ -19,12 +18,12 @@ class BucketLike(ValueOp):
 
 @public
 class Bucket(BucketLike):
-    arg = Arg(rlz.column(rlz.any))
-    buckets = Arg(rlz.list_of(rlz.scalar(rlz.any)))
-    closed = Arg(rlz.isin({'left', 'right'}), default='left')
-    close_extreme = Arg(bool, default=True)
-    include_under = Arg(bool, default=False)
-    include_over = Arg(bool, default=False)
+    arg = rlz.column(rlz.any)
+    buckets = rlz.list_of(rlz.scalar(rlz.any))
+    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
+    close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
+    include_under = rlz.optional(rlz.instance_of(bool), default=False)
+    include_over = rlz.optional(rlz.instance_of(bool), default=False)
 
     def _validate(self):
         if not len(self.buckets):
@@ -43,12 +42,12 @@ class Bucket(BucketLike):
 
 @public
 class Histogram(BucketLike):
-    arg = Arg(rlz.numeric)
-    nbins = Arg(int, default=None)
-    binwidth = Arg(rlz.scalar(rlz.numeric), default=None)
-    base = Arg(rlz.scalar(rlz.numeric), default=None)
-    closed = Arg(rlz.isin({'left', 'right'}), default='left')
-    aux_hash = Arg(str, default=None)
+    arg = rlz.numeric
+    nbins = rlz.optional(rlz.instance_of(int))
+    binwidth = rlz.optional(rlz.scalar(rlz.numeric))
+    base = rlz.optional(rlz.scalar(rlz.numeric))
+    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
+    aux_hash = rlz.optional(rlz.instance_of(str))
 
     def _validate(self):
         if self.nbins is None:
@@ -64,9 +63,9 @@ class Histogram(BucketLike):
 
 @public
 class CategoryLabel(ValueOp):
-    arg = Arg(rlz.category)
-    labels = Arg(rlz.list_of(rlz.instance_of(str)))
-    nulls = Arg(str, default=None)
+    arg = rlz.category
+    labels = rlz.list_of(rlz.instance_of(str))
+    nulls = rlz.optional(rlz.instance_of(str))
     output_type = rlz.shape_like('arg', dt.string)
 
     def _validate(self):

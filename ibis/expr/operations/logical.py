@@ -5,21 +5,19 @@ from public import public
 from ...common import exceptions as com
 from .. import datatypes as dt
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .core import BinaryOp, UnaryOp, ValueOp
-from .generic import BooleanValueOp
 
 
 @public
 class LogicalBinaryOp(BinaryOp):
-    left = Arg(rlz.boolean)
-    right = Arg(rlz.boolean)
+    left = rlz.boolean
+    right = rlz.boolean
     output_type = rlz.shape_like('args', dt.boolean)
 
 
 @public
 class Not(UnaryOp):
-    arg = Arg(rlz.boolean)
+    arg = rlz.boolean
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -39,9 +37,9 @@ class Xor(LogicalBinaryOp):
 
 
 @public
-class Comparison(BinaryOp, BooleanValueOp):
-    left = Arg(rlz.any)
-    right = Arg(rlz.any)
+class Comparison(BinaryOp):
+    left = rlz.any
+    right = rlz.any
 
     def __init__(self, left, right):
         """
@@ -111,10 +109,10 @@ class IdenticalTo(Comparison):
 
 
 @public
-class Between(ValueOp, BooleanValueOp):
-    arg = Arg(rlz.any)
-    lower_bound = Arg(rlz.any)
-    upper_bound = Arg(rlz.any)
+class Between(ValueOp):
+    arg = rlz.any
+    lower_bound = rlz.any
+    upper_bound = rlz.any
 
     def output_type(self):
         arg, lower, upper = self.args
@@ -126,21 +124,19 @@ class Between(ValueOp, BooleanValueOp):
 
 
 @public
-class Contains(ValueOp, BooleanValueOp):
-    value = Arg(rlz.any)
-    options = Arg(
-        rlz.one_of(
-            [
-                rlz.value_list_of(rlz.any),
-                rlz.set_,
-                rlz.column(rlz.any),
-                rlz.array_of(rlz.any),
-            ]
-        )
+class Contains(ValueOp):
+    value = rlz.any
+    options = rlz.one_of(
+        [
+            rlz.value_list_of(rlz.any),
+            rlz.set_,
+            rlz.column(rlz.any),
+            rlz.array_of(rlz.any),
+        ]
     )
 
     def output_type(self):
-        return rlz.shape_like(list(self.flat_args()), dt.boolean)
+        return rlz.shape_like(self.flat_args(), dt.boolean)
 
 
 @public
@@ -159,9 +155,9 @@ class Where(ValueOp):
              .else_(false_or_null_expr)
     """
 
-    bool_expr = Arg(rlz.boolean)
-    true_expr = Arg(rlz.any)
-    false_null_expr = Arg(rlz.any)
+    bool_expr = rlz.boolean
+    true_expr = rlz.any
+    false_null_expr = rlz.any
 
     def output_type(self):
         return rlz.shape_like(self.bool_expr, self.true_expr.type())

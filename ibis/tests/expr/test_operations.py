@@ -7,13 +7,12 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
-from ibis.expr.signature import Argument as Arg
 
 
 def test_operation():
     class Log(ops.Node):
-        arg = Arg(rlz.double())
-        base = Arg(rlz.double(), default=None)
+        arg = rlz.double()
+        base = rlz.optional(rlz.double())
 
     Log(1, base=2)
     Log(1, base=2)
@@ -80,7 +79,7 @@ def test_ops_smoke():
 
 def test_instance_of_operation():
     class MyOperation(ops.Node):
-        arg = Arg(ir.IntegerValue)
+        arg = rlz.instance_of(ir.IntegerValue)
 
     MyOperation(ir.literal(5))
 
@@ -90,7 +89,7 @@ def test_instance_of_operation():
 
 def test_array_input():
     class MyOp(ops.ValueOp):
-        value = Arg(rlz.value(dt.Array(dt.double)))
+        value = rlz.value(dt.Array(dt.double))
         output_type = rlz.typeof('value')
 
     raw_value = [1.0, 2.0, 3.0]
@@ -117,7 +116,7 @@ def test_custom_table_expr():
 @pytest.fixture(scope='session')
 def dummy_op():
     class DummyOp(ops.ValueOp):
-        arg = Arg(rlz.any)
+        arg = rlz.any
 
     return DummyOp
 

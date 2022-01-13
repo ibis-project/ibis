@@ -6,7 +6,6 @@ import ibis  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
 import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.types as ir  # noqa: E402
-from ibis.expr.signature import Argument as Arg  # noqa: E402
 
 pytest.importorskip('graphviz')
 
@@ -48,8 +47,8 @@ def test_custom_expr():
         pass
 
     class MyExprNode(ops.Node):
-        foo = Arg(rlz.string)
-        bar = Arg(rlz.numeric)
+        foo = rlz.string
+        bar = rlz.numeric
 
         def output_type(self):
             return MyExpr
@@ -69,8 +68,8 @@ def test_custom_expr_with_not_implemented_type():
             raise NotImplementedError
 
     class MyExprNode(ops.Node):
-        foo = Arg(rlz.string)
-        bar = Arg(rlz.numeric)
+        foo = rlz.string
+        bar = rlz.numeric
 
         def output_type(self):
             return MyExpr

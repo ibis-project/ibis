@@ -5,7 +5,6 @@ from public import public
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import ValueOp
 
 
@@ -14,25 +13,27 @@ class Reduction(ValueOp):
     _reduction = True
 
 
+class Filterable(ValueOp):
+    where = rlz.optional(rlz.boolean)
+
+
 @public
-class Count(Reduction):
-    arg = Arg(rlz.one_of((rlz.column(rlz.any), rlz.table)))
-    where = Arg(rlz.boolean, default=None)
+class Count(Filterable, Reduction):
+    arg = rlz.one_of((rlz.column(rlz.any), rlz.table))
 
     def output_type(self):
         return functools.partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 @public
-class Arbitrary(Reduction):
-    arg = Arg(rlz.column(rlz.any))
-    how = Arg(rlz.isin({'first', 'last', 'heavy'}), default=None)
-    where = Arg(rlz.boolean, default=None)
+class Arbitrary(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}))
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class BitAnd(Reduction):
+class BitAnd(Filterable, Reduction):
     """Aggregate bitwise AND operation.
 
     All elements in an integer column are ANDed together. This can be used
@@ -46,13 +47,12 @@ class BitAnd(Reduction):
       <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and>`_
     """
 
-    arg = Arg(rlz.column(rlz.integer))
-    where = Arg(rlz.boolean, default=None)
+    arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class BitOr(Reduction):
+class BitOr(Filterable, Reduction):
     """Aggregate bitwise OR operation.
 
     All elements in an integer column are ORed together. This can be used
@@ -66,13 +66,12 @@ class BitOr(Reduction):
       <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or>`_
     """
 
-    arg = Arg(rlz.column(rlz.integer))
-    where = Arg(rlz.boolean, default=None)
+    arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class BitXor(Reduction):
+class BitXor(Filterable, Reduction):
     """Aggregate bitwise XOR operation.
 
     All elements in an integer column are XORed together. This can be used
@@ -86,15 +85,13 @@ class BitXor(Reduction):
       <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor>`_
     """
 
-    arg = Arg(rlz.column(rlz.integer))
-    where = Arg(rlz.boolean, default=None)
+    arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class Sum(Reduction):
-    arg = Arg(rlz.column(rlz.numeric))
-    where = Arg(rlz.boolean, default=None)
+class Sum(Filterable, Reduction):
+    arg = rlz.column(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg, ir.BooleanValue):
@@ -105,9 +102,8 @@ class Sum(Reduction):
 
 
 @public
-class Mean(Reduction):
-    arg = Arg(rlz.column(rlz.numeric))
-    where = Arg(rlz.boolean, default=None)
+class Mean(Filterable, Reduction):
+    arg = rlz.column(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -119,11 +115,10 @@ class Mean(Reduction):
 
 @public
 class Quantile(Reduction):
-    arg = Arg(rlz.any)
-    quantile = Arg(rlz.strict_numeric)
-    interpolation = Arg(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
-        default='linear',
+    arg = rlz.any
+    quantile = rlz.strict_numeric
+    interpolation = rlz.isin(
+        {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
     )
 
     def output_type(self):
@@ -132,11 +127,10 @@ class Quantile(Reduction):
 
 @public
 class MultiQuantile(Quantile):
-    arg = Arg(rlz.any)
-    quantile = Arg(rlz.value(dt.Array(dt.float64)))
-    interpolation = Arg(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
-        default='linear',
+    arg = rlz.any
+    quantile = rlz.value(dt.Array(dt.float64))
+    interpolation = rlz.isin(
+        {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
     )
 
     def output_type(self):
@@ -144,10 +138,9 @@ class MultiQuantile(Quantile):
 
 
 @public
-class VarianceBase(Reduction):
-    arg = Arg(rlz.column(rlz.numeric))
-    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
-    where = Arg(rlz.boolean, default=None)
+class VarianceBase(Filterable, Reduction):
+    arg = rlz.column(rlz.numeric)
+    how = rlz.isin({'sample', 'pop'})
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -168,54 +161,49 @@ class Variance(VarianceBase):
 
 
 @public
-class Correlation(Reduction):
+class Correlation(Filterable, Reduction):
     """Coefficient of correlation of a set of number pairs."""
 
-    left = Arg(rlz.column(rlz.numeric))
-    right = Arg(rlz.column(rlz.numeric))
-    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
-    where = Arg(rlz.boolean, default=None)
+    left = rlz.column(rlz.numeric)
+    right = rlz.column(rlz.numeric)
+    how = rlz.isin({'sample', 'pop'})
 
     def output_type(self):
         return dt.float64.scalar_type()
 
 
 @public
-class Covariance(Reduction):
+class Covariance(Filterable, Reduction):
     """Covariance of a set of number pairs."""
 
-    left = Arg(rlz.column(rlz.numeric))
-    right = Arg(rlz.column(rlz.numeric))
-    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
-    where = Arg(rlz.boolean, default=None)
+    left = rlz.column(rlz.numeric)
+    right = rlz.column(rlz.numeric)
+    how = rlz.isin({'sample', 'pop'})
 
     def output_type(self):
         return dt.float64.scalar_type()
 
 
 @public
-class Max(Reduction):
-    arg = Arg(rlz.column(rlz.any))
-    where = Arg(rlz.boolean, default=None)
+class Max(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class Min(Reduction):
-    arg = Arg(rlz.column(rlz.any))
-    where = Arg(rlz.boolean, default=None)
+class Min(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class HLLCardinality(Reduction):
+class HLLCardinality(Filterable, Reduction):
     """Approximate number of unique values using HyperLogLog algorithm.
 
     Impala offers the NDV built-in function for this.
     """
 
-    arg = Arg(rlz.column(rlz.any))
-    where = Arg(rlz.boolean, default=None)
+    arg = rlz.column(rlz.any)
 
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
@@ -224,32 +212,29 @@ class HLLCardinality(Reduction):
 
 
 @public
-class GroupConcat(Reduction):
-    arg = Arg(rlz.column(rlz.any))
-    sep = Arg(rlz.string, default=',')
-    where = Arg(rlz.boolean, default=None)
+class GroupConcat(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    sep = rlz.string
 
     def output_type(self):
         return dt.string.scalar_type()
 
 
 @public
-class CMSMedian(Reduction):
+class CMSMedian(Filterable, Reduction):
     """
     Compute the approximate median of a set of comparable values using the
     Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
     """
 
-    arg = Arg(rlz.column(rlz.any))
-    where = Arg(rlz.boolean, default=None)
+    arg = rlz.column(rlz.any)
     output_type = rlz.scalar_like('arg')
 
 
 @public
-class All(ValueOp):
-    arg = Arg(rlz.column(rlz.boolean))
+class All(Reduction):
+    arg = rlz.column(rlz.boolean)
     output_type = rlz.scalar_like('arg')
-    _reduction = True
 
     def negate(self):
         return NotAll(self.arg)
@@ -262,9 +247,8 @@ class NotAll(All):
 
 
 @public
-class CountDistinct(Reduction):
-    arg = Arg(rlz.column(rlz.any))
-    where = Arg(rlz.boolean, default=None)
+class CountDistinct(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
 
     def output_type(self):
         return dt.int64.scalar_type()
@@ -272,7 +256,7 @@ class CountDistinct(Reduction):
 
 @public
 class ArrayCollect(Reduction):
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
 
     def output_type(self):
         dtype = dt.Array(self.arg.type())
