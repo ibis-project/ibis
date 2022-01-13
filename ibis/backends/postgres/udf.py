@@ -15,7 +15,6 @@ from ibis.backends.postgres.compiler import (
     PostgreSQLExprTranslator,
     PostgresUDFNode,
 )
-from ibis.expr.signature import Argument as Arg
 
 _udf_name_cache: Dict[str, Any] = collections.defaultdict(itertools.count)
 
@@ -94,7 +93,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
     udf_node_fields = collections.OrderedDict(
         [
-            (name, Arg(rlz.value(type_)))
+            (name, rlz.value(type_))
             for name, type_ in zip(parameters, input_types)
         ]
         + [

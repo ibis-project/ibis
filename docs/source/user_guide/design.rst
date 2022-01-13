@@ -97,21 +97,16 @@ their node's input arguments directly in the class body.
 Additionally the ``output_type`` member of the class is a rule or method that
 defines the shape (scalar or column) and element type of the operation.
 
-Each input argument's rule should be passed to the
-``ibis.expr.signature.Argument`` class (often aliased to ``Arg`` for
-convenience in the ibis codebase).
-
 An example of usage is a node that representats a logarithm operation:
 
 .. ipython:: python
 
    import ibis.expr.rules as rlz
    from ibis.expr.operations import ValueOp
-   from ibis.expr.signature import Argument as Arg
 
    class Log(ValueOp):
-       arg = Arg(rlz.double)  # A double scalar or column
-       base = Arg(rlz.double, default=None)  # Optional argument
+       arg = rlz.double  # A double scalar or column
+       base = rlz.optional(rlz.double)  # Optional argument, defaults to None
        output_type = rlz.typeof('arg')
 
 This class describes an operation called ``Log`` that takes one required

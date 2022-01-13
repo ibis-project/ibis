@@ -161,20 +161,23 @@ def _not_contains(t, expr):
 def reduction(sa_func):
     def formatter(t, expr):
         op = expr.op()
-        *args, where = op.args
-
-        return _reduction_format(t, sa_func, where, *args)
+        if op.where is not None:
+            arg = t.translate(op.where.ifelse(op.arg, ibis.NA))
+        else:
+            arg = t.translate(op.arg)
+        return sa_func(arg)
 
     return formatter
 
 
-def _reduction_format(t, sa_func, where, arg, *args):
-    if where is not None:
-        arg = t.translate(where.ifelse(arg, ibis.NA))
+def _group_concat(t, expr):
+    op = expr.op()
+    sep = t.translate(op.sep)
+    if op.where is not None:
+        arg = t.translate(op.where.ifelse(op.arg, ibis.NA))
     else:
-        arg = t.translate(arg)
-
-    return sa_func(arg, *map(t.translate, args))
+        arg = t.translate(op.arg)
+    return sa.func.group_concat(arg, sep)
 
 
 def _literal(t, expr):
@@ -422,7 +425,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Min: reduction(sa.func.min),
     ops.Max: reduction(sa.func.max),
     ops.CountDistinct: _count_distinct,
-    ops.GroupConcat: reduction(sa.func.group_concat),
+    ops.GroupConcat: _group_concat,
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,

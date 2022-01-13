@@ -3,13 +3,12 @@ from public import public
 from ...common import exceptions as com
 from .. import datatypes as dt
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .core import UnaryOp, ValueOp
 
 
 @public
 class ArrayColumn(ValueOp):
-    cols = Arg(rlz.value_list_of(rlz.column(rlz.any), min_length=1))
+    cols = rlz.value_list_of(rlz.column(rlz.any), min_length=1)
 
     def _validate(self):
         if len({col.type() for col in self.cols}) > 1:
@@ -25,22 +24,22 @@ class ArrayColumn(ValueOp):
 
 @public
 class ArrayLength(UnaryOp):
-    arg = Arg(rlz.array)
+    arg = rlz.array
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 @public
 class ArraySlice(ValueOp):
-    arg = Arg(rlz.array)
-    start = Arg(rlz.integer)
-    stop = Arg(rlz.integer, default=None)
+    arg = rlz.array
+    start = rlz.integer
+    stop = rlz.optional(rlz.integer)
     output_type = rlz.typeof('arg')
 
 
 @public
 class ArrayIndex(ValueOp):
-    arg = Arg(rlz.array)
-    index = Arg(rlz.integer)
+    arg = rlz.array
+    index = rlz.integer
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
@@ -49,8 +48,8 @@ class ArrayIndex(ValueOp):
 
 @public
 class ArrayConcat(ValueOp):
-    left = Arg(rlz.array)
-    right = Arg(rlz.array)
+    left = rlz.array
+    right = rlz.array
     output_type = rlz.shape_like('left')
 
     def _validate(self):
@@ -66,6 +65,6 @@ class ArrayConcat(ValueOp):
 
 @public
 class ArrayRepeat(ValueOp):
-    arg = Arg(rlz.array)
-    times = Arg(rlz.integer)
+    arg = rlz.array
+    times = rlz.integer
     output_type = rlz.typeof('arg')
