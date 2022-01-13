@@ -8,7 +8,6 @@ from pathlib import Path
 import click
 import pandas as pd
 import sqlalchemy as sa
-from toolz import dissoc
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
@@ -46,30 +45,27 @@ logger = get_logger(Path(__file__).with_suffix('').name)
 
 
 def recreate_database(driver, params, **kwargs):
-    url = sa.engine.url.URL(driver, **dissoc(params, 'database'))
+    database = params.pop("database", None)
+    url = sa.engine.url.URL(driver, **params)
     engine = sa.create_engine(url, **kwargs)
 
-    with engine.connect() as conn:
-        conn.execute('DROP DATABASE IF EXISTS {}'.format(params['database']))
-        conn.execute('CREATE DATABASE {}'.format(params['database']))
+    if database is not None:
+        with engine.connect() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS {database}')
+            conn.execute(f'CREATE DATABASE {database}')
 
 
 def init_database(driver, params, schema=None, recreate=True, **kwargs):
-    new_params = params.copy()
-    new_params['username'] = new_params.pop('user', None)
-
     if recreate:
-        recreate_database(driver, new_params, **kwargs)
+        recreate_database(driver, params.copy(), **kwargs)
 
-    url = sa.engine.url.URL(driver, **new_params)
+    url = sa.engine.url.URL(driver, **params)
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
         with engine.connect() as conn:
-            # clickhouse doesn't support multi-statements
-            for stmt in schema.read().split(';'):
-                if len(stmt.strip()):
-                    conn.execute(stmt)
+            for stmt in filter(None, map(str.strip, schema.read().split(';'))):
+                conn.execute(stmt)
 
     return engine
 
@@ -87,7 +83,7 @@ def read_tables(names, data_directory):
 
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
-            # string_col is actually dt.int64
+            # string_col is read in as dt.int64, but it's a string for tests
             df['string_col'] = df['string_col'].astype(str)
             df['date_string_col'] = df['date_string_col'].astype(str)
             # timestamp_col has object dtype
@@ -96,34 +92,10 @@ def read_tables(names, data_directory):
         yield name, df
 
 
-def convert_to_database_compatible_value(value):
-    """Pandas 0.23 broke DataFrame.to_sql, so we workaround it by rolling our
-    own extremely low-tech conversion routine
-    """
-    if pd.isnull(value):
-        return None
-    if isinstance(value, pd.Timestamp):
-        return value.to_pydatetime()
-    try:
-        return value.item()
-    except AttributeError:
-        return value
-
-
-def insert(engine, tablename, df):
-    keys = df.columns
-    rows = [
-        dict(zip(keys, map(convert_to_database_compatible_value, row)))
-        for row in df.itertuples(index=False, name=None)
-    ]
-    t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
-    engine.execute(t.insert(), rows)
-
-
 def insert_tables(engine, names, data_directory):
     for table, df in read_tables(names, data_directory):
-        with engine.begin() as connection:
-            insert(connection, table, df)
+        with engine.begin() as con:
+            df.to_sql(table, con, if_exists="replace", index=False)
 
 
 @click.group()
@@ -189,7 +161,7 @@ def download(repo_url, directory):
     envvar=["PGPORT", "IBIS_TEST_POSTGRES_PORT"],
     type=int,
 )
-@click.option('-u', '--user', default='postgres')
+@click.option('-u', '--username', default='postgres')
 @click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option(
@@ -322,7 +294,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @cli.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=3306, type=int)
-@click.option('-u', '--user', default='ibis')
+@click.option('-u', '--username', default='ibis')
 @click.option('-p', '--password', default='ibis')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option(
@@ -384,22 +356,22 @@ def mysql(schema, tables, data_directory, **params):
     ),
 )
 def clickhouse(schema, tables, data_directory, **params):
+    import clickhouse_driver
+
     logger.info('Initializing ClickHouse...')
-    engine = init_database('clickhouse+native', params, schema)
+    database = params.pop("database")
+    client = clickhouse_driver.Client(**params)
+
+    client.execute(f"DROP DATABASE IF EXISTS {database}")
+    client.execute(f"CREATE DATABASE {database}")
+    client.execute(f"USE {database}")
+
+    for stmt in filter(None, map(str.strip, schema.read().split(';'))):
+        client.execute(stmt)
 
     for table, df in read_tables(tables, data_directory):
-        if table == 'batting':
-            # float nan problem
-            cols = df.select_dtypes([float]).columns
-            df[cols] = df[cols].fillna(0).astype(int)
-            # string None driver problem
-            cols = df.select_dtypes([object]).columns
-            df[cols] = df[cols].fillna('')
-        elif table == 'awards_players':
-            # string None driver problem
-            cols = df.select_dtypes([object]).columns
-            df[cols] = df[cols].fillna('')
-        insert(engine, table, df)
+        query = f"INSERT INTO {table} VALUES"
+        client.insert_dataframe(query, df, settings={"use_numpy": True})
 
 
 @cli.command()

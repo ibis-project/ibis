@@ -20,10 +20,10 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7.1,<3.11"
+python = ">=3.8,<3.11"
 atpublic = ">=2.3,<3"
 cached_property = ">=1,<2"
-importlib-metadata = { version = ">=4,<5", python = "<3.8" }
+importlib-metadata = { version = ">=4,<5", python = "<3.10" }
 multipledispatch = ">=0.6,<0.7"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
@@ -43,22 +43,21 @@ geopandas = { version = ">=0.6,<0.11", optional = true }
 graphviz = { version = ">=0.16,<0.20", optional = true }
 hdfs = { version = ">=2,<3", optional = true, extras = ["kerberos"] }
 impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
-psycopg2 = { version = ">=2.7.6,<3", optional = true }
+psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=1,<8", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
-pyspark = { version = ">=2.4.3,<4", optional = true }
+pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 shapely = { version = ">=1.6,<2", optional = true }
-sqlalchemy = { version = "~1.3", optional = true } # TODO: this can't be relaxed due to clickhouse-sqlalchemy not supporting 1.4
+sqlalchemy = { version = ">=1.3,<1.5", optional = true }
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
 click = "^8.0.1"
-clickhouse-sqlalchemy = ">=0.1.4,<0.2"
 commitizen = "^2.20.3"
 flake8 = "^4.0.0"
 ipykernel = "^6"
-ipython = "^7.27.0"
+ipython = ">=7.27.0,<9"
 isort = "^5.9.3"
 markdown = "<3.3.5"
 mkdocs = "^1.2.3"
@@ -80,7 +79,7 @@ pytkdocs = { version = "^0.15.0", extras = ["numpy-style"] }
 pyupgrade = "^2.26.0"
 requests = "^2.27.1"
 setuptools = ">=57,<61"
-sqlalchemy = "~1.3"
+sqlalchemy = ">=1.3,<1.5"
 types-requests = "^2.27.8"
 
 [tool.poetry.extras]

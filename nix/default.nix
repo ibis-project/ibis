@@ -41,7 +41,6 @@ import sources.nixpkgs {
         "$@"
       '';
 
-      ibisDevEnv37 = pkgs.mkPoetryEnv pkgs.python37;
       ibisDevEnv38 = pkgs.mkPoetryEnv pkgs.python38;
       ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;
       ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;

@@ -59,10 +59,8 @@ install_requires = [
 ]
 
 extras_require = {
-    ':python_version < "3.8"': [
-        "importlib-metadata>=4,<5",
-        "typing-extensions>=4.0.1,<5.0.0",
-    ],
+    ':python_version < "3.10"': ["importlib-metadata>=4,<5"],
+    ':python_version < "3.8"': ["typing-extensions>=4.0.1,<5.0.0"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
         "dask[array,dataframe]>=2021.10.0",
@@ -72,13 +70,13 @@ extras_require = {
         "graphviz>=0.16,<0.20",
         "hdfs[kerberos]>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
-        "psycopg2>=2.7.6,<3",
+        "psycopg2>=2.8.4,<3",
         "pyarrow>=1,<8",
         "pymysql>=1,<2",
-        "pyspark>=2.4.3,<4",
+        "pyspark>=3,<4",
         "requests>=2,<3",
         "shapely>=1.6,<2",
-        "sqlalchemy>=1.3,<1.4",
+        "sqlalchemy>=1.3,<1.5",
     ],
     "clickhouse": ["clickhouse-driver>=0.1,<0.3"],
     "dask": ["dask[array,dataframe]>=2021.10.0", "pyarrow>=1,<8"],
@@ -93,10 +91,10 @@ extras_require = {
         "impyla[kerberos]>=0.17,<0.19",
         "requests>=2,<3",
     ],
-    "mysql": ["pymysql>=1,<2", "sqlalchemy>=1.3,<1.4"],
-    "postgres": ["psycopg2>=2.7.6,<3", "sqlalchemy>=1.3,<1.4"],
-    "pyspark": ["pyarrow>=1,<8", "pyspark>=2.4.3,<4"],
-    "sqlite": ["sqlalchemy>=1.3,<1.4"],
+    "mysql": ["pymysql>=1,<2", "sqlalchemy>=1.3,<1.5"],
+    "postgres": ["psycopg2>=2.8.4,<3", "sqlalchemy>=1.3,<1.5"],
+    "pyspark": ["pyarrow>=1,<8", "pyspark>=3,<4"],
+    "sqlite": ["sqlalchemy>=1.3,<1.5"],
     "visualization": ["graphviz>=0.16,<0.20"],
 }
 
@@ -130,7 +128,7 @@ setup_kwargs = {
     "install_requires": install_requires,
     "extras_require": extras_require,
     "entry_points": entry_points,
-    "python_requires": ">=3.7.1,<3.11",
+    "python_requires": ">=3.8,<3.11",
 }
 
 

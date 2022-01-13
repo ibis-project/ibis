@@ -1,5 +1,4 @@
 CREATE TABLE diamonds (
-    `date` Date DEFAULT today(),
     carat Float64,
     cut String,
     color String,
@@ -10,10 +9,9 @@ CREATE TABLE diamonds (
     x Float64,
     y Float64,
     z Float64
-) ENGINE = MergeTree(date, (`carat`), 8192);
+) ENGINE = Memory;
 
 CREATE TABLE batting (
-    `date` Date DEFAULT today(),
     `playerID` String,
     `yearID` Int64,
     stint Int64,
@@ -36,20 +34,18 @@ CREATE TABLE batting (
     `SH` Int64,
     `SF` Int64,
     `GIDP` Int64
-) ENGINE = MergeTree(date, (`playerID`), 8192);
+) ENGINE = Memory;
 
 CREATE TABLE awards_players (
-    `date` Date DEFAULT today(),
     `playerID` String,
     `awardID` String,
     `yearID` Int64,
     `lgID` String,
     tie String,
     notes String
-) ENGINE = MergeTree(date, (`playerID`), 8192);
+) ENGINE = Memory;
 
 CREATE TABLE functional_alltypes (
-    `date` Date DEFAULT toDate(timestamp_col),
     `index` Int64,
     `Unnamed: 0` Int64,
     id Int32,
@@ -65,20 +61,18 @@ CREATE TABLE functional_alltypes (
     timestamp_col DateTime,
     year Int32,
     month Int32
-) ENGINE = MergeTree(date, (`index`), 8192);
+) ENGINE = Memory;
 
 CREATE TABLE tzone (
-    `date` Date DEFAULT today(),
     ts DateTime,
     key String,
     value Float64
-) ENGINE = MergeTree(date, (key), 8192);
+) ENGINE = Memory;
 
 CREATE TABLE IF NOT EXISTS array_types (
-    `date` Date DEFAULT today(),
     x Array(Int64),
     y Array(String),
     z Array(Float64),
     grouper String,
     scalar_column Float64
-) ENGINE = MergeTree(date, (scalar_column), 8192);
+) ENGINE = Memory;
