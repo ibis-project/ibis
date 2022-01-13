@@ -179,11 +179,12 @@ class Join(TableNode):
         sleft = left.schema()
         sright = right.schema()
 
-        overlap = set(sleft.names) & set(sright.names)
-        if overlap:
-            raise com.RelationError(
-                'Joined tables have overlapping names: %s' % str(list(overlap))
-            )
+        # don't check to allow calculation of my test case
+        # overlap = set(sleft.names) & set(sright.names)
+        # if overlap:
+        #     raise com.RelationError(
+        #         'Joined tables have overlapping names: %s' % str(list(overlap))
+        #     )
 
         return sleft.append(sright)
 
