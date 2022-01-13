@@ -112,4 +112,20 @@ repos:
           - file
         types_or:
           - file
+      - entry: prettier --check
+        exclude: ^$
+        files: ""
+        id: prettier
+        language: system
+        name: prettier
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - text
+        types_or:
+          - json
+          - toml
+          - yaml
+          - markdown
     repo: local
