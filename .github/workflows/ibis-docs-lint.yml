@@ -29,7 +29,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable-small
 
       - name: lint commits
-        run: nix shell -L --keep-going -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
+        run: nix shell -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
 
   lint:
     runs-on: ubuntu-latest
@@ -50,7 +50,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: pre-commit checks
-        run: nix-shell --pure --keep-going --run 'pre-commit run --all-files'
+        run: nix develop -f shell.nix --ignore-environment --keep-going -c pre-commit run -a
 
   docs:
     name: Docs
@@ -75,11 +75,11 @@ jobs:
 
       - name: build docs
         working-directory: ibis
-        run: nix-shell --pure --run 'make -C docs html BUILDDIR=web/docs'
+        run: nix develop -f shell.nix --ignore-environment --keep-going -c make -C docs html BUILDDIR=web/docs
 
       - name: build website
         working-directory: ibis
-        run: nix-shell --pure --run 'mkdocs build -f docs/mkdocs.yml'
+        run: nix develop -f shell.nix --ignore-environment --keep-going -c mkdocs build -f docs/mkdocs.yml
 
       - name: Add config to docs
         working-directory: ibis
@@ -138,18 +138,10 @@ jobs:
           git add .
           git commit -am 'docs: ibis-project/ibis@${{ github.sha }}' || true
 
-      - name: tag docs if this is a release
-        if: ${{ startsWith(github.ref, 'refs/tags') }}
-        working-directory: ibis-project.org
-        run: |
-          set -euo pipefail
-
-          git tag "${GITHUB_REF##*/}"
-
       - name: Push docs
         if: ${{ github.event_name == 'push' }}
         working-directory: ibis-project.org
-        run: git push --tags -f origin master
+        run: git push -f origin master
 
   simulate_release:
     runs-on: ubuntu-latest
