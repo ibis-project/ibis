@@ -1,0 +1,8 @@
+.direnv
+.mypy_cache
+.pytest_cache
+nix/sources.json
+result
+result-*
+docs/source/*
+docs/web/release_notes.md

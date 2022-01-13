@@ -35,6 +35,12 @@ import sources.nixpkgs {
         );
       };
 
+      prettierTOML = pkgs.writeShellScriptBin "prettier" ''
+        ${pkgs.nodePackages.prettier}/bin/prettier \
+        --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
+        "$@"
+      '';
+
       ibisDevEnv37 = pkgs.mkPoetryEnv pkgs.python37;
       ibisDevEnv38 = pkgs.mkPoetryEnv pkgs.python38;
       ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;

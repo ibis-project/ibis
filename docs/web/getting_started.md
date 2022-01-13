@@ -13,17 +13,17 @@ page](/docs/index.html#installation).
 
 2. In a shell prompt install `ibis-framework`:
 
-      ```sh
-      conda install -c conda-forge ibis-framework
-      ```
+   ```sh
+   conda install -c conda-forge ibis-framework
+   ```
 
-5. In the same shell prompt, import ibis and print its version
+3. In the same shell prompt, import ibis and print its version
 
-      ```sh
-      python -c 'import ibis; print(ibis.__version__)'
-      ```
+   ```sh
+   python -c 'import ibis; print(ibis.__version__)'
+   ```
 
-6. You're ready to start using {{ config.project_name }}!
+4. You're ready to start using {{ config.project_name }}!
 
 ## Tutorials
 

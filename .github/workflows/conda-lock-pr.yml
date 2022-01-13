@@ -5,7 +5,7 @@ on:
       - opened
       - reopened
     paths:
-      - 'conda-lock/*.lock'
+      - "conda-lock/*.lock"
       - pyproject.toml
       - poetry.lock
 
@@ -27,6 +27,6 @@ jobs:
       - name: add condalock comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-           token: ${{ steps.generate_token.outputs.token }}
-           issue-number: ${{ github.event.number }}
-           body: "/condalock"
+          token: ${{ steps.generate_token.outputs.token }}
+          issue-number: ${{ github.event.number }}
+          body: "/condalock"

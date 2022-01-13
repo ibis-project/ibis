@@ -1,0 +1,115 @@
+default_stages:
+  - commit
+repos:
+  - hooks:
+      - entry: black --check
+        exclude: ^$
+        files: ""
+        id: black
+        language: system
+        name: black
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - python
+          - file
+          - python
+        types_or: []
+      - entry: flake8
+        exclude: ^$
+        files: ""
+        id: flake8
+        language: python
+        name: flake8
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - python
+        types_or: []
+      - entry: isort --check
+        exclude: ^$
+        files: ""
+        id: isort
+        language: python
+        name: isort
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - file
+          - python
+        types_or:
+          - cython
+          - pyi
+          - python
+      - entry: nix-linter
+        exclude: (nix/sources.nix)
+        files: \.nix$
+        id: nix-linter
+        language: system
+        name: nix-linter
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - file
+        types_or: []
+      - entry: nixpkgs-fmt --check
+        exclude: (nix/sources.nix)
+        files: \.nix$
+        id: nixpkgs-fmt
+        language: system
+        name: nixpkgs-fmt
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - file
+        types_or: []
+      - entry: pyupgrade --py37-plus
+        exclude: (setup.py)
+        files: ""
+        id: pyupgrade
+        language: system
+        name: pyupgrade
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - python
+        types_or: []
+      - entry: shellcheck
+        exclude: ^$
+        files: \.sh$
+        id: shellcheck
+        language: system
+        name: shellcheck
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - shell
+        types_or:
+          - file
+          - sh
+          - ash
+          - bash
+          - bats
+          - dash
+          - ksh
+      - entry: shfmt -i 2 -sr -d -s -l
+        exclude: ^$
+        files: \.sh$
+        id: shfmt
+        language: system
+        name: shfmt
+        pass_filenames: true
+        stages:
+          - commit
+        types:
+          - file
+        types_or:
+          - file
+    repo: local
