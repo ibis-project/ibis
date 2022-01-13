@@ -194,7 +194,7 @@ jobs:
       - name: run tests
         env:
           PYTEST_BACKENDS: postgres
-        run: ./ci/run_tests.sh -m "not udf"
+        run: ./ci/run_tests.sh
 
       - name: publish test report
         uses: actions/upload-artifact@v2
