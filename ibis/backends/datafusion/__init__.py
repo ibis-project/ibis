@@ -35,7 +35,7 @@ class Backend(BaseBackend):
         try:
             import importlib.metadata as importlib_metadata
         except ImportError:
-            # TODO: remove this when Python 3.7 support is dropped
+            # TODO: remove this when Python 3.9 support is dropped
             import importlib_metadata
         return importlib_metadata.version("datafusion")
 

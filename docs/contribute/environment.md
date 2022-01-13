@@ -22,7 +22,7 @@ There are two primary ways to setup a development environment.
     tools that ibis uses and we cannot offically support Python 3.10 until
     those are fixed.
 
-=== "Nix (Linux, Python 3.7-3.9)"
+=== "Nix (Linux, Python 3.8-3.9)"
 
     1. [Download and install `nix`](https://nixos.org/download.html)
     1. Install `gh`:
@@ -53,7 +53,7 @@ There are two primary ways to setup a development environment.
         nix-shell
         ```
 
-=== "Miniconda (Linux, Mac, Windows, Python 3.7-3.9)"
+=== "Miniconda (Linux, Mac, Windows, Python 3.8-3.9)"
 
     !!! tip "Mamba is supported as well"
 
