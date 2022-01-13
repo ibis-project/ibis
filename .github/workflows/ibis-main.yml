@@ -43,12 +43,10 @@ jobs:
       - name: nix-linter
         run: nix shell -f ./nix nix-linter -c nix-linter $(find . -name '*.nix' -and \( -not -wholename '*nix/sources.nix' \))
   nix:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
         python-version:
           - "3.7"
           - "3.8"
