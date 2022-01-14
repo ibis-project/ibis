@@ -10,8 +10,9 @@
 ## {{ group.name }}
 
 {% for person in group.members %}
-* [{{ person }}](https://github.com/{{ person }})
-{% endfor %}
+
+- [{{ person }}](https://github.com/{{ person }})
+  {% endfor %}
 
 {% endfor %}
 

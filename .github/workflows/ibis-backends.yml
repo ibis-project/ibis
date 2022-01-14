@@ -5,13 +5,13 @@ on:
   push:
     # Skip the backend suite if all changes are in the docs directory
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
     branches:
       - master
   pull_request:
     # Skip the backend suite if all changes are in the docs directory
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
     branches:
       - master
 
@@ -194,7 +194,7 @@ jobs:
       - name: run tests
         env:
           PYTEST_BACKENDS: postgres
-        run: ./ci/run_tests.sh -m "not udf"
+        run: ./ci/run_tests.sh
 
       - name: publish test report
         uses: actions/upload-artifact@v2

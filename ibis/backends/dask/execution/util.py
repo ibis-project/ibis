@@ -1,9 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-import dask.array as da
 import dask.dataframe as dd
 import dask.delayed
-import numpy as np
 import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
@@ -449,56 +447,3 @@ def add_partitioned_sorted_column(
     df = df.set_index(col_name, sorted=True, divisions=divisions)
 
     return df
-
-
-def dask_array_select(condlist, choicelist, default=0):
-    # shim taken from dask.array 2021.6.1
-    # https://github.com/ibis-project/ibis/issues/2847
-    try:
-        from dask.array import select
-
-        return select(condlist, choicelist, default)
-    except ImportError:
-
-        def _select(*args, **kwargs):
-            split_at = len(args) // 2
-            condlist = args[:split_at]
-            choicelist = args[split_at:]
-            return np.select(condlist, choicelist, **kwargs)
-
-        if len(condlist) != len(choicelist):
-            raise ValueError(
-                "list of cases must be same length as list of conditions"
-            )
-
-        if len(condlist) == 0:
-            raise ValueError(
-                "select with an empty condition list is not possible"
-            )
-
-        choicelist = [da.asarray(choice) for choice in choicelist]
-
-        try:
-            intermediate_dtype = da.result_type(*choicelist)
-        except TypeError as e:
-            msg = "Choicelist elements do not have a common dtype."
-            raise TypeError(msg) from e
-
-        blockwise_shape = tuple(range(choicelist[0].ndim))
-
-        condargs = [
-            arg for elem in condlist for arg in (elem, blockwise_shape)
-        ]
-        choiceargs = [
-            arg for elem in choicelist for arg in (elem, blockwise_shape)
-        ]
-
-        return da.blockwise(
-            _select,
-            blockwise_shape,
-            *condargs,
-            *choiceargs,
-            dtype=intermediate_dtype,
-            name="select",
-            default=default,
-        )

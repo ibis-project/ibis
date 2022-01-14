@@ -60,7 +60,6 @@ from ..core import execute
 from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
-    dask_array_select,
     make_selected_obj,
     register_types_to_dispatcher,
 )
@@ -430,8 +429,7 @@ def execute_searched_case_dask(op, whens, thens, otherwise, **kwargs):
     else:
         # scalar
         thens = [da.from_array(np.array([t])) for t in thens]
-    # TODO this only exists as of 2021.6.1
-    raw = dask_array_select(whens, thens, otherwise)
+    raw = da.select(whens, thens, otherwise)
     out = dd.from_dask_array(
         raw,
         index=idx,

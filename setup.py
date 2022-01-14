@@ -57,7 +57,7 @@ install_requires = [
     "numpy>=1,<2",
     "pandas>=1.2.5,<2",
     "parsy>=1.3.0,<2",
-    "regex>=2021.7.6,<2022.0.0",
+    "regex>=2021.7.6",
     "toolz>=0.11,<0.12",
 ]
 
@@ -66,7 +66,7 @@ extras_require = {
     "all": [
         "clickhouse-driver>=0.1,<0.3",
         "clickhouse-sqlalchemy>=0.1.4,<0.2",
-        "dask[array,dataframe]>=2021.10.0,<2022.0.0",
+        "dask[array,dataframe]>=2021.10.0",
         "datafusion>=0.4,<0.5",
         "geoalchemy2>=0.6,<0.11",
         "geopandas>=0.6,<0.11",
@@ -87,7 +87,7 @@ extras_require = {
         "clickhouse-sqlalchemy>=0.1.4,<0.2",
         "sqlalchemy>=1.3,<1.4",
     ],
-    "dask": ["dask[array,dataframe]>=2021.10.0,<2022.0.0", "pyarrow>=1,<7"],
+    "dask": ["dask[array,dataframe]>=2021.10.0", "pyarrow>=1,<7"],
     "datafusion": ["datafusion>=0.4,<0.5"],
     "geospatial": [
         "geoalchemy2>=0.6,<0.11",
@@ -131,7 +131,7 @@ setup_kwargs = {
     "name": "ibis-framework",
     "version": "2.1.1",
     "description": "Productivity-centric Python Big Data Framework",
-    "long_description": "# Ibis: Python data analysis framework for Hadoop and SQL engines\n\n|Service|Status|\n| -------------: | :---- |\n| Documentation  | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org) |\n| Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework) |\n| PyPI           | [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework) |\n| Ibis CI        | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amaster) |\n| Backend CI     | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amaster) |\n| Coverage       | [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis) |\n\n\nIbis is a toolbox to bridge the gap between local Python environments, remote\nstorage, execution systems like Hadoop components (HDFS, Impala, Hive, Spark)\nand SQL databases. Its goal is to simplify analytical workflows and make you\nmore productive.\n\nInstall Ibis from PyPI with:\n\n```sh\npip install ibis-framework\n```\n\nor from conda-forge with\n\n```sh\nconda install ibis-framework -c conda-forge\n```\n\nIbis currently provides tools for interacting with the following systems:\n\n- [Apache Impala](https://impala.apache.org/)\n- [Apache Kudu](https://kudu.apache.org/)\n- [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)\n- [PostgreSQL](https://www.postgresql.org/)\n- [MySQL](https://www.mysql.com/)\n- [SQLite](https://www.sqlite.org/)\n- [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe)\n- [Clickhouse](https://clickhouse.yandex)\n- [BigQuery](https://cloud.google.com/bigquery)\n- [OmniSciDB](https://www.omnisci.com)\n- [PySpark](https://spark.apache.org)\n- [Dask](https://dask.org/) (Experimental)\n\nLearn more about using the library at http://ibis-project.org.\n",
+    "long_description": "# Ibis: Python data analysis framework for Hadoop and SQL engines\n\n|        Service | Status                                                                                                                                                                                                |\n| -------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n|  Documentation | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)                                                                                 |\n| Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)                                                       |\n|           PyPI | [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework)                                                                                                  |\n|        Ibis CI | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amaster)         |\n|     Backend CI | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amaster) |\n|       Coverage | [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis)                                                                    |\n\nIbis is a toolbox to bridge the gap between local Python environments, remote\nstorage, execution systems like Hadoop components (HDFS, Impala, Hive, Spark)\nand SQL databases. Its goal is to simplify analytical workflows and make you\nmore productive.\n\nInstall Ibis from PyPI with:\n\n```sh\npip install ibis-framework\n```\n\nor from conda-forge with\n\n```sh\nconda install ibis-framework -c conda-forge\n```\n\nIbis currently provides tools for interacting with the following systems:\n\n- [Apache Impala](https://impala.apache.org/)\n- [Apache Kudu](https://kudu.apache.org/)\n- [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)\n- [PostgreSQL](https://www.postgresql.org/)\n- [MySQL](https://www.mysql.com/)\n- [SQLite](https://www.sqlite.org/)\n- [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe)\n- [Clickhouse](https://clickhouse.yandex)\n- [BigQuery](https://cloud.google.com/bigquery)\n- [OmniSciDB](https://www.omnisci.com)\n- [PySpark](https://spark.apache.org)\n- [Dask](https://dask.org/) (Experimental)\n\nLearn more about using the library at http://ibis-project.org.\n",
     "author": "Ibis Contributors",
     "author_email": None,
     "maintainer": "Ibis Contributors",

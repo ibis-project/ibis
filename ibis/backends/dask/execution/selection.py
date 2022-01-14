@@ -4,7 +4,7 @@
 
 import functools
 import operator
-from typing import Optional
+from typing import List, Optional
 
 import dask.dataframe as dd
 import pandas
@@ -47,7 +47,6 @@ def compute_projection_scalar_expr(
     parent_table_op = parent.table.op()
 
     data_columns = frozenset(data.columns)
-
     scope = scope.merge_scopes(
         Scope(
             {
@@ -129,6 +128,42 @@ compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
 )
 
 
+def build_df_from_selection(
+    selections: List[ir.ColumnExpr], data: dd.DataFrame
+) -> dd.DataFrame:
+    """Build up a df by doing direct selections, renaming if necessary."""
+    cols = [
+        (s.op().name, getattr(s, "_name", s.op().name)) for s in selections
+    ]
+    renamed_cols = {
+        col: renamed_col for col, renamed_col in cols if col != renamed_col
+    }
+
+    result = data[[col for col, _ in cols]]
+    if renamed_cols:
+        result = result.rename(columns=renamed_cols)
+
+    return result
+
+
+def build_df_from_projection(
+    selections: List[ir.Expr], op: ops.Selection, data: dd.DataFrame, **kwargs
+) -> dd.DataFrame:
+    """
+    Build up a df from individual pieces by dispatching to `compute_projection`
+    for each expression.
+    """
+
+    # Create a unique row identifier and set it as the index. This is
+    # used in dd.concat to merge the pieces back together.
+    data = add_partitioned_sorted_column(data)
+    data_pieces = [
+        compute_projection(s, op, data, **kwargs) for s in selections
+    ]
+
+    return dd.concat(data_pieces, axis=1).reset_index(drop=True)
+
+
 @execute_node.register(ops.Selection, dd.DataFrame)
 def execute_selection_dataframe(
     op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
@@ -138,25 +173,22 @@ def execute_selection_dataframe(
     sort_keys = op.sort_keys
     result = data
 
-    # Build up the individual dask structures from column expressions
     if selections:
-        # Create a unique row identifier and set it as the index. This is used
-        # in dd.concat to merge the pieces back together.
-        data = add_partitioned_sorted_column(data)
-        data_pieces = []
-        for selection in selections:
-            dask_object = compute_projection(
-                selection,
+        # if we are just performing select operations and all columns are in
+        # the table we can do a direct selection
+        if all(isinstance(s.op(), ops.TableColumn) for s in selections) and {
+            s.op().name for s in selections
+        }.issubset(set(result.columns)):
+            result = build_df_from_selection(selections, data)
+        else:
+            result = build_df_from_projection(
+                selections,
                 op,
                 data,
                 scope=scope,
                 timecontext=timecontext,
                 **kwargs,
             )
-            data_pieces.append(dask_object)
-
-        result = dd.concat(data_pieces, axis=1)
-        result.reset_index(drop=True)
 
     if predicates:
         predicates = _compute_predicates(

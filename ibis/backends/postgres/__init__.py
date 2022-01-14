@@ -5,8 +5,8 @@ import sqlalchemy
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
-from . import udf
 from .compiler import PostgreSQLCompiler
+from .udf import udf
 
 
 class Backend(BaseAlchemyBackend):

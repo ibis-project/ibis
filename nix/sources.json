@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f101b1d0f976b95444cdaf19a8f3d09148bd9c02",
-        "sha256": "0891hrj8pzfkvnsxgaw23kc29lwsc5c0m69pxsmapihhna9qylqs",
+        "rev": "b4ac5539ea325cadce07b99c837d6cccbdddda3b",
+        "sha256": "10krl2ywv0qzac6ixpbk34xnmr9cppq07yh9asli3f9nhk39jvk2",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/f101b1d0f976b95444cdaf19a8f3d09148bd9c02.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/b4ac5539ea325cadce07b99c837d6cccbdddda3b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
@@ -29,22 +29,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "48e98cefbc43142d9e6f9e5e474e19873e8df564",
-        "sha256": "1ah6xi84gv4nzn41a58ihrgslf37r4jd0da9w0ynmn8sbc5gj5wz",
+        "rev": "cf1547ba2b009e20d92d5aab0691c5286408e2bb",
+        "sha256": "1kgp62ix1mgqw65npzr95nsiprcp6d2rpsy1dr58i91h2dv2bylp",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/48e98cefbc43142d9e6f9e5e474e19873e8df564.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "pre-commit-hooks": {
-        "branch": "master",
-        "description": "Seamless integration of https://pre-commit.com git hooks with Nix.",
-        "homepage": "",
-        "owner": "cachix",
-        "repo": "pre-commit-hooks.nix",
-        "rev": "ff9c0b459ddc4b79c06e19d44251daa8e9cd1746",
-        "sha256": "0z09ndxvbk6w4j28lzgj0b9qqcbwrvr58c0xsm0rf0xsdipi0nwf",
-        "type": "tarball",
-        "url": "https://github.com/cachix/pre-commit-hooks.nix/archive/ff9c0b459ddc4b79c06e19d44251daa8e9cd1746.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/cf1547ba2b009e20d92d5aab0691c5286408e2bb.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

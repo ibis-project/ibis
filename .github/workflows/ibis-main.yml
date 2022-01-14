@@ -5,13 +5,13 @@ on:
   push:
     # Skip the test suite if all changes are in the docs directory
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
     branches:
       - master
   pull_request:
     # Skip the test suite if all changes are in the docs directory
     paths-ignore:
-      - 'docs/**'
+      - "docs/**"
     branches:
       - master
 
@@ -20,13 +20,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  nix-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install nix
+        uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
+
+      - name: nixpkgs-fmt
+        run: nix shell -f ./nix nixpkgs-fmt -c nixpkgs-fmt --check $(find . -name '*.nix' -and \( -not -wholename '*nix/sources.nix' \))
+
+      - name: nix-linter
+        run: nix shell -f ./nix nix-linter -c nix-linter $(find . -name '*.nix' -and \( -not -wholename '*nix/sources.nix' \))
   nix:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
         python-version:
           - "3.7"
           - "3.8"
