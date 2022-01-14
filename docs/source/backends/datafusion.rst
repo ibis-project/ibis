@@ -33,7 +33,7 @@ Create a client by passing a dictionary that maps table names to paths to
    >>> import ibis
    >>> data_sources = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
    >>> client = ibis.datafusion.connect(data_sources)
-   >>> t = clien.table("t")
+   >>> t = client.table("t")
 
 .. _api.datafusion:
 
