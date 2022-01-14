@@ -240,7 +240,7 @@ jobs:
 
       - uses: actions/setup-java@v2
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: ${{ matrix.pyspark.jdk }}
 
       - uses: syphar/restore-virtualenv@v1
