@@ -188,7 +188,8 @@ class Join(TableNode):
         else:
             if overlap:
                 raise com.RelationError(
-                    'Joined tables have overlapping names: %s' % str(list(overlap))
+                    'Joined tables have overlapping names: %s'
+                    % str(list(overlap))
                 )
 
         return sleft.append(sright)
