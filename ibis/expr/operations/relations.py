@@ -180,11 +180,11 @@ class Join(TableNode):
         sright = right.schema()
 
         # don't check to allow calculation of my test case
-        # overlap = set(sleft.names) & set(sright.names)
-        # if overlap:
-        #     raise com.RelationError(
-        #         'Joined tables have overlapping names: %s' % str(list(overlap))
-        #     )
+        overlap = set(sleft.names) & set(sright.names)
+        if overlap:
+            raise com.RelationError(
+                'Joined tables have overlapping names: %s' % str(list(overlap))
+            )
 
         return sleft.append(sright)
 
@@ -284,6 +284,51 @@ class AsOfJoin(Join):
         default=[],
     )
     tolerance = Arg(rlz.interval, default=None)
+
+    def __init__(self, left, right, predicates, by, tolerance):
+        super().__init__(left, right, predicates)
+        self.by = _clean_join_predicates(self.left, self.right, by)
+        self.tolerance = tolerance
+
+        self._validate_args(['by', 'tolerance'])
+
+    def _validate_args(self, args: List[str]):
+        # this should be removed altogether
+        for arg in args:
+            argument = self.__signature__.parameters[arg]
+            value = argument.validate(self, getattr(self, arg))
+            setattr(self, arg, value)
+
+
+@public
+class MergeAsOfJoin(Join):
+    left = Arg(rlz.table)
+    right = Arg(rlz.table)
+    predicates = Arg(rlz.list_of(rlz.boolean))
+    by = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.function_of("table"),
+                    rlz.column_from("table"),
+                    rlz.any,
+                )
+            )
+        ),
+        default=[],
+    )
+    tolerance = Arg(
+        rlz.list_of(
+            rlz.one_of(
+                (
+                    rlz.scalar,
+                    rlz.interval,
+                )
+            )
+        ),
+        default=None,
+
+    )
 
     def __init__(self, left, right, predicates, by, tolerance):
         super().__init__(left, right, predicates)
