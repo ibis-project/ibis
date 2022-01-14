@@ -13,17 +13,18 @@ from toolz import concatv
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas.execution.selection import (
+    build_df_from_selection,
     compute_projection,
     compute_projection_table_expr,
     map_new_column_names_to_data,
     remap_overlapping_column_names,
 )
+from ibis.backends.pandas.execution.util import get_join_suffix_for_op
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from ..execution import constants
 from ..execution.util import (
     add_partitioned_sorted_column,
     coerce_to_output,
@@ -87,17 +88,8 @@ def compute_projection_column_expr(
 
         if not isinstance(parent_table_op, ops.Join):
             raise KeyError(name)
-        (root_table,) = op.root_tables()
-        left_root, right_root = ops.distinct_roots(
-            parent_table_op.left, parent_table_op.right
-        )
-        suffixes = {
-            left_root: constants.LEFT_JOIN_SUFFIX,
-            right_root: constants.RIGHT_JOIN_SUFFIX,
-        }
-        return data.loc[:, name + suffixes[root_table]].rename(
-            result_name or name
-        )
+        suffix = get_join_suffix_for_op(op, parent_table_op)
+        return data.loc[:, name + suffix].rename(result_name or name)
 
     data_columns = frozenset(data.columns)
 
@@ -128,26 +120,11 @@ compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
 )
 
 
-def build_df_from_selection(
-    selections: List[ir.ColumnExpr], data: dd.DataFrame
-) -> dd.DataFrame:
-    """Build up a df by doing direct selections, renaming if necessary."""
-    cols = [
-        (s.op().name, getattr(s, "_name", s.op().name)) for s in selections
-    ]
-    renamed_cols = {
-        col: renamed_col for col, renamed_col in cols if col != renamed_col
-    }
-
-    result = data[[col for col, _ in cols]]
-    if renamed_cols:
-        result = result.rename(columns=renamed_cols)
-
-    return result
-
-
 def build_df_from_projection(
-    selections: List[ir.Expr], op: ops.Selection, data: dd.DataFrame, **kwargs
+    selection_exprs: List[ir.Expr],
+    op: ops.Selection,
+    data: dd.DataFrame,
+    **kwargs,
 ) -> dd.DataFrame:
     """
     Build up a df from individual pieces by dispatching to `compute_projection`
@@ -158,7 +135,8 @@ def build_df_from_projection(
     # used in dd.concat to merge the pieces back together.
     data = add_partitioned_sorted_column(data)
     data_pieces = [
-        compute_projection(s, op, data, **kwargs) for s in selections
+        compute_projection(expr, op, data, **kwargs)
+        for expr in selection_exprs
     ]
 
     return dd.concat(data_pieces, axis=1).reset_index(drop=True)
@@ -174,12 +152,10 @@ def execute_selection_dataframe(
     result = data
 
     if selections:
-        # if we are just performing select operations and all columns are in
-        # the table we can do a direct selection
-        if all(isinstance(s.op(), ops.TableColumn) for s in selections) and {
-            s.op().name for s in selections
-        }.issubset(set(result.columns)):
-            result = build_df_from_selection(selections, data)
+        # if we are just performing select operations we can do a direct
+        # selection
+        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
+            result = build_df_from_selection(selections, data, op.table.op())
         else:
             result = build_df_from_projection(
                 selections,
