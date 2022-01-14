@@ -299,17 +299,6 @@ def test_interval_timestamp_expr(table):
     assert isinstance(expr.op(), ops.TimestampSub)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYI')
-def test_compound_offset():
-    # These are not yet allowed (e.g. 1 month + 1 hour)
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_offset_months():
-    assert False
-
-
 @pytest.mark.parametrize(
     'literal',
     [

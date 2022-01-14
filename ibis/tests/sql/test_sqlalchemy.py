@@ -107,10 +107,6 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         assert_equal(schema, expected)
 
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_ibis_to_sqla_conversion(self):
-        assert False
-
     def test_comparisons(self):
         sat = self.sa_alltypes
 
@@ -537,14 +533,6 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         expected = sa.select([t1]).where(sa.not_(cond1))
 
         self._compare_sqla(expr, expected)
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_general_sql_function(self):
-        assert False
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_union(self):
-        assert False
 
     def test_table_distinct(self):
         t = self.alltypes

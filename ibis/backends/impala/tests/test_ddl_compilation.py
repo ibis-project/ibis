@@ -101,11 +101,6 @@ PARTITION (year=2007, month=7)"""
     assert result == expected
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_select_overwrite():
-    assert False
-
-
 def test_cache_table_pool_name():
     statement = ddl.CacheTable('foo', database='bar')
     query = statement.compile()
@@ -523,11 +518,6 @@ FROM functional_alltypes"""
 
     with pytest.raises(ValueError):
         _create_table('tname', t, format='foo')
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_partition_by():
-    assert False
 
 
 def _create_table(

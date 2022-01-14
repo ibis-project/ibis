@@ -69,12 +69,6 @@ def test_invalid_timestamp_literal():
         ibis.timestamp('2015-01-01 00:71')
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_integer_to_timestamp():
-    # #246
-    assert False
-
-
 def test_comparison_timestamp(alltypes):
     expr = alltypes.i > alltypes.i.min() + ibis.interval(days=3)
     assert isinstance(expr, ir.BooleanColumn)
