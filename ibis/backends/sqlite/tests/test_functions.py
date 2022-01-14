@@ -38,11 +38,6 @@ def test_cast(alltypes, alltypes_sqla, translate, func, expected):
     assert translate(func(alltypes)) == str(expected(alltypes_sqla))
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYI')
-def test_decimal_cast():
-    assert False
-
-
 @pytest.mark.parametrize(
     ('func', 'expected_func'),
     [
@@ -318,11 +313,6 @@ def test_regexp_extract(con, expr, expected):
 )
 def test_fillna_nullif(con, expr, expected):
     assert con.execute(expr) == expected
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYI')
-def test_coalesce():
-    assert False
 
 
 def test_numeric_builtins_work(alltypes, df):

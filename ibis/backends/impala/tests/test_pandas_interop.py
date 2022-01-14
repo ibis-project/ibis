@@ -174,11 +174,6 @@ def test_insert(con, temp_table_db, exhaustive_df):
     tm.assert_frame_equal(result, exhaustive_df)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_insert_partition():
-    assert False
-
-
 def test_round_trip_exhaustive(con, exhaustive_df):
     _check_roundtrip(con, exhaustive_df)
 

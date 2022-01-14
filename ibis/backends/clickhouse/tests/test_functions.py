@@ -44,13 +44,6 @@ def test_cast_string_col(alltypes, translate, to_type, expected):
     assert translate(expr) == expected
 
 
-@pytest.mark.xfail(
-    raises=AssertionError, reason='Clickhouse doesn\'t have decimal type'
-)
-def test_decimal_cast():
-    assert False
-
-
 @pytest.mark.parametrize(
     'column',
     [
