@@ -57,14 +57,13 @@ class Schema:
 
         self._name_locs = {v: i for i, v in enumerate(self.names)}
 
-        # don't check to allow calculation of my test case
-        # if len(self._name_locs) < len(self.names):
-            # duplicate_names = list(self.names)
-            # for v in self._name_locs.keys():
-            #     duplicate_names.remove(v)
-            # raise com.IntegrityError(
-            #     f'Duplicate column name(s): {duplicate_names}'
-            # )
+        if len(self._name_locs) < len(self.names):
+            duplicate_names = list(self.names)
+            for v in self._name_locs.keys():
+                duplicate_names.remove(v)
+            raise com.IntegrityError(
+                f'Duplicate column name(s): {duplicate_names}'
+            )
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
