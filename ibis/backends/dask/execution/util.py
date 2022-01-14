@@ -341,17 +341,6 @@ def assert_identical_grouping_keys(*args):
         )
 
 
-def safe_scalar_type(output_meta):
-    """
-    Patch until https://github.com/dask/dask/pull/7627 is merged and that
-    version of dask is used in ibis
-    """
-    if isinstance(output_meta, pd.DatetimeTZDtype):
-        output_meta = pd.Timestamp(1, tz=output_meta.tz, unit=output_meta.unit)
-
-    return output_meta
-
-
 def add_partitioned_sorted_column(
     df: Union[dd.DataFrame, dd.Series],
 ) -> dd.DataFrame:
