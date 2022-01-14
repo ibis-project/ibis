@@ -49,7 +49,7 @@ class FormatMemo:
             formatter = self._format
         key = self._key(expr)
         if key not in self.formatted:
-            self.aliases[key] = f'ref_{len(self.formatted):d}'
+            self.aliases[key] = f'r{len(self.formatted):d}'
             self.formatted[key] = formatter(expr)
             self.ops[key] = expr.op()
 
@@ -104,7 +104,7 @@ class ExprFormatter:
         if isinstance(what, ops.TableNode) and what.has_schema():
             # This should also catch aggregations
             if not self.memoize and self.expr in self.memo:
-                text = 'Table: %s' % self.memo.get_alias(self.expr)
+                text = f"ref: {self.memo.get_alias(self.expr)}"
             elif isinstance(what, ops.PhysicalTable):
                 text = self._format_table(self.expr)
             else:
@@ -113,33 +113,33 @@ class ExprFormatter:
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
         elif isinstance(what, ops.Literal):
-            text = f'Literal[{self._get_type_display()}] {what.value}'
+            text = f"value: {self._get_type_display()} = {what.value!r}"
         elif isinstance(what, ops.ScalarParameter):
-            text = f'ScalarParameter[{self._get_type_display()}]'
+            text = self._get_type_display()
         elif isinstance(what, ops.Node):
             text = self._format_node(self.expr)
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = f'{self.expr.get_name()} = {text}'
+            raw_name = self.expr.get_name()
+            if isinstance(self.expr.op(), ops.ScalarParameter):
+                name = f"$({raw_name})"
+            else:
+                name = raw_name
+            text = f'{name}: {text}'
 
         if self.memoize:
-            alias_to_text = [
+            alias_to_text = sorted(
                 (
                     self.memo.aliases[x],
                     self.memo.formatted[x],
                     self.memo.ops[x],
                 )
                 for x in self.memo.formatted
-            ]
-            alias_to_text.sort()
+            )
 
             # A hack to suppress printing out of a ref that is the result of
             # the top level expression
-            refs = [
-                f'{x}  {y}'
-                for x, y, op in alias_to_text
-                if not op.equals(what)
-            ]
+            refs = [y for _, y, op in alias_to_text if not op.equals(what)]
 
             text = '\n\n'.join(refs + [text])
 
@@ -181,15 +181,19 @@ class ExprFormatter:
 
     def _format_table(self, expr):
         table = expr.op()
+        column_names = table.schema.names
+        max_name_len = max(map(len, column_names))
         # format the schema
-        rows = [f'{table.name}:']
-        rows.extend(
-            map('  {} : {}'.format, table.schema.names, table.schema.types)
+        rows = list(
+            map(
+                "{} {}".format,
+                (name.ljust(max_name_len) for name in column_names),
+                table.schema.types,
+            )
         )
         opname = type(table).__name__
-        type_display = self._get_type_display(expr)
-        opline = f'{opname}[{type_display}]'
-        return '{} {}'.format(opline, self._indent('\n'.join(rows)))
+        opline = f'{opname}[{self.memo.get_alias(expr)}, name={table.name}]'
+        return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
 
     def _format_column(self, expr):
         # HACK: if column is pulled from a Filter of another table, this parent
@@ -203,9 +207,7 @@ class ExprFormatter:
         table_formatted = self.memo.get_alias(parent)
 
         type_display = self._get_type_display(self.expr)
-        return "Column[{}] '{!r}' from {}".format(
-            type_display, col.name, table_formatted
-        )
+        return f"{type_display} = {table_formatted}.{col.name}"
 
     def _format_node(self, expr):
         op = expr.op()
@@ -253,7 +255,13 @@ class ExprFormatter:
 
         opname = type(op).__name__
         type_display = self._get_type_display(expr)
-        opline = f'{opname}[{type_display}]'
+        if isinstance(op, ops.TableNode):
+            try:
+                opline = f"{opname}[{self.memo.get_alias(expr)}]"
+            except KeyError:
+                opline = opname
+        else:
+            opline = f"{type_display} = {opname}"
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):

@@ -837,10 +837,6 @@ def test_self_join(table):
     metric = (left['a'] - right['b']).mean().name('metric')
 
     joined = left.inner_join(right, [right['g'] == left['g']])
-    # basic check there's no referential problems
-    result_repr = repr(joined)
-    assert 'ref_0' in result_repr
-    assert 'ref_1' in result_repr
 
     # Cannot be immediately materialized because of the schema overlap
     with pytest.raises(RelationError):

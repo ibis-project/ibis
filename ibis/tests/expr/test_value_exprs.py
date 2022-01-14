@@ -962,14 +962,6 @@ def test_scalar_parameter_set():
     assert value.type().equals(dt.Set(dt.int64))
 
 
-def test_scalar_parameter_repr():
-    value = ibis.param(dt.timestamp).name('value')
-    assert repr(value) == 'value = ScalarParameter[timestamp]'
-
-    value_op = value.op()
-    assert repr(value_op) == "ScalarParameter(type=timestamp)"
-
-
 @pytest.mark.parametrize(
     ('left', 'right', 'expected'),
     [
