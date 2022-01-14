@@ -1,4 +1,5 @@
 import ibis
+import ibis.expr.datatypes as dt
 from ibis.expr.format import ExprFormatter
 from ibis.expr.types import Expr
 
@@ -19,7 +20,7 @@ def test_format_custom_expr():
 def test_format_table_column(table):
     # GH #507
     result = repr(table.f)
-    assert 'Column[float64*]' in result
+    assert 'float64' in result
 
 
 def test_format_projection(table):
@@ -42,8 +43,8 @@ def test_table_type_output():
     expr = foo.dept_id == foo.view().dept_id
     result = repr(expr)
 
-    assert 'SelfReference[table]' in result
-    assert 'UnboundTable[table]' in result
+    assert 'SelfReference[r1]' in result
+    assert 'UnboundTable[r0, name=foo]' in result
 
 
 def test_memoize_aggregate_correctly(table):
@@ -206,10 +207,10 @@ def test_argument_repr_shows_name():
 
 def test_scalar_parameter_formatting():
     value = ibis.param('array<date>')
-    assert str(value) == 'ScalarParameter[array<date>]'
+    assert str(value) == 'array<date>'
 
     value = ibis.param('int64').name('my_param')
-    assert str(value) == 'my_param = ScalarParameter[int64]'
+    assert str(value) == '$(my_param): int64'
 
 
 def test_same_column_multiple_aliases():
@@ -217,5 +218,40 @@ def test_same_column_multiple_aliases():
     expr = table[table.col.name('fakealias1'), table.col.name('fakealias2')]
     result = repr(expr)
 
-    assert 'fakealias1' in result
-    assert 'fakealias2' in result
+    assert "UnboundTable[r0, name=t]" in result
+    assert "col int64" in result
+    assert "fakealias1: int64 = r0.col" in result
+    assert "fakealias2: int64 = r0.col" in result
+
+
+def test_scalar_parameter_repr():
+    value = ibis.param(dt.timestamp).name('value')
+    assert repr(value) == "$(value): timestamp"
+
+    value_op = value.op()
+    assert repr(value_op) == "ScalarParameter(type=timestamp)"
+
+
+def test_repr_exact():
+    # XXX: This is the only exact repr test. Do
+    # not add new exact repr tests. New repr tests
+    # should check for the presence of substrings.
+    table = ibis.table(
+        [('col', 'int64'), ("col2", "string"), ("col3", "double")],
+        name='t',
+    ).mutate(col4=lambda t: t.col2.length())
+    result = repr(table)
+    expected = """\
+UnboundTable[r0, name=t]
+  col  int64
+  col2 string
+  col3 float64
+
+Selection[r1]
+  table:
+    ref: r0
+  selections:
+    ref: r0
+    col4: int32 = StringLength
+      col2: string = r0.col2"""
+    assert result == expected

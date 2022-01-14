@@ -386,7 +386,7 @@ class ScalarExpr(ValueExpr):
 
 class ColumnExpr(ValueExpr):
     def _type_display(self):
-        return f'{self.type()}*'
+        return str(self.type())
 
     def parent(self):
         return self._arg
