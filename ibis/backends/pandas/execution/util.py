@@ -13,6 +13,16 @@ from ibis.expr.schema import coerce_to_dataframe
 from ibis.expr.scope import Scope
 
 from ..core import execute
+from ..execution import constants
+
+
+def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
+    (root_table,) = op.root_tables()
+    left_root, right_root = ops.distinct_roots(join_op.left, join_op.right)
+    return {
+        left_root: constants.LEFT_JOIN_SUFFIX,
+        right_root: constants.RIGHT_JOIN_SUFFIX,
+    }[root_table]
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
