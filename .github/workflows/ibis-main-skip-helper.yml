@@ -14,7 +14,7 @@ on:
     branches:
       - master
 jobs:
-  build:
+  main:
     runs-on: ubuntu-latest
     steps:
-      - run: 'echo "No build required" '
+      - run: echo "No build required"
