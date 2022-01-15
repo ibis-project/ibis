@@ -18,7 +18,6 @@ from .execution.util import (
     assert_identical_grouping_keys,
     make_meta_series,
     make_selected_obj,
-    safe_scalar_type,
 )
 
 
@@ -155,9 +154,12 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
-                output_meta = safe_scalar_type(op.return_type.to_dask())
+                # manully construct a dd.core.Scalar out of the delayed result
                 result = dd.from_delayed(
-                    lazy_result, meta=output_meta, verify_meta=False
+                    lazy_result,
+                    meta=op.return_type.to_dask(),
+                    # otherwise dask complains this is a scalar
+                    verify_meta=False,
                 )
 
         return result
@@ -192,7 +194,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             meta_index = pandas.MultiIndex.from_arrays(
                 [[0]] * len(groupings), names=groupings
             )
-            meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
+            meta_value = [dd.utils.make_meta(out_type)]
         else:
             meta_index = pandas.Index([], name=groupings[0])
             meta_value = []
@@ -249,7 +251,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 [[0]] * (len(groupings) + 1),
                 names=groupings + [parent_df.index.name],
             )
-            meta_value = [dd.utils.make_meta(safe_scalar_type(out_type))]
+            meta_value = [dd.utils.make_meta(out_type)]
 
             result = grouped_df.apply(
                 apply_wrapper,

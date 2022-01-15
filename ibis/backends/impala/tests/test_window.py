@@ -268,14 +268,3 @@ SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`)) \
 OVER (PARTITION BY `g` ORDER BY `f`) AS `foo`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
-
-
-@pytest.mark.xfail
-def test_math_on_windowed_expr():
-    # Window clause may not be found at top level of expression
-    assert False
-
-
-@pytest.mark.xfail
-def test_group_by_then_different_sort_orders():
-    assert False

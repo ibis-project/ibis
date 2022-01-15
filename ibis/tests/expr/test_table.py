@@ -169,14 +169,6 @@ def test_projection_unnamed_literal_interactive_blowup(con):
             assert 'named' in e.args[0]
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_projection_of_aggregated(table):
-    # Fully-formed aggregations "block"; in a projection, column
-    # expressions referencing table expressions below the aggregation are
-    # invalid.
-    assert False
-
-
 def test_projection_with_star_expr(table):
     new_expr = (table['a'] * 5).name('bigger_a')
 
@@ -226,20 +218,6 @@ def test_projection_array_expr(table):
     result = table[table.a]
     expected = table[[table.a]]
     assert_equal(result, expected)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_add_column_aggregate_crossjoin(table):
-    # A new column that depends on a scalar value produced by this or some
-    # other table.
-    #
-    # For example:
-    # SELECT *, b - VAL
-    # FROM table1
-    #
-    # Here, VAL could be something produced by aggregating table1 or any
-    # other table for that matter.
-    assert False
 
 
 def test_mutate(table):
@@ -574,12 +552,6 @@ def test_summary_prefix_suffix(table):
     ]
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_aggregate_invalid(table):
-    # Pass a non-aggregation or non-scalar expr
-    assert False
-
-
 def test_filter_aggregate_pushdown_predicate(table):
     # In the case where we want to add a predicate to an aggregate
     # expression after the fact, rather than having to backpedal and add it
@@ -596,11 +568,6 @@ def test_filter_aggregate_pushdown_predicate(table):
     filtered = agged.filter([pred])
     expected = table[pred].aggregate(metrics, by=['g'])
     assert_equal(filtered, expected)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_filter_aggregate_partial_pushdown(table):
-    assert False
 
 
 @pytest.mark.parametrize(
@@ -640,11 +607,6 @@ def test_group_by_kwargs(table):
         t.d.mean().name('foo')
     )
     assert_equal(expr, expected)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_aggregate_root_table_internal(table):
-    assert False
 
 
 def test_compound_aggregate_expr(table):
@@ -979,12 +941,6 @@ def test_cross_join_multiple(table):
     assert joined.equals(expected)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_join_compound_boolean_predicate(table):
-    # The user might have composed predicates through logical operations
-    assert False
-
-
 def test_filter_join_unmaterialized(table):
     table1 = ibis.table(
         {'key1': 'string', 'key2': 'string', 'value1': 'double'}
@@ -1097,16 +1053,6 @@ def test_unravel_compound_equijoin(table):
     assert_equal(joined, expected)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_join_add_prefixes(table):
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_join_nontrivial_exprs(table):
-    assert False
-
-
 def test_union(
     setops_table_foo,
     setops_table_bar,
@@ -1194,12 +1140,6 @@ def test_simple_existence_predicate(t1, t2):
     # it works!
     expr = t1[cond]
     assert isinstance(expr.op(), ops.Selection)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_cannot_use_existence_expression_in_join(table):
-    # Join predicates must consist only of comparisons
-    assert False
 
 
 def test_not_exists_predicate(t1, t2):

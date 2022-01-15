@@ -146,16 +146,6 @@ def test_create_partitioned_table_from_expr(con, alltypes):
         con.drop_table(name, force=True)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_insert_overwrite_partition():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_dynamic_partitioning():
-    assert False
-
-
 def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema(
         [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
@@ -224,11 +214,6 @@ def test_add_drop_partition_hive_bug(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_set_partition_location():
-    assert False
-
-
 def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
     part_keys = ['year', 'month']
 
@@ -279,13 +264,3 @@ def verify_partitioned_table(part_t, df, unique_keys):
 
     # allow for the total line
     assert len(parts) == len(unique_keys) + 1
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_drop_partition():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_repartition_automated():
-    assert False

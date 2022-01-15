@@ -259,11 +259,6 @@ def test_create_table_reserved_identifier(client, alltypes):
         client.drop_table(table_name)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_query_text_file_regex():
-    assert False
-
-
 @pytest.fixture(scope='session')
 def awards_players_filename(data_directory):
     return str(data_directory / 'awards_players.csv')
