@@ -69,10 +69,11 @@ def test_bad_timecontext(time_table, t):
 def test_bad_call_to_adjust_context():
     op = "not_a_node"
     context = (pd.Timestamp('20170101'), pd.Timestamp('20170103'))
+    scope = Scope()
     with pytest.raises(
         com.IbisError, match=r".*Unsupported input type for adjust context.*"
     ):
-        adjust_context(op, context)
+        adjust_context(op, context, scope=scope)
 
 
 def test_compare_timecontext():

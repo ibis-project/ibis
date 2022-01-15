@@ -252,7 +252,7 @@ def construct_time_context_aware_series(
 
 @functools.singledispatch
 def adjust_context(
-    op: Any, timecontext: TimeContext, scope: Optional['Scope'] = None
+    op: Any, timecontext: TimeContext, *, scope: Optional['Scope']
 ) -> TimeContext:
     """
     Params
@@ -274,7 +274,7 @@ def adjust_context(
 
 @adjust_context.register(ops.Node)
 def adjust_context_node(
-    op: Node, timecontext: TimeContext, scope: Optional['Scope'] = None
+    op: Node, timecontext: TimeContext, *, scope: Optional['Scope']
 ) -> TimeContext:
     # For any node, by default, do not adjust time context
     return timecontext
@@ -282,7 +282,7 @@ def adjust_context_node(
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: ops.AsOfJoin, timecontext: TimeContext, scope: Optional['Scope'] = None
+    op: ops.AsOfJoin, timecontext: TimeContext, *, scope: Optional['Scope']
 ) -> TimeContext:
     begin, end = timecontext
 
@@ -297,7 +297,7 @@ def adjust_context_asof_join(
 
 @adjust_context.register(ops.WindowOp)
 def adjust_context_window(
-    op: ops.WindowOp, timecontext: TimeContext, scope: Optional['Scope'] = None
+    op: ops.WindowOp, timecontext: TimeContext, *, scope: Optional['Scope']
 ) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext
