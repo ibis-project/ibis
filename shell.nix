@@ -23,7 +23,7 @@ let
     cmake
   ];
 
-  backendTestDeps = [ pkgs.docker-compose_2 ];
+  backendTestDeps = [ pkgs.docker-compose ];
   vizDeps = [ pkgs.graphviz-nox ];
   pysparkDeps = [ pkgs.openjdk11 ];
   docDeps = [ pkgs.pandoc ];

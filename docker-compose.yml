@@ -41,7 +41,7 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: postgres:9.5
+    image: postgres:9.5-alpine
     ports:
       - 5432:5432
   kudu:
@@ -81,12 +81,15 @@ services:
         - mysqladmin
         - ping
       timeout: 5s
-    image: mariadb:10.4.12
+    image: mariadb:10.4.22
     ports:
       - 3306:3306
   ibis-postgres:
+    user: postgres
     environment:
-      POSTGRES_PASSWORD: ""
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: ibis_testing
+      POSTGRES_USER: postgres
     healthcheck:
       interval: 10s
       retries: 3
