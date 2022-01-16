@@ -30,6 +30,7 @@ POSTGRES_TEST_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing'
 )
 IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
+IBIS_POSTGRES_PORT = os.environ.get('IBIS_TEST_POSTGRES_PORT', '5432')
 IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER', 'postgres')
 IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD', 'postgres')
 
@@ -99,6 +100,7 @@ def test_metadata_is_per_table():
         database=POSTGRES_TEST_DB,
         user=IBIS_POSTGRES_USER,
         password=IBIS_POSTGRES_PASS,
+        port=IBIS_POSTGRES_PORT,
     )
     assert len(con.meta.tables) == 0
 

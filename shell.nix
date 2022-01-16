@@ -23,6 +23,7 @@ let
     cmake
   ];
 
+  backendTestDeps = [ pkgs.docker-compose_2 ];
   vizDeps = [ pkgs.graphviz-nox ];
   pysparkDeps = [ pkgs.openjdk11 ];
   docDeps = [ pkgs.pandoc ];
@@ -33,6 +34,7 @@ let
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
   libraryDevDeps = impalaUdfDeps
+    ++ backendTestDeps
     ++ vizDeps
     ++ pysparkDeps
     ++ docDeps
@@ -57,4 +59,5 @@ pkgs.mkShell {
   ];
 
   PYTHONPATH = builtins.toPath ./.;
+  IBIS_TEST_POSTGRES_PORT = "5433";
 }

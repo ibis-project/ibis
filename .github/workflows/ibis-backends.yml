@@ -161,6 +161,8 @@ jobs:
 
   test_postgres:
     name: PostgreSQL deps-unbounded python-${{ matrix.python-version }}
+    env:
+      IBIS_TEST_POSTGRES_PORT: 5433
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -168,17 +170,12 @@ jobs:
         python-version:
           - "3.7"
           - "3.9"
-    services:
-      postgres:
-        image: shajekpivotal/ibis-docker-postgres-9.5
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_PASSWORD: ""
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: start postgres container
+        run: docker compose up -d ibis-postgres
 
       - name: install python
         uses: actions/setup-python@v2
@@ -225,17 +222,12 @@ jobs:
   test_postgres_min_version:
     name: PostgreSQL deps-bounded python-3.7
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: shajekpivotal/ibis-docker-postgres-9.5
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_PASSWORD: ""
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: start postgres container
+        run: docker compose up -d ibis-postgres
 
       - name: install python
         uses: actions/setup-python@v2
@@ -384,54 +376,12 @@ jobs:
           - "3.7"
           # XXX: unlikely that impala will ever support 3.10
           - "3.9"
-    services:
-      postgres:
-        image: shajekpivotal/ibis-docker-postgres-9.5
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_PASSWORD: ""
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
-      kudu-master:
-        image: ibisproject/kudu:latest
-        ports:
-          - 7051:7051
-          - 8051:8051
-        env:
-          KUDU_MASTER: "true"
-        options: "--network-alias=kudu --cap-add=SYS_TIME"
-      kudu-tserver:
-        image: ibisproject/kudu:latest
-        ports:
-          - 7050:7050
-          - 8050:8050
-        env:
-          KUDU_MASTER: "false"
-        options: "--cap-add=SYS_TIME"
-      impala:
-        image: ibisproject/impala:latest
-        env:
-          PGPASSWORD: postgres
-        ports:
-          # HDFS
-          - 9020:9020
-          - 50070:50070
-          - 50075:50075
-          - 8020:8020
-          - 8042:8042
-          # Hive
-          - 9083:9083
-
-          # Impala
-          - 21000:21000
-          - 21050:21050
-          - 25000:25000
-          - 25010:25010
-          - 25020:25020
-        options: --hostname localhost --health-cmd "nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070" --health-interval 30s --health-timeout 10s --health-retries 20
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: start impala and kudu containers
+        run: docker compose up -d impala kudu
 
       - name: install python
         uses: actions/setup-python@v2
@@ -489,26 +439,12 @@ jobs:
             title: MySQL
           - name: clickhouse
             title: ClickHouse
-    services:
-      mysql:
-        image: mariadb:10.4.12
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: true
-          MYSQL_DATABASE: ibis_testing
-          MYSQL_USER: ibis
-          MYSQL_PASSWORD: ibis
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
-      clickhouse:
-        image: yandex/clickhouse-server:20-alpine
-        ports:
-          - 8123:8123
-          - 9000:9000
-        options: --ulimit nofile=262144:262144
     steps:
       - name: checkout
         uses: actions/checkout@v2
+
+      - name: start ${{ matrix.backend.name }} container
+        run: docker compose up -d ${{ matrix.backend.name }}
 
       - name: install python
         uses: actions/setup-python@v2
@@ -626,7 +562,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: ${{ matrix.backend }}-${{ matrix.python-version }}
+          name: datafusion-${{ matrix.datafusion-version }}-${{ matrix.python-version }}
           path: ibis/junit.xml
 
   backends:

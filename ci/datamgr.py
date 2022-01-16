@@ -216,7 +216,13 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 
 @cli.command()
 @click.option('-h', '--host', default='localhost')
-@click.option('-P', '--port', default=5432, type=int)
+@click.option(
+    '-P',
+    '--port',
+    default=5432,
+    envvar=["PGPORT", "IBIS_TEST_POSTGRES_PORT"],
+    type=int,
+)
 @click.option('-u', '--user', default='postgres')
 @click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
