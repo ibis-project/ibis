@@ -39,6 +39,8 @@ MOCK_TABLES = {
         ('j', 'date'),
         ('k', 'time'),
     ],
+    "foo_t": [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
+    "bar_t": [('key1', 'string'), ('key2', 'string'), ('value2', 'double')],
     "t1": [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
     "t2": [('key1', 'string'), ('key2', 'string'), ('value2', 'double')],
     "t3": [('key2', 'string'), ('key3', 'string'), ('value3', 'double')],

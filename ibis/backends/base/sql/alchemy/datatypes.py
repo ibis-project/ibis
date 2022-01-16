@@ -38,8 +38,8 @@ ibis_type_to_sqla = {
     dt.String: sa.Text,
     dt.Decimal: sa.NUMERIC,
     # Mantissa-based
-    dt.Float: sa.Float(precision=24),
-    dt.Double: sa.Float(precision=53),
+    dt.Float: sa.REAL,
+    dt.Double: sa.FLOAT,
     dt.Int8: sa.SmallInteger,
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
@@ -133,15 +133,16 @@ def sa_bigint(_, satype, nullable=True):
     return dt.Int64(nullable=nullable)
 
 
-@dt.dtype.register(Dialect, sa.types.Float)
+@dt.dtype.register(Dialect, sa.REAL)
 def sa_float(_, satype, nullable=True):
-    return dt.Float(nullable=nullable)
+    return dt.Float32(nullable=nullable)
 
 
-@dt.dtype.register(SQLiteDialect, sa.types.Float)
+@dt.dtype.register(Dialect, sa.FLOAT)
+@dt.dtype.register(SQLiteDialect, sa.REAL)
 @dt.dtype.register(PGDialect, postgresql.DOUBLE_PRECISION)
 def sa_double(_, satype, nullable=True):
-    return dt.Double(nullable=nullable)
+    return dt.Float64(nullable=nullable)
 
 
 @dt.dtype.register(PGDialect, postgresql.UUID)

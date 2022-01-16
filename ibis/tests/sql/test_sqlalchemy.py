@@ -35,37 +35,37 @@ sa = pytest.importorskip('sqlalchemy')
 L = sa.literal
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def con():
     return MockAlchemyBackend()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def star1(con):
     return con.table("star1")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sa_star1(con, star1):
     return con.meta.tables["star1"]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def functional_alltypes(con):
     return con.table('functional_alltypes')
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sa_functional_alltypes(con, functional_alltypes):
     return con.meta.tables['functional_alltypes'].alias("t0")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def alltypes(con):
     return con.table('alltypes')
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sa_alltypes(con, alltypes):
     return con.meta.tables['alltypes'].alias("t0")
 
@@ -614,8 +614,8 @@ def test_lower_projection_sort_key(con, subquery_aliased, star1, star2):
 def test_exists(con, exists, t1, t2):
     e1, e2 = exists
 
-    t1 = con.meta.tables["t1"].alias("t0")
-    t2 = con.meta.tables["t2"].alias("t1")
+    t1 = con.meta.tables["foo_t"].alias("t0")
+    t2 = con.meta.tables["bar_t"].alias("t1")
 
     cond1 = sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1)
     ex1 = sa.select([t1]).where(cond1)
@@ -635,8 +635,8 @@ def test_not_exists(con, not_exists):
 
     expr = not_exists
 
-    t1 = con.meta.tables["t1"].alias("t0")
-    t2 = con.meta.tables["t2"].alias("t1")
+    t1 = con.meta.tables["foo_t"].alias("t0")
+    t2 = con.meta.tables["bar_t"].alias("t1")
 
     expected = sa.select([t1]).where(
         sa.not_(sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1))

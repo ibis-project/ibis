@@ -5,39 +5,64 @@ from ibis.backends.base.sql.compiler import Compiler, QueryContext
 from ibis.tests.expr.mocks import MockBackend
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def con(request):
     return MockBackend()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
+def alltypes(con):
+    return con.table("alltypes")
+
+
+@pytest.fixture(scope="module")
+def functional_alltypes(con):
+    return con.table("functional_alltypes")
+
+
+@pytest.fixture(scope="module")
 def star1(con):
     return con.table("star1")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def star2(con):
     return con.table("star2")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def star3(con):
     return con.table("star3")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def nation(con):
     return con.table("tpch_nation")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def region(con):
     return con.table("tpch_region")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def customer(con):
     return con.table("tpch_customer")
+
+
+@pytest.fixture(scope="module")
+def airlines(con):
+    return con.table("airlines")
+
+
+@pytest.fixture(scope="module")
+def foo_t(con):
+    return con.table("foo_t")
+
+
+@pytest.fixture(scope="module")
+def bar_t(con):
+    return con.table("bar_t")
 
 
 def get_query(expr):
@@ -45,7 +70,21 @@ def get_query(expr):
     return ast.queries[0]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
+def aggregate_having(star1):
+    # Filtering post-aggregation predicate
+    t1 = star1
+
+    total = t1.f.sum().name('total')
+    metrics = [total]
+
+    e1 = t1.aggregate(metrics, by=['foo_id'], having=[total > 10])
+    e2 = t1.aggregate(metrics, by=['foo_id'], having=[t1.count() > 100])
+
+    return e1, e2
+
+
+@pytest.fixture(scope="module")
 def multiple_joins(con, star1, star2, star3):
     t1 = star1
     t2 = star2
@@ -62,8 +101,19 @@ def multiple_joins(con, star1, star2, star3):
     return what
 
 
-@pytest.fixture
-def join_between_joins(con, t1, t2, t3, t4):
+@pytest.fixture(scope="module")
+def join_between_joins():
+    t1 = ibis.table(
+        [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
+        'first',
+    )
+
+    t2 = ibis.table([('key1', 'string'), ('value2', 'double')], 'second')
+    t3 = ibis.table(
+        [('key2', 'string'), ('key3', 'string'), ('value3', 'double')],
+        'third',
+    )
+    t4 = ibis.table([('key3', 'string'), ('value4', 'double')], 'fourth')
     left = t1.inner_join(t2, [('key1', 'key1')])[t1, t2.value2]
     right = t3.inner_join(t4, [('key3', 'key3')])[t3, t4.value4]
 
@@ -75,7 +125,7 @@ def join_between_joins(con, t1, t2, t3, t4):
     return joined.projection(exprs)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def join_just_materialized(con, nation, region, customer):
     t1 = nation
     t2 = region
@@ -87,7 +137,7 @@ def join_just_materialized(con, nation, region, customer):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def semi_anti_joins(con, star1, star2):
     t1 = star1
     t2 = star2
@@ -98,20 +148,20 @@ def semi_anti_joins(con, star1, star2):
     return sj, aj
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def self_reference_simple(con, star1):
     return star1.view()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def self_reference_join(con, star1):
     t1 = star1
     t2 = t1.view()
     return t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
 
 
-@pytest.fixture
-def join_projection_subquery_bug(con):
+@pytest.fixture(scope="module")
+def join_projection_subquery_bug(nation, region, customer):
     # From an observed bug, derived from tpch tables
     geo = nation.inner_join(region, [('n_regionkey', 'r_regionkey')])[
         nation.n_nationkey,
@@ -125,13 +175,13 @@ def join_projection_subquery_bug(con):
     ]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def where_simple_comparisons(con, star1):
     t1 = star1
     return t1.filter([t1.f > 0, t1.c < t1.f * 2])
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def where_with_join(con, star1, star2):
     t1 = star1
     t2 = star2
@@ -152,7 +202,7 @@ def where_with_join(con, star1, star2):
     return e1
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def subquery_used_for_self_join(con):
     # There could be cases that should look in SQL like
     # WITH t0 as (some subquery)
@@ -177,7 +227,7 @@ def subquery_used_for_self_join(con):
     return expr
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def subquery_factor_correlated_subquery(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
@@ -207,7 +257,7 @@ def subquery_factor_correlated_subquery(con):
     return tpch[amount_filter].limit(10)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def self_join_subquery_distinct_equal(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
@@ -225,7 +275,7 @@ def self_join_subquery_distinct_equal(con):
     return expr
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def cte_factor_distinct_but_equal(con):
     t = con.table('alltypes')
     tt = con.table('alltypes')
@@ -238,7 +288,7 @@ def cte_factor_distinct_but_equal(con):
     return expr
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def tpch_self_join_failure(con):
     # duplicating the integration test here
 
@@ -276,7 +326,7 @@ def tpch_self_join_failure(con):
     return yoy
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def subquery_in_filter_predicate(con, star1):
     # E.g. comparing against some scalar aggregate value. See Ibis #43
     t1 = star1
@@ -292,7 +342,7 @@ def subquery_in_filter_predicate(con, star1):
     return expr, expr2
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def filter_subquery_derived_reduction(con, star1):
     t1 = star1
 
@@ -306,7 +356,7 @@ def filter_subquery_derived_reduction(con, star1):
     return expr3, expr4
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def topk_operation(con):
     # TODO: top K with filter in place
 
@@ -331,7 +381,7 @@ def topk_operation(con):
     return e1, e2
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def aggregate_count_joined(con):
     # count on more complicated table
     region = con.table('tpch_region')
@@ -343,37 +393,47 @@ def aggregate_count_joined(con):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def foo(con):
     return con.table("foo")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def bar(con):
     return con.table("bar")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def t1(con):
     return con.table("t1")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def t2(con):
     return con.table("t2")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
+def t3(con):
+    return con.table("t3")
+
+
+@pytest.fixture(scope="module")
+def t4(con):
+    return con.table("t4")
+
+
+@pytest.fixture(scope="module")
 def first(con, t1):
     return con.table("t1")
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def where_uncorrelated_subquery(foo, bar):
     return foo[foo.job.isin(bar.job)]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def where_correlated_subquery(foo):
     t1 = foo
     t2 = t1.view()
@@ -382,8 +442,10 @@ def where_correlated_subquery(foo):
     return t1[t1.y > stat]
 
 
-@pytest.fixture
-def exists(t1, t2):
+@pytest.fixture(scope="module")
+def exists(foo_t, bar_t):
+    t1 = foo_t
+    t2 = bar_t
     cond = (t1.key1 == t2.key1).any()
     expr = t1[cond]
 
@@ -393,13 +455,12 @@ def exists(t1, t2):
     return expr, expr2
 
 
-@pytest.fixture
-def not_exists(t1, t2):
-    cond = (t1.key1 == t2.key1).any()
-    return t1[-cond]
+@pytest.fixture(scope="module")
+def not_exists(foo_t, bar_t):
+    return foo_t[-(foo_t.key1 == bar_t.key1).any()]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def join_with_limited_table(con, star1, star2):
     t1 = star1
     t2 = star2
@@ -409,7 +470,7 @@ def join_with_limited_table(con, star1, star2):
     return joined
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def union(con):
     table = con.table('functional_alltypes')
 
@@ -424,7 +485,7 @@ def union(con):
     return t1.union(t2, distinct=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def union_all(con):
     table = con.table('functional_alltypes')
 
@@ -439,7 +500,7 @@ def union_all(con):
     return t1.union(t2, distinct=False)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def intersect(con):
     table = con.table('functional_alltypes')
 
@@ -454,7 +515,7 @@ def intersect(con):
     return t1.intersect(t2)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def difference(con):
     table = con.table('functional_alltypes')
 
@@ -469,7 +530,7 @@ def difference(con):
     return t1.difference(t2)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def simple_case(con):
     t = con.table('alltypes')
     return (
@@ -477,13 +538,13 @@ def simple_case(con):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def search_case(con):
     t = con.table('alltypes')
     return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def self_reference_in_exists(con):
     t = con.table('functional_alltypes')
     t2 = t.view()
@@ -495,7 +556,7 @@ def self_reference_in_exists(con):
     return semi, anti
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def self_reference_limit_exists(con):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
@@ -503,7 +564,7 @@ def self_reference_limit_exists(con):
     return t[-((t.string_col == t2.string_col).any())]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def limit_cte_extract(con):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
@@ -511,7 +572,7 @@ def limit_cte_extract(con):
     return t.join(t2).projection(t)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def subquery_aliased(con, star1, star2):
     t1 = star1
     t2 = star2
@@ -522,7 +583,7 @@ def subquery_aliased(con, star1, star2):
     return what
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def filter_self_join_analysis_bug(con):
     purchases = ibis.table(
         [
@@ -546,7 +607,7 @@ def filter_self_join_analysis_bug(con):
     return result, purchases
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def projection_fuse_filter(con):
     # Probably test this during the evaluation phase. In SQL, "fusable"
     # table operations will be combined together into a single select
@@ -582,13 +643,13 @@ def projection_fuse_filter(con):
     return expr1, expr2, expr3
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def startswith(con, star1):
     t1 = star1
     return t1.foo_id.startswith('foo')
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def endswith(con, star1):
     t1 = star1
     return t1.foo_id.endswith('foo')

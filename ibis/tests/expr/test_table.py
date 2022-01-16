@@ -948,7 +948,7 @@ def test_cross_join_multiple(table):
     assert joined.equals(expected)
 
 
-def test_filter_join_unmaterialized(table):
+def test_filter_join(table):
     table1 = ibis.table(
         {'key1': 'string', 'key2': 'string', 'value1': 'double'}
     )
