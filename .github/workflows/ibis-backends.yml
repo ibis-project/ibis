@@ -221,6 +221,8 @@ jobs:
 
   test_postgres_min_version:
     name: PostgreSQL deps-bounded python-3.7
+    env:
+      IBIS_TEST_POSTGRES_PORT: 5433
     runs-on: ubuntu-latest
     steps:
       - name: checkout
