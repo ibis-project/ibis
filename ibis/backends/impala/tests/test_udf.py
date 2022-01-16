@@ -1,4 +1,3 @@
-import unittest
 from decimal import Decimal
 from posixpath import join as pjoin
 
@@ -7,172 +6,259 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.backends.impala as api  # noqa: E402
+import ibis.backends.impala as api
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.exceptions import IbisTypeError
-from ibis.tests.expr.mocks import MockBackend
 
-from .. import ddl  # noqa: E402
+from .. import ddl
 
 pytestmark = pytest.mark.udf
 
 
-class TestWrapping(unittest.TestCase):
-    def setUp(self):
-        self.con = MockBackend()
-        self.table = self.con.table('functional_alltypes')
+@pytest.fixture(scope="module")
+def table(mockcon):
+    return mockcon.table("functional_alltypes")
 
-        self.i8 = self.table.tinyint_col
-        self.i16 = self.table.smallint_col
-        self.i32 = self.table.int_col
-        self.i64 = self.table.bigint_col
-        self.d = self.table.double_col
-        self.f = self.table.float_col
-        self.s = self.table.string_col
-        self.b = self.table.bool_col
-        self.t = self.table.timestamp_col
-        self.dec = self.con.table('tpch_customer').c_acctbal
-        self.all_cols = [
-            self.i8,
-            self.i16,
-            self.i32,
-            self.i64,
-            self.d,
-            self.f,
-            self.dec,
-            self.s,
-            self.b,
-            self.t,
-        ]
 
-    def test_sql_generation(self):
-        func = api.scalar_function(['string'], 'string', name='Tester')
-        func.register('identity', 'udf_testing')
+@pytest.fixture
+def i8(table):
+    return table.tinyint_col
 
-        result = func('hello world')
-        assert (
-            ibis.impala.compile(result)
-            == "SELECT udf_testing.identity('hello world') AS `tmp`"
-        )
 
-    def test_sql_generation_from_infoclass(self):
-        func = api.wrap_udf('test.so', ['string'], 'string', 'info_test')
-        repr(func)
+@pytest.fixture
+def i16(table):
+    return table.smallint_col
 
-        func.register('info_test', 'udf_testing')
-        result = func('hello world')
-        assert (
-            ibis.impala.compile(result)
-            == "SELECT udf_testing.info_test('hello world') AS `tmp`"
-        )
 
-    def test_udf_primitive_output_types(self):
-        types = [
-            ('boolean', True, self.b),
-            ('int8', 1, self.i8),
-            ('int16', 1, self.i16),
-            ('int32', 1, self.i32),
-            ('int64', 1, self.i64),
-            ('float', 1.0, self.f),
-            ('double', 1.0, self.d),
-            ('string', '1', self.s),
-            ('timestamp', ibis.timestamp('1961-04-10'), self.t),
-        ]
-        for t, sv, av in types:
-            func = self._register_udf([t], t, 'test')
+@pytest.fixture
+def i32(table):
+    return table.int_col
 
-            ibis_type = dt.validate_type(t)
 
-            expr = func(sv)
-            assert type(expr) == type(  # noqa: E501, E721
-                ibis_type.scalar_type()(expr.op())
-            )
-            expr = func(av)
-            assert type(expr) == type(  # noqa: E501, E721
-                ibis_type.column_type()(expr.op())
-            )
+@pytest.fixture
+def i64(table):
+    return table.bigint_col
 
-    def test_uda_primitive_output_types(self):
-        types = [
-            ('boolean', True, self.b),
-            ('int8', 1, self.i8),
-            ('int16', 1, self.i16),
-            ('int32', 1, self.i32),
-            ('int64', 1, self.i64),
-            ('float', 1.0, self.f),
-            ('double', 1.0, self.d),
-            ('string', '1', self.s),
-            ('timestamp', ibis.timestamp('1961-04-10'), self.t),
-        ]
-        for t, sv, av in types:
-            func = self._register_uda([t], t, 'test')
 
-            ibis_type = dt.validate_type(t)
+@pytest.fixture
+def d(table):
+    return table.double_col
 
-            expr1 = func(sv)
-            expr2 = func(sv)
-            expected_type1 = type(ibis_type.scalar_type()(expr1.op()))
-            expected_type2 = type(ibis_type.scalar_type()(expr2.op()))
-            assert isinstance(expr1, expected_type1)
-            assert isinstance(expr2, expected_type2)
 
-    def test_decimal(self):
-        func = self._register_udf(['decimal(9,0)'], 'decimal(9,0)', 'test')
-        expr = func(1.0)
-        assert type(expr) == ir.DecimalScalar
-        expr = func(self.dec)
-        assert type(expr) == ir.DecimalColumn
+@pytest.fixture
+def f(table):
+    return table.float_col
 
-    def test_udf_invalid_typecasting(self):
-        cases = [
-            ('int8', self.all_cols[:1], self.all_cols[1:]),
-            ('int16', self.all_cols[:2], self.all_cols[2:]),
-            ('int32', self.all_cols[:3], self.all_cols[3:]),
-            ('int64', self.all_cols[:4], self.all_cols[4:]),
-            ('boolean', [], self.all_cols[:8] + self.all_cols[9:]),
-            # allowing double here for now
-            ('float', self.all_cols[:6], [self.s, self.b, self.t]),
-            ('double', self.all_cols[:6], [self.s, self.b, self.t]),
-            ('string', [], self.all_cols[:7] + self.all_cols[8:]),
-            ('timestamp', [], self.all_cols[:-1]),
-            ('decimal', self.all_cols[:7], self.all_cols[7:]),
-        ]
 
-        for t, valid_casts, invalid_casts in cases:
-            func = self._register_udf([t], 'int32', 'typecast')
+@pytest.fixture
+def s(table):
+    return table.string_col
 
-            for expr in valid_casts:
-                func(expr)
 
-            for expr in invalid_casts:
-                self.assertRaises(IbisTypeError, func, expr)
+@pytest.fixture
+def b(table):
+    return table.bool_col
 
-    def test_mult_args(self):
-        func = self._register_udf(
-            ['int32', 'double', 'string', 'boolean', 'timestamp'],
-            'int64',
-            'mult_types',
-        )
 
-        expr = func(self.i32, self.d, self.s, self.b, self.t)
-        assert issubclass(type(expr), ir.ColumnExpr)
+@pytest.fixture
+def t(table):
+    return table.timestamp_col
 
-        expr = func(1, 1.0, 'a', True, ibis.timestamp('1961-04-10'))
-        assert issubclass(type(expr), ir.ScalarExpr)
 
-    def _register_udf(self, inputs, output, name):
-        func = api.scalar_function(inputs, output, name=name)
-        func.register(name, 'ibis_testing')
-        return func
+@pytest.fixture
+def tpch_customer(con):
+    return con.table("tpch_customer")
 
-    def _register_uda(self, inputs, output, name):
-        func = api.aggregate_function(inputs, output, name=name)
-        func.register(name, 'ibis_testing')
-        return func
+
+@pytest.fixture
+def dec(tpch_customer):
+    return tpch_customer.c_acctbal
+
+
+@pytest.fixture
+def all_cols(i8, i16, i32, i64, d, f, dec, s, b, t):
+    return [
+        i8,
+        i16,
+        i32,
+        i64,
+        d,
+        f,
+        dec,
+        s,
+        b,
+        t,
+    ]
+
+
+def test_sql_generation():
+    func = api.scalar_function(['string'], 'string', name='Tester')
+    func.register('identity', 'udf_testing')
+
+    result = func('hello world')
+    assert (
+        ibis.impala.compile(result)
+        == "SELECT udf_testing.identity('hello world') AS `tmp`"
+    )
+
+
+def test_sql_generation_from_infoclass():
+    func = api.wrap_udf('test.so', ['string'], 'string', 'info_test')
+    repr(func)
+
+    func.register('info_test', 'udf_testing')
+    result = func('hello world')
+    assert (
+        ibis.impala.compile(result)
+        == "SELECT udf_testing.info_test('hello world') AS `tmp`"
+    )
+
+
+@pytest.mark.parametrize(
+    ("ty", "value", "column"),
+    [
+        pytest.param('boolean', True, "bool_col", id="boolean"),
+        pytest.param('int8', 1, "tinyint_col", id="int8"),
+        pytest.param('int16', 1, "smallint_col", id="int16"),
+        pytest.param('int32', 1, "int_col", id="int32"),
+        pytest.param('int64', 1, "bigint_col", id="int64"),
+        pytest.param('float', 1.0, "float_col", id="float"),
+        pytest.param('double', 1.0, "double_col", id="double"),
+        pytest.param('string', '1', "string_col", id="string"),
+        pytest.param(
+            'timestamp',
+            ibis.timestamp('1961-04-10'),
+            "timestamp_col",
+            id="timestamp",
+        ),
+    ],
+)
+def test_udf_primitive_output_types(ty, value, column, table):
+    func = _register_udf([ty], ty, 'test')
+
+    ibis_type = dt.validate_type(ty)
+
+    expr = func(value)
+    assert type(expr) == type(  # noqa: E501, E721
+        ibis_type.scalar_type()(expr.op())
+    )
+    expr = func(table[column])
+    assert type(expr) == type(  # noqa: E501, E721
+        ibis_type.column_type()(expr.op())
+    )
+
+
+@pytest.mark.parametrize(
+    ("ty", "value"),
+    [
+        pytest.param('boolean', True, id="boolean"),
+        pytest.param('int8', 1, id="int8"),
+        pytest.param('int16', 1, id="int16"),
+        pytest.param('int32', 1, id="int32"),
+        pytest.param('int64', 1, id="int64"),
+        pytest.param('float', 1.0, id="float"),
+        pytest.param('double', 1.0, id="double"),
+        pytest.param('string', '1', id="string"),
+        pytest.param(
+            'timestamp',
+            ibis.timestamp('1961-04-10'),
+            id="timestamp",
+        ),
+    ],
+)
+def test_uda_primitive_output_types(ty, value, table):
+    func = _register_uda([ty], ty, 'test')
+
+    ibis_type = dt.validate_type(ty)
+
+    expr1 = func(value)
+    expr2 = func(value)
+    expected_type1 = type(ibis_type.scalar_type()(expr1.op()))
+    expected_type2 = type(ibis_type.scalar_type()(expr2.op()))
+    assert isinstance(expr1, expected_type1)
+    assert isinstance(expr2, expected_type2)
+
+
+def test_decimal(dec):
+    func = _register_udf(['decimal(12, 2)'], 'decimal(12, 2)', 'test')
+    expr = func(1.0)
+    assert type(expr) == ir.DecimalScalar
+    expr = func(dec)
+    assert type(expr) == ir.DecimalColumn
+
+
+@pytest.mark.parametrize(
+    ("ty", "valid_cast_indexer"),
+    [
+        pytest.param("decimal(12, 2)", slice(7), id="decimal"),
+        pytest.param("double", slice(6), id="double"),
+        pytest.param("float", slice(6), id="float"),
+        pytest.param("int16", slice(2), id="int16"),
+        pytest.param("int32", slice(3), id="int32"),
+        pytest.param("int64", slice(4), id="int64"),
+        pytest.param("int8", slice(1), id="int8"),
+    ],
+)
+def test_udf_valid_typecasting(ty, valid_cast_indexer, all_cols):
+    func = _register_udf([ty], 'int32', 'typecast')
+
+    for expr in all_cols[valid_cast_indexer]:
+        func(expr)
+
+
+@pytest.mark.parametrize(
+    ("ty", "valid_cast_indexer"),
+    [
+        pytest.param("boolean", slice(8), id="boolean_first_8"),
+        pytest.param("boolean", slice(9, None), id="boolean_9_onwards"),
+        pytest.param("decimal", slice(7, None), id="decimal"),
+        pytest.param("double", slice(-3, None), id="double"),
+        pytest.param("float", slice(-3, None), id="float"),
+        pytest.param("int16", slice(2, None), id="int16"),
+        pytest.param("int32", slice(3, None), id="int32"),
+        pytest.param("int64", slice(4, None), id="int64"),
+        pytest.param("int8", slice(1, None), id="int8"),
+        pytest.param("string", slice(7), id="string_first_7"),
+        pytest.param("string", slice(8, None), id="string_8_onwards"),
+        pytest.param("timestamp", slice(-1), id="timestamp"),
+    ],
+)
+def test_udf_invalid_typecasting(ty, valid_cast_indexer, all_cols):
+    func = _register_udf([ty], 'int32', 'typecast')
+
+    for expr in all_cols[valid_cast_indexer]:
+        with pytest.raises(IbisTypeError):
+            func(expr)
+
+
+def test_mult_args(i32, d, s, b, t):
+    func = _register_udf(
+        ['int32', 'double', 'string', 'boolean', 'timestamp'],
+        'int64',
+        'mult_types',
+    )
+
+    expr = func(i32, d, s, b, t)
+    assert issubclass(type(expr), ir.ColumnExpr)
+
+    expr = func(1, 1.0, 'a', True, ibis.timestamp('1961-04-10'))
+    assert issubclass(type(expr), ir.ScalarExpr)
+
+
+def _register_udf(inputs, output, name):
+    func = api.scalar_function(inputs, output, name=name)
+    func.register(name, 'ibis_testing')
+    return func
+
+
+def _register_uda(inputs, output, name):
+    func = api.aggregate_function(inputs, output, name=name)
+    func.register(name, 'ibis_testing')
+    return func
 
 
 @pytest.fixture
@@ -207,15 +293,30 @@ def uda_so(udfcon, test_data_dir):
 @pytest.mark.parametrize(
     ('typ', 'lit_val', 'col_name'),
     [
-        ('boolean', True, 'bool_col'),
-        ('int8', ibis.literal(5), 'tinyint_col'),
-        ('int16', ibis.literal(2 ** 10), 'smallint_col'),
-        ('int32', ibis.literal(2 ** 17), 'int_col'),
-        ('int64', ibis.literal(2 ** 33), 'bigint_col'),
-        ('float', ibis.literal(3.14), 'float_col'),
-        ('double', ibis.literal(3.14), 'double_col'),
-        ('string', ibis.literal('ibis'), 'string_col'),
-        ('timestamp', ibis.timestamp('1961-04-10'), 'timestamp_col'),
+        pytest.param('boolean', True, 'bool_col', id="boolean"),
+        pytest.param('int8', ibis.literal(5), 'tinyint_col', id="int8"),
+        pytest.param(
+            'int16',
+            ibis.literal(2 ** 10),
+            'smallint_col',
+            id="int16",
+        ),
+        pytest.param('int32', ibis.literal(2 ** 17), 'int_col', id="int16"),
+        pytest.param('int64', ibis.literal(2 ** 33), 'bigint_col', id="int64"),
+        pytest.param('float', ibis.literal(3.14), 'float_col', id="float"),
+        pytest.param('double', ibis.literal(3.14), 'double_col', id="double"),
+        pytest.param(
+            'string',
+            ibis.literal('ibis'),
+            'string_col',
+            id="string",
+        ),
+        pytest.param(
+            'timestamp',
+            ibis.timestamp('1961-04-10'),
+            'timestamp_col',
+            id="timestamp",
+        ),
     ],
 )
 @pytest.mark.xfail(
@@ -231,7 +332,7 @@ def test_identity_primitive_types(
 @pytest.mark.xfail(
     reason='Unknown reason. xfailing to restore the CI for udf tests. #2358'
 )
-def test_decimal(udfcon, test_data_db, udf_ll):
+def test_decimal_fail(udfcon, test_data_db, udf_ll):
     col = udfcon.table('tpch_customer').c_acctbal
     literal = ibis.literal(1).cast('decimal(12,2)')
     name = '__tmp_udf_' + util.guid()
@@ -416,8 +517,6 @@ def udf_creation_to_op(
 ):
     func = api.wrap_udf(udf_ll, inputs, output, symbol, name)
 
-    # self.temp_udfs.append((name, inputs))
-
     udfcon.create_function(func, database=test_data_db)
 
     func.register(name, test_data_db)
@@ -463,7 +562,6 @@ def test_count_uda(udfcon, alltypes, test_data_db, wrapped_count_uda):
 
     # it works!
     func(alltypes.int_col).execute()
-    # self.temp_udas.append((func.name, ['int32']))
 
 
 def test_list_udas(udfcon, temp_database, wrapped_count_uda):
@@ -504,131 +602,143 @@ def test_drop_database_with_udfs_and_udas(
     # drop happens in test tear down
 
 
-class TestUDFDDL(unittest.TestCase):
-    def setUp(self):
-        self.con = MockBackend()
-        self.name = 'test_name'
-        self.inputs = ['string', 'string']
-        self.output = 'int64'
+@pytest.fixture
+def inputs():
+    return ["string", "string"]
 
-    def test_create_udf(self):
-        func = api.wrap_udf(
-            '/foo/bar.so',
-            self.inputs,
-            self.output,
-            so_symbol='testFunc',
-            name=self.name,
-        )
-        stmt = ddl.CreateUDF(func)
-        result = stmt.compile()
-        expected = (
-            "CREATE FUNCTION `test_name`(string, string) "
-            "returns bigint "
-            "location '/foo/bar.so' symbol='testFunc'"
-        )
-        assert result == expected
 
-    def test_create_udf_type_conversions(self):
-        inputs = ['string', 'int8', 'int16', 'int32']
-        func = api.wrap_udf(
-            '/foo/bar.so',
-            inputs,
-            self.output,
-            so_symbol='testFunc',
-            name=self.name,
-        )
-        stmt = ddl.CreateUDF(func)
+@pytest.fixture
+def output():
+    return "int64"
 
-        # stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
-        #                           ,
-        #                           self.output, self.name)
-        result = stmt.compile()
-        expected = (
-            "CREATE FUNCTION `test_name`(string, tinyint, "
-            "smallint, int) returns bigint "
-            "location '/foo/bar.so' symbol='testFunc'"
-        )
-        assert result == expected
 
-    def test_delete_udf_simple(self):
-        stmt = ddl.DropFunction(self.name, self.inputs)
-        result = stmt.compile()
-        expected = "DROP FUNCTION `test_name`(string, string)"
-        assert result == expected
+@pytest.fixture
+def name():
+    return "test_name"
 
-    def test_delete_udf_if_exists(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
-        result = stmt.compile()
-        expected = "DROP FUNCTION IF EXISTS `test_name`(string, string)"
-        assert result == expected
 
-    def test_delete_udf_aggregate(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, aggregate=True)
-        result = stmt.compile()
-        expected = "DROP AGGREGATE FUNCTION `test_name`(string, string)"
-        assert result == expected
+def test_create_udf(inputs, output, name):
+    func = api.wrap_udf(
+        '/foo/bar.so',
+        inputs,
+        output,
+        so_symbol='testFunc',
+        name=name,
+    )
+    stmt = ddl.CreateUDF(func)
+    result = stmt.compile()
+    expected = (
+        "CREATE FUNCTION `test_name`(string, string) "
+        "returns bigint "
+        "location '/foo/bar.so' symbol='testFunc'"
+    )
+    assert result == expected
 
-    def test_delete_udf_db(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, database='test')
-        result = stmt.compile()
-        expected = "DROP FUNCTION test.`test_name`(string, string)"
-        assert result == expected
 
-    def test_create_uda(self):
-        def make_ex(serialize=False):
-            if serialize:
-                serialize = "\nserialize_fn='Serialize'"
-            else:
-                serialize = ""
-            return (
-                (
-                    "CREATE AGGREGATE FUNCTION "
-                    "bar.`test_name`(string, string)"
-                    " returns bigint location '/foo/bar.so'"
-                    "\ninit_fn='Init'"
-                    "\nupdate_fn='Update'"
-                    "\nmerge_fn='Merge'"
-                )
-                + serialize
-                + "\nfinalize_fn='Finalize'"
-            )
+def test_create_udf_type_conversions(output, name):
+    inputs = ['string', 'int8', 'int16', 'int32']
+    func = api.wrap_udf(
+        '/foo/bar.so',
+        inputs,
+        output,
+        so_symbol='testFunc',
+        name=name,
+    )
+    stmt = ddl.CreateUDF(func)
 
-        for ser in [True, False]:
-            func = api.wrap_uda(
-                '/foo/bar.so',
-                self.inputs,
-                self.output,
-                update_fn='Update',
-                init_fn='Init',
-                merge_fn='Merge',
-                finalize_fn='Finalize',
-                serialize_fn='Serialize' if ser else None,
-            )
-            stmt = ddl.CreateUDA(func, name=self.name, database='bar')
-            result = stmt.compile()
-            expected = make_ex(ser)
-            assert result == expected
+    # stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
+    #                           ,
+    #                           output, name)
+    result = stmt.compile()
+    expected = (
+        "CREATE FUNCTION `test_name`(string, tinyint, "
+        "smallint, int) returns bigint "
+        "location '/foo/bar.so' symbol='testFunc'"
+    )
+    assert result == expected
 
-    def test_list_udf(self):
-        stmt = ddl.ListFunction('test')
-        result = stmt.compile()
-        expected = 'SHOW FUNCTIONS IN test'
-        assert result == expected
 
-    def test_list_udfs_like(self):
-        stmt = ddl.ListFunction('test', like='identity')
-        result = stmt.compile()
-        expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
-        assert result == expected
+def test_delete_udf_simple(name, inputs):
+    stmt = ddl.DropFunction(name, inputs)
+    result = stmt.compile()
+    expected = "DROP FUNCTION `test_name`(string, string)"
+    assert result == expected
 
-    def test_list_udafs(self):
-        stmt = ddl.ListFunction('test', aggregate=True)
-        result = stmt.compile()
-        expected = 'SHOW AGGREGATE FUNCTIONS IN test'
-        assert result == expected
 
-    def test_list_udafs_like(self):
-        stmt = ddl.ListFunction('test', like='identity', aggregate=True)
-        result = stmt.compile()
-        expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
-        assert result == expected
+def test_delete_udf_if_exists(name, inputs):
+    stmt = ddl.DropFunction(name, inputs, must_exist=False)
+    result = stmt.compile()
+    expected = "DROP FUNCTION IF EXISTS `test_name`(string, string)"
+    assert result == expected
+
+
+def test_delete_udf_aggregate(name, inputs):
+    stmt = ddl.DropFunction(name, inputs, aggregate=True)
+    result = stmt.compile()
+    expected = "DROP AGGREGATE FUNCTION `test_name`(string, string)"
+    assert result == expected
+
+
+def test_delete_udf_db(name, inputs):
+    stmt = ddl.DropFunction(name, inputs, database='test')
+    result = stmt.compile()
+    expected = "DROP FUNCTION test.`test_name`(string, string)"
+    assert result == expected
+
+
+@pytest.mark.parametrize("ser", [True, False])
+def test_create_uda(name, inputs, output, ser):
+    def make_ex(serialize=False):
+        lines = [
+            f"CREATE AGGREGATE FUNCTION bar.`{name}`(string, string) returns bigint location '/foo/bar.so'",  # noqa: E501
+            "init_fn='Init'",
+            "update_fn='Update'",
+            "merge_fn='Merge'",
+        ]
+        if serialize:
+            lines.append("serialize_fn='Serialize'")
+        lines.append("finalize_fn='Finalize'")
+        return "\n".join(lines)
+
+    func = api.wrap_uda(
+        '/foo/bar.so',
+        inputs,
+        output,
+        update_fn='Update',
+        init_fn='Init',
+        merge_fn='Merge',
+        finalize_fn='Finalize',
+        serialize_fn='Serialize' if ser else None,
+    )
+    stmt = ddl.CreateUDA(func, name=name, database='bar')
+    result = stmt.compile()
+    expected = make_ex(ser)
+    assert result == expected
+
+
+def test_list_udf():
+    stmt = ddl.ListFunction('test')
+    result = stmt.compile()
+    expected = 'SHOW FUNCTIONS IN test'
+    assert result == expected
+
+
+def test_list_udfs_like():
+    stmt = ddl.ListFunction('test', like='identity')
+    result = stmt.compile()
+    expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
+    assert result == expected
+
+
+def test_list_udafs():
+    stmt = ddl.ListFunction('test', aggregate=True)
+    result = stmt.compile()
+    expected = 'SHOW AGGREGATE FUNCTIONS IN test'
+    assert result == expected
+
+
+def test_list_udafs_like():
+    stmt = ddl.ListFunction('test', like='identity', aggregate=True)
+    result = stmt.compile()
+    expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
+    assert result == expected

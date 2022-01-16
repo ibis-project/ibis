@@ -1,60 +1,67 @@
 import operator
-import unittest
 
 import pytest
 
 import ibis
 from ibis.backends.impala.tests.mocks import MockImpalaConnection
-from ibis.tests.sql.test_compiler import ExprTestCases
 
 from ..compiler import ImpalaCompiler
 
 
-class TestImpalaSQL(unittest.TestCase):
-    def test_relabel_projection(self):
-        # GH #551
-        types = ['int32', 'string', 'double']
-        table = ibis.table(zip(['foo', 'bar', 'baz'], types), name='table')
-        relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
+def test_relabel_projection():
+    # GH #551
+    types = ['int32', 'string', 'double']
+    table = ibis.table(zip(['foo', 'bar', 'baz'], types), name='table')
+    relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
-        result = ImpalaCompiler.to_sql(relabeled)
-        expected = """\
+    result = ImpalaCompiler.to_sql(relabeled)
+    expected = """\
 SELECT `foo` AS `one`, `bar`, `baz` AS `three`
 FROM `table`"""
+    assert result == expected
+
+
+@pytest.fixture(scope="module")
+def con():
+    return MockImpalaConnection()
+
+
+@pytest.fixture
+def limit_cte_extract(con):
+    alltypes = con.table('functional_alltypes')
+    t = alltypes.limit(100)
+    t2 = t.view()
+    return t.join(t2).projection(t)
+
+
+def test_join_no_predicates_for_impala(con):
+    # Impala requires that joins without predicates be written explicitly
+    # as CROSS JOIN, since result sets can accidentally get too large if a
+    # query is executed before predicates are written
+    t1 = con.table('star1')
+    t2 = con.table('star2')
+
+    joined2 = t1.cross_join(t2)[[t1]]
+
+    expected = """\
+SELECT t0.*
+FROM star1 t0
+  CROSS JOIN star2 t1"""
+    result2 = ImpalaCompiler.to_sql(joined2)
+    assert result2 == expected
+
+    for jtype in ['inner_join', 'left_join', 'outer_join']:
+        joined = getattr(t1, jtype)(t2)[[t1]]
+
+        result = ImpalaCompiler.to_sql(joined)
         assert result == expected
 
 
-class TestSelectSQL(unittest.TestCase, ExprTestCases):
-    @classmethod
-    def setUpClass(cls):
-        cls.con = MockImpalaConnection()
+def test_limit_cte_extract(limit_cte_extract):
+    case = limit_cte_extract
+    result = ImpalaCompiler.to_sql(case)
 
-    def test_join_no_predicates_for_impala(self):
-        # Impala requires that joins without predicates be written explicitly
-        # as CROSS JOIN, since result sets can accidentally get too large if a
-        # query is executed before predicates are written
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        joined2 = t1.cross_join(t2)[[t1]]
-
-        expected = """SELECT t0.*
-FROM star1 t0
-  CROSS JOIN star2 t1"""
-        result2 = ImpalaCompiler.to_sql(joined2)
-        assert result2 == expected
-
-        for jtype in ['inner_join', 'left_join', 'outer_join']:
-            joined = getattr(t1, jtype)(t2)[[t1]]
-
-            result = ImpalaCompiler.to_sql(joined)
-            assert result == expected
-
-    def test_limit_cte_extract(self):
-        case = self._case_limit_cte_extract()
-        result = ImpalaCompiler.to_sql(case)
-
-        expected = """\
+    expected = """\
 WITH t0 AS (
   SELECT *
   FROM functional_alltypes
@@ -64,7 +71,7 @@ SELECT t0.*
 FROM t0
   CROSS JOIN t0 t1"""
 
-        assert result == expected
+    assert result == expected
 
 
 def test_nested_join_base():

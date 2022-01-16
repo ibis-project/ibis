@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
+from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import (
     BackendTest,
     RoundAwayFromZero,
@@ -271,7 +272,7 @@ def con_no_db(env, hdfs):
 
 @pytest.fixture
 def alltypes(con, test_data_db):
-    return con.database(test_data_db).functional_alltypes
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture
@@ -363,7 +364,7 @@ def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
         db.client.drop_table(name, database=tmp_db)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def mockcon():
     return MockBackend()
 
@@ -372,8 +373,8 @@ def mockcon():
 def kudu_table(con, test_data_db):
     name = 'kudu_backed_table'
     con.raw_sql(
-        """\
-CREATE TABLE {database}.{name} (
+        f"""
+CREATE TABLE {test_data_db}.{name} (
   a STRING,
   PRIMARY KEY(a)
 )
@@ -382,14 +383,17 @@ STORED AS KUDU
 TBLPROPERTIES (
   'kudu.master_addresses' = 'kudu',
   'kudu.num_tablet_replicas' = '1'
-)""".format(
-            database=test_data_db, name=name
-        )
+)"""
     )
-    drop_sql = 'DROP TABLE {database}.{name}'.format(
-        database=test_data_db, name=name
-    )
+    drop_sql = f'DROP TABLE {test_data_db}.{name}'
     try:
         yield con.table(name)
     finally:
         con.raw_sql(drop_sql)
+
+
+def translate(expr, context=None, named=False):
+    if context is None:
+        context = ImpalaCompiler.make_context()
+    translator = ImpalaExprTranslator(expr, context=context, named=named)
+    return translator.get_result()

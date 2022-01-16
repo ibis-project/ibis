@@ -349,38 +349,6 @@ def test_where_use_if(con, alltypes, translate):
     con.execute(expr)
 
 
-# def test_union(alltypes):
-#     t = alltypes
-
-#     expr = (t.group_by('string_col')
-#             .aggregate(t.double_col.sum().name('foo'))
-#             .sort_by('string_col'))
-
-#     t1 = expr.limit(4)
-#     t2 = expr.limit(4, offset=4)
-#     t3 = expr.limit(8)
-
-#     result = t1.union(t2).execute()
-#     expected = t3.execute()
-#     tm.assert_frame_equal(result, expected)
-
-
-# def test_unions_with_ctes(con, alltypes):
-#     t = alltypes
-
-#     expr1 = (t.group_by(['tinyint_col', 'string_col'])
-#              .aggregate(t.double_col.sum().name('metric')))
-#     expr2 = expr1.view()
-
-#     join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
-#              [[expr1]])
-#     join2 = join1.view()
-
-#     expr = join1.union(join2)
-#     con.execute(expr)
-#     con.explain(expr)
-
-
 @pytest.mark.xfail(
     raises=com.RelationError, reason='Expression equality is broken'
 )

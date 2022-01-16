@@ -1,14 +1,18 @@
+import filecmp
 import os
 import shutil
-import unittest
+import subprocess
 from io import BytesIO
 from os import path as osp
+from pathlib import Path
 from posixpath import join as pjoin
 
 import pytest
+from hdfs.util import HdfsError
 
 import ibis
 import ibis.util as util
+from ibis.backends.impala.tests.conftest import IbisTestEnv
 
 from .. import HDFS
 
@@ -26,475 +30,475 @@ class MockHDFS(HDFS):
         return self.ls_result
 
 
-class TestHDFSRandom(unittest.TestCase):
-    def setUp(self):
-        self.con = MockHDFS()
-
-    def test_find_any_file(self):
-        ls_contents = [
-            ('foo', {'type': 'DIRECTORY'}),
-            ('bar.tmp', {'type': 'FILE'}),
-            ('baz.copying', {'type': 'FILE'}),
-            ('_SUCCESS', {'type': 'FILE'}),
-            ('.peekaboo', {'type': 'FILE'}),
-            ('0.parq', {'type': 'FILE'}),
-            ('_FILE', {'type': 'DIRECTORY'}),
-        ]
-
-        self.con.set_ls(ls_contents)
-
-        result = self.con._find_any_file('/path')
-        assert result == '0.parq'
+@pytest.fixture
+def mockhdfs():
+    return MockHDFS()
 
 
-class TestHDFSE2E(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from ibis.backends.impala.tests.conftest import IbisTestEnv
+def test_find_any_file(mockhdfs):
+    ls_contents = [
+        ('foo', {'type': 'DIRECTORY'}),
+        ('bar.tmp', {'type': 'FILE'}),
+        ('baz.copying', {'type': 'FILE'}),
+        ('_SUCCESS', {'type': 'FILE'}),
+        ('.peekaboo', {'type': 'FILE'}),
+        ('0.parq', {'type': 'FILE'}),
+        ('_FILE', {'type': 'DIRECTORY'}),
+    ]
 
-        cls.ENV = IbisTestEnv()
-        cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
-        if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
-            print("Warning: ignoring invalid Certificate Authority errors")
-        cls.hdfs = ibis.impala.hdfs_connect(
-            host=cls.ENV.nn_host,
-            port=cls.ENV.webhdfs_port,
-            auth_mechanism=cls.ENV.auth_mechanism,
-            verify=(cls.ENV.auth_mechanism not in ['GSSAPI', 'LDAP']),
-            user=cls.ENV.webhdfs_user,
-        )
-        cls.hdfs.mkdir(cls.tmp_dir)
+    mockhdfs.set_ls(ls_contents)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.hdfs.rmdir(cls.tmp_dir)
+    result = mockhdfs._find_any_file('/path')
+    assert result == '0.parq'
 
-    def setUp(self):
-        self.test_files = []
-        self.test_directories = []
 
-    def tearDown(self):
-        self._delete_test_files()
+@pytest.fixture
+def env():
+    return IbisTestEnv()
 
-    def _delete_test_files(self):
-        for path in self.test_files:
-            try:
-                os.remove(path)
-            except os.error:
-                pass
 
-        for path in self.test_directories:
-            try:
-                shutil.rmtree(path)
-            except os.error:
-                pass
+@pytest.fixture
+def tmp_dir(env):
+    path = pjoin(env.tmp_dir, util.guid())
+    os.makedirs(path, exist_ok=True)
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path)
 
-    def _make_test_directory(self, files=5, filesize=1024, directory=None):
-        if directory is None:
-            directory = util.guid()
-            os.mkdir(directory)
-            self.test_directories.append(directory)
 
-        for i in range(files):
-            self._make_random_file(size=filesize, directory=directory)
+@pytest.fixture
+def hdfs(env, tmp_dir):
+    hdfs = ibis.impala.hdfs_connect(
+        host=env.nn_host,
+        port=env.webhdfs_port,
+        auth_mechanism=env.auth_mechanism,
+        verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
+        user=env.webhdfs_user,
+    )
+    hdfs.mkdir(tmp_dir)
+    try:
+        yield hdfs
+    finally:
+        hdfs.rmdir(tmp_dir)
 
-        return directory
 
-    def _make_random_file(self, size=1024, directory=None):
-        path = util.guid()
+def make_test_directory(files=5, filesize=1024, directory=None):
+    if directory is None:
+        directory = util.guid()
+        os.mkdir(directory)
 
-        if directory:
-            path = osp.join(directory, path)
+    for _ in range(files):
+        make_random_file(size=filesize, directory=directory)
 
-        units = size / 32
+    return directory
 
-        with open(path, 'wb') as f:
-            for i in range(int(units)):
-                f.write(guidbytes())
 
-        self.test_files.append(path)
-        return path
+def make_random_file(size=1024, directory=None):
+    path = util.guid()
 
-    def _make_random_hdfs_file(self, size=1024, directory=None):
-        local_path = self._make_random_file(size=size)
-        remote_path = pjoin(directory or self.tmp_dir, local_path)
-        self.hdfs.put(remote_path, local_path)
-        return remote_path
+    if directory:
+        path = osp.join(directory, path)
 
-    def test_mkdir(self):
-        path = pjoin(self.tmp_dir, 'mkdir-test')
-        self.hdfs.mkdir(path)
-        assert self.hdfs.exists(path)
+    Path(path).write_bytes(os.urandom(size))
 
-    def test_chmod(self):
-        new_permissions = '755'
-        path = self._make_random_hdfs_file()
-        self.hdfs.chmod(path, new_permissions)
-        assert self.hdfs.status(path)['permission'] == new_permissions
+    return path
 
-    def test_chmod_directory(self):
-        new_permissions = '755'
-        path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(path)
-        self.hdfs.chmod(path, new_permissions)
-        assert self.hdfs.status(path)['permission'] == new_permissions
 
-    def test_mv_to_existing_file(self):
-        remote_file = self._make_random_hdfs_file()
-        existing_remote_file_dest = self._make_random_hdfs_file()
-        self.hdfs.mv(remote_file, existing_remote_file_dest)
+@pytest.fixture
+def random_file():
+    path = make_random_file()
+    try:
+        yield path
+    finally:
+        os.remove(path)
 
-    def test_mv_to_existing_file_no_overwrite(self):
-        remote_file = self._make_random_hdfs_file()
-        existing_remote_file_dest = self._make_random_hdfs_file()
-        with self.assertRaises(Exception):
-            self.hdfs.mv(
-                remote_file, existing_remote_file_dest, overwrite=False
-            )
 
-    def test_mv_to_directory(self):
-        remote_file = self._make_random_hdfs_file()
-        dest_dir = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(dest_dir)
-        self.hdfs.mv(remote_file, dest_dir)
-        new_remote_file = pjoin(dest_dir, os.path.basename(remote_file))
-        file_status = self.hdfs.status(new_remote_file)
-        assert file_status['type'] == 'FILE'
+@pytest.fixture
+def random_file_dest():
+    path = make_random_file()
+    try:
+        yield path
+    finally:
+        os.remove(path)
 
-    def test_put_get_delete_file(self):
-        dirpath = pjoin(self.tmp_dir, 'write-delete-test')
-        self.hdfs.mkdir(dirpath)
 
-        lpath = self._make_random_file()
-        fpath = pjoin(dirpath, lpath)
+@pytest.fixture
+def random_hdfs_file(hdfs, random_file, tmp_dir):
+    local_path = random_file
+    remote_path = pjoin(tmp_dir, local_path)
+    hdfs.put(remote_path, local_path)
+    try:
+        yield remote_path
+    finally:
+        hdfs.rm(remote_path)
 
-        self.hdfs.put(fpath, lpath)
-        assert self.hdfs.exists(fpath)
 
+@pytest.fixture
+def random_hdfs_file_dest(hdfs, random_file_dest, tmp_dir):
+    local_path = random_file_dest
+    remote_path = pjoin(tmp_dir, local_path)
+    hdfs.put(remote_path, local_path)
+    try:
+        yield remote_path
+    finally:
+        hdfs.rm(remote_path)
+
+
+def test_mkdir(hdfs, tmp_dir):
+    path = pjoin(tmp_dir, 'mkdir-test')
+    hdfs.mkdir(path)
+    assert hdfs.exists(path)
+
+
+def test_chmod(hdfs, tmp_dir, random_hdfs_file):
+    new_permissions = '755'
+    path = random_hdfs_file
+    hdfs.chmod(path, new_permissions)
+    assert hdfs.status(path)['permission'] == new_permissions
+
+
+def test_chmod_directory(hdfs, tmp_dir):
+    new_permissions = '755'
+    path = pjoin(tmp_dir, util.guid())
+    hdfs.mkdir(path)
+    hdfs.chmod(path, new_permissions)
+    assert hdfs.status(path)['permission'] == new_permissions
+
+
+def test_mv_to_existing_file(
+    hdfs,
+    tmp_dir,
+    random_hdfs_file,
+    random_hdfs_file_dest,
+):
+    remote_file = random_hdfs_file
+    existing_remote_file_dest = random_hdfs_file_dest
+    hdfs.mv(remote_file, existing_remote_file_dest)
+
+
+def test_mv_to_existing_file_no_overwrite(
+    hdfs,
+    random_hdfs_file,
+    random_hdfs_file_dest,
+):
+    remote_file = random_hdfs_file
+    existing_remote_file_dest = random_hdfs_file_dest
+    with pytest.raises(HdfsError):
+        hdfs.mv(remote_file, existing_remote_file_dest, overwrite=False)
+
+
+def test_mv_to_directory(hdfs, tmp_dir, random_hdfs_file):
+    remote_file = random_hdfs_file
+    dest_dir = pjoin(tmp_dir, util.guid())
+    hdfs.mkdir(dest_dir)
+    hdfs.mv(remote_file, dest_dir)
+    new_remote_file = pjoin(dest_dir, os.path.basename(remote_file))
+    file_status = hdfs.status(new_remote_file)
+    assert file_status['type'] == 'FILE'
+
+
+def test_put_get_delete_file(hdfs, tmp_dir, random_file):
+    dirpath = pjoin(tmp_dir, 'write-delete-test')
+    hdfs.mkdir(dirpath)
+
+    lpath = random_file
+    fpath = pjoin(dirpath, lpath)
+
+    hdfs.put(fpath, lpath)
+    assert hdfs.exists(fpath)
+
+    try:
+        dpath = util.guid()
+        hdfs.get(fpath, dpath)
+        assert filecmp.cmp(dpath, lpath, shallow=False)
+        os.remove(dpath)
+    finally:
+        hdfs.rm(fpath)
+        assert not hdfs.exists(fpath)
+
+
+def test_put_get_directory(hdfs, tmp_dir):
+    local_dir = util.guid()
+    local_download_dir = util.guid()
+
+    K = 5
+
+    os.mkdir(local_dir)
+
+    try:
+        for _ in range(K):
+            make_random_file(directory=local_dir)
+
+        remote_dir = pjoin(tmp_dir, local_dir)
+        hdfs.put(remote_dir, local_dir)
+
+        assert hdfs.exists(remote_dir)
+        assert len(hdfs.ls(remote_dir)) == K
+
+        # download directory and check contents
+        hdfs.get(remote_dir, local_download_dir)
+
+        _check_directories_equal(local_dir, local_download_dir)
+
+        shutil.rmtree(local_download_dir, ignore_errors=True)
+
+        hdfs.rmdir(remote_dir)
+        assert not hdfs.exists(remote_dir)
+    finally:
+        shutil.rmtree(local_dir)
+
+
+def test_put_file_into_directory(hdfs, tmp_dir, random_file):
+    local_path = random_file
+    hdfs.put(tmp_dir, local_path)
+    remote_file_path = pjoin(tmp_dir, local_path)
+    file_status = hdfs.status(remote_file_path)
+    assert file_status['type'] == 'FILE'
+
+
+def test_get_file_overwrite(hdfs, tmp_dir, random_file, random_file_dest):
+    local_path = random_file
+    local_path2 = random_file_dest
+
+    remote_path = pjoin(tmp_dir, local_path)
+    hdfs.put(remote_path, local_path)
+
+    remote_path2 = pjoin(tmp_dir, local_path2)
+    hdfs.put(remote_path2, local_path2)
+
+    with pytest.raises(HdfsError):
+        hdfs.get(remote_path, '.')
+
+    hdfs.get(remote_path, local_path2, overwrite=True)
+    assert Path(local_path2).read_bytes() == Path(local_path).read_bytes()
+
+
+def test_put_buffer_like(hdfs, tmp_dir):
+    data = b'peekaboo'
+
+    remote_path = pjoin(tmp_dir, util.guid())
+    hdfs.put(remote_path, BytesIO(data))
+
+    local_path = pjoin(tmp_dir, util.guid())
+
+    hdfs.get(remote_path, local_path)
+    assert Path(local_path).read_bytes() == data
+
+
+def test_get_directory_nested_dirs(hdfs, tmp_dir):
+    local_dir = util.guid()
+    local_download_dir = util.guid()
+
+    K = 5
+
+    os.mkdir(local_dir)
+
+    try:
+        for _ in range(K):
+            make_random_file(directory=local_dir)
+
+        nested_dir = osp.join(local_dir, 'nested-dir')
+        shutil.copytree(local_dir, nested_dir)
+
+        remote_dir = pjoin(tmp_dir, local_dir)
+        hdfs.put(remote_dir, local_dir)
+
+        # download directory and check contents
+        hdfs.get(remote_dir, local_download_dir)
+
+        _check_directories_equal(local_dir, local_download_dir)
+
+        shutil.rmtree(local_download_dir, ignore_errors=True)
+
+        hdfs.rmdir(remote_dir)
+        assert not hdfs.exists(remote_dir)
+    finally:
+        shutil.rmtree(local_dir)
+
+
+def test_get_directory_overwrite_file(hdfs, tmp_dir):
+    local_path1 = make_test_directory()
+    try:
+        local_path2 = make_random_file()
         try:
-            dpath = util.guid()
-            self.hdfs.get(fpath, dpath)
-            assert _contents_equal(dpath, lpath)
-            os.remove(dpath)
-        finally:
-            self.hdfs.rm(fpath)
-            assert not self.hdfs.exists(fpath)
-
-    def test_put_get_directory(self):
-        local_dir = util.guid()
-        local_download_dir = util.guid()
-
-        K = 5
-
-        os.mkdir(local_dir)
-
-        try:
-            for i in range(K):
-                self._make_random_file(directory=local_dir)
-
-            remote_dir = pjoin(self.tmp_dir, local_dir)
-            self.hdfs.put(remote_dir, local_dir)
-
-            assert self.hdfs.exists(remote_dir)
-            assert len(self.hdfs.ls(remote_dir)) == K
-
-            # download directory and check contents
-            self.hdfs.get(remote_dir, local_download_dir)
-
-            _check_directories_equal(local_dir, local_download_dir)
-
-            self._try_delete_directory(local_download_dir)
-
-            self.hdfs.rmdir(remote_dir)
-            assert not self.hdfs.exists(remote_dir)
-        finally:
-            shutil.rmtree(local_dir)
-
-    def test_put_file_into_directory(self):
-        local_path = self._make_random_file()
-        self.hdfs.put(self.tmp_dir, local_path)
-        remote_file_path = pjoin(self.tmp_dir, local_path)
-        file_status = self.hdfs.status(remote_file_path)
-        assert file_status['type'] == 'FILE'
-
-    def test_get_file_overwrite(self):
-        local_path = self._make_random_file()
-        local_path2 = self._make_random_file()
-
-        remote_path = pjoin(self.tmp_dir, local_path)
-        self.hdfs.put(remote_path, local_path)
-
-        remote_path2 = pjoin(self.tmp_dir, local_path2)
-        self.hdfs.put(remote_path2, local_path2)
-
-        with self.assertRaises(Exception):
-            self.hdfs.get(remote_path, '.')
-
-        self.hdfs.get(remote_path, local_path2, overwrite=True)
-        assert open(local_path2).read() == open(local_path).read()
-
-    def test_put_buffer_like(self):
-        data = b'peekaboo'
-
-        buf = BytesIO()
-        buf.write(data)
-        buf.seek(0)
-
-        remote_path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.put(remote_path, buf)
-
-        local_path = util.guid()
-        self.test_files.append(local_path)
-
-        self.hdfs.get(remote_path, local_path)
-        assert open(local_path, 'rb').read() == data
-
-    def test_get_directory_nested_dirs(self):
-        local_dir = util.guid()
-        local_download_dir = util.guid()
-
-        K = 5
-
-        os.mkdir(local_dir)
-
-        try:
-            for i in range(K):
-                self._make_random_file(directory=local_dir)
-
-            nested_dir = osp.join(local_dir, 'nested-dir')
-            shutil.copytree(local_dir, nested_dir)
-
-            remote_dir = pjoin(self.tmp_dir, local_dir)
-            self.hdfs.put(remote_dir, local_dir)
-
-            # download directory and check contents
-            self.hdfs.get(remote_dir, local_download_dir)
-
-            _check_directories_equal(local_dir, local_download_dir)
-
-            self._try_delete_directory(local_download_dir)
-
-            self.hdfs.rmdir(remote_dir)
-            assert not self.hdfs.exists(remote_dir)
-        finally:
-            shutil.rmtree(local_dir)
-
-    def test_get_directory_overwrite_file(self):
-        try:
-            local_path1 = self._make_test_directory()
-            local_path2 = self._make_random_file()
-            remote_path = pjoin(self.tmp_dir, local_path1)
-            self.hdfs.put(remote_path, local_path1)
-            self.hdfs.get(remote_path, local_path2, overwrite=True)
+            remote_path = pjoin(tmp_dir, local_path1)
+            hdfs.put(remote_path, local_path1)
+            hdfs.get(remote_path, local_path2, overwrite=True)
             _check_directories_equal(local_path1, local_path2)
         finally:
             # Path changed from file to directory, must be cleaned manually.
-            self._try_delete_directory(local_path2)
+            shutil.rmtree(local_path2, ignore_errors=True)
+    finally:
+        shutil.rmtree(local_path1, ignore_errors=True)
 
-    def test_get_directory_overwrite_directory(self):
-        local_path1 = self._make_test_directory()
-        local_path2 = self._make_test_directory()
-        remote_path = pjoin(self.tmp_dir, local_path2)
-        self.hdfs.put(remote_path, local_path1)
-        self.hdfs.get(remote_path, osp.dirname(local_path2), overwrite=True)
-        _check_directories_equal(local_path1, local_path2)
 
-    def test_get_directory_into_directory(self):
-        local_path1 = self._make_test_directory()
-        local_path2 = self._make_test_directory()
-        remote_path = pjoin(self.tmp_dir, local_path1)
-        self.hdfs.put(remote_path, local_path1)
-        local_path3 = self.hdfs.get(remote_path, local_path2)
-        _check_directories_equal(local_path3, local_path1)
-
-    def _try_delete_directory(self, path):
+def test_get_directory_overwrite_directory(hdfs, tmp_dir):
+    local_path1 = make_test_directory()
+    try:
+        local_path2 = make_test_directory()
         try:
-            shutil.rmtree(path)
-        except os.error:
-            pass
+            remote_path = pjoin(tmp_dir, local_path2)
+            hdfs.put(remote_path, local_path1)
+            hdfs.get(remote_path, osp.dirname(local_path2), overwrite=True)
+            _check_directories_equal(local_path1, local_path2)
+        finally:
+            shutil.rmtree(local_path2, ignore_errors=True)
+    finally:
+        shutil.rmtree(local_path1, ignore_errors=True)
 
-    def test_ls(self):
-        test_dir = pjoin(self.tmp_dir, 'ls-test')
-        self.hdfs.mkdir(test_dir)
-        for i in range(10):
-            local_path = self._make_random_file()
+
+def test_get_directory_into_directory(hdfs, tmp_dir):
+    local_path1 = make_test_directory()
+    try:
+        local_path2 = make_test_directory()
+        try:
+            remote_path = pjoin(tmp_dir, local_path1)
+            hdfs.put(remote_path, local_path1)
+            local_path3 = hdfs.get(remote_path, local_path2)
+            _check_directories_equal(local_path3, local_path1)
+        finally:
+            shutil.rmtree(local_path2, ignore_errors=True)
+    finally:
+        shutil.rmtree(local_path1, ignore_errors=True)
+
+
+def test_ls(hdfs, tmp_dir):
+    test_dir = pjoin(tmp_dir, 'ls-test')
+    hdfs.mkdir(test_dir)
+    n = 2
+    to_remove = []
+    try:
+        for _ in range(n):
+            local_path = make_random_file()
+            to_remove.append(local_path)
             hdfs_path = pjoin(test_dir, local_path)
-            self.hdfs.put(hdfs_path, local_path)
-        assert len(self.hdfs.ls(test_dir)) == 10
+            hdfs.put(hdfs_path, local_path)
+        assert len(hdfs.ls(test_dir)) == n
+    finally:
+        for path in to_remove:
+            os.remove(path)
 
-    def test_size(self):
-        test_dir = pjoin(self.tmp_dir, 'size-test')
 
-        K = 2048
-        path = self._make_random_file(size=K)
+def test_size(hdfs, tmp_dir):
+    test_dir = pjoin(tmp_dir, 'size-test')
+
+    K = 2048
+    path = make_random_file(size=K)
+    try:
         hdfs_path = pjoin(test_dir, path)
-        self.hdfs.put(hdfs_path, path)
-        assert self.hdfs.size(hdfs_path) == K
+        hdfs.put(hdfs_path, path)
+        assert hdfs.size(hdfs_path) == K
 
-        size_test_dir = self._sample_nested_directory()
+        size_test_dir = sample_nested_directory()
+        try:
+            hdfs_path = pjoin(test_dir, size_test_dir)
+            hdfs.put(hdfs_path, size_test_dir)
 
-        hdfs_path = pjoin(test_dir, size_test_dir)
-        self.hdfs.put(hdfs_path, size_test_dir)
+            assert hdfs.size(hdfs_path) == K * 7
+        finally:
+            shutil.rmtree(size_test_dir)
+    finally:
+        os.remove(path)
 
-        assert self.hdfs.size(hdfs_path) == K * 7
 
-    def test_put_get_tarfile(self):
-        test_dir = pjoin(self.tmp_dir, 'tarfile-test')
+def test_put_get_tarfile(hdfs, tmp_dir, tmp_path):
+    test_dir = pjoin(tmp_dir, 'tarfile-test')
 
-        dirname = self._sample_nested_directory()
+    dirname = sample_nested_directory()
 
-        import subprocess
+    try:
 
-        tf_name = f'{dirname}.tar.gz'
-        cmd = f'tar zc {dirname} > {tf_name}'
-
-        retcode = subprocess.call(cmd, shell=True)
-        if retcode:
-            raise Exception((retcode, cmd))
-
-        self.test_files.append(tf_name)
-
+        tf_name = tmp_path / f'{dirname}.tar.gz'
+        subprocess.check_call(f'tar zc {dirname} > {tf_name}', shell=True)
         randname = util.guid()
         hdfs_path = pjoin(test_dir, randname)
-        self.hdfs.put_tarfile(hdfs_path, tf_name, compression='gzip')
+        hdfs.put_tarfile(hdfs_path, tf_name, compression='gzip')
 
-        self.hdfs.get(hdfs_path, '.')
-        self.test_directories.append(randname)
+        hdfs.get(hdfs_path, '.')
         _check_directories_equal(osp.join(randname, dirname), dirname)
+    finally:
+        shutil.rmtree(dirname, ignore_errors=True)
+        shutil.rmtree(osp.join(randname, dirname), ignore_errors=True)
 
-    def _sample_nested_directory(self):
-        K = 2048
-        dirname = self._make_test_directory(files=2, filesize=K)
-        nested_dir = osp.join(dirname, util.guid())
-        os.mkdir(nested_dir)
 
-        self._make_test_directory(files=5, filesize=K, directory=nested_dir)
+def sample_nested_directory():
+    K = 2048
+    dirname = make_test_directory(files=2, filesize=K)
+    nested_dir = osp.join(dirname, util.guid())
+    os.mkdir(nested_dir)
 
-        return dirname
+    make_test_directory(files=5, filesize=K, directory=nested_dir)
+
+    return dirname
+
+
+@pytest.fixture
+def hdfs_superuser(env, tmp_dir):
+    # NOTE: specifying superuser as set in IbisTestEnv
+    hdfs = ibis.impala.hdfs_connect(
+        host=env.nn_host,
+        port=env.webhdfs_port,
+        auth_mechanism=env.auth_mechanism,
+        verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
+        user=env.hdfs_superuser,
+    )
+    hdfs.mkdir(tmp_dir)
+    try:
+        yield hdfs
+    finally:
+        hdfs.rmdir(tmp_dir)
+
+
+@pytest.fixture
+def random_hdfs_superuser_file(hdfs_superuser, tmp_dir, random_file):
+    local_path = random_file
+    remote_path = pjoin(tmp_dir, local_path)
+    hdfs_superuser.put(remote_path, local_path)
+    return remote_path
 
 
 @pytest.mark.superuser
-class TestSuperUserHDFSE2E(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        from ibis.backends.impala.tests.conftest import IbisTestEnv
+def test_chown_owner(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
+    new_owner = 'randomowner'
+    path = random_hdfs_superuser_file
+    hdfs_superuser.chown(path, new_owner)
+    assert hdfs_superuser.status(path)['owner'] == new_owner
 
-        cls.ENV = IbisTestEnv()
-        cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
-        if cls.ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
-            print("Warning: ignoring invalid Certificate Authority errors")
-        # NOTE: specifying superuser as set in IbisTestEnv
-        cls.hdfs = ibis.impala.hdfs_connect(
-            host=cls.ENV.nn_host,
-            port=cls.ENV.webhdfs_port,
-            auth_mechanism=cls.ENV.auth_mechanism,
-            verify=(cls.ENV.auth_mechanism not in ['GSSAPI', 'LDAP']),
-            user=cls.ENV.hdfs_superuser,
-        )
-        cls.hdfs.mkdir(cls.tmp_dir)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.hdfs.rmdir(cls.tmp_dir)
+@pytest.mark.superuser
+def test_chown_group(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
+    new_group = 'randomgroup'
+    path = random_hdfs_superuser_file
+    hdfs_superuser.chown(path, group=new_group)
+    assert hdfs_superuser.status(path)['group'] == new_group
 
-    def setUp(self):
-        self.test_files = []
-        self.test_directories = []
 
-    def tearDown(self):
-        self._delete_test_files()
+@pytest.mark.superuser
+def test_chown_group_directory(
+    hdfs_superuser,
+    tmp_dir,
+    random_hdfs_superuser_file,
+):
+    new_group = 'randomgroup'
+    path = pjoin(tmp_dir, util.guid())
+    hdfs_superuser.mkdir(path)
+    hdfs_superuser.chown(path, group=new_group)
+    assert hdfs_superuser.status(path)['group'] == new_group
 
-    def _delete_test_files(self):
-        for path in self.test_files:
-            try:
-                os.remove(path)
-            except os.error:
-                pass
 
-        for path in self.test_directories:
-            try:
-                shutil.rmtree(path)
-            except os.error:
-                pass
-
-    def _make_random_file(self, size=1024, directory=None):
-        path = util.guid()
-
-        if directory:
-            path = osp.join(directory, path)
-
-        units = size / 32
-
-        with open(path, 'wb') as f:
-            for i in range(int(units)):
-                f.write(guidbytes())
-
-        self.test_files.append(path)
-        return path
-
-    def _make_random_hdfs_file(self, size=1024, directory=None):
-        local_path = self._make_random_file(size=size)
-        remote_path = pjoin(directory or self.tmp_dir, local_path)
-        self.hdfs.put(remote_path, local_path)
-        return remote_path
-
-    def test_chown_owner(self):
-        new_owner = 'randomowner'
-        path = self._make_random_hdfs_file()
-        self.hdfs.chown(path, new_owner)
-        assert self.hdfs.status(path)['owner'] == new_owner
-
-    def test_chown_group(self):
-        new_group = 'randomgroup'
-        path = self._make_random_hdfs_file()
-        self.hdfs.chown(path, group=new_group)
-        assert self.hdfs.status(path)['group'] == new_group
-
-    def test_chown_group_directory(self):
-        new_group = 'randomgroup'
-        path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(path)
-        self.hdfs.chown(path, group=new_group)
-        assert self.hdfs.status(path)['group'] == new_group
-
-    def test_chown_owner_directory(self):
-        new_owner = 'randomowner'
-        path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(path)
-        self.hdfs.chown(path, new_owner)
-        assert self.hdfs.status(path)['owner'] == new_owner
+@pytest.mark.superuser
+def test_chown_owner_directory(
+    hdfs_superuser,
+    tmp_dir,
+    random_hdfs_superuser_file,
+):
+    new_owner = 'randomowner'
+    path = pjoin(tmp_dir, util.guid())
+    hdfs_superuser.mkdir(path)
+    hdfs_superuser.chown(path, new_owner)
+    assert hdfs_superuser.status(path)['owner'] == new_owner
 
 
 def _check_directories_equal(left, right):
-    left_files = _get_all_files(left)
-    right_files = _get_all_files(right)
-
-    assert set(left_files.keys()) == set(right_files.keys())
-
-    for relpath, labspath in left_files.items():
-        rabspath = right_files[relpath]
-        assert _contents_equal(rabspath, labspath)
-
-
-def _contents_equal(left, right):
-    with open(left) as lf:
-        with open(right) as rf:
-            return lf.read() == rf.read()
-
-
-def _get_all_files(path):
-    paths = {}
-    for dirpath, _, filenames in os.walk(path):
-        rel_dir = osp.relpath(dirpath, path)
-        if rel_dir == '.':
-            rel_dir = ''
-        for name in filenames:
-            abspath = osp.join(dirpath, name)
-            relpath = osp.join(rel_dir, name)
-            paths[relpath] = abspath
-
-    return paths
-
-
-def guidbytes():
-    return util.guid().encode('utf8')
+    assert not filecmp.dircmp(left, right).diff_files
