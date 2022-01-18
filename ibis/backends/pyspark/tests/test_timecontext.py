@@ -1,11 +1,10 @@
-from typing import Optional
-
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.expr.operations as ops
+from ibis.backends.pyspark.compiler import compile_window_op, compiles
 from ibis.backends.pyspark.timecontext import combine_time_context
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
@@ -69,35 +68,43 @@ def test_adjust_context_scope(client):
     table = client.table('time_indexed_table')
 
     # WindowOp is the only context-adjusted node that the PySpark backend
-    # can compile.
-    # Override its `adjust_context` function with a function that imply
-    # checks that `scope` has been passed in:
+    # can compile. Ideally we would test the context adjustment logic for
+    # WindowOp itself, but building this test like that would unfortunately
+    # affect other tests that involve WindowOp.
+    # To avoid that, we'll create a dummy subclass of WindowOp and build the
+    # test around that.
 
-    @adjust_context.register(ops.WindowOp)
+    class CustomWindowOp(ops.WindowOp):
+        pass
+
+    # Tell the Spark backend compiler it should compile CustomWindowOp just
+    # like WindowOp
+    compiles(CustomWindowOp)(compile_window_op)
+
+    # Create an `adjust_context` function for this subclass that simply checks
+    # that `scope` is passed in.
+    @adjust_context.register(CustomWindowOp)
     def adjust_context_window_check_scope(
-        op: ops.WindowOp,
+        op: CustomWindowOp,
+        scope: Scope,
         timecontext: TimeContext,
-        scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Confirms that `scope` is passed in."""
         assert scope is not None
         return timecontext
 
     # Do an operation that will trigger context adjustment
-    # on a WindowOp
-    expr = table.mutate(
-        win=(
-            table['value']
-            .count()
-            .over(
-                ibis.window(
-                    ibis.interval(hours=1),
-                    0,
-                    order_by='time',
-                    group_by='key',
-                )
-            )
-        )
+    # on a CustomWindowOp
+    value_count = table['value'].count()
+    win = ibis.window(
+        ibis.interval(hours=1),
+        0,
+        order_by='time',
+        group_by='key',
     )
+    value_count_over_win = CustomWindowOp(value_count, win).to_expr()
+
+    expr = table.mutate(value_count_over_win.name('value_count_over_win'))
+
     context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
     expr.execute(timecontext=context)
