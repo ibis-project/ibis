@@ -123,7 +123,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     # time context among child nodes, and pass this as context to
     # source table to get all data within time context loaded.
     arg_timecontexts = [
-        adjust_context(node.op(), timecontext, scope=scope)
+        adjust_context(node.op(), scope, timecontext)
         for node in op.selections
         if timecontext
     ]
