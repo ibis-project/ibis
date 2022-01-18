@@ -40,7 +40,6 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.expr.operations import Node
 from ibis.expr.typing import TimeContext
 
 if TYPE_CHECKING:
@@ -252,15 +251,15 @@ def construct_time_context_aware_series(
 
 @functools.singledispatch
 def adjust_context(
-    op: Any, timecontext: TimeContext, *, scope: Optional['Scope']
+    op: Any, scope: 'Scope', timecontext: TimeContext
 ) -> TimeContext:
     """
     Params
     -------
     op: ibis.expr.operations.Node
+    scope: Scope
     timecontext: TimeContext
         time context associated with the node
-    scope: Scope
 
     Returns
     --------
@@ -274,7 +273,7 @@ def adjust_context(
 
 @adjust_context.register(ops.Node)
 def adjust_context_node(
-    op: Node, timecontext: TimeContext, *, scope: Optional['Scope']
+    op: ops.Node, scope: 'Scope', timecontext: TimeContext
 ) -> TimeContext:
     # For any node, by default, do not adjust time context
     return timecontext
@@ -282,7 +281,7 @@ def adjust_context_node(
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: ops.AsOfJoin, timecontext: TimeContext, *, scope: Optional['Scope']
+    op: ops.AsOfJoin, scope: 'Scope', timecontext: TimeContext
 ) -> TimeContext:
     begin, end = timecontext
 
@@ -297,7 +296,7 @@ def adjust_context_asof_join(
 
 @adjust_context.register(ops.WindowOp)
 def adjust_context_window(
-    op: ops.WindowOp, timecontext: TimeContext, *, scope: Optional['Scope']
+    op: ops.WindowOp, scope: 'Scope', timecontext: TimeContext
 ) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext

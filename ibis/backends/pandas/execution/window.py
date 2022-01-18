@@ -273,7 +273,7 @@ def execute_window_op(
     adjusted_timecontext = None
     if timecontext:
         arg_timecontexts = compute_time_context(
-            op, timecontext=timecontext, clients=clients
+            op, timecontext=timecontext, clients=clients, scope=scope
         )
         # timecontext is the original time context required by parent node
         # of this WindowOp, while adjusted_timecontext is the adjusted context
