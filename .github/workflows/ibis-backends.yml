@@ -37,10 +37,6 @@ jobs:
             title: CSV
           - name: dask
             title: Dask
-          - name: dask
-            title: Dask Extra
-            deps:
-              - "dask@2021.10.0 --extras array --extras dataframe"
           - name: hdf5
             title: HDF5
           - name: pandas
@@ -86,18 +82,14 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps || 'no-deps' }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ matrix.backend.deps || 'no-deps' }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
-
-      - name: install minimum dask version
-        if: ${{ matrix.backend.name == 'dask' && matrix.backend.deps != null }}
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
 
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
@@ -118,11 +110,57 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: ${{ matrix.backend.name }}-${{ join(matrix.backend.deps || fromJSON('["no-deps"]'), '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit.xml
+
+  test_dask_min_version:
+    name: Dask Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.7"
+          - "3.10"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - run: python -m pip install --upgrade pip poetry
+
+      - name: install minimum dask version
+        run: poetry add --lock --optional dask@2021.10.0 --extras array --extras dataframe
+
+      - name: install ibis
+        run: poetry install --extras dask
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: run tests
+        shell: bash
+        env:
+          PYTEST_BACKENDS: dask
+        run: ./ci/run_tests.sh
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: dask-min-version-${{ join(matrix.backend.deps, '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
   test_postgres:
-    name: PostgreSQL deps-${{ (matrix.deps && 'bounded') || 'unbounded' }} python-${{ matrix.python-version }}
+    name: PostgreSQL deps-unbounded python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -130,16 +168,6 @@ jobs:
         python-version:
           - "3.7"
           - "3.9"
-        deps:
-          - null
-        include:
-          - python-version: "3.7"
-            deps:
-              - "sqlalchemy@1.3"
-              - "psycopg2@2.7"
-              - "geoalchemy@0.6"
-              - "geopandas@0.6"
-              - "shapely@1.6"
     services:
       postgres:
         image: shajekpivotal/ibis-docker-postgres-9.5
@@ -164,23 +192,14 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: postgres-geospatial-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: postgres-geospatial-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
-
-      - name: install minimum postgres dependencies
-        if: ${{ matrix.deps != null }}
-        run: |
-          set -euo pipefail
-
-          deps=(${{ join(matrix.deps, ' ') }})
-          args=(${deps[@]/#/--optional })
-          poetry add --lock ${args[*]}
 
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
@@ -200,11 +219,61 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: postgres-geospatial-${{ join(matrix.deps || fromJSON('["no-deps"]'), '-') }}-${{ matrix.python-version }}
+          name: postgres-geospatial-${{ matrix.python-version }}
+          path: junit.xml
+
+  test_postgres_min_version:
+    name: PostgreSQL deps-bounded python-3.7
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: shajekpivotal/ibis-docker-postgres-9.5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ""
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        id: install_python
+        with:
+          python-version: "3.7"
+
+      - name: install libgeos for shapely
+        run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
+
+      - run: python -m pip install --upgrade pip poetry
+
+      - name: install minimum postgres dependencies
+        run: poetry add --lock --optional "sqlalchemy@1.3" --optional "psycopg2@2.7.6" --optional "geoalchemy@0.6" --optional "geopandas@0.6" --optional "shapely@1.6"
+
+      - name: install ibis
+        run: poetry install --extras postgres --extras geospatial
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: install backend data
+        run: poetry run python ci/datamgr.py postgres
+
+      - name: run tests
+        env:
+          PYTEST_BACKENDS: postgres
+        run: ./ci/run_tests.sh
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: postgres-geospatial-bounded-3.7
           path: junit.xml
 
   test_pyspark:
-    name: PySpark ${{ matrix.pyspark.version }} python-${{ matrix.python-version }}
+    name: "PySpark 3 python-${{ matrix.python-version }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -212,22 +281,6 @@ jobs:
         python-version:
           - "3.7"
           - "3.10"
-        pyspark:
-          - version: "2.4.3"
-            jdk: 8
-            env:
-              ARROW_PRE_0_15_IPC_FORMAT: 1
-          - version: null
-            jdk: 11
-            env:
-              ARROW_PRE_0_15_IPC_FORMAT: 0
-        exclude:
-          - python-version: "3.10"
-            pyspark:
-              version: "2.4.3"
-              jdk: 8
-              env:
-                ARROW_PRE_0_15_IPC_FORMAT: 1
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -241,23 +294,19 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: temurin
-          java-version: ${{ matrix.pyspark.jdk }}
+          java-version: 11
 
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: pyspark-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: pyspark-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: pyspark-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: pyspark-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip poetry
-
-      - name: pin pyspark
-        if: ${{ matrix.pyspark.version != null }}
-        run: poetry add --lock --optional "pyspark@${{ matrix.pyspark.version }}"
 
       - name: install ibis
         run: poetry install --extras pyspark
@@ -268,14 +317,55 @@ jobs:
       - name: run tests
         env:
           PYTEST_BACKENDS: pyspark
-          ARROW_PRE_0_15_IPC_FORMAT: ${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
         run: ./ci/run_tests.sh
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: pyspark-${{ matrix.python-version }}-${{ matrix.pyspark.version || 'default' }}-${{ matrix.pyspark.jdk }}-${{ matrix.pyspark.env.ARROW_PRE_0_15_IPC_FORMAT }}
+          name: pyspark-${{ matrix.python-version }}
+          path: junit.xml
+
+  test_pyspark_min_version:
+    name: "PySpark 2.4.3 python-3.7"
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install python
+        uses: actions/setup-python@v2
+        id: install_python
+        with:
+          python-version: "3.7"
+
+      - uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - run: python -m pip install --upgrade pip poetry
+
+      - name: pin pyspark
+        run: poetry add --lock --optional "pyspark@2.4.3"
+
+      - name: install ibis
+        run: poetry install --extras pyspark
+
+      - name: download backend data
+        run: poetry run python ci/datamgr.py download
+
+      - name: run tests
+        env:
+          PYTEST_BACKENDS: pyspark
+          ARROW_PRE_0_15_IPC_FORMAT: 1
+        run: ./ci/run_tests.sh
+
+      - name: publish test report
+        uses: actions/upload-artifact@v2
+        if: success() || failure()
+        with:
+          name: pyspark-3.7-2.4.3
           path: junit.xml
 
   test_impala:
@@ -526,10 +616,6 @@ jobs:
         working-directory: ibis
         run: python ci/datamgr.py download
 
-      - name: install backend data
-        working-directory: ibis
-        run: python ci/datamgr.py datafusion
-
       - name: run tests
         working-directory: ibis
         run: ./ci/run_tests.sh
@@ -547,11 +633,14 @@ jobs:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
+      - test_dask_min_version
+      - test_datafusion
       - test_impala
       - test_mysql_clickhouse
       - test_postgres
+      - test_postgres_min_version
       - test_pyspark
+      - test_pyspark_min_version
       - test_simple_backends
-      - test_datafusion
     steps:
       - run: exit 0
