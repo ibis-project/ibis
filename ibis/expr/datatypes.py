@@ -4,6 +4,7 @@ import ast
 import builtins
 import collections
 import datetime
+import decimal
 import enum
 import functools
 import itertools
@@ -1571,3 +1572,8 @@ def _str_to_uuid(typ: UUID, value: str) -> _uuid.UUID:
 @_normalize.register(String, _uuid.UUID)
 def _uuid_to_str(typ: String, value: _uuid.UUID) -> str:
     return str(value)
+
+
+@_normalize.register(Decimal, int)
+def _int_to_decimal(typ: Decimal, value: int) -> decimal.Decimal:
+    return decimal.Decimal(value).scaleb(-typ.scale)

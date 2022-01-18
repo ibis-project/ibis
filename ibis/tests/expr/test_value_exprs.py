@@ -4,6 +4,7 @@ import os
 import uuid
 from collections import OrderedDict
 from datetime import date, datetime, time
+from decimal import Decimal
 from operator import methodcaller
 
 import numpy as np
@@ -112,11 +113,32 @@ multipolygon1 = [polygon1, polygon2]
         (tuple(multipolygon1), 'multipolygon'),
         pytest.param(uuid.uuid4(), 'uuid', id='uuid'),
         pytest.param(str(uuid.uuid4()), 'uuid', id='uuid_str'),
+        pytest.param(Decimal("234.234"), "decimal(6, 3)", id="decimal_native"),
+        pytest.param(234234, "decimal(6, 3)", id="decimal_int"),
     ],
 )
 def test_literal_with_explicit_type(value, expected_type):
     expr = ibis.literal(value, type=expected_type)
     assert expr.type().equals(dt.validate_type(expected_type))
+
+
+@pytest.mark.parametrize(
+    ("value", "expected", "dtype"),
+    [
+        # precision > scale
+        (Decimal("234.234"), Decimal("234.234"), "decimal(6, 3)"),
+        (234234, Decimal("234.234"), "decimal(6, 3)"),
+        # scale == 0
+        (Decimal("234"), Decimal("234"), "decimal(6, 0)"),
+        (234, Decimal("234"), "decimal(6, 0)"),
+        # precision == scale
+        (Decimal(".234"), Decimal(".234"), "decimal(3, 3)"),
+        (234, Decimal(".234"), "decimal(3, 3)"),
+    ],
+)
+def test_normalize_decimal_literal(value, expected, dtype):
+    expr = ibis.literal(value, type=dtype)
+    assert expr.op().value == expected
 
 
 @pytest.mark.parametrize(
