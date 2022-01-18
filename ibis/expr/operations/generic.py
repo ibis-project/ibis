@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import enum
 import functools
 import itertools
@@ -242,6 +243,7 @@ class Literal(ValueOp):
                     tuple,
                     type(None),
                     uuid.UUID,
+                    decimal.Decimal,
                 )
             ),
             rlz.is_computable_input,
