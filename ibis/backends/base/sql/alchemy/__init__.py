@@ -52,28 +52,6 @@ __all__ = (
 )
 
 
-class _AutoCloseCursor:
-    """
-    Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
-    garbage collection
-    """
-
-    def __init__(self, original_cursor):
-        self.original_cursor = original_cursor
-
-    def __del__(self):
-        self.original_cursor.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, tb):
-        self.original_cursor.close()
-
-    def fetchall(self):
-        return self.original_cursor.fetchall()
-
-
 class BaseAlchemyBackend(BaseSQLBackend):
     """
     Base backend class for backends that compile to SQL with SQLAlchemy.
@@ -151,8 +129,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def fetch_from_cursor(self, cursor, schema):
         df = pd.DataFrame.from_records(
-            cursor.original_cursor.fetchall(),
-            columns=cursor.original_cursor.keys(),
+            cursor.fetchall(),
+            columns=cursor.keys(),
             coerce_float=True,
         )
         df = schema.apply_to(df)
@@ -325,9 +303,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     @util.deprecated(version='2.0', instead='`list_databases`')
     def list_schemas(self):
         return self.list_databases()
-
-    def raw_sql(self, query: str, results=False):
-        return _AutoCloseCursor(super().raw_sql(query))
 
     def _log(self, sql):
         try:
