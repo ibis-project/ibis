@@ -1,0 +1,20 @@
+# This job intentionally collides with the Backend job in `ibis-backends.yml`
+# that would be skipped because the paths are ignored.  This is so the
+# `Backends` job isn't stuck in "expected" forever when it should be skipped
+name: Backends
+on:
+  push:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+  pull_request:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No build required" '

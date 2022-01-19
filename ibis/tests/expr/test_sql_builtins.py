@@ -205,13 +205,3 @@ def test_floats(sql_table, function):
 
     expr = function(5.5, 5)
     assert isinstance(expr, ir.FloatingScalar)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_bools():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_decimal_promotions():
-    assert False

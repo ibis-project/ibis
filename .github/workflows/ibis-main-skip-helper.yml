@@ -1,0 +1,20 @@
+# This job intentionally collides with the Ibis job in `ibis-main.yml`
+# that would be skipped because the paths are ignored.  This is so the `Ibis`
+# job isn't stuck in "expected" forever when it should be skipped
+name: Ibis
+on:
+  push:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+  pull_request:
+    paths:
+      - "docs/**"
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No build required" '

@@ -304,6 +304,17 @@ def test_fillna_table(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
+def test_mutate_rename(alltypes):
+    table = alltypes.select(["bool_col", "string_col"])
+    table = table.mutate(dupe_col=table["bool_col"])
+    result = table.execute()
+    # check_dtype is False here because there are dtype diffs between
+    # Pyspark and Pandas on Java 8 - filling the 'none_col' with an int
+    # results in float in Pyspark, and int in Pandas. This diff does
+    # not exist in Java 11.
+    assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
+
+
 @pytest.mark.parametrize(
     ('how', 'subset'),
     [

@@ -4,7 +4,7 @@
 
 import functools
 import operator
-from typing import Optional
+from typing import List, Optional
 
 import dask.dataframe as dd
 import pandas
@@ -13,17 +13,18 @@ from toolz import concatv
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas.execution.selection import (
+    build_df_from_selection,
     compute_projection,
     compute_projection_table_expr,
     map_new_column_names_to_data,
     remap_overlapping_column_names,
 )
+from ibis.backends.pandas.execution.util import get_join_suffix_for_op
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from ..execution import constants
 from ..execution.util import (
     add_partitioned_sorted_column,
     coerce_to_output,
@@ -47,7 +48,6 @@ def compute_projection_scalar_expr(
     parent_table_op = parent.table.op()
 
     data_columns = frozenset(data.columns)
-
     scope = scope.merge_scopes(
         Scope(
             {
@@ -88,17 +88,8 @@ def compute_projection_column_expr(
 
         if not isinstance(parent_table_op, ops.Join):
             raise KeyError(name)
-        (root_table,) = op.root_tables()
-        left_root, right_root = ops.distinct_roots(
-            parent_table_op.left, parent_table_op.right
-        )
-        suffixes = {
-            left_root: constants.LEFT_JOIN_SUFFIX,
-            right_root: constants.RIGHT_JOIN_SUFFIX,
-        }
-        return data.loc[:, name + suffixes[root_table]].rename(
-            result_name or name
-        )
+        suffix = get_join_suffix_for_op(op, parent_table_op)
+        return data.loc[:, name + suffix].rename(result_name or name)
 
     data_columns = frozenset(data.columns)
 
@@ -129,6 +120,28 @@ compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
 )
 
 
+def build_df_from_projection(
+    selection_exprs: List[ir.Expr],
+    op: ops.Selection,
+    data: dd.DataFrame,
+    **kwargs,
+) -> dd.DataFrame:
+    """
+    Build up a df from individual pieces by dispatching to `compute_projection`
+    for each expression.
+    """
+
+    # Create a unique row identifier and set it as the index. This is
+    # used in dd.concat to merge the pieces back together.
+    data = add_partitioned_sorted_column(data)
+    data_pieces = [
+        compute_projection(expr, op, data, **kwargs)
+        for expr in selection_exprs
+    ]
+
+    return dd.concat(data_pieces, axis=1).reset_index(drop=True)
+
+
 @execute_node.register(ops.Selection, dd.DataFrame)
 def execute_selection_dataframe(
     op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
@@ -138,25 +151,20 @@ def execute_selection_dataframe(
     sort_keys = op.sort_keys
     result = data
 
-    # Build up the individual dask structures from column expressions
     if selections:
-        # Create a unique row identifier and set it as the index. This is used
-        # in dd.concat to merge the pieces back together.
-        data = add_partitioned_sorted_column(data)
-        data_pieces = []
-        for selection in selections:
-            dask_object = compute_projection(
-                selection,
+        # if we are just performing select operations we can do a direct
+        # selection
+        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
+            result = build_df_from_selection(selections, data, op.table.op())
+        else:
+            result = build_df_from_projection(
+                selections,
                 op,
                 data,
                 scope=scope,
                 timecontext=timecontext,
                 **kwargs,
             )
-            data_pieces.append(dask_object)
-
-        result = dd.concat(data_pieces, axis=1)
-        result.reset_index(drop=True)
 
     if predicates:
         predicates = _compute_predicates(

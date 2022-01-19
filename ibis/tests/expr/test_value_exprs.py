@@ -38,14 +38,6 @@ def test_null():
     assert expr2.type().equals(dt.null)
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason='UTF-8 support in Impala non-existent at the moment?',
-)
-def test_unicode():
-    assert False
-
-
 @pytest.mark.parametrize(
     ['value', 'expected_type'],
     [
@@ -266,23 +258,6 @@ def test_value_counts(table, string_col):
     assert isinstance(expr, ir.TableExpr)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_isin_not_comparable():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_isin_array_expr():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_isin_invalid_cases():
-    # For example, array expression in a list of values, where the inner
-    # array values originate from some other table
-    assert False
-
-
 def test_isin_notin_scalars():
     a, b, c = (ibis.literal(x) for x in [1, 1, 2])
 
@@ -291,17 +266,6 @@ def test_isin_notin_scalars():
 
     result = a.notin([b, c, 3])
     assert isinstance(result, ir.BooleanScalar)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_isin_null():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_negate_isin():
-    # Should yield a NotContains
-    assert False
 
 
 def test_scalar_isin_list_with_array(table):
@@ -385,11 +349,6 @@ def test_nunique(functional_alltypes):
     assert isinstance(expr.op(), ops.CountDistinct)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_project_with_distinct():
-    assert False
-
-
 def test_isnull(table):
     expr = table['g'].isnull()
     assert isinstance(expr, ir.BooleanColumn)
@@ -430,11 +389,6 @@ def test_isnan_isinf_scalar(value):
     expr = ibis.literal(value).isinf()
     assert isinstance(expr, ir.BooleanScalar)
     assert isinstance(expr.op(), ops.IsInf)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_null_literal():
-    assert False
 
 
 @pytest.mark.parametrize(
@@ -494,26 +448,6 @@ def test_log_literal(log):
     assert isinstance(log(ibis.literal(5.5)), ir.FloatingScalar)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_exp():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_sqrt():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_trig_functions():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_round():
-    assert False
-
-
 def test_cast_same_type_noop(table):
     c = table.g
     assert c.cast('string') is c
@@ -555,11 +489,6 @@ def test_casted_exprs_are_named(table):
     expr.value_counts()
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_nonzero():
-    assert False
-
-
 @pytest.mark.parametrize('col', list('abcdefh'))
 def test_negate(table, col):
     c = table[col]
@@ -572,11 +501,6 @@ def test_negate_boolean_scalar():
     result = -(ibis.literal(False))
     assert isinstance(result, ir.BooleanScalar)
     assert isinstance(result.op(), ops.Negate)
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_isnull_notnull():
-    assert False
 
 
 @pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
@@ -862,31 +786,6 @@ def test_zero_subtract_literal_promotions(
     assert result.type() == dt.dtype(ex_type)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_add_array_promotions():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_subtract_array_promotions():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_multiply_array_promotions():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_divide_array_promotions():
-    assert False
-
-
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_string_add_concat():
-    assert False
-
-
 def test_substitute_dict():
     table = ibis.table([('foo', 'string'), ('bar', 'string')], 't1')
     subs = {'a': 'one', 'b': table.bar}
@@ -1060,14 +959,6 @@ def test_scalar_parameter_set():
 
     assert isinstance(value.op(), ops.ScalarParameter)
     assert value.type().equals(dt.Set(dt.int64))
-
-
-def test_scalar_parameter_repr():
-    value = ibis.param(dt.timestamp).name('value')
-    assert repr(value) == 'value = ScalarParameter[timestamp]'
-
-    value_op = value.op()
-    assert repr(value_op) == "ScalarParameter(type=timestamp)"
 
 
 @pytest.mark.parametrize(
@@ -1491,30 +1382,11 @@ def test_chained_select_on_join():
 
 def test_repr_list_of_lists():
     lit = ibis.literal([[1]])
-    result = repr(lit)
-    expected = """\
-Literal[array<array<int8>>]
-  [[1]]"""
-    assert result == expected
+    repr(lit)
 
 
 def test_repr_list_of_lists_in_table():
     t = ibis.table([('a', 'int64')], name='t')
     lit = ibis.literal([[1]])
     expr = t[t, lit.name('array_of_array')]
-    result = repr(expr)
-    expected = """\
-ref_0
-UnboundTable[table]
-  name: t
-  schema:
-    a : int64
-
-Selection[table]
-  table:
-    Table: ref_0
-  selections:
-    Table: ref_0
-    array_of_array = Literal[array<array<int8>>]
-      [[1]]"""
-    assert result == expected
+    repr(expr)

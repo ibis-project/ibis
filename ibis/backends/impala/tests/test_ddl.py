@@ -324,11 +324,6 @@ def test_create_table_reserved_identifier(con):
         con.drop_table(table_name)
 
 
-@pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_query_text_file_regex():
-    assert False
-
-
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
     hdfs_path = pjoin(test_data_dir, 'csv')
 
