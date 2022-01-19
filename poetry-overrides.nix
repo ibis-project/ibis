@@ -105,4 +105,28 @@ self: super:
         sha256 = "sha256-JGyDxpfBXzduJaMF1sbmRm7KJajHYdVSj+WbiSETiY0=";
       };
     });
+
+  isort = super.isort.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  });
+
+  entrypoints = super.entrypoints.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit ];
+  });
+
+  pyyaml-env-tag = super.pyyaml-env-tag.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit-core ];
+  });
+
+  questionary = super.questionary.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  });
+
+  commitizen = super.commitizen.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  });
+
+  testpath = super.testpath.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit-core ];
+  });
 }
