@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b4ac5539ea325cadce07b99c837d6cccbdddda3b",
-        "sha256": "10krl2ywv0qzac6ixpbk34xnmr9cppq07yh9asli3f9nhk39jvk2",
+        "rev": "1caf78f4bf5cba45eb04c45a3c9b46bde8fa50e0",
+        "sha256": "05l3s6bjlz0wlcmri72cn4538xxnp9w7mnipr2p7z826yfm7kyav",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/b4ac5539ea325cadce07b99c837d6cccbdddda3b.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/1caf78f4bf5cba45eb04c45a3c9b46bde8fa50e0.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
@@ -29,10 +29,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "cf1547ba2b009e20d92d5aab0691c5286408e2bb",
-        "sha256": "1kgp62ix1mgqw65npzr95nsiprcp6d2rpsy1dr58i91h2dv2bylp",
+        "rev": "6f31c4ed1dafdd1fa9930d5157576abdf6e0b370",
+        "sha256": "0palfcp2yijv7w66hhnqn5sr1dkyvnin6qwfzks7nyf5qppk2v16",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/cf1547ba2b009e20d92d5aab0691c5286408e2bb.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/6f31c4ed1dafdd1fa9930d5157576abdf6e0b370.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
