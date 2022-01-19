@@ -156,7 +156,14 @@ class Backend(BaseAlchemyBackend):
             return self.table_expr_class(node)
 
     def udf(
-        self, pyfunc, in_types, out_type, schema=None, replace=False, name=None
+        self,
+        pyfunc,
+        in_types,
+        out_type,
+        schema=None,
+        replace=False,
+        name=None,
+        language="plpythonu",
     ):
         """Decorator that defines a PL/Python UDF in-database based on the
         wrapped function and turns it into an ibis function expression.
@@ -172,6 +179,8 @@ class Backend(BaseAlchemyBackend):
             replace UDF in database if already exists
         name: str
             name for the UDF to be defined in database
+        language
+            Language extension to use for PL/Python
 
         Returns
         -------
@@ -189,4 +198,5 @@ class Backend(BaseAlchemyBackend):
             schema=schema,
             replace=replace,
             name=name,
+            language=language,
         )

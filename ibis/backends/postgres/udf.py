@@ -136,6 +136,7 @@ def udf(
     schema=None,
     replace=False,
     name=None,
+    language="plpythonu",
 ):
     """Defines a UDF in the database
 
@@ -148,6 +149,8 @@ def udf(
     schema: str - optionally specify the schema in which to define the UDF
     replace: bool - replace UDF in database if already exists
     name: str - name for the UDF to be defined in database
+    language
+        The language to use for the UDF
 
     Returns
     -------
@@ -166,7 +169,7 @@ def udf(
     template = """CREATE {replace} FUNCTION
 {schema_fragment}{name}({signature})
 RETURNS {return_type}
-LANGUAGE plpythonu
+LANGUAGE {language}
 AS $$
 {func_definition}
 return {internal_name}({args})
@@ -200,6 +203,7 @@ $$;
         name=internal_name,
         signature=postgres_signature,
         return_type=return_type,
+        language=language,
         func_definition=func_definition,
         # for internal_name, need to make sure this works if passing
         # name parameter

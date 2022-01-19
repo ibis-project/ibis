@@ -262,10 +262,10 @@ def postgres(schema, tables, data_directory, plpython, **params):
 
     use_postgis = 'geo' in tables
     if use_postgis:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS POSTGIS")
+        engine.execute("CREATE EXTENSION IF NOT EXISTS postgis")
 
     if plpython:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS PLPYTHONU")
+        engine.execute("CREATE EXTENSION IF NOT EXISTS plpython3u")
 
     for table in tables:
         src = data_directory / f'{table}.csv'

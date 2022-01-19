@@ -491,8 +491,12 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.xfail_unsupported
-# Postgres and Impala do not support range window bounded on both sides
-@pytest.mark.xfail_backends(['postgres', 'impala'])
+@pytest.mark.xfail_backends(
+    [
+        # Impala does not support range window bounded on both sides
+        'impala',
+    ]
+)
 @pytest.mark.skip_backends(
     ['pandas', 'csv', 'parquet', 'pyspark', 'hdf5'], reason='Issue #2709'
 )

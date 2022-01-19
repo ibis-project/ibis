@@ -57,7 +57,7 @@ INSERT INTO {schema}.{table_name} VALUES
 def sql_define_py_udf(test_schema):
     return """CREATE OR REPLACE FUNCTION {schema}.pylen(x varchar)
 RETURNS integer
-LANGUAGE plpythonu
+LANGUAGE plpython3u
 AS
 $$
 return len(x)
@@ -83,9 +83,10 @@ $$;""".format(
 def con_for_udf(
     con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf
 ):
-    con.con.execute(sql_table_setup)
-    con.con.execute(sql_define_udf)
-    con.con.execute(sql_define_py_udf)
+    with con.con.begin() as c:
+        c.execute(sql_table_setup)
+        c.execute(sql_define_udf)
+        c.execute(sql_define_py_udf)
     try:
         yield con
     finally:
@@ -148,6 +149,7 @@ def test_udf(con_for_udf, test_schema, table):
         dt.int32,
         schema=test_schema,
         replace=True,
+        language="plpython3u",
     )
     table_filt = table.filter(table['user_id'] == 2)
     expr = table_filt[
@@ -177,6 +179,7 @@ def test_array_type(con_for_udf, test_schema, table):
         dt.Array(dt.string),
         schema=test_schema,
         replace=True,
+        language="plpython3u",
     )
     splitter = ibis.literal(' ', dt.string)
     result = pysplit_udf(table['user_name'], splitter).name('split_name')
@@ -196,6 +199,7 @@ def test_client_udf_api(con_for_udf, test_schema, table):
         dt.int32,
         schema=test_schema,
         replace=True,
+        language="plpython3u",
     )
 
     table_filt = table.filter(table['user_id'] == 2)
@@ -232,4 +236,5 @@ def test_client_udf_decorator_fails(con_for_udf, test_schema):
             dt.int32,
             schema=test_schema,
             replace=True,
+            language="plpython3u",
         )
