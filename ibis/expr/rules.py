@@ -16,6 +16,10 @@ optional = sig.Optional
 
 
 class validator(curry, sig.Validator):
+    """
+    Enable convenient validator definition by decorating plain functions.
+    """
+
     def __repr__(self):
         return '{}({}{})'.format(
             self.func.__name__,
@@ -347,7 +351,7 @@ def promoter(fn):
 
 @promoter
 def shape_like(arg, dtype=None):
-    if isinstance(arg, (tuple, list, ir.ListExpr)):
+    if util.is_iterable(arg):
         datatype = dtype or highest_precedence_dtype(arg)
         columnar = util.any_of(arg, ir.AnyColumn)
     else:

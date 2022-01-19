@@ -559,9 +559,7 @@ class SelectBuilder:
                 return expr._factory(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(
-            op, (ops.Any, ops.BooleanValueOp, ops.TableColumn, ops.Literal)
-        ):
+        elif isinstance(op, (ops.Any, ops.TableColumn, ops.Literal)):
             return expr
         elif isinstance(op, ops.ValueOp):
             visited = [

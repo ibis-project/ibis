@@ -12,7 +12,6 @@ from ...common import exceptions as com
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import UnaryOp, ValueOp, distinct_roots
 
 try:
@@ -24,16 +23,11 @@ else:
 
 
 @public
-class BooleanValueOp:
-    pass
-
-
-@public
 class TableColumn(ValueOp):
     """Selects a column from a `TableExpr`."""
 
-    table = Arg(rlz.table)
-    name = Arg(rlz.instance_of((str, int)))
+    table = rlz.table
+    name = rlz.instance_of((str, int))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -110,7 +104,7 @@ class TableArrayView(ValueOp):
     subqueries to be viewed as arrays)
     """
 
-    table = Arg(rlz.table)
+    table = rlz.table
 
     @property
     def name(self):
@@ -124,8 +118,8 @@ class TableArrayView(ValueOp):
 
 @public
 class Cast(ValueOp):
-    arg = Arg(rlz.any)
-    to = Arg(rlz.datatype)
+    arg = rlz.any
+    to = rlz.datatype
 
     # see #396 for the issue preventing an implementation of resolve_name
 
@@ -175,8 +169,8 @@ class IfNull(ValueOp):
           .else_(null_substitute_expr)
     """
 
-    arg = Arg(rlz.any)
-    ifnull_expr = Arg(rlz.any)
+    arg = rlz.any
+    ifnull_expr = rlz.any
     output_type = rlz.shape_like('args')
 
 
@@ -184,8 +178,8 @@ class IfNull(ValueOp):
 class NullIf(ValueOp):
     """Set values to NULL if they equal the null_if_expr"""
 
-    arg = Arg(rlz.any)
-    null_if_expr = Arg(rlz.any)
+    arg = rlz.any
+    null_if_expr = rlz.any
     output_type = rlz.shape_like('args')
 
 
@@ -196,7 +190,7 @@ class CoalesceLike(ValueOp):
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
-    arg = Arg(rlz.value_list_of(rlz.any))
+    arg = rlz.value_list_of(rlz.any)
 
     def output_type(self):
         first = self.arg[0]
@@ -223,39 +217,37 @@ class Least(CoalesceLike):
 
 @public
 class Literal(ValueOp):
-    value = Arg(
-        rlz.one_of(
-            (
-                rlz.instance_of(
-                    (
-                        BaseGeometry,
-                        bytes,
-                        datetime.date,
-                        datetime.datetime,
-                        datetime.time,
-                        datetime.timedelta,
-                        dict,
-                        enum.Enum,
-                        float,
-                        frozenset,
-                        int,
-                        list,
-                        np.generic,
-                        np.ndarray,
-                        pd.Timedelta,
-                        pd.Timestamp,
-                        set,
-                        str,
-                        tuple,
-                        type(None),
-                        uuid.UUID,
-                    )
-                ),
-                rlz.is_computable_input,
-            )
+    value = rlz.one_of(
+        (
+            rlz.instance_of(
+                (
+                    BaseGeometry,
+                    bytes,
+                    datetime.date,
+                    datetime.datetime,
+                    datetime.time,
+                    datetime.timedelta,
+                    dict,
+                    enum.Enum,
+                    float,
+                    frozenset,
+                    int,
+                    list,
+                    np.generic,
+                    np.ndarray,
+                    pd.Timedelta,
+                    pd.Timestamp,
+                    set,
+                    str,
+                    tuple,
+                    type(None),
+                    uuid.UUID,
+                )
+            ),
+            rlz.is_computable_input,
         )
     )
-    dtype = Arg(rlz.datatype)
+    dtype = rlz.datatype
 
     def __repr__(self):
         return '{}({})'.format(
@@ -297,16 +289,18 @@ class Literal(ValueOp):
 class NullLiteral(Literal):
     """Typeless NULL literal"""
 
-    value = Arg(type(None), default=None)
-    dtype = Arg(dt.Null, default=dt.null)
+    value = rlz.optional(type(None))
+    dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)
 
 
 @public
 class ScalarParameter(ValueOp):
     _counter = itertools.count()
 
-    dtype = Arg(rlz.datatype)
-    counter = Arg(int, default=lambda: next(ScalarParameter._counter))
+    dtype = rlz.datatype
+    counter = rlz.optional(
+        rlz.instance_of(int), default=lambda: next(ScalarParameter._counter)
+    )
 
     def resolve_name(self):
         return f'param_{self.counter:d}'
@@ -339,7 +333,7 @@ class ScalarParameter(ValueOp):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = Arg(rlz.tuple_of(rlz.any))
+    values = rlz.tuple_of(rlz.any)
     display_argnames = False  # disable showing argnames in repr
 
     def output_type(self):
@@ -384,8 +378,8 @@ class Pi(FloatConstant):
 
 @public
 class StructField(ValueOp):
-    arg = Arg(rlz.struct)
-    field = Arg(str)
+    arg = rlz.struct
+    field = rlz.instance_of(str)
 
     def output_type(self):
         struct_dtype = self.arg.type()
@@ -395,7 +389,7 @@ class StructField(ValueOp):
 
 @public
 class DecimalUnaryOp(UnaryOp):
-    arg = Arg(rlz.decimal)
+    arg = rlz.decimal
 
 
 @public
@@ -410,21 +404,21 @@ class DecimalScale(DecimalUnaryOp):
 
 @public
 class Hash(ValueOp):
-    arg = Arg(rlz.any)
-    how = Arg(rlz.isin({'fnv', 'farm_fingerprint'}))
+    arg = rlz.any
+    how = rlz.isin({'fnv', 'farm_fingerprint'})
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 @public
 class HashBytes(ValueOp):
-    arg = Arg(rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)}))
-    how = Arg(rlz.isin({'md5', 'sha1', 'sha256', 'sha512'}))
+    arg = rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)})
+    how = rlz.isin({'md5', 'sha1', 'sha256', 'sha512'})
     output_type = rlz.shape_like('arg', dt.binary)
 
 
 @public
 class SummaryFilter(ValueOp):
-    expr = Arg(ir.TopKExpr)
+    expr = rlz.instance_of(ir.TopKExpr)
 
     def output_type(self):
         return dt.boolean.column_type()
@@ -432,15 +426,13 @@ class SummaryFilter(ValueOp):
 
 @public
 class TopK(ValueOp):
-    arg = Arg(rlz.column(rlz.any))
-    k = Arg(rlz.non_negative_integer)
-    by = Arg(
-        rlz.one_of(
-            (
-                rlz.function_of("arg", preprocess=ir.find_base_table),
-                rlz.any,
-            )
-        ),
+    arg = rlz.column(rlz.any)
+    k = rlz.non_negative_integer
+    by = rlz.one_of(
+        (
+            rlz.function_of("arg", preprocess=ir.find_base_table),
+            rlz.any,
+        )
     )
 
     def output_type(self):
@@ -452,10 +444,10 @@ class TopK(ValueOp):
 
 @public
 class SimpleCase(ValueOp):
-    base = Arg(rlz.any)
-    cases = Arg(rlz.value_list_of(rlz.any))
-    results = Arg(rlz.value_list_of(rlz.any))
-    default = Arg(rlz.any)
+    base = rlz.any
+    cases = rlz.value_list_of(rlz.any)
+    results = rlz.value_list_of(rlz.any)
+    default = rlz.any
 
     def _validate(self):
         assert len(self.cases) == len(self.results)
@@ -471,9 +463,9 @@ class SimpleCase(ValueOp):
 
 @public
 class SearchedCase(ValueOp):
-    cases = Arg(rlz.value_list_of(rlz.boolean))
-    results = Arg(rlz.value_list_of(rlz.any))
-    default = Arg(rlz.any)
+    cases = rlz.value_list_of(rlz.boolean)
+    results = rlz.value_list_of(rlz.any)
+    default = rlz.any
 
     def _validate(self):
         assert len(self.cases) == len(self.results)
@@ -499,7 +491,7 @@ class DistinctColumn(ValueOp):
     for calling count()
     """
 
-    arg = Arg(rlz.column(rlz.any))
+    arg = rlz.column(rlz.any)
     output_type = rlz.typeof('arg')
 
     def count(self):

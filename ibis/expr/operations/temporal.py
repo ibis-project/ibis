@@ -6,19 +6,18 @@ from public import public
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from ..signature import Argument as Arg
 from .core import BinaryOp, Node, UnaryOp, ValueOp
 from .logical import Between
 
 
 @public
 class TemporalUnaryOp(UnaryOp):
-    arg = Arg(rlz.temporal)
+    arg = rlz.temporal
 
 
 @public
 class TimestampUnaryOp(UnaryOp):
-    arg = Arg(rlz.timestamp)
+    arg = rlz.timestamp
 
 
 _date_units = {
@@ -77,37 +76,37 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 
 @public
 class TimestampTruncate(ValueOp):
-    arg = Arg(rlz.timestamp)
-    unit = Arg(rlz.isin(_timestamp_units))
+    arg = rlz.timestamp
+    unit = rlz.isin(_timestamp_units)
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
 @public
 class DateTruncate(ValueOp):
-    arg = Arg(rlz.date)
-    unit = Arg(rlz.isin(_date_units))
+    arg = rlz.date
+    unit = rlz.isin(_date_units)
     output_type = rlz.shape_like('arg', dt.date)
 
 
 @public
 class TimeTruncate(ValueOp):
-    arg = Arg(rlz.time)
-    unit = Arg(rlz.isin(_time_units))
+    arg = rlz.time
+    unit = rlz.isin(_time_units)
     output_type = rlz.shape_like('arg', dt.time)
 
 
 @public
 class Strftime(ValueOp):
-    arg = Arg(rlz.temporal)
-    format_str = Arg(rlz.string)
+    arg = rlz.temporal
+    format_str = rlz.string
     output_type = rlz.shape_like('arg', dt.string)
 
 
 @public
 class StringToTimestamp(ValueOp):
-    arg = Arg(rlz.string)
-    format_str = Arg(rlz.string)
-    timezone = Arg(rlz.string, default=None)
+    arg = rlz.string
+    format_str = rlz.string
+    timezone = rlz.optional(rlz.string)
     output_type = rlz.shape_like('arg', dt.Timestamp(timezone='UTC'))
 
 
@@ -121,12 +120,12 @@ ExtractTimestampField = ExtractTemporalField
 
 @public
 class ExtractDateField(ExtractTemporalField):
-    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
 
 
 @public
 class ExtractTimeField(ExtractTemporalField):
-    arg = Arg(rlz.one_of([rlz.time, rlz.timestamp]))
+    arg = rlz.one_of([rlz.time, rlz.timestamp])
 
 
 @public
@@ -186,19 +185,19 @@ class ExtractMillisecond(ExtractTimeField):
 
 @public
 class DayOfWeekIndex(UnaryOp):
-    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_type = rlz.shape_like('arg', dt.int16)
 
 
 @public
 class DayOfWeekName(UnaryOp):
-    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_type = rlz.shape_like('arg', dt.string)
 
 
 @public
 class DayOfWeekNode(Node):
-    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
 
     def output_type(self):
         return ir.DayOfWeek
@@ -216,80 +215,76 @@ class Date(UnaryOp):
 
 @public
 class TimestampFromUNIX(ValueOp):
-    arg = Arg(rlz.any)
+    arg = rlz.any
     # Only pandas-based backends support 'ns'
-    unit = Arg(rlz.isin({'s', 'ms', 'us', 'ns'}))
+    unit = rlz.isin({'s', 'ms', 'us', 'ns'})
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
 @public
 class DateAdd(BinaryOp):
-    left = Arg(rlz.date)
-    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'}))
+    left = rlz.date
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
     output_type = rlz.shape_like('left')
 
 
 @public
 class DateSub(BinaryOp):
-    left = Arg(rlz.date)
-    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'}))
+    left = rlz.date
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
     output_type = rlz.shape_like('left')
 
 
 @public
 class DateDiff(BinaryOp):
-    left = Arg(rlz.date)
-    right = Arg(rlz.date)
+    left = rlz.date
+    right = rlz.date
     output_type = rlz.shape_like('left', dt.Interval('D'))
 
 
 @public
 class TimeAdd(BinaryOp):
-    left = Arg(rlz.time)
-    right = Arg(rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'}))
+    left = rlz.time
+    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
     output_type = rlz.shape_like('left')
 
 
 @public
 class TimeSub(BinaryOp):
-    left = Arg(rlz.time)
-    right = Arg(rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'}))
+    left = rlz.time
+    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
     output_type = rlz.shape_like('left')
 
 
 @public
 class TimeDiff(BinaryOp):
-    left = Arg(rlz.time)
-    right = Arg(rlz.time)
+    left = rlz.time
+    right = rlz.time
     output_type = rlz.shape_like('left', dt.Interval('s'))
 
 
 @public
 class TimestampAdd(BinaryOp):
-    left = Arg(rlz.timestamp)
-    right = Arg(
-        rlz.interval(
-            units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
-        )
+    left = rlz.timestamp
+    right = rlz.interval(
+        units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
     )
     output_type = rlz.shape_like('left')
 
 
 @public
 class TimestampSub(BinaryOp):
-    left = Arg(rlz.timestamp)
-    right = Arg(
-        rlz.interval(
-            units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
-        )
+    left = rlz.timestamp
+    right = rlz.interval(
+        units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
     )
     output_type = rlz.shape_like('left')
 
 
 @public
 class TimestampDiff(BinaryOp):
-    left = Arg(rlz.timestamp)
-    right = Arg(rlz.timestamp)
+    left = rlz.timestamp
+    right = rlz.timestamp
     output_type = rlz.shape_like('left', dt.Interval('s'))
 
 
@@ -316,38 +311,36 @@ class IntervalBinaryOp(BinaryOp):
 
 @public
 class IntervalAdd(IntervalBinaryOp):
-    left = Arg(rlz.interval)
-    right = Arg(rlz.interval)
+    left = rlz.interval
+    right = rlz.interval
     op = operator.add
 
 
 @public
 class IntervalSubtract(IntervalBinaryOp):
-    left = Arg(rlz.interval)
-    right = Arg(rlz.interval)
+    left = rlz.interval
+    right = rlz.interval
     op = operator.sub
 
 
 @public
 class IntervalMultiply(IntervalBinaryOp):
-    left = Arg(rlz.interval)
-    right = Arg(rlz.numeric)
+    left = rlz.interval
+    right = rlz.numeric
     op = operator.mul
 
 
 @public
 class IntervalFloorDivide(IntervalBinaryOp):
-    left = Arg(rlz.interval)
-    right = Arg(rlz.numeric)
+    left = rlz.interval
+    right = rlz.numeric
     op = operator.floordiv
 
 
 @public
 class IntervalFromInteger(ValueOp):
-    arg = Arg(rlz.integer)
-    unit = Arg(
-        rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
-    )
+    arg = rlz.integer
+    unit = rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
 
     @property
     def resolution(self):
@@ -360,6 +353,6 @@ class IntervalFromInteger(ValueOp):
 
 @public
 class BetweenTime(Between):
-    arg = Arg(rlz.one_of([rlz.timestamp, rlz.time]))
-    lower_bound = Arg(rlz.one_of([rlz.time, rlz.string]))
-    upper_bound = Arg(rlz.one_of([rlz.time, rlz.string]))
+    arg = rlz.one_of([rlz.timestamp, rlz.time])
+    lower_bound = rlz.one_of([rlz.time, rlz.string])
+    upper_bound = rlz.one_of([rlz.time, rlz.string])

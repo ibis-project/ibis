@@ -2,28 +2,28 @@ import copy
 import inspect
 from typing import Any, Callable, Dict
 
-import ibis.expr.rules as rlz
 from ibis import util
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
 class Validator(Callable):
-    pass
-
-
-class ValidatorFunction(Validator):
-
-    __slots__ = ('fn',)
-
-    def __init__(self, fn):
-        self.fn = fn
-
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
+    """
+    Abstract base class for defining argument validators.
+    """
 
 
 class Optional(Validator):
+    """
+    Validator to allow missing arguments.
+
+    Parameters
+    ----------
+    validator : Validator
+        Used to do the actual validation if the argument gets passed.
+    default : Any, default None
+        Value to return with in case of a missing argument.
+    """
 
     __slots__ = ('validator', 'default')
 
@@ -44,6 +44,9 @@ class Optional(Validator):
 
 
 class Parameter(inspect.Parameter):
+    """
+    Augmented Parameter class to additionally hold a validator object.
+    """
 
     __slots__ = ('_validator',)
 
@@ -66,9 +69,27 @@ class Parameter(inspect.Parameter):
             return self.validator(arg, this=this)
 
 
+class _ValidatorFunction(Validator):
+    def __init__(self, fn):
+        self.fn = fn
+
+    def __call__(self, *args, **kwargs):
+        return self.fn(*args, **kwargs)
+
+
+class _InstanceOf(Validator):
+    def __init__(self, typ):
+        self.typ = typ
+
+    def __call__(self, arg, **kwargs):
+        if not isinstance(arg, self.typ):
+            raise TypeError(self.typ)
+        return arg
+
+
+@util.deprecated(version="3.0", instead="Validator")
 def Argument(validator, default=EMPTY):
     """Argument constructor
-
     Parameters
     ----------
     validator : Union[Callable[[arg], coerced], Type, Tuple[Type]]
@@ -84,14 +105,14 @@ def Argument(validator, default=EMPTY):
     if isinstance(validator, Validator):
         pass
     elif isinstance(validator, type):
-        validator = rlz.instance_of(validator)
+        validator = _InstanceOf(validator)
     elif isinstance(validator, tuple):
         assert util.all_of(validator, type)
-        validator = rlz.instance_of(validator)
+        validator = _InstanceOf(validator)
     elif isinstance(validator, Validator):
         validator = validator
     elif callable(validator):
-        validator = ValidatorFunction(validator)
+        validator = _ValidatorFunction(validator)
     else:
         raise TypeError(
             'Argument validator must be a callable, type or '
@@ -105,6 +126,10 @@ def Argument(validator, default=EMPTY):
 
 
 class AnnotableMeta(type):
+    """
+    Metaclass to turn class annotations into a validatable function signature.
+    """
+
     def __new__(metacls, clsname, bases, dct):
         params = {}
         for parent in bases:
@@ -135,8 +160,9 @@ class AnnotableMeta(type):
 
 
 class Annotable(metaclass=AnnotableMeta):
-
-    __slots__ = ()
+    """
+    Base class for dataclass-like objects with custom validation rules.
+    """
 
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)

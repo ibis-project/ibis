@@ -3,17 +3,16 @@ from types import FunctionType, LambdaType
 from public import public
 
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .analytic import AnalyticOp
 from .core import ValueOp, distinct_roots
 from .reductions import Reduction
 
 
 class VectorizedUDF(ValueOp):
-    func = Arg(rlz.instance_of((FunctionType, LambdaType)))
-    func_args = Arg(rlz.list_of(rlz.column(rlz.any)))
-    input_type = Arg(rlz.list_of(rlz.datatype))
-    return_type = Arg(rlz.datatype)
+    func = rlz.instance_of((FunctionType, LambdaType))
+    func_args = rlz.list_of(rlz.column(rlz.any))
+    input_type = rlz.list_of(rlz.datatype)
+    return_type = rlz.datatype
 
     @property
     def inputs(self):

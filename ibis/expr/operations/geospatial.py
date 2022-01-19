@@ -2,7 +2,6 @@ from public import public
 
 from .. import datatypes as dt
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .core import BinaryOp, UnaryOp
 from .reductions import Reduction
 
@@ -11,15 +10,15 @@ from .reductions import Reduction
 class GeoSpatialBinOp(BinaryOp):
     """Geo Spatial base binary"""
 
-    left = Arg(rlz.geospatial)
-    right = Arg(rlz.geospatial)
+    left = rlz.geospatial
+    right = rlz.geospatial
 
 
 @public
 class GeoSpatialUnOp(UnaryOp):
     """Geo Spatial base unary"""
 
-    arg = Arg(rlz.geospatial)
+    arg = rlz.geospatial
 
 
 @public
@@ -86,7 +85,7 @@ class GeoEquals(GeoSpatialBinOp):
 class GeoGeometryN(GeoSpatialUnOp):
     """Returns the Nth Geometry of a Multi geometry."""
 
-    n = Arg(rlz.integer)
+    n = rlz.integer
 
     output_type = rlz.shape_like('args', dt.geometry)
 
@@ -124,8 +123,8 @@ class GeoLineLocatePoint(GeoSpatialBinOp):
     total 2d line length.
     """
 
-    left = Arg(rlz.linestring)
-    right = Arg(rlz.point)
+    left = rlz.linestring
+    right = rlz.point
 
     output_type = rlz.shape_like('args', dt.halffloat)
 
@@ -155,10 +154,9 @@ class GeoLineSubstring(GeoSpatialUnOp):
     This only works with linestrings.
     """
 
-    arg = Arg(rlz.linestring)
-
-    start = Arg(rlz.floating)
-    end = Arg(rlz.floating)
+    arg = rlz.linestring
+    start = rlz.floating
+    end = rlz.floating
 
     output_type = rlz.shape_like('args', dt.linestring)
 
@@ -195,7 +193,7 @@ class GeoTouches(GeoSpatialBinOp):
 class GeoUnaryUnion(Reduction):
     """Returns the pointwise union of the geometries in the column."""
 
-    arg = Arg(rlz.column(rlz.geospatial))
+    arg = rlz.column(rlz.geospatial)
 
     def output_type(self):
         return dt.geometry.scalar_type()
@@ -311,8 +309,8 @@ class GeoPoint(GeoSpatialBinOp):
     Constant coordinates result in construction of a POINT literal.
     """
 
-    left = Arg(rlz.numeric)
-    right = Arg(rlz.numeric)
+    left = rlz.numeric
+    right = rlz.numeric
     output_type = rlz.shape_like('args', dt.point)
 
 
@@ -324,7 +322,7 @@ class GeoPointN(GeoSpatialUnOp):
     the geometry
     """
 
-    n = Arg(rlz.integer)
+    n = rlz.integer
     output_type = rlz.shape_like('args', dt.point)
 
 
@@ -355,7 +353,7 @@ class GeoSRID(GeoSpatialUnOp):
 class GeoSetSRID(GeoSpatialUnOp):
     """Set the spatial reference identifier for the ST_Geometry."""
 
-    srid = Arg(rlz.integer)
+    srid = rlz.integer
     output_type = rlz.shape_like('args', dt.geometry)
 
 
@@ -366,7 +364,7 @@ class GeoBuffer(GeoSpatialUnOp):
     Spatial Reference System of this Geometry.
     """
 
-    radius = Arg(rlz.floating)
+    radius = rlz.floating
 
     output_type = rlz.shape_like('args', dt.geometry)
 
@@ -384,7 +382,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
     of one another.
     """
 
-    distance = Arg(rlz.floating)
+    distance = rlz.floating
 
     output_type = rlz.shape_like('args', dt.boolean)
 
@@ -395,7 +393,7 @@ class GeoDWithin(GeoSpatialBinOp):
     of one another.
     """
 
-    distance = Arg(rlz.floating)
+    distance = rlz.floating
 
     output_type = rlz.shape_like('args', dt.boolean)
 
@@ -414,8 +412,8 @@ class GeoAzimuth(GeoSpatialBinOp):
     on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
     """
 
-    left = Arg(rlz.point)
-    right = Arg(rlz.point)
+    left = rlz.point
+    right = rlz.point
 
     output_type = rlz.shape_like('args', dt.float64)
 
@@ -449,8 +447,8 @@ class GeoDifference(GeoSpatialBinOp):
 class GeoSimplify(GeoSpatialUnOp):
     """Returns a simplified version of the given geometry."""
 
-    tolerance = Arg(rlz.floating)
-    preserve_collapsed = Arg(rlz.boolean)
+    tolerance = rlz.floating
+    preserve_collapsed = rlz.boolean
 
     output_type = rlz.shape_like('arg', dt.geometry)
 
@@ -459,7 +457,7 @@ class GeoSimplify(GeoSpatialUnOp):
 class GeoTransform(GeoSpatialUnOp):
     """Returns a transformed version of the given geometry into a new SRID."""
 
-    srid = Arg(rlz.integer)
+    srid = rlz.integer
 
     output_type = rlz.shape_like('arg', dt.geometry)
 

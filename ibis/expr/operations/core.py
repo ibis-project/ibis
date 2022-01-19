@@ -9,7 +9,6 @@ from ... import util
 from ...common import exceptions as com
 from .. import rules as rlz
 from ..signature import Annotable
-from ..signature import Argument as Arg
 
 
 def _safe_repr(x, memo=None):
@@ -186,12 +185,12 @@ class ValueOp(Node):
 class UnaryOp(ValueOp):
     """A unary operation."""
 
-    arg = Arg(rlz.any)
+    arg = rlz.any
 
 
 @public
 class BinaryOp(ValueOp):
     """A binary operation."""
 
-    left = Arg(rlz.any)
-    right = Arg(rlz.any)
+    left = rlz.any
+    right = rlz.any

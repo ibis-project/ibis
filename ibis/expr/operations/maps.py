@@ -3,20 +3,19 @@ from public import public
 from ...common import exceptions as com
 from .. import datatypes as dt
 from .. import rules as rlz
-from ..signature import Argument as Arg
 from .core import ValueOp
 
 
 @public
 class MapLength(ValueOp):
-    arg = Arg(rlz.mapping)
+    arg = rlz.mapping
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 @public
 class MapValueForKey(ValueOp):
-    arg = Arg(rlz.mapping)
-    key = Arg(rlz.one_of([rlz.string, rlz.integer]))
+    arg = rlz.mapping
+    key = rlz.one_of([rlz.string, rlz.integer])
 
     def output_type(self):
         return rlz.shape_like(tuple(self.args), self.arg.type().value_type)
@@ -24,9 +23,9 @@ class MapValueForKey(ValueOp):
 
 @public
 class MapValueOrDefaultForKey(ValueOp):
-    arg = Arg(rlz.mapping)
-    key = Arg(rlz.one_of([rlz.string, rlz.integer]))
-    default = Arg(rlz.any)
+    arg = rlz.mapping
+    key = rlz.one_of([rlz.string, rlz.integer])
+    default = rlz.any
 
     def output_type(self):
         arg = self.arg
@@ -47,7 +46,7 @@ class MapValueOrDefaultForKey(ValueOp):
 
 @public
 class MapKeys(ValueOp):
-    arg = Arg(rlz.mapping)
+    arg = rlz.mapping
 
     def output_type(self):
         arg = self.arg
@@ -56,7 +55,7 @@ class MapKeys(ValueOp):
 
 @public
 class MapValues(ValueOp):
-    arg = Arg(rlz.mapping)
+    arg = rlz.mapping
 
     def output_type(self):
         arg = self.arg
@@ -65,6 +64,6 @@ class MapValues(ValueOp):
 
 @public
 class MapConcat(ValueOp):
-    left = Arg(rlz.mapping)
-    right = Arg(rlz.mapping)
+    left = rlz.mapping
+    right = rlz.mapping
     output_type = rlz.typeof('left')
