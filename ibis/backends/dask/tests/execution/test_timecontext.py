@@ -1,5 +1,3 @@
-from typing import Optional
-
 import dask.dataframe as dd
 import pytest
 from dask.dataframe.utils import tm
@@ -240,8 +238,8 @@ def test_adjust_context_scope(time_keyed_left, time_keyed_right):
     @adjust_context.register(CustomAsOfJoin)
     def adjust_context_custom_asof_join(
         op: ops.AsOfJoin,
+        scope: Scope,
         timecontext: TimeContext,
-        scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Confirms that `scope` is passed in."""
         assert scope is not None
@@ -280,8 +278,8 @@ def test_adjust_context_complete_shift(
     @adjust_context.register(CustomAsOfJoin)
     def adjust_context_custom_asof_join(
         op: ops.AsOfJoin,
+        scope: Scope,
         timecontext: TimeContext,
-        scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Shifts both the begin and end in the same direction."""
         begin, end = timecontext

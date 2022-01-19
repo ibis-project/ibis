@@ -29,9 +29,10 @@ This is an optional feature. The result of executing an expression without time
 context is conceptually the same as executing an expression with (-inf, inf)
 time context.
 """
-from typing import Optional
+from typing import List, Optional
 
 import ibis.expr.operations as ops
+from ibis.backends.base import BaseBackend
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
@@ -41,10 +42,10 @@ from ..core import compute_time_context, is_computable_input
 
 @compute_time_context.register(ops.AsOfJoin)
 def compute_time_context_asof_join(
-    op,
-    clients,
+    op: ops.AsOfJoin,
+    scope: Scope,
+    clients: List[BaseBackend],
     timecontext: Optional[TimeContext] = None,
-    scope: Optional[Scope] = None,
     **kwargs
 ):
     new_timecontexts = [
@@ -57,7 +58,7 @@ def compute_time_context_asof_join(
     # right table is the second node in children
     new_timecontexts = [
         new_timecontexts[0],
-        adjust_context(op, timecontext=timecontext, scope=scope),
+        adjust_context(op, scope, timecontext),
         *new_timecontexts[2:],
     ]
     return new_timecontexts
@@ -65,10 +66,10 @@ def compute_time_context_asof_join(
 
 @compute_time_context.register(ops.WindowOp)
 def compute_time_context_window(
-    op,
-    clients,
+    op: ops.WindowOp,
+    scope: Scope,
+    clients: List[BaseBackend],
     timecontext: Optional[TimeContext] = None,
-    scope: Optional[Scope] = None,
     **kwargs
 ):
     new_timecontexts = [
@@ -78,7 +79,7 @@ def compute_time_context_window(
     if not timecontext:
         return new_timecontexts
 
-    result = adjust_context(op, timecontext=timecontext, scope=scope)
+    result = adjust_context(op, scope, timecontext)
 
     new_timecontexts = [
         result for arg in op.inputs if is_computable_input(arg)

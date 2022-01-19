@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -69,10 +67,11 @@ def test_bad_timecontext(time_table, t):
 def test_bad_call_to_adjust_context():
     op = "not_a_node"
     context = (pd.Timestamp('20170101'), pd.Timestamp('20170103'))
+    scope = Scope()
     with pytest.raises(
         com.IbisError, match=r".*Unsupported input type for adjust context.*"
     ):
-        adjust_context(op, context)
+        adjust_context(op, scope, context)
 
 
 def test_compare_timecontext():
@@ -278,8 +277,8 @@ def test_adjust_context_scope(time_keyed_left, time_keyed_right):
     @adjust_context.register(CustomAsOfJoin)
     def adjust_context_custom_asof_join(
         op: ops.AsOfJoin,
+        scope: Scope,
         timecontext: TimeContext,
-        scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Confirms that `scope` is passed in."""
         assert scope is not None
@@ -318,8 +317,8 @@ def test_adjust_context_complete_shift(
     @adjust_context.register(CustomAsOfJoin)
     def adjust_context_custom_asof_join(
         op: ops.AsOfJoin,
+        scope: Scope,
         timecontext: TimeContext,
-        scope: Optional[Scope] = None,
     ) -> TimeContext:
         """Shifts both the begin and end in the same direction."""
 
