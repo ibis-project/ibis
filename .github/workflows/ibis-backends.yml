@@ -161,8 +161,6 @@ jobs:
 
   test_postgres:
     name: PostgreSQL deps-unbounded python-${{ matrix.python-version }}
-    env:
-      IBIS_TEST_POSTGRES_PORT: 5433
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -175,7 +173,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: start postgres container
-        run: docker compose up -d ibis-postgres
+        run: docker compose up --build -d ibis-postgres
 
       - name: install python
         uses: actions/setup-python@v2
@@ -221,15 +219,13 @@ jobs:
 
   test_postgres_min_version:
     name: PostgreSQL deps-bounded python-3.7
-    env:
-      IBIS_TEST_POSTGRES_PORT: 5433
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
       - name: start postgres container
-        run: docker compose up -d ibis-postgres
+        run: docker compose up --build -d ibis-postgres
 
       - name: install python
         uses: actions/setup-python@v2

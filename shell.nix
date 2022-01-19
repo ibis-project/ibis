@@ -59,5 +59,4 @@ pkgs.mkShell {
   ];
 
   PYTHONPATH = builtins.toPath ./.;
-  IBIS_TEST_POSTGRES_PORT = "5433";
 }

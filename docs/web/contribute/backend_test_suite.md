@@ -27,8 +27,8 @@ with the backend test suite.
 
 Many backends can be tested without `docker-compose`.
 
-The SQLite, datafusion, and any pandas-based backends can all be tested without
-needing to do anything except loading data.
+The `sqlite`, `datafusion`, and any `pandas`-based backends can all be tested
+without needing to do anything except loading data.
 
 ## Backend Testing with Compose
 
@@ -44,7 +44,7 @@ Here is the list of backends that can be tested using `docker-compose`.
 
 ### Testing a Compose Service
 
-!!! tip
+!!! check "Check your current directory"
 
     Make sure you're inside of your clone of the ibis GitHub repository
 
@@ -55,19 +55,15 @@ Let's fire up a PostgreSQL server and run tests against it.
 Open a new shell and run
 
 ```sh
-docker-compose up ibis-postgres
+docker-compose up --build ibis-postgres
 ```
 
-Test the connection using
+Test the connection in a different shell using
 
 ```sh
-export PGPORT=5433
-PGPASSWORD=postgres psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
+export PGPASSWORD=postgres
+psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
 ```
-
-!!! tip
-
-    The password for the `ibis_testing` database is `postgres`
 
 You should see this output:
 
@@ -75,11 +71,10 @@ You should see this output:
 success
 ```
 
-!!! note "Why are we setting `PGPORT`?"
+!!! warning "PostgreSQL doesn't start up instantly"
 
-    `PGPORT` is set to `5433` to allow testing the impala and postgres backends together,
-    because the impala backend uses a different postgres container for its Hive metastore and
-    requires its postgres server to be listening on port `5432`.
+    It takes a few seconds for postgres to start, so if the previous
+    command fails wait a few seconds and try again
 
 Congrats, you now have a PostgreSQL server running and are ready to run tests!
 

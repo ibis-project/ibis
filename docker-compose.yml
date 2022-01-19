@@ -32,6 +32,7 @@ services:
       - 25010:25010
       - 25020:25020
   postgres:
+    user: postgres
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
@@ -41,9 +42,7 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: postgres:9.5-alpine
-    ports:
-      - 5432:5432
+    image: postgres:13.3-alpine
   kudu:
     cap_add:
       - SYS_TIME
@@ -90,6 +89,7 @@ services:
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_DB: ibis_testing
       POSTGRES_USER: postgres
+    build: ./docker/ibis-postgres
     healthcheck:
       interval: 10s
       retries: 3
@@ -97,6 +97,5 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: shajekpivotal/ibis-docker-postgres-9.5
     ports:
-      - 5433:5432
+      - 5432:5432
