@@ -447,11 +447,11 @@ def column_from(name, column, *, this):
                 return column
             else:
                 raise com.IbisTypeError(
-                    f"Passed column is not a column in {table}"
+                    f"Passed column is not a column in {type(table)}"
                 )
         except com.IbisError:
             raise com.IbisTypeError(
-                f"Cannot get column {maybe_column} from {table}"
+                f"Cannot get column {maybe_column} from {type(table)}"
             )
 
     raise com.IbisTypeError(
