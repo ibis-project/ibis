@@ -107,3 +107,24 @@ def test_verbose_log_queries(con):
     expected += 'FROM base.functional_alltypes AS t0\n'
     expected += ' LIMIT ? OFFSET ?'
     assert query == expected
+
+
+def test_table_equality(dbpath):
+    con1 = ibis.sqlite.connect(dbpath)
+    batting1 = con1.table("batting")
+
+    con2 = ibis.sqlite.connect(dbpath)
+    batting2 = con2.table("batting")
+
+    assert batting1.op() == batting2.op()
+    assert batting1.equals(batting2)
+
+
+def test_table_inequality(dbpath):
+    con = ibis.sqlite.connect(dbpath)
+
+    batting = con.table("batting")
+    functional_alltypes = con.table("functional_alltypes")
+
+    assert batting.op() != functional_alltypes.op()
+    assert not batting.equals(functional_alltypes)
