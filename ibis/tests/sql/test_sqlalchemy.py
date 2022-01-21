@@ -691,11 +691,41 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._compare_sqla(expr, ex)
 
+    def test_filter_group_by_agg_with_same_name(self):
+        # GH 2907
+        t = ibis.table(
+            [("int_col", "int32"), ("bigint_col", "int64")], name="t"
+        )
+        expr = (
+            t.group_by("int_col")
+            .aggregate(bigint_col=lambda t: t.bigint_col.sum())
+            .filter(lambda t: t.bigint_col == 60)
+        )
+
+        t1 = sa.table(
+            "t", sa.column("int_col"), sa.column("bigint_col")
+        ).alias("t1")
+        t0 = (
+            sa.select(
+                [
+                    t1.c.int_col.label("int_col"),
+                    sa.func.sum(t1.c.bigint_col).label("bigint_col"),
+                ]
+            )
+            .group_by(t1.c.int_col)
+            .alias("t0")
+        )
+        ex = sa.select([t0]).where(t0.c.bigint_col == 60)
+
+        self._compare_sqla(expr, ex)
+
     def _compare_sqla(self, expr, sqla):
         context = AlchemyContext(compiler=AlchemyCompiler)
         result_sqla = AlchemyCompiler.to_sql(expr, context)
-        result = str(result_sqla.compile())
-        expected = str(sqla.compile())
+        result = str(
+            result_sqla.compile(compile_kwargs=dict(literal_binds=True))
+        )
+        expected = str(sqla.compile(compile_kwargs=dict(literal_binds=True)))
         assert result == expected
 
     def _to_sqla(self, table):
