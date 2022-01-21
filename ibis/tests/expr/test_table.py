@@ -1361,3 +1361,14 @@ def test_multiple_db():
     con2 = MockAlchemyBackend()
 
     con1.table('alltypes').union(con2.table('alltypes')).execute()
+
+
+def test_filter_group_by_agg_with_same_name():
+    # GH 2907
+    t = ibis.table([("int_col", "int32"), ("bigint_col", "int64")], name="t")
+    expr = (
+        t.group_by("int_col")
+        .aggregate(bigint_col=lambda t: t.bigint_col.sum())
+        .filter(lambda t: t.bigint_col == 60)
+    )
+    assert isinstance(expr.op(), ops.Selection)

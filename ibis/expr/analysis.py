@@ -620,7 +620,12 @@ def apply_filter(expr, predicates):
         # Potential fusion opportunity
         # GH1344: We can't sub in things with correlated subqueries
         simplified_predicates = [
-            sub_for(predicate, [(expr, op.table)])
+            # Originally this line tried substituting op.table in for expr, but
+            # that is too aggressive in the presence of filters that occur
+            # after aggregations.
+            #
+            # See https://github.com/ibis-project/ibis/pull/3341 for details
+            sub_for(predicate, [(op.table, expr)])
             if not has_reduction(predicate)
             else predicate
             for predicate in predicates

@@ -2038,20 +2038,23 @@ ORDER BY `string_col`"""
         expr, _ = self._case_filter_self_join_analysis_bug()
 
         expected = """\
-SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
-FROM (
+WITH t0 AS (
   SELECT `region`, `kind`, sum(`amount`) AS `total`
   FROM purchases
-  WHERE `kind` = 'foo'
   GROUP BY 1, 2
-) t0
+)
+SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `kind` = 'foo'
+) t1
   INNER JOIN (
-    SELECT `region`, `kind`, sum(`amount`) AS `total`
-    FROM purchases
+    SELECT *
+    FROM t0
     WHERE `kind` = 'bar'
-    GROUP BY 1, 2
-  ) t1
-    ON t0.`region` = t1.`region`"""
+  ) t2
+    ON t1.`region` = t2.`region`"""
         self._compare_sql(expr, expected)
 
     def test_join_filtered_tables_no_pushdown(self):
