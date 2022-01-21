@@ -716,6 +716,27 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             .alias("t0")
         )
         ex = sa.select([t0]).where(t0.c.bigint_col == 60)
+        self._compare_sqla(expr, ex)
+
+    def test_mutate_filter_join_no_cross_join(self):
+        person = ibis.table(
+            [('person_id', 'int64'), ('birth_datetime', 'timestamp')],
+            name='person',
+        )
+        mutated = person.mutate(age=400)
+        expr = mutated.filter(mutated.age <= 40)[mutated.person_id]
+
+        person = sa.table(
+            "person", sa.column("person_id"), sa.column("birth_datetime")
+        ).alias("t1")
+        t0 = sa.select(
+            [
+                person.c.person_id,
+                person.c.birth_datetime,
+                sa.literal(400).label("age"),
+            ]
+        ).alias("t0")
+        ex = sa.select([t0.c.person_id]).where(t0.c.age <= 40)
 
         self._compare_sqla(expr, ex)
 

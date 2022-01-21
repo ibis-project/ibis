@@ -1290,7 +1290,7 @@ WITH t0 AS (
     INNER JOIN tpch_region t4
       ON t3.`n_regionkey` = t4.`r_regionkey`
 )
-SELECT `c_name`, `r_name`, `n_name`
+SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
 FROM t0
   LEFT SEMI JOIN (
     SELECT *
