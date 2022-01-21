@@ -4,10 +4,7 @@ import toolz
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base.file import BaseFileBackend
-from ibis.backends.pandas.core import execute, execute_node, pre_execute
-from ibis.backends.pandas.execution.selection import physical_tables
-from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
+from ibis.backends.pandas.core import execute, execute_node
 
 
 def _read_csv(path, schema, **kwargs):
@@ -58,40 +55,6 @@ class Backend(BaseFileBackend):
         self.dictionary[name] = f
 
         return table
-
-
-@pre_execute.register(ops.Selection, Backend)
-def csv_pre_execute_selection(
-    op: ops.Node,
-    client: Backend,
-    scope: Scope,
-    timecontext: TimeContext = None,
-    **kwargs,
-):
-    tables = filter(
-        lambda t: scope.get_value(t, timecontext) is None,
-        physical_tables(op.table.op()),
-    )
-
-    ops = Scope()
-    for table in tables:
-        path = client.dictionary[table.name]
-        usecols = None
-
-        if op.selections:
-            header = _read_csv(path, schema=table.schema, header=0, nrows=1)
-            usecols = [
-                getattr(s.op(), 'name', None) or s.get_name()
-                for s in op.selections
-            ]
-
-            # we cannot read all the columns that we would like
-            if len(pd.Index(usecols) & header.columns) != len(usecols):
-                usecols = None
-        result = _read_csv(path, table.schema, usecols=usecols, header=0)
-        ops = ops.merge_scope(Scope({table: result}, timecontext))
-
-    return ops
 
 
 @execute_node.register(Backend.table_class, Backend)
