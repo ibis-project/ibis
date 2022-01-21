@@ -3,7 +3,7 @@ import pytest
 from pytest import param
 
 # add here backends that passes join tests
-all_db_join_supported = ['pandas', 'pyspark', 'dask']
+all_db_join_supported = ['pandas', 'pyspark', 'dask', 'csv']
 
 
 @pytest.mark.parametrize(
@@ -29,7 +29,6 @@ all_db_join_supported = ['pandas', 'pyspark', 'dask']
 )
 @pytest.mark.only_on_backends(all_db_join_supported)
 # Csv is a subclass of Pandas so need to skip it explicitly.
-@pytest.mark.skip_backends(['csv'])
 @pytest.mark.xfail_unsupported
 def test_join_project_left_table(backend, con, batting, awards_players, how):
 
