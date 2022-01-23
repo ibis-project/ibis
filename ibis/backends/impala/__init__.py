@@ -239,7 +239,6 @@ class Backend(BaseSQLBackend):
         """
         import hdfs
 
-        new_backend._kudu = None
         new_backend._temp_objects = set()
 
         if hdfs_client is None or isinstance(hdfs_client, HDFS):
@@ -332,11 +331,11 @@ class Backend(BaseSQLBackend):
 
     @property
     def kudu(self):
-        from .kudu_support import KuduImpalaInterface
-
-        if self._kudu is None:
-            self._kudu = KuduImpalaInterface(self)
-        return self._kudu
+        raise NotImplementedError(
+            "kudu support using kudu-python is no longer supported; "
+            "use impala facilities to manage kudu tables; "
+            "see https://kudu.apache.org/docs/kudu_impala_integration.html"
+        )
 
     def close(self):
         """Close the connection and drop temporary objects."""
