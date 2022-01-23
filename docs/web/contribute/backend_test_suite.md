@@ -37,7 +37,7 @@ Here is the list of backends that can be tested using `docker-compose`.
 | Backend    | Docker Compose Services |
 | ---------- | ----------------------- |
 | ClickHouse | `clickhouse`            |
-| PostgreSQL | `ibis-postgres`         |
+| PostgreSQL | `postgres`              |
 | impala     | `impala`                |
 | kudu       | `kudu`, `impala`        |
 | mysql      | `mysql`                 |
@@ -55,7 +55,7 @@ Let's fire up a PostgreSQL server and run tests against it.
 Open a new shell and run
 
 ```sh
-docker-compose up --build ibis-postgres
+docker-compose up --build postgres
 ```
 
 Test the connection in a different shell using
