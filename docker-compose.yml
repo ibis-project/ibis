@@ -5,9 +5,11 @@ services:
     ports:
       - 8123:8123
       - 9000:9000
+    networks:
+      - clickhouse
   impala:
     depends_on:
-      - postgres
+      - impala-postgres
     environment:
       PGPASSWORD: postgres
     healthcheck:
@@ -31,8 +33,11 @@ services:
       - 25000:25000
       - 25010:25010
       - 25020:25020
-  postgres:
+    networks:
+      - impala
+  impala-postgres:
     user: postgres
+    hostname: postgres
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
@@ -43,11 +48,12 @@ services:
         - pg_isready
       timeout: 5s
     image: postgres:13.3-alpine
+    networks:
+      - impala
   kudu:
     cap_add:
       - SYS_TIME
     depends_on:
-      - impala
       - kudu-tserver
     environment:
       KUDU_MASTER: "true"
@@ -55,17 +61,19 @@ services:
     ports:
       - 7051:7051
       - 8051:8051
+    networks:
+      - impala
   kudu-tserver:
     cap_add:
       - SYS_TIME
-    depends_on:
-      - impala
     environment:
       KUDU_MASTER: "false"
     image: ibisproject/kudu:latest
     ports:
       - 7050:7050
       - 8050:8050
+    networks:
+      - impala
   mysql:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -83,13 +91,15 @@ services:
     image: mariadb:10.4.22
     ports:
       - 3306:3306
-  ibis-postgres:
+    networks:
+      - mysql
+  postgres:
     user: postgres
     environment:
-      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ibis_testing
       POSTGRES_USER: postgres
-    build: ./docker/ibis-postgres
+    build: ./docker/postgres
     healthcheck:
       interval: 10s
       retries: 3
@@ -99,3 +109,11 @@ services:
       timeout: 5s
     ports:
       - 5432:5432
+    networks:
+      - postgres
+
+networks:
+  impala:
+  mysql:
+  clickhouse:
+  postgres:

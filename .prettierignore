@@ -6,3 +6,4 @@ result
 result-*
 docs/source/*
 docs/web/release_notes.md
+ci/udf/CMakeFiles
