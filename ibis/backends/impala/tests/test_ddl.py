@@ -370,3 +370,11 @@ def test_temp_table_concurrency(con, test_data_dir):
 def test_access_kudu_table(kudu_table):
     assert kudu_table.columns == ['a']
     assert kudu_table['a'].type() == dt.string
+
+
+def test_kudu_property_raises_useful_error(con):
+    with pytest.raises(
+        NotImplementedError,
+        match="kudu support using kudu-python",
+    ):
+        con.kudu
