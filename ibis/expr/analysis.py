@@ -895,7 +895,7 @@ class Projector:
         parent_op = self.parent.op()
         for val in resolved:
             # XXX
-            lifted_val = substitute_parents(val)
+            lifted_val = substitute_parents(val, past_projection=False)
 
             # a * projection
             if isinstance(val, ir.TableExpr) and (
