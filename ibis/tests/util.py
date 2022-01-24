@@ -22,7 +22,8 @@ def assert_equal(left, right):
 def assert_pickle_roundtrip(obj):
     """Assert that an ibis object remains the
     same after pickling and unpickling."""
-
-    raw = pickle.dumps(obj)
-    loaded = pickle.loads(raw)
-    assert obj.equals(loaded)
+    loaded = pickle.loads(pickle.dumps(obj))
+    if hasattr(obj, "equals"):
+        assert obj.equals(loaded)
+    else:
+        assert obj == loaded

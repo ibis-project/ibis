@@ -50,10 +50,16 @@ class Parameter(inspect.Parameter):
 
     __slots__ = ('_validator',)
 
-    def __init__(self, name, *, validator=EMPTY):
+    def __init__(
+        self,
+        name,
+        kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        *,
+        validator=EMPTY
+    ):
         super().__init__(
             name,
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            kind,
             default=None if isinstance(validator, Optional) else EMPTY,
         )
         self._validator = validator
