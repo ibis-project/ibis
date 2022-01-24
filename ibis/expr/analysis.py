@@ -895,8 +895,7 @@ class Projector:
         root_selections = root.selections
         parent_op = self.parent.op()
         for val in resolved:
-            # XXX
-            lifted_val = substitute_parents(val)
+            lifted_val = substitute_parents(val, past_projection=False)
 
             # a * projection
             if isinstance(val, ir.TableExpr) and (
@@ -968,7 +967,10 @@ class ExprValidator:
         return self.roots_shared(node) > 0
 
     def roots_shared(self, node):
-        return sum(root.is_ancestor(node) for root in self.roots)
+        return sum(
+            root.is_ancestor(node) or node.compatible_with(root)
+            for root in self.roots
+        )
 
     def shares_some_roots(self, expr):
         expr_roots = expr.op().root_tables()

@@ -898,7 +898,7 @@ FROM (
 
         result = Compiler.to_sql(projected)
         expected = """\
-SELECT t0.*, `value3`, `value4`
+SELECT t0.*, t1.`value3`, t1.`value4`
 FROM (
   SELECT t2.*, t3.`value2`
   FROM `first` t2
@@ -1147,43 +1147,32 @@ FROM (
         table2_filtered = table2[pred]
 
         f2 = (table2['foo'] * 2).name('qux')
-        f3 = (table['foo'] * 2).name('qux')
 
         table3 = table2.projection([table2, f2])
 
         # fusion works even if there's a filter
         table3_filtered = table2_filtered.projection([table2, f2])
 
-        expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
+        ex_sql = """\
+SELECT *, `foo` * 2 AS `qux`
+FROM (
+  SELECT *, `foo` + `bar` AS `baz`
+  FROM tbl
+) t0"""
 
-        assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
-
-        ex_sql = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
-FROM tbl"""
-
-        ex_sql2 = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
-FROM tbl
-WHERE `value` > 0"""
+        ex_sql2 = """\
+SELECT *, `foo` * 2 AS `qux`
+FROM (
+  SELECT *, `foo` + `bar` AS `baz`
+  FROM tbl
+  WHERE `value` > 0
+) t0"""
 
         table3_sql = Compiler.to_sql(table3)
         table3_filt_sql = Compiler.to_sql(table3_filtered)
 
         assert table3_sql == ex_sql
         assert table3_filt_sql == ex_sql2
-
-        # Use the intermediate table refs
-        table3 = table2.projection([table2, f2])
-
-        # fusion works even if there's a filter
-        table3_filtered = table2_filtered.projection([table2, f2])
-
-        expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
-
-        assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
 
     def test_projection_filter_fuse(self):
         expr1, expr2, expr3 = self._case_projection_fuse_filter()
@@ -1226,7 +1215,7 @@ WITH t0 AS (
     INNER JOIN tpch_region t4
       ON t3.`n_regionkey` = t4.`r_regionkey`
 )
-SELECT `c_name`, `r_name`, `n_name`
+SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
 FROM t0
   LEFT SEMI JOIN (
     SELECT *
@@ -1454,7 +1443,7 @@ WITH t0 AS (
     INNER JOIN tpch_nation t3
       ON t2.`r_regionkey` = t3.`n_regionkey`
 )
-SELECT `r_name`, t1.`n_name`
+SELECT t0.`r_name`, t1.`n_name`
 FROM t0
   INNER JOIN t0 t1
     ON t0.`r_regionkey` = t1.`r_regionkey`"""
