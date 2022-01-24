@@ -806,7 +806,7 @@ def windowize_function(expr, w=None):
             return walked.over(w)
         elif isinstance(op, ops.WindowOp):
             if w is not None:
-                return walked.over(w)
+                return walked.over(w.combine(op.window))
             else:
                 return walked
         else:

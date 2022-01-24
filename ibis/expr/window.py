@@ -5,6 +5,7 @@ from typing import NamedTuple, Union
 
 import numpy as np
 import pandas as pd
+import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
@@ -103,21 +104,24 @@ class Window:
     ):
         import ibis.expr.operations as ops
 
-        if group_by is None:
-            group_by = []
+        self._group_by = list(
+            toolz.unique(
+                util.promote_list([] if group_by is None else group_by),
+                key=lambda value: getattr(value, "_key", value),
+            )
+        )
 
-        if order_by is None:
-            order_by = []
+        _order_by = []
+        for expr in util.promote_list([] if order_by is None else order_by):
+            if isinstance(expr, ir.Expr) and not isinstance(expr, ir.SortExpr):
+                expr = ops.SortKey(expr).to_expr()
+            _order_by.append(expr)
 
-        self._group_by = util.promote_list(group_by)
-
-        self._order_by = []
-        for x in util.promote_list(order_by):
-            if isinstance(x, ir.SortExpr):
-                pass
-            elif isinstance(x, ir.Expr):
-                x = ops.SortKey(x).to_expr()
-            self._order_by.append(x)
+        self._order_by = list(
+            toolz.unique(
+                _order_by, key=lambda value: getattr(value, "_key", value)
+            )
+        )
 
         if isinstance(preceding, RowsWithMaxLookback):
             # the offset interval is used as the 'preceding' value of a window
