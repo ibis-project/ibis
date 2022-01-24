@@ -1237,18 +1237,6 @@ WHERE `value` > 0"""
         assert table3_sql == ex_sql
         assert table3_filt_sql == ex_sql2
 
-        # Use the intermediate table refs
-        table3 = table2.projection([table2, f2])
-
-        # fusion works even if there's a filter
-        table3_filtered = table2_filtered.projection([table2, f2])
-
-        expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
-
-        assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
-
     def test_projection_filter_fuse(self):
         expr1, expr2, expr3 = self._case_projection_fuse_filter()
 
