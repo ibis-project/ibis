@@ -1211,25 +1211,26 @@ FROM t0 t2
         table2_filtered = table2[pred]
 
         f2 = (table2['foo'] * 2).name('qux')
-        f3 = (table['foo'] * 2).name('qux')
 
         table3 = table2.projection([table2, f2])
 
         # fusion works even if there's a filter
         table3_filtered = table2_filtered.projection([table2, f2])
 
-        expected = table[table, f1, f3]
-        expected2 = table[pred][table, f1, f3]
+        ex_sql = """\
+SELECT *, `foo` * 2 AS `qux`
+FROM (
+  SELECT *, `foo` + `bar` AS `baz`
+  FROM tbl
+) t0"""
 
-        assert table3.equals(expected)
-        assert table3_filtered.equals(expected2)
-
-        ex_sql = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
-FROM tbl"""
-
-        ex_sql2 = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
-FROM tbl
-WHERE `value` > 0"""
+        ex_sql2 = """\
+SELECT *, `foo` * 2 AS `qux`
+FROM (
+  SELECT *, `foo` + `bar` AS `baz`
+  FROM tbl
+  WHERE `value` > 0
+) t0"""
 
         table3_sql = Compiler.to_sql(table3)
         table3_filt_sql = Compiler.to_sql(table3_filtered)
