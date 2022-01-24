@@ -349,3 +349,13 @@ def test_determine_how():
 
     with pytest.raises(TypeError):
         _determine_how([3, 5])
+
+
+def test_combine_preserves_existing_window():
+    t = ibis.table(
+        [('one', 'string'), ('two', 'double'), ('three', 'int32')],
+        name='my_data',
+    )
+    w = ibis.cumulative_window(order_by=t.one)
+    mut = t.group_by(t.three).mutate(four=t.two.sum().over(w))
+    assert mut.op().selections[1].op().window.following == 0
