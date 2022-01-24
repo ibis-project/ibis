@@ -1,4 +1,3 @@
-import pickle
 from inspect import Signature
 
 import pytest
@@ -11,6 +10,7 @@ from ibis.expr.signature import (
     Parameter,
     Validator,
 )
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 class ValidatorFunction(Validator):
@@ -310,11 +310,15 @@ def test_multiple_inheritance():
     assert strlen._reduction is True
 
 
-def test_pickling_support():
-    op = MagicString(arg="something", foo="magic", bar=True, baz=8)
-    raw = pickle.dumps(op)
-    loaded = pickle.loads(raw)
-    assert op == loaded
+@pytest.mark.parametrize(
+    "obj",
+    [
+        MagicString(arg="something", foo="magic", bar=True, baz=8),
+        Parameter("test"),
+    ],
+)
+def test_pickling_support(obj):
+    assert_pickle_roundtrip(obj)
 
 
 def test_multiple_inheritance_argument_order():
