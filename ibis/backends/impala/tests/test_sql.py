@@ -551,3 +551,18 @@ FROM t1
   INNER JOIN t1 t2
     ON t1.`year` = t2.`year`"""
     assert result == expected
+
+
+def test_group_by_with_window_preserves_range():
+    t = ibis.table(
+        [('one', 'string'), ('two', 'double'), ('three', 'int32')],
+        name='my_data',
+    )
+    w = ibis.cumulative_window(order_by=t.one)
+    expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
+    result = ibis.impala.compile(expr)
+    expected = """\
+SELECT *,
+       sum(`two`) OVER (PARTITION BY `three` ORDER BY `one` RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `four`
+FROM my_data"""  # noqa: E501
+    assert result == expected
