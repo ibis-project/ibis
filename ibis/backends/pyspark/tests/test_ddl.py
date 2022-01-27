@@ -55,10 +55,6 @@ def test_drop_table_not_exist(client):
     client.drop_table(non_existent_table, force=True)
 
 
-@pytest.mark.xfail(
-    reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one #2879'
-)
 def test_truncate_table(client, alltypes, temp_table):
     expr = alltypes.limit(1)
 
@@ -72,10 +68,6 @@ def test_truncate_table(client, alltypes, temp_table):
     assert not nrows
 
 
-@pytest.mark.xfail(
-    reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one #2879'
-)
 def test_truncate_table_expression(client, alltypes, temp_table):
     expr = alltypes.limit(1)
 
@@ -113,10 +105,6 @@ def test_create_empty_table(client, temp_table):
     assert client.table(table_name).execute().empty
 
 
-@pytest.mark.xfail(
-    reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one #2879'
-)
 def test_insert_table(client, alltypes, temp_table, test_data_db):
     expr = alltypes
     table_name = temp_table
@@ -240,10 +228,6 @@ def test_change_properties(client, table):
         assert value == props[key]
 
 
-@pytest.mark.xfail(
-    reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one #2879'
-)
 def test_create_table_reserved_identifier(client, alltypes):
     table_name = 'distinct'
     expr = alltypes
@@ -281,10 +265,6 @@ def test_schema_from_csv(client, awards_players_filename):
     assert schema.equals(awards_players_schema)
 
 
-@pytest.mark.xfail(
-    reason='Moved from the legacy spark backend, '
-    'but not working in the pyspark one #2879'
-)
 def test_create_table_or_temp_view_from_csv(client, awards_players_filename):
     client._create_table_or_temp_view_from_csv(
         'awards', awards_players_filename
