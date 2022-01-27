@@ -448,6 +448,10 @@ def compile_endswith(t, expr, scope, timecontext, **kwargs):
     return col.startswith(end)
 
 
+def _is_table(table):
+    return isinstance(table.op().arg, ir.TableExpr)
+
+
 def compile_aggregator(
     t, expr, scope, timecontext, *, fn, context=None, **kwargs
 ):
@@ -467,6 +471,8 @@ def compile_aggregator(
         # Here we get the root table df of that column and compile
         # the expr to:
         # df.select(max(some_col))
+        if _is_table(expr):
+            return src_col.select(col)
         return t.translate(
             expr.op().arg.op().table, scope, timecontext
         ).select(col)
@@ -548,10 +554,18 @@ def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
         )
 
 
+def _count_star(_):
+    return F.count(F.lit(1))
+
+
 @compiles(ops.Count)
 def compile_count(t, expr, scope, timecontext, context=None, **kwargs):
+    if _is_table(expr):
+        fn = _count_star
+    else:
+        fn = F.count
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.count, context=context, **kwargs
+        t, expr, scope, timecontext, fn=fn, context=context, **kwargs
     )
 
 

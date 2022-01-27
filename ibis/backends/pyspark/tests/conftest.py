@@ -280,9 +280,9 @@ def _random_identifier(suffix):
 
 @pytest.fixture(scope='session', autouse=True)
 def test_data_db(client):
+    name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+    client.create_database(name)
     try:
-        name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
-        client.create_database(name)
         client.set_database(name)
         yield name
     finally:
