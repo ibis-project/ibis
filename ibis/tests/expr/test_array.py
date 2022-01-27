@@ -6,15 +6,16 @@ import ibis.expr.operations as ops
 
 
 @pytest.mark.parametrize(
-    ['arg', 'type'],
+    ['arg', 'typestr', 'type'],
     [
-        ([1, 2, 3], dt.Array(dt.int8)),
-        ([1, 2, 3.0], dt.Array(dt.double)),
-        (['a', 'b', 'c'], dt.Array(dt.string)),
+        ([1, 2, 3], None, dt.Array(dt.int8)),
+        ([1, 2, 3], 'array<int16>', dt.Array(dt.int16)),
+        ([1, 2, 3.0], None, dt.Array(dt.double)),
+        (['a', 'b', 'c'], None, dt.Array(dt.string)),
     ],
 )
-def test_array_literal(arg, type):
-    x = ibis.literal(arg)
+def test_array_literal(arg, typestr, type):
+    x = ibis.literal(arg, type=typestr)
     assert x._arg.value == arg
     assert x.type() == type
 

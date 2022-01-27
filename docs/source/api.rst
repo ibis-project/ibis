@@ -17,6 +17,9 @@ These methods are available directly in the ``ibis`` module namespace.
 
    case
    literal
+   array
+   struct
+   map
    schema
    table
    timestamp
