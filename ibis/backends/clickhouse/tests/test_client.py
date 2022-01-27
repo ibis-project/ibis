@@ -8,16 +8,8 @@ import ibis.config as config
 import ibis.expr.types as ir
 
 
-def test_get_table_ref(db):
-    table = db.functional_alltypes
-    assert isinstance(table, ir.TableExpr)
-
-    table = db['functional_alltypes']
-    assert isinstance(table, ir.TableExpr)
-
-
-def test_run_sql(con, db):
-    query = f'SELECT * FROM {db.name}.`functional_alltypes`'
+def test_run_sql(con):
+    query = 'SELECT * FROM ibis_testing.functional_alltypes'
     table = con.sql(query)
 
     fa = con.table('functional_alltypes')
@@ -29,9 +21,9 @@ def test_run_sql(con, db):
     assert len(result) == 10
 
 
-def test_get_schema(con, db):
+def test_get_schema(con):
     t = con.table('functional_alltypes')
-    schema = con.get_schema('functional_alltypes', database=db.name)
+    schema = con.get_schema('functional_alltypes')
     assert t.schema() == schema
 
 
@@ -62,7 +54,7 @@ def test_limit_equals_none_no_limit(alltypes):
         assert len(result) > 10
 
 
-def test_verbose_log_queries(con, db):
+def test_verbose_log_queries(con):
     queries = []
 
     def logger(x):
@@ -70,9 +62,9 @@ def test_verbose_log_queries(con, db):
 
     with config.option_context('verbose', True):
         with config.option_context('verbose_log', logger):
-            con.table('functional_alltypes', database=db.name)
+            con.table('functional_alltypes')
 
-    expected = f'DESC {db.name}.`functional_alltypes`'
+    expected = 'DESC ibis_testing.`functional_alltypes`'
 
     assert len(queries) == 1
     assert queries[0] == expected
@@ -110,15 +102,6 @@ def test_sql_query_limits(alltypes):
         assert table.count().execute(limit=10) == 7300
 
 
-def test_database_repr(db):
-    assert db.name in repr(db)
-
-
-def test_database_default_current_database(con):
-    db = con.database()
-    assert db.name == con.current_database
-
-
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
@@ -133,7 +116,6 @@ def test_table_info(alltypes):
     assert buf.getvalue() is not None
 
 
-@pytest.mark.skip(reason="FIXME: it is raising KeyError: 'Unnamed: 0'")
 def test_insert(con, alltypes, df):
     drop = 'DROP TABLE IF EXISTS temporary_alltypes'
     create = (
