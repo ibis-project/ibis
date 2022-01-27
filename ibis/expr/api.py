@@ -101,7 +101,9 @@ from ibis.expr.types import (  # noqa
     ValueExpr,
     array,
     literal,
+    map,
     null,
+    struct,
 )
 from ibis.expr.window import (
     cumulative_window,
@@ -183,6 +185,7 @@ __all__ = (
     'join',
     'least',
     'literal',
+    'map',
     'NA',
     'negate',
     'now',
@@ -197,6 +200,7 @@ __all__ = (
     'schema',
     'Schema',
     'sequence',
+    'struct',
     'table',
     'time',
     'timestamp',

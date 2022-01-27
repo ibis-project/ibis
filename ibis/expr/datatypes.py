@@ -535,7 +535,7 @@ class Struct(DataType):
 
     @property
     def pairs(self) -> Mapping:
-        return collections.OrderedDict(zip(self.names, self.types))
+        return dict(zip(self.names, self.types))
 
     def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]
@@ -1414,6 +1414,24 @@ def can_cast_string_to_temporal(
 Collection = TypeVar('Collection', Array, Set)
 
 
+@castable.register(Map, Map)
+def can_cast_map(source, target, **kwargs):
+    return castable(source.key_type, target.key_type) and castable(
+        source.value_type, target.value_type
+    )
+
+
+@castable.register(Struct, Struct)
+def can_cast_struct(source, target, **kwargs):
+    source_pairs = source.pairs
+    target_pairs = target.pairs
+    for name in {*source.names, *target.names}:
+        if name in target_pairs:
+            if not castable(source_pairs[name], target_pairs[name]):
+                return False
+    return True
+
+
 @castable.register(Array, Array)
 @castable.register(Set, Set)
 def can_cast_variadic(
@@ -1458,14 +1476,6 @@ def can_cast_geospatial(source, target, **kwargs):
 @castable.register(INET, INET)
 def can_cast_special_string(source, target, **kwargs):
     return True
-
-
-# @castable.register(Map, Map)
-# def can_cast_maps(source, target):
-#     return (source.equals(target) or
-#             source.equals(Map(null, null)) or
-#             source.equals(Map(any, any)))
-# TODO cast category
 
 
 def cast(source: DataType | str, target: DataType | str, **kwargs) -> DataType:

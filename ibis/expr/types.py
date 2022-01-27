@@ -1,3 +1,4 @@
+import collections
 import itertools
 import os
 import webbrowser
@@ -518,7 +519,7 @@ class TableExpr(Expr):
 
     def _resolve(self, exprs):
         exprs = util.promote_list(exprs)
-        return list(map(self._ensure_expr, exprs))
+        return list(self._ensure_expr(x) for x in exprs)
 
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
@@ -1247,7 +1248,7 @@ def literal(value, type=None):
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-def array(values):
+def array(values, type=None):
     """Create an array expression.
 
     If the input expressions are all column expressions, then the output will
@@ -1270,6 +1271,9 @@ def array(values):
     array_value : ArrayValue
         An array column (if the inputs are column expressions), or an array
         scalar (if the inputs are Python literals)
+    type : ibis type or string, optional
+        An instance of :class:`ibis.expr.datatypes.DataType` or a string
+        indicating the ibis type of `value`.
 
     Examples
     --------
@@ -1293,13 +1297,72 @@ def array(values):
         )
     else:
         try:
-            return literal(list(values))
+            return literal(list(values), type=type)
         except com.IbisTypeError as e:
             raise com.IbisTypeError(
                 'Could not create an array scalar from the values provided '
                 'to `array`. Ensure that all input values have the same '
                 'Python type, or can be casted to a single Python type.'
             ) from e
+
+
+def struct(value, type=None):
+    '''Create a struct literal from a dict or other mapping.
+
+    Parameters
+    ----------
+    value
+        the literal struct value
+    type
+        An instance of :class:`ibis.expr.datatypes.DataType` or a string
+        indicating the ibis type of `value`.
+
+    Returns
+    -------
+    StructValue
+        An expression representing a literal struct (compound type with fields
+        of fixed types)
+
+    Examples
+    --------
+    Create struct literal from dict with inferred type:
+    >>> import ibis
+    >>> t = ibis.struct(dict(a=1, b='foo'))
+
+    Create struct literal from dict with specified type:
+    >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
+    '''
+    return literal(collections.OrderedDict(value), type=type)
+
+
+def map(value, type=None):
+    '''Create a map literal from a dict or other mapping.
+
+    Parameters
+    ----------
+    value
+        the literal map value
+    type
+        An instance of :class:`ibis.expr.datatypes.DataType` or a string
+        indicating the ibis type of `value`.
+
+    Returns
+    -------
+    MapValue
+        An expression representing a literal map (associative array with
+        key/value pairs of fixed types)
+
+    Examples
+    --------
+    Create map literal from dict with inferred type:
+    >>> import ibis
+    >>> t = ibis.map(dict(a=1, b=2))
+
+    Create map literal from dict with specified type:
+    >>> import ibis
+    >>> t = ibis.map(dict(a=1, b=2), type='map<string, double>')
+    '''
+    return literal(dict(value), type=type)
 
 
 class UnnamedMarker:
