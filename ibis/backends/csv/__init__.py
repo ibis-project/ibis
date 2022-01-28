@@ -29,6 +29,10 @@ class Backend(BaseFileBackend):
     extension = 'csv'
     table_class = CSVTable
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from ibis.backends.pandas import execution, udf  # noqa: F401
+
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
         data = execute(expr)

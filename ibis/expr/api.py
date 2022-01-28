@@ -5484,6 +5484,7 @@ _table_methods = {
     'cross_join': cross_join,
     'inner_join': _regular_join_method('inner_join', 'inner'),
     'left_join': _regular_join_method('left_join', 'left'),
+    'right_join': _regular_join_method('right_join', 'right'),
     'any_inner_join': _regular_join_method('any_inner_join', 'any_inner'),
     'any_left_join': _regular_join_method('any_left_join', 'any_left'),
     'outer_join': _regular_join_method('outer_join', 'outer'),

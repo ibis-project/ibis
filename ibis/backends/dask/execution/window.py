@@ -73,7 +73,7 @@ def execute_window_op(
         ]
     ):
         raise NotImplementedError(
-            "Window operations are unsuported in the dask backend"
+            "Window operations are unsupported in the dask backend"
         )
 
     if window._group_by:

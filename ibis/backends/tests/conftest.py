@@ -47,7 +47,7 @@ def _backend_name_to_class(backend_str: str):
     return conftest.TestConf
 
 
-def _get_backends_to_test():
+def _get_backends_to_test(keep=None, discard=None):
     """
     Get a list of `TestConf` classes of the backends to test.
 
@@ -64,7 +64,20 @@ def _get_backends_to_test():
     if not backends_raw:
         return []
 
-    backends = backends_raw.split()
+    if backends_raw == "all":
+        backends = set(_get_all_backends())
+        # spark is just an alias to pyspark so don't re-run all spark tests
+        backends.discard("spark")
+    else:
+        backends = set(backends_raw.split())
+
+    if discard is not None:
+        backends = backends.difference(discard.split())
+
+    if keep is not None:
+        backends = backends.intersection(keep.split())
+
+    backends = sorted(list(backends))
 
     return [
         pytest.param(
@@ -79,7 +92,13 @@ def _get_backends_to_test():
 def pytest_runtest_call(item):
     """Dynamically add various custom markers."""
     nodeid = item.nodeid
-    backend = item.funcargs["backend"]
+    backend = (
+        # TODO: gross
+        item.funcargs.get("backend")
+        or item.funcargs.get("ddl_backend")
+        or item.funcargs.get("alchemy_backend")
+        or item.funcargs.get("rw_backend")
+    )
     assert isinstance(backend, BackendTest), "backend has type {!r}".format(
         type(backend).__name__
     )
@@ -92,7 +111,6 @@ def pytest_runtest_call(item):
             )
 
     for marker in item.iter_markers(name="skip_backends"):
-        (backend_types,) = map(tuple, marker.args)
         if backend.name() in marker.args[0]:
             pytest.skip(f"skip_backends: {backend} {nodeid}")
 
@@ -108,13 +126,24 @@ def pytest_runtest_call(item):
             )
 
     for marker in item.iter_markers(name="xfail_backends"):
-        if backend.name() in marker.args[0]:
-            item.add_marker(
-                pytest.mark.xfail(
-                    reason=f'{backend} in xfail list: {marker.args[0]}',
-                    **marker.kwargs,
+        for entry in marker.args[0]:
+            if isinstance(entry, tuple):
+                name, reason = entry
+            else:
+                name = entry
+                reason = marker.kwargs.get('reason', None)
+
+            if backend.name() == name:
+                item.add_marker(
+                    pytest.mark.xfail(
+                        reason=reason or f'{backend} in xfail list: {name}',
+                        **{
+                            k: v
+                            for k, v in marker.kwargs.items()
+                            if k != "reason"
+                        },
+                    )
                 )
-            )
 
     for marker in item.iter_markers(name="xpass_backends"):
         if backend.name() not in marker.args[0]:
@@ -140,6 +169,36 @@ def pytest_runtest_call(item):
                         **marker.kwargs,
                     )
                 )
+
+    # Ibis hasn't exposed existing functionality
+    # This xfails so that you know when it starts to pass
+    for marker in item.iter_markers(name="backends_notimpl"):
+        if backend.name() in marker.args[0]:
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason=f'Feature not yet exposed in {backend}',
+                    **marker.kwargs,
+                )
+            )
+
+    # Functionality is unavailable upstream (but could be)
+    # This xfails so that you know when it starts to pass
+    for marker in item.iter_markers(name="backends_notyet"):
+        if backend.name() in marker.args[0]:
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason=f'Feature not available upstream for {backend}',
+                    **marker.kwargs,
+                )
+            )
+
+    for marker in item.iter_markers(name="backends_never"):
+        if backend.name() in marker.args[0]:
+            item.add_marker(
+                pytest.mark.xfail(
+                    **marker.kwargs,
+                )
+            )
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -179,6 +238,9 @@ pytestmark = pytest.mark.backend
 def backend(request, data_directory):
     """
     Instance of BackendTest.
+
+    (dask pandas clickhouse sqlite postgres pyspark impala hdf5 csv parquet
+    datafusion mysql)
     """
     # See #3021
     # TODO Remove this to backend_test, since now that a `Backend` class exists
@@ -194,6 +256,66 @@ def con(backend):
     # TODO Rename this to `backend` when the existing `backend` is renamed to
     # `backend_test`, and when `connect` returns `Backend` and not `Client`
     return backend.connection
+
+
+@pytest.fixture(
+    params=_get_backends_to_test(discard="dask csv parquet hdf5 pandas"),
+    scope='session',
+)
+def ddl_backend(request, data_directory):
+    """
+    Runs the SQL-ish backends
+    (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
+    """
+    return request.param(data_directory)
+
+
+@pytest.fixture(scope='session')
+def ddl_con(ddl_backend):
+    """
+    Instance of Client, already connected to the db (if applies).
+    """
+    return ddl_backend.connection
+
+
+@pytest.fixture(
+    params=_get_backends_to_test(keep="sqlite postgres mysql"),
+    scope='session',
+)
+def alchemy_backend(request, data_directory):
+    """
+    Runs the SQLAlchemy-based backends
+    (sqlite, mysql, postgres)
+    """
+    return request.param(data_directory)
+
+
+@pytest.fixture(scope='session')
+def alchemy_con(alchemy_backend):
+    """
+    Instance of Client, already connected to the db (if applies).
+    """
+    return alchemy_backend.connection
+
+
+@pytest.fixture(
+    params=_get_backends_to_test(discard="csv parquet hdf5"),
+    scope='session',
+)
+def rw_backend(request, data_directory):
+    """
+    Runs the non-file-based backends
+    (dask pandas clickhouse sqlite postgres pyspark impala datafusion mysql)
+    """
+    return request.param(data_directory)
+
+
+@pytest.fixture(scope='session')
+def rw_con(rw_backend):
+    """
+    Instance of Client, already connected to the db (if applies).
+    """
+    return rw_backend.connection
 
 
 @pytest.fixture(scope='session')
@@ -256,13 +378,13 @@ def geo_df(geo):
 
 
 @pytest.fixture
-def temp_table(con) -> str:
+def temp_table(rw_con) -> str:
     """
     Return a temporary table name.
 
     Parameters
     ----------
-    con : ibis.backends.base.Client
+    rw_con : ibis.backends.base.Client
 
     Yields
     ------
@@ -274,14 +396,18 @@ def temp_table(con) -> str:
         yield name
     finally:
         try:
-            con.drop_table(name, force=True)
+            rw_con.drop_table(name, force=True)
         except NotImplementedError:
             pass
 
 
 @pytest.fixture
-def temp_view(con) -> str:
+def temp_view(ddl_con) -> str:
     """Return a temporary view name.
+
+    Parameters
+    ----------
+    ddl_con : backend connection
 
     Yields
     ------
@@ -293,30 +419,27 @@ def temp_view(con) -> str:
         yield name
     finally:
         try:
-            con.drop_view(name, force=True)
+            ddl_con.drop_view(name, force=True)
         except NotImplementedError:
             pass
 
 
 @pytest.fixture(scope='session')
-def current_data_db(con, backend) -> str:
+def current_data_db(ddl_con, ddl_backend) -> str:
     """Return current database name."""
-    try:
-        return con.current_database
-    except NotImplementedError:
-        pytest.skip(
-            f"{backend.name()} backend doesn't have current_database method."
-        )
+    return ddl_con.current_database
 
 
 @pytest.fixture
-def alternate_current_database(con, backend, current_data_db: str) -> str:
+def alternate_current_database(
+    ddl_con, ddl_backend, current_data_db: str
+) -> str:
     """Create a temporary database and yield its name.
     Drops the created database upon completion.
 
     Parameters
     ----------
-    con : ibis.backends.base.Client
+    ddl_con : ibis.backends.base.Client
     current_data_db : str
     Yields
     -------
@@ -324,16 +447,16 @@ def alternate_current_database(con, backend, current_data_db: str) -> str:
     """
     name = _random_identifier('database')
     try:
-        con.create_database(name)
+        ddl_con.create_database(name)
     except NotImplementedError:
         pytest.skip(
-            f'{backend.name()} backend doesn\'t have create_database method.'
+            f"{ddl_backend.name()} doesn't have create_database method."
         )
     try:
         yield name
     finally:
-        con.set_database(current_data_db)
-        con.drop_database(name, force=True)
+        ddl_con.set_database(current_data_db)
+        ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

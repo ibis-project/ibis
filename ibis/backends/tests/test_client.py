@@ -1,182 +1,16 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import mark
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.util import guid
 
-SQLALCHEMY_BACKENDS = ['sqlite', 'postgres', 'mysql']
-
 
 @pytest.fixture
 def new_schema():
     return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
-
-
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
-)
-@pytest.mark.xfail_unsupported
-def test_load_data_sqlalchemy(backend, con, temp_table):
-    sch = ibis.schema(
-        [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
-        ]
-    )
-
-    df = pd.DataFrame(
-        {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
-        }
-    )
-    con.create_table(temp_table, schema=sch)
-    con.load_data(temp_table, df, if_exists='append')
-    result = con.table(temp_table).execute()
-
-    backend.assert_frame_equal(df, result)
-
-
-@pytest.mark.parametrize(
-    ('expr_fn', 'expected'),
-    [
-        (lambda t: t.string_col, [('string_col', dt.String)]),
-        (
-            lambda t: t[t.string_col, t.bigint_col],
-            [('string_col', dt.String), ('bigint_col', dt.Int64)],
-        ),
-    ],
-)
-def test_query_schema(backend, con, alltypes, expr_fn, expected):
-    if not hasattr(con, 'compiler'):
-        pytest.skip(
-            '{} backend has no `compiler` attribute'.format(
-                type(backend).__name__
-            )
-        )
-
-    expr = expr_fn(alltypes)
-
-    # we might need a public API for it
-    ast = con.compiler.to_ast(expr, backend.make_context())
-    schema = con.ast_schema(ast)
-
-    # clickhouse columns has been defined as non-nullable
-    # whereas other backends don't support non-nullable columns yet
-    expected = ibis.schema(
-        [
-            (name, dtype(nullable=schema[name].nullable))
-            for name, dtype in expected
-        ]
-    )
-    assert schema.equals(expected)
-
-
-@pytest.mark.parametrize(
-    'sql',
-    [
-        'select * from functional_alltypes limit 10',
-        'select * from functional_alltypes \nlimit 10\n',
-    ],
-)
-@pytest.mark.xfail_backends(('bigquery',))
-@pytest.mark.xfail_unsupported
-def test_sql(backend, con, sql):
-    if not hasattr(con, 'sql') or not hasattr(con, '_get_schema_using_query'):
-        pytest.skip(f'Backend {backend} does not support sql method')
-
-    # execute the expression using SQL query
-    con.sql(sql).execute()
-
-
-@pytest.mark.xfail_unsupported
-def test_create_table_from_schema(con, backend, new_schema, temp_table):
-    con.create_table(temp_table, schema=new_schema)
-
-    t = con.table(temp_table)
-
-    for k, i_type in t.schema().items():
-        assert new_schema[k] == i_type
-
-
-@pytest.mark.xfail_unsupported
-def test_rename_table(con, backend, temp_table, new_schema):
-    if not hasattr(con, 'rename_table'):
-        pytest.xfail(f"{backend.name} backend has no `rename_table` method")
-
-    temp_table_original = f'{temp_table}_original'
-    con.create_table(temp_table_original, schema=new_schema)
-
-    t = con.table(temp_table_original)
-    t.rename(temp_table)
-
-    assert con.table(temp_table) is not None
-    assert temp_table in con.list_tables()
-
-
-@pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['impala', 'pyspark', 'spark'])
-def test_nullable_input_output(con, backend, temp_table):
-    # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
-    sch = ibis.schema(
-        [
-            ('foo', 'int64'),
-            ('bar', ibis.expr.datatypes.int64(nullable=False)),
-            ('baz', 'boolean'),
-        ]
-    )
-
-    con.create_table(temp_table, schema=sch)
-
-    t = con.table(temp_table)
-
-    assert t.schema().types[0].nullable
-    assert not t.schema().types[1].nullable
-    assert t.schema().types[2].nullable
-
-
-# view tests
-
-
-@pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['pyspark', 'spark'])
-def test_create_drop_view(con, backend, temp_view):
-    # pyspark and spark skipt because table actually is a temporary view
-
-    # setup
-    table_name = 'functional_alltypes'
-    expr = con.table(table_name).limit(1)
-
-    # create a new view
-    con.create_view(temp_view, expr)
-    # check if the view was created
-    assert temp_view in con.list_tables()
-
-    t_expr = con.table(table_name)
-    v_expr = con.table(temp_view)
-    # check if the view and the table has the same fields
-    assert set(t_expr.schema().names) == set(v_expr.schema().names)
-
-
-@pytest.mark.only_on_backends(
-    ['bigquery', 'clickhouse', 'impala', 'spark'],
-    reason="run only if backend is sql-based",
-)
-def test_separate_database(con, alternate_current_database, current_data_db):
-    # using alternate_current_database switches "con" current
-    #  database to a temporary one until a test is over
-    tmp_db = con.database(alternate_current_database)
-    # verifying we can open another db which isn't equal to current
-    db = con.database(current_data_db)
-    assert db.name == current_data_db
-    assert tmp_db.name == alternate_current_database
 
 
 def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
@@ -194,86 +28,227 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     return temporary
 
 
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
+def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, temp_table):
+    sch = ibis.schema(
+        [
+            ('first_name', 'string'),
+            ('last_name', 'string'),
+            ('department_name', 'string'),
+            ('salary', 'float64'),
+        ]
+    )
+
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+    alchemy_con.create_table(temp_table, schema=sch)
+    alchemy_con.load_data(temp_table, df, if_exists='append')
+    result = alchemy_con.table(temp_table).execute()
+
+    alchemy_backend.assert_frame_equal(df, result)
+
+
+@mark.parametrize(
+    ('expr_fn', 'expected'),
+    [
+        (lambda t: t.string_col, [('string_col', dt.String)]),
+        (
+            lambda t: t[t.string_col, t.bigint_col],
+            [('string_col', dt.String), ('bigint_col', dt.Int64)],
+        ),
+    ],
 )
+@mark.backends_notimpl(["datafusion"])
+def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
+    expr = expr_fn(ddl_backend.functional_alltypes)
+
+    # we might need a public API for it
+    ast = ddl_con.compiler.to_ast(expr, ddl_backend.make_context())
+    schema = ddl_con.ast_schema(ast)
+
+    # clickhouse columns has been defined as non-nullable
+    # whereas other backends don't support non-nullable columns yet
+    expected = ibis.schema(
+        [
+            (name, dtype(nullable=schema[name].nullable))
+            for name, dtype in expected
+        ]
+    )
+    assert schema.equals(expected)
+
+
+@mark.parametrize(
+    'sql',
+    [
+        'select * from functional_alltypes limit 10',
+        'select * from functional_alltypes \nlimit 10\n',
+    ],
+)
+@mark.backends_notimpl(["postgres", "mysql", "datafusion", "sqlite"])
+def test_sql(ddl_backend, ddl_con, sql):
+    # execute the expression using SQL query
+    ddl_con.sql(sql).execute()
+
+
+@mark.backends_notimpl(["datafusion", "clickhouse"])
+def test_create_table_from_schema(rw_con, rw_backend, new_schema, temp_table):
+    rw_con.create_table(temp_table, schema=new_schema)
+
+    t = rw_con.table(temp_table)
+
+    for k, i_type in t.schema().items():
+        assert new_schema[k] == i_type
+
+
+@mark.backends_notimpl(
+    [
+        "postgres",
+        "sqlite",
+        "mysql",
+        "pandas",
+        "dask",
+        "datafusion",
+        "clickhouse",
+    ]
+)
+def test_rename_table(rw_con, temp_table, new_schema):
+    temp_table_original = f'{temp_table}_original'
+    rw_con.create_table(temp_table_original, schema=new_schema)
+
+    t = rw_con.table(temp_table_original)
+    t.rename(temp_table)
+
+    assert rw_con.table(temp_table) is not None
+    assert temp_table in rw_con.list_tables()
+
+
+@mark.backends_notimpl(["datafusion", "clickhouse"])
+@mark.backends_never(["impala", "pyspark"], reason="No non-nullable datatypes")
+def test_nullable_input_output(rw_con, temp_table):
+    sch = ibis.schema(
+        [
+            ('foo', 'int64'),
+            ('bar', ibis.expr.datatypes.int64(nullable=False)),
+            ('baz', 'boolean'),
+        ]
+    )
+
+    rw_con.create_table(temp_table, schema=sch)
+
+    t = rw_con.table(temp_table)
+
+    assert t.schema().types[0].nullable
+    assert not t.schema().types[1].nullable
+    assert t.schema().types[2].nullable
+
+
+# view tests
+
+
+@mark.only_on_backends(["impala"])
+def test_create_drop_view(ddl_con, ddl_backend, temp_view):
+    # setup
+    table_name = 'functional_alltypes'
+    expr = ddl_con.table(table_name).limit(1)
+
+    # create a new view
+    ddl_con.create_view(temp_view, expr)
+    # check if the view was created
+    assert temp_view in ddl_con.list_tables()
+
+    t_expr = ddl_con.table(table_name)
+    v_expr = ddl_con.table(temp_view)
+    # check if the view and the table has the same fields
+    assert set(t_expr.schema().names) == set(v_expr.schema().names)
+
+
+@mark.backends_notimpl(["postgres", "mysql", "clickhouse", "datafusion"])
+def test_separate_database(
+    ddl_con, alternate_current_database, current_data_db
+):
+    # using alternate_current_database switches "con" current
+    #  database to a temporary one until a test is over
+    tmp_db = ddl_con.database(alternate_current_database)
+    # verifying we can open another db which isn't equal to current
+    db = ddl_con.database(current_data_db)
+    assert db.name == current_data_db
+    assert tmp_db.name == alternate_current_database
+
+
 def test_insert_no_overwrite_from_dataframe(
-    con, test_employee_schema, test_employee_data_2
+    alchemy_backend, alchemy_con, test_employee_schema, test_employee_data_2
 ):
-
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         temp_table,
         test_employee_schema,
     )
 
-    con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
+    alchemy_con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
 
 
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
-)
 def test_insert_overwrite_from_dataframe(
-    con, test_employee_schema, test_employee_data_1, test_employee_data_2
+    alchemy_backend,
+    alchemy_con,
+    test_employee_schema,
+    test_employee_data_1,
+    test_employee_data_2,
 ):
 
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         temp_table,
         test_employee_schema,
         data=test_employee_data_1,
     )
 
-    con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
+    alchemy_con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
 
 
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
-)
 def test_insert_no_overwite_from_expr(
-    con, test_employee_schema, test_employee_data_2
+    alchemy_backend, alchemy_con, test_employee_schema, test_employee_data_2
 ):
-
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         temp_table,
         test_employee_schema,
     )
 
     from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         from_table_name,
         test_employee_schema,
         data=test_employee_data_2,
     )
 
-    con.insert(temp_table, obj=from_table, overwrite=False)
+    alchemy_con.insert(temp_table, obj=from_table, overwrite=False)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
 
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
-)
 def test_insert_overwrite_from_expr(
-    con, test_employee_schema, test_employee_data_1, test_employee_data_2
+    alchemy_backend,
+    alchemy_con,
+    test_employee_schema,
+    test_employee_data_1,
+    test_employee_data_2,
 ):
-
     temp_table = f'temp_to_table_{guid()}'
     temporary = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         temp_table,
         test_employee_schema,
         data=test_employee_data_1,
@@ -281,63 +256,53 @@ def test_insert_overwrite_from_expr(
 
     from_table_name = f'temp_from_table_{guid()}'
     from_table = _create_temp_table_with_schema(
-        con,
+        alchemy_con,
         from_table_name,
         test_employee_schema,
         data=test_employee_data_2,
     )
 
-    con.insert(temp_table, obj=from_table, overwrite=True)
+    alchemy_con.insert(temp_table, obj=from_table, overwrite=True)
     assert len(temporary.execute()) == 3
     tm.assert_frame_equal(temporary.execute(), from_table.execute())
 
 
-@pytest.mark.only_on_backends(
-    SQLALCHEMY_BACKENDS,
-    reason="run only if backend is SQLAlchemy based",
-)
-def test_list_databases(con):
+def test_list_databases(alchemy_backend, alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
         'sqlite': ['main', 'base'],
         'postgres': ['postgres', 'ibis_testing'],
         'mysql': ['ibis_testing', 'information_schema'],
     }
-    assert con.list_databases() == TEST_DATABASES[con.name]
+    assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
-@pytest.mark.only_on_backends(
-    set(SQLALCHEMY_BACKENDS) - {'postgres'},
-    reason="run only if backend is SQLAlchemy based, except postgres which "
-    "which has schemas different than databases",
+@mark.backends_never(
+    ["postgres"], reason="schemas and databases are different in postgres"
 )
-def test_list_schemas(con):
+def test_list_schemas(alchemy_backend, alchemy_con):
     with pytest.warns(FutureWarning):
-        schemas = con.list_schemas()
-    assert schemas == con.list_databases()
+        schemas = alchemy_con.list_schemas()
+    assert schemas == alchemy_con.list_databases()
 
 
-def test_verify(con, backend):
-    if not hasattr(con, 'compiler'):
-        pytest.skip(
-            '{} backend has no `compiler` attribute'.format(
-                type(backend).__name__
-            )
-        )
-    expr = con.table('functional_alltypes').double_col.sum()
+def test_verify(ddl_backend, ddl_con):
+    expr = ddl_con.table('functional_alltypes').double_col.sum()
 
     with pytest.warns(FutureWarning):
         assert expr.verify()
 
     with pytest.warns(FutureWarning):
-        assert backend.api.verify(expr)
+        assert ddl_backend.api.verify(expr)
 
+
+@mark.only_on_backends(["postgres"])
+def test_not_verify(alchemy_con, alchemy_backend):
     # There is no expression that can't be compiled to any backend
     # Testing `not verify()` only for an expression not supported in postgres
-    if backend.api.name == 'postgres':
-        expr = con.table('functional_alltypes').double_col.approx_median()
-        with pytest.warns(FutureWarning):
-            assert not expr.verify()
+    expr = alchemy_con.table('functional_alltypes').double_col.approx_median()
+    with pytest.warns(FutureWarning):
+        assert not expr.verify()
 
-        with pytest.warns(FutureWarning):
-            assert not backend.api.verify(expr)
+    with pytest.warns(FutureWarning):
+        assert not alchemy_backend.api.verify(expr)

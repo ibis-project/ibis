@@ -1,6 +1,5 @@
 import functools
 import operator
-import os
 import uuid
 from collections import OrderedDict
 from datetime import date, datetime, time
@@ -1289,18 +1288,6 @@ def test_valid_negate(type):
     assert -expr is not None
 
 
-@pytest.mark.xfail(
-    reason='Type not supported in most backends', raises=TypeError
-)
-@pytest.mark.skipif(
-    os.name == 'nt', reason='np.float128 not appear to exist on windows'
-)
-def test_valid_negate_float128():
-    value = np.float128(1)
-    expr = ibis.literal(value)
-    assert -expr is not None
-
-
 @pytest.mark.parametrize(
     ('kind', 'begin', 'end'),
     [
@@ -1356,25 +1343,10 @@ def test_nullif_fail(left, right):
     "join_method",
     [
         "left_join",
-        pytest.param(
-            "right_join",
-            marks=pytest.mark.xfail(
-                raises=AttributeError, reason="right_join is not an ibis API"
-            ),
-        ),
+        "right_join",
         "inner_join",
         "outer_join",
         "asof_join",
-        pytest.param(
-            "semi_join",
-            marks=pytest.mark.xfail(
-                raises=com.IbisTypeError,
-                reason=(
-                    "semi_join only gives access to the left table's "
-                    "columns"
-                ),
-            ),
-        ),
     ],
 )
 def test_select_on_unambiguous_join(join_method):

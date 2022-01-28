@@ -1357,14 +1357,15 @@ def test_multiple_dbcon():
     con1.table('alltypes').union(con2.table('alltypes')).execute()
 
 
-@pytest.mark.xfail(
-    raises=RelationError, reason='Expr from different DB should fail #64'
-)
-def test_multiple_db():
+def test_multiple_db_different_backends():
     con1 = MockBackend()
     con2 = MockAlchemyBackend()
 
-    con1.table('alltypes').union(con2.table('alltypes')).execute()
+    backend1_table = con1.table('alltypes')
+    backend2_table = con2.table('alltypes')
+
+    with pytest.raises(RelationError):
+        backend1_table.union(backend2_table)
 
 
 def test_merge_as_of_allows_overlapping_columns():

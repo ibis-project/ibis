@@ -51,61 +51,55 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.xfail_backends(('spark', 'pyspark')),
+            marks=pytest.mark.xfail_backends(['pyspark']),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.xfail_backends(('spark', 'pyspark')),
+            marks=pytest.mark.xfail_backends(['pyspark']),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.xfail_backends(('spark', 'pyspark')),
+            marks=pytest.mark.xfail_backends(['pyspark']),
         ),
         param(
             lambda t: t.string_col.re_search(r'\\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark_raw',
-            marks=pytest.mark.xpass_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark',
-            marks=pytest.mark.xpass_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark_raw',
-            marks=pytest.mark.xpass_backends(
-                ('clickhouse', 'impala', 'spark')
-            ),
+            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xfail_backends(('impala', 'spark')),
+            marks=pytest.mark.xfail_backends(['impala']),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark_raw',
-            marks=pytest.mark.xfail_backends(('impala', 'spark')),
+            marks=pytest.mark.xfail_backends(['impala']),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark',
-            marks=pytest.mark.xfail_backends(('impala', 'spark')),
+            marks=pytest.mark.xfail_backends(['impala']),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -161,8 +155,9 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            # TODO - dtype - #2553
-            marks=pytest.mark.skip_backends(['dask']),
+            marks=pytest.mark.xfail_backends(
+                [('dask', '#TODO - dtype - #2553')]
+            ),
         ),
         param(
             lambda t: t.string_col.length(),
@@ -223,22 +218,25 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
             id='expr_slice_begin',
-            # TODO - substring - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.xfail_backends(
+                [('dask', '#TODO: substring #2553')]
+            ),
         ),
         param(
             lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
             id='expr_slice_end',
-            # TODO - substring - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.xfail_backends(
+                [('dask', '#TODO: substring #2553')]
+            ),
         ),
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
             id='expr_empty_slice',
-            # TODO - substring - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.xfail_backends(
+                [('dask', '#TODO: substring #2553')]
+            ),
         ),
         param(
             lambda t: t.date_string_col[
@@ -246,14 +244,15 @@ def test_string_col_is_unicode(backend, alltypes, df):
             ],
             lambda t: t.date_string_col.str[-2:-1],
             id='expr_slice_begin_end',
-            # TODO - substring - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.xfail_backends(
+                [('dask', '#TODO: substring #2553')]
+            ),
         ),
         param(
             lambda t: t.date_string_col.split('/'),
             lambda t: t.date_string_col.str.split('/'),
             id='split',
-            marks=pytest.mark.xfail_backends(['bigquery']),  # Issue #2372
+            marks=pytest.mark.xfail_backends([('bigquery', '#2372')]),
         ),
         param(
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
@@ -283,7 +282,7 @@ def test_special_strings(backend, con, alltypes, data, data_type):
     assert df['tmp'].iloc[0] == uuid.UUID(data)
 
 
-@pytest.mark.xfail_backends(['clickhouse'])  # #2642
+@pytest.mark.xfail_backends([('clickhouse', '#2642')])
 @pytest.mark.xfail_unsupported
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
