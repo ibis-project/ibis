@@ -52,7 +52,8 @@ def test_load_data(client, npartitions):
 
 
 def test_create_table(client, npartitions):
-    client.create_table('testing', obj=make_dask_data_frame(npartitions))
+    ddf = make_dask_data_frame(npartitions)
+    client.create_table('testing', obj=ddf)
     assert 'testing' in client.list_tables()
     client.create_table('testingschema', schema=client.get_schema('testing'))
     assert 'testingschema' in client.list_tables()

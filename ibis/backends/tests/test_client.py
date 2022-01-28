@@ -96,13 +96,8 @@ def test_sql(backend, con, sql):
     con.sql(sql).execute()
 
 
-# test table
-
-
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['pandas', 'dask'])
 def test_create_table_from_schema(con, backend, new_schema, temp_table):
-    # xfailing pandas and dask: #3020
     con.create_table(temp_table, schema=new_schema)
 
     t = con.table(temp_table)
@@ -114,7 +109,7 @@ def test_create_table_from_schema(con, backend, new_schema, temp_table):
 @pytest.mark.xfail_unsupported
 def test_rename_table(con, backend, temp_table, new_schema):
     if not hasattr(con, 'rename_table'):
-        pytest.xfail('{} backend doesn\'t have rename_table method.')
+        pytest.xfail(f"{backend.name} backend has no `rename_table` method")
 
     temp_table_original = f'{temp_table}_original'
     con.create_table(temp_table_original, schema=new_schema)
@@ -127,10 +122,9 @@ def test_rename_table(con, backend, temp_table, new_schema):
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['impala', 'pyspark', 'spark', 'pandas', 'dask'])
+@pytest.mark.xfail_backends(['impala', 'pyspark', 'spark'])
 def test_nullable_input_output(con, backend, temp_table):
     # - Impala, PySpark and Spark non-nullable issues #2138 and #2137
-    # xfailing pandas and dask: #3020
     sch = ibis.schema(
         [
             ('foo', 'int64'),
