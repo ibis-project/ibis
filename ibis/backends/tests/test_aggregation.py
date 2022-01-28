@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pytest import param
+from pytest import mark, param
 
 import ibis.expr.datatypes as dt
 from ibis.udf.vectorized import reduction
@@ -24,7 +24,13 @@ aggregate_test_params = [
         lambda s: s.mean(),
         'double_col',
         id='mean_udf',
-        marks=pytest.mark.udf,
+        marks=[
+            pytest.mark.udf,
+            pytest.mark.backends_notimpl(
+                ["datafusion", "postgres", "clickhouse", "impala"]
+            ),
+            pytest.mark.backends_never(["sqlite", "mysql"]),
+        ],
     ),
     param(
         lambda t: t.double_col.min(),
@@ -57,7 +63,6 @@ aggregate_test_params = [
     ('result_fn', 'expected_fn', 'expected_col'),
     aggregate_test_params,
 )
-@pytest.mark.xfail_unsupported
 def test_aggregate(
     backend, alltypes, df, result_fn, expected_fn, expected_col
 ):
@@ -75,7 +80,6 @@ def test_aggregate(
     ('result_fn', 'expected_fn', 'expected_col'),
     aggregate_test_params,
 )
-@pytest.mark.xfail_unsupported
 def test_aggregate_grouped(
     backend, alltypes, df, result_fn, expected_fn, expected_col
 ):
@@ -195,27 +199,67 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.cov(t.float_col),
             lambda t, where: t.double_col.cov(t.float_col),
             id='covar',
+            marks=[
+                pytest.mark.backends_notimpl(
+                    [
+                        "clickhouse",
+                        "csv",
+                        "dask",
+                        "hdf5",
+                        "impala",
+                        "mysql",
+                        "pandas",
+                        "parquet",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                    ]
+                )
+            ],
         ),
         param(
             lambda t, where: t.double_col.corr(t.float_col),
             lambda t, where: t.double_col.corr(t.float_col),
             id='corr',
+            marks=[
+                pytest.mark.backends_notimpl(
+                    [
+                        "clickhouse",
+                        "csv",
+                        "dask",
+                        "hdf5",
+                        "impala",
+                        "mysql",
+                        "pandas",
+                        "parquet",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                    ]
+                )
+            ],
         ),
         param(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='approx_nunique',
-            marks=pytest.mark.xfail_backends(['mysql', 'sqlite']),
+            marks=pytest.mark.xfail_backends(['mysql', 'sqlite', 'pyspark']),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first'),
             lambda t, where: t.double_col.iloc[0],
             id='arbitrary_first',
+            marks=pytest.mark.backends_notimpl(
+                ['impala', 'postgres', 'mysql', 'sqlite']
+            ),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='last'),
             lambda t, where: t.double_col.iloc[-1],
             id='arbitrary_last',
+            marks=pytest.mark.backends_notimpl(
+                ['impala', 'postgres', 'mysql', 'sqlite']
+            ),
         ),
     ],
 )
@@ -230,7 +274,7 @@ def test_aggregate_grouped(
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
+@mark.backends_notimpl(["datafusion"])
 def test_reduction_ops(
     backend,
     alltypes,
@@ -266,7 +310,7 @@ def test_reduction_ops(
         )
     ],
 )
-@pytest.mark.xfail_unsupported
+@mark.backends_notimpl(["datafusion"])
 def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
@@ -286,8 +330,8 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(['pyspark', 'datafusion'])  # Issue #2130
+@mark.backends_notimpl(["pandas", "dask", "csv", "hdf5", "parquet"])
+@pytest.mark.xfail_backends([('pyspark', '#2130'), 'datafusion'])
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -314,10 +358,22 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@pytest.mark.xfail_unsupported
-# Issues #2369 #2133 #2131 #2132
-@pytest.mark.xfail_backends(['bigquery', 'clickhouse', 'mysql', 'postgres'])
-@pytest.mark.skip_backends(['sqlite'], reason='Issue #2128')
+@pytest.mark.xfail_backends(['sqlite'], reason='Issue #2128')
+@pytest.mark.xfail_backends(
+    [('mysql', 'Issue #2131'), ('postgres', 'Issue #2132')]
+)
+@mark.backends_notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "pandas",
+        "dask",
+        "hdf5",
+        "csv",
+        "parquet",
+        "pyspark",
+    ]
+)
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -337,7 +393,16 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
         param(lambda s: np.array(s), id='agg_to_ndarray'),
     ],
 )
-@pytest.mark.xfail_unsupported
+@mark.backends_notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
+)
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     """Tests .aggregate() where the result of an aggregation is a list-like.
 
@@ -359,7 +424,16 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
+@mark.backends_notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
+)
 def test_aggregate_mixed(backend, alltypes, df):
     """Tests .aggregate() with multiple aggregations with mixed result types.
 

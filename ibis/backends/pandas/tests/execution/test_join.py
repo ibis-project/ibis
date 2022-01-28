@@ -342,12 +342,7 @@ def test_keyed_asof_join_with_tolerance(
     "how",
     [
         "left",
-        pytest.param(
-            "right",
-            marks=pytest.mark.xfail(
-                raises=AttributeError, reason="right_join is not an ibis API"
-            ),
-        ),
+        "right",
         "inner",
         "outer",
     ],

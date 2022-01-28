@@ -7,7 +7,6 @@ import parsy
 import pytest
 import pytz
 from multipledispatch.conflict import ambiguities
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -439,51 +438,6 @@ class Foo(enum.Enum):
             ),
         ),
         (Foo.a, dt.Enum(dt.string, dt.int8)),
-        param(
-            datetime.timedelta(hours=5),
-            dt.Interval(unit='h'),
-            id='dateime hours',
-            marks=pytest.mark.xfail(
-                reason='Hour conversion from datetime.timedelta to ibis '
-                'interval not supported'
-            ),
-        ),
-        param(
-            datetime.timedelta(minutes=7),
-            dt.Interval(unit='m'),
-            id='dateime minutes',
-            marks=pytest.mark.xfail(
-                reason='Minute conversion from datetime.timedelta to ibis '
-                'interval not supported'
-            ),
-        ),
-        param(
-            datetime.timedelta(milliseconds=11),
-            dt.Interval(unit='ms'),
-            id='dateime milliseconds',
-            marks=pytest.mark.xfail(
-                reason='Millisecond conversion from datetime.timedelta to '
-                'ibis interval not supported'
-            ),
-        ),
-        param(
-            pd.Timedelta('3W'),
-            dt.Interval(unit='W'),
-            id='weeks',
-            marks=pytest.mark.xfail(
-                reason='Week conversion from Timedelta to ibis interval '
-                'not supported'
-            ),
-        ),
-        param(
-            None,
-            dt.Interval(unit='Y'),
-            id='years',
-            marks=pytest.mark.xfail(
-                reason='Year conversion from Timedelta to ibis interval '
-                'not supported'
-            ),
-        ),
     ],
 )
 def test_infer_dtype(value, expected_dtype):

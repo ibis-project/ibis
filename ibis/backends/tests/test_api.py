@@ -25,8 +25,8 @@ def test_exists_table(con, table_name):
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 # 2. list_databases() returns directories which don't make sense as HDF5
 #    databases
-@pytest.mark.xfail_backends(['hdf5'])
-@pytest.mark.xfail_unsupported
+@pytest.mark.backends_never(["dask", "pandas"])
+@pytest.mark.backends_notimpl(["datafusion", "hdf5"])
 def test_database_consistency(con):
     # every backend has a different set of databases, not testing the
     # exact names for now
@@ -41,7 +41,7 @@ def test_database_consistency(con):
 
 
 # HDF5 requires a path argument
-@pytest.mark.xfail_backends(['hdf5'])
+@pytest.mark.backends_never(["hdf5"])
 def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)

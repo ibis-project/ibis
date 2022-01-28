@@ -113,8 +113,6 @@ def calc_zscore(s):
             id='cumany',
         ),
         param(
-            # notany() over window not supported in Impala, Postgres,
-            # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notany().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -124,7 +122,8 @@ def calc_zscore(s):
             ),
             id='cumnotany',
             marks=pytest.mark.xfail_backends(
-                ('impala', 'postgres', 'spark', 'mysql', 'sqlite')
+                ('impala', 'postgres', 'mysql', 'sqlite'),
+                reason="notany() over window not supported",
             ),
         ),
         param(
@@ -138,8 +137,6 @@ def calc_zscore(s):
             id='cumall',
         ),
         param(
-            # notall() over window not supported in Impala, Postgres,
-            # Spark, MySQL and SQLite backends
             lambda t, win: (t.double_col == 0).notall().over(win),
             lambda t: (
                 t.double_col.expanding()
@@ -149,7 +146,8 @@ def calc_zscore(s):
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                ('impala', 'postgres', 'spark', 'mysql', 'sqlite')
+                ('impala', 'postgres', 'mysql', 'sqlite'),
+                reason="notall() over window not supported",
             ),
         ),
         param(
@@ -228,7 +226,7 @@ def test_grouped_bounded_expanding_window(
             id='mean_udf',
             marks=[
                 pytest.mark.udf,
-                pytest.mark.skip_backends(['pyspark', 'spark']),
+                pytest.mark.skip_backends(['pyspark']),
             ],
         ),
     ],
@@ -436,20 +434,23 @@ def test_grouped_unbounded_window(
     ('ordered'),
     [
         param(
-            # Temporarily disabled on Spark and Imapala because their behavior
-            # is currently inconsistent with the other backends (see #2378).
             True,
             id='orderered',
-            marks=pytest.mark.skip_backends(['spark', 'impala']),
+            marks=pytest.mark.skip_backends(
+                ['pyspark', 'impala'],
+                reason="Behavior inconsistent with other backends (see #2378)",
+            ),
         ),
         param(
-            # Disabled on MySQL and PySpark because they require a defined
-            # ordering for analytic ops like lag and lead.
-            # Disabled on Spark because its behavior is inconsistent with other
-            # backends (see #2381).
             False,
             id='unordered',
-            marks=pytest.mark.skip_backends(['mysql', 'pyspark', 'spark']),
+            marks=pytest.mark.skip_backends(
+                [
+                    'mysql',
+                    'pyspark',
+                ],
+                reason="requires a defined ordering for ops like lag and lead",
+            ),
         ),
     ],
 )
@@ -491,8 +492,10 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.xfail_unsupported
 @pytest.mark.xfail_backends(
     [
-        # Impala does not support range window bounded on both sides
-        'impala',
+        (
+            'impala',
+            'Impala does not support range window bounded on both sides',
+        ),
     ]
 )
 @pytest.mark.skip_backends(

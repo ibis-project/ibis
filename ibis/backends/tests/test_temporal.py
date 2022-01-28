@@ -38,16 +38,17 @@ def test_date_extract(backend, alltypes, df, attr):
         'hour',
         'minute',
         'second',
-        'millisecond',
+        param(
+            'millisecond',
+            marks=pytest.mark.xfail_backends(
+                [('sqlite', "#2156"), ('pyspark', '#2159')]
+            ),
+        ),
     ],
 )
 @pytest.mark.xfail_unsupported
 def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'millisecond':
-        if backend.name() == 'sqlite':
-            pytest.xfail(reason=('Issue #2156'))
-        if backend.name() == 'spark':
-            pytest.xfail(reason='Issue #2159')
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
     elif attr == 'epoch_seconds':
         expected = df.timestamp_col.astype('int64') // int(1e9)
@@ -63,7 +64,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'epoch_seconds' and backend.name() in [
         'bigquery',
         'postgres',
-        'spark',
+        'pyspark',
     ]:
         # note: these backends cast to bigint are not changing the result
         result = result.astype('int64')
@@ -184,7 +185,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark'])
+@pytest.mark.skip_backends(['pyspark'])
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -212,7 +213,7 @@ def test_integer_to_interval_timestamp(
 )
 @pytest.mark.xfail_unsupported
 # TODO - DateOffset - #2553
-@pytest.mark.skip_backends(['dask', 'spark'])
+@pytest.mark.skip_backends(['dask', 'pyspark'])
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -292,7 +293,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.xfail_backends(['spark']),
+            marks=pytest.mark.xfail_backends(['pyspark']),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
@@ -302,7 +303,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark'])
+@pytest.mark.skip_backends(['pyspark'])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -323,7 +324,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
         ],
     ),
 )
-@pytest.mark.only_on_backends(['dask', 'pandas', 'pyspark'])
+@pytest.mark.only_on_backends(['dask', 'pandas'])
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -358,7 +359,7 @@ def test_temporal_binop_invalid_interval_unit(con, alltypes):
     ],
 )
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark', 'sqlite', 'datafusion'])
+@pytest.mark.skip_backends(['pyspark', 'sqlite', 'datafusion'])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):
@@ -369,7 +370,7 @@ def test_timestamp_comparison_filter(
 
 
 @pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['spark'])
+@pytest.mark.skip_backends(['pyspark'])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -380,9 +381,9 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 
 @pytest.mark.xfail_unsupported
-# PySpark does not support casting columns to intervals
-@pytest.mark.xfail_backends(['pyspark'])
-@pytest.mark.skip_backends(['spark'])
+@pytest.mark.xfail_backends(
+    ['pyspark'], reason="PySpark does not support casting columns to intervals"
+)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -402,8 +403,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
 @pytest.mark.xfail_unsupported
-# Spark takes Java SimpleDateFormat instead of strftime
-@pytest.mark.skip_backends(['spark'])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -430,7 +429,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
                     'impala',
                     'pandas',
                     'parquet',
-                    'spark',
+                    'pyspark',
                     'dask',
                     'hdf5',
                 )
