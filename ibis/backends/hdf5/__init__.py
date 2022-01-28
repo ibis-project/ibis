@@ -16,6 +16,22 @@ class Backend(BaseFileBackend):
     extension = 'h5'
     table_class = HDFTable
 
+    def do_connect(self, path):
+        """Create an HDF5 backend for use with Ibis
+
+        Parameters
+        ----------
+        path
+            Path to an HDF5 file
+
+        Returns
+        -------
+        Backend
+        """
+        from ibis.backends.pandas import execution, udf  # noqa: F401
+
+        super().do_connect(path)
+
     def list_tables(self, path=None, like=None, database=None):
         """
         For HDF5, tables are the HDF5 tables inside the file.

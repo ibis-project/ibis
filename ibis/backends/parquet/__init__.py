@@ -62,6 +62,22 @@ class Backend(BaseFileBackend):
     extension = 'parquet'
     table_class = ParquetTable
 
+    def do_connect(self, path):
+        """Create a Parquet backend for use with Ibis
+
+        Parameters
+        ----------
+        path
+            Path to a parquet file
+
+        Returns
+        -------
+        Backend
+        """
+        from ibis.backends.pandas import execution, udf  # noqa: F401
+
+        super().do_connect(path)
+
     def insert(self, path, expr, **kwargs):
         path = self.root / path
         df = execute(expr)

@@ -1,5 +1,4 @@
 import decimal
-import os
 
 import dask.dataframe as dd
 import pandas as pd
@@ -72,31 +71,21 @@ def df(npartitions):
 
 
 @pytest.fixture(scope='module')
-def batting_df():
-    path = os.path.join(
-        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'batting.csv'
+def batting_df(data_directory):
+    df = dd.read_csv(
+        data_directory / 'batting.csv',
+        assume_missing=True,
+        dtype={"lgID": "object"},
     )
-    if not os.path.exists(path):
-        pytest.skip(f'{path} not found')
-    elif not os.path.isfile(path):
-        pytest.skip(f'{path} is not a file')
-
-    df = dd.read_csv(path, assume_missing=True)
-    num_rows = int(0.01 * len(df))
-    return df.iloc[30 : 30 + num_rows].reset_index(drop=True)
+    return df.sample(frac=0.01).reset_index(drop=True)
 
 
 @pytest.fixture(scope='module')
-def awards_players_df():
-    path = os.path.join(
-        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'awards_players.csv'
+def awards_players_df(data_directory):
+    return dd.read_csv(
+        data_directory / 'awards_players.csv',
+        assume_missing=True,
     )
-    if not os.path.exists(path):
-        pytest.skip(f'{path} not found')
-    elif not os.path.isfile(path):
-        pytest.skip(f'{path} is not a file')
-
-    return dd.read_csv(path, assume_missing=True)
 
 
 @pytest.fixture(scope='module')

@@ -345,15 +345,10 @@ def test_frame_limit(t, df, offset):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@pytest.mark.xfail(
-    raises=AttributeError, reason='TableColumn does not implement limit'
-)
 @pytest.mark.parametrize('offset', [0, 2])
 def test_series_limit(t, df, offset):
-    n = 5
-    s_expr = t.plain_int64.limit(n, offset=offset)
-    result = s_expr.execute()
-    tm.assert_series_equal(result, df.plain_int64.iloc[offset : offset + n])
+    with pytest.raises(AttributeError):
+        t.plain_int64.limit(5, offset=offset)
 
 
 @pytest.mark.parametrize(
@@ -682,7 +677,7 @@ def test_summary_execute(t):
 
 
 def test_summary_numeric(batting, batting_df):
-    expr = batting.G.summary()
+    expr = batting.aggregate(batting.G.summary())
     result = expr.execute()
     assert len(result) == 1
 
@@ -728,7 +723,7 @@ def test_summary_numeric_group_by(batting, batting_df):
 
 
 def test_summary_non_numeric(batting, batting_df):
-    expr = batting.teamID.summary()
+    expr = batting.aggregate(batting.teamID.summary())
     result = expr.execute()
     assert len(result) == 1
     assert len(result.columns) == 3
@@ -855,7 +850,7 @@ def test_difference(client, df1, intersect_df2):
     merged = df1.merge(
         intersect_df2, on=list(df1.columns), how="outer", indicator=True
     )
-    expected = merged[merged["_merge"] != "both"].drop("_merge", 1)
+    expected = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
     tm.assert_frame_equal(result, expected)
 
 
