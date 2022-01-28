@@ -49,11 +49,13 @@ pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
 
   shellHook = ''
-    data_dir="ci/ibis-testing-data"
+    data_dir="$PWD/ci/ibis-testing-data"
     mkdir -p "$data_dir"
     chmod u+rwx "$data_dir"
     cp -rf ${pkgs.ibisTestingData}/* "$data_dir"
     chmod --recursive u+rw "$data_dir"
+
+    export IBIS_TEST_DATA_DIRECTORY="$data_dir"
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [

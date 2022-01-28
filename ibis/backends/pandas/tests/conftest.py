@@ -4,6 +4,7 @@ import pandas as pd
 
 import ibis
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 
@@ -33,3 +34,15 @@ class TestConf(BackendTest, RoundHalfToEven):
                 ),
             }
         )
+
+    @property
+    def functional_alltypes(self) -> ir.TableExpr:
+        return self.connection.table("functional_alltypes")
+
+    @property
+    def batting(self) -> ir.TableExpr:
+        return self.connection.table("batting")
+
+    @property
+    def awards_players(self) -> ir.TableExpr:
+        return self.connection.table("awards_players")

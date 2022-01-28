@@ -305,6 +305,10 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     )
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason="multi-key sort isn't implemented",
+)
 def test_join_with_window_function(
     players_base, players_df, batting, batting_df
 ):

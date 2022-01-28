@@ -15,9 +15,6 @@ class TestConf(PandasTest):
 
     @staticmethod
     def connect(data_directory: Path):
-        filename = data_directory / 'functional_alltypes.parquet'
-        if not filename.exists():
-            pytest.skip(f'test data set {filename} not found')
         return ibis.parquet.connect(data_directory)
 
 

@@ -1,5 +1,4 @@
 import decimal
-import os
 
 import numpy as np
 import pandas as pd
@@ -80,31 +79,27 @@ def df():
 
 
 @pytest.fixture(scope='module')
-def batting_df():
-    path = os.path.join(
-        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'batting.csv'
+def batting_df(data_directory):
+    num_rows = 1000
+    start_index = 30
+    df = pd.read_csv(
+        data_directory / 'batting.csv',
+        index_col=None,
+        sep=',',
+        header=0,
+        skiprows=range(1, start_index + 1),
+        nrows=num_rows,
     )
-    if not os.path.exists(path):
-        pytest.skip(f'{path} not found')
-    elif not os.path.isfile(path):
-        pytest.skip(f'{path} is not a file')
-
-    df = pd.read_csv(path, index_col=None, sep=',')
-    num_rows = int(0.01 * len(df))
-    return df.iloc[30 : 30 + num_rows].reset_index(drop=True)
+    return df.reset_index(drop=True)
 
 
 @pytest.fixture(scope='module')
-def awards_players_df():
-    path = os.path.join(
-        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''), 'awards_players.csv'
+def awards_players_df(data_directory):
+    return pd.read_csv(
+        data_directory / 'awards_players.csv',
+        index_col=None,
+        sep=',',
     )
-    if not os.path.exists(path):
-        pytest.skip(f'{path} not found')
-    elif not os.path.isfile(path):
-        pytest.skip(f'{path} is not a file')
-
-    return pd.read_csv(path, index_col=None, sep=',')
 
 
 @pytest.fixture(scope='module')
