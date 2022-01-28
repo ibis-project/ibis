@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 from pytest import param
 
+import ibis.common.exceptions as exc
+
 # add here backends that passes join tests
 all_db_join_supported = [
     'csv',
@@ -23,13 +25,15 @@ all_db_join_supported = [
         param(
             'semi',
             marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason='Semi join not implemented'
+                raises=(exc.OperationNotDefinedError, NotImplementedError),
+                reason='Semi join not implemented',
             ),
         ),
         param(
             'anti',
             marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason='Anti join not implemented'
+                raises=(exc.OperationNotDefinedError, NotImplementedError),
+                reason='Anti join not implemented',
             ),
         ),
     ],
