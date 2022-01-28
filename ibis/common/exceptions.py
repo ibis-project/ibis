@@ -71,6 +71,10 @@ class UnsupportedArgumentError(IbisError):
     """UnsupportedArgumentError."""
 
 
+class BackendConversionError(IbisError):
+    """A backend cannot convert an input to its native type."""
+
+
 def mark_as_unsupported(f: Callable) -> Callable:
     """Decorate an unsupported method.
 

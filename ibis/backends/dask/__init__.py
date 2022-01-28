@@ -1,15 +1,15 @@
-from typing import Mapping
+from __future__ import annotations
+
+from typing import Any, Mapping
 
 import dask
 import dask.dataframe as dd
 import pandas as pd
-import toolz
 from dask.base import DaskMethodsMixin
 
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
 import ibis.backends.pandas.execution  # noqa: F401
-import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -26,6 +26,7 @@ class Backend(BasePandasBackend):
     name = 'dask'
     database_class = DaskDatabase
     table_class = DaskTable
+    backend_table_type = dd.DataFrame
 
     def do_connect(self, dictionary):
         # register dispatchers
@@ -72,28 +73,30 @@ class Backend(BasePandasBackend):
         -----
         For the dask backend returns a dask graph that you can run ``.compute``
         on to get a pandas object.
-
         """
         return execute_and_reset(query, params=params, **kwargs)
+
+    @classmethod
+    def _supports_conversion(cls, obj: Any) -> bool:
+        return isinstance(obj, cls.backend_table_type)
+
+    @staticmethod
+    def _from_pandas(df: pd.DataFrame, npartitions: int = 1) -> dd.DataFrame:
+        return dd.from_pandas(df, npartitions=npartitions)
+
+    @staticmethod
+    def _convert_schema(schema: sch.Schema):
+        return ibis_schema_to_dask(schema)
+
+    @classmethod
+    def _convert_object(cls, obj: dd.DataFrame) -> dd.DataFrame:
+        return obj
 
     def create_table(
         self,
         table_name: str,
-        obj: dd.DataFrame = None,
-        schema: sch.Schema = None,
+        obj: dd.DataFrame | None = None,
+        schema: sch.Schema | None = None,
     ):
         """Create a table."""
-        if obj is not None:
-            df = obj
-        elif schema is not None:
-            dtypes = ibis_schema_to_dask(schema)
-            df = schema.apply_to(
-                dd.from_pandas(
-                    pd.DataFrame(columns=list(map(toolz.first, dtypes))),
-                    npartitions=1,
-                )
-            )
-        else:
-            raise com.IbisError('Must pass expr or schema')
-
-        self.dictionary[table_name] = df
+        super().create_table(table_name, obj=obj, schema=schema)

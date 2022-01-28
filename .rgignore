@@ -1,1 +1,4 @@
 !.github
+docs/source/tutorial/data/geography.json
+docs/source/tutorial/data/geography.db
+*.ipynb
