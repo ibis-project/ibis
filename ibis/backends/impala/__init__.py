@@ -17,6 +17,7 @@ except ImportError:
 
 import numpy as np
 import pandas as pd
+from pydantic import Field
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -175,6 +176,16 @@ class Backend(BaseSQLBackend):
     WebHDFS = WebHDFS
     compiler = ImpalaCompiler
 
+    class Options(ibis.config.BaseModel):
+        temp_db: str = Field(
+            default="__ibis_tmp",
+            description="Database to use for temporary objects.",
+        )
+        temp_hdfs_path: str = Field(
+            default="/tmp/hdfs",
+            description="HDFS path for storage of temporary data",
+        )
+
     def hdfs_connect(self, *args, **kwargs):
         return hdfs_connect(*args, **kwargs)
 
@@ -280,18 +291,6 @@ class Backend(BaseSQLBackend):
         result = cursor.fetchone()[0]
         cursor.release()
         return result
-
-    def register_options(self):
-        ibis.config.register_option(
-            'temp_db',
-            '__ibis_tmp',
-            'Database to use for temporary tables, views. functions, etc.',
-        )
-        ibis.config.register_option(
-            'temp_hdfs_path',
-            '/tmp/ibis',
-            'HDFS path for storage of temporary data',
-        )
 
     def list_databases(self, like=None):
         cur = self.raw_sql('SHOW DATABASES')

@@ -48,7 +48,9 @@ if TYPE_CHECKING:
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
 # used in filtering data from a table or columns of a table. It can be changed
-# by ibis.set_option('time_col')
+# by running:
+#
+# ibis.config.options.context_adjustment.time_col = "other_time_col"
 
 
 def get_time_col():
