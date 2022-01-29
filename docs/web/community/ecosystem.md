@@ -57,3 +57,44 @@ This would output a dataframe that looks like:
 | 1       | 5       |
 | 2       | 6       |
 | 3       | 7       |
+
+## Ibis on [Fugue](https://github.com/fugue-project/fugue)
+
+[Fugue](https://github.com/fugue-project/fugue) is a low-code abstraction layer letting users express
+the workflows in SQL or Python end-to-end. The design philosophy of Fugue and Ibis is very aligned, and
+Fugue is at a higher level of abstraction compared to Ibis. So the integration is very intuitive, Ibis
+is also able to run on all the backends Fugue supports: Pandas, Spark, Dask and DuckDB. The value Fugue
+adds to Ibis is the seamless integration of SQL semantics and scientific computing plus non-standard SQL
+operations. The detailed tutorial can be found
+[here](https://fugue-tutorials.readthedocs.io/tutorials/integrations/ibis.html)
+
+Here is an example of a distributed inference pipeline:
+
+```python
+import pandas as pd
+
+# schema: *,pred:double
+def predict(df: pd.DataFrame) -> pd.DataFrame:
+    model = load_model("somefile")
+    return df.assign(pred=model.predict(df))
+
+import fugue_ibis
+from fugue import FugueWorkflow
+
+def distributed_predict(file1, df2, dest):
+    dag = FugueWorkflow()
+    a = dag.load(file1).as_ibis()
+    b = dag.df(df2).as_ibis()
+    # ibis operations (you can do more here)
+    joined = a.inner_join(b, a.key==b.key)[a, b.f2]
+    filtered = joined[joined.f1>0]
+    # back to fugue, apply predict distributedly and save
+    filtered.as_fugue().transform(predict).save(dest)
+    return dag
+
+# test locally
+distributed_predict(small_file, pandas_df2, temp_dest).run()
+
+# run on spark when you have a SparkSession: session
+distributed_predict(large_file, spark_df2, dest).run(session)
+```
