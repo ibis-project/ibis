@@ -68,7 +68,6 @@ adds to Ibis is the seamless integration of SQL semantics and scientific computi
 operations. The detailed tutorial can be found
 [here](https://fugue-tutorials.readthedocs.io/tutorials/integrations/ibis.html)
 
-
 Here is an example of a distributed inference pipeline:
 
 ```python
