@@ -63,6 +63,10 @@ def isproperty(obj):
 
 
 class IbisTestEnv:
+    def __init__(self):
+        if options.impala is None:
+            ibis.backends.impala.Backend.register_options()
+
     def items(self):
         return [
             (name, getattr(self, name))
@@ -90,9 +94,12 @@ class IbisTestEnv:
         )
         return tmp_db
 
-    options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-        'IBIS_TEST_TMP_HDFS_DIR', f'/tmp/__ibis_test_{util.guid()}'
-    )
+    @property
+    def tmp_dir(self):
+        options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
+            'IBIS_TEST_TMP_HDFS_DIR', f'/tmp/__ibis_test_{util.guid()}'
+        )
+        return tmp_dir
 
     @property
     def test_data_db(self):

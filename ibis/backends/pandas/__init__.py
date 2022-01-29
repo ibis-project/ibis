@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, MutableMapping
 
 import pandas as pd
+from pydantic import Field
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -18,7 +19,14 @@ class BasePandasBackend(BaseBackend):
     Base class for backends based on pandas.
     """
 
+    name = "pandas"
     backend_table_type = pd.DataFrame
+
+    class Options(ibis.config.BaseModel):
+        enable_trace: bool = Field(
+            default=False,
+            description="Enable tracing for execution.",
+        )
 
     def do_connect(
         self,
@@ -59,15 +67,6 @@ class BasePandasBackend(BaseBackend):
             return self.connect({name: df}).table(name)
         client.dictionary[name] = df
         return client.table(name)
-
-    def register_options(self):
-        ibis.config.register_option(
-            'enable_trace',
-            False,
-            f'Whether enable tracing for {self.name} execution. '
-            'See ibis.{self.name}.trace for details.',
-            validator=ibis.config.is_bool,
-        )
 
     @property
     def version(self) -> str:

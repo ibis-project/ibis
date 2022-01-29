@@ -53,6 +53,7 @@ install_requires = [
     "numpy>=1,<2",
     "pandas>=1.2.5,<2",
     "parsy>=1.3.0,<2",
+    "pydantic>=1.9.0,<2",
     "regex>=2021.7.6",
     "toolz>=0.11,<0.12",
 ]

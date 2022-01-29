@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import re
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 from cached_property import cached_property
 
 import ibis
+import ibis.common.exceptions as exc
+import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -151,6 +153,7 @@ class BaseBackend(abc.ABC):
 
     database_class = Database
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
+    name: ClassVar[str]
 
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
@@ -169,11 +172,6 @@ class BaseBackend(abc.ABC):
 
     def __eq__(self, other):
         return self.db_identity == other.db_identity
-
-    @property
-    @abc.abstractmethod
-    def name(self) -> str:
-        """The name of the backend, for example 'sqlite'."""
 
     @cached_property
     def db_identity(self) -> str:
@@ -390,8 +388,22 @@ class BaseBackend(abc.ABC):
             The backend version
         """
 
-    def register_options(self) -> None:
+    @classmethod
+    def register_options(cls) -> None:
         """Register custom backend options."""
+        options = ibis.config.options
+        backend_name = cls.name
+        try:
+            backend_options = cls.Options()
+        except AttributeError:
+            pass
+        else:
+            try:
+                setattr(options, backend_name, backend_options)
+            except ValueError as e:
+                raise exc.BackendConfigurationNotRegistered(
+                    backend_name
+                ) from e
 
     def compile(
         self,

@@ -75,6 +75,20 @@ class BackendConversionError(IbisError):
     """A backend cannot convert an input to its native type."""
 
 
+class BackendConfigurationNotRegistered(IbisError):
+    """A backend has options but isn't regsitered in ibis/config.py"""
+
+    def __init__(self, backend_name: str) -> None:
+        super().__init__(backend_name)
+        self.backend_name = backend_name
+
+    def __str__(self) -> str:
+        return (
+            f"Please register options for the `{self.backend_name}` "
+            "backend in ibis/config.py"
+        )
+
+
 def mark_as_unsupported(f: Callable) -> Callable:
     """Decorate an unsupported method.
 

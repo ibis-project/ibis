@@ -5,6 +5,7 @@ from typing import Any, Mapping
 
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
+from pydantic import Field
 
 import ibis
 import ibis.config
@@ -29,6 +30,12 @@ class Backend(BaseSQLBackend):
     name = 'clickhouse'
     table_expr_class = ClickhouseTable
     compiler = ClickhouseCompiler
+
+    class Options(ibis.config.BaseModel):
+        temp_db: str = Field(
+            default="__ibis_tmp",
+            description="Database to use for temporary objects.",
+        )
 
     def do_connect(
         self,
@@ -90,13 +97,6 @@ class Backend(BaseSQLBackend):
             password=password,
             client_name=client_name,
             compression=compression,
-        )
-
-    def register_options(self):
-        ibis.config.register_option(
-            'temp_db',
-            '__ibis_tmp',
-            'Database to use for temporary tables, views. functions, etc.',
         )
 
     @property
