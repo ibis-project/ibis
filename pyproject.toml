@@ -177,5 +177,5 @@ add_ignore = ["D100", "D101", "D102", "D103", "D104", "D105"]
 channels = ["conda-forge"]
 
 [build-system]
-requires = ["poetry-core>=1"]
+requires = ["poetry-core>=1", "setuptools"]
 build-backend = "poetry.core.masonry.api"
