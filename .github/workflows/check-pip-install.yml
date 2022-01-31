@@ -3,16 +3,14 @@ name: Check pip install
 on:
   push:
     paths:
-      - README.md
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/check-setup-py.yml
+      - .github/workflows/check-pip-install.yml
   pull_request:
     paths:
-      - README.md
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/check-setup-py.yml
+      - .github/workflows/check-pip-install.yml
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
@@ -57,12 +55,14 @@ jobs:
         run: pip install -e .
 
       - name: check import
-        run: python -c 'import ibis'
+        run: $VIRTUAL_ENV/bin/python -c 'import ibis'
 
       - name: check import above ibis
         run: |
+          set -euo pipefail
+
           cd ../..
-          python -c 'import ibis'
+          $VIRTUAL_ENV/bin/python -c 'import ibis'
 
       - name: run simple tests
         run: $VIRTUAL_ENV/bin/python -m pytest ibis/tests --numprocesses auto
