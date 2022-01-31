@@ -69,7 +69,6 @@ extras_require = {
     ],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
-        "clickhouse-sqlalchemy>=0.1.4,<0.2",
         "dask[array,dataframe]>=2021.10.0",
         "datafusion>=0.4,<0.5",
         "geoalchemy2>=0.6,<0.11",
@@ -86,11 +85,7 @@ extras_require = {
         "sqlalchemy>=1.3,<1.4",
         "tables>=3,<4",
     ],
-    "clickhouse": [
-        "clickhouse-driver>=0.1,<0.3",
-        "clickhouse-sqlalchemy>=0.1.4,<0.2",
-        "sqlalchemy>=1.3,<1.4",
-    ],
+    "clickhouse": ["clickhouse-driver>=0.1,<0.3"],
     "dask": ["dask[array,dataframe]>=2021.10.0", "pyarrow>=1,<7"],
     "datafusion": ["datafusion>=0.4,<0.5"],
     "geospatial": [
@@ -103,7 +98,6 @@ extras_require = {
         "hdfs[kerberos]>=2,<3",
         "impyla[kerberos]>=0.17,<0.19",
         "requests>=2,<3",
-        "sqlalchemy>=1.3,<1.4",
     ],
     "mysql": ["pymysql>=1,<2", "sqlalchemy>=1.3,<1.4"],
     "parquet": ["pyarrow>=1,<7"],

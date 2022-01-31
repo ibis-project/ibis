@@ -42,33 +42,8 @@ self: super:
   });
 
   tables = super.tables.overridePythonAttrs (attrs: {
-    format = "setuptools";
-
     buildInputs = (attrs.buildInputs or [ ]) ++ (with pkgs; [ bzip2 c-blosc hdf5 lzo ]);
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.cython ];
-
-    # Regenerate C code with Cython
-    preBuild = ''
-      make distclean
-    '';
-
-    # When doing `make distclean`, ignore docs
-    postPatch = ''
-      substituteInPlace Makefile --replace "src doc" "src"
-      # Force test suite to error when unittest runner fails
-      substituteInPlace tables/tests/test_suite.py \
-        --replace "return 0" "assert result.wasSuccessful(); return 0" \
-        --replace "return 1" "assert result.wasSuccessful(); return 1"
-    '';
-
-    setupPyBuildFlags = with pkgs; [
-      "--hdf5=${lib.getDev hdf5}"
-      "--lzo=${lib.getDev lzo}"
-      "--bzip2=${lib.getDev bzip2}"
-      "--blosc=${lib.getDev c-blosc}"
-    ];
-
-    pythonImportsCheck = [ "tables" ];
   });
 
   # TODO: remove this entire override when upstream nixpkgs datafusion PR
@@ -105,32 +80,4 @@ self: super:
         sha256 = "sha256-JGyDxpfBXzduJaMF1sbmRm7KJajHYdVSj+WbiSETiY0=";
       };
     });
-
-  mkdocs-autorefs = super.mkdocs-autorefs.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
-  });
-
-  mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
-  });
-
-  pytkdocs = super.pytkdocs.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
-  });
-
-  mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
-  });
-
-  jupyter-server = super.jupyter-server.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
-  });
-
-  nbclassic = super.nbclassic.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
-  });
-
-  jupyterlab = super.jupyterlab.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
-  });
 }

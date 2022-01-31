@@ -244,7 +244,7 @@ def test_column_types(alltypes):
     [
         (L(50000).to_timestamp('s'), pd.to_datetime(50000, unit='s')),
         (L(50000).to_timestamp('ms'), pd.to_datetime(50000, unit='ms')),
-        (L(5 * 10 ** 8).to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
+        (L(5 * 10**8).to_timestamp(), pd.to_datetime(5 * 10**8, unit='s')),
         (
             ibis.timestamp('2009-05-17 12:34:56').truncate('y'),
             pd.Timestamp('2009-01-01'),
@@ -440,7 +440,7 @@ def test_decimal_timestamp_builtins(con):
         dc + dc,
         dc / 2,
         dc * 2,
-        dc ** 2,
+        dc**2,
         dc.cast('double'),
         api.where(table.l_discount > 0, dc * table.l_discount, api.NA),
         dc.fillna(0),

@@ -417,7 +417,7 @@ def add_partitioned_sorted_column(
         col_name: str,
     ):
         """Assigns a column with a unique id for each row"""
-        if len(df) > (2 ** 31):
+        if len(df) > (2**31):
             raise ValueError(
                 f"Too many items in partition {partition_info} to add"
                 "partitioned sorted column without overflowing."

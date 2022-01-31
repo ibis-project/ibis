@@ -135,7 +135,7 @@ if __name__ == '__main__':
     df = joined[left.a, right.c.name('b'), right.d.name('c')]
     a = df.a
     b = df.b
-    filt = df[(a + b * 2 * b / b ** 3 > 4) & (b > 5)]
+    filt = df[(a + b * 2 * b / b**3 > 4) & (b > 5)]
     expr = filt.groupby(filt.c).aggregate(
         amean=filt.a.mean(), bsum=filt.b.sum()
     )

@@ -121,7 +121,7 @@ def test_named_expressions(table, expr_fn, expected):
         pytest.param(lambda t: t.a - t.b, '`a` - `b`', id="sub"),
         pytest.param(lambda t: t.a * t.b, '`a` * `b`', id="mul"),
         pytest.param(lambda t: t.a / t.b, '`a` / `b`', id="div"),
-        pytest.param(lambda t: t.a ** t.b, 'pow(`a`, `b`)', id="pow"),
+        pytest.param(lambda t: t.a**t.b, 'pow(`a`, `b`)', id="pow"),
         pytest.param(lambda t: t.a < t.b, '`a` < `b`', id="lt"),
         pytest.param(lambda t: t.a <= t.b, '`a` <= `b`', id="le"),
         pytest.param(lambda t: t.a > t.b, '`a` > `b`', id="gt"),
