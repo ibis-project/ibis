@@ -54,6 +54,11 @@ jobs:
       - name: install ibis in development mode
         run: pip install -e .
 
+      - name: show python
+        run: |
+          which python
+          echo "$VIRTUAL_ENV/bin/python"
+
       - name: check import
         run: $VIRTUAL_ENV/bin/python -c 'import ibis'
 
