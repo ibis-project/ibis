@@ -56,8 +56,16 @@ jobs:
       - name: install ibis in development mode
         run: pip install -e .
 
+      - name: check import
+        run: python -c 'import ibis'
+
+      - name: check import above ibis
+        run: |
+          cd ../..
+          python -c 'import ibis'
+
       - name: run simple tests
-        run: pytest ibis/tests --numprocesses auto
+        run: $VIRTUAL_ENV/bin/python -m pytest ibis/tests --numprocesses auto
 
   check_poetry_lock:
     runs-on: ubuntu-latest
