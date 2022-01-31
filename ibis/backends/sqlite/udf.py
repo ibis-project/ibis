@@ -200,7 +200,7 @@ def _ibis_sqlite_power(arg, power):
     """
     if arg < 0.0 and not power.is_integer():
         return None
-    return arg ** power
+    return arg**power
 
 
 @udf

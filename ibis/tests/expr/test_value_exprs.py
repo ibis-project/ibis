@@ -565,7 +565,7 @@ def test_any_all_notany(table, column, operation):
     ],
 )
 @pytest.mark.parametrize('column', list('abcdef'))
-@pytest.mark.parametrize('case', [2, 2 ** 9, 2 ** 17, 2 ** 33, 1.5])
+@pytest.mark.parametrize('case', [2, 2**9, 2**17, 2**33, 1.5])
 def test_numbers_compare_numeric_literal(table, operation, column, case):
     ex_op_class = {
         operator.eq: ops.Equals,
@@ -727,8 +727,8 @@ def test_binop_string_type_error(table, operation):
         (operator.add, 'd', 5, 'int64'),
         (operator.mul, 'a', 0, 'int8'),
         (operator.mul, 'a', 5, 'int16'),
-        (operator.mul, 'a', 2 ** 24, 'int32'),
-        (operator.mul, 'a', -(2 ** 24) + 1, 'int32'),
+        (operator.mul, 'a', 2**24, 'int32'),
+        (operator.mul, 'a', -(2**24) + 1, 'int32'),
         (operator.mul, 'a', 1.5, 'double'),
         (operator.mul, 'b', 0, 'int16'),
         (operator.mul, 'b', 5, 'int32'),
@@ -1330,8 +1330,8 @@ def test_window_unbounded_invalid(kind, begin, end):
         (ibis.literal(1.0), ibis.literal(1), dt.float64),
         (ibis.literal(1), ibis.literal(1), dt.int8),
         (ibis.literal(1), ibis.literal(1000), dt.int16),
-        (ibis.literal(2 ** 16), ibis.literal(2 ** 17), dt.int32),
-        (ibis.literal(2 ** 50), ibis.literal(1000), dt.int64),
+        (ibis.literal(2**16), ibis.literal(2**17), dt.int32),
+        (ibis.literal(2**50), ibis.literal(1000), dt.int64),
         (ibis.literal([1, 2]), ibis.literal([1, 2]), dt.Array(dt.int8)),
         (ibis.literal(['a']), ibis.literal([]), dt.Array(dt.string)),
         (ibis.literal([]), ibis.literal(['a']), dt.Array(dt.string)),

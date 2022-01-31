@@ -297,12 +297,12 @@ def uda_so(udfcon, test_data_dir):
         pytest.param('int8', ibis.literal(5), 'tinyint_col', id="int8"),
         pytest.param(
             'int16',
-            ibis.literal(2 ** 10),
+            ibis.literal(2**10),
             'smallint_col',
             id="int16",
         ),
-        pytest.param('int32', ibis.literal(2 ** 17), 'int_col', id="int16"),
-        pytest.param('int64', ibis.literal(2 ** 33), 'bigint_col', id="int64"),
+        pytest.param('int32', ibis.literal(2**17), 'int_col', id="int16"),
+        pytest.param('int64', ibis.literal(2**33), 'bigint_col', id="int64"),
         pytest.param('float', ibis.literal(3.14), 'float_col', id="float"),
         pytest.param('double', ibis.literal(3.14), 'double_col', id="double"),
         pytest.param(

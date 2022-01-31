@@ -625,7 +625,7 @@ def test_mutate_after_group_by(t, df):
 def test_groupby_with_unnamed_arithmetic(t, df):
     expr = t.groupby(t.dup_strings).aggregate(
         naive_variance=(
-            (t.plain_float64 ** 2).sum() - t.plain_float64.mean() ** 2
+            (t.plain_float64**2).sum() - t.plain_float64.mean() ** 2
         )
         / t.plain_float64.count()
     )
@@ -635,7 +635,7 @@ def test_groupby_with_unnamed_arithmetic(t, df):
         .groupby('dup_strings')
         .agg(
             {
-                'plain_float64': lambda x: ((x ** 2).sum() - x.mean() ** 2)
+                'plain_float64': lambda x: ((x**2).sum() - x.mean() ** 2)
                 / x.count()
             }
         )

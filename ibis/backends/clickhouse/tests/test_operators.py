@@ -76,7 +76,7 @@ def test_binary_arithmetic(con, func, left, right, expected):
         (lambda a, b: a - b, '`int_col` - `tinyint_col`'),
         (lambda a, b: a * b, '`int_col` * `tinyint_col`'),
         (lambda a, b: a / b, '`int_col` / `tinyint_col`'),
-        (lambda a, b: a ** b, 'pow(`int_col`, `tinyint_col`)'),
+        (lambda a, b: a**b, 'pow(`int_col`, `tinyint_col`)'),
         (lambda a, b: a < b, '`int_col` < `tinyint_col`'),
         (lambda a, b: a <= b, '`int_col` <= `tinyint_col`'),
         (lambda a, b: a > b, '`int_col` > `tinyint_col`'),
