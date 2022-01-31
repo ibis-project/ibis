@@ -38,24 +38,6 @@ cases contributors do not have to remember to generate and commit these files.
 
 ### Manually updating dependencies
 
-!!! danger
-
-    Do not manually edit `setup.py`, it is automatically generated from `pyproject.toml`
-
-1. Edit `pyproject.toml` as needed.
-2. Run `poetry update`
-3. Run
-
-```sh
-# if using nix
-./dev/poetry2setup -o setup.py
-
-# it not using nix, requires installation of tomli and poetry-core
-PYTHONHASHSEED=42 python ./dev/poetry2setup.py -o setup.py
-```
-
-from the repository root.
-
 Updates of minor and patch versions of dependencies are handled automatically by
 [`renovate`](https://github.com/renovatebot/renovate).
 

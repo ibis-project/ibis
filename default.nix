@@ -35,10 +35,6 @@ let
         }
       );
 
-      preConfigure = ''
-        rm -f setup.py
-      '';
-
       buildInputs = with pkgs; [ graphviz-nox ];
       checkInputs = with pkgs; [ graphviz-nox ];
 
