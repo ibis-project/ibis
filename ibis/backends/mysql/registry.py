@@ -227,6 +227,7 @@ def _day_of_week_name(t, expr):
 operation_registry.update(
     {
         ops.Literal: _literal,
+        ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         # strings
         ops.Substring: _substr,
         ops.StringFind: _string_find,

@@ -19,7 +19,7 @@ from ibis import literal as L
         (L(10).nullif(5), 10),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.xfail_backends(["datafusion"])  # not implemented
 def test_fillna_nullif(backend, con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
