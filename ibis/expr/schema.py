@@ -123,7 +123,8 @@ class Schema:
 
     @classmethod
     def from_dict(cls, dictionary):
-        return Schema(*zip(*dictionary.items()))
+        names, types = zip(*dictionary.items()) if dictionary else ([], [])
+        return Schema(names, types)
 
     def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types

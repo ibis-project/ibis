@@ -7,7 +7,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 import dateutil.parser
 import pandas as pd
@@ -258,7 +258,9 @@ def sequence(values):
 
 
 def schema(
-    pairs: Iterable[tuple[str, dt.DataType]] | None = None,
+    pairs: Iterable[tuple[str, dt.DataType]]
+    | Mapping[str, dt.DataType]
+    | None = None,
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
@@ -267,7 +269,8 @@ def schema(
     Parameters
     ----------
     pairs
-        List of name, type pairs. Mutually exclusive with `names` and `types`.
+        List or dictionary of name, type pairs. Mutually exclusive with `names`
+        and `types`.
     names
         Field names. Mutually exclusive with `pairs`.
     types
@@ -283,9 +286,12 @@ def schema(
     ...              types=['string', 'int64', 'boolean'])
     """
     if pairs is not None:
-        return Schema.from_tuples(pairs)
+        return Schema.from_dict(dict(pairs))
     else:
         return Schema(names, types)
+
+
+_schema = schema
 
 
 def table(schema, name=None):
@@ -306,10 +312,7 @@ def table(schema, name=None):
     table : TableExpr
     """
     if not isinstance(schema, Schema):
-        if isinstance(schema, dict):
-            schema = Schema.from_dict(schema)
-        else:
-            schema = Schema.from_tuples(schema)
+        schema = _schema(pairs=schema)
 
     node = ops.UnboundTable(schema, name=name)
     return node.to_expr()
