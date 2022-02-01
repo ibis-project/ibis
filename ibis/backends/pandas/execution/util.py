@@ -9,8 +9,8 @@ import ibis.common.exceptions as com
 import ibis.util
 from ibis.expr import operations as ops
 from ibis.expr import types as ir
-from ibis.expr.schema import coerce_to_dataframe
 from ibis.expr.scope import Scope
+from ibis.udf.vectorized import coerce_to_dataframe
 
 from ..core import execute
 from ..execution import constants
