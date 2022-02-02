@@ -14,7 +14,12 @@ on:
     branches:
       - master
 jobs:
-  main:
+  nix-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  benchmarks:
+    name: Benchmarks
     runs-on: ubuntu-latest
     steps:
       - run: echo "No build required"
