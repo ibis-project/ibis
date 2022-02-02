@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -143,13 +144,13 @@ class ClickhouseTable(ir.TableExpr):
     def invalidate_metadata(self):
         self._client.invalidate_metadata(self._qualified_name)
 
-    def metadata(self):
-        """
-        Return parsed results of DESCRIBE FORMATTED statement
+    def metadata(self) -> Any:
+        """Return the parsed results of a `DESCRIBE FORMATTED` statement.
 
         Returns
         -------
-        meta : TableMetadata
+        TableMetadata
+            Table metadata
         """
         return self._client.describe_formatted(self._qualified_name)
 

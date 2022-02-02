@@ -10,6 +10,7 @@ import warnings
 from numbers import Real
 from typing import (
     Any,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -74,7 +75,7 @@ any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
 
 
-def promote_list(val: Union[V, List[V]]) -> List[V]:
+def promote_list(val: Union[V, Sequence[V]]) -> List[V]:
     """Ensure that the value is a list.
 
     Parameters
@@ -100,11 +101,12 @@ def is_function(v: Any) -> bool:
     Returns
     -------
     bool
+        Whether `v` is a function
     """
     return isinstance(v, (types.FunctionType, types.LambdaType))
 
 
-def adjoin(space: int, *lists: Sequence[str]) -> str:
+def adjoin(space: int, *lists: Iterable[str]) -> str:
     """Glue together two sets of strings using `space`.
 
     Parameters
@@ -114,7 +116,7 @@ def adjoin(space: int, *lists: Sequence[str]) -> str:
 
     Returns
     -------
-    string
+    str
     """
     lengths = [max(map(len, x)) + space for x in lists[:-1]]
 
@@ -359,8 +361,10 @@ def flatten_iterable(iterable):
 
 
 def warn_deprecated(name, *, instead, version='', stacklevel=1):
-    """Warn about deprecated usage, including stacktrace, and
-    what to do instead."""
+    """Warn about deprecated usage.
+
+    The message includes a stacktrace and what to do instead.
+    """
     msg = f'"{name}" is deprecated'
     if version:
         msg += f' since v{version}'

@@ -23,24 +23,30 @@ class Backend(BaseAlchemyBackend):
         url=None,
         driver='psycopg2',
     ):
-        """Create an Ibis client located at `user`:`password`@`host`:`port`
-        connected to a PostgreSQL database named `database`.
+        """Create an Ibis client connected to PostgreSQL database.
 
         Parameters
         ----------
-        host : string, default 'localhost'
-        user : string, default None
-        password : string, default None
-        port : string or integer, default 5432
-        database : string, default None
-        url : string, default None
+        host
+            Hostname
+        user
+            Username
+        password
+            Password
+        port
+            Port number
+        database
+            Database to connect to
+        url
             Complete SQLAlchemy connection string. If passed, the other
             connection arguments are ignored.
-        driver : string, default 'psycopg2'
+        driver
+            Database driver
 
         Returns
         -------
         Backend
+            Ibis backend instance
 
         Examples
         --------
@@ -165,19 +171,21 @@ class Backend(BaseAlchemyBackend):
         name=None,
         language="plpythonu",
     ):
-        """Decorator that defines a PL/Python UDF in-database based on the
-        wrapped function and turns it into an ibis function expression.
+        """Decorator that defines a PL/Python UDF in-database.
 
         Parameters
         ----------
-        pyfunc : function
-        in_types : List[ibis.expr.datatypes.DataType]
-        out_type : ibis.expr.datatypes.DataType
-        schema : str
-            optionally specify the schema in which to define the UDF
-        replace : bool
+        pyfunc
+            Python function
+        in_types
+            Input types
+        out_type
+            Output type
+        schema
+            The postgres schema in which to define the UDF
+        replace
             replace UDF in database if already exists
-        name: str
+        name
             name for the UDF to be defined in database
         language
             Language extension to use for PL/Python
@@ -185,6 +193,7 @@ class Backend(BaseAlchemyBackend):
         Returns
         -------
         Callable
+            A callable ibis expression
 
         Function that takes in ColumnExpr arguments and returns an instance
         inheriting from PostgresUDFNode

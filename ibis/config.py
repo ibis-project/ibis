@@ -47,11 +47,6 @@ class OptionError(AttributeError, KeyError):
     Backwards compatible with KeyError checks.
     """
 
-    pass
-
-
-# User API
-
 
 def _get_single_key(pat, silent):
     keys = _select_options(pat)

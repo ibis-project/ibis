@@ -1,10 +1,19 @@
 """Impala backend"""
+
+from __future__ import annotations
+
 import contextlib
 import io
 import operator
 import re
 import weakref
 from posixpath import join as pjoin
+from typing import Any
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -184,34 +193,34 @@ class Backend(BaseSQLBackend):
         pool_size=8,
         hdfs_client=None,
     ):
-        """Create a Impala Backend for use with Ibis.
+        """Create an Impala Backend for use with Ibis.
 
         Parameters
         ----------
-        host : str, optional
+        host
             Host name of the impalad or HiveServer2 in Hive
-        port : int, optional
+        port
             Impala's HiveServer2 port
-        database : str, optional
+        database
             Default database when obtaining new cursors
-        timeout : int, optional
+        timeout
             Connection timeout in seconds when communicating with HiveServer2
-        use_ssl : bool, optional
+        use_ssl
             Use SSL when connecting to HiveServer2
-        ca_cert : str, optional
+        ca_cert
             Local path to 3rd party CA certificate or copy of server
             certificate for self-signed certificates. If SSL is enabled, but
             this argument is ``None``, then certificate validation is skipped.
-        user : str, optional
+        user
             LDAP user to authenticate
-        password : str, optional
+        password
             LDAP password to authenticate
-        auth_mechanism : str, optional
+        auth_mechanism
             {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}.
             Use NOSASL for non-secured Impala connections.  Use PLAIN for
             non-secured Hive clusters.  Use LDAP for LDAP authenticated
             connections.  Use GSSAPI for Kerberos-secured clusters.
-        kerberos_service_name : str, optional
+        kerberos_service_name
             Specify particular impalad service principal.
 
         Examples
@@ -236,6 +245,7 @@ class Backend(BaseSQLBackend):
         Returns
         -------
         Backend
+            Impala backend
         """
         import hdfs
 
@@ -347,14 +357,13 @@ class Backend(BaseSQLBackend):
         self.con.close()
 
     def disable_codegen(self, disabled=True):
-        """
-        Turn off or on LLVM codegen in Impala query execution
+        """Turn off or on LLVM codegen in Impala query execution.
 
         Parameters
         ----------
-        disabled : boolean, default True
-          To disable codegen, pass with no argument or True. To enable codegen,
-          pass False
+        disabled
+            To disable codegen, pass with no argument or True. To enable
+            codegen, pass False.
         """
         self.con.disable_codegen(disabled)
 
@@ -384,16 +393,17 @@ class Backend(BaseSQLBackend):
         return self.con.database
 
     def create_database(self, name, path=None, force=False):
-        """
-        Create a new Impala database
+        """Create a new Impala database.
 
         Parameters
         ----------
-        name : string
-          Database name
-        path : string, default None
-          HDFS path where to store the database data; otherwise uses Impala
-          default
+        name
+            Database name
+        path
+            HDFS path where to store the database data; otherwise uses Impala
+            default
+        force
+            Forcibly create the database
         """
         if path:
             # explicit mkdir ensures the user own the dir rather than impala,
@@ -407,12 +417,11 @@ class Backend(BaseSQLBackend):
 
         Parameters
         ----------
-        name : string
-          Database name
-        force : bool, default False
-          If False and there are any tables in this database, raises an
-          IntegrityError
-
+        name
+            Database name
+        force
+            If False and there are any tables in this database, raises an
+            IntegrityError
         """
         if not force or name in self.list_databases():
             tables = self.list_tables(database=name)
@@ -456,19 +465,24 @@ class Backend(BaseSQLBackend):
         statement = DropDatabase(name, must_exist=not force)
         return self.raw_sql(statement)
 
-    def get_schema(self, table_name, database=None):
-        """
-        Return a Schema object for the indicated table and database
+    def get_schema(
+        self,
+        table_name: str,
+        database: str | None = None,
+    ) -> sch.Schema:
+        """Return a Schema object for the indicated table and database.
 
         Parameters
         ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
+        table_name
+            Table name
+        database
+            Database name
 
         Returns
         -------
-        schema : ibis Schema
+        Schema
+            Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = f'DESCRIBE {qualified_name}'
@@ -487,11 +501,8 @@ class Backend(BaseSQLBackend):
         return self.con.options
 
     def get_options(self):
-        """
-        Return current query options for the Impala session
-        """
-        query = 'SET'
-        return dict(row[:2] for row in self.con.fetchall(query))
+        """Return current query options for the Impala session."""
+        return dict(row[:2] for row in self.con.fetchall("SET"))
 
     def set_options(self, options):
         self.con.set_options(options)
@@ -501,9 +512,6 @@ class Backend(BaseSQLBackend):
         raise NotImplementedError
 
     def set_compression_codec(self, codec):
-        """
-        Parameters
-        """
         if codec is None:
             codec = 'none'
         else:
@@ -515,14 +523,16 @@ class Backend(BaseSQLBackend):
         self.set_options({'COMPRESSION_CODEC': codec})
 
     def create_view(self, name, expr, database=None):
-        """
-        Create an Impala view from a table expression
+        """Create an Impala view from a table expression.
 
         Parameters
         ----------
-        name : string
+        name
+            View name
         expr : ibis TableExpr
-        database : string, default None
+            Ibis table expression
+        database
+            Database name
         """
         ast = self.compiler.to_ast(expr)
         select = ast.queries[0]
@@ -530,15 +540,16 @@ class Backend(BaseSQLBackend):
         return self.raw_sql(statement)
 
     def drop_view(self, name, database=None, force=False):
-        """
-        Drop an Impala view
+        """Drop an Impala view.
 
         Parameters
         ----------
-        name : string
-        database : string, default None
-        force : boolean, default False
-          Database may throw exception if table does not exist
+        name
+            Table name
+        database
+            Database
+        force
+            Database may throw exception if table does not exist
         """
         statement = DropView(name, database=database, must_exist=not force)
         return self.raw_sql(statement)
@@ -565,34 +576,36 @@ class Backend(BaseSQLBackend):
         partition=None,
         like_parquet=None,
     ):
-        """
-        Create a new table in Impala using an Ibis table expression. This is
-        currently designed for tables whose data is stored in HDFS (or
-        eventually other filesystems).
+        """Create a new table in Impala using an Ibis table expression.
+
+        This is currently designed for tables whose data is stored in HDFS.
 
         Parameters
         ----------
-        table_name : string
-        obj : TableExpr or pandas.DataFrame, optional
-          If passed, creates table from select statement results
-        schema : ibis.Schema, optional
-          Mutually exclusive with obj, creates an empty table with a
-          particular schema
-        database : string, default None (optional)
-        force : boolean, default False
-          Do not create table if table with indicated name already exists
-        external : boolean, default False
-          Create an external table; Impala will not delete the underlying data
-          when the table is dropped
-        format : {'parquet'}
-        location : string, default None
-          Specify the directory location where Impala reads and writes files
-          for the table
-        partition : list of strings
-          Must pass a schema to use this. Cannot partition from an expression
-          (create-table-as-select)
-        like_parquet : string (HDFS path), optional
-          Can specify in lieu of a schema
+        table_name
+            Table name
+        obj
+            If passed, creates table from select statement results
+        schema
+            Mutually exclusive with obj, creates an empty table with a
+            particular schema
+        database
+            Database name
+        force
+            Do not create table if table with indicated name already exists
+        external
+            Create an external table; Impala will not delete the underlying
+            data when the table is dropped
+        format
+            File format
+        location
+            Specify the directory location where Impala reads and writes files
+            for the table
+        partition
+            Must pass a schema to use this. Cannot partition from an
+            expression.
+        like_parquet
+            Can specify instead of a schema
 
         Examples
         --------
@@ -643,23 +656,27 @@ class Backend(BaseSQLBackend):
         external=True,
         persist=False,
     ):
-        """
-        Create a (possibly temporary) table to read a collection of Avro data.
+        """Create a table to read a collection of Avro data.
 
         Parameters
         ----------
-        hdfs_dir : string
-          Absolute HDFS path to directory containing avro files
-        avro_schema : dict
-          The Avro schema for the data as a Python dict
-        name : string, default None
-        database : string, default None
-        external : boolean, default True
-        persist : boolean, default False
+        hdfs_dir
+            Absolute HDFS path to directory containing avro files
+        avro_schema
+            The Avro schema for the data as a Python dict
+        name
+            Table name
+        database
+            Database name
+        external
+            Whether the table is external
+        persist
+            Persist the table
 
         Returns
         -------
-        avro_table : ImpalaTable
+        ImpalaTable
+            Impala table expression
         """
         name, database = self._get_concrete_table_path(
             name, database, persist=persist
@@ -684,37 +701,40 @@ class Backend(BaseSQLBackend):
         external=True,
         persist=False,
     ):
-        """
-        Interpret delimited text files (CSV / TSV / etc.) as an Ibis table. See
-        `parquet_file` for more exposition on what happens under the hood.
+        """Interpret delimited text files as an Ibis table expression.
+
+        See the `parquet_file` method for more details on what happens under
+        the hood.
 
         Parameters
         ----------
-        hdfs_dir : string
-          HDFS directory name containing delimited text files
-        schema : ibis Schema
-        name : string, default None
-          Name for temporary or persistent table; otherwise random one
-          generated
-        database : string
-          Database to create the (possibly temporary) table in
-        delimiter : length-1 string, default ','
-          Pass None if there is no delimiter
-        escapechar : length-1 string
-          Character used to escape special characters
-        lineterminator : length-1 string
-          Character used to delimit lines
-        external : boolean, default True
-          Create table as EXTERNAL (data will not be deleted on drop). Not that
-          if persist=False and external=False, whatever data you reference will
-          be deleted
-        persist : boolean, default False
-          If True, do not delete the table upon garbage collection of ibis
-          table object
+        hdfs_dir
+            HDFS directory containing delimited text files
+        schema
+            Ibis schema
+        name
+            Name for temporary or persistent table; otherwise random names are
+            generated
+        database
+            Database to create the table in
+        delimiter
+            Character used to delimit columns
+        escapechar
+            Character used to escape special characters
+        lineterminator
+            Character used to delimit lines
+        external
+            Create table as EXTERNAL (data will not be deleted on drop). Not
+            that if persist=False and external=False, whatever data you
+            reference will be deleted
+        persist
+            If True, do not delete the table upon garbage collection of ibis
+            table object
 
         Returns
         -------
-        delimited_table : ImpalaTable
+        ImpalaTable
+            Impala table expression
         """
         name, database = self._get_concrete_table_path(
             name, database, persist=persist
@@ -745,8 +765,7 @@ class Backend(BaseSQLBackend):
         like_table=None,
         persist=False,
     ):
-        """
-        Make indicated parquet file in HDFS available as an Ibis table.
+        """Make indicated parquet file in HDFS available as an Ibis table.
 
         The table created can be optionally named and persisted, otherwise a
         unique name will be generated. Temporarily, for any non-persistent
@@ -756,32 +775,33 @@ class Backend(BaseSQLBackend):
 
         Parameters
         ----------
-        hdfs_dir : string
-          Path in HDFS
-        schema : ibis Schema
-          If no schema provided, and neither of the like_* argument is passed,
-          one will be inferred from one of the parquet files in the directory.
-        like_file : string
-          Absolute path to Parquet file in HDFS to use for schema
-          definitions. An alternative to having to supply an explicit schema
-        like_table : string
-          Fully scoped and escaped string to an Impala table whose schema we
-          will use for the newly created table.
-        name : string, optional
-          random unique name generated otherwise
-        database : string, optional
-          Database to create the (possibly temporary) table in
-        external : boolean, default True
-          If a table is external, the referenced data will not be deleted when
-          the table is dropped in Impala. Otherwise (external=False) Impala
-          takes ownership of the Parquet file.
-        persist : boolean, default False
-          Do not drop the table upon Ibis garbage collection / interpreter
-          shutdown
+        hdfs_dir
+            Path in HDFS
+        schema
+            If no schema provided, and neither of the like_* argument is
+            passed, one will be inferred from one of the parquet files in the
+            directory.
+        like_file
+            Absolute path to Parquet file in HDFS to use for schema
+            definitions. An alternative to having to supply an explicit schema
+        like_table
+            Fully scoped and escaped string to an Impala table whose schema we
+            will use for the newly created table.
+        name
+            Random unique name generated otherwise
+        database
+            Database to create the (possibly temporary) table in
+        external
+            If a table is external, the referenced data will not be deleted
+            when the table is dropped in Impala. Otherwise (external=False)
+            Impala takes ownership of the Parquet file.
+        persist
+            Do not drop the table during garbage collection
 
         Returns
         -------
-        parquet_table : ImpalaTable
+        ImpalaTable
+            Impala table expression
         """
         name, database = self._get_concrete_table_path(
             name, database, persist=persist
@@ -859,17 +879,7 @@ class Backend(BaseSQLBackend):
         return t
 
     def text_file(self, hdfs_path, column_name='value'):
-        """
-        Interpret text data as a table with a single string column.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        text_table : TableExpr
-        """
-        pass
+        """Interpret text data as a table with a single string column."""
 
     def insert(
         self,
@@ -881,22 +891,18 @@ class Backend(BaseSQLBackend):
         values=None,
         validate=True,
     ):
-        """
-        Insert into existing table.
+        """Insert data into an existing table.
 
-        See ImpalaTable.insert for other parameters.
-
-        Parameters
-        ----------
-        table_name : string
-        database : string, default None
+        See
+        [`ImpalaTable.insert`][ibis.backends.impala.client.ImpalaTable.insert]
+        for parameters.
 
         Examples
         --------
         >>> table = 'my_table'
         >>> con.insert(table, table_expr)  # doctest: +SKIP
 
-        # Completely overwrite contents
+        Completely overwrite contents
         >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
@@ -916,28 +922,21 @@ class Backend(BaseSQLBackend):
         overwrite=False,
         partition=None,
     ):
-        """
-        Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
-        physically moving data files.
-
-        Parameters
-        ----------
-        table_name : string
-        database : string, default None (optional)
-        """
+        """Loads data into an Impala table by physically moving data files."""
         table = self.table(table_name, database=database)
         return table.load_data(path, overwrite=overwrite, partition=partition)
 
     def drop_table(self, table_name, database=None, force=False):
-        """
-        Drop an Impala table
+        """Drop an Impala table.
 
         Parameters
         ----------
-        table_name : string
-        database : string, default None (optional)
-        force : boolean, default False
-          Database may throw exception if table does not exist
+        table_name
+            Table name
+        database
+            Database name
+        force
+            Database may throw exception if table does not exist
 
         Examples
         --------
@@ -951,21 +950,20 @@ class Backend(BaseSQLBackend):
         self.raw_sql(statement)
 
     def truncate_table(self, table_name, database=None):
-        """
-        Delete all rows from, but do not drop, an existing table
+        """Delete all rows from an existing table.
 
         Parameters
         ----------
-        table_name : string
-        database : string, default None (optional)
+        table_name
+            Table name
+        database
+            Database name
         """
         statement = TruncateTable(table_name, database=database)
         self.raw_sql(statement)
 
     def drop_table_or_view(self, name, database=None, force=False):
-        """
-        Attempt to drop a relation that may be a view or table
-        """
+        """Drop view or table."""
         try:
             self.drop_table(name, database=database)
         except Exception as e:
@@ -975,14 +973,15 @@ class Backend(BaseSQLBackend):
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
-        """
-        Caches a table in cluster memory in the given pool.
+        """Caches a table in cluster memory in the given pool.
 
         Parameters
         ----------
-        table_name : string
-        database : string default None (optional)
-        pool : string, default 'default'
+        table_name
+            Table name
+        database
+            Database name
+        pool
            The name of the pool in which to cache the table
 
         Examples
@@ -1012,15 +1011,16 @@ class Backend(BaseSQLBackend):
         return sch.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
-        """
-        Creates a function within Impala
+        """Create a function within Impala.
 
         Parameters
         ----------
-        func : ImpalaUDF or ImpalaUDA
-          Created with wrap_udf or wrap_uda
-        name : string (optional)
-        database : string (optional)
+        func
+            UDF or UDAF
+        name
+            Function name
+        database
+            Database name
         """
         if name is None:
             name = func.name
@@ -1042,20 +1042,23 @@ class Backend(BaseSQLBackend):
         force=False,
         aggregate=False,
     ):
-        """
-        Drops a UDF
-        If only name is given, this will search
-        for the relevant UDF and drop it.
-        To delete an overloaded UDF, give only a name and force=True
+        """Drop a UDF.
+
+        If only name is given, this will search for the relevant UDF and drop
+        it. To delete an overloaded UDF, give only a name and force=True
 
         Parameters
         ----------
-        name : string
-        input_types : list of strings (optional)
-        force : boolean, default False Must be set to true to
-                drop overloaded UDFs
-        database : string, default None
-        aggregate : boolean, default False
+        name
+            Function name
+        input_types
+            Input types
+        force
+            Must be set to `True` to drop overloaded UDFs
+        database
+            Database name
+        aggregate
+            Whether the function is an aggregate
         """
         if not input_types:
             if not database:
@@ -1093,10 +1096,7 @@ class Backend(BaseSQLBackend):
         )
 
     def drop_uda(self, name, input_types=None, database=None, force=False):
-        """
-        Drop aggregate function. See drop_udf for more information on the
-        parameters.
-        """
+        """Drop an aggregate function."""
         return self.drop_udf(
             name, input_types=input_types, database=database, force=force
         )
@@ -1136,14 +1136,7 @@ class Backend(BaseSQLBackend):
             self.raw_sql(stmt)
 
     def list_udfs(self, database=None, like=None):
-        """
-        Lists all UDFs associated with given database
-
-        Parameters
-        ----------
-        database : string
-        like : string for searching (optional)
-        """
+        """Lists all UDFs associated with given database."""
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
@@ -1153,14 +1146,7 @@ class Backend(BaseSQLBackend):
         return result
 
     def list_udas(self, database=None, like=None):
-        """
-        Lists all UDAFs associated with a given database
-
-        Parameters
-        ----------
-        database : string
-        like : string for searching (optional)
-        """
+        """Lists all UDAFs associated with a given database."""
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
@@ -1203,47 +1189,30 @@ class Backend(BaseSQLBackend):
         else:
             return []
 
-    def exists_udf(self, name, database=None):
-        """
-        Checks if a given UDF exists within a specified database
+    def exists_udf(self, name: str, database: str | None = None) -> bool:
+        """Checks if a given UDF exists within a specified database"""
+        return bool(self.list_udfs(database=database, like=name))
+
+    def exists_uda(self, name: str, database: str | None = None) -> bool:
+        """Checks if a given UDAF exists within a specified database."""
+        return bool(self.list_udas(database=database, like=name))
+
+    def compute_stats(
+        self,
+        name: str,
+        database: str | None = None,
+        incremental: bool = False,
+    ) -> None:
+        """Issue a `COMPUTE STATS` command for a given table.
 
         Parameters
         ----------
-        name : string, UDF name
-        database : string, database name
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_udfs(database=database, like=name)) > 0
-
-    def exists_uda(self, name, database=None):
-        """
-        Checks if a given UDAF exists within a specified database
-
-        Parameters
-        ----------
-        name : string, UDAF name
-        database : string, database name
-
-        Returns
-        -------
-        if_exists : boolean
-        """
-        return len(self.list_udas(database=database, like=name)) > 0
-
-    def compute_stats(self, name, database=None, incremental=False):
-        """
-        Issue COMPUTE STATS command for a given table
-
-        Parameters
-        ----------
-        name : string
-          Can be fully qualified (with database name)
-        database : string, optional
-        incremental : boolean, default False
-          If True, issue COMPUTE INCREMENTAL STATS
+        name
+            Can be fully qualified (with database name)
+        database
+            Database name
+        incremental
+            If True, issue COMPUTE INCREMENTAL STATS
         """
         maybe_inc = 'INCREMENTAL ' if incremental else ''
         cmd = f'COMPUTE {maybe_inc}STATS'
@@ -1251,48 +1220,61 @@ class Backend(BaseSQLBackend):
         stmt = self._table_command(cmd, name, database=database)
         self.raw_sql(stmt)
 
-    def invalidate_metadata(self, name=None, database=None):
-        """
-        Issue INVALIDATE METADATA command, optionally only applying to a
-        particular table. See Impala documentation.
+    def invalidate_metadata(
+        self,
+        name: str | None = None,
+        database: str | None = None,
+    ) -> None:
+        """Issue an `INVALIDATE METADATA` command.
+
+        Optionally this applies to a specific table. See Impala documentation.
 
         Parameters
         ----------
-        name : string, optional
-          Table name. Can be fully qualified (with database)
-        database : string, optional
+        name
+            Table name. Can be fully qualified (with database)
+        database
+            Database name
         """
         stmt = 'INVALIDATE METADATA'
         if name is not None:
             stmt = self._table_command(stmt, name, database=database)
         self.raw_sql(stmt)
 
-    def refresh(self, name, database=None):
-        """
-        Reload HDFS block location metadata for a table, for example after
-        ingesting data as part of an ETL pipeline. Related to INVALIDATE
-        METADATA. See Impala documentation for more.
+    def refresh(self, name: str, database: str | None = None) -> None:
+        """Reload HDFS block location metadata for a table.
+
+        This can be useful after ingesting data as part of an ETL pipeline, for
+        example.
+
+        Related to `INVALIDATE METADATA`. See Impala documentation for more.
 
         Parameters
         ----------
-        name : string
-          Table name. Can be fully qualified (with database)
-        database : string, optional
+        name
+            Table name. Can be fully qualified (with database)
+        database
+            Database name
         """
         # TODO(wesm): can this statement be cancelled?
         stmt = self._table_command('REFRESH', name, database=database)
         self.raw_sql(stmt)
 
-    def describe_formatted(self, name, database=None):
-        """
-        Retrieve results of DESCRIBE FORMATTED command. See Impala
-        documentation for more.
+    def describe_formatted(
+        self,
+        name: str,
+        database: str | None = None,
+    ) -> pd.DataFrame:
+        """Retrieve the results of a `DESCRIBE FORMATTED` command.
+
+        See Impala documentation for more.
 
         Parameters
         ----------
-        name : string
-          Table name. Can be fully qualified (with database)
-        database : string, optional
+        name
+            Table name. Can be fully qualified (with database)
+        database
+            Database name
         """
         from .metadata import parse_metadata
 
@@ -1307,16 +1289,21 @@ class Backend(BaseSQLBackend):
 
         return parse_metadata(result)
 
-    def show_files(self, name, database=None):
-        """
-        Retrieve results of SHOW FILES command for a table. See Impala
-        documentation for more.
+    def show_files(
+        self,
+        name: str,
+        database: str | None = None,
+    ) -> pd.DataFrame:
+        """Retrieve results of a `SHOW FILES` command for a table.
+
+        See Impala documentation for more.
 
         Parameters
         ----------
-        name : string
-          Table name. Can be fully qualified (with database)
-        database : string, optional
+        name
+            Table name. Can be fully qualified (with database)
+        database
+            Database name
         """
         stmt = self._table_command('SHOW FILES IN', name, database=database)
         return self._exec_statement(stmt)
@@ -1326,18 +1313,12 @@ class Backend(BaseSQLBackend):
         return self._exec_statement(stmt)
 
     def table_stats(self, name, database=None):
-        """
-        Return results of SHOW TABLE STATS for indicated table. See also
-        ImpalaTable.stats
-        """
+        """Return results of `SHOW TABLE STATS` for the table `name`."""
         stmt = self._table_command('SHOW TABLE STATS', name, database=database)
         return self._exec_statement(stmt)
 
     def column_stats(self, name, database=None):
-        """
-        Return results of SHOW COLUMN STATS for indicated table. See also
-        ImpalaTable.column_stats
-        """
+        """Return results of `SHOW COLUMN STATS` for the table `name`."""
         stmt = self._table_command(
             'SHOW COLUMN STATS', name, database=database
         )
@@ -1367,21 +1348,22 @@ class Backend(BaseSQLBackend):
                 adapted_types.append(typename)
         return names, adapted_types
 
-    def write_dataframe(self, df, path, format='csv'):
-        """
-        Write a pandas DataFrame to indicated file path (default: HDFS) in the
-        indicated format
+    def write_dataframe(
+        self,
+        df: pd.DataFrame,
+        path: str,
+        format: Literal['csv'] = 'csv',
+    ) -> Any:
+        """Write a pandas DataFrame to indicated file path.
 
         Parameters
         ----------
-        df : DataFrame
-        path : string
-          Absolute output path
-        format : {'csv'}, default 'csv'
-
-        Returns
-        -------
-        None (for now)
+        df
+            Pandas DataFrame
+        path
+            Absolute file path
+        format
+            File format
         """
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)

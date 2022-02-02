@@ -3,3 +3,4 @@ nix/sources.json linguist-generated=true
 nix/sources.nix linguist-generated=true
 poetry.lock linguist-generated=true
 setup.py linguist-generated=true
+docs/**/*.ipynb linguist-generated=true

@@ -85,6 +85,10 @@ result-*
 requirements.txt
 
 # generated mkdocs website
-docs/site
-docs/web/docs
 .benchmarks
+site
+
+# tutorial data
+geography.db
+*.pbf
+*.pbf.zst

@@ -1,0 +1,158 @@
+site_name: Ibis Project
+site_url: https://ibis-project.org
+repo_url: https://github.com/ibis-project/ibis
+extra_css:
+  - stylesheets/extra.css
+theme:
+  name: material
+  features:
+    - content.tabs.link
+    - header.autohide
+    - navigation.indexes
+    - navigation.instant
+    - search.highlight
+    - search.share
+    - search.suggest
+  icon:
+    repo: fontawesome/brands/github
+  logo: static/img/logo_ibis.svg
+  favicon: static/img/favicon.ico
+  palette:
+    scheme: slate
+    primary: black
+    accent: lime
+  custom_dir: docs/overrides
+plugins:
+  - search
+  - macros
+  - autorefs
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          selection:
+            docstring_style: numpy
+            filters:
+              - "!^table_expr_class"
+              - "!^database_class"
+              - "!^backend_table_type"
+              - "!^_filter_with_like"
+              - "!^_log"
+          rendering:
+            show_category_heading: true
+            show_root_full_path: false
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_source: false
+  - mkdocs-jupyter:
+      execute: true
+      execute_ignore: "tutorial/*Geospatial*.ipynb"
+      include_source: false
+      theme: dark
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html # used for the hero image
+  - meta
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.saneheaders
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc
+nav:
+  - Home: index.md
+  - About:
+      - Introduction: about/index.md
+      - Team: about/team.md
+      - Roadmap: about/roadmap.md
+      - License: about/license.md
+  - Getting Started: getting_started.md
+  - Tutorial:
+      - Introduction: tutorial/01-Introduction-to-Ibis.ipynb
+      - Aggregates and Joins: tutorial/02-Aggregates-Joins.ipynb
+      - Lazy Mode and Logging: tutorial/03-Expressions-Lazy-Mode-Logging.ipynb
+      - More Value Expressions: tutorial/04-More-Value-Expressions.ipynb
+      - Creating and Inserting Data: tutorial/05-IO-Create-Insert-External-Data.ipynb
+      - Advanced Topics:
+          - Complex Filtering: tutorial/06-Advanced-Topics-ComplexFiltering.ipynb
+          - Analytics Tools: tutorial/07-Advanced-Topics-Analytics-Tools.ipynb
+          - Geospatial Analysis: tutorial/08-Geospatial-Analysis.ipynb
+  - User Guide:
+      - Configuration: user_guide/configuration.md
+      - Ibis for SQL Programmers: user_guide/sql.ipynb
+      - TopK: user_guide/topk.md
+      - Self Joins: user_guide/self_joins.md
+      - UDFs: user_guide/udfs.md
+      - Design: user_guide/design.md
+      - Extending:
+          - Adding a per-element expression: user_guide/extending/extending_elementwise_expr.ipynb
+          - Adding a reduction expression: user_guide/extending/extending_reduce_expr.ipynb
+  - Backends:
+      - backends/index.md
+      - ClickHouse: backends/clickhouse.md
+      - Dask: backends/dask.md
+      - Datafusion: backends/datafusion.md
+      - Impala: backends/impala.md
+      - MySQL: backends/mysql.md
+      - Pandas: backends/pandas.md
+      - PostgreSQL: backends/postgres.md
+      - PySpark: backends/pyspark.md
+      - SQLite: backends/sqlite.md
+  - Community:
+      - Ask a question (StackOverflow): https://stackoverflow.com/questions/tagged/ibis
+      - Chat (Gitter): https://gitter.im/ibis-dev/Lobby
+      - Code of Conduct: community/coc.md
+      - Ecosystem: community/ecosystem.md
+  - Contribute:
+      - Development Environment: contribute/environment.md
+      - Commit Workflow: contribute/workflow.md
+      - Development Style: contribute/style.md
+      - Backend Test Suite: contribute/backend_test_suite.md
+      - Maintainer's Guide: contribute/maintainers_guide.md
+  - Release Notes: release_notes.md
+  - API Reference:
+      - Expressions:
+          - api/expressions/index.md
+          - Top Level: api/expressions/top_level.md
+          - Tables: api/expressions/tables.md
+          - Generic Value Expressions: api/expressions/generic.md
+          - Numbers + Booleans: api/expressions/numeric.md
+          - Strings: api/expressions/strings.md
+          - Timestamps + Dates + Times: api/expressions/timestamps.md
+          - Complex Types: api/expressions/complex_types.md
+          - Geospatial: api/expressions/geospatial.md
+      - Data Types: api/datatypes.md
+      - Backend Interfaces:
+          - Base Class: api/backends/base.md
+          - Generic SQL Backends: api/backends/sql.md
+          - SQLAlchemy Backends: api/backends/sqlalchemy.md
+extra:
+  project_name: "ibis"
+  team:
+    - name: "Active maintainers"
+      kind: github
+      members:
+        - jreback
+        - datapythonista
+        - cpcloud
+        - kszucs
+    - name: "Former maintainers"
+      kind: github
+      members:
+        - wesm
+  social:
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/IbisData
+    - icon: fontawesome/brands/github
+      link: https://github.com/ibis-project/ibis
+
+copyright: "Copyright &copy; 2014-2022, Ibis developers"

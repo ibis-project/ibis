@@ -1,12 +1,22 @@
+from __future__ import annotations
+
 import collections
 import itertools
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Hashable, Iterable, Mapping, TypeVar
 
 import numpy as np
 
 import ibis
+
+if TYPE_CHECKING:
+    import ibis.expr.schema as sch
+    from ibis.backends.base import BaseBackend
+    import ibis.expr.operations as ops
+    from ibis.expr.groupby import GroupedTableExpr
+    import ibis.expr.datatypes as dt
+
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.types as ir
@@ -23,14 +33,14 @@ if TYPE_CHECKING:
 class Expr:
     """Base expression class"""
 
-    def _type_display(self):
+    def _type_display(self) -> str:
         return type(self).__name__
 
-    def __init__(self, arg):
+    def __init__(self, arg: ops.Node) -> None:
         # TODO: all inputs must inherit from a common table API
         self._arg = arg
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         from ibis.expr.format import FormatMemo
 
         if not config.options.interactive:
@@ -48,29 +58,29 @@ class Expr:
         else:
             return repr(result)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self._key)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         raise ValueError(
             "The truth value of an Ibis expression is not defined"
         )
 
     __nonzero__ = __bool__
 
-    def _repr(self, memo: 'Optional[FormatMemo]' = None):
+    def _repr(self, memo: FormatMemo | None = None) -> str:
         from ibis.expr.format import ExprFormatter
 
         return ExprFormatter(self, memo=memo).get_result()
 
     @property
-    def _safe_name(self):
-        """Get the name of an expression `expr`, returning ``None`` if the
-        expression has no name.
+    def _safe_name(self) -> str | None:
+        """Get the name of an expression `expr` if one exists
 
         Returns
         -------
-        Optional[str]
+        str | None
+            `str` if the Expr has a name, otherwise `None`
         """
         try:
             return self.get_name()
@@ -78,17 +88,17 @@ class Expr:
             return None
 
     @property
-    def _key(self):
+    def _key(self) -> tuple[Hashable, ...]:
         """Key suitable for hashing an expression.
 
         Returns
         -------
-        Tuple[Type[Expr], Optional[str], ibis.expr.operations.Node]
+        tuple[Hashable, ...]
             A tuple of hashable objects uniquely identifying this expression.
         """
         return type(self), self._safe_name, self.op()
 
-    def _repr_png_(self):
+    def _repr_png_(self) -> bytes | None:
         if config.options.interactive or not ibis.options.graphviz_repr:
             return None
         try:
@@ -103,20 +113,19 @@ class Expr:
                 # so fallback to the default text representation.
                 return None
 
-    def visualize(self, format='svg'):
+    def visualize(self, format: str = 'svg') -> None:
         """Visualize an expression in the browser as an SVG image.
 
         Parameters
         ----------
-        format : str, optional
-            Defaults to ``'svg'``. Some additional formats are
-            ``'jpeg'`` and ``'png'``. These are specified by the ``graphviz``
-            Python library.
+        format
+            Image output format. These are specified by the ``graphviz`` Python
+            library.
 
         Notes
         -----
         This method opens a web browser tab showing the image of the expression
-        graph created by the code in :module:`ibis.expr.visualize`.
+        graph created by the code in [ibis.expr.visualize][].
 
         Raises
         ------
@@ -128,17 +137,20 @@ class Expr:
         path = viz.draw(viz.to_graph(self), format=format)
         webbrowser.open(f'file://{os.path.abspath(path)}')
 
-    def pipe(self, f, *args, **kwargs):
-        """Generic composition function to enable expression pipelining.
+    def pipe(self, f, *args: Any, **kwargs: Any) -> Expr:
+        """Compose `f` with `self`.
 
         Parameters
         ----------
-        f : function or (function, arg_name) tuple
-          If the expression needs to be passed as anything other than the first
-          argument to the function, pass a tuple with the argument name. For
-          example, (f, 'data') if the function f expects a 'data' keyword
-        args : positional arguments
-        kwargs : keyword arguments
+        f
+            If the expression needs to be passed as anything other than the
+            first argument to the function, pass a tuple with the argument
+            name. For example, (f, 'data') if the function f expects a 'data'
+            keyword
+        args
+            Positional arguments to `f`
+        kwargs
+            Keyword arguments to `f`
 
         Examples
         --------
@@ -172,7 +184,8 @@ class Expr:
 
         Returns
         -------
-        result : result type of passed function
+        Expr
+            Result type of passed function
         """
         if isinstance(f, tuple):
             f, data_keyword = f
@@ -184,28 +197,24 @@ class Expr:
 
     __call__ = pipe
 
-    def op(self):
+    def op(self) -> ops.Node:
         return self._arg
 
     @property
-    def _factory(self):
+    def _factory(self) -> type[Expr]:
         return type(self)
 
-    def _find_backends(self):
-        """Find possible backends for an expression.
-
-        Parameters
-        ----------
-        expr : Expr
+    def _find_backends(self) -> list[BaseBackend]:
+        """Return the possible backends for an expression.
 
         Returns
         -------
-        Backend
-            Backend found.
+        list[BaseBackend]
+            A list of the backends found.
         """
         from ibis.backends.base import BaseBackend
 
-        seen_backends: Dict[
+        seen_backends: dict[
             str, BaseBackend
         ] = {}  # key is backend.db_identity
 
@@ -227,7 +236,7 @@ class Expr:
 
         return list(seen_backends.values())
 
-    def _find_backend(self):
+    def _find_backend(self) -> BaseBackend:
         backends = self._find_backends()
 
         if not backends:
@@ -245,10 +254,10 @@ class Expr:
 
     def execute(
         self,
-        limit='default',
-        timecontext: Optional[TimeContext] = None,
-        params=None,
-        **kwargs,
+        limit: int | str | None = 'default',
+        timecontext: TimeContext | None = None,
+        params: Mapping[str, ValueExpr] | None = None,
+        **kwargs: Any,
     ):
         """
         If this expression is based on physical tables in a database backend,
@@ -256,18 +265,18 @@ class Expr:
 
         Parameters
         ----------
-        limit : integer or None, default 'default'
-          Pass an integer to effect a specific row limit. limit=None means "no
-          limit". The default is whatever is in ibis.options.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is whatever is in `ibis/config.py`.
 
-        timecontext: Optional[TimeContext], default None.
-           Defines a time range of (begin, end). When defined, the execution
-           will only compute result for data inside the time range. The time
-           range is inclusive of both endpoints. This is conceptually same as
-           a time filter.
-           The time column must be named as 'time' and should preserve
-           across the expression. e.g. If that column is dropped then
-           execute will result in an error.
+        timecontext
+            Defines a time range of (begin, end). When defined, the execution
+            will only compute result for data inside the time range. The time
+            range is inclusive of both endpoints. This is conceptually same as
+            a time filter.
+            The time column must be named as 'time' and should preserve
+            across the expression. e.g. If that column is dropped then
+            execute will result in an error.
         Returns
         -------
         result : expression-dependent
@@ -280,7 +289,7 @@ class Expr:
     def compile(
         self,
         limit=None,
-        timecontext: Optional[TimeContext] = None,
+        timecontext: TimeContext | None = None,
         params=None,
     ):
         """
@@ -534,9 +543,8 @@ class TableExpr(Expr):
     def _get_type(self, name):
         return self._arg.get_type(name)
 
-    def get_columns(self, iterable):
-        """
-        Get multiple columns from the table
+    def get_columns(self, iterable: Iterable[str]) -> list[ir.ColumnExpr]:
+        """Get multiple columns from the table.
 
         Examples
         --------
@@ -554,17 +562,18 @@ class TableExpr(Expr):
 
         Returns
         -------
-        columns : list of column/array expressions
+        list[ir.ColumnExpr]
+            List of column expressions
         """
         return [self.get_column(x) for x in iterable]
 
-    def get_column(self, name):
-        """
-        Get a reference to a single column from the table
+    def get_column(self, name: str) -> ir.ColumnExpr:
+        """Get a reference to a single column from the table.
 
         Returns
         -------
-        column : array expression
+        ColumnExpr
+            A column named `name`.
         """
         import ibis.expr.operations as ops
 
@@ -575,20 +584,29 @@ class TableExpr(Expr):
     def columns(self):
         return self.schema().names
 
-    def schema(self):
-        """
-        Get the schema for this table (if one is known)
+    def schema(self) -> sch.Schema:
+        """Return the table's schema.
 
         Returns
         -------
-        schema : Schema
+        Schema
+            The table's schema.
         """
         return self.op().schema
 
-    def group_by(self, by=None, **additional_grouping_expressions):
-        """
-        Create an intermediate grouped table expression, pending some group
-        operation to be applied with it.
+    def group_by(
+        self,
+        by=None,
+        **additional_grouping_expressions: Any,
+    ) -> GroupedTableExpr:
+        """Create a grouped table expression.
+
+        Parameters
+        ----------
+        by
+            Grouping expressions
+        additional_grouping_expressions
+            Named grouping expressions
 
         Examples
         --------
@@ -600,12 +618,14 @@ class TableExpr(Expr):
 
         Notes
         -----
-        group_by and groupby are equivalent, with `groupby` being provided for
-        ease-of-use for pandas users.
+        `group_by` and `groupby` are equivalent.
+
+        `groupby` exists for familiarity for pandas users.
 
         Returns
         -------
-        grouped_expr : GroupedTableExpr
+        GroupedTableExpr
+            A grouped table expression
         """
         from ibis.expr.groupby import GroupedTableExpr
 
@@ -1248,41 +1268,52 @@ def literal(value, type=None):
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-def array(values, type=None):
+K = TypeVar("K", bound=Hashable)
+V = TypeVar("V")
+
+
+def array(
+    values: Iterable[V],
+    type: str | dt.DataType | None = None,
+) -> ArrayValue:
     """Create an array expression.
 
     If the input expressions are all column expressions, then the output will
-    be an ``ArrayColumn``. The input columns will be concatenated row-wise to
+    be an `ArrayColumn`. The input columns will be concatenated row-wise to
     produce each array in the output array column. Each array will have length
-    n, where n is the number of input columns. All input columns should be of
-    the same datatype.
+    _n_, where _n_ is the number of input columns. All input columns should be
+    of the same datatype.
 
     If the input expressions are Python literals, then the output will be a
-    single ``ArrayScalar`` of length n, where n are the number of input
-    values. This is equivalent to ``ibis.literal(values)``.
+    single `ArrayScalar` of length _n_, where _n_ is the number of input
+    values. This is equivalent to
+
+    ```python
+    ibis.literal(values)  # `values` is a `list`
+    ```
 
     Parameters
     ----------
-    values : list
-        A list of Ibis column expressions, or a list of Python literals
+    values
+        An iterable of Ibis expressions or a list of Python literals
+    type
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the ibis type of `value`.
 
     Returns
     -------
-    array_value : ArrayValue
+    ArrayValue
         An array column (if the inputs are column expressions), or an array
         scalar (if the inputs are Python literals)
-    type : ibis type or string, optional
-        An instance of :class:`ibis.expr.datatypes.DataType` or a string
-        indicating the ibis type of `value`.
 
     Examples
     --------
-    Creating an array column from column expressions:
+    Create an array column from column expressions
     >>> import ibis
     >>> t = ibis.table([('a', 'int64'), ('b', 'int64')], name='t')
     >>> result = ibis.array([t.a, t.b])
 
-    Creating an array scalar from Python literals:
+    Create an array scalar from Python literals
     >>> import ibis
     >>> result = ibis.array([1.0, 2.0, 3.0])
     """
@@ -1306,62 +1337,68 @@ def array(values, type=None):
             ) from e
 
 
-def struct(value, type=None):
-    '''Create a struct literal from a dict or other mapping.
+def struct(
+    value: Iterable[tuple[str, V]] | Mapping[str, V],
+    type: str | dt.DataType | None = None,
+) -> StructValue:
+    """Create a struct literal from a [`dict`][dict] or other mapping.
 
     Parameters
     ----------
     value
-        the literal struct value
+        The underlying data for literal struct value
     type
-        An instance of :class:`ibis.expr.datatypes.DataType` or a string
-        indicating the ibis type of `value`.
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the ibis type of `value`.
 
     Returns
     -------
-    StructValue
+    StructScalar
         An expression representing a literal struct (compound type with fields
         of fixed types)
 
     Examples
     --------
-    Create struct literal from dict with inferred type:
+    Create a struct literal from a [`dict`][dict] with the type inferred
     >>> import ibis
     >>> t = ibis.struct(dict(a=1, b='foo'))
 
-    Create struct literal from dict with specified type:
+    Create a struct literal from a [`dict`][dict] with a specified type
     >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
-    '''
+    """
     return literal(collections.OrderedDict(value), type=type)
 
 
-def map(value, type=None):
-    '''Create a map literal from a dict or other mapping.
+def map(
+    value: Iterable[tuple[K, V]] | Mapping[K, V],
+    type: str | dt.DataType | None = None,
+) -> MapValue:
+    """Create a map literal from a [`dict`][dict] or other mapping.
 
     Parameters
     ----------
     value
         the literal map value
     type
-        An instance of :class:`ibis.expr.datatypes.DataType` or a string
-        indicating the ibis type of `value`.
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the ibis type of `value`.
 
     Returns
     -------
-    MapValue
+    MapScalar
         An expression representing a literal map (associative array with
         key/value pairs of fixed types)
 
     Examples
     --------
-    Create map literal from dict with inferred type:
+    Create a map literal from a dict with the type inferred
     >>> import ibis
     >>> t = ibis.map(dict(a=1, b=2))
 
-    Create map literal from dict with specified type:
+    Create a map literal from a dict with the specified type
     >>> import ibis
     >>> t = ibis.map(dict(a=1, b=2), type='map<string, double>')
-    '''
+    """
     return literal(dict(value), type=type)
 
 

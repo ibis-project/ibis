@@ -19,35 +19,24 @@ from .. import HDFS
 pytestmark = pytest.mark.hdfs
 
 
-class MockHDFS(HDFS):
-    def __init__(self):
-        self.ls_result = []
-
-    def set_ls(self, results):
-        self.ls_result = results
-
-    def ls(self, *args, **kwargs):
-        return self.ls_result
-
-
 @pytest.fixture
-def mockhdfs():
-    return MockHDFS()
+def mockhdfs(mocker):
+    mocker.patch.multiple(
+        HDFS,
+        ls=lambda *args, **kwargs: [
+            ('foo', {'type': 'DIRECTORY'}),
+            ('bar.tmp', {'type': 'FILE'}),
+            ('baz.copying', {'type': 'FILE'}),
+            ('_SUCCESS', {'type': 'FILE'}),
+            ('.peekaboo', {'type': 'FILE'}),
+            ('0.parq', {'type': 'FILE'}),
+            ('_FILE', {'type': 'DIRECTORY'}),
+        ],
+    )
+    return HDFS()
 
 
 def test_find_any_file(mockhdfs):
-    ls_contents = [
-        ('foo', {'type': 'DIRECTORY'}),
-        ('bar.tmp', {'type': 'FILE'}),
-        ('baz.copying', {'type': 'FILE'}),
-        ('_SUCCESS', {'type': 'FILE'}),
-        ('.peekaboo', {'type': 'FILE'}),
-        ('0.parq', {'type': 'FILE'}),
-        ('_FILE', {'type': 'DIRECTORY'}),
-    ]
-
-    mockhdfs.set_ls(ls_contents)
-
     result = mockhdfs._find_any_file('/path')
     assert result == '0.parq'
 

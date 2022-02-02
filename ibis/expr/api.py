@@ -7,7 +7,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import Any, Iterable, Mapping
+from typing import IO, Iterable, Mapping, Sequence, TypeVar
 
 import dateutil.parser
 import pandas as pd
@@ -21,6 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+import ibis.expr.window as win
 import ibis.util as util
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.random import random  # noqa
@@ -113,6 +114,11 @@ from ibis.expr.window import (
     trailing_window,
     window,
 )
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 __all__ = (
     'aggregate',
@@ -217,19 +223,21 @@ infer_schema = sch.infer
 
 NA = null()
 
+T = TypeVar("T")
 
-def param(type):
-    """Create a parameter of a particular type to be defined just before
-    execution.
+
+def param(type: dt.DataType) -> ir.ScalarExpr:
+    """Create a deferred parameter of a given type.
 
     Parameters
     ----------
-    type : dt.DataType
+    type
         The type of the unbound parameter, e.g., double, int64, date, etc.
 
     Returns
     -------
     ScalarExpr
+        A scalar expression backend by a parameter
 
     Examples
     --------
@@ -245,18 +253,18 @@ def param(type):
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
-def sequence(values):
-    """
-    Wrap a list of Python values as an Ibis sequence type
+def sequence(values: Sequence[T | None]) -> ir.ListExpr:
+    """Wrap a list of Python values as an Ibis sequence type.
 
     Parameters
     ----------
-    values : list
-      Should all be None or the same type
+    values
+        Should all be None or the same type
 
     Returns
     -------
-    seq : Sequence
+    ListExpr
+        A list expression
     """
     return ops.ValueList(values).to_expr()
 
@@ -268,7 +276,7 @@ def schema(
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
-    """Validate and return an :class:`~ibis.expr.schema.Schema` object.
+    """Validate and return an Schema object.
 
     Parameters
     ----------
@@ -288,7 +296,12 @@ def schema(
     ...              ('baz', 'boolean')])
     >>> sc2 = schema(names=['foo', 'bar', 'baz'],
     ...              types=['string', 'int64', 'boolean'])
-    """
+
+    Returns
+    -------
+    Schema
+        An ibis schema
+    """  # noqa: E501
     if pairs is not None:
         return Schema.from_dict(dict(pairs))
     else:
@@ -298,22 +311,21 @@ def schema(
 _schema = schema
 
 
-def table(schema, name=None):
-    """
-    Create an unbound Ibis table for creating expressions. Cannot be executed
-    without being bound to some physical table.
+def table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
+    """Create an unbound table for build expressions without data.
 
-    Useful for testing
 
     Parameters
     ----------
-    schema : ibis Schema
-    name : string, default None
-      Name for table
+    schema
+        A schema for the table
+    name
+        Name for the table
 
     Returns
     -------
-    table : TableExpr
+    TableExpr
+        An unbound table expression
     """
     if not isinstance(schema, Schema):
         schema = _schema(pairs=schema)
@@ -322,21 +334,24 @@ def table(schema, name=None):
     return node.to_expr()
 
 
-def desc(expr):
-    """
-    Create a sort key (when used in sort_by) by the passed array expression or
-    column name.
+def desc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
+    """Create a descending sort key from `expr` or column name.
 
     Parameters
     ----------
-    expr : array expression or string
-      Can be a column name in the table being sorted
+    expr
+        The expression or column name to use for sorting
 
     Examples
     --------
     >>> import ibis
     >>> t = ibis.table([('g', 'string')])
     >>> result = t.group_by('g').size('count').sort_by(ibis.desc('count'))
+
+    Returns
+    -------
+    ops.DeferredSortKey
+        A deferred sort key
     """
     if not isinstance(expr, Expr):
         return ops.DeferredSortKey(expr, ascending=False)
@@ -344,19 +359,23 @@ def desc(expr):
         return ops.SortKey(expr, ascending=False).to_expr()
 
 
-def timestamp(value, timezone=None):
-    """
-    Returns a timestamp literal if value is likely coercible to a timestamp
+def timestamp(
+    value: str | numbers.Integral,
+    timezone: str | None = None,
+) -> ir.TimestampScalar:
+    """Construct a timestamp literal if `value` is coercible to a timestamp.
 
     Parameters
     ----------
-    value : timestamp value as string
-    timezone: timezone as string
-        defaults to None
+    value
+        The value to use for constructing the timestamp
+    timezone
+        The timezone of the timestamp
 
     Returns
-    --------
-    result : TimestampScalar
+    -------
+    TimestampScalar
+        A timestamp expression
     """
     if isinstance(value, str):
         try:
@@ -374,34 +393,36 @@ def timestamp(value, timezone=None):
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
-def date(value):
-    """
-    Returns a date literal if value is likely coercible to a date
+def date(value: str) -> ir.DateScalar:
+    """Return a date literal if `value` is coercible to a date.
 
     Parameters
     ----------
-    value : date value as string
+    value
+        Date string
 
     Returns
-    --------
-    result : TimeScalar
+    -------
+    DateScalar
+        A date expression
     """
     if isinstance(value, str):
         value = pd.to_datetime(value).date()
     return literal(value, type=dt.date)
 
 
-def time(value):
-    """
-    Returns a time literal if value is likely coercible to a time
+def time(value: str) -> ir.TimeScalar:
+    """Return a time literal if `value` is coercible to a time.
 
     Parameters
     ----------
-    value : time value as string
+    value
+        Time string
 
     Returns
-    --------
-    result : TimeScalar
+    -------
+    TimeScalar
+        A time expression
     """
     if isinstance(value, str):
         value = pd.to_datetime(value).time()
@@ -409,41 +430,55 @@ def time(value):
 
 
 def interval(
-    value=None,
-    unit='s',
-    years=None,
-    quarters=None,
-    months=None,
-    weeks=None,
-    days=None,
-    hours=None,
-    minutes=None,
-    seconds=None,
-    milliseconds=None,
-    microseconds=None,
-    nanoseconds=None,
-):
-    """
-    Returns an interval literal
+    value: int | datetime.timedelta | None = None,
+    unit: str = 's',
+    years: int | None = None,
+    quarters: int | None = None,
+    months: int | None = None,
+    weeks: int | None = None,
+    days: int | None = None,
+    hours: int | None = None,
+    minutes: int | None = None,
+    seconds: int | None = None,
+    milliseconds: int | None = None,
+    microseconds: int | None = None,
+    nanoseconds: int | None = None,
+) -> ir.IntervalScalar:
+    """Return an interval literal expression.
 
     Parameters
     ----------
-    value : int or datetime.timedelta, default None
-    years : int, default None
-    quarters : int, default None
-    months : int, default None
-    days : int, default None
-    weeks : int, default None
-    hours : int, default None
-    minutes : int, default None
-    seconds : int, default None
-    milliseconds : int, default None
-    microseconds : int, default None
-    nanoseconds : int, default None
+    value
+        Interval value. If passed, must be combined with `unit`.
+    unit
+        Unit of `value`
+    years
+        Number of years
+    quarters
+        Number of quarters
+    months
+        Number of months
+    weeks
+        Number of weeks
+    days
+        Number of days
+    hours
+        Number of hours
+    minutes
+        Number of minutes
+    seconds
+        Number of seconds
+    milliseconds
+        Number of milliseconds
+    microseconds
+        Number of microseconds
+    nanoseconds
+        Number of nanoseconds
 
     Returns
-    --------
-    result : IntervalScalar
+    -------
+    IntervalScalar
+        An interval expression
     """
     if value is not None:
         if isinstance(value, datetime.timedelta):
@@ -478,13 +513,12 @@ def interval(
     return literal(value, type=type).op().to_expr()
 
 
-def case():
-    """
-    Similar to the .case method on array expressions, create a case builder
-    that accepts self-contained boolean expressions (as opposed to expressions
-    which are to be equality-compared with a fixed value expression)
+def case() -> bl.SearchedCaseBuilder:
+    """Begin constructing a case expression.
 
-    Use the .when method on the resulting object followed by .end to create a
+    Notes
+    -----
+    Use the `.when` method on the resulting object followed by .end to create a
     complete case.
 
     Examples
@@ -500,31 +534,30 @@ def case():
 
     Returns
     -------
-    case : CaseBuilder
+    bl.SearchedCaseBuilder
+        A builder object to use for constructing a case expression.
     """
     return bl.SearchedCaseBuilder()
 
 
-def now():
-    """
-    Compute the current timestamp
+def now() -> ir.TimestampScalar:
+    """Return an expression that will compute the current timestamp.
 
     Returns
     -------
-    now : Timestamp scalar
+    TimestampScalar
+        A "now" expression
     """
     return ops.TimestampNow().to_expr()
 
 
-def row_number():
-    """Analytic function for the current row number, starting at 0.
-
-    This function does not require an ORDER BY clause, however, without an
-    ORDER BY clause the order of the result is nondeterministic.
+def row_number() -> ir.IntegerColumn:
+    """Return an analytic function expression for the current row number.
 
     Returns
     -------
-    row_number : IntArray
+    IntegerColumn
+        A column expression enumerating rows
     """
     return ops.RowNumber().to_expr()
 
@@ -551,17 +584,18 @@ def _unary_op(name, klass, doc=None):
     return f
 
 
-def negate(arg):
-    """
-    Negate a numeric expression
+def negate(arg: ir.NumericValue) -> ir.NumericValue:
+    """Negate a numeric expression.
 
     Parameters
     ----------
-    arg : numeric value expression
+    arg
+        A numeric value to negate
 
     Returns
     -------
-    negated : type of caller
+    N
+        A numeric value expression
     """
     op = arg.op()
     if hasattr(op, 'negate'):
@@ -572,15 +606,27 @@ def negate(arg):
     return result.to_expr()
 
 
-def count(expr, where=None):
-    """
-    Compute cardinality / sequence size of expression. For array expressions,
-    the count is excluding nulls. For tables, it's the size of the entire
-    table.
+def count(
+    expr: ir.TableExpr | ir.ColumnExpr,
+    where: ir.BooleanValue | None = None,
+) -> ir.IntegerScalar:
+    """Compute the number of rows in an expression.
+
+    For column expressions the count excludes nulls.
+
+    For tables the number of rows in the table are computed.
+
+    Parameters
+    ----------
+    expr
+        Expression to count
+    where
+        Filter expression
 
     Returns
     -------
-    counts : int64 type
+    IntegerScalar
+        Number of elements in an expression
     """
     op = expr.op()
     if isinstance(op, ops.DistinctColumn):
@@ -591,39 +637,51 @@ def count(expr, where=None):
     return result.name('count')
 
 
-def group_concat(arg, sep=',', where=None):
-    """
-    Concatenate values using the indicated separator (comma by default) to
-    produce a string
+def group_concat(
+    arg: ir.StringValue,
+    sep: str = ',',
+    where: ir.BooleanValue | None = None,
+) -> ir.StringValue:
+    """Concatenate values using the indicated separator to produce a string.
 
     Parameters
     ----------
-    arg : array expression
-    sep : string, default ','
-    where : bool, default None
+    arg
+        A column of strings
+    sep
+        Separator will be used to join strings
+    where
+        Filter expression
 
     Returns
     -------
-    concatenated : string scalar
+    S
+        Concatenate string expression
     """
     return ops.GroupConcat(arg, sep=sep, where=where).to_expr()
 
 
-def arbitrary(arg, where=None, how=None):
-    """
-    Selects the first / last non-null value in a column
+def arbitrary(
+    arg: ir.ColumnExpr,
+    where: ir.BooleanValue | None = None,
+    how: str | None = None,
+) -> ir.ScalarExpr:
+    """Select an arbitrary value in a column.
 
     Parameters
     ----------
-    arg : array expression
-    where: bool, default None
-    how : {'first', 'last', 'heavy'}, default 'first'
+    arg
+        An expression
+    where
+        A filter expression
+    how
       Heavy selects a frequently occurring value using the heavy hitters
       algorithm. Heavy is only supported by Clickhouse backend.
 
     Returns
     -------
-    arbitrary element : scalar type of caller
+    V
+        An expression
     """
     return ops.Arbitrary(arg, how=how, where=where).to_expr()
 
@@ -715,13 +773,20 @@ def _extract_field(name, klass):
 # Generic value API
 
 
-def cast(arg, target_type):
+def cast(arg: ir.ValueExpr, target_type: dt.DataType) -> ir.ValueExpr:
     """Cast value(s) to indicated data type.
 
     Parameters
     ----------
+    arg
+        Expression to cast
     target_type
         Type to cast to
+
+    Returns
+    -------
+    ValueExpr
+        Casted expression
     """
     # validate
     op = ops.Cast(arg, to=target_type)
@@ -743,41 +808,49 @@ def cast(arg, target_type):
     return result.name(expr_name)
 
 
-def typeof(arg):
-    """
-    Return the data type of the argument according to the current backend
+def typeof(arg: ir.ValueExpr) -> ir.StringValue:
+    """Return the data type of the argument according to the current backend.
+
+    Parameters
+    ----------
+    arg
+        An expression
 
     Returns
     -------
-    typeof_arg : string
+    StringValue
+        A string indicating the type of the value
     """
     return ops.TypeOf(arg).to_expr()
 
 
-def hash(arg, how='fnv'):
-    """
-    Compute an integer hash value for the indicated value expression.
+def hash(arg: ir.ValueExpr, how: str = 'fnv') -> ir.IntegerValue:
+    """Compute an integer hash value for the indicated value expression.
 
     Parameters
     ----------
-    arg : value expression
-    how : {'fnv', 'farm_fingerprint'}, default 'fnv'
-      Hash algorithm to use
+    arg
+        An expression
+    how
+        Hash algorithm to use
 
     Returns
     -------
-    hash_value : int64 expression
+    IntegerValue
+        The hash value of `arg`
     """
     return ops.Hash(arg, how).to_expr()
 
 
-def fillna(arg, fill_value):
-    """
-    Replace any null values with the indicated fill value
+def fillna(arg: ir.ValueExpr, fill_value: ir.ScalarExpr) -> ir.ValueExpr:
+    """Replace any null values with the indicated fill value.
 
     Parameters
     ----------
-    fill_value : scalar / array value or expression
+    arg
+        An expression
+    fill_value
+        Value to replace `NA` values in `arg` with
 
     Examples
     --------
@@ -788,19 +861,19 @@ def fillna(arg, fill_value):
 
     Returns
     -------
-    filled : type of caller
+    ValueExpr
+        `arg` filled with `fill_value` where it is `NA`
     """
     return ops.IfNull(arg, fill_value).to_expr()
 
 
-def coalesce(*args):
-    """
-    Compute the first non-null value(s) from the passed arguments in
-    left-to-right order. This is also known as "combine_first" in pandas.
+def coalesce(*args: ir.ValueExpr) -> ir.ValueExpr:
+    """Compute the first non-null value(s) from the passed arguments.
 
     Parameters
     ----------
-    *args : variable-length value list
+    args
+        Arguments to choose from
 
     Examples
     --------
@@ -811,69 +884,94 @@ def coalesce(*args):
 
     Returns
     -------
-    coalesced : type of first provided argument
+    ValueExpr
+        Coalesced expression
+
+    See Also
+    --------
+    pandas.DataFrame.combine_first
     """
-    return ops.Coalesce(args).to_expr()
+    op = ops.Coalesce(args)
+    return op.to_expr()
 
 
-def greatest(*args):
-    """
-    Compute the largest value (row-wise, if any arrays are present) among the
-    supplied arguments.
-
-    Returns
-    -------
-    greatest : type depending on arguments
-    """
-    return ops.Greatest(args).to_expr()
-
-
-def least(*args):
-    """
-    Compute the smallest value (row-wise, if any arrays are present) among the
-    supplied arguments.
-
-    Returns
-    -------
-    least : type depending on arguments
-    """
-    return ops.Least(args).to_expr()
-
-
-def where(boolean_expr, true_expr, false_null_expr):
-    """
-    Equivalent to the ternary expression: if X then Y else Z
+def greatest(*args: ir.ValueExpr) -> ir.ValueExpr:
+    """Compute the largest value among the supplied arguments.
 
     Parameters
     ----------
-    boolean_expr : BooleanValue (array or scalar)
-    true_expr : value
-      Values for each True value
-    false_null_expr : value
-      Values for False or NULL values
+    args
+        Arguments to choose from
 
     Returns
     -------
-    result : arity depending on inputs
-      Type of true_expr used to determine output type
+    ValueExpr
+        Maximum of the passed arguments
+    """
+    op = ops.Greatest(args)
+    return op.to_expr()
+
+
+def least(*args: ir.ValueExpr) -> ir.ValueExpr:
+    """Compute the smallest value among the supplied arguments.
+
+    Parameters
+    ----------
+    args
+        Arguments to choose from
+
+    Returns
+    -------
+    ValueExpr
+        Minimum of the passed arguments
+    """
+    op = ops.Least(args)
+    return op.to_expr()
+
+
+def where(
+    boolean_expr: ir.BooleanValue,
+    true_expr: ir.ValueExpr,
+    false_null_expr: ir.ValueExpr,
+) -> ir.ValueExpr:
+    """Return `true_expr` if `boolean_expr` is `True` else `false_null_expr`.
+
+    Parameters
+    ----------
+    boolean_expr
+        A boolean expression
+    true_expr
+        Value returned if `boolean_expr` is `True`
+    false_null_expr
+        Value returned if `boolean_expr` is `False` or `NULL`
+
+    Returns
+    -------
+    ir.ValueExpr
+        An expression
     """
     op = ops.Where(boolean_expr, true_expr, false_null_expr)
     return op.to_expr()
 
 
-def over(expr, window):
-    """
-    Turn an aggregation or full-sample analytic operation into a windowed
-    operation. See ibis.window for more details on window configuration
+def over(expr: ir.ValueExpr, window: win.Window) -> ir.ValueExpr:
+    """Construct a window expression.
 
     Parameters
     ----------
-    expr : value expression
-    window : ibis.Window
+    expr
+        A value expression
+    window
+        Window specification
 
     Returns
     -------
-    expr : type of input
+    ValueExpr
+        A window function expression
+
+    See Also
+    --------
+    ibis.window
     """
     prior_op = expr.op()
 
@@ -894,17 +992,20 @@ def over(expr, window):
     return result
 
 
-def value_counts(arg, metric_name='count'):
-    """
-    Compute a frequency table for this value expression
+def value_counts(
+    arg: ir.ValueExpr, metric_name: str = 'count'
+) -> ir.TableExpr:
+    """Compute a frequency table for `arg`.
 
     Parameters
     ----------
+    arg
+        An expression
 
     Returns
     -------
-    counts : TableExpr
-      Aggregated table
+    TableExpr
+        Frequency table expression
     """
     base = ir.find_base_table(arg)
     metric = base.count().name(metric_name)
@@ -917,51 +1018,62 @@ def value_counts(arg, metric_name='count'):
     return base.group_by(arg).aggregate(metric)
 
 
-def nullif(value, null_if_expr):
-    """
-    Set values to null if they match/equal a particular expression (scalar or
-    array-valued).
+def nullif(value: ir.ValueExpr, null_if_expr: ir.ValueExpr) -> ir.ValueExpr:
+    """Set values to null if they equal the values `null_if_expr`.
 
-    Common use to avoid divide-by-zero problems (get NULL instead of INF on
-    divide-by-zero): 5 / expr.nullif(0)
+    Commonly use to avoid divide-by-zero problems by replacing zero with NULL
+    in the divisor.
 
     Parameters
     ----------
-    value : value expression
-      Value to modify
-    null_if_expr : value expression (array or scalar)
+    value
+        Value expression
+    null_if_expr
+        Expression indicating what values should be NULL
 
     Returns
     -------
-    null_if : type of caller
+    ir.ValueExpr
+        Value expression
     """
     return ops.NullIf(value, null_if_expr).to_expr()
 
 
-def between(arg, lower, upper):
-    """
-    Check if the input expr falls between the lower/upper bounds
-    passed. Bounds are inclusive. All arguments must be comparable.
+def between(
+    arg: ir.ValueExpr, lower: ir.ValueExpr, upper: ir.ValueExpr
+) -> ir.BooleanValue:
+    """Check if `arg` is between `lower` and `upper`, inclusive.
+
+    Parameters
+    ----------
+    arg
+        Expression
+    lower
+        Lower bound
+    upper
+        Upper bound
 
     Returns
     -------
-    is_between : BooleanValue
+    BooleanValue
+        Expression indicating membership in the provided range
     """
     lower, upper = rlz.any(lower), rlz.any(upper)
     op = ops.Between(arg, lower, upper)
     return op.to_expr()
 
 
-def isin(arg, values):
-    """
-    Check whether the value expression is contained within the indicated
-    list of values.
+def isin(
+    arg: ir.ValueExpr, values: ir.ValueExpr | Sequence[ir.ValueExpr]
+) -> ir.BooleanValue:
+    """Check whether `arg`'s values are contained within `values`.
 
     Parameters
     ----------
-    values : list, tuple, or array expression
-      The values can be scalar or array-like. Each of them must be
-      comparable with the calling expression, or None (NULL).
+    arg
+        Expression
+    values
+        Values or expression to check for membership
 
     Examples
     --------
@@ -973,16 +1085,29 @@ def isin(arg, values):
 
     Returns
     -------
-    contains : BooleanValue
+    BooleanValue
+        Expression indicating membership
     """
     op = ops.Contains(arg, values)
     return op.to_expr()
 
 
-def notin(arg, values):
-    """
-    Like isin, but checks whether this expression's value(s) are not
-    contained in the passed values. See isin docs for full usage.
+def notin(
+    arg: ir.ValueExpr, values: ir.ValueExpr | Sequence[ir.ValueExpr]
+) -> ir.BooleanValue:
+    """Check whether `arg`'s values are not contained in `values`.
+
+    Parameters
+    ----------
+    arg
+        Expression
+    values
+        Values or expression to check for lack of membership
+
+    Returns
+    -------
+    BooleanValue
+        Whether `arg`'s values are not contained in `values`
     """
     op = ops.NotContains(arg, values)
     return op.to_expr()
@@ -1002,21 +1127,29 @@ rdiv = _rbinop_expr('__rdiv__', ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', ops.FloorDivide)
 
 
-def substitute(arg, value, replacement=None, else_=None):
-    """
-    Substitute (replace) one or more values in a value expression
+def substitute(
+    arg: ir.ValueExpr,
+    value: ir.ValueExor,
+    replacement=None,
+    else_=None,
+):
+    """Replace one or more values in a value expression.
 
     Parameters
     ----------
-    value : expr-like or dict
-    replacement : expr-like, optional
-      If an expression is passed to value, this must be passed
-    else_ : expr, optional
+    arg
+        Value expression
+    value
+        Expression or mapping
+    replacement
+        Expression. If an expression is passed to value, this must be passed.
+    else_
+        Expression
 
     Returns
     -------
-    replaced : case statement (for now!)
-
+    ValueExpr
+        Replaced values
     """
     expr = arg.case()
     if isinstance(value, dict):
@@ -1034,13 +1167,20 @@ def substitute(arg, value, replacement=None, else_=None):
 
 
 def _case(arg):
-    """Create a new SimpleCaseBuilder to chain multiple if-else statements. Add
-    new search expressions with the .when method. These must be comparable with
-    this array expression. Conclude by calling .end()
+    """Create a new SimpleCaseBuilder to chain multiple if-else statements.
+
+    Add new search expressions with the `.when` method. These must be
+    comparable with this column expression. Conclude by calling `.end()`
+
+    Parameters
+    ----------
+    arg
+        A value expression
 
     Returns
     -------
-    builder : CaseBuilder
+    bl.SimpleCaseBuilder
+        A case builder
 
     Examples
     --------
@@ -1080,13 +1220,13 @@ def _case(arg):
     return bl.SimpleCaseBuilder(arg)
 
 
-def cases(arg, case_result_pairs, default=None):
-    """
-    Create a case expression in one shot.
+def cases(arg, case_result_pairs, default=None) -> ir.ValueExpr:
+    """Create a case expression in one shot.
 
     Returns
     -------
-    case_expr : SimpleCase
+    ValueExpr
+        Value expression
     """
     builder = arg.case()
     for case, result in case_result_pairs:
@@ -1178,11 +1318,24 @@ def distinct(arg):
     return op.to_expr()
 
 
-def topk(arg, k, by=None):
-    """
+def topk(
+    arg: ir.ColumnExpr, k: int, by: ir.ValueExpr | None = None
+) -> ir.TopKExpr:
+    """Return a "top k" expression.
+
+    Parameters
+    ----------
+    arg
+        A column expression
+    k
+        Return this number of rows
+    by
+        An expression. Defaults to the count
+
     Returns
     -------
-    topk : TopK filter expression
+    TopKExpr
+        A top-k expression
     """
     op = ops.TopK(arg, k, by=by if by is not None else arg.count())
     return op.to_expr()
@@ -1192,23 +1345,30 @@ def bottomk(arg, k, by=None):
     raise NotImplementedError
 
 
-def _generic_summary(arg, exact_nunique=False, prefix="", suffix=""):
-    """
-    Compute a set of summary metrics from the input value expression
+def _generic_summary(
+    arg: ir.ValueExpr,
+    exact_nunique: bool = False,
+    prefix: str = "",
+    suffix: str = "",
+) -> list[ir.NumericScalar]:
+    """Compute a set of summary metrics from the input value expression.
 
     Parameters
     ----------
-    arg : value expression
-    exact_nunique : boolean, default False
-      Compute the exact number of distinct values (slower)
-    prefix : string, default ""
-      String prefix for metric names
-    suffix : string, default ""
-      String suffix for metric names
+    arg
+        Value expression
+    exact_nunique
+        Compute the exact number of distinct values. Typically slower if
+        `True`.
+    prefix
+        String prefix for metric names
+    suffix
+        String suffix for metric names
 
     Returns
     -------
-    summary : (count, # nulls, nunique)
+    list[ir.NumericScalar]
+        Metrics list
     """
     if exact_nunique:
         unique_metric = arg.nunique().name('uniques')
@@ -1221,22 +1381,30 @@ def _generic_summary(arg, exact_nunique=False, prefix="", suffix=""):
     return metrics
 
 
-def _numeric_summary(arg, exact_nunique=False, prefix="", suffix=""):
-    """
-    Compute a set of summary metrics from the input numeric value expression
+def _numeric_summary(
+    arg: ir.NumericColumn,
+    exact_nunique: bool = False,
+    prefix: str = "",
+    suffix: str = "",
+) -> list[ir.NumericScalar]:
+    """Compute a set of summary metrics from the input numeric value expression.
 
     Parameters
     ----------
-    arg : numeric value expression
-    exact_nunique : boolean, default False
-    prefix : string, default ""
-      String prefix for metric names
-    suffix : string, default ""
-      String suffix for metric names
+    arg
+        Numeric expression
+    exact_nunique
+        Compute the exact number of distinct values. Typically slower if
+        `True`.
+    prefix
+        String prefix for metric names
+    suffix
+        String suffix for metric names
 
     Returns
     -------
-    summary : (count, # nulls, min, max, sum, mean, nunique)
+    list[ir.NumericScalar]
+        Metrics list
     """
     if exact_nunique:
         unique_metric = arg.nunique().name('nunique')
@@ -1295,9 +1463,8 @@ _add_methods(ir.ColumnExpr, _generic_column_methods)
 # Numeric API
 
 
-def round(arg, digits=None):
-    """
-    Round values either to integer or indicated number of decimal places.
+def round(arg: ir.NumericValue, digits: int | None = None) -> ir.NumericValue:
+    """Round values to an indicated number of decimal places.
 
     Returns
     -------
@@ -1313,53 +1480,76 @@ def round(arg, digits=None):
     return op.to_expr()
 
 
-def log(arg, base=None):
-    """
-    Perform the logarithm using a specified base
+def log(
+    arg: ir.NumericValue, base: ir.NumericValue | None = None
+) -> ir.NumericValue:
+    """Return the logarithm using a specified base.
 
     Parameters
     ----------
-    base : number, default None
-      If None, base e is used
+    arg
+        A numeric expression
+    base
+        The base of the logarithm. If `None`, base `e` is used.
 
     Returns
     -------
-    logarithm : double type
+    NumericValue
+        Logarithm of `arg` with base `base`
     """
     op = ops.Log(arg, base)
     return op.to_expr()
 
 
-def clip(arg, lower=None, upper=None):
+def clip(
+    arg: ir.NumericValue,
+    lower: ir.NumericValue | None = None,
+    upper: ir.NumericValue | None = None,
+) -> ir.NumericValue:
     """
     Trim values at input threshold(s).
 
     Parameters
     ----------
-    lower : float
-    upper : float
+    arg
+        Numeric expression
+    lower
+        Lower bound
+    upper
+        Upper bound
 
     Returns
     -------
-    clipped : same as type of the input
+    NumericValue
+        Clipped input
     """
     if lower is None and upper is None:
-        raise ValueError("at least one of lower and " "upper must be provided")
+        raise ValueError("at least one of lower and upper must be provided")
 
     op = ops.Clip(arg, lower, upper)
     return op.to_expr()
 
 
-def quantile(arg, quantile, interpolation='linear'):
-    """
-    Return value at the given quantile, a la numpy.percentile.
+def quantile(
+    arg: ir.NumericValue,
+    quantile: ir.NumericValue,
+    interpolation: Literal[
+        'linear',
+        'lower',
+        'higher',
+        'midpoint',
+        'nearest',
+    ] = 'linear',
+) -> ir.NumericValue:
+    """Return value at the given quantile.
 
     Parameters
     ----------
-    quantile : float/int or array-like
-        0 <= quantile <= 1, the quantile(s) to compute
-    interpolation : {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
-
+    arg
+        Numeric expression
+    quantile
+        `0 <= quantile <= 1`, the quantile(s) to compute
+    interpolation
         This optional parameter specifies the interpolation method to use,
         when the desired quantile lies between two data points `i` and `j`:
 
@@ -1372,9 +1562,8 @@ def quantile(arg, quantile, interpolation='linear'):
 
     Returns
     -------
-    quantile
-        if scalar input, scalar type, same as input
-        if array input, list of scalar type
+    NumericValue
+        Quantile of the input
     """
     if isinstance(quantile, collections.abc.Sequence):
         op = ops.MultiQuantile(
@@ -1385,34 +1574,45 @@ def quantile(arg, quantile, interpolation='linear'):
     return op.to_expr()
 
 
-def _integer_to_timestamp(arg, unit='s'):
-    """
-    Convert integer UNIX timestamp (at some resolution) to a timestamp type
+def _integer_to_timestamp(
+    arg: ir.IntegerValue, unit: Literal['s', 'ms', 'us'] = 's'
+) -> ir.TimestampValue:
+    """Convert integral UNIX timestamp to a timestamp.
 
     Parameters
     ----------
-    unit : {'s', 'ms', 'us'}
-      Second (s), millisecond (ms), or microsecond (us) resolution
+    arg
+        Integral UNIX timestamp
+    unit
+        The resolution of `arg`
 
     Returns
     -------
-    timestamp : timestamp value expression
+    TimestampValue
+        `arg` converted to a timestamp
     """
     op = ops.TimestampFromUNIX(arg, unit)
     return op.to_expr()
 
 
-def _integer_to_interval(arg, unit='s'):
+def _integer_to_interval(
+    arg: ir.IntegerValue,
+    unit: Literal['Y', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'] = 's',
+) -> ir.IntervalValue:
     """
     Convert integer interval with the same inner type
 
     Parameters
     ----------
-    unit : {'Y', 'M', 'W', 'D', 'h', 'm', s', 'ms', 'us', 'ns'}
+    arg
+        Integer value
+    unit
+        Unit for the resulting interval
 
     Returns
     -------
-    interval : interval value expression
+    IntervalValue
+        An interval in units of `unit`
     """
     op = ops.IntervalFromInteger(arg, unit)
     return op.to_expr()
@@ -1499,19 +1699,26 @@ _numeric_value_methods = {
 }
 
 
-def convert_base(arg, from_base, to_base):
-    """
-    Convert number (as integer or string) from one base to another
+def convert_base(
+    arg: ir.IntegerValue | ir.StringValue,
+    from_base: ir.IntegerValue,
+    to_base: ir.IntegerValue,
+) -> ir.IntegerValue:
+    """Convert an integer or string from one base to another.
 
     Parameters
     ----------
-    arg : string or integer
-    from_base : integer
-    to_base : integer
+    arg
+        Integer or string expression
+    from_base
+        Base of `arg`
+    to_base
+        New base
 
     Returns
     -------
-    converted : string
+    IntegerValue
+        Converted expression
     """
     return ops.BaseConvert(arg, from_base, to_base).to_expr()
 
@@ -1534,97 +1741,138 @@ sum = _agg_function('sum', ops.Sum, True)
 cumsum = _unary_op('cumsum', ops.CumulativeSum)
 
 
-def std(arg, where=None, how='sample'):
-    """
-    Compute standard deviation of numeric array
+def std(
+    arg: ir.NumericColumn,
+    where: ir.BooleanValue | None = None,
+    how: Literal['sample', 'pop'] = 'sample',
+) -> ir.NumericScalar:
+    """Return the standard deviation of a numeric column.
 
     Parameters
     ----------
-    how : {'sample', 'pop'}, default 'sample'
+    arg
+        Numeric column
+    how
+        Sample or population standard deviation
 
     Returns
     -------
-    stdev : double scalar
+    NumericScalar
+        Standard deviation of `arg`
     """
     expr = ops.StandardDev(arg, how=how, where=where).to_expr()
     expr = expr.name('std')
     return expr
 
 
-def variance(arg, where=None, how='sample'):
-    """
-    Compute standard deviation of numeric array
+def variance(
+    arg: ir.NumericColumn,
+    where: ir.BooleanValue | None = None,
+    how: Literal['sample', 'pop'] = 'sample',
+) -> ir.NumericScalar:
+    """Return the variance of a numeric column.
 
     Parameters
     ----------
-    how : {'sample', 'pop'}, default 'sample'
+    arg
+        Numeric column
+    how
+        Sample or population variance
 
     Returns
     -------
-    stdev : double scalar
+    NumericScalar
+        Standard deviation of `arg`
     """
     expr = ops.Variance(arg, how=how, where=where).to_expr()
     expr = expr.name('var')
     return expr
 
 
-def correlation(left, right, where=None, how='sample'):
-    """
-    Compute correlation of two numeric array
+def correlation(
+    left: ir.NumericColumn,
+    right: ir.NumericColumn,
+    where: ir.BooleanValue | None = None,
+    how: Literal['sample', 'pop'] = 'sample',
+) -> ir.NumericScalar:
+    """Return the correlation of two numeric columns.
 
     Parameters
     ----------
-    how : {'sample', 'pop'}, default 'sample'
+    left
+        Numeric column
+    right
+        Numeric column
+    how
+        Population or sample correlation
 
     Returns
     -------
-    corr : double scalar
+    NumericScalar
+        The correlation of `left` and `right`
     """
     expr = ops.Correlation(left, right, how=how, where=where).to_expr()
     return expr
 
 
-def covariance(left, right, where=None, how='sample'):
-    """
-    Compute covariance of two numeric array
+def covariance(
+    left: ir.NumericColumn,
+    right: ir.NumericColumn,
+    where: ir.BooleanValue | None = None,
+    how: Literal['sample', 'pop'] = 'sample',
+):
+    """Return the covariance of two numeric columns.
 
     Parameters
     ----------
-    how : {'sample', 'pop'}, default 'sample'
+    left
+        Numeric column
+    right
+        Numeric column
+    how
+        Population or sample covariance
 
     Returns
     -------
-    cov : double scalar
+    NumericScalar
+        The covariance of `left` and `right`
     """
     expr = ops.Covariance(left, right, how=how, where=where).to_expr()
     return expr
 
 
 def bucket(
-    arg,
-    buckets,
-    closed='left',
-    close_extreme=True,
-    include_under=False,
-    include_over=False,
-):
+    arg: ir.NumericValue,
+    buckets: Sequence[int],
+    closed: Literal['left', 'right'] = 'left',
+    close_extreme: bool = True,
+    include_under: bool = False,
+    include_over: bool = False,
+) -> ir.CategoryColumn:
     """
     Compute a discrete binning of a numeric array
 
     Parameters
     ----------
-    arg : numeric array expression
-    buckets : list
-    closed : {'left', 'right'}, default 'left'
-      Which side of each interval is closed. For example
-      buckets = [0, 100, 200]
-      closed = 'left': 100 falls in 2nd bucket
-      closed = 'right': 100 falls in 1st bucket
-    close_extreme : boolean, default True
+    arg
+        Numeric array expression
+    buckets
+        List of buckets
+    closed
+        Which side of each interval is closed. For example:
+
+        ```python
+        buckets = [0, 100, 200]
+        closed = 'left': 100 falls in 2nd bucket
+        closed = 'right': 100 falls in 1st bucket
+        ```
+    close_extreme
+        Whether the extreme values fall in the last bucket
 
     Returns
     -------
-    bucketed : coded value expression
+    CategoryColumn
+        A categorical column expression
     """
     op = ops.Bucket(
         arg,
@@ -1638,24 +1886,33 @@ def bucket(
 
 
 def histogram(
-    arg, nbins=None, binwidth=None, base=None, closed='left', aux_hash=None
-):
+    arg: ir.NumericColumn,
+    nbins: int | None = None,
+    binwidth: float | None = None,
+    base: float | None = None,
+    closed: Literal['left', 'right'] = 'left',
+    aux_hash: str | None = None,
+) -> ir.CategoryColumn:
     """Compute a histogram with fixed width bins.
 
     Parameters
     ----------
-    arg : numeric array expression
-    nbins : int, default None
-      If supplied, will be used to compute the binwidth
-    binwidth : number, default None
-      If not supplied, computed from the data (actual max and min values)
-    base : number, default None
-    closed : {'left', 'right'}, default 'left'
-      Which side of each interval is closed
+    arg
+        Numeric column
+    nbins
+        If supplied, will be used to compute the binwidth
+    binwidth
+        If not supplied, computed from the data (actual max and min values)
+    base
+    closed
+        Which side of each interval is closed
+    aux_hash
+        Auxiliary hash value to add to bucket names
 
     Returns
     -------
-    histogrammed : coded value expression
+    CategoryColumn
+        Coded value expression
     """
     op = ops.Histogram(
         arg, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
@@ -1663,18 +1920,26 @@ def histogram(
     return op.to_expr()
 
 
-def category_label(arg, labels, nulls=None):
+def category_label(
+    arg: ir.CategoryValue,
+    labels: Sequence[str],
+    nulls: str | None = None,
+) -> ir.StringValue:
     """Format a known number of categories as strings.
 
     Parameters
     ----------
-    labels : list of string
-    nulls : string, optional
-      How to label any null values among the categories
+    arg
+        A category value
+    labels
+        Labels to use for formatting categories
+    nulls
+        How to label any null values among the categories
 
     Returns
     -------
-    string_categories : string value expression
+    StringValue
+        Labeled categories
     """
     op = ops.CategoryLabel(arg, labels, nulls)
     return op.to_expr()
@@ -1717,313 +1982,370 @@ _add_methods(ir.IntegerColumn, _integer_column_methods)
 # GeoSpatial API
 
 
-def geo_area(arg):
-    """
-    Compute area of a geo spatial data
+def geo_area(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Compute the area of a geospatial value.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    area : double scalar
+    FloatingValue
+        The area of `arg`
     """
     op = ops.GeoArea(arg)
     return op.to_expr()
 
 
-def geo_as_binary(arg):
-    """
-    Get the geometry as well-known bytes (WKB) without the SRID data.
+def geo_as_binary(arg: ir.GeoSpatialValue) -> ir.BinaryValue:
+    """Get the geometry as well-known bytes (WKB) without the SRID data.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    wkb : binary
+    BinaryValue
+        Binary value
     """
     op = ops.GeoAsBinary(arg)
     return op.to_expr()
 
 
-def geo_as_ewkt(arg):
-    """
-    Get the geometry as well-known text (WKT) with the SRID data.
+def geo_as_ewkt(arg: ir.GeoSpatialValue) -> ir.StringValue:
+    """Get the geometry as well-known text (WKT) with the SRID data.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    wkt : string
+    StringValue
+        String value
     """
     op = ops.GeoAsEWKT(arg)
     return op.to_expr()
 
 
-def geo_as_text(arg):
-    """
-    Get the geometry as well-known text (WKT) without the SRID data.
+def geo_as_text(arg: ir.GeoSpatialValue) -> ir.StringValue:
+    """Get the geometry as well-known text (WKT) without the SRID data.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    wkt : string
+    StringValue
+        String value
     """
     op = ops.GeoAsText(arg)
     return op.to_expr()
 
 
-def geo_as_ewkb(arg):
-    """
-    Get the geometry as well-known bytes (WKB) with the SRID data.
+def geo_as_ewkb(arg: ir.GeoSpatialValue) -> ir.BinaryValue:
+    """Get the geometry as well-known bytes (WKB) with the SRID data.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    wkb : binary
+    BinaryValue
+        WKB value
     """
     op = ops.GeoAsEWKB(arg)
     return op.to_expr()
 
 
-def geo_contains(left, right):
-    """
-    Check if the first geometry contains the second one
+def geo_contains(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the `left` geometry contains the `right` one.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    contains : bool scalar
+    BooleanValue
+        Whether left contains right
     """
     op = ops.GeoContains(left, right)
     return op.to_expr()
 
 
-def geo_contains_properly(left, right):
+def geo_contains_properly(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
     """
     Check if the first geometry contains the second one,
     with no common border points.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    contains_properly : bool scalar
+    BooleanValue
+        Whether left contains right, properly.
     """
     op = ops.GeoContainsProperly(left, right)
     return op.to_expr()
 
 
-def geo_covers(left, right):
-    """
-    Check if the first geometry covers the second one.
+def geo_covers(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the first geometry covers the second one.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    covers : bool scalar
+    BooleanValue
+        Whether `left` covers `right`
     """
     op = ops.GeoCovers(left, right)
     return op.to_expr()
 
 
-def geo_covered_by(left, right):
-    """
-    Check if the first geometry is covered by the second one.
+def geo_covered_by(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the first geometry is covered by the second one.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    covered_by : bool scalar
+    BooleanValue
+        Whether `left` is covered by `right`
     """
     op = ops.GeoCoveredBy(left, right)
     return op.to_expr()
 
 
-def geo_crosses(left, right):
-    """
-    Check if the geometries have some, but not all, interior points in common.
+def geo_crosses(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries have at least one interior point in common.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    crosses : bool scalar
+    BooleanValue
+        Whether `left` and `right` have at least one common interior point.
     """
     op = ops.GeoCrosses(left, right)
     return op.to_expr()
 
 
-def geo_d_fully_within(left, right, distance):
-    """
-    Check if the first geometry is fully within a specified distance from
-    the second one.
+def geo_d_fully_within(
+    left: ir.GeoSpatialValue,
+    right: ir.GeoSpatialValue,
+    distance: ir.FloatingValue,
+) -> ir.BooleanValue:
+    """Check if the `left` is entirely within `distance` from `right`.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
-    distance: double
+    left
+        Left geometry
+    right
+        Right geometry
+    distance
+        Distance to check
 
     Returns
     -------
-    d_fully_within : bool scalar
+    BooleanValue
+        Whether `left` is within a specified distance from `right`.
     """
     op = ops.GeoDFullyWithin(left, right, distance)
     return op.to_expr()
 
 
-def geo_disjoint(left, right):
-    """
-    Check if the geometries have no points in common.
+def geo_disjoint(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries have no points in common.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    disjoint : bool scalar
+    BooleanValue
+        Whether `left` and `right` are disjoin
     """
     op = ops.GeoDisjoint(left, right)
     return op.to_expr()
 
 
-def geo_d_within(left, right, distance):
-    """
-    Check if the first geometry is within a specified distance from
-    the second one.
+def geo_d_within(
+    left: ir.GeoSpatialValue,
+    right: ir.GeoSpatialValue,
+    distance: ir.FloatingValue,
+) -> ir.BooleanValue:
+    """Check if `left` is partially within `distance` from `right`.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
-    distance: double
+    left
+        Left geometry
+    right
+        Right geometry
+    distance
+        Distance to check
 
     Returns
     -------
-    d_within : bool scalar
+    BooleanValue
+        Whether `left` is partially within `distance` from `right`.
     """
     op = ops.GeoDWithin(left, right, distance)
     return op.to_expr()
 
 
-def geo_equals(left, right):
-    """
-    Check if the geometries are the same.
+def geo_equals(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries are equal.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    equals : bool scalar
+    BooleanValue
+        Whether `left` equals `right`
     """
     op = ops.GeoEquals(left, right)
     return op.to_expr()
 
 
-def geo_geometry_n(arg, n):
-    """
-    Get the 1-based Nth geometry of a multi geometry.
+def geo_geometry_n(
+    arg: ir.GeoSpatialValue, n: int | ir.IntegerValue
+) -> ir.GeoSpatialValue:
+    """Get the 1-based Nth geometry of a multi geometry.
 
     Parameters
     ----------
-    arg : geometry
-    n : integer
+    arg
+        Geometry expression
+    n
+        Nth geometry index
 
     Returns
     -------
-    geom : geometry scalar
+    GeoSpatialValue
+        Geometry value
     """
     op = ops.GeoGeometryN(arg, n)
     return op.to_expr()
 
 
-def geo_geometry_type(arg):
-    """
-    Get the type of a geometry.
+def geo_geometry_type(arg: ir.GeoSpatialValue) -> ir.StringValue:
+    """Get the type of a geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    type : string scalar
+    StringValue
+        String representing the type of `arg`.
     """
     op = ops.GeoGeometryType(arg)
     return op.to_expr()
 
 
-def geo_intersects(left, right):
-    """
-    Check if the geometries share any points.
+def geo_intersects(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries share any points.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    intersects : bool scalar
+    BooleanValue
+        Whether `left` intersects `right`
     """
     op = ops.GeoIntersects(left, right)
     return op.to_expr()
 
 
-def geo_is_valid(arg):
-    """
-    Check if the geometry is valid.
+def geo_is_valid(arg: ir.GeoSpatialValue) -> ir.BooleanValue:
+    """Check if the geometry is valid.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    valid : bool scalar
+    BooleanValue
+        Whether `arg` is valid
     """
     op = ops.GeoIsValid(arg)
     return op.to_expr()
 
 
-def geo_line_locate_point(left, right):
-    """
-    Locate the distance a point falls along the length of a line.
+def geo_line_locate_point(
+    left: ir.LineStringValue, right: ir.PointValue
+) -> ir.FloatingValue:
+    """Locate the distance a point falls along the length of a line.
 
     Returns a float between zero and one representing the location of the
     closest point on the linestring to the given point, as a fraction of the
@@ -2031,20 +2353,22 @@ def geo_line_locate_point(left, right):
 
     Parameters
     ----------
-    left : linestring
-    right: point
+    left
+        Linestring geometry
+    right
+        Point geometry
 
     Returns
     -------
-    distance: float scalar
+    FloatingValue
+        Fraction of the total line length
     """
     op = ops.GeoLineLocatePoint(left, right)
     return op.to_expr()
 
 
-def geo_line_merge(arg):
-    """
-    Merge a MultiLineString into a LineString.
+def geo_line_merge(arg: ir.GeoSpatialValue) -> ir.GeoSpatialValue:
+    """Merge a `MultiLineString` into a `LineString`.
 
     Returns a (set of) LineString(s) formed by sewing together the
     constituent line work of a MultiLineString. If a geometry other than
@@ -2053,19 +2377,22 @@ def geo_line_merge(arg):
 
     Parameters
     ----------
-    arg : (multi)linestring
+    arg
+        Multiline string
 
     Returns
     -------
-    merged: geometry scalar
+    ir.GeoSpatialValue
+        Merged linestrings
     """
     op = ops.GeoLineMerge(arg)
     return op.to_expr()
 
 
-def geo_line_substring(arg, start, end):
-    """
-    Clip a substring from a LineString.
+def geo_line_substring(
+    arg: ir.LineStringValue, start: ir.FloatingValue, end: ir.FloatingValue
+) -> ir.LineStringValue:
+    """Clip a substring from a LineString.
 
     Returns a linestring that is a substring of the input one, starting
     and ending at the given fractions of the total 2d length. The second
@@ -2074,51 +2401,63 @@ def geo_line_substring(arg, start, end):
 
     Parameters
     ----------
-    arg: linestring
-    start: float
-    end: float
+    arg
+        Linestring value
+    start
+        Start value
+    end
+        End value
 
     Returns
     -------
-    substring: linestring scalar
+    LineStringValue
+        Clipped linestring
     """
     op = ops.GeoLineSubstring(arg, start, end)
     return op.to_expr()
 
 
-def geo_ordering_equals(left, right):
-    """
-    Check if two geometries are equal and have the same point ordering.
+def geo_ordering_equals(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if two geometries are equal and have the same point ordering.
 
     Returns true if the two geometries are equal and the coordinates
     are in the same order.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    ordering_equals : bool scalar
+    BooleanValue
+        Whether points and orderings are equal.
     """
     op = ops.GeoOrderingEquals(left, right)
     return op.to_expr()
 
 
-def geo_overlaps(left, right):
-    """
-    Check if the geometries share space, are of the same dimension,
-    but are not completely contained by each other.
+def geo_overlaps(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries share space, have the same dimension, and are
+    not completely contained by each other.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    overlaps : bool scalar
+    BooleanValue
+        Overlaps indicator
     """
     op = ops.GeoOverlaps(left, right)
     return op.to_expr()
@@ -2127,113 +2466,132 @@ def geo_overlaps(left, right):
 def geo_point(
     left: NumericValue | int | float,
     right: NumericValue | int | float,
-) -> ops.GeoPoint:
-    """
-    Return a point constructed on the fly from the provided coordinate values.
+) -> ir.PointValue:
+    """Return a point constructed from the coordinate values.
+
     Constant coordinates result in construction of a POINT literal.
 
     Parameters
     ----------
-    left : NumericValue, integer or float
-    right : NumericValue, integer or float
+    left
+        X coordinate
+    right
+        Y coordinate
 
     Returns
     -------
-    point
+    PointValue
+        Points
     """
     op = ops.GeoPoint(left, right)
     return op.to_expr()
 
 
-def geo_touches(left, right):
-    """
-    Check if the geometries have at least one point in common,
-    but do not intersect.
+def geo_touches(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the geometries have at least one point in common, but do not
+    intersect.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    touches : bool scalar
+    BooleanValue
+        Whether left and right are touching
     """
     op = ops.GeoTouches(left, right)
     return op.to_expr()
 
 
-def geo_distance(left, right):
-    """
-    Compute distance between two geo spatial data
+def geo_distance(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.FloatingValue:
+    """Compute the distance between two geospatial expressions.
 
     Parameters
     ----------
-    left : geometry or geography
-    right : geometry or geography
+    left
+        Left geometry or geography
+    right
+        Right geometry or geography
 
     Returns
     -------
-    distance : double scalar
+    FloatingValue
+        Distance between `left` and `right`
     """
     op = ops.GeoDistance(left, right)
     return op.to_expr()
 
 
-def geo_length(arg):
-    """
-    Compute length of a geo spatial data
+def geo_length(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Compute the length of a geospatial expression.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    length : double scalar
+    FloatingValue
+        Length of `arg`
     """
     op = ops.GeoLength(arg)
     return op.to_expr()
 
 
-def geo_perimeter(arg):
-    """
-    Compute perimeter of a geo spatial data
+def geo_perimeter(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Compute the perimeter of a geospatial expression.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    perimeter : double scalar
+    FloatingValue
+        Perimeter of `arg`
     """
     op = ops.GeoPerimeter(arg)
     return op.to_expr()
 
 
-def geo_max_distance(left, right):
+def geo_max_distance(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.FloatingValue:
     """Returns the 2-dimensional maximum distance between two geometries in
-    projected units. If g1 and g2 is the same geometry the function will
-    return the distance between the two vertices most far from each other
-    in that geometry
+    projected units.
+
+    If `left` and `right` are the same geometry the function will return the
+    distance between the two vertices most far from each other in that
+    geometry.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    MaxDistance : double scalar
+    FloatingValue
+        Maximum distance
     """
     op = ops.GeoMaxDistance(left, right)
     return op.to_expr()
 
 
-def geo_unary_union(arg):
-    """
-    Aggregate a set of geometries into a union.
+def geo_unary_union(arg: ir.GeoSpatialValue) -> ir.GeoSpatialScalar:
+    """Aggregate a set of geometries into a union.
 
     This corresponds to the aggregate version of the PostGIS ST_Union.
     We give it a different name (following the corresponding method
@@ -2241,162 +2599,189 @@ def geo_unary_union(arg):
 
     Parameters
     ----------
-    arg : geometry column
+    arg
+        Geometry expression column
 
     Returns
     -------
-    union : geometry scalar
+    GeoSpatialScalar
+        Union of geometries
     """
     expr = ops.GeoUnaryUnion(arg).to_expr()
     expr = expr.name('union')
     return expr
 
 
-def geo_union(left, right):
-    """
-    Merge two geometries into a union geometry.
+def geo_union(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.GeoSpatialValue:
+    """Merge two geometries into a union geometry.
 
     Returns the pointwise union of the two geometries.
     This corresponds to the non-aggregate version the PostGIS ST_Union.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    union : geometry scalar
+    GeoSpatialValue
+        Union of geometries
     """
     op = ops.GeoUnion(left, right)
     return op.to_expr()
 
 
-def geo_x(arg):
-    """Return the X coordinate of the point, or NULL if not available.
-    Input must be a point
+def geo_x(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the X coordinate of `arg`, or NULL if not available.
+
+    Input must be a point.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    X : double scalar
+    FloatingValue
+        X coordinate of `arg`
     """
     op = ops.GeoX(arg)
     return op.to_expr()
 
 
-def geo_y(arg):
-    """Return the Y coordinate of the point, or NULL if not available.
-    Input must be a point
+def geo_y(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the Y coordinate of `arg`, or NULL if not available.
+
+    Input must be a point.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    Y : double scalar
+    FloatingValue
+        Y coordinate of `arg`
     """
     op = ops.GeoY(arg)
     return op.to_expr()
 
 
-def geo_x_min(arg):
-    """Returns Y minima of a geometry
+def geo_x_min(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the X minima of a geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    XMin : double scalar
+    FloatingValue
+        X minima
     """
     op = ops.GeoXMin(arg)
     return op.to_expr()
 
 
-def geo_x_max(arg):
-    """Returns X maxima of a geometry
+def geo_x_max(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the X maxima of a geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    XMax : double scalar
+    FloatingValue
+        X maxima
     """
     op = ops.GeoXMax(arg)
     return op.to_expr()
 
 
-def geo_y_min(arg):
-    """Returns Y minima of a geometry
+def geo_y_min(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the Y minima of a geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    YMin : double scalar
+    FloatingValue
+        Y minima
     """
     op = ops.GeoYMin(arg)
     return op.to_expr()
 
 
-def geo_y_max(arg):
-    """Returns Y maxima of a geometry
+def geo_y_max(arg: ir.GeoSpatialValue) -> ir.FloatingValue:
+    """Return the Y maxima of a geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
+    FloatingValue
+        Y maxima
     YMax : double scalar
     """
     op = ops.GeoYMax(arg)
     return op.to_expr()
 
 
-def geo_start_point(arg):
-    """Returns the first point of a LINESTRING geometry as a POINT or
-    NULL if the input parameter is not a LINESTRING
+def geo_start_point(arg: ir.GeoSpatialValue) -> ir.PointValue:
+    """Return the first point of a `LINESTRING` geometry as a `POINT`.
+
+    Return NULL if the input parameter is not a `LINESTRING`
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    Point : geometry scalar
+    PointValue
+        Start point
     """
     op = ops.GeoStartPoint(arg)
     return op.to_expr()
 
 
-def geo_end_point(arg):
-    """Returns the last point of a LINESTRING geometry as a POINT or
-    NULL if the input parameter is not a LINESTRING
+def geo_end_point(arg: ir.GeoSpatialValue) -> ir.PointValue:
+    """Return the last point of a `LINESTRING` geometry as a `POINT`.
+
+    Return NULL if the input parameter is not a LINESTRING
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    EndPoint : geometry scalar
+    PointValue
+        End point
     """
     op = ops.GeoEndPoint(arg)
     return op.to_expr()
 
 
-def geo_point_n(arg, n):
+def geo_point_n(arg: ir.GeoSpatialValue, n: ir.IntegerValue) -> ir.PointValue:
     """Return the Nth point in a single linestring in the geometry.
     Negative values are counted backwards from the end of the LineString,
     so that -1 is the last point. Returns NULL if there is no linestring in
@@ -2404,226 +2789,280 @@ def geo_point_n(arg, n):
 
     Parameters
     ----------
-    arg : geometry
-    n : integer
+    arg
+        Geometry expression
+    n
+        Nth point index
 
     Returns
     -------
-    PointN : geometry scalar
+    PointValue
+        Nth point in `arg`
     """
     op = ops.GeoPointN(arg, n)
     return op.to_expr()
 
 
-def geo_n_points(arg):
+def geo_n_points(arg: ir.GeoSpatialValue) -> ir.IntegerValue:
     """Return the number of points in a geometry. Works for all geometries
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry or geography
 
     Returns
     -------
-    NPoints : double scalar
+    IntegerValue
+        Number of points
     """
     op = ops.GeoNPoints(arg)
     return op.to_expr()
 
 
-def geo_n_rings(arg):
-    """If the geometry is a polygon or multi-polygon returns the number of
-    rings. It counts the outer rings as well
+def geo_n_rings(arg: ir.GeoSpatialValue) -> ir.IntegerValue:
+    """Return the number of rings for polygons and multipolygons.
+
+    Outer rings are counted as well.
 
     Parameters
     ----------
-    arg : geometry or geography
+    arg
+        Geometry or geography
 
     Returns
     -------
-    NRings : double scalar
+    IntegerValue
+        Number of rings
     """
     op = ops.GeoNRings(arg)
     return op.to_expr()
 
 
-def geo_srid(arg):
-    """Returns the spatial reference identifier for the ST_Geometry
+def geo_srid(arg: ir.GeoSpatialValue) -> ir.IntegerValue:
+    """Return the spatial reference identifier for the ST_Geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    SRID : Integer scalar
+    IntegerValue
+        SRID
     """
     op = ops.GeoSRID(arg)
     return op.to_expr()
 
 
-def geo_set_srid(arg, srid):
+def geo_set_srid(
+    arg: ir.GeoSpatialValue, srid: ir.IntegerValue
+) -> ir.GeoSpatialValue:
     """Set the spatial reference identifier for the ST_Geometry
 
     Parameters
     ----------
-    arg : geometry
-    srid : integer
+    arg
+        Geometry expression
+    srid
+        SRID integer value
 
     Returns
     -------
-    SetSRID : geometry
+    GeoSpatialValue
+        `arg` with SRID set to `srid`
     """
     op = ops.GeoSetSRID(arg, srid)
     return op.to_expr()
 
 
-def geo_buffer(arg, radius):
+def geo_buffer(
+    arg: ir.GeoSpatialValue, radius: float | ir.FloatingValue
+) -> ir.GeoSpatialValue:
     """Returns a geometry that represents all points whose distance from this
     Geometry is less than or equal to distance. Calculations are in the
     Spatial Reference System of this Geometry.
 
     Parameters
     ----------
-    arg : geometry
-    radius: double
+    arg
+        Geometry expression
+    radius
+        Floating expression
 
     Returns
     -------
-    buffer : geometry scalar
+    ir.GeoSpatialValue
+        Geometry expression
     """
     op = ops.GeoBuffer(arg, radius)
     return op.to_expr()
 
 
-def geo_centroid(arg):
+def geo_centroid(arg: ir.GeoSpatialValue) -> ir.PointValue:
     """Returns the centroid of the geometry.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    centroid : geometry scalar
+    PointValue
+        The centroid
     """
     op = ops.GeoCentroid(arg)
     return op.to_expr()
 
 
-def geo_envelope(arg):
+def geo_envelope(arg: ir.GeoSpatialValue) -> ir.PolygonValue:
     """Returns a geometry representing the bounding box of the arg.
 
     Parameters
     ----------
-    arg : geometry
+    arg
+        Geometry expression
 
     Returns
     -------
-    envelope : geometry scalar
+    PolygonValue
+        A polygon
     """
     op = ops.GeoEnvelope(arg)
     return op.to_expr()
 
 
-def geo_within(left, right):
-    """
-    Check if the first geometry is completely inside of the second.
+def geo_within(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.BooleanValue:
+    """Check if the first geometry is completely inside of the second.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    within : bool scalar
+    BooleanValue
+        Whether `left` is in `right`.
     """
     op = ops.GeoWithin(left, right)
     return op.to_expr()
 
 
-def geo_azimuth(left, right):
-    """
-    Check if the geometries have at least one point in common,
-    but do not intersect.
+def geo_azimuth(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.FloatingValue:
+    """Return the angle in radians from the horizontal of the vector defined by
+    `left` and `right`.
+
+    Angle is computed clockwise from down-to-up on the clock:
+    12=0; 3=PI/2; 6=PI; 9=3PI/2.
 
     Parameters
     ----------
-    left : point
-    right : point
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    azimuth : float scalar
+    FloatingValue
+        azimuth
     """
     op = ops.GeoAzimuth(left, right)
     return op.to_expr()
 
 
-def geo_intersection(left, right):
-    """
-    Return the intersection of two geometries.
+def geo_intersection(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.GeoSpatialValue:
+    """Return the intersection of two geometries.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    intersection : geometry scalar
+    GeoSpatialValue
+        Intersection of `left` and `right`
     """
     op = ops.GeoIntersection(left, right)
     return op.to_expr()
 
 
-def geo_difference(left, right):
-    """
-    Return the difference of two geometries.
+def geo_difference(
+    left: ir.GeoSpatialValue, right: ir.GeoSpatialValue
+) -> ir.GeoSpatialValue:
+    """Return the difference of two geometries.
 
     Parameters
     ----------
-    left : geometry
-    right : geometry
+    left
+        Left geometry
+    right
+        Right geometry
 
     Returns
     -------
-    difference : geometry scalar
+    GeoSpatialValue
+        Difference of `left` and `right`
     """
     op = ops.GeoDifference(left, right)
     return op.to_expr()
 
 
-def geo_simplify(arg, tolerance, preserve_collapsed):
-    """
-    Simplify a given geometry.
+def geo_simplify(
+    arg: ir.GeoSpatialValue,
+    tolerance: ir.FloatingValue,
+    preserve_collapsed: ir.BooleanValue,
+) -> ir.GeoSpatialValue:
+    """Simplify a given geometry.
 
     Parameters
     ----------
-    arg : geometry
-    tolerance: float
-    preserved_collapsed: boolean
+    arg
+        Geometry expression
+    tolerance
+        Tolerance
+    preserve_collapsed
+        Whether to preserve collapsed geometries
 
     Returns
     -------
-    simplified : geometry scalar
+    GeoSpatialValue
+        Simplified geometry
     """
     op = ops.GeoSimplify(arg, tolerance, preserve_collapsed)
     return op.to_expr()
 
 
-def geo_transform(arg, srid):
-    """
-    Transform a geometry into a new SRID.
+def geo_transform(
+    arg: ir.GeoSpatialValue, srid: ir.IntegerValue
+) -> ir.GeoSpatialValue:
+    """Transform a geometry into a new SRID.
 
     Parameters
     ----------
-    arg : geometry
-    srid: integer
+    arg
+        Geometry expression
+    srid
+        Integer expression
 
     Returns
     -------
-    transformed : geometry scalar
+    GeoSpatialValue
+        Transformed geometry
     """
     op = ops.GeoTransform(arg, srid)
     return op.to_expr()
@@ -2694,12 +3133,20 @@ _add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
 # TODO: logical binary operators for BooleanValue
 
 
-def ifelse(arg, true_expr, false_expr):
-    """
-    Shorthand for implementing ternary expressions
+def ifelse(
+    arg: ir.ValueExpr, true_expr: ir.ValueExpr, false_expr: ir.ValueExpr
+) -> ir.ValueExpr:
+    """Construct a ternary conditional expression.
 
+    Examples
+    --------
     bool_expr.ifelse(0, 1)
     e.g., in SQL: CASE WHEN bool_expr THEN 0 else 1 END
+
+    Returns
+    -------
+    ValueExpr
+        The value of `true_expr` if `arg` is `True` else `false_expr`
     """
     # Result will be the result of promotion of true/false exprs. These
     # might be conflicting types; same type resolution as case expressions
@@ -2738,19 +3185,23 @@ _add_methods(ir.BooleanColumn, _boolean_column_methods)
 # Binary API
 
 
-def hashbytes(arg, how='sha256'):
-    """
-    Compute a binary hash value for the indicated value expression.
+def hashbytes(
+    arg: ir.BinaryValue | ir.StringValue,
+    how: Literal['md5', 'sha1', 'sha256', 'sha512'] = 'sha256',
+) -> ir.BinaryValue:
+    """Compute the binary hash value of `arg`.
 
     Parameters
     ----------
-    arg : binary or string value expression
-    how : {'md5', 'sha1', 'sha256', 'sha512'}, default 'sha256'
-      Hash algorithm to use
+    arg
+        Expression to hash
+    how
+        Hash algorithm to use
 
     Returns
     -------
-    hash_value : binary expression
+    BinaryValue
+        Binary expression
     """
     return ops.HashBytes(arg, how).to_expr()
 
@@ -2763,78 +3214,105 @@ _add_methods(ir.BinaryValue, _binary_value_methods)
 # String API
 
 
-def _string_substr(self, start, length=None):
-    """
-    Pull substrings out of each string value by position and maximum
-    length.
+def _string_substr(
+    self: ir.StringValue,
+    start: int | ir.IntegerValue,
+    length: int | ir.IntegerValue | None = None,
+) -> ir.StringValue:
+    """Pull substrings out by position and maximum length.
 
     Parameters
     ----------
-    start : int
-      First character to start splitting, indices starting at 0 (like
-      Python)
-    length : int, optional
-      Maximum length of each substring. If not supplied, splits each string
-      to the end
+    self
+        String expression
+    start
+        First character to start splitting, indices start at 0
+    length
+        Maximum length of each substring. If not supplied, searches the entire
+        string
 
     Returns
     -------
-    substrings : type of caller
+    StringValue
+        Found substring
     """
     op = ops.Substring(self, start, length)
     return op.to_expr()
 
 
-def _string_left(self, nchars):
-    """
-    Return left-most up to N characters from each string. Convenience
-    use of substr.
+def _string_left(
+    self: ir.StringValue, nchars: int | ir.IntegerValue
+) -> ir.StringValue:
+    """Return the `nchars` left-most characters each string in `arg`.
+
+    Parameters
+    ----------
+    self
+        String expression
+    nchars
+        Maximum number of characters to return
 
     Returns
     -------
-    substrings : type of caller
+    StringValue
+        Characters
     """
     return self.substr(0, length=nchars)
 
 
-def _string_right(self, nchars):
-    """
-    Return up to nchars starting from end of each string.
+def _string_right(
+    self: ir.StringValue, nchars: int | ir.IntegerValue
+) -> ir.StringValue:
+    """Return up to `nchars` from the end of each string in `arg`.
+
+    Parameters
+    ----------
+    self
+        String expression
+    nchars
+        Maximum number of characters to return
 
     Returns
     -------
-    substrings : type of caller
+    StringValue
+        Characters
     """
     return ops.StrRight(self, nchars).to_expr()
 
 
-def repeat(self, n):
-    """
-    Returns the argument string repeated n times
+def repeat(self: ir.StringValue, n: int | ir.IntegerValue) -> ir.StringValue:
+    """Repeat the string `self` `n` times.
 
     Parameters
     ----------
-    n : int
+    self
+        String to repeat
+    n
+        Number of repetitions
 
     Returns
     -------
-    result : string
+    StringValue
+        Repeated string
     """
     return ops.Repeat(self, n).to_expr()
 
 
-def _translate(self, from_str, to_str):
-    """
-    Returns string with set of 'from' characters replaced
-    by set of 'to' characters.
-    from_str[x] is replaced by to_str[x].
-    To avoid unexpected behavior, from_str should be
-    shorter than to_string.
+def _translate(
+    self: ir.StringValue, from_str: ir.StringValue, to_str: ir.StringValue
+) -> ir.StringValue:
+    """Replace `from_str` characters in `self` characters in `to_str`.
+
+    To avoid unexpected behavior, `from_str` should be shorter than `to_str`.
 
     Parameters
     ----------
-    from_str : string
-    to_str : string
+    self
+        String expression
+    from_str
+        Characters in `arg` to replace
+    to_str
+        Characters to use for replacement
 
     Examples
     --------
@@ -2845,41 +3323,57 @@ def _translate(self, from_str, to_str):
 
     Returns
     -------
-    translated : string
+    StringValue
+        Translated string
     """
     return ops.Translate(self, from_str, to_str).to_expr()
 
 
-def _string_find(self, substr, start=None, end=None):
-    """
-    Returns position (0 indexed) of first occurence of substring,
-    optionally after a particular position (0 indexed)
+def _string_find(
+    self: ir.StringValue,
+    substr: str | ir.StringValue,
+    start: int | ir.IntegerValue | None = None,
+    end: int | ir.IntegerValue | None = None,
+) -> ir.IntegerValue:
+    """Return the position of the first occurence of substring.
 
     Parameters
     ----------
-    substr : string
-    start : int, default None
-    end : int, default None
-        Not currently implemented
+    self
+        String expression
+    substr
+        Substring to search for
+    start
+        Zero based index of where to start the search
+    end
+        Zero based index of where to stop the search. Currently not
+        implemented.
 
     Returns
     -------
-    position : int, 0 indexed
+    IntegerValue
+        Position of `substr` in `arg` starting from `start`
     """
     if end is not None:
         raise NotImplementedError
     return ops.StringFind(self, substr, start, end).to_expr()
 
 
-def _lpad(self, length, pad=' '):
-    """
-    Returns string of given length by truncating (on right)
-    or padding (on left) original string
+def _lpad(
+    self: ir.StringValue,
+    length: int | ir.IntegerValue,
+    pad: str | ir.StringValue = ' ',
+) -> ir.StringValue:
+    """Pad `arg` by truncating on the right or padding on the left.
 
     Parameters
     ----------
+    self
+        String to pad
     length : int
-    pad : string, default is ' '
+        Length of output string
+    pad
+        Pad character
 
     Examples
     --------
@@ -2891,20 +3385,27 @@ def _lpad(self, length, pad=' '):
 
     Returns
     -------
-    padded : string
+    StringValue
+        Padded string
     """
     return ops.LPad(self, length, pad).to_expr()
 
 
-def _rpad(self, length, pad=' '):
-    """
-    Returns string of given length by truncating (on right)
-    or padding (on right) original string
+def _rpad(
+    self: ir.StringValue,
+    length: int | ir.IntegerValue,
+    pad: str | ir.StringValue = ' ',
+) -> ir.StringValue:
+    """Pad `self` by truncating or padding on the right.
 
     Parameters
     ----------
+    self
+        String to pad
     length : int
-    pad : string, default is ' '
+        Length of output string
+    pad
+        Pad character
 
     Examples
     --------
@@ -2916,21 +3417,25 @@ def _rpad(self, length, pad=' '):
 
     Returns
     -------
-    padded : string
+    StringValue
+        Padded string
     """
     return ops.RPad(self, length, pad).to_expr()
 
 
-def _find_in_set(self, str_list):
-    """
-    Returns postion (0 indexed) of first occurence of argument within
-    a list of strings. No string in list can have a comma
-    Returns -1 if search string isn't found or if search string contains ','
+def _find_in_set(
+    self: ir.StringValue, str_list: Sequence[str]
+) -> ir.IntegerValue:
+    """Find the first occurence of `str_list` within a list of strings.
 
+    No string in list can have a comma.
 
     Parameters
     ----------
-    str_list : list of strings
+    self
+        String expression to search
+    str_list
+        Sequence of strings
 
     Examples
     --------
@@ -2940,18 +3445,24 @@ def _find_in_set(self, str_list):
 
     Returns
     -------
-    position : int
+    IntegerValue
+        Position of `str_list` in `arg`. Returns -1 if `arg` isn't found or if
+        `arg` contains `','`.
     """
     return ops.FindInSet(self, str_list).to_expr()
 
 
-def _string_join(self, strings):
-    """
-    Joins a list of strings together using the calling string as a separator
+def _string_join(
+    self: str | ir.StringValue, strings: Sequence[str]
+) -> ir.StringValue:
+    """Join a list of strings using the `self` as the separator.
 
     Parameters
     ----------
-    strings : list of strings
+    self
+        String expression
+    strings
+        Strings to join with `arg`
 
     Examples
     --------
@@ -2961,82 +3472,87 @@ def _string_join(self, strings):
 
     Returns
     -------
-    joined : string
+    StringValue
+        Joined string
     """
     return ops.StringJoin(self, strings).to_expr()
 
 
-def _startswith(self, start):
-    """
-    Determine if `self` string starts with `start` string.
+def _startswith(
+    self: str | ir.StringValue, start: str | ir.StringValue
+) -> ir.BooleanValue:
+    """Determine whether `self` starts with `end`.
 
     Parameters
     ----------
-    start: string
+    self
+        String expression
+    start
+        prefix to check for
 
     Examples
     --------
     >>> import ibis
-    >>> text = ibis.literal('Ibis project)
+    >>> text = ibis.literal('Ibis project')
     >>> text.startswith('Ibis')
-    StartsWith[boolean]
-      Literal[string]
-        Ibis project
-      start:
-        Literal[string]
-          Ibis
+
     Returns
     -------
-    result : boolean
+    BooleanValue
+        Boolean indicating whether `self` starts with `start`
     """
     return ops.StartsWith(self, start).to_expr()
 
 
-def _endswith(self, end):
-    """
-    Determine if `self` string ends with `end` string.
+def _endswith(
+    self: str | ir.StringValue, end: str | ir.StringValue
+) -> ir.BooleanValue:
+    """Determine if `self` ends with `end`.
 
     Parameters
     ----------
-    end: string
+    self
+        String expression
+    end
+        Suffix to check for
 
     Examples
     --------
     >>> import ibis
-    >>> text = ibis.literal('Ibis project)
+    >>> text = ibis.literal('Ibis project')
     >>> text.endswith('project')
-    EndsWith[boolean]
-      Literal[string]
-        Ibis project
-      end:
-        Literal[string]
-          project
 
     Returns
     -------
-    result : boolean
+    BooleanValue
+        Boolean indicating whether `self` ends with `end`
     """
     return ops.EndsWith(self, end).to_expr()
 
 
-def _string_like(self, patterns):
-    """
-    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
-    % as a multiple-character wildcard or _ (underscore) as a single-character
-    wildcard.
+def _string_like(
+    self: ir.StringValue,
+    patterns: str | ir.StringValue | Sequence[str | ir.StringValue],
+) -> ir.BooleanValue:
+    """Match `patterns` against `self`, case-sensitive.
 
-    Use re_search or rlike for regex-based matching.
+    This function is modeled after the SQL `LIKE` directive. Use `%` as a
+    multiple-character wildcard or `_` as a single-character wildcard.
+
+    Use `re_search` or `rlike` for regular expression-based matching.
 
     Parameters
     ----------
-    pattern : str or List[str]
-        A pattern or list of patterns to match. If `pattern` is a list, then if
-        **any** pattern matches the input then the corresponding row in the
-        output is ``True``.
+    self
+        String expression
+    patterns
+        If `pattern` is a list, then if any pattern matches the input then
+        the corresponding row in the output is `True`.
 
     Returns
     -------
-    matched : ir.BooleanColumn
+    BooleanValue
+        Column indicating matches
     """
     return functools.reduce(
         operator.or_,
@@ -3047,24 +3563,29 @@ def _string_like(self, patterns):
     )
 
 
-def _string_ilike(self, patterns):
-    """
-    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
-    % as a multiple-character wildcard or _ (underscore) as a single-character
-    wildcard.
+def _string_ilike(
+    self: ir.StringValue,
+    patterns: str | ir.StringValue | Sequence[str | ir.StringValue],
+) -> ir.BooleanValue:
+    """Match `patterns` against `self`, case-insensitive.
 
-    Use re_search or rlike for regex-based matching.
+    This function is modeled after the SQL `ILIKE` directive. Use `%` as a
+    multiple-character wildcard or `_` as a single-character wildcard.
+
+    Use `re_search` or `rlike` for regular expression-based matching.
 
     Parameters
     ----------
-    pattern : str or List[str]
-        A pattern or list of patterns to match. If `pattern` is a list, then if
-        **any** pattern matches the input then the corresponding row in the
-        output is ``True``.
+    self
+        String expression
+    patterns
+        If `pattern` is a list, then if any pattern matches the input then
+        the corresponding row in the output is `True`.
 
     Returns
     -------
-    matched : ir.BooleanColumn
+    BooleanValue
+        Column indicating matches
     """
     return functools.reduce(
         operator.or_,
@@ -3075,48 +3596,69 @@ def _string_ilike(self, patterns):
     )
 
 
-def re_search(arg, pattern):
-    """
-    Search string values using a regular expression. Returns True if the regex
-    matches a string and False otherwise.
+def re_search(
+    arg: str | ir.StringValue, pattern: str | ir.StringValue
+) -> ir.BooleanValue:
+    """Return whether the values in `arg` match `pattern`.
+
+    Returns `True` if the regex matches a string and `False` otherwise.
 
     Parameters
     ----------
-    pattern : string (regular expression string)
+    arg
+        String expression to check for matches
+    pattern
+        Regular expression use for searching
 
     Returns
     -------
-    searched : boolean value
+    BooleanValue
+        Indicator of matches
     """
     return ops.RegexSearch(arg, pattern).to_expr()
 
 
-def regex_extract(arg, pattern, index):
-    """
-    Returns specified index, 0 indexed, from string based on regex pattern
-    given
+def regex_extract(
+    arg: str | ir.StringValue,
+    pattern: str | ir.StringValue,
+    index: int | ir.IntegerValue,
+) -> ir.StringValue:
+    """Return the specified match from a regular expression `pattern`.
 
     Parameters
     ----------
-    pattern : string (regular expression string)
-    index : int, 0 indexed
+    arg
+        String expression
+    pattern
+        Reguar expression string
+    index
+        Zero-based index of match to return
 
     Returns
     -------
-    extracted : string
+    StringValue
+        Extracted match
     """
     return ops.RegexExtract(arg, pattern, index).to_expr()
 
 
-def regex_replace(arg, pattern, replacement):
-    """
-    Replaces match found by regex with replacement string.
-    Replacement string can also be a regex
+def regex_replace(
+    arg: str | ir.StringValue,
+    pattern: str | ir.StringValue,
+    replacement: str | ir.StringValue,
+) -> ir.StringValue:
+    """Replace match found by regex `pattern` with `replacement`.
+
+    `replacement` can also be a regex
 
     Parameters
     ----------
-    pattern : string (regular expression string)
-    replacement : string (can be regular expression string)
+    arg
+        String expression
+    pattern
+        Regular expression string
+    replacement
+        Replacement string; can be a regular expression
 
     Examples
     --------
@@ -3126,20 +3668,30 @@ def regex_replace(arg, pattern, replacement):
 
     Returns
     -------
-    modified : string
+    StringValue
+        Modified string
     """
     return ops.RegexReplace(arg, pattern, replacement).to_expr()
 
 
-def _string_replace(arg, pattern, replacement):
-    """
-    Replaces each exactly occurrence of pattern with given replacement
-    string. Like Python built-in str.replace
+def _string_replace(
+    arg: str | ir.StringValue,
+    pattern: ir.StringValue,
+    replacement: ir.StringValue,
+) -> ir.StringValue:
+    """Replace each exact match of `pattern` with `replacement`.
+    string.
+
+    Like Python built-in [`str.replace`][str.replace]
 
     Parameters
     ----------
-    pattern : string
-    replacement : string
+    arg
+        String expression
+    pattern
+        String pattern
+    replacement
+        String replacement
 
     Examples
     --------
@@ -3149,20 +3701,23 @@ def _string_replace(arg, pattern, replacement):
 
     Returns
     -------
-    replaced : string
+    StringVulae
+        Replaced string
     """
     return ops.StringReplace(arg, pattern, replacement).to_expr()
 
 
-def to_timestamp(arg, format_str, timezone=None):
-    """
-    Parses a string and returns a timestamp.
+def to_timestamp(
+    arg: ir.StringValue, format_str: str, timezone: str | None = None
+) -> ir.TimestampValue:
+    """Parse a string and return a timestamp.
 
     Parameters
     ----------
-    format_str : A format string potentially of the type '%Y-%m-%d'
-    timezone : An optional string indicating the timezone,
-        i.e. 'America/New_York'
+    format_str
+        Format string in `strptime` format
+    timezone
+        A string indicating the timezone. For example `'America/New_York'`
 
     Examples
     --------
@@ -3172,24 +3727,38 @@ def to_timestamp(arg, format_str, timezone=None):
 
     Returns
     -------
-    parsed : TimestampValue
+    TimestampValue
+        Parsed timestamp value
     """
     return ops.StringToTimestamp(arg, format_str, timezone).to_expr()
 
 
-def parse_url(arg, extract, key=None):
-    """
-    Returns the portion of a URL corresponding to a part specified
-    by 'extract'
-    Can optionally specify a key to retrieve an associated value
-    if extract parameter is 'QUERY'
+def parse_url(
+    arg: str | ir.StringValue,
+    extract: Literal[
+        "PROTOCOL",
+        "HOST",
+        "PATH",
+        "REF",
+        "AUTHORITY",
+        "FILE",
+        "USERINFO",
+        "QUERY",
+    ],
+    key: str | None = None,
+) -> ir.StringValue:
+    """Parse a URL and extract its components.
+
+    `key` can be used to extract query values when `extract == 'QUERY'`
 
     Parameters
     ----------
+    arg
+        URL to extract from
     extract : str
-        One of {'PROTOCOL', 'HOST', 'PATH', 'REF', 'AUTHORITY', 'FILE',
-            'USERINFO', 'QUERY'}
-    key : string (optional)
+        Component of URL to extract
+    key
+        Query component to extract
 
     Examples
     --------
@@ -3199,37 +3768,48 @@ def parse_url(arg, extract, key=None):
 
     Returns
     -------
-    extracted : string
+    StringValue
+        Extracted string value
     """
     return ops.ParseURL(arg, extract, key).to_expr()
 
 
-def _string_contains(arg, substr):
-    """
-    Determine if indicated string is exactly contained in the calling string.
+def _string_contains(
+    arg: str | ir.StringValue, substr: str | ir.StringValue
+) -> ir.BooleanValue:
+    """Determine if `arg` contains `substr`.
 
     Parameters
     ----------
-    substr : str or ibis.expr.types.StringValue
+    arg
+        String value expression
+    substr
+        Substring to check `arg` for
 
     Returns
     -------
-    contains : ibis.expr.types.BooleanValue
+    BooleanValue
+        Boolean value indicating the presence of `substr` in `arg`
     """
     return arg.find(substr) >= 0
 
 
-def _string_split(arg, delimiter):
+def _string_split(
+    arg: str | ir.StringValue, delimiter: str | ir.StringValue
+) -> ir.ArrayValue:
     """Split `arg` on `delimiter`.
 
     Parameters
     ----------
-    arg : str or ibis.expr.types.StringValue
-    delimiter : str or ibis.expr.types.StringValue
+    arg
+        String value to split
+    delimiter
+        Value to split by
 
     Returns
     -------
-    splitsville : Array[String]
+    ArrayValue
+        The string `arg` split by `delimiter`
     """
     return ops.StringSplit(arg, delimiter).to_expr()
 
@@ -3242,7 +3822,9 @@ def _string_dunder_contains(arg, substr):
     raise TypeError('Use val.contains(arg)')
 
 
-def _string_getitem(self, key):
+def _string_getitem(
+    self: str | ir.StringValue, key: slice | int
+) -> ir.StringValue:
     if isinstance(key, slice):
         start, stop, step = key.start, key.stop, key.step
 
@@ -3324,16 +3906,21 @@ _add_methods(ir.StringValue, _string_value_methods)
 # Array API
 
 
-def _array_slice(array, index):
+def _array_slice(
+    array: ir.ArrayValue, index: int | ir.IntegerValue | slice
+) -> ir.ValueExpr:
     """Slice or index `array` at `index`.
 
     Parameters
     ----------
-    index : int or ibis.expr.types.IntegerValue or slice
+    array
+        Array expression
+    index
+        Indexer into `array`
 
     Returns
     -------
-    sliced_array : ibis.expr.types.ValueExpr
+    ibis.expr.types.ValueExpr
         If `index` is an ``int`` or :class:`~ibis.expr.types.IntegerValue` then
         the return type is the element type of `array`. If `index` is a
         ``slice`` then the return type is the same type as the input.
@@ -3368,16 +3955,20 @@ _add_methods(ir.ArrayValue, _array_column_methods)
 # Map API
 
 
-def get(expr, key, default=None):
-    """
-    Return the mapped value for this key, or the default
-    if the key does not exist
+def get(
+    expr: ir.MapValue, key: ir.ValueExpr, default: ir.ValueExpr | None = None
+) -> ir.ValueExpr:
+    """Return the value for `key` from `expr`, or the default if `key` is not in the map.
 
     Parameters
     ----------
-    key : any
-    default : any
-    """
+    expr
+        A map expression
+    key
+        Expression to use for key
+    default
+        Expression to return if `key` is not a key in `expr`
+    """  # noqa: E501
     return ops.MapValueOrDefaultForKey(expr, key, default).to_expr()
 
 
@@ -3398,11 +3989,13 @@ _add_methods(ir.MapValue, _map_column_methods)
 
 
 def _struct_get_field(expr: StructValue, field_name: str) -> ValueExpr:
-    """Get the `field_name` field from the ``StructValue`` expression `expr`.
+    """Extract the `field_name` field from the ``StructValue`` expression `expr`.
 
     Parameters
     ----------
-    field_name : str
+    expr
+        A struct valued expression
+    field_name
         The name of the field to access from the ``Struct`` typed expression
         `expr`. Must be a Python ``str`` type; programmatic struct field
         access is not yet supported.
@@ -3423,7 +4016,7 @@ def _struct_get_field(expr: StructValue, field_name: str) -> ValueExpr:
 
     Returns
     -------
-    value_expr : ibis.expr.types.ValueExpr
+    ValueExpr
         An expression with the type of the field being accessed.
     """
     return ops.StructField(expr, field_name).to_expr().name(field_name)
@@ -3440,12 +4033,12 @@ def _destructure(expr: StructValue) -> DestructValue:
 
     Parameters
     ----------
-    expr : StructColumn
+    expr
         The struct column to destructure.
 
     Returns
     -------
-    destruct_expr: ibis.expr.types.DestructValue
+    DestructValue
         A destruct value expression.
     """
     # Set name to empty string here so that we can detect and error when
@@ -3472,69 +4065,78 @@ _add_methods(ir.StructValue, _struct_value_methods)
 # Timestamp API
 
 
-def _timestamp_truncate(arg, unit):
-    """
-    Zero out smaller-size units beyond indicated unit. Commonly used for time
-    series resampling.
+def _timestamp_truncate(
+    arg: ir.TimestampValue,
+    unit: Literal["Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"],
+) -> ir.TimestampValue:
+    """Truncate `arg` to units of `unit`.
 
     Parameters
     ----------
-    unit : string, one of below table
-      'Y': year
-      'Q': quarter
-      'M': month
-      'W': week
-      'D': day
-      'h': hour
-      'm': minute
-      's': second
-      'ms': millisecond
-      'us': microsecond
-      'ns': nanosecond
+    arg
+        Timestamp expression
+    unit
+        Unit to truncate to
 
     Returns
     -------
-    truncated : timestamp
+    TimestampValue
+        Truncated timestamp expression
     """
     return ops.TimestampTruncate(arg, unit).to_expr()
 
 
-def _timestamp_strftime(arg, format_str):
-    """
-    Format timestamp according to the passed format string. Format string may
-    depend on backend, but we try to conform to ANSI strftime (e.g. Python
-    built-in datetime.strftime)
+def _timestamp_strftime(
+    arg: ir.TimestampValue, format_str: str
+) -> ir.StringValue:
+    """Format timestamp according to the passed format string.
+
+    Format string may depend on backend, but we try to conform to ANSI
+    `strftime`.
 
     Parameters
     ----------
-    format_str : string
+    arg
+        Timestamp expression
+    format_str
+        `strftime` format string
 
     Returns
     -------
-    formatted : string
+    StringValue
+        Formatted version of `arg`
     """
     return ops.Strftime(arg, format_str).to_expr()
 
 
-def _timestamp_time(arg):
-    """Return a Time node for a Timestamp.
+def _timestamp_time(arg: ir.TimestampValue) -> ir.TimeValue:
+    """Return the time component of `arg`.
 
-    We can perform certain operations on this node w/o actually instantiating
-    the underlying structure (which is inefficient in pandas/numpy)
+    Parameters
+    ----------
+    arg
+        A timestamp expression
 
     Returns
     -------
     TimeValue
+        The time component of `arg`
     """
     return ops.Time(arg).to_expr()
 
 
-def _timestamp_date(arg):
-    """Return a Date for a Timestamp.
+def _timestamp_date(arg: ir.TimestampValue) -> ir.DateValue:
+    """Return the date component of `arg`.
+
+    Parameters
+    ----------
+    arg
+        A timestamp expression
 
     Returns
     -------
     DateValue
+        The date component of `arg`
     """
     return ops.Date(arg).to_expr()
 
@@ -3557,8 +4159,7 @@ _timestamp_radd = _binop_expr('__radd__', ops.TimestampAdd)
 _day_of_week = property(
     lambda self: ops.DayOfWeekNode(self).to_expr(),
     doc="""\
-Namespace expression containing methods for extracting information about the
-day of the week of a TimestampValue or DateValue expression.
+Return a namespace containing methods for extracting day of week information.
 
 Returns
 -------
@@ -3602,23 +4203,22 @@ _add_methods(ir.TimestampValue, _timestamp_value_methods)
 # Date API
 
 
-def _date_truncate(arg, unit):
-    """
-    Zero out smaller-size units beyond indicated unit. Commonly used for time
-    series resampling.
+def _date_truncate(
+    arg: ir.DateValue, unit: Literal["Y", "Q", "M", "W", "D"]
+) -> ir.DateValue:
+    """Truncate date expression `arg` to unit `unit`.
 
     Parameters
     ----------
-    unit : string, one of below table
-      'Y': year
-      'Q': quarter
-      'M': month
-      'W': week
-      'D': day
+    arg
+        Date value expression
+    unit
+        Unit to truncate `arg` to
 
     Returns
     -------
-    truncated : date
+    DateValue
+        Truncated date value expression
     """
     return ops.DateTruncate(arg, unit).to_expr()
 
@@ -3670,15 +4270,13 @@ def _to_unit(arg, target_unit):
 def _interval_property(target_unit, name):
     return property(
         functools.partial(_to_unit, target_unit=target_unit),
-        doc="""Extract the number of {0}s from an IntervalValue expression.
+        doc=f"""Extract the number of {name}s from an IntervalValue expression.
 
 Returns
 -------
 IntegerValue
-    The number of {0}s in the expression
-""".format(
-            name
-        ),
+    The number of {name}s in the expression
+""",
     )
 
 
@@ -3725,19 +4323,31 @@ _add_methods(ir.IntervalValue, _interval_value_methods)
 # Time API
 
 
-def between_time(arg, lower, upper, timezone=None):
+def between_time(
+    arg: ir.TimestampValue | ir.TimeValue,
+    lower: str | datetime.datetime | ir.TimestampValue,
+    upper: str | datetime.datetime | ir.TimestampValue,
+    timezone: str | None = None,
+) -> ir.BooleanValue:
     """Check if the input expr falls between the lower/upper bounds passed.
     Bounds are inclusive. All arguments must be comparable.
 
     Parameters
     ----------
-    lower : str, datetime.time
-    upper : str, datetime.time
-    timezone : str, timezone, default None
+    arg
+        Timestamp or time expression
+    lower
+        Lower bound
+    upper
+        Upper bound
+    timezone
+        Time zone
 
     Returns
     -------
     BooleanValue
+        Whether `arg` is between `lower` and `upper` adjusting `timezone` as
+        needed.
     """
     op = arg.op()
     if isinstance(op, ops.Time):
@@ -3757,24 +4367,27 @@ def between_time(arg, lower, upper, timezone=None):
     return op.to_expr()
 
 
-def _time_truncate(arg, unit):
-    """
-    Zero out smaller-size units beyond indicated unit. Commonly used for time
-    series resampling.
+def _time_truncate(
+    arg: ir.TimeValue,
+    unit: Literal['h', 'm', 's', 'ms', 'us', 'ns'],
+) -> ir.TimeValue:
+    """Truncate `arg` to time with unit `unit`.
+
+    Notes
+    -----
+    Commonly used for time series resampling.
 
     Parameters
     ----------
-    unit : string, one of below table
-      'h': hour
-      'm': minute
-      's': second
-      'ms': millisecond
-      'us': microsecond
-      'ns': nanosecond
+    arg
+        Time column or scalar
+    unit
+        The time unit to truncate to
 
     Returns
     -------
-    truncated : time
+    TimeValue
+        `arg` truncated to `unit`
     """
     return ops.TimeTruncate(arg, unit).to_expr()
 
@@ -3816,9 +4429,42 @@ _add_methods(ir.TimeValue, _time_value_methods)
 # ---------------------------------------------------------------------
 # Decimal API
 
+
+def _precision(arg: ir.DecimalValue) -> ir.IntegerValue:
+    """Return the precision of `arg`.
+
+    Parameters
+    ----------
+    arg
+        Decimal expression
+
+    Returns
+    -------
+    IntegerValue
+        The precision of `arg`.
+    """
+    return ops.DecimalPrecision(arg).to_expr()
+
+
+def _scale(arg: ir.DecimalValue) -> ir.IntegerValue:
+    """Return the scale of `arg`.
+
+    Parameters
+    ----------
+    arg
+        Decimal expression
+
+    Returns
+    -------
+    IntegerValue
+        The scale of `arg`.
+    """
+    return ops.DecimalScale(arg).to_expr()
+
+
 _decimal_value_methods = {
-    'precision': _unary_op('precision', ops.DecimalPrecision),
-    'scale': _unary_op('scale', ops.DecimalScale),
+    'precision': _precision,
+    'scale': _scale,
 }
 
 
@@ -3854,12 +4500,27 @@ _join_classes = {
 def join(
     left: ir.TableExpr,
     right: ir.TableExpr,
-    predicates=(),
-    how: str = "inner",
+    predicates: str
+    | Sequence[
+        str
+        | tuple[str | ir.ColumnExpr, str | ir.ColumnExpr]
+        | ir.BooleanColumn
+    ] = (),
+    how: Literal[
+        'inner',
+        'left',
+        'outer',
+        'right',
+        'semi',
+        'anti',
+        'any_inner',
+        'any_left',
+        'left_semi',
+    ] = 'inner',
     *,
     suffixes: tuple[str, str] = ("_x", "_y"),
-):
-    """Join two tables.
+) -> ir.TableExpr:
+    """Perform a join between two tables.
 
     Parameters
     ----------
@@ -3876,7 +4537,7 @@ def join(
         columns.
     """
     klass = _join_classes[how.lower()]
-    if isinstance(predicates, Expr):
+    if isinstance(predicates, ir.Expr):
         predicates = _L.flatten_predicate(predicates)
 
     expr = klass(left, right, predicates).to_expr()
@@ -3895,31 +4556,41 @@ def join(
 
 
 def asof_join(
-    left,
-    right,
-    predicates=(),
-    by=(),
-    tolerance=None,
+    left: ir.TableExpr,
+    right: ir.TableExpr,
+    predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
+    by: str | ir.ColumnExpr | Sequence[str | ir.ColumnExpr] = (),
+    tolerance: str | ir.IntervalScalar | None = None,
     *,
     suffixes: tuple[str, str] = ("_x", "_y"),
-):
-    """Perform an asof join between two tables.  Similar to a left join
-    except that the match is done on nearest key rather than equal keys.
+) -> ir.TableExpr:
+    """Perform an "as-of" join between `left` and `right`.
 
-    Optionally, match keys with 'by' before joining with predicates.
+    Similar to a left join except that the match is done on nearest key rather
+    than equal keys.
+
+    Optionally, match keys with `by` before joining with `predicates`.
 
     Parameters
     ----------
-    left : TableExpr
-    right : TableExpr
-    predicates : join expression(s)
-    by : string
+    left
+        Table expression
+    right
+        Table expression
+    predicates
+        Join expressions
+    by
         column to group by before joining
-    tolerance : interval
+    tolerance
         Amount of time to look behind when joining
     suffixes
         Left and right suffixes that will be used to rename overlapping
         columns.
+
+    Returns
+    -------
+    TableExpr
+        Table expression
     """
     expr = ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
     return ops.relations._dedup_join_columns(
@@ -3931,14 +4602,12 @@ def asof_join(
 
 
 def cross_join(
-    left,
-    right,
-    *rest,
+    left: ir.TableExpr,
+    right: ir.TableExpr,
+    *rest: ir.TableExpr,
     suffixes: tuple[str, str] = ("_x", "_y"),
-):
-    """
-    Perform a cross join (cartesian product) amongst a list of tables, with
-    optional set of prefixes to apply to overlapping column names
+) -> ir.TableExpr:
+    """Compute the cross join of a sequence of tables.
 
     Parameters
     ----------
@@ -3954,7 +4623,8 @@ def cross_join(
 
     Returns
     -------
-    joined : TableExpr
+    TableExpr
+        Cross join of `left`, `right` and `rest`
 
     Examples
     --------
@@ -4021,29 +4691,38 @@ def cross_join(
     )
 
 
-def _table_count(self):
-    """
-    Returns the computed number of rows in the table expression
+def _table_count(self: ir.TableExpr) -> ir.IntegerScalar:
+    """Compute the number of rows in `self`.
+
+    Parameters
+    ----------
+    self
+        Table expression
 
     Returns
     -------
-    count : Int64Scalar
+    IntegerScalar
+        Count of the number of rows in `self`
     """
     return ops.Count(self, None).to_expr().name('count')
 
 
-def _table_dropna(self, subset: list[str] | None = None, how: str = 'any'):
-    """
-    Remove rows with null values from the table.
+def _table_dropna(
+    self: ir.TableExpr,
+    subset: Sequence[str] | None = None,
+    how: Literal['any', 'all'] = 'any',
+) -> ir.TableExpr:
+    """Remove rows with null values from the table.
 
     Parameters
     ----------
-    subset : list of strings
-      Optional, columns names to consider. Defaults to all columns.
-    how : string
-      Determine whether a row is removed if there is at least one null
-      value in the row ('any'), or if all row values are null ('all').
-      Options are 'any' or 'all'. Default is 'any'.
+    subset
+        Columns names to consider when dropping nulls. By default all columns
+        are considered.
+    how
+        Determine whether a row is removed if there is at least one null
+        value in the row ('any'), or if all row values are null ('all').
+        Options are 'any' or 'all'. Default is 'any'.
 
     Examples
     --------
@@ -4055,8 +4734,8 @@ def _table_dropna(self, subset: list[str] | None = None, how: str = 'any'):
 
     Returns
     -------
-    table : TableExpr
-      New table expression
+    TableExpr
+        Table expression
     """
     if subset is None:
         subset = []
@@ -4064,22 +4743,26 @@ def _table_dropna(self, subset: list[str] | None = None, how: str = 'any'):
     return ops.DropNa(self, how, subset).to_expr()
 
 
-def _table_fillna(self, replacements):
-    """
-    Fill null values in the table.
+def _table_fillna(
+    self: ir.TableExpr,
+    replacements: ir.ScalarExpr | Mapping[str, ir.ScalarExpr],
+) -> ir.TableExpr:
+    """Fill null values in a table expression.
 
     Parameters
     ----------
-    replacements : scalar or dict
-      Value with which to fill the nulls. If passed as a dict, the
-      keys are column name strings that map to their replacement value.
-      If passed as a scalar, all columns are filled with that value.
+    self
+        Table expression
+    replacements
+        Value with which to fill the nulls. If passed as a mapping, the keys
+        are column names that map to their replacement value. If passed
+        as a scalar, all columns are filled with that value.
 
     Notes
     -----
-    There is potential lack of type stability with the fillna API. For
+    There is potential lack of type stability with the `fillna` API. For
     example, different library versions may impact whether or not a given
-    backend type-promotes integer replacement values to floats.
+    backend promotes integer replacement values to floats.
 
     Examples
     --------
@@ -4090,8 +4773,8 @@ def _table_fillna(self, replacements):
 
     Returns
     -------
-    table : TableExpr
-      New table expression
+    TableExpr
+        Table expression
     """
     if isinstance(replacements, collections.abc.Mapping):
         columns = replacements.keys()
@@ -4104,10 +4787,17 @@ def _table_fillna(self, replacements):
     return ops.FillNa(self, replacements).to_expr()
 
 
-def _table_info(self, buf=None):
-    """
-    Similar to pandas DataFrame.info. Show column names, types, and null
-    counts. Output to stdout by default
+def _table_info(self: ir.TableExpr, buf: IO[str] | None = None) -> None:
+    """Show column names, types, and null counts.
+
+    Output to stdout by default.
+
+    Parameters
+    ----------
+    self
+        Table expression
+    buf
+        A writable buffer
     """
     metrics = [self.count().name('nrows')]
     for col in self.columns:
@@ -4124,21 +4814,22 @@ def _table_info(self, buf=None):
     print(result, file=buf)
 
 
-def _table_set_column(table, name, expr):
-    """
-    Replace an existing column with a new expression
+def _table_set_column(table: ir.TableExpr, name: str, expr: ir.ValueExpr):
+    """Replace an existing column with a new expression.
 
     Parameters
     ----------
-    name : string
-      Column name to replace
-    expr : value expression
-      New data for column
+    table
+        Table expression
+    name
+        Column name to replace
+    expr
+        New data for column
 
     Returns
     -------
-    set_table : TableExpr
-      New table expression
+    TableExpr
+        Table expression
     """
     expr = table._ensure_expr(expr)
 
@@ -4159,36 +4850,80 @@ def _table_set_column(table, name, expr):
     return table.projection(proj_exprs)
 
 
-def _regular_join_method(name, how, doc=None):
-    def f(self, other, predicates=(), rename_left=None, rename_right=None):
+def _regular_join_method(
+    name: str,
+    how: Literal[
+        'inner',
+        'left',
+        'outer',
+        'right',
+        'semi',
+        'anti',
+        'any_inner',
+        'any_left',
+    ],
+):
+    def f(
+        self: ir.TableExpr,
+        other: ir.TableExpr,
+        predicates: str
+        | Sequence[
+            str
+            | tuple[str | ir.ColumnExpr, str | ir.ColumnExpr]
+            | ir.BooleanValue
+        ] = (),
+        suffixes: tuple[str, str] = ("_x", "_y"),
+    ) -> ir.TableExpr:
+        f"""Perform a{'n' * how.startswith(tuple("aeiou"))} {how} join between two tables.
+
+        Parameters
+        ----------
+        left
+            Left table to join
+        right
+            Right table to join
+        predicates
+            Boolean or column names to join on
+        suffixes
+            Left and right suffixes that will be used to rename overlapping
+            columns.
+
+        Returns
+        -------
+        TableExpr
+            Joined `left` and `right`
+        """  # noqa: E501
         return self.join(other, predicates, how=how)
 
-    if doc:
-        f.__doc__ = doc
-    else:
-        # XXX
-        f.__doc__ = join.__doc__
     f.__name__ = name
     return f
 
 
-def filter(table, predicates):
-    """
-    Select rows from table based on boolean expressions
+def filter(
+    table: ir.TableExpr,
+    predicates: ir.BooleanValue | Sequence[ir.BooleanValue],
+) -> ir.TableExpr:
+    """Select rows from `table` based on `predicates`.
 
     Parameters
     ----------
-    predicates : boolean array expressions, or list thereof
+    table
+        Table expression
+    predicates
+        Boolean value expressions used to select rows in `table`.
 
     Returns
     -------
-    filtered_expr : TableExpr
+    TableExpr
+        Filtered table expression
     """
     resolved_predicates = _resolve_predicates(table, predicates)
     return _L.apply_filter(table, resolved_predicates)
 
 
-def _resolve_predicates(table, predicates):
+def _resolve_predicates(
+    table: ir.TableExpr, predicates
+) -> list[ir.BooleanValue]:
     if isinstance(predicates, Expr):
         predicates = _L.flatten_predicate(predicates)
     predicates = util.promote_list(predicates)
@@ -4202,23 +4937,32 @@ def _resolve_predicates(table, predicates):
     return resolved_predicates
 
 
-def aggregate(table, metrics=None, by=None, having=None, **kwargs):
-    """
-    Aggregate a table with a given set of reductions, with grouping
-    expressions, and post-aggregation filters.
+def aggregate(
+    table: ir.TableExpr,
+    metrics: Sequence[ir.ScalarExpr] | None = None,
+    by: Sequence[ir.ValueExpr] | None = None,
+    having: Sequence[ir.BooleanValue] | None = None,
+    **kwargs: ir.ValueExpr,
+) -> ir.TableExpr:
+    """Aggregate a table with a given set of reductions grouping by `by`.
 
     Parameters
     ----------
-    table : table expression
-    metrics : expression or expression list
-    by : optional, default None
-      Grouping expressions
-    having : optional, default None
-      Post-aggregation filters
+    table
+        Table to compute aggregates from
+    metrics
+        Aggregate expressions
+    by
+        Grouping expressions
+    having
+        Post-aggregation filters
+    kwargs
+        Named aggregate expressions
 
     Returns
     -------
-    agg_expr : TableExpr
+    TableExpr
+        An aggregate table expression
     """
     metrics = [] if metrics is None else util.promote_list(metrics)
     metrics.extend(
@@ -4235,47 +4979,51 @@ def aggregate(table, metrics=None, by=None, having=None, **kwargs):
     return op.to_expr()
 
 
-def _table_distinct(self):
-    """
-    Compute set of unique rows/tuples occurring in this table
-    """
+def _table_distinct(self: ir.TableExpr) -> ir.TableExpr:
+    """Compute the set of unique rows in the table."""
     op = ops.Distinct(self)
     return op.to_expr()
 
 
-def _table_limit(table, n, offset=0):
-    """
-    Select the first n rows at beginning of table (may not be deterministic
-    depending on implementation and presence of a sorting).
+def _table_limit(table: ir.TableExpr, n: int, offset: int = 0) -> ir.TableExpr:
+    """Select the first `n` rows at beginning of table starting at `offset`.
 
     Parameters
     ----------
-    n : int
-      Number of rows to include
-    offset : int, default 0
-      Number of rows to skip first
+    table
+        Table expression
+    n
+        Number of rows to include
+    offset
+        Number of rows to skip first
 
     Returns
     -------
-    limited : TableExpr
+    TableExpr
+        The first `n` rows of `table` starting at `offset`
     """
     op = ops.Limit(table, n, offset=offset)
     return op.to_expr()
 
 
-def _head(table, n=5):
-    """
-    Select the first n rows at beginning of a table (may not be deterministic
-    depending on implementation and presence of a sorting).
+def _head(table: ir.TableExpr, n: int = 5) -> ir.TableExpr:
+    """Select the first `n` rows of a table.
+
+    Notes
+    -----
+    The result set is not deterministic without a sort.
 
     Parameters
     ----------
-    n : int
-      Number of rows to include, defaults to 5
+    table
+        Table expression
+    n
+        Number of rows to include, defaults to 5
 
     Returns
     -------
-    limited : TableExpr
+    TableExpr
+        `table` limited to `n` rows
 
     See Also
     --------
@@ -4284,18 +5032,22 @@ def _head(table, n=5):
     return _table_limit(table, n=n)
 
 
-def _table_sort_by(table, sort_exprs):
-    """
-    Sort table by the indicated column expressions and sort orders
-    (ascending/descending)
+def _table_sort_by(
+    table: ir.TableExpr,
+    sort_exprs: str
+    | ir.ColumnExpr
+    | ir.SortKey
+    | tuple[str | ir.ColumnExpr, bool]
+    | Sequence[tuple[str | ir.ColumnExpr, bool]],
+) -> ir.TableExpr:
+    """Sort `table` by `sort_exprs`
 
     Parameters
     ----------
-    sort_exprs : sorting expressions
-      Must be one of:
-        - Column name or expression
-        - Sort key, e.g. desc(col)
-        - (column name, True (ascending) / False (descending))
+    table
+        Table expression
+    sort_exprs
+        Sort specifications
 
     Examples
     --------
@@ -4306,71 +5058,98 @@ def _table_sort_by(table, sort_exprs):
     Returns
     -------
     TableExpr
+        Sorted `table`
     """
-    result = table.op().sort_by(
-        table,
-        util.promote_list(sort_exprs if sort_exprs is not None else []),
+    return (
+        table.op()
+        .sort_by(
+            table,
+            [] if sort_exprs is None else util.promote_list(sort_exprs),
+        )
+        .to_expr()
     )
-    return result.to_expr()
 
 
-def _table_union(left, right, distinct=False):
-    """
-    Form the table set union of two table expressions having identical
-    schemas.
+def _table_union(
+    left: ir.TableExpr,
+    right: ir.TableExpr,
+    distinct: bool = False,
+) -> ir.TableExpr:
+    """Compute the set union of two table expressions.
+
+    The input tables must have identical schemas.
 
     Parameters
     ----------
-    left : TableExpr
-    right : TableExpr
-    distinct : boolean, default False
+    left
+        Table expression
+    right
+        Table expression
+    distinct
         Only union distinct rows not occurring in the calling table (this
         can be very expensive, be careful)
 
     Returns
     -------
-    union : TableExpr
+    TableExpr
+        Union of `left` and `right`
     """
     return ops.Union(left, right, distinct=distinct).to_expr()
 
 
-def _table_intersect(left: TableExpr, right: TableExpr):
-    """
-    Form the table set intersect of two table expressions having identical
-    schemas. An intersect returns only the common rows between the two tables.
+def _table_intersect(left: ir.TableExpr, right: ir.TableExpr) -> ir.TableExpr:
+    """Compute the set intersection of two table expressions.
+
+    The input tables must have identical schemas.
 
     Parameters
     ----------
-    left : TableExpr
-    right : TableExpr
+    left
+        Table expression
+    right
+        Table expression
 
     Returns
     -------
-    intersection : TableExpr
+    TableExpr
+        The rows common amongst `left` and `right`.
     """
     return ops.Intersection(left, right).to_expr()
 
 
-def _table_difference(left: TableExpr, right: TableExpr):
-    """
-    Form the table set difference of two table expressions having identical
-    schemas. A set difference returns only the rows present in the left table
-    that are not present in the right table
+def _table_difference(left: TableExpr, right: TableExpr) -> ir.TableExpr:
+    """Compute the set difference of two table expressions.
+
+    The input tables must have identical schemas.
 
     Parameters
     ----------
-    left : TableExpr
-    right : TableExpr
+    left
+        Table expression
+    right
+        Table expression
 
     Returns
     -------
-    difference : TableExpr
+    TableExpr
+        The rows present in `left` that are not present in `right`.
     """
     return ops.Difference(left, right).to_expr()
 
 
-def _table_to_array(self):
-    """View a single column table as an array."""
+def _table_to_array(self: ir.TableExpr) -> ir.ColumnExpr:
+    """View a single column table as an array.
+
+    Parameters
+    ----------
+    self
+        Table expression
+
+    Returns
+    -------
+    ValueExpr
+        A single column view of a table
+    """
 
     schema = self.schema()
     if len(schema) != 1:
@@ -4389,20 +5168,25 @@ def _safe_get_name(expr):
 
 
 def mutate(
-    table: ir.TableExpr, exprs: list[ir.Expr] = None, **mutations: Any
+    table: ir.TableExpr,
+    exprs: Sequence[ir.Expr] | None = None,
+    **mutations: ir.ValueExpr,
 ) -> ir.TableExpr:
-    """
-    Convenience function for table projections involving adding columns
+    """Add columns to a table expression.
 
     Parameters
     ----------
-    exprs : list, default None
-      List of named expressions to add as columns
-    mutations : keywords for new columns
+    table
+        Table expression to add columns to
+    exprs
+        List of named expressions to add as columns
+    mutations
+        Named expressions using keyword arguments
 
     Returns
     -------
-    mutated : TableExpr
+    TableExpr
+        Table expression with additional columns
 
     Examples
     --------
@@ -4455,25 +5239,27 @@ def mutate(
     return table.projection(mutation_exprs)
 
 
-def projection(table, exprs):
-    """
-    Compute new table expression with the indicated column expressions from
-    this table.
+def projection(
+    table: ir.TableExpr,
+    exprs: ir.ValueExpr | str | Sequence[ir.ValueExpr | str],
+) -> ir.TableExpr:
+    """Compute a new table expression using `exprs`.
 
     Parameters
     ----------
-    exprs : column expression, or string, or list of column expressions and
-      strings. If strings passed, must be columns in the table already
+    exprs
+        Column expression, string, or list of column expressions and strings.
 
     Returns
     -------
-    projection : TableExpr
+    TableExpr
+        Table expression
 
     Notes
     -----
     Passing an aggregate function to this method will broadcast the aggregate's
-    value over the number of rows in the table. See the examples section for
-    more details.
+    value over the number of rows in the table and automatically constructs
+    a window function expression. See the examples section for more details.
 
     Examples
     --------
@@ -4557,21 +5343,23 @@ def projection(table, exprs):
     return op.to_expr()
 
 
-def _table_relabel(table, substitutions, replacements=None):
-    """
-    Change table column names, otherwise leaving table unaltered
+def _table_relabel(
+    table: ir.TableExpr, substitutions: Mapping[str, str]
+) -> ir.TableExpr:
+    """Change table column names, otherwise leaving table unaltered.
 
     Parameters
     ----------
+    table
+        Table expression
     substitutions
+        Name mapping
 
     Returns
     -------
-    relabeled : TableExpr
+    TableExpr
+        A relabeled table expression
     """
-    if replacements is not None:
-        raise NotImplementedError
-
     observed = set()
 
     exprs = []
@@ -4589,35 +5377,44 @@ def _table_relabel(table, substitutions, replacements=None):
     return table.projection(exprs)
 
 
-def _table_view(self):
-    """
-    Create a new table expression that is semantically equivalent to the
-    current one, but is considered a distinct relation for evaluation
-    purposes (e.g. in SQL).
+def _table_view(self) -> ir.TableExpr:
+    """Create a new table expression distinct from the current one..
 
-    For doing any self-referencing operations, like a self-join, you will
-    use this operation to create a reference to the current table
-    expression.
+    Parameters
+    ----------
+    self
+        Table expression
 
     Returns
     -------
-    expr : TableExpr
+    TableExpr
+        Table expression
+
+    Notes
+    -----
+    For doing any self-referencing operations, like a self-join, you will use
+    this operation to create a reference to the current table expression.
     """
     new_view = ops.SelfReference(self)
     return new_view.to_expr()
 
 
-def _table_drop(self, fields: str | list[str]) -> ir.TableExpr:
-    """
-    Remove one or more fields from a table.
+def _table_drop(
+    self: ir.TableExpr, fields: str | Sequence[str]
+) -> ir.TableExpr:
+    """Remove fields from a table.
 
     Parameters
     ----------
-    fields : The field(s) to be removed from the target table.
+    self
+        Table expression
+    fields
+        Fields to drop
 
     Returns
     -------
-    A TableExpr with specified fields removed
+    TableExpr
+        Expression without `fields`
     """
 
     if not fields:
@@ -4638,21 +5435,23 @@ def _table_drop(self, fields: str | list[str]) -> ir.TableExpr:
     return self[[field for field in schema if field not in field_set]]
 
 
-def _rowid(self):
-    """
-    An autonumeric representing the row number of the results.
+def _rowid(self) -> ir.IntegerValue:
+    """An autonumbering expression representing the row number of the results.
 
     It can be 0 or 1 indexed depending on the backend. Check the backend
-    documentation.
+    documentation for specifics.
 
-    Note that this is different from the window function row number
-    (even if they are conceptually the same), and different from row
-    id in backends where it represents the physical location (e.g. Oracle
-    or PostgreSQL's ctid).
+    Notes
+    -----
+    This function is different from the window function `row_number`
+    (even if they are conceptually the same), and different from `rowid` in
+    backends where it represents the physical location
+    (e.g. Oracle or PostgreSQL's ctid).
 
     Returns
     -------
-    ir.IntegerColumn
+    IntegerColumn
+        An integer column
 
     Examples
     --------

@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# User API for grouped data operations
+"""User API for grouping operations."""
 
+from __future__ import annotations
 
 import types
+from typing import Iterable, Sequence
 
 import toolz
 
@@ -55,10 +57,7 @@ def _get_group_by_key(table, value):
 
 
 class GroupedTableExpr:
-
-    """
-    Helper intermediate construct
-    """
+    """An intermediate table expression to hold grouping information."""
 
     def __init__(
         self, table, by, having=None, order_by=None, window=None, **expressions
@@ -94,18 +93,18 @@ class GroupedTableExpr:
             metrics, by=self.by, having=self._having, **kwds
         )
 
-    def having(self, expr):
-        """
-        Add a post-aggregation result filter (like the having argument in
-        `aggregate`), for composability with the group_by API
+    def having(self, expr: ir.BooleanScalar) -> GroupedTableExpr:
+        """Add a post-aggregation result filter `expr`.
 
         Parameters
         ----------
-        expr : ibis.expr.types.Expr
+        expr
+            An expression that filters based on an aggregate value.
 
         Returns
         -------
-        grouped : GroupedTableExpr
+        GroupedTableExpr
+            A grouped table expression
         """
         exprs = util.promote_list(expr)
         new_having = self._having + exprs
@@ -117,18 +116,24 @@ class GroupedTableExpr:
             window=self._window,
         )
 
-    def order_by(self, expr):
-        """
-        Expressions to use for ordering data for a window function
-        computation. Ignored in aggregations.
+    def order_by(
+        self, expr: ir.ValueExpr | Iterable[ir.ValueExpr]
+    ) -> GroupedTableExpr:
+        """Sort a grouped table expression by `expr`.
+
+        Notes
+        -----
+        This API call is ignored in aggregations.
 
         Parameters
         ----------
-        expr : value expression or list of value expressions
+        expr
+            Expressions to order the results by
 
         Returns
         -------
-        grouped : GroupedTableExpr
+        GroupedTableExpr
+            A sorted grouped GroupedTableExpr
         """
         exprs = util.promote_list(expr)
         new_order = self._order_by + exprs
@@ -140,15 +145,21 @@ class GroupedTableExpr:
             window=self._window,
         )
 
-    def mutate(self, exprs=None, **kwds):
-        """
-        Returns a table projection with analytic / window functions
-        applied. Any arguments can be functions.
+    def mutate(
+        self,
+        exprs: ir.ValueExpr | Sequence[ir.ValueExpr] | None = None,
+        **kwds: ir.ValueExpr,
+    ):
+        """Return a table projection with window functions applied.
+
+        Any arguments can be functions.
 
         Parameters
         ----------
-        exprs : list, default None
-        kwds : key=value pairs
+        exprs
+            List of expressions
+        kwds
+            Expressions
 
         Examples
         --------
@@ -203,7 +214,8 @@ class GroupedTableExpr:
 
         Returns
         -------
-        mutated : TableExpr
+        TableExpr
+            A table expression with window functions applied
         """
         if exprs is None:
             exprs = []
@@ -220,8 +232,11 @@ class GroupedTableExpr:
         return self.projection([self.table] + exprs)
 
     def projection(self, exprs):
-        """
-        Like mutate, but do not include existing table columns
+        """Project new columns out of the grouped table.
+
+        See Also
+        --------
+        ibis.expr.groupby.GroupedTableExpr.mutate
         """
         w = self._get_window()
         windowed_exprs = []
@@ -253,9 +268,18 @@ class GroupedTableExpr:
             order_by=sorts,
         )
 
-    def over(self, window):
-        """
-        Add a window clause to be applied to downstream analytic expressions
+    def over(self, window: _window.Window) -> GroupedTableExpr:
+        """Add a window frame clause to be applied to child analytic expressions.
+
+        Parameters
+        ----------
+        window
+            Window to add to child analytic expressions
+
+        Returns
+        -------
+        GroupedTableExpr
+            A new grouped table expression
         """
         return GroupedTableExpr(
             self.table,
@@ -265,20 +289,18 @@ class GroupedTableExpr:
             window=window,
         )
 
-    def count(self, metric_name='count'):
-        """
-        Convenience function for computing the group sizes (number of rows per
-        group) given a grouped table.
+    def count(self, metric_name: str = 'count') -> ir.TableExpr:
+        """Computing the number of rows per group.
 
         Parameters
         ----------
-        metric_name : string, default 'count'
-          Name to use for the row count metric
+        metric_name
+            Name to use for the row count metric
 
         Returns
         -------
-        aggregated : TableExpr
-          The aggregated table
+        TableExpr
+            The aggregated table
         """
         metric = self.table.count().name(metric_name)
         return self.table.aggregate([metric], by=self.by, having=self._having)
@@ -316,7 +338,6 @@ class GroupedArray:
 
 
 class GroupedNumbers(GroupedArray):
-
     mean = _group_agg_dispatch('mean')
     sum = _group_agg_dispatch('sum')
 

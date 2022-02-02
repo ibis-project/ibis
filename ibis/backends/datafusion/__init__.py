@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import Mapping
+from pathlib import Path
+from typing import Any, Mapping
 
 import datafusion as df
 import pyarrow as pa
@@ -38,17 +39,16 @@ class Backend(BaseBackend):
             import importlib_metadata
         return importlib_metadata.version("datafusion")
 
-    def do_connect(self, config):
-        """
-        Create a DataFusionClient for use with Ibis
+    def do_connect(
+        self,
+        config: Mapping[str, str | Path] | df.ExecutionContext,
+    ) -> None:
+        """Create a Datafusion backend for use with Ibis.
 
         Parameters
         ----------
-        config : DataFusionContext or dict
-
-        Returns
-        -------
-        DataFusionClient
+        config
+            Mapping of table names to files.
         """
         if isinstance(config, df.ExecutionContext):
             self._context = config
@@ -68,13 +68,17 @@ class Backend(BaseBackend):
                     "the .parquet extension."
                 )
 
-    def current_database(self):
+    def current_database(self) -> str:
         raise NotImplementedError()
 
-    def list_databases(self, like: str = None) -> list[str]:
+    def list_databases(self, like: str | None = None) -> list[str]:
         raise NotImplementedError()
 
-    def list_tables(self, like: str = None, database: str = None) -> list[str]:
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
         """List the available tables."""
         tables = list(self._context.tables())
         if like is not None:
@@ -82,19 +86,23 @@ class Backend(BaseBackend):
             return list(filter(lambda t: pattern.findall(t), tables))
         return tables
 
-    def table(self, name, schema=None):
+    def table(
+        self,
+        name: str,
+        schema: sch.Schema | None = None,
+    ) -> ir.TableExpr:
         """Get an ibis expression representing a DataFusion table.
 
         Parameters
-        ---------
+        ----------
         name
             The name of the table to retreive
         schema
-            An optional schema
+            An optional schema for the table
 
         Returns
         -------
-        ibis.expr.types.TableExpr
+        TableExpr
             A table expression
         """
         catalog = self._context.catalog()
@@ -103,7 +111,12 @@ class Backend(BaseBackend):
         schema = sch.infer(table.schema)
         return self.table_class(name, schema, self).to_expr()
 
-    def register_csv(self, name, path, schema=None):
+    def register_csv(
+        self,
+        name: str,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+    ) -> None:
         """Register a CSV file with with `name` located at `path`.
 
         Parameters
@@ -117,7 +130,12 @@ class Backend(BaseBackend):
         """
         self._context.register_csv(name, path, schema=schema)
 
-    def register_parquet(self, name, path, schema=None):
+    def register_parquet(
+        self,
+        name: str,
+        path: str | Path,
+        schema: sch.Schema | None = None,
+    ) -> None:
         """Register a parquet file with with `name` located at `path`.
 
         Parameters
@@ -125,7 +143,7 @@ class Backend(BaseBackend):
         name
             The name of the table
         path
-            The path to the parquet file
+            The path to the Parquet file
         schema
             An optional schema
         """
@@ -136,7 +154,7 @@ class Backend(BaseBackend):
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] = None,
         limit: str = 'default',
-        **kwargs,
+        **kwargs: Any,
     ):
         if isinstance(expr, ir.TableExpr):
             frame = self.compile(expr, params, **kwargs)
@@ -168,6 +186,9 @@ class Backend(BaseBackend):
             )
 
     def compile(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, object] = None, **kwargs
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, object] = None,
+        **kwargs: Any,
     ):
         return translate(expr)

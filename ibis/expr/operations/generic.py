@@ -135,11 +135,12 @@ class TypeOf(UnaryOp):
 
 @public
 class IsNull(UnaryOp):
-    """Returns true if values are null
+    """Return true if values are null.
 
     Returns
     -------
-    isnull : boolean with dimension of caller
+    ir.BooleanValue
+        Value expression indicating whether values are null
     """
 
     output_type = rlz.shape_like('arg', dt.boolean)
@@ -151,7 +152,8 @@ class NotNull(UnaryOp):
 
     Returns
     -------
-    notnull : boolean with dimension of caller
+    ir.BooleanValue
+        Value expression indicating whether values are not null
     """
 
     output_type = rlz.shape_like('arg', dt.boolean)

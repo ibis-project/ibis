@@ -156,7 +156,6 @@ def test_data_dir(env):
 @pytest.fixture
 def hdfs_superuser(env):
     return env.hdfs_superuser
-    return os.environ.get('IBIS_TEST_HDFS_SUPERUSER', 'hdfs')
 
 
 @pytest.fixture

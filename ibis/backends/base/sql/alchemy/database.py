@@ -4,13 +4,7 @@ from ibis.backends.base import Database
 
 
 class AlchemyDatabase(Database):
-    """
-
-    Attributes
-    ----------
-    client : AlchemyClient
-
-    """
+    """SQLAlchemy-based database class."""
 
     def table(self, name, schema=None):
         return self.client.table(name, schema=schema)

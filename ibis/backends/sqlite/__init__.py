@@ -11,11 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from __future__ import annotations
+
 import errno
 import os
-from typing import Optional
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import sqlalchemy
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -55,7 +62,7 @@ class Backend(BaseAlchemyBackend):
         return self._con
 
     @con.setter
-    def con(self, v: Optional[sqlalchemy.engine.Engine]):
+    def con(self, v: sqlalchemy.engine.Engine | None):
         self._con = v
 
     @property
@@ -68,20 +75,23 @@ class Backend(BaseAlchemyBackend):
     def meta(self, v: sqlalchemy.MetaData):
         self._meta = v
 
-    def do_connect(self, path=None, create=False):
-        """
-        Create an Ibis client connected to a SQLite database.
+    def do_connect(
+        self,
+        path: str | Path | None = None,
+        create: bool = False,
+    ) -> None:
+        """Create an Ibis client connected to a SQLite database.
 
-        Multiple database files can be created using the attach() method
+        Multiple database files can be created using the `attach()` method
 
         Parameters
         ----------
-        path : string, default None
+        path
             File path to the SQLite database file. If None, creates an
             in-memory transient database and you can use attach() to add more
             files
-        create : boolean, default False
-            If file does not exist, create it
+        create
+            If the database file does not exist, create it
         """
         self.database_name = "base"
 
@@ -98,19 +108,23 @@ class Backend(BaseAlchemyBackend):
             database = self.current_database
         return super().list_tables(like, database=database)
 
-    def attach(self, name, path, create: bool = False) -> None:
-        """Connect another SQLite database file
+    def attach(
+        self,
+        name: str,
+        path: str | Path,
+        create: bool = False,
+    ) -> None:
+        """Connect another SQLite database file to the current connection.
 
         Parameters
         ----------
-        name : string
+        name
             Database name within SQLite
-        path : string
-            Path to sqlite3 file
-        create : boolean, optional
-            If file does not exist, create file if True otherwise raise an
-            Exception
-
+        path
+            Path to sqlite3 database file
+        create
+            If the database file does not exist, create file if `True`
+            otherwise raise an exception
         """
         if not os.path.exists(path) and not create:
             raise FileNotFoundError(
@@ -133,28 +147,27 @@ class Backend(BaseAlchemyBackend):
             autoload=autoload,
         )
 
-    def table(self, name, database=None):
-        """
-        Create a table expression that references a particular table in the
-        SQLite database
+    def table(self, name: str, database: str | None = None) -> ir.TableExpr:
+        """Create a table expression from a table in the SQLite database.
 
         Parameters
         ----------
-        name : string
-        database : string, optional
-          name of the attached database that the table is located in.
+        name
+            Table name
+        database
+            Name of the attached database that the table is located in.
 
         Returns
         -------
         TableExpr
-
+            Table expression
         """
         alch_table = self._get_sqla_table(name, schema=database)
         node = self.table_class(alch_table, self)
         return self.table_expr_class(node)
 
     def _table_from_schema(
-        self, name, schema, database: Optional[str] = None
+        self, name, schema, database: str | None = None
     ) -> sqlalchemy.Table:
         columns = self._columns_from_schema(name, schema)
         return sqlalchemy.Table(name, self.meta, schema=database, *columns)

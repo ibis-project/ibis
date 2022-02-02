@@ -1,6 +1,12 @@
+from __future__ import annotations
+
 import contextlib
 import getpass
-from typing import Dict, List, Optional, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import pandas as pd
 import sqlalchemy
@@ -53,9 +59,7 @@ __all__ = (
 
 
 class BaseAlchemyBackend(BaseSQLBackend):
-    """
-    Base backend class for backends that compile to SQL with SQLAlchemy.
-    """
+    """Backend class for backends that compile to SQLAlchemy expressions."""
 
     database_class = AlchemyDatabase
     table_class = AlchemyTable
@@ -82,7 +86,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self.con = con
         self._inspector = sqlalchemy.inspect(self.con)
         self.meta = sqlalchemy.MetaData(bind=self.con)
-        self._schemas: Dict[str, sch.Schema] = {}
+        self._schemas: dict[str, sch.Schema] = {}
 
     @property
     def version(self):
@@ -107,10 +111,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     @staticmethod
     def _to_geodataframe(df, schema):
-        """
-        If the required libraries for geospatial support are installed, and if
-        a geospatial column is present in the dataframe, convert it to a
-        GeoDataFrame.
+        """Convert `df` to a `GeoDataFrame`.
+
+        Required libraries for geospatial support must be installed and a
+        geospatial column is present in the dataframe.
         """
         import geopandas
         from geoalchemy2 import shape
@@ -143,7 +147,26 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with self.con.begin() as bind:
             yield bind
 
-    def create_table(self, name, expr=None, schema=None, database=None):
+    def create_table(
+        self,
+        name: str,
+        expr: pd.DataFrame | ir.TableExpr | None = None,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+    ) -> None:
+        """Create a table.
+
+        Parameters
+        ----------
+        name
+            Table name to create
+        expr
+            DataFrame or table expression to use as the data source
+        schema
+            An ibis schema
+        database
+            A database
+        """
         if database == self.current_database:
             # avoid fully qualified name
             database = None
@@ -180,7 +203,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _columns_from_schema(
         self, name: str, schema: sch.Schema
-    ) -> List[sqlalchemy.Column]:
+    ) -> list[sqlalchemy.Column]:
         return [
             sqlalchemy.Column(
                 colname, to_sqla_type(dtype), nullable=dtype.nullable
@@ -189,7 +212,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ]
 
     def _table_from_schema(
-        self, name: str, schema: sch.Schema, database: Optional[str] = None
+        self, name: str, schema: sch.Schema, database: str | None = None
     ) -> sqlalchemy.Table:
         columns = self._columns_from_schema(name, schema)
         return sqlalchemy.Table(name, self.meta, *columns)
@@ -197,9 +220,20 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def drop_table(
         self,
         table_name: str,
-        database: Optional[str] = None,
+        database: str | None = None,
         force: bool = False,
     ) -> None:
+        """Drop a table.
+
+        Parameters
+        ----------
+        table_name
+            Table to drop
+        database
+            Database to drop table from
+        force
+            Check for existence before dropping
+        """
         if database == self.current_database:
             # avoid fully qualified name
             database = None
@@ -230,19 +264,21 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self,
         table_name: str,
         data: pd.DataFrame,
-        database: str = None,
-        if_exists: str = 'fail',
-    ):
-        """
-        Load data from a dataframe to the backend.
+        database: str | None = None,
+        if_exists: Literal['fail', 'replace', 'append'] = 'fail',
+    ) -> None:
+        """Load data from a dataframe to the backend.
 
         Parameters
         ----------
-        table_name : string
-        data : pandas.DataFrame
-        database : string, optional
-        if_exists : string, optional, default 'fail'
-            The values available are: {‘fail’, ‘replace’, ‘append’}
+        table_name
+            Name of the table in which to load data
+        data
+            Pandas DataFrame
+        database
+            Database in which the table exists
+        if_exists
+            What to do when data in `name` already exists
 
         Raises
         ------
@@ -275,28 +311,30 @@ class BaseAlchemyBackend(BaseSQLBackend):
         )
 
     def truncate_table(
-        self, table_name: str, database: Optional[str] = None
+        self,
+        table_name: str,
+        database: str | None = None,
     ) -> None:
         t = self._get_sqla_table(table_name, schema=database)
         t.delete().execute()
 
-    def schema(self, name):
-        """Get a schema object from the current database for the schema named `name`.
+    def schema(self, name: str) -> sch.Schema:
+        """Get a schema object from the current database for the table `name`.
 
         Parameters
         ----------
-        name : str
+        name
+            Table name
 
         Returns
         -------
-        schema : ibis Schema
+        Schema
             The schema of the object `name`.
-
         """
         return self.database().schema(name)
 
     @property
-    def current_database(self):
+    def current_database(self) -> str:
         """The name of the current database this client is connected to."""
         return self.database_name
 
@@ -324,38 +362,29 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def insert(
         self,
         table_name: str,
-        obj: Union[pd.DataFrame, ir.TableExpr],
-        database: Optional[str] = None,
-        overwrite: Optional[bool] = False,
+        obj: pd.DataFrame | ir.TableExpr,
+        database: str | None = None,
+        overwrite: bool = False,
     ) -> None:
-        """
-        Insert the given data to a table in backend.
+        """Insert data into a table.
 
         Parameters
         ----------
-        table_name : string
-            name of the table to which data needs to be inserted
-        obj : pandas DataFrame or ibis TableExpr
-            obj is either the dataframe (pd.DataFrame) containing data
-            which needs to be inserted to table_name or
-            the TableExpr type which ibis provides with data which needs
-            to be inserted to table_name
-        database : string, optional
-            name of the attached database that the table is located in.
-        overwrite : boolean, default False
-            If True, will replace existing contents of table else not
+        table_name
+            The name of the table to which data needs will be inserted
+        obj
+            The source data or expression to insert
+        database
+            Name of the attached database that the table is located in.
+        overwrite
+            If `True` then replace existing contents of table
 
         Raises
-        -------
+        ------
         NotImplementedError
-            Inserting data to a table from a different database is not
-            yet implemented
-
+            If inserting data from a different database
         ValueError
-            No operation is being performed. Either the obj parameter
-            is not a pandas DataFrame or is not a ibis TableExpr.
-            The given obj is of type type(obj).__name__ .
-
+            If the type of `obj` isn't supported
         """
 
         if database == self.current_database:

@@ -30,7 +30,7 @@ let
 
   # postgresql is the client, not the server
   postgresDeps = [ pkgs.postgresql ];
-  geospatialDeps = [ pkgs.proj ];
+  geospatialDeps = with pkgs; [ gdal proj ];
 
   sqliteDeps = [ pkgs.sqlite-interactive ];
 

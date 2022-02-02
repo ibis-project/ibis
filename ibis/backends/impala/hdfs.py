@@ -1,4 +1,3 @@
-"""File system module."""
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +14,21 @@
 # This file may adapt small portions of https://github.com/mtth/hdfs (MIT
 # license), see the LICENSES directory.
 
+"""File system module."""
+
+from __future__ import annotations
+
+import abc
+import operator
 import posixpath
+import tarfile
 from functools import wraps as implements
+from typing import IO, Any
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import ibis.common.exceptions as com
 from ibis.config import options
@@ -24,8 +36,6 @@ from ibis.config import options
 
 class HDFSError(com.IbisError):
     """HDFS Error class."""
-
-    pass
 
 
 class HDFS:
@@ -35,21 +45,19 @@ class HDFS:
     user/developer against) various 3rd party library API differences.
     """
 
+    @abc.abstractmethod
     def exists(self, path: str) -> bool:
         """Check if the file exists.
 
         Parameters
         ----------
-        path : string
+        path
+            Path to a file on HDFS
 
         Returns
         -------
         bool
-
-        Raises
-        ------
-        NotImplementedError
-
+            Whether `path` exists.
         """
         raise NotImplementedError
 
@@ -58,16 +66,13 @@ class HDFS:
 
         Parameters
         ----------
-        path : string
+        path
+            Path to a file on HDFS
 
         Returns
         -------
-        status : dict
-
-        Raises
-        ------
-        NotImplementedError
-
+        dict
+            Information about `path`
         """
         raise NotImplementedError
 
@@ -76,32 +81,29 @@ class HDFS:
 
         Parameters
         ----------
-        hdfs_path : string
-          Directory or path
-        permissions : string
-          Octal permissions string
-
-        Raises
-        ------
-        NotImplementedError
+        hdfs_path
+            Directory or path
+        permissions
+            Octal permissions string
         """
         raise NotImplementedError
 
-    def chown(self, hdfs_path: str, owner: str = None, group: str = None):
+    def chown(
+        self,
+        hdfs_path: str,
+        owner: str | None = None,
+        group: str | None = None,
+    ) -> None:
         """Change owner (and/or group) of a file or directory.
 
         Parameters
         ----------
-        hdfs_path : string
-          Directory or path
-        owner : string, optional
-          Name of owner
-        group : string, optional
-          Name of group
-
-        Raises
-        ------
-        NotImplementedError
+        hdfs_path
+            Directory or path
+        owner
+            Name of owner
+        group
+            Name of group
         """
         raise NotImplementedError
 
@@ -112,78 +114,73 @@ class HDFS:
 
         Parameters
         ----------
-        hdfs_path : string
-          Absolute HDFS path
-        nbytes : int, default 1024 (1K)
-          Number of bytes to retrieve
-        offset : int, default 0
-          Number of bytes at beginning of file to skip before retrieving data
+        hdfs_path
+            Absolute HDFS path
+        nbytes
+            Number of bytes to retrieve
+        offset
+            Number of bytes at beginning of file to skip before retrieving data
 
         Returns
         -------
-        head_data : bytes
-
-        Raises
-        ------
-        NotImplementedError
+        bytes
+            File data
         """
         raise NotImplementedError
 
     def get(
-        self, hdfs_path: str, local_path: str = '.', overwrite: bool = False
+        self,
+        hdfs_path: str,
+        local_path: str,
+        overwrite: bool = False,
     ) -> str:
-        """
-        Download remote file or directory to the local filesystem.
+        """Download remote file or directory to the local filesystem.
+
+        Further keyword arguments are passed down to internal APIs.
 
         Parameters
         ----------
-        hdfs_path : string
-        local_path : string, default '.'
-        overwrite : bool, default False
-
-        Further keyword arguments passed down to any internal API used.
+        hdfs_path
+            Absolute HDFS path
+        local_path
+            Output location on the client
+        overwrite
+            Whether to overwrite the file on the client.
 
         Returns
         -------
-        written_path : string
-          The path to the written file or directory
-
-        Raises
-        ------
-        NotImplementedError
+        str
+            The path to the written file or directory
         """
         raise NotImplementedError
 
     def put(
         self,
         hdfs_path: str,
-        resource,
+        resource: str | bytes | IO,
         overwrite: bool = False,
         verbose: bool = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
-        """
-        Write file or directory to HDFS.
+        """Write a resource to HDFS.
+
+        Further keyword arguments passed down to internal APIs.
 
         Parameters
         ----------
-        hdfs_path : string
-          Directory or path
-        resource : string or buffer-like
-          Relative or absolute path to local resource, or a file-like object
-        overwrite : boolean, default False
-        verbose : boolean, default ibis options.verbose
-
-        Further keyword arguments passed down to any internal API used.
+        hdfs_path
+            Directory or path
+        resource
+            Relative or absolute path to local resource, or a file-like object
+        overwrite
+            Overwrite the HDFS file
+        verbose
+            Verbosity
 
         Returns
         -------
-        written_path : string
-          The path to the written file or directory
-
-        Raises
-        ------
-        NotImplementedError
+        str
+            The path to the written file or directory
         """
         raise NotImplementedError
 
@@ -191,199 +188,208 @@ class HDFS:
         self,
         hdfs_path: str,
         local_path: str,
-        compression: str = 'gzip',
+        compression: Literal['gzip', 'bz2'] | None = 'gzip',
         verbose: bool = None,
         overwrite: bool = False,
-    ):
-        """
-        Write contents of tar archive to HDFS.
-
-        Write contents of tar archive to HDFS directly without having to
-        decompress it locally first.
+    ) -> None:
+        """Write the contents of a tar archive to HDFS.
 
         Parameters
         ----------
-        hdfs_path : string
-        local_path : string
-        compression : {'gzip', 'bz2', None}
-        overwrite : boolean, default False
-        verbose : boolean, default None (global default)
+        hdfs_path
+            Path on HDFS
+        local_path
+            Path to tar archive on the client
+        compression
+            Compression type. If `None` then no compression is done.
+        overwrite
+            Overwrite the HDFS file
+        verbose
+            Verbosity
 
         Raises
         ------
         ValueError
             if given compression is none of the following: None, gzip or bz2.
         """
-        import tarfile
-
         modes = {None: 'r', 'gzip': 'r:gz', 'bz2': 'r:bz2'}
 
         if compression not in modes:
             raise ValueError(f'Invalid compression type {compression}')
         mode = modes[compression]
 
-        tf = tarfile.open(local_path, mode=mode)
-        for info in tf:
-            if not info.isfile():
-                continue
+        with tarfile.open(local_path, mode=mode) as tf:
+            for info in filter(operator.methodcaller("isfile"), tf):
+                buf = tf.extractfile(info)
+                assert buf is not None
+                abspath = posixpath.join(hdfs_path, info.path)
+                self.put(abspath, buf, verbose=verbose, overwrite=overwrite)
 
-            buf = tf.extractfile(info)
-            abspath = posixpath.join(hdfs_path, info.path)
-            self.put(abspath, buf, verbose=verbose, overwrite=overwrite)
-
-    def put_zipfile(self, hdfs_path: str, local_path: str):
+    def put_zipfile(self, hdfs_path: str, local_path: str) -> None:
         """Write contents of zipfile archive to HDFS.
 
         Parameters
         ----------
-        hdfs_path : string
-        local_path : string
-
-        Raises
-        ------
-        NotImplementedError
+        hdfs_path
+            HDFS path
+        local_path
+            Client path to zip file
         """
         raise NotImplementedError
 
     def write(
         self,
         hdfs_path: str,
-        buf,
+        buf: str | bytes | IO,
         overwrite: bool = False,
-        blocksize: int = None,
-        replication=None,
-        buffersize: int = None,
-    ):
-        """HDFS Write function.
+        blocksize: int | None = None,
+        replication: int | None = None,
+        buffersize: int | None = None,
+    ) -> None:
+        """Write bytes to HDFS.
 
         Parameters
         ----------
         hdfs_path : string
+            HDFS path
         buf
-        overwrite : bool, defaul False
-        blocksize : int
+            Data to write
+        overwrite
+            Overwrite data on HDFS
+        blocksize
+            HDFS block size
         replication
+            Replication factor
         buffersize : int
-
-        Raises
-        ------
-        NotImplementedError
+            IO buffer size
         """
         raise NotImplementedError
 
-    def mkdir(self, path: str):
-        """Create new directory.
+    def mkdir(self, path: str) -> None:
+        """Create a new directory.
 
         Parameters
         ----------
-        path : string
+        path
+            Directory to create
         """
-        pass
 
-    def ls(self, hdfs_path: str, status: bool = False) -> list:
-        """Return contents of directory.
+    def ls(
+        self,
+        hdfs_path: str,
+        status: bool = False,
+    ) -> list[tuple[str, dict[str, Any]]]:
+        """Return the contents of directory.
 
         Parameters
         ----------
-        hdfs_path : string
-        status : bool
+        hdfs_path
+            Directory
+        status
+            Give extended status information
 
         Returns
         -------
-        list
-
-        Raises
-        ------
-        NotImplementedError
+        list[tuple[str, dict[str, Any]]]
+            Directory contents
         """
         raise NotImplementedError
 
     def size(self, hdfs_path: str) -> int:
-        """Return total size of file or directory.
+        """Return the size of a file or directory.
 
         Parameters
         ----------
-        hdfs_path : basestring
+        hdfs_path
+            Path to HDFS file or directory
 
         Returns
         -------
-        size : int
-
-        Raises
-        ------
-        NotImplementedError
+        int
+            Size of a file or directory
         """
         raise NotImplementedError
 
     def tail(self, hdfs_path: str, nbytes: int = 1024) -> bytes:
-        """Retrieve the requested number of bytes from the end of a file.
+        """Retrieve `nbytes` bytes from the end of a file.
 
         Parameters
         ----------
-        hdfs_path : string
-        nbytes : int
+        hdfs_path
+            Path on HDFS
+        nbytes
+            Number of bytes to read
 
         Returns
         -------
-        data_tail : bytes
-
-        Raises
-        ------
-        NotImplementedError
+        bytes
+            Bytes from the end of `hdfs_path`
         """
         raise NotImplementedError
 
     def mv(
-        self, hdfs_path_src: str, hdfs_path_dest: str, overwrite: bool = True
-    ):
-        """Move hdfs_path_src to hdfs_path_dest.
+        self,
+        hdfs_path_src: str,
+        hdfs_path_dest: str,
+        overwrite: bool = True,
+    ) -> None:
+        """Move `hdfs_path_src` to `hdfs_path_dest`.
 
         Parameters
         ----------
-        hdfs_path_src: string
-        hdfs_path_dest: string
-        overwrite : boolean, default True
-          Overwrite hdfs_path_dest if it exists.
-
-        Raises
-        ------
-        NotImplementedError
+        hdfs_path_src
+            Source path
+        hdfs_path_dest
+            Destination path
+        overwrite
+            Overwrite the destination path if it exists.
         """
         raise NotImplementedError
 
-    def cp(self, hdfs_path_src: str, hdfs_path_dest: str):
-        """Copy hdfs_path_src to hdfs_path_dest.
+    def cp(self, hdfs_path_src: str, hdfs_path_dest: str) -> None:
+        """Copy `hdfs_path_src` to `hdfs_path_dest`.
 
         Parameters
         ----------
-        hdfs_path_src : string
-        hdfs_path_dest : string
-
-        Raises
-        ------
-        NotImplementedError
+        hdfs_path_src
+            Source path
+        hdfs_path_dest
+            Destination path
         """
         raise NotImplementedError
 
-    def rm(self, path: str):
+    def delete(self, path: str) -> None:
         """Delete a single file.
 
         Parameters
         ----------
-        path : string
+        path
+            Path to delete
         """
-        return self.delete(path)
 
-    def rmdir(self, path: str):
-        """Delete a directory and all its contents.
+    def rm(self, path: str) -> None:
+        """Remove a single file.
 
         Parameters
         ----------
-        path : string
+        path
+            Path to remove
+        """
+        self.delete(path)
+
+    client: Any
+
+    def rmdir(self, path: str) -> None:
+        """Delete a directory and all of its contents.
+
+        Parameters
+        ----------
+        path
+            Directory to remove
         """
         self.client.delete(path, recursive=True)
 
-    def _find_any_file(self, hdfs_dir):
+    def _find_any_file(self, hdfs_dir: str) -> str:
         contents = self.ls(hdfs_dir, status=True)
 
         def valid_filename(name):
@@ -406,197 +412,79 @@ class HDFS:
 class WebHDFS(HDFS):
     """A WebHDFS-based interface to HDFS using the HDFSCli library."""
 
-    def __init__(self, client):
+    def __init__(self, client) -> None:
         self.client = client
 
     @property
-    def protocol(self) -> str:
-        """Return the protocol used by WebHDFS.
-
-        Returns
-        -------
-        protocol : string
-        """
+    def protocol(self) -> Literal['webhdfs']:
+        """Return the protocol used by WebHDFS."""
         return 'webhdfs'
 
     def status(self, path: str) -> dict:
-        """Retrieve HDFS metadata for path.
-
-        Parameters
-        ----------
-        path : str
-
-        Returns
-        -------
-        status : dict
-            Client status
-        """
         return self.client.status(path)
 
     @implements(HDFS.chmod)
     def chmod(self, path: str, permissions: str):
-        """Change the permissions of a HDFS file.
-
-        Parameters
-        ----------
-        path : string
-        permissions : string
-            New octal permissions string of the file.
-        """
         self.client.set_permission(path, permissions)
 
     @implements(HDFS.chown)
     def chown(self, path: str, owner=None, group=None):
-        """
-        Change the owner of a HDFS file.
-
-        At least one of `owner` and `group` must be specified.
-
-        Parameters
-        ----------
-        hdfs_path : HDFS path.
-        owner : string, optional
-        group: string, optional
-        """
         self.client.set_owner(path, owner, group)
 
     @implements(HDFS.exists)
-    def exists(self, path: str) -> dict:
-        """Check if the HDFS file exists.
-
-        Parameters
-        ----------
-        path : string
-
-        Returns
-        -------
-        bool
-        """
+    def exists(self, path: str) -> bool:
         return not self.client.status(path, strict=False) is None
 
     @implements(HDFS.ls)
     def ls(self, hdfs_path: str, status: bool = False) -> list:
-        """Return contents of directory.
-
-        Parameters
-        ----------
-        hdfs_path : string
-        status : bool
-
-        Returns
-        -------
-        list
-        """
         return self.client.list(hdfs_path, status=status)
 
     @implements(HDFS.mkdir)
     def mkdir(self, dir_path: str):
-        """Create new directory.
-
-        Parameters
-        ----------
-        path : string
-        """
         self.client.makedirs(dir_path)
 
     @implements(HDFS.size)
     def size(self, hdfs_path: str) -> int:
-        """Return total size of file or directory.
-
-        Parameters
-        ----------
-        hdfs_path : string
-
-        Returns
-        -------
-        size : int
-        """
         return self.client.content(hdfs_path)['length']
 
     @implements(HDFS.mv)
     def mv(
-        self, hdfs_path_src: str, hdfs_path_dest: str, overwrite: bool = True
-    ):
-        """Move hdfs_path_src to hdfs_path_dest.
-
-        Parameters
-        ----------
-        hdfs_path_src: string
-        hdfs_path_dest: string
-        overwrite : boolean, default True
-          Overwrite hdfs_path_dest if it exists.
-        """
+        self,
+        hdfs_path_src: str,
+        hdfs_path_dest: str,
+        overwrite: bool = True,
+    ) -> None:
         if overwrite and self.exists(hdfs_path_dest):
             if self.status(hdfs_path_dest)['type'] == 'FILE':
                 self.rm(hdfs_path_dest)
         self.client.rename(hdfs_path_src, hdfs_path_dest)
 
     def delete(self, hdfs_path: str, recursive: bool = False) -> bool:
-        """Delete a file located at `hdfs_path`.
-
-        Parameters
-        ----------
-        hdfs_path : string
-        recursive : bool, default False
-
-        Returns
-        -------
-        bool
-            True if the function was successful.
-        """
         return self.client.delete(hdfs_path, recursive=recursive)
 
     @implements(HDFS.head)
     def head(
-        self, hdfs_path: str, nbytes: int = 1024, offset: int = 0
+        self,
+        hdfs_path: str,
+        nbytes: int = 1024,
+        offset: int = 0,
     ) -> bytes:
-        """Retrieve the requested number of bytes from a file.
-
-        Parameters
-        ----------
-        hdfs_path : string
-          Absolute HDFS path
-        nbytes : int, default 1024 (1K)
-          Number of bytes to retrieve
-        offset : int, default 0
-          Number of bytes at beginning of file to skip before retrieving data
-
-        Returns
-        -------
-        head_data : bytes
-        """
-        _reader = self.client.read(hdfs_path, offset=offset, length=nbytes)
-        with _reader as reader:
+        with self.client.read(
+            hdfs_path,
+            offset=offset,
+            length=nbytes,
+        ) as reader:
             return reader.read()
 
     @implements(HDFS.put)
     def put(
         self,
         hdfs_path: str,
-        resource,
+        resource: str | bytes | IO,
         overwrite: bool = False,
         verbose: bool = None,
-        **kwargs,
+        **kwargs: Any,
     ):
-        """
-        Write file or directory to HDFS.
-
-        Parameters
-        ----------
-        hdfs_path : string
-          Directory or path
-        resource : string or buffer-like
-          Relative or absolute path to local resource, or a file-like object
-        overwrite : boolean, default False
-        verbose : boolean, default ibis options.verbose
-
-        Further keyword arguments passed down to any internal API used.
-
-        Returns
-        -------
-        written_path : string
-          The path to the written file or directory
-        """
         verbose = verbose or options.verbose
         if isinstance(resource, str):
             # `resource` is a path.
@@ -617,71 +505,49 @@ class WebHDFS(HDFS):
         hdfs_path: str,
         local_path: str,
         overwrite: bool = False,
-        verbose: bool = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
-        """
-        Download remote file or directory to the local filesystem.
-
-        Parameters
-        ----------
-        hdfs_path : string
-        local_path : string, default '.'
-        overwrite : bool, default False
-
-        Further keyword arguments passed down to any internal API used.
-
-        Returns
-        -------
-        written_path : string
-          The path to the written file or directory
-        """
-        verbose = verbose or options.verbose
         return self.client.download(
             hdfs_path, local_path, overwrite=overwrite, **kwargs
         )
 
 
 def hdfs_connect(
-    host='localhost',
-    port=50070,
-    protocol='webhdfs',
-    use_https='default',
-    auth_mechanism='NOSASL',
-    verify=True,
-    session=None,
-    **kwds,
-):
+    host: str = 'localhost',
+    port: int = 50070,
+    protocol: Literal['webhdfs'] = 'webhdfs',
+    use_https: str = 'default',
+    auth_mechanism: str = 'NOSASL',
+    verify: bool = True,
+    session: Any = None,
+    **kwds: Any,
+) -> WebHDFS:
     """Connect to HDFS.
 
     Parameters
     ----------
-    host : str
+    host
         Host name of the HDFS NameNode
-    port : int
+    port
         NameNode's WebHDFS port
-    protocol : str,
+    protocol
         The protocol used to communicate with HDFS. The only valid value is
         ``'webhdfs'``.
-    use_https : bool
+    use_https
         Connect to WebHDFS with HTTPS, otherwise plain HTTP. For secure
         authentication, the default for this is True, otherwise False.
-    auth_mechanism : str
+    auth_mechanism
         Set to NOSASL or PLAIN for non-secure clusters.
         Set to GSSAPI or LDAP for Kerberos-secured clusters.
-    verify : bool
-        Set to :data:`False` to turn off verifying SSL certificates.
-    session : Optional[requests.Session]
-        A custom :class:`requests.Session` object.
-
-    Notes
-    -----
-    Other keywords are forwarded to HDFS library classes.
+    verify
+        Set to `False` to turn off verifying SSL certificates.
+    session
+        A custom `requests.Session` object.
 
     Returns
     -------
     WebHDFS
-
+        WebHDFS client
     """
     import requests
 

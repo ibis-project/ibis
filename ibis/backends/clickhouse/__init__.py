@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from typing import Any, Mapping
 
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
@@ -31,31 +32,31 @@ class Backend(BaseSQLBackend):
 
     def do_connect(
         self,
-        host='localhost',
-        port=9000,
-        database='default',
-        user='default',
-        password='',
-        client_name='ibis',
-        compression=_default_compression,
+        host: str = 'localhost',
+        port: int = 9000,
+        database: str = 'default',
+        user: str = 'default',
+        password: str = '',
+        client_name: str = 'ibis',
+        compression: str | bool = _default_compression,
     ):
-        """Create an ClickhouseClient for use with Ibis.
+        """Create a ClickHouse client for use with Ibis.
 
         Parameters
         ----------
-        host : str, optional
+        host
             Host name of the clickhouse server
-        port : int, optional
+        port
             Clickhouse server's  port
-        database : str, optional
+        database
             Default database when executing queries
-        user : str, optional
+        user
             User to authenticate with
-        password : str, optional
+        password
             Password to authenticate with
-        client_name: str, optional
+        client_name
             This will appear in clickhouse server logs
-        compression: str, optional
+        compression
             Weather or not to use compression.
             Default is lz4 if installed else False.
             Possible choices: lz4, lz4hc, quicklz, zstd, True, False
@@ -79,6 +80,7 @@ class Backend(BaseSQLBackend):
         Returns
         -------
         ClickhouseClient
+            A clickhouse client
         """
         self.con = _DriverClient(
             host=host,
@@ -122,8 +124,29 @@ class Backend(BaseSQLBackend):
         databases = list(data[0])
         return self._filter_with_like(databases, like)
 
-    def raw_sql(self, query: str, external_tables={}):
+    def raw_sql(
+        self,
+        query: str,
+        external_tables: Mapping[str, pd.DataFrame] | None = None,
+    ) -> Any:
+        """Execute a SQL string `query` against the database.
+
+        Parameters
+        ----------
+        query
+            Raw SQL string
+        external_tables
+            Mapping of table name to pandas DataFrames providing
+            external datasources for the query
+
+        Returns
+        -------
+        Any
+            The resutls of executing the query
+        """
         external_tables_list = []
+        if external_tables is None:
+            external_tables = {}
         for name, df in external_tables.items():
             if not isinstance(df, pd.DataFrame):
                 raise TypeError(
@@ -154,10 +177,6 @@ class Backend(BaseSQLBackend):
             external_tables=external_tables_list,
         )
 
-    def ast_schema(self, query_ast, external_tables={}):
-        # Allowing signature to accept `external_tables`
-        return super().ast_schema(query_ast)
-
     def fetch_from_cursor(self, cursor, schema):
         data, columns = cursor
         if not len(data):
@@ -178,19 +197,24 @@ class Backend(BaseSQLBackend):
         database = database or self.current_database
         return f'{database}.`{name}`'
 
-    def get_schema(self, table_name, database=None):
-        """
-        Return a Schema object for the indicated table and database
+    def get_schema(
+        self,
+        table_name: str,
+        database: str | None = None,
+    ) -> sch.Schema:
+        """Return a Schema object for the indicated table and database.
 
         Parameters
         ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
+        table_name
+            May be fully qualified
+        database
+            Database name
 
         Returns
         -------
-        schema : ibis Schema
+        sch.Schema
+            Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = f'DESC {qualified_name}'
