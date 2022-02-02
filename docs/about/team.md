@@ -2,8 +2,8 @@
 
 ## Contributors
 
-{{ config.project_name }} is developed and maintained by a
-[community of volunteer contributors](https://github.com/{{ config.repo_url }}/graphs/contributors).
+{{ config.project_name }} is developed and maintained by a [community of
+volunteer contributors]({{ config.repo_url }}/graphs/contributors).
 
 {% for group in config.team %}
 
