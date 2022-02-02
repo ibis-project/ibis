@@ -6,6 +6,7 @@ let
     cacert
     cachix
     commitlint
+    curl
     git
     niv
     nix-linter
