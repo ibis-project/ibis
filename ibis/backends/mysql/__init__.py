@@ -25,24 +25,30 @@ class Backend(BaseAlchemyBackend):
         driver='pymysql',
     ):
 
-        """Create an Ibis client located at `user`:`password`@`host`:`port`
-        connected to a MySQL database named `database`.
+        """Create an Ibis client using the passed connection parameters.
 
         Parameters
         ----------
-        host : string, default 'localhost'
-        user : string, default None
-        password : string, default None
-        port : string or integer, default 3306
-        database : string, default None
-        url : string, default None
+        host
+            Hostname
+        user
+            Username
+        password
+            Password
+        port
+            Port
+        database
+            Database to connect to
+        url
             Complete SQLAlchemy connection string. If passed, the other
             connection arguments are ignored.
-        driver : string, default 'pymysql'
+        driver
+            Python MySQL database driver
 
         Returns
         -------
         Backend
+            An instance of a MySQL backend
 
         Examples
         --------

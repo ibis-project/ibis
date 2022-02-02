@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any, Iterable, Mapping
+
 import pandas as pd
 import pyspark as ps
 
@@ -47,19 +51,17 @@ class PySparkTable(ir.TableExpr):
     def _client(self):
         return self.op().source
 
-    def compute_stats(self, noscan=False):
-        """
-        Invoke Spark ANALYZE TABLE <tbl> COMPUTE STATISTICS command to
-        compute column, table, and partition statistics.
+    def compute_stats(self, noscan: bool = False):
+        """Invoke the Spark ANALYZE TABLE <tbl> COMPUTE STATISTICS command.
 
-        See also SparkClient.compute_stats
+        See Also
+        --------
+        SparkClient.compute_stats
         """
         return self._client.compute_stats(self._qualified_name, noscan=noscan)
 
     def drop(self):
-        """
-        Drop the table from the database
-        """
+        """Drop the table from the database."""
         self._client.drop_table_or_view(self._qualified_name)
 
     def truncate(self):
@@ -78,18 +80,26 @@ class PySparkTable(ir.TableExpr):
                     f'Cannot safely cast {lt!r} to {rt!r}'
                 )
 
-    def insert(self, obj=None, overwrite=False, values=None, validate=True):
-        """
-        Insert into Spark table.
+    def insert(
+        self,
+        obj: ir.TableExpr | pd.DataFrame | None = None,
+        overwrite: bool = False,
+        values: Iterable[Any] | None = None,
+        validate: bool = True,
+    ):
+        """Insert data into the table.
 
         Parameters
         ----------
-        obj : TableExpr or pandas DataFrame
-        overwrite : boolean, default False
-          If True, will replace existing contents of table
-        validate : boolean, default True
-          If True, do more rigorous validation that schema of table being
-          inserted is compatible with the existing table
+        obj
+            Table expression or pandas DataFrame
+        overwrite
+            If True, will replace existing contents of table
+        values
+            Values to insert. Not implemented currently.
+        validate
+            If True, do more rigorous validation that schema of table being
+            inserted is compatible with the existing table
 
         Examples
         --------
@@ -121,19 +131,21 @@ class PySparkTable(ir.TableExpr):
         )
         return self._client.raw_sql(statement.compile())
 
-    def rename(self, new_name):
-        """
-        Rename table inside Spark. References to the old table are no longer
-        valid. Spark does not support moving tables across databases using
-        rename.
+    def rename(self, new_name: str) -> PySparkTable:
+        """Rename the table inside Spark.
+
+        References to the old table are no longer valid. Spark does not support
+        moving tables across databases using `rename`.
 
         Parameters
         ----------
-        new_name : string
+        new_name
+            New table name
 
         Returns
         -------
-        renamed : SparkTable
+        PySparkTable
+            Renamed spark table
         """
         new_qualified_name = self._client._fully_qualified_name(
             new_name, self._database
@@ -145,17 +157,13 @@ class PySparkTable(ir.TableExpr):
         op = self.op().change_name(new_qualified_name)
         return type(self)(op)
 
-    def alter(self, tbl_properties=None):
-        """
-        Change setting and parameters of the table.
+    def alter(self, tbl_properties: Mapping[str, str] | None = None) -> Any:
+        """Change settings and parameters of the table.
 
         Parameters
         ----------
-        tbl_properties : dict, optional
-
-        Returns
-        -------
-        None (for now)
+        tbl_properties
+            Spark table properties
         """
 
         stmt = ddl.AlterTable(

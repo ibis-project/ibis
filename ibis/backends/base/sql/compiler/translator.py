@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 import operator
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
 import ibis
 import ibis.common.exceptions as com
@@ -16,7 +16,6 @@ from ibis.backends.base.sql.registry import (
 
 
 class QueryContext:
-
     """Records bits of information used during ibis AST to SQL translation.
 
     Notably, table aliases (for subquery construction) and scalar query
@@ -41,16 +40,18 @@ class QueryContext:
     def _to_sql(self, expr, ctx):
         return self.compiler.to_sql(expr, ctx)
 
-    def collapse(self, queries):
-        """Turn a sequence of queries into something executable.
+    def collapse(self, queries: Iterable[str]) -> str:
+        """Turn an iterable of queries into something executable.
 
         Parameters
         ----------
-        queries : List[str]
+        queries
+            Iterable of query strings
 
         Returns
         -------
-        query : str
+        query
+            A single query string
         """
         return '\n\n'.join(queries)
 
@@ -130,10 +131,7 @@ class QueryContext:
         self.table_refs[key] = alias
 
     def get_ref(self, expr):
-        """
-        Get the alias being used throughout a query to refer to a particular
-        table or inline view
-        """
+        """Return the alias used to refer to an expression."""
         key = self._get_table_key(expr)
         top = self.top_context
 
@@ -185,10 +183,7 @@ class QueryContext:
 
 
 class ExprTranslator:
-
-    """Class that performs translation of ibis expressions into executable
-    SQL.
-    """
+    """Translates ibis expressions into a compilation target."""
 
     _registry = operation_registry
     _rewrites: dict[ops.Node, Callable] = {}
@@ -206,9 +201,7 @@ class ExprTranslator:
         self.named = named
 
     def get_result(self):
-        """
-        Build compiled SQL expression from the bottom up and return as a string
-        """
+        """Compile SQL expression into a string."""
         translated = self.translate(self.expr)
         if self._needs_name(self.expr):
             # TODO: this could fail in various ways
@@ -218,12 +211,13 @@ class ExprTranslator:
 
     @classmethod
     def add_operation(cls, operation, translate_function):
-        """
-        Adds an operation to the operation registry. In general, operations
-        should be defined directly in the registry, in `registry.py`. But
-        there are couple of exceptions why this is needed. Operations defined
-        by Ibis users (not Ibis or backend developers). and UDF, which are
-        added dynamically.
+        """Add an operation to the operation registry.
+
+        In general, operations should be defined directly in the registry, in
+        `registry.py`. There are couple of exceptions why this is needed.
+
+        Operations defined by Ibis users (not Ibis or backend developers), and
+        UDFs which are added dynamically.
         """
         cls._registry[operation] = translate_function
 
@@ -243,7 +237,7 @@ class ExprTranslator:
 
         return True
 
-    def name(self, translated, name, force=True):
+    def name(self, translated: str, name: str, force: bool = True) -> str:
         return '{} AS {}'.format(
             translated, quote_identifier(name, force=force)
         )

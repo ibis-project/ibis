@@ -75,19 +75,15 @@ jobs:
 
       - name: build docs
         working-directory: ibis
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c make -C docs html BUILDDIR=web/docs
-
-      - name: build website
-        working-directory: ibis
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c mkdocs build -f docs/mkdocs.yml
+        run: nix develop -f shell.nix --ignore-environment --keep-going -c mkdocs build
 
       - name: Add config to docs
         working-directory: ibis
         run: |
           set -euo pipefail
 
-          touch docs/site/.nojekyll
-          echo "ibis-project.org" > docs/site/CNAME
+          touch site/.nojekyll
+          echo "ibis-project.org" > site/CNAME
 
       - name: Generate a GitHub token
         if: ${{ github.event_name == 'push' }}
@@ -113,14 +109,14 @@ jobs:
           repository: ibis-project/ibis-project.org
           path: ibis-project.org
 
-      - name: Copy docbuild to checkout
+      - name: Copy site to ibis-project.org checkout
         working-directory: ibis
         run: |
           set -euo pipefail
 
           # the trailing slash matters here; it means "everything underneath
-          # docbuild, but not docbuild itself"
-          rsync --delete --exclude=.git -avz docs/site/ ../ibis-project.org
+          # site , but not site itself"
+          rsync --delete --exclude=.git -avz site/ ../ibis-project.org
 
       - name: Configure git info
         working-directory: ibis-project.org

@@ -62,16 +62,21 @@ class Negate(UnaryOp):
 
 @public
 class NullIfZero(ValueOp):
+    """Set values to NULL if they are equal to zero.
 
-    """
-    Set values to NULL if they equal to zero. Commonly used in cases where
-    divide-by-zero would produce an overflow or infinity.
+    Commonly used in cases where divide-by-zero would produce an overflow or
+    infinity.
 
-    Equivalent to (value == 0).ifelse(ibis.NA, value)
+    Equivalent to
+
+    ```python
+    (value == 0).ifelse(ibis.NA, value)
+    ```
 
     Returns
     -------
-    maybe_nulled : type of caller
+    NumericValue
+        The input if not zero otherwise `NULL`.
     """
 
     arg = rlz.numeric

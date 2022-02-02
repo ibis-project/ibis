@@ -64,8 +64,7 @@ class RankBase(AnalyticOp):
 
 @public
 class MinRank(RankBase):
-    """
-    Compute position of first element within each equal-value group in sorted
+    """Compute position of first element within each equal-value group in sorted
     order.
 
     Examples
@@ -80,7 +79,8 @@ class MinRank(RankBase):
 
     Returns
     -------
-    ranks : Int64Column, starting from 0
+    Int64Column
+        The min rank
     """
 
     # Equivalent to SQL RANK()
@@ -89,9 +89,8 @@ class MinRank(RankBase):
 
 @public
 class DenseRank(RankBase):
-    """
-    Compute position of first element within each equal-value group in sorted
-    order, ignoring duplicate values.
+    """Compute the position of first element within each equal-value group in
+    sorted order, ignoring duplicate values.
 
     Examples
     --------
@@ -105,7 +104,8 @@ class DenseRank(RankBase):
 
     Returns
     -------
-    ranks : Int64Column, starting from 0
+    IntegerColumn
+        The rank
     """
 
     # Equivalent to SQL DENSE_RANK()
@@ -114,8 +114,7 @@ class DenseRank(RankBase):
 
 @public
 class RowNumber(RankBase):
-    """
-    Compute row number starting from 0 after sorting by column expression
+    """Compute the row number starting from 0.
 
     Examples
     --------
@@ -127,10 +126,9 @@ class RowNumber(RankBase):
 
     Returns
     -------
-    row_number : Int64Column, starting from 0
+    IntegerColumn
+        Row number
     """
-
-    # Equivalent to SQL ROW_NUMBER()
 
 
 @public
@@ -140,7 +138,7 @@ class CumulativeOp(AnalyticOp):
 
 @public
 class CumulativeSum(CumulativeOp):
-    """Cumulative sum. Requires an order window."""
+    """Cumulative sum. Requires an ordering window."""
 
     arg = rlz.column(rlz.numeric)
 

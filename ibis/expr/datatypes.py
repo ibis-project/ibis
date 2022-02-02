@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import ast
 import builtins
 import collections
@@ -12,7 +10,23 @@ import numbers
 import re
 import typing
 import uuid as _uuid
-from typing import Iterator, Mapping, NamedTuple, Sequence, TypeVar
+from typing import (
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import pandas as pd
 import parsy as p
@@ -29,17 +43,21 @@ try:
 
     IS_SHAPELY_AVAILABLE = True
 except ImportError:
-    ...
+    pass
 
 
 class DataType:
+    """Base class for all data types."""
+
+    nullable: bool
+    """Whether the data type can hold `NULL` values."""
 
     __slots__ = ('nullable',)
 
     def __init__(self, nullable: bool = True, **kwargs) -> None:
         self.nullable = nullable
 
-    def __call__(self, nullable: bool = True) -> DataType:
+    def __call__(self, nullable: bool = True) -> "DataType":
         if nullable is not True and nullable is not False:
             raise TypeError(
                 "__call__ only accepts the 'nullable' argument. "
@@ -48,7 +66,7 @@ class DataType:
             )
         return self._factory(nullable=nullable)
 
-    def _factory(self, nullable: bool = True) -> DataType:
+    def _factory(self, nullable: bool = True) -> "DataType":
         slots = {
             slot: getattr(self, slot)
             for slot in self.__slots__
@@ -85,13 +103,15 @@ class DataType:
 
     @property
     def name(self) -> str:
+        """Return the name of the data type."""
         return type(self).__name__
 
     def equals(
         self,
-        other: DataType,
-        cache: Mapping[typing.Any, bool] | None = None,
+        other: "DataType",
+        cache: Optional[Mapping[typing.Any, bool]] = None,
     ) -> bool:
+        """Return whether this data type equals `other`."""
         if isinstance(other, str):
             raise TypeError(
                 'Comparing datatypes to strings is not allowed. Convert '
@@ -108,27 +128,35 @@ class DataType:
         )
 
     def castable(self, target, **kwargs):
+        """Return whether this data type is castable to `target`."""
         return castable(self, target, **kwargs)
 
     def cast(self, target, **kwargs):
+        """Cast this data type to `target`."""
         return cast(self, target, **kwargs)
 
     def scalar_type(self):
+        """Return a scalar expression with this data type."""
         return functools.partial(self.scalar, dtype=self)
 
     def column_type(self):
+        """Return a column expression with this data type."""
         return functools.partial(self.column, dtype=self)
 
-    def _literal_value_hash_key(self, value) -> tuple[DataType, typing.Any]:
+    def _literal_value_hash_key(self, value) -> Tuple["DataType", typing.Any]:
         """Return a hash for `value`."""
         return self, value
 
 
 class Any(DataType):
+    """Values of any type."""
+
     __slots__ = ()
 
 
 class Primitive(DataType):
+    """Values with known size."""
+
     __slots__ = ()
 
     def __repr__(self) -> str:
@@ -139,6 +167,8 @@ class Primitive(DataType):
 
 
 class Null(DataType):
+    """Null values."""
+
     scalar = ir.NullScalar
     column = ir.NullColumn
 
@@ -146,10 +176,14 @@ class Null(DataType):
 
 
 class Variadic(DataType):
+    """Values with unknown size."""
+
     __slots__ = ()
 
 
 class Boolean(Primitive):
+    """True or False values."""
+
     scalar = ir.BooleanScalar
     column = ir.BooleanColumn
 
@@ -162,6 +196,8 @@ class Bounds(NamedTuple):
 
 
 class Integer(Primitive):
+    """Integer values."""
+
     scalar = ir.IntegerScalar
     column = ir.IntegerColumn
 
@@ -169,6 +205,7 @@ class Integer(Primitive):
 
     @property
     def _nbytes(self) -> int:
+        """Return the number of bytes used to store values of this type."""
         raise TypeError(
             "Cannot determine the size in bytes of an abstract integer type."
         )
@@ -190,14 +227,15 @@ class String(Variadic):
 
 
 class Binary(Variadic):
-    """A type representing a blob of bytes.
+    """A type representing a sequence of bytes.
 
     Notes
     -----
-    Some databases treat strings and blobs of equally, and some do not. For
-    example, Impala doesn't make a distinction between string and binary types
-    but PostgreSQL has a TEXT type and a BYTEA type which are distinct types
-    that behave differently.
+    Some databases treat strings and blobs of equally, and some do not.
+
+    For example, Impala doesn't make a distinction between string and binary
+    types but PostgreSQL has a `TEXT` type and a `BYTEA` type which are
+    distinct types that have different behavior.
     """
 
     scalar = ir.BinaryScalar
@@ -207,6 +245,8 @@ class Binary(Variadic):
 
 
 class Date(Primitive):
+    """Date values."""
+
     scalar = ir.DateScalar
     column = ir.DateColumn
 
@@ -214,6 +254,8 @@ class Date(Primitive):
 
 
 class Time(Primitive):
+    """Time values."""
+
     scalar = ir.TimeScalar
     column = ir.TimeColumn
 
@@ -221,13 +263,18 @@ class Time(Primitive):
 
 
 class Timestamp(DataType):
+    """Timestamp values."""
+
+    timezone: str
+    """The timezone of values of this type."""
+
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
     __slots__ = ('timezone',)
 
     def __init__(
-        self, timezone: str | None = None, nullable: bool = True
+        self, timezone: Optional[str] = None, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.timezone = timezone
@@ -241,8 +288,11 @@ class Timestamp(DataType):
 
 
 class SignedInteger(Integer):
+    """Signed integer values."""
+
     @property
     def largest(self):
+        """Return the largest type of signed integer."""
         return int64
 
     @property
@@ -253,8 +303,11 @@ class SignedInteger(Integer):
 
 
 class UnsignedInteger(Integer):
+    """Unsigned integer values."""
+
     @property
     def largest(self):
+        """Return the largest type of unsigned integer."""
         return uint64
 
     @property
@@ -265,6 +318,8 @@ class UnsignedInteger(Integer):
 
 
 class Floating(Primitive):
+    """Floating point values."""
+
     scalar = ir.FloatingScalar
     column = ir.FloatingColumn
 
@@ -272,6 +327,7 @@ class Floating(Primitive):
 
     @property
     def largest(self):
+        """Return the largest type of floating point values."""
         return float64
 
     @property
@@ -283,56 +339,78 @@ class Floating(Primitive):
 
 
 class Int8(SignedInteger):
+    """Signed 8-bit integers."""
+
     __slots__ = ()
     _nbytes = 1
 
 
 class Int16(SignedInteger):
+    """Signed 16-bit integers."""
+
     __slots__ = ()
     _nbytes = 2
 
 
 class Int32(SignedInteger):
+    """Signed 32-bit integers."""
+
     __slots__ = ()
     _nbytes = 4
 
 
 class Int64(SignedInteger):
+    """Signed 64-bit integers."""
+
     __slots__ = ()
     _nbytes = 8
 
 
 class UInt8(UnsignedInteger):
+    """Unsigned 8-bit integers."""
+
     __slots__ = ()
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
+    """Unsigned 16-bit integers."""
+
     __slots__ = ()
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
+    """Unsigned 32-bit integers."""
+
     __slots__ = ()
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
+    """Unsigned 64-bit integers."""
+
     __slots__ = ()
     _nbytes = 8
 
 
 class Float16(Floating):
+    """16-bit floating point numbers."""
+
     __slots__ = ()
     _nbytes = 2
 
 
 class Float32(Floating):
+    """32-bit floating point numbers."""
+
     __slots__ = ()
     _nbytes = 4
 
 
 class Float64(Floating):
+    """64-bit floating point numbers."""
+
     __slots__ = ()
     _nbytes = 8
 
@@ -343,6 +421,14 @@ Double = Float64
 
 
 class Decimal(DataType):
+    """Fixed-precision decimal values."""
+
+    precision: int
+    """The number of values after the decimal point."""
+
+    scale: int
+    """The number of decimal places values of this type can hold."""
+
     scalar = ir.DecimalScalar
     column = ir.DecimalColumn
 
@@ -379,11 +465,19 @@ class Decimal(DataType):
         )
 
     @property
-    def largest(self) -> Decimal:
+    def largest(self) -> "Decimal":
+        """Return the largest decimal type."""
         return Decimal(38, self.scale)
 
 
 class Interval(DataType):
+    """Interval values."""
+
+    value_type: DataType
+    """The underlying type of the stored values."""
+    unit: str
+    """The time unit of the interval."""
+
     scalar = ir.IntervalScalar
     column = ir.IntervalColumn
 
@@ -449,7 +543,7 @@ class Interval(DataType):
 
     @property
     def resolution(self):
-        """Unit's name"""
+        """The interval unit's name."""
         return self._units[self.unit]
 
     def __str__(self):
@@ -485,25 +579,35 @@ class Category(DataType):
 
 
 class Struct(DataType):
+    """Structured values."""
+
+    names: List[str]
+    """Field names of the struct."""
+    types: Sequence[DataType]
+    """Types of the fields of the struct."""
+
     scalar = ir.StructScalar
     column = ir.StructColumn
 
     __slots__ = 'names', 'types'
 
     def __init__(
-        self, names: list[str], types: list[DataType], nullable: bool = True
+        self,
+        names: Iterable[str],
+        types: Iterable[DataType],
+        nullable: bool = True,
     ) -> None:
-        """Construct a ``Struct`` type from a `names` and `types`.
+        """Construct a struct type from `names` and `types`.
 
         Parameters
         ----------
-        names : Sequence[str]
+        names
             Sequence of strings indicating the name of each field in the
             struct.
-        types : Sequence[Union[str, DataType]]
+        types
             Sequence of strings or :class:`~ibis.expr.datatypes.DataType`
             instances, one for each field
-        nullable : bool, optional
+        nullable
             Whether the struct can be null
         """
         if not (names and types):
@@ -518,18 +622,18 @@ class Struct(DataType):
     @classmethod
     def from_tuples(
         cls,
-        pairs: Sequence[tuple[str, str | DataType]],
+        pairs: Iterable[Tuple[str, Union[str, DataType]]],
         nullable: bool = True,
-    ) -> Struct:
+    ) -> "Struct":
         names, types = zip(*pairs)
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @classmethod
     def from_dict(
         cls,
-        pairs: Mapping[str, str | DataType],
+        pairs: Mapping[str, Union[str, DataType]],
         nullable: bool = True,
-    ) -> Struct:
+    ) -> "Struct":
         names, types = pairs.keys(), pairs.values()
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
@@ -573,13 +677,17 @@ def _tuplize(values):
 
 
 class Array(Variadic):
+    """Array values."""
+
+    value_type: DataType
+    """The type of the elements of the array."""
     scalar = ir.ArrayScalar
     column = ir.ArrayColumn
 
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: str | DataType, nullable: bool = True
+        self, value_type: Union[str, DataType], nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
@@ -592,13 +700,17 @@ class Array(Variadic):
 
 
 class Set(Variadic):
+    """Set values."""
+
+    value_type: DataType
+    """The type of the elements of the set."""
     scalar = ir.SetScalar
     column = ir.SetColumn
 
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: str | DataType, nullable: bool = True
+        self, value_type: Union[str, DataType], nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
@@ -608,6 +720,13 @@ class Set(Variadic):
 
 
 class Enum(DataType):
+    """Enumeration values."""
+
+    rep_type: DataType
+    """The type of the key of the enumeration."""
+    value_type: DataType
+    """The type of the elements of the enumeration."""
+
     scalar = ir.EnumScalar
     column = ir.EnumColumn
 
@@ -622,6 +741,12 @@ class Enum(DataType):
 
 
 class Map(Variadic):
+    """Associative array values."""
+
+    key_type: DataType
+    """The type of the key of the map."""
+    value_type: DataType
+    """The type of the values of the map."""
     scalar = ir.MapScalar
     column = ir.MapColumn
 
@@ -644,16 +769,17 @@ class Map(Variadic):
 
 
 class JSON(String):
-    """JSON (JavaScript Object Notation) text format."""
+    """JSON values."""
 
     scalar = ir.JSONScalar
     column = ir.JSONColumn
 
 
 class JSONB(Binary):
-    """JSON (JavaScript Object Notation) data stored as a binary
-    representation, which eliminates whitespace, duplicate keys,
-    and key ordering.
+    """JSON data stored in a binary representation.
+
+    This representation eliminates whitespace, duplicate keys, and does not
+    preserve key ordering.
     """
 
     scalar = ir.JSONBScalar
@@ -661,25 +787,34 @@ class JSONB(Binary):
 
 
 class GeoSpatial(DataType):
+    """Geospatial values."""
+
     __slots__ = 'geotype', 'srid'
 
+    geotype: Optional[Literal['geography', 'geometry']]
+    """The specific geospatial type"""
+    srid: Optional[int]
+    """The spatial reference identifier."""
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
     def __init__(
-        self, geotype: str = None, srid: int = None, nullable: bool = True
-    ):
+        self,
+        geotype: Optional[Literal['geography', 'geometry']] = None,
+        srid: Optional[int] = None,
+        nullable: bool = True,
+    ) -> None:
         """Geospatial data type base class
 
         Parameters
         ----------
-        geotype : str
+        geotype
             Specification of geospatial type which could be `geography` or
             `geometry`.
-        srid : int
+        srid
             Spatial Reference System Identifier
-        nullable : bool, optional
-            Whether the struct can be null
+        nullable
+            Whether the value can be null
         """
         super().__init__(nullable=nullable)
 
@@ -715,7 +850,7 @@ class GeoSpatial(DataType):
 
 
 class Geometry(GeoSpatial):
-    """Geometry is used to cast from geography types."""
+    """Geometry values."""
 
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
@@ -731,7 +866,7 @@ class Geometry(GeoSpatial):
 
 
 class Geography(GeoSpatial):
-    """Geography is used to cast from geometry types."""
+    """Geography values."""
 
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
@@ -765,9 +900,10 @@ class LineString(GeoSpatial):
 
 
 class Polygon(GeoSpatial):
-    """A set of one or more rings (closed line strings), with the first
-    representing the shape (external ring) and the rest representing holes in
-    that shape (internal rings).
+    """A set of one or more closed line strings.
+
+    The first line string represents the shape (external ring) and the rest
+    represent holes in that shape (internal rings).
     """
 
     scalar = ir.PolygonScalar
@@ -804,9 +940,7 @@ class MultiPolygon(GeoSpatial):
 
 
 class UUID(DataType):
-    """A universally unique identifier (UUID) is a 128-bit number used to
-    identify information in computer systems.
-    """
+    """A 128-bit number used to identify information in computer systems."""
 
     scalar = ir.UUIDScalar
     column = ir.UUIDColumn
@@ -815,7 +949,7 @@ class UUID(DataType):
 
 
 class MACADDR(String):
-    """Media Access Control (MAC) Address of a network interface."""
+    """Media Access Control (MAC) address of a network interface."""
 
     scalar = ir.MACADDRScalar
     column = ir.MACADDRColumn
@@ -824,7 +958,7 @@ class MACADDR(String):
 
 
 class INET(String):
-    """IP address type."""
+    """IP addresses."""
 
     scalar = ir.INETScalar
     column = ir.INETColumn
@@ -1090,8 +1224,8 @@ validate_type = dtype
 
 
 def _get_timedelta_units(
-    timedelta: datetime.timedelta | pd.Timedelta,
-) -> list[str]:
+    timedelta: Union[datetime.timedelta, pd.Timedelta],
+) -> List[str]:
     # pandas Timedelta has more granularity
     if isinstance(timedelta, pd.Timedelta):
         unit_fields = timedelta.components._fields
@@ -1126,7 +1260,7 @@ def from_string(value: str) -> DataType:
 
 
 @dtype.register(list)
-def from_list(values: list[typing.Any]) -> Array:
+def from_list(values: List[typing.Any]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
@@ -1184,7 +1318,7 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
 
 
 @infer.register(list)
-def infer_list(values: list[typing.Any]) -> Array:
+def infer_list(values: List[typing.Any]) -> Array:
     """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
@@ -1270,7 +1404,7 @@ def infer_boolean(value: bool) -> Boolean:
 
 
 @infer.register((type(None), Null))
-def infer_null(value: Null | None) -> Null:
+def infer_null(value: Optional[Null]) -> Null:
     return null
 
 
@@ -1340,7 +1474,7 @@ Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
 def can_cast_to_differently_signed_integer_type(
-    source: Integral, target: Integral, value: int | None = None, **kwargs
+    source: Integral, target: Integral, value: Optional[int] = None, **kwargs
 ) -> bool:
     if value is None:
         return False
@@ -1382,7 +1516,7 @@ def can_cast_intervals(source: Interval, target: Interval, **kwargs) -> bool:
 
 @castable.register(Integer, Boolean)
 def can_cast_integer_to_boolean(
-    source: Integer, target: Boolean, value: int | None = None, **kwargs
+    source: Integer, target: Boolean, value: Optional[int] = None, **kwargs
 ) -> bool:
     return value is not None and (value == 0 or value == 1)
 
@@ -1397,8 +1531,8 @@ def can_cast_integer_to_interval(
 @castable.register(String, (Date, Time, Timestamp))
 def can_cast_string_to_temporal(
     source: String,
-    target: Date | Time | Timestamp,
-    value: str | None = None,
+    target: Union[Date, Time, Timestamp],
+    value: Optional[str] = None,
     **kwargs,
 ) -> bool:
     if value is None:
@@ -1478,7 +1612,9 @@ def can_cast_special_string(source, target, **kwargs):
     return True
 
 
-def cast(source: DataType | str, target: DataType | str, **kwargs) -> DataType:
+def cast(
+    source: Union[str, DataType], target: Union[str, DataType], **kwargs
+) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, result_target = dtype(source), dtype(target)
 

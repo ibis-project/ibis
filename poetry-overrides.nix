@@ -106,27 +106,31 @@ self: super:
       };
     });
 
-  isort = super.isort.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  mkdocs-autorefs = super.mkdocs-autorefs.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
   });
 
-  entrypoints = super.entrypoints.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit ];
+  mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
   });
 
-  pyyaml-env-tag = super.pyyaml-env-tag.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit-core ];
+  pytkdocs = super.pytkdocs.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
   });
 
-  questionary = super.questionary.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
   });
 
-  commitizen = super.commitizen.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  jupyter-server = super.jupyter-server.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
   });
 
-  testpath = super.testpath.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.flit-core ];
+  nbclassic = super.nbclassic.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
+  });
+
+  jupyterlab = super.jupyterlab.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.jupyter-packaging ];
   });
 }

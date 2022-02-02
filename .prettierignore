@@ -5,6 +5,7 @@
 nix/sources.json
 result
 result-*
-docs/source/*
-docs/web/release_notes.md
+docs/release_notes.md
+docs/overrides/*.html
+site
 ci/udf/CMakeFiles
