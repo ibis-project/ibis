@@ -434,7 +434,7 @@ class TopK(ValueOp):
     k = rlz.non_negative_integer
     by = rlz.one_of(
         (
-            rlz.function_of("arg", preprocess=ir.find_base_table),
+            rlz.function_of("arg", preprocess=ir.relations.find_base_table),
             rlz.any,
         )
     )

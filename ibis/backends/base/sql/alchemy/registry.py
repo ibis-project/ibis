@@ -139,7 +139,7 @@ def _exists_subquery(t, expr):
     ctx = t.context
 
     filtered = op.foreign_table.filter(op.predicates).projection(
-        [ir.literal(1).name(ir.unnamed)]
+        [ir.literal(1).name(ir.core.unnamed)]
     )
 
     sub_ctx = ctx.subcontext()

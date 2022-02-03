@@ -1,6 +1,11 @@
 # Generic Expression APIs
 
-These expressions are available on columns of any data type.
+These expressions are available on scalars and columns of any element type.
 
-::: ibis.expr.types.ValueExpr
-::: ibis.expr.types.ColumnExpr
+<!-- prettier-ignore-start -->
+::: ibis.expr.types.generic
+    selection:
+      filters:
+        - "!^literal"
+        - "!^null"
+<!-- prettier-ignore-end -->

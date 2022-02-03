@@ -14,7 +14,7 @@ from ibis.expr.timecontext import (
     compare_timecontext,
     construct_time_context_aware_series,
 )
-from ibis.expr.types import TimeContext
+from ibis.expr.typing import TimeContext
 
 
 class CustomAsOfJoin(ops.AsOfJoin):

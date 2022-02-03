@@ -3,6 +3,6 @@
 These APIs are available on complex data types such as arrays, maps, and
 structs.
 
-::: ibis.expr.types.ArrayValue
-::: ibis.expr.types.MapValue
-::: ibis.expr.types.StructValue
+::: ibis.expr.types.arrays
+::: ibis.expr.types.maps
+::: ibis.expr.types.structs

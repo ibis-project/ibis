@@ -23,7 +23,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.util as util
-from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
@@ -106,6 +105,7 @@ from ibis.expr.types import (  # noqa
     null,
     struct,
 )
+from ibis.expr.types.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import (
     cumulative_window,
     range_window,
@@ -1007,7 +1007,7 @@ def value_counts(
     TableExpr
         Frequency table expression
     """
-    base = ir.find_base_table(arg)
+    base = ir.relations.find_base_table(arg)
     metric = base.count().name(metric_name)
 
     try:
@@ -1904,6 +1904,7 @@ def histogram(
     binwidth
         If not supplied, computed from the data (actual max and min values)
     base
+        Histogram base
     closed
         Which side of each interval is closed
     aux_hash
@@ -4927,7 +4928,7 @@ def _resolve_predicates(
     if isinstance(predicates, Expr):
         predicates = _L.flatten_predicate(predicates)
     predicates = util.promote_list(predicates)
-    predicates = [ir.bind_expr(table, x) for x in predicates]
+    predicates = [ir.relations.bind_expr(table, x) for x in predicates]
     resolved_predicates = []
     for pred in predicates:
         if isinstance(pred, ir.AnalyticExpr):

@@ -573,7 +573,7 @@ def window(win, *, from_base_table_of, this):
             "`win` argument should be of type `ibis.expr.window.Window`; "
             f"got type {type(win).__name__}"
         )
-    table = ir.find_base_table(getattr(this, from_base_table_of))
+    table = ir.relations.find_base_table(getattr(this, from_base_table_of))
     if table is not None:
         win = win.bind(table)
 

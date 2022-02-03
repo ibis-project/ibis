@@ -168,7 +168,7 @@ def exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
 
-    dummy = ir.literal(1).name(ir.unnamed)
+    dummy = ir.literal(1).name(ir.core.unnamed)
 
     filtered = op.foreign_table.filter(op.predicates)
     expr = filtered.projection([dummy])
