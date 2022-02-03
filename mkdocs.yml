@@ -48,6 +48,8 @@ plugins:
             show_source: false
   - mkdocs-jupyter:
       execute: true
+      ignore:
+        - "*.py"
       execute_ignore: "tutorial/*Geospatial*.ipynb"
       include_source: false
       theme: dark
@@ -60,9 +62,14 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.details
   - pymdownx.highlight
   - pymdownx.inlinehilite
+  - pymdownx.magiclink:
+      provider: github
+      repo_url_shortener: true
   - pymdownx.saneheaders
+  - pymdownx.snippets
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
@@ -124,11 +131,11 @@ nav:
           - api/expressions/index.md
           - Top Level: api/expressions/top_level.md
           - Tables: api/expressions/tables.md
-          - Generic Value Expressions: api/expressions/generic.md
-          - Numbers + Booleans: api/expressions/numeric.md
+          - Generic Values: api/expressions/generic.md
+          - Numeric + Boolean: api/expressions/numeric.md
           - Strings: api/expressions/strings.md
           - Timestamps + Dates + Times: api/expressions/timestamps.md
-          - Complex Types: api/expressions/complex_types.md
+          - Collections: api/expressions/collections.md
           - Geospatial: api/expressions/geospatial.md
       - Data Types: api/datatypes.md
       - Backend Interfaces:
@@ -139,14 +146,12 @@ extra:
   project_name: "ibis"
   team:
     - name: "Active maintainers"
-      kind: github
       members:
         - jreback
         - datapythonista
         - cpcloud
         - kszucs
     - name: "Former maintainers"
-      kind: github
       members:
         - wesm
   social:

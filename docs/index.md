@@ -22,8 +22,7 @@ multiple engines.
 
 ## Example
 
-The next example is all the code you need to connect to a database with a
-countries database, and compute the number of citizens per squared kilometer in Asia:
+Here's Ibis computing the number of citizens per squared kilometer in Asia:
 
 ```python
 >>> import ibis
@@ -35,44 +34,53 @@ countries database, and compute the number of citizens per squared kilometer in 
 130.7019141926602
 ```
 
-Learn more about Ibis in [our tutorial](/tutorial/01-Introduction-to-Ibis).
+!!! tip "Learn more!"
+
+    Learn more about Ibis in [our tutorial](/tutorial/01-Introduction-to-Ibis).
 
 ## Comparison to other tools
 
-!!! tip "Coming from SQL?"
+=== "SQL"
 
-    Check out [Ibis for SQL Programmers](/user_guide/sql)!
+    ??? tip "Coming from SQL?"
 
-### Why not use [pandas](https://pandas.pydata.org/)?
+        Check out [Ibis for SQL Programmers](/user_guide/sql)!
 
-pandas is great for many use cases. But pandas loads the data into the
-memory of the local host, and performs the computations on it.
+    Ibis gives you the benefit of a programming language. You don't need to
+    sacrifice maintainability to get to those insights!
 
-Ibis instead, leaves the data in its storage, and performs the computations
-there. This means that even if your data is distributed, or it requires
-GPU accelarated speed, Ibis code will be able to benefit from your storage
-capabilities.
+    === "SQL"
 
-### Why not use SQL?
+        ``` sql title="docs/example.sql" linenums="1"
+        --8<-- "docs/example.sql"
+        ```
 
-SQL is widely used and very convenient when writing simple queries. But as
-the complexity of operations grow, SQL can become very difficult to deal with.
+    === "Ibis"
 
-With Ibis, you can take fully advantage of software engineering techniques to
-keep your code readable and maintainable, while writing very complex analytics
-code.
+        ``` py title="docs/example.py" linenums="1"
+        --8<-- "docs/example.py"
+        ```
 
-### Why not use [SQLAlchemy](https://www.sqlalchemy.org/)?
+=== "SQLAlchemy"
 
-SQLAlchemy is very convenient as an ORM (Object Relational Mapper), providing
-a Python interface to SQL databases. Ibis uses SQLAlchemy internally, but aims
-to provide a friendlier syntax for analytics code. And Ibis is also not limited
-to SQL databases, but also can connect to distributed platforms and in-memory
-representations.
+    Ibis aims to be more concise and composable than
+    [SQLAlchemy](https://www.sqlalchemy.org/) when writing interactive
+    analytics code.
 
-### Why not use [Dask](https://dask.org/)?
+    !!! success "Ibis :heart:'s SQLAlchemy"
 
-Dask provides advanced parallelism, and can distribute pandas jobs. Ibis can
-process data in a similar way, but for a different number of backends. For
-example, given a Spark cluster, Ibis allows to perform analytics using it,
-with a familiar Python syntax. Ibis supports Dask as a backend.
+        Ibis generates SQLAlchemy expressions for some of our backends
+        including the [PostgreSQL](/backends/postgres) and
+        [SQLite](/backends/sqlite) backends!
+
+    === "SQLAlchemy"
+
+        ``` python title="docs/sqlalchemy_example.py" "linenums="1"
+        --8<-- "docs/sqlalchemy_example.py"
+        ```
+
+    === "Ibis"
+
+        ``` py title="docs/example.py" linenums="1"
+        --8<-- "docs/example.py"
+        ```
