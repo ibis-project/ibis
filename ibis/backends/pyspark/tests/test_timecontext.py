@@ -8,7 +8,7 @@ from ibis.backends.pyspark.compiler import compile_window_op, compiles
 from ibis.backends.pyspark.timecontext import combine_time_context
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
-from ibis.expr.types import TimeContext
+from ibis.expr.typing import TimeContext
 
 
 def test_table_with_timecontext(client):

@@ -284,7 +284,7 @@ class SelectBuilder:
                 )
                 return table_expr, _get_scalar(name)
             else:
-                base_table = ir.find_base_table(expr)
+                base_table = ir.relations.find_base_table(expr)
                 if base_table is None:
                     # exprs with no table refs
                     # TODO(phillipc): remove ScalarParameter hack

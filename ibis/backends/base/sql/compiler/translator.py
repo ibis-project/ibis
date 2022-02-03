@@ -232,7 +232,7 @@ class ExprTranslator:
                 return True
             return False
 
-        if expr.get_name() is ir.unnamed:
+        if expr.get_name() is ir.core.unnamed:
             return False
 
         return True

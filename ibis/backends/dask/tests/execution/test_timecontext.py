@@ -13,7 +13,7 @@ from ibis.expr.timecontext import (
     adjust_context,
     compare_timecontext,
 )
-from ibis.expr.types import TimeContext
+from ibis.expr.typing import TimeContext
 
 
 class CustomAsOfJoin(ops.AsOfJoin):
