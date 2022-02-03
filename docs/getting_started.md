@@ -2,7 +2,7 @@
 
 ## Installation instructions
 
-Here's the recommended way of installing {{ config.project_name }}.
+Here's the recommended way of installing {{ config.extra.project_name }}.
 
 1. Download [Anaconda](https://www.anaconda.com/distribution/) for your operating system and
    the latest Python version, run the installer, and follow the steps. Detailed instructions
@@ -21,6 +21,6 @@ Here's the recommended way of installing {{ config.project_name }}.
    python -c 'import ibis; print(ibis.__version__)'
    ```
 
-4. You're ready to start using {{ config.project_name }}!
+4. You're ready to start using {{ config.extra.project_name }}!
 
 Learn more about ibis in the [tutorials](/tutorial/01-Introduction-to-Ibis)!
