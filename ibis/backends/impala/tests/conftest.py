@@ -280,7 +280,7 @@ def alltypes_df(alltypes):
 
 
 def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{util.guid()}'
+    return f'__ibis_test`{suffix}_{util.guid()}'
 
 
 @pytest.fixture

@@ -17,7 +17,10 @@ def format_call(translator, func, *args):
 
 def quote_identifier(name, quotechar='`', force=False):
     """Add quotes to the `name` identifier if needed."""
-    if force or name.count(' ') or name in identifiers.base_identifiers:
+    if (force or name.count(' ')
+        or name in identifiers.base_identifiers
+        or quotechar in name):
+        name = name.replace(quotechar, '\\'+quotechar)
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name
