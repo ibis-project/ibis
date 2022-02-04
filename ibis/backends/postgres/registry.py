@@ -674,6 +674,7 @@ operation_registry.update(
         ops.Round: _round,
         ops.Modulus: _mod,
         # dates and times
+        ops.DateFromYMD: fixed_arity(sa.func.make_date, 3),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.IntervalFromInteger: _interval_from_integer,
@@ -706,6 +707,7 @@ operation_registry.update(
         ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
+        ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations

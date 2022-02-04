@@ -622,3 +622,75 @@ def test_now_from_projection(backend, alltypes):
     now = pd.Timestamp('now')
     year_expected = pd.Series([now.year] * n, name='ts')
     tm.assert_series_equal(ts.dt.year, year_expected)
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["clickhouse", "impala"])
+def test_date_literal(con):
+    expr = ibis.date(2022, 2, 4)
+    result = con.execute(expr)
+    assert result.strftime('%Y-%m-%d') == '2022-02-04'
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["clickhouse", "impala"])
+def test_timestamp_literal(con):
+    expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
+    result = con.execute(expr)
+    if not isinstance(result, str):
+        result = result.strftime('%Y-%m-%d %H:%M:%S%Z')
+    assert result == '2022-02-04 16:20:00'
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["clickhouse", "impala"])
+def test_time_literal(con):
+    expr = ibis.time(16, 20, 0)
+    result = con.execute(expr)
+    if not isinstance(result, str):
+        result = result.strftime('%H:%M:%S')
+    assert result == '16:20:00'
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["clickhouse", "impala"])
+def test_date_column_from_ymd(con, alltypes, df):
+    c = alltypes.timestamp_col
+    expr = ibis.date(c.year(), c.month(), c.day())
+    tbl = alltypes[
+        expr.name('timestamp_col'),
+    ]
+    result = con.execute(tbl)
+
+    golden = df.timestamp_col.dt.date.astype('datetime64[ns]')
+    tm.assert_series_equal(golden, result.timestamp_col)
+
+
+@pytest.mark.notimpl(["datafusion", "impala"])
+def test_date_scalar_from_iso(con):
+    expr = ibis.literal('2022-02-24')
+    expr2 = ibis.date(expr)
+
+    result = con.execute(expr2)
+    assert result.strftime('%Y-%m-%d') == '2022-02-24'
+
+
+@pytest.mark.notimpl(["datafusion", "impala", "pyspark"])
+def test_date_column_from_iso(con, alltypes, df):
+    expr = (
+        alltypes.year.cast('string')
+        + '-'
+        + alltypes.month.cast('string').lpad(2, '0')
+        + '-13'
+    )
+    expr = ibis.date(expr)
+
+    result = con.execute(expr)
+    golden = (
+        df.year.astype(str)
+        + '-'
+        + df.month.astype(str).str.rjust(2, '0')
+        + '-13'
+    )
+    actual = result.dt.strftime('%Y-%m-%d')
+    tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))

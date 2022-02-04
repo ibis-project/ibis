@@ -214,6 +214,34 @@ class Date(UnaryOp):
 
 
 @public
+class DateFromYMD(ValueOp):
+    year = rlz.integer
+    month = rlz.integer
+    day = rlz.integer
+    output_type = rlz.shape_like('args', dt.date)
+
+
+@public
+class TimeFromHMS(ValueOp):
+    hours = rlz.integer
+    minutes = rlz.integer
+    seconds = rlz.integer
+    output_type = rlz.shape_like('args', dt.time)
+
+
+@public
+class TimestampFromYMDHMS(ValueOp):
+    year = rlz.integer
+    month = rlz.integer
+    day = rlz.integer
+    hours = rlz.integer
+    minutes = rlz.integer
+    seconds = rlz.integer
+    timezone = rlz.optional(rlz.string)
+    output_type = rlz.shape_like('args', dt.timestamp)
+
+
+@public
 class TimestampFromUNIX(ValueOp):
     arg = rlz.any
     # Only pandas-based backends support 'ns'

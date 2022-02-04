@@ -277,6 +277,7 @@ operation_registry = {
     ops.Count: aggregate.reduction('count'),
     ops.CountDistinct: aggregate.count_distinct,
     # string operations
+    ops.StringConcat: fixed_arity('concat', 2),
     ops.StringLength: unary('length'),
     ops.StringAscii: unary('ascii'),
     ops.Lowercase: unary('lower'),
