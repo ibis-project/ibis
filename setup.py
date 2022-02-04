@@ -42,6 +42,7 @@ packages = [
     "ibis.common",
     "ibis.expr",
     "ibis.expr.operations",
+    "ibis.expr.types",
     "ibis.tests",
     "ibis.tests.benchmarks",
     "ibis.tests.expr",
