@@ -705,3 +705,9 @@ def test_time_truncate(table, operand, unit):
     expr = operand(table).truncate(unit)
     assert isinstance(expr, ir.TimeValue)
     assert isinstance(expr.op(), ops.TimeTruncate)
+
+
+def test_date_time_literals():
+    assert ibis.date(2022, 2, 4).type() == dt.date
+    assert ibis.time(16, 20, 00).type() == dt.time
+    assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.timestamp

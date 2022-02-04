@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import datetime
-import numbers
+import functools
 from typing import Iterable, Mapping, Sequence, TypeVar
 
 import dateutil.parser
+import numpy as np
 import pandas as pd
 
 import ibis.expr.builders as bl
@@ -371,8 +372,10 @@ def asc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.SortKey(expr).to_expr()
 
 
+@functools.singledispatch
 def timestamp(
-    value: str | numbers.Integral,
+    value,
+    *args,
     timezone: str | None = None,
 ) -> ir.TimestampScalar:
     """Construct a timestamp literal if `value` is coercible to a timestamp.
@@ -389,23 +392,45 @@ def timestamp(
     TimestampScalar
         A timestamp expression
     """
-    if isinstance(value, str):
-        try:
-            value = pd.Timestamp(value, tz=timezone)
-        except pd.errors.OutOfBoundsDatetime:
-            value = dateutil.parser.parse(value)
-    if isinstance(value, numbers.Integral):
-        raise TypeError(
-            (
-                "Passing an integer to ibis.timestamp is not supported. Use "
-                "ibis.literal({value}).to_timestamp() to create a timestamp "
-                "expression from an integer."
-            ).format(value=value)
-        )
+    raise NotImplementedError(f'cannot convert {type(value)} to timestamp')
+
+
+@timestamp.register(np.integer)
+@timestamp.register(np.floating)
+@timestamp.register(int)
+@timestamp.register(float)
+def _(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
+    if timezone:
+        raise NotImplementedError('timestamp timezone not implemented')
+
+    if not args:  # only one value
+        raise TypeError(f"Use ibis.literal({value}).to_timestamp")
+
+    # pass through to datetime constructor
+    return ops.TimestampFromYMDHMS(value, *args).to_expr()
+
+
+@timestamp.register(pd.Timestamp)
+def _(value, timezone: str | None = None) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
-def date(value: str) -> ir.DateScalar:
+@timestamp.register(datetime.datetime)
+def _(value, timezone: str | None = None) -> ir.TimestampScalar:
+    return literal(value, type=dt.Timestamp(timezone=timezone))
+
+
+@timestamp.register(str)
+def _(value: str, timezone: str | None = None) -> ir.TimestampScalar:
+    try:
+        value = pd.Timestamp(value, tz=timezone)
+    except pd.errors.OutOfBoundsDatetime:
+        value = dateutil.parser.parse(value)
+    return literal(value, type=dt.Timestamp(timezone=timezone))
+
+
+@functools.singledispatch
+def date(value) -> DateValue:
     """Return a date literal if `value` is coercible to a date.
 
     Parameters
@@ -418,27 +443,49 @@ def date(value: str) -> ir.DateScalar:
     DateScalar
         A date expression
     """
-    if isinstance(value, str):
-        value = pd.to_datetime(value).date()
+    raise NotImplementedError()
+
+
+@date.register(str)
+def _(value: str) -> ir.DateScalar:
+    return literal(pd.to_datetime(value).date(), type=dt.date)
+
+
+@date.register(pd.Timestamp)
+def _(value) -> ir.DateScalar:
     return literal(value, type=dt.date)
 
 
-def time(value: str) -> ir.TimeScalar:
-    """Return a time literal if `value` is coercible to a time.
+@date.register(IntegerColumn)
+@date.register(int)
+def _(year, month, day) -> ir.DateScalar:
+    return ops.DateFromYMD(year, month, day).to_expr()
 
-    Parameters
-    ----------
-    value
-        Time string
 
-    Returns
-    -------
-    TimeScalar
-        A time expression
-    """
-    if isinstance(value, str):
-        value = pd.to_datetime(value).time()
+@date.register(StringValue)
+def _(value: StringValue) -> DateValue:
+    return value.cast(dt.date)
+
+
+@functools.singledispatch
+def time(value) -> TimeValue:
     return literal(value, type=dt.time)
+
+
+@time.register(str)
+def _(value: str) -> ir.TimeScalar:
+    return literal(pd.to_datetime(value).time(), type=dt.time)
+
+
+@time.register(IntegerColumn)
+@time.register(int)
+def _(hours, mins, secs) -> ir.TimeScalar:
+    return ops.TimeFromHMS(hours, mins, secs).to_expr()
+
+
+@time.register(StringValue)
+def _(value: StringValue) -> TimeValue:
+    return value.cast(dt.time)
 
 
 def interval(

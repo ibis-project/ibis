@@ -302,9 +302,33 @@ def _string_concat(t, expr):
     return functools.reduce(operator.add, map(t.translate, args))
 
 
+def _date_from_ymd(t, expr):
+    y, m, d = map(t.translate, expr.op().args)
+    ymdstr = sa.func.printf('%04d-%02d-%02d', y, m, d)
+    return sa.func.date(ymdstr)
+
+
+def _timestamp_from_ymdhms(t, expr):
+    y, mo, d, h, m, s, *rest = (
+        t.translate(x) if x is not None else None for x in expr.op().args
+    )
+    tz = rest[0] if rest else ''
+    timestr = sa.func.printf(
+        '%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s, tz
+    )
+    return sa.func.datetime(timestr)
+
+
+def _time_from_hms(t, expr):
+    h, m, s = map(t.translate, expr.op().args)
+    timestr = sa.func.printf('%02d:%02d:%02d', h, m, s)
+    return sa.func.time(timestr)
+
+
 operation_registry.update(
     {
         ops.Cast: _cast,
+        ops.DateFromYMD: _date_from_ymd,
         ops.Substring: _substr,
         ops.StrRight: _string_right,
         ops.StringFind: _string_find,
@@ -313,6 +337,9 @@ operation_registry.update(
         ops.Least: varargs(sa.func.min),
         ops.Greatest: varargs(sa.func.max),
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
+        ops.DateFromYMD: _date_from_ymd,
+        ops.TimeFromHMS: _time_from_hms,
+        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.DateTruncate: _truncate(sa.func.date),
         ops.Date: unary(sa.func.date),
         ops.TimestampTruncate: _truncate(sa.func.datetime),

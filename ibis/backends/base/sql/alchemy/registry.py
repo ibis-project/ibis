@@ -506,6 +506,11 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     # other
     ops.SortKey: _sort_key,
     ops.Date: unary(lambda arg: sa.cast(arg, sa.DATE)),
+    ops.DateFromYMD: fixed_arity(sa.func.date, 3),
+    ops.TimeFromHMS: fixed_arity(sa.func.time, 3),
+    ops.TimestampFromYMDHMS: lambda t, expr: sa.func.make_timestamp(
+        *map(t.translate, expr.op().args[:6])  # ignore timezone
+    ),
 }
 
 
