@@ -128,13 +128,12 @@ class Backend(BaseBackend):
         schema
             An optional schema
         """
-        self._context.register_csv(name, path, schema=schema)
+        self._context.register_csv(name, str(path), schema=schema)
 
     def register_parquet(
         self,
         name: str,
         path: str | Path,
-        schema: sch.Schema | None = None,
     ) -> None:
         """Register a parquet file with with `name` located at `path`.
 
@@ -147,7 +146,7 @@ class Backend(BaseBackend):
         schema
             An optional schema
         """
-        self._context.register_parquet(name, path, schema=schema)
+        self._context.register_parquet(name, str(path))
 
     def execute(
         self,
