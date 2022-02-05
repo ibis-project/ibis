@@ -75,10 +75,15 @@ There are two primary ways to setup a development environment.
 
     1. Create a Conda environment from a lock file in the repo:
 
-        ```sh
-        cd ibis
-        conda create -n ibis-dev -f conda-lock/<platform-64-pyver>.lock
-        ```
+        {% set platforms = {"Linux": "linux", "MacOS": "osx", "Windows": "win"} %}
+        {% for os, platform in platforms.items() %}
+        === "{{ os }}"
+
+            ```sh
+            cd ibis
+            conda create -n ibis-dev --file=conda-lock/{{ platform }}-64-3.9.lock
+            ```
+        {% endfor %}
 
     1. Activate the environment
 
