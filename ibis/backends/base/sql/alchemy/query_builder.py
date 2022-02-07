@@ -40,8 +40,10 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             else:
                 onclause = None
 
-            if jtype in (ops.InnerJoin, ops.CrossJoin):
+            if jtype is ops.InnerJoin:
                 result = result.join(table, onclause)
+            elif jtype is ops.CrossJoin:
+                result = result.join(table, sa.literal(True))
             elif jtype is ops.LeftJoin:
                 result = result.join(table, onclause, isouter=True)
             elif jtype is ops.RightJoin:

@@ -452,3 +452,21 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     # Names won't match in the Pyspark backend since Pyspark
     # gives 'tmp' name when executing a ColumnExpr
     tm.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.skip_backends(
+    [
+        'pandas',
+        'dask',
+        'csv',
+        'parquet',
+        'hdf5',
+        'datafusion',
+        'pyspark',
+        'clickhouse',
+    ]
+)
+def test_histogram(con, alltypes):
+    n = 10
+    results = con.execute(alltypes.int_col.histogram(n))
+    assert len(results.value_counts()) == n
