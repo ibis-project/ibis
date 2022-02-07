@@ -210,7 +210,7 @@ zstd = ["zstd", "clickhouse-cityhash (>=1.0.2.1)"]
 
 [[package]]
 name = "clickhouse-sqlalchemy"
-version = "0.1.7"
+version = "0.1.8"
 description = "Simple ClickHouse SQLAlchemy Dialect"
 category = "dev"
 optional = false
@@ -998,7 +998,7 @@ test = ["mkdocs-macros-test", "mkdocs-material (>=6.2)", "mkdocs-include-markdow
 
 [[package]]
 name = "mkdocs-material"
-version = "8.1.9"
+version = "8.1.10"
 description = "A Material Design theme for MkDocs"
 category = "dev"
 optional = false
@@ -2311,7 +2311,7 @@ clickhouse-driver = [
     {file = "clickhouse_driver-0.2.2-pp37-pypy37_pp73-win32.whl", hash = "sha256:cea99c3a508ecc87cf26c7b615e23b76d9be6ee0a34018efa028107904409c6f"},
 ]
 clickhouse-sqlalchemy = [
-    {file = "clickhouse-sqlalchemy-0.1.7.tar.gz", hash = "sha256:ff9b5af78de06fb74085ec4d27a60b3b58733fc44b0e9713c538a2aa8f83c5e8"},
+    {file = "clickhouse-sqlalchemy-0.1.8.tar.gz", hash = "sha256:0ebd727fe9e250a119ea00134a7290a19fbadb79243b8936af1437f674c1e413"},
 ]
 cligj = [
     {file = "cligj-0.7.2-py3-none-any.whl", hash = "sha256:c1ca117dbce1fe20a5809dc96f01e1c2840f6dcc939b3ddbb1111bf330ba82df"},
@@ -2713,8 +2713,8 @@ mkdocs-macros-plugin = [
     {file = "mkdocs_macros_plugin-0.6.4-py3-none-any.whl", hash = "sha256:e498843b49fbe959b4b9d90ff431300d6bfb48a3023c576dd42c13ca105e82de"},
 ]
 mkdocs-material = [
-    {file = "mkdocs-material-8.1.9.tar.gz", hash = "sha256:a15873a5e116bf4615af4fcedc85a0537492464365286cba50310d96fb066958"},
-    {file = "mkdocs_material-8.1.9-py2.py3-none-any.whl", hash = "sha256:6feb433f29227b862418bd1009edeec2e52870770c476bf02840fc094b8823f2"},
+    {file = "mkdocs-material-8.1.10.tar.gz", hash = "sha256:10970bfe2628eaa41c379e9075121b1232f4304cac9876feac8ac9d0d2e9035b"},
+    {file = "mkdocs_material-8.1.10-py2.py3-none-any.whl", hash = "sha256:e47ad89b98c32a0832509a72ade2114e0c84727a573018d768f4c6de19886b2f"},
 ]
 mkdocs-material-extensions = [
     {file = "mkdocs-material-extensions-1.0.3.tar.gz", hash = "sha256:bfd24dfdef7b41c312ede42648f9eb83476ea168ec163b613f9abd12bbfddba2"},
