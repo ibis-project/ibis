@@ -1,11 +1,10 @@
-from io import StringIO
-
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis.config as config
 import ibis.expr.types as ir
+from ibis import util
 
 
 def test_run_sql(con):
@@ -109,24 +108,18 @@ def test_embedded_identifier_quoting(alltypes):
     expr.execute()
 
 
-def test_table_info(alltypes):
-    buf = StringIO()
-    alltypes.info(buf=buf)
+@pytest.fixture
+def temporary_alltypes(con):
+    id = util.guid()
+    con.raw_sql(f"CREATE TABLE temporary_alltypes_{id} AS functional_alltypes")
+    try:
+        yield con.table(f"temporary_alltypes_{id}")
+    finally:
+        con.raw_sql(f"DROP TABLE temporary_alltypes_{id}")
 
-    assert buf.getvalue() is not None
 
-
-def test_insert(con, alltypes, df):
-    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = (
-        'CREATE TABLE IF NOT EXISTS '
-        'temporary_alltypes AS functional_alltypes'
-    )
-
-    con.raw_sql(drop)
-    con.raw_sql(create)
-
-    temporary = con.table('temporary_alltypes')
+def test_insert(con, temporary_alltypes, alltypes, df):
+    temporary = temporary_alltypes
     records = df[:10]
 
     assert len(temporary.execute()) == 0
@@ -135,17 +128,8 @@ def test_insert(con, alltypes, df):
     tm.assert_frame_equal(temporary.execute(), records)
 
 
-def test_insert_with_less_columns(con, alltypes, df):
-    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = (
-        'CREATE TABLE IF NOT EXISTS '
-        'temporary_alltypes AS functional_alltypes'
-    )
-
-    con.raw_sql(drop)
-    con.raw_sql(create)
-
-    temporary = con.table('temporary_alltypes')
+def test_insert_with_less_columns(con, temporary_alltypes, alltypes, df):
+    temporary = temporary_alltypes
     records = df.loc[:10, ['string_col']].copy()
     records['date_col'] = None
 
@@ -153,17 +137,8 @@ def test_insert_with_less_columns(con, alltypes, df):
         temporary.insert(records)
 
 
-def test_insert_with_more_columns(con, alltypes, df):
-    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
-    create = (
-        'CREATE TABLE IF NOT EXISTS '
-        'temporary_alltypes AS functional_alltypes'
-    )
-
-    con.raw_sql(drop)
-    con.raw_sql(create)
-
-    temporary = con.table('temporary_alltypes')
+def test_insert_with_more_columns(con, temporary_alltypes, alltypes, df):
+    temporary = temporary_alltypes
     records = df[:10].copy()
     records['non_existing_column'] = 'raise on me'
 
