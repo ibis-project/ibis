@@ -12,8 +12,6 @@ packages = [
     "ibis.backends.base.sql.registry",
     "ibis.backends.clickhouse",
     "ibis.backends.clickhouse.tests",
-    "ibis.backends.csv",
-    "ibis.backends.csv.tests",
     "ibis.backends.dask",
     "ibis.backends.dask.execution",
     "ibis.backends.dask.tests",
@@ -108,7 +106,6 @@ extras_require = {
 entry_points = {
     "ibis.backends": [
         "clickhouse = ibis.backends.clickhouse",
-        "csv = ibis.backends.csv",
         "dask = ibis.backends.dask",
         "datafusion = ibis.backends.datafusion",
         "hdf5 = ibis.backends.hdf5",

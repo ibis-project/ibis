@@ -83,9 +83,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         # Pandas backend is probably doing this wrong
         param(
             'W',
-            marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'dask', 'hdf5')
-            ),
+            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
         ),
         'h',
         'm',
@@ -116,9 +114,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'D',
         param(
             'W',
-            marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'dask', 'hdf5')
-            ),
+            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
         ),
     ],
 )
@@ -166,7 +162,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=pytest.mark.xpass_backends(
                 (
-                    'csv',
                     'pandas',
                     'bigquery',
                     'impala',
@@ -424,7 +419,6 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
             marks=pytest.mark.xpass_backends(
                 (
                     'bigquery',
-                    'csv',
                     'impala',
                     'pandas',
                     'pyspark',
@@ -435,9 +429,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         ),
         param(
             'ns',
-            marks=pytest.mark.xpass_backends(
-                ('csv', 'pandas', 'dask', 'hdf5')
-            ),
+            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
         ),
     ],
 )

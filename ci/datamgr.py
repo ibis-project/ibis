@@ -455,15 +455,6 @@ def datafusion(tables, data_directory, ignore_missing_dependency, **params):
 
 
 @cli.command()
-def csv(**params):
-    """
-    The csv backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py csv` in the CI.
-    """
-
-
-@cli.command()
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option(
     '-d',
