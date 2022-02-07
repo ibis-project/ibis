@@ -104,9 +104,8 @@ class Backend(BaseSQLBackend):
         self.con.connection.force_connect()
         try:
             info = self.con.connection.server_info
-        except Exception:
+        finally:
             self.con.connection.disconnect()
-            raise
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
 
