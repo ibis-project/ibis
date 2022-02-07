@@ -11,7 +11,6 @@ let
 
     let
       backends = [
-        "csv"
         "dask"
         "datafusion"
         "hdf5"

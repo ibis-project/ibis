@@ -51,7 +51,7 @@ def calc_zscore(s):
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                ['csv', 'pandas', 'pyspark', 'hdf5'],
+                ['pandas', 'pyspark', 'hdf5'],
                 raises=AssertionError,
             ),
         ),
@@ -76,7 +76,7 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=pytest.mark.xfail_backends(
-                ('pandas', 'dask', 'csv', 'hdf5'),
+                ('pandas', 'dask', 'hdf5'),
                 raises=(IndexError, com.UnboundExpressionError),
             ),
         ),
@@ -498,9 +498,7 @@ def test_ungrouped_unbounded_window(
         ),
     ]
 )
-@pytest.mark.skip_backends(
-    ['pandas', 'csv', 'pyspark', 'hdf5'], reason='Issue #2709'
-)
+@pytest.mark.skip_backends(['pandas', 'pyspark', 'hdf5'], reason='Issue #2709')
 def test_grouped_bounded_range_window(backend, alltypes, df, con):
     if not backend.supports_window_operations:
         pytest.skip(f'Backend {backend} does not support window operations')

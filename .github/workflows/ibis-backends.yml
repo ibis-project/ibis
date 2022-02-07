@@ -33,8 +33,6 @@ jobs:
           - "3.7"
           - "3.10"
         backend:
-          - name: csv
-            title: CSV
           - name: dask
             title: Dask
           - name: hdf5

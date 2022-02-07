@@ -103,7 +103,6 @@ all = [
   "tables",
 ]
 clickhouse = ["clickhouse-driver"]
-csv = []
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
@@ -118,7 +117,6 @@ visualization = ["graphviz"]
 
 [tool.poetry.plugins."ibis.backends"]
 clickhouse = "ibis.backends.clickhouse"
-csv = "ibis.backends.csv"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
 hdf5 = "ibis.backends.hdf5"
