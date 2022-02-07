@@ -58,9 +58,3 @@ def test_pipe_pass_to_keyword(pipe_table):
     expected = pipe_table['value'] + 4
 
     assert result.equals(expected)
-
-
-def test_call_pipe_equivalence(pipe_table):
-    result = pipe_table(lambda x: x['key1'].cast('double').sum())
-    expected = pipe_table.key1.cast('double').sum()
-    assert result.equals(expected)
