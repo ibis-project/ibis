@@ -250,7 +250,6 @@ def awards_players_df(awards_players):
 
 @pytest.fixture(scope='session')
 def geo_df(geo):
-    # Currently geo is implemented just for OmniSciDB
     if geo is not None:
         return geo.execute(limit=None)
     return None
@@ -283,10 +282,6 @@ def temp_table(con) -> str:
 @pytest.fixture
 def temp_view(con) -> str:
     """Return a temporary view name.
-
-    Parameters
-    ----------
-    con : ibis.omniscidb.OmniSciDBClient
 
     Yields
     ------

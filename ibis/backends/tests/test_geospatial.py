@@ -34,7 +34,7 @@ polygon_0 = ibis.literal(
 ).name('p')
 
 # add here backends that support geo spatial types
-all_db_geo_supported = ['omniscidb', 'postgres']
+all_db_geo_supported = ['postgres']
 
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
@@ -60,64 +60,14 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (
-            point_0,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (0 0)')",
-                'postgres': "'POINT (0 0)'",
-            },
-        ),
-        # TODO: add SRID to the literals. OmniSciDB and PostGIS handle in a
-        #       different way that.
-        (
-            point_0_4326,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (0 0)', 4326)",
-                'postgres': "'SRID=4326;POINT (0 0)'",
-            },
-        ),
-        (
-            point_geom_0,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (0 0)', 4326)",
-                'postgres': "'SRID=4326;POINT (0 0)'::geometry",
-            },
-        ),
-        (
-            point_geom_1,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (1 1)', 4326)",
-                'postgres': "'SRID=4326;POINT (1 1)'::geometry",
-            },
-        ),
-        (
-            point_geom_2,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (2 2)', 4326)",
-                'postgres': "'SRID=4326;POINT (2 2)'::geometry",
-            },
-        ),
-        (
-            point_geog_0,
-            {
-                'omniscidb': "ST_GeogFromText('POINT (0 0)', 4326)",
-                'postgres': "'SRID=4326;POINT (0 0)'::geography",
-            },
-        ),
-        (
-            point_geog_1,
-            {
-                'omniscidb': "ST_GeogFromText('POINT (1 1)', 4326)",
-                'postgres': "'SRID=4326;POINT (1 1)'::geography",
-            },
-        ),
-        (
-            point_geog_2,
-            {
-                'omniscidb': "ST_GeogFromText('POINT (2 2)', 4326)",
-                'postgres': "'SRID=4326;POINT (2 2)'::geography",
-            },
-        ),
+        (point_0, {'postgres': "'POINT (0 0)'"}),
+        (point_0_4326, {'postgres': "'SRID=4326;POINT (0 0)'"}),
+        (point_geom_0, {'postgres': "'SRID=4326;POINT (0 0)'::geometry"}),
+        (point_geom_1, {'postgres': "'SRID=4326;POINT (1 1)'::geometry"}),
+        (point_geom_2, {'postgres': "'SRID=4326;POINT (2 2)'::geometry"}),
+        (point_geog_0, {'postgres': "'SRID=4326;POINT (0 0)'::geography"}),
+        (point_geog_1, {'postgres': "'SRID=4326;POINT (1 1)'::geography"}),
+        (point_geog_2, {'postgres': "'SRID=4326;POINT (2 2)'::geography"}),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
@@ -133,68 +83,22 @@ def test_literal_geospatial_explicit(backend, con, expr, expected):
 @pytest.mark.parametrize(
     ('shp', 'expected'),
     [
-        (
-            shp_point_0,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (0 0)')",
-                'postgres': "'POINT (0 0)'",
-            },
-        ),
-        (
-            shp_point_1,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (1 1)')",
-                'postgres': "'POINT (1 1)'",
-            },
-        ),
-        (
-            shp_point_2,
-            {
-                'omniscidb': "ST_GeomFromText('POINT (2 2)')",
-                'postgres': "'POINT (2 2)'",
-            },
-        ),
-        (
-            shp_linestring_0,
-            {
-                'omniscidb': "ST_GeomFromText('LINESTRING (0 0, 1 1, 2 2)')",
-                'postgres': "'LINESTRING (0 0, 1 1, 2 2)'",
-            },
-        ),
-        (
-            shp_linestring_1,
-            {
-                'omniscidb': "ST_GeomFromText('LINESTRING (2 2, 1 1, 0 0)')",
-                'postgres': "'LINESTRING (2 2, 1 1, 0 0)'",
-            },
-        ),
-        (
-            shp_polygon_0,
-            {
-                'omniscidb': (
-                    "ST_GeomFromText('POLYGON ((0 0, 1 1, 2 2, 0 0))')"
-                ),
-                'postgres': "'POLYGON ((0 0, 1 1, 2 2, 0 0))'",
-            },
-        ),
+        (shp_point_0, {'postgres': "'POINT (0 0)'"}),
+        (shp_point_1, {'postgres': "'POINT (1 1)'"}),
+        (shp_point_2, {'postgres': "'POINT (2 2)'"}),
+        (shp_linestring_0, {'postgres': "'LINESTRING (0 0, 1 1, 2 2)'"}),
+        (shp_linestring_1, {'postgres': "'LINESTRING (2 2, 1 1, 0 0)'"}),
+        (shp_polygon_0, {'postgres': "'POLYGON ((0 0, 1 1, 2 2, 0 0))'"}),
         (
             shp_multipolygon_0,
-            {
-                'omniscidb': (
-                    "ST_GeomFromText('MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))')"
-                ),
-                'postgres': "'MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))'",
-            },
+            {'postgres': "'MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))'"},
         ),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
 def test_literal_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
     result_expected = f"SELECT {expected[backend.name()]} AS tmp"
-    # use `in` op because if name is specified omniscidb doesn't compile
-    # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
     assert result in result_expected
 
@@ -207,24 +111,13 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
             {
                 'postgres': (
                     "'MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))'"
-                ),
-                'omniscidb': (
-                    "ST_GeomFromText('MULTILINESTRING ((0 0, 1 1, 2 2),"
-                    + " (2 2, 1 1, 0 0))')"
-                ),
+                )
             },
         ),
-        (
-            shp_multipoint_0,
-            {
-                'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'",
-                'omniscidb': "ST_GeomFromText('MULTIPOINT (0 0, 1 1, 2 2)')",
-            },
-        ),
+        (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
 def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
     result_expected = f"SELECT {expected[backend.name()]} AS tmp"
@@ -287,65 +180,45 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
         param(
             lambda t: t['geo_linestring'].contains(point_geom_1_srid0),
             {
-                'omniscidb': [True, True, False, False, False],
-                'postgres': [False] * 5,  # not contains the border
+                # does not contain the border
+                'postgres': [False]
+                * 5,
             },
             id='contains',
         ),
         param(
             lambda t: t['geo_linestring'].disjoint(point_geom_0_srid0),
-            {
-                'omniscidb': [False, True, True, True, True],
-                'postgres': [False, True, True, True, True],
-            },
+            {'postgres': [False, True, True, True, True]},
             id='disjoint',
         ),
         param(
             lambda t: t['geo_point'].d_within(point_geom_1_srid0, 2.0),
-            {
-                'omniscidb': [True, True, True, False, False],
-                'postgres': [True, True, True, False, False],
-            },
+            {'postgres': [True, True, True, False, False]},
             id='d_within',
         ),
         param(
             lambda t: t['geo_point'].d_fully_within(t['geo_linestring'], 2.0),
-            {
-                'omniscidb': [True, True, True, True, True],
-                'postgres': [True, True, True, True, True],
-            },
+            {'postgres': [True, True, True, True, True]},
             id='d_fully_within',
         ),
         param(
             lambda t: t['geo_linestring'].intersects(point_geom_0_srid0),
-            {
-                'omniscidb': [True, False, False, False, False],
-                'postgres': [True, False, False, False, False],
-            },
+            {'postgres': [True, False, False, False, False]},
             id='intersects',
         ),
         param(
             lambda t: t['geo_linestring'].distance(point_geom_0_srid0),
-            {
-                'omniscidb': [0.0, 1.41, 2.82, 4.24, 5.66],
-                'postgres': [0.0, 1.41, 2.82, 4.24, 5.66],
-            },
+            {'postgres': [0.0, 1.41, 2.82, 4.24, 5.66]},
             id='distance',
         ),
         param(
             lambda t: t['geo_linestring'].max_distance(point_geom_0_srid0),
-            {
-                'omniscidb': [1.41, 2.82, 4.24, 5.66, 7.08],
-                'postgres': [1.41, 2.82, 4.24, 5.66, 7.08],
-            },
+            {'postgres': [1.41, 2.82, 4.24, 5.66, 7.08]},
             id='max_distance',
         ),
         param(
             lambda t: t.geo_polygon.contains(ibis.geo_point(30, 10)),
-            {
-                'omniscidb': [True, False, False, False, False],
-                'postgres': [True, False, False, False, False],
-            },
+            {'postgres': [True, False, False, False, False]},
             id='point',
         ),
     ],
@@ -405,12 +278,12 @@ def test_area(backend, geo, arg, expected):
 @pytest.mark.parametrize(
     ('condition', 'expected'),
     [
-        (lambda t: point_geom_2.srid(), {'omniscidb': 4326, 'postgres': 4326}),
-        (lambda t: point_geom_0.srid(), {'omniscidb': 4326, 'postgres': 4326}),
-        (lambda t: t.geo_point.srid(), {'omniscidb': 0, 'postgres': 0}),
-        (lambda t: t.geo_linestring.srid(), {'omniscidb': 0, 'postgres': 0}),
-        (lambda t: t.geo_polygon.srid(), {'omniscidb': 0, 'postgres': 0}),
-        (lambda t: t.geo_multipolygon.srid(), {'omniscidb': 0, 'postgres': 0}),
+        (lambda t: point_geom_2.srid(), {'postgres': 4326}),
+        (lambda t: point_geom_0.srid(), {'postgres': 4326}),
+        (lambda t: t.geo_point.srid(), {'postgres': 0}),
+        (lambda t: t.geo_linestring.srid(), {'postgres': 0}),
+        (lambda t: t.geo_polygon.srid(), {'postgres': 0}),
+        (lambda t: t.geo_multipolygon.srid(), {'postgres': 0}),
     ],
 )
 @pytest.mark.only_on_backends(all_db_geo_supported)

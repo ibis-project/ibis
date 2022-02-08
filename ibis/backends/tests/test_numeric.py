@@ -58,19 +58,16 @@ def sch_decimal():
             lambda t: ibis.literal(np.nan),
             lambda t: np.nan,
             id='nan-literal',
-            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
         param(
             lambda t: ibis.literal(np.inf),
             lambda t: np.inf,
             id='inf-literal',
-            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
         param(
             lambda t: ibis.literal(-np.inf),
             lambda t: -np.inf,
             id='-inf-literal',
-            marks=pytest.mark.xfail_backends(['omniscidb']),
         ),
     ],
 )

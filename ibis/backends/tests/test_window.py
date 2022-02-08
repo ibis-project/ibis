@@ -51,7 +51,7 @@ def calc_zscore(s):
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.xpass_backends(
-                ['csv', 'pandas', 'parquet', 'pyspark', 'omniscidb', 'hdf5'],
+                ['csv', 'pandas', 'parquet', 'pyspark', 'hdf5'],
                 raises=AssertionError,
             ),
         ),
@@ -234,7 +234,6 @@ def test_grouped_bounded_expanding_window(
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.xfail_backends(['omniscidb'])
 @pytest.mark.xfail_unsupported
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, con, result_fn, expected_fn
@@ -455,7 +454,6 @@ def test_grouped_unbounded_window(
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.xfail_backends(['omniscidb'])
 @pytest.mark.xfail_unsupported
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
