@@ -166,7 +166,7 @@ def test_create_drop_view(con, backend, temp_view):
 
 
 @pytest.mark.only_on_backends(
-    ['bigquery', 'clickhouse', 'impala', 'omniscidb', 'spark'],
+    ['bigquery', 'clickhouse', 'impala', 'spark'],
     reason="run only if backend is sql-based",
 )
 def test_separate_database(con, alternate_current_database, current_data_db):
