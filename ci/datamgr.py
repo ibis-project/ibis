@@ -455,39 +455,9 @@ def datafusion(tables, data_directory, ignore_missing_dependency, **params):
 
 
 @cli.command()
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option(
-    '-d',
-    '--data-directory',
-    default=DATA_DIR,
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        writable=True,
-        readable=True,
-        path_type=Path,
-    ),
-)
-def hdf5(tables, data_directory, **params):
-    """
-    The hdf5 backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py hdf5` in the CI.
-    """
-    for table, df in read_tables(tables, data_directory):
-        df.to_hdf(
-            data_directory / f'{table}.h5',
-            key=table,
-            mode='w',
-            format='table',
-        )
-
-
-@cli.command()
 def pyspark(**params):
     """
-    The hdf5 backend does not need test data, but we still
+    The pyspark backend does not need test data, but we still
     have an option for the backend for consistency, and to not
     have to avoid calling `./datamgr.py pyspark` in the CI.
     """

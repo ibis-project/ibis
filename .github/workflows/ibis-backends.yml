@@ -35,36 +35,10 @@ jobs:
         backend:
           - name: dask
             title: Dask
-          - name: hdf5
-            title: HDF5
           - name: pandas
             title: Pandas
           - name: sqlite
             title: SQLite
-        exclude:
-          - os: windows-latest
-            python-version: "3.10"
-            backend:
-              name: hdf5
-              title: HDF5
-          # TODO: remove this when HDF5 becomes 3.10 compatible
-          - os: ubuntu-latest
-            python-version: "3.10"
-            backend:
-              name: hdf5
-              title: HDF5
-        include:
-          - os: windows-latest
-            python-version: "3.8"
-            backend:
-              name: hdf5
-              title: HDF5
-          # TODO: remove this when HDF5 becomes 3.10 compatible
-          - os: ubuntu-latest
-            python-version: "3.9"
-            backend:
-              name: hdf5
-              title: HDF5
     steps:
       - name: checkout
         uses: actions/checkout@v2

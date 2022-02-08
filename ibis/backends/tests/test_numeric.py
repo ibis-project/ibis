@@ -456,7 +456,6 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
         'pandas',
         'dask',
         'csv',
-        'hdf5',
         'datafusion',
         'pyspark',
         'clickhouse',

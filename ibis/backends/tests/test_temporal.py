@@ -81,10 +81,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'D',
         # Spark truncation to week truncates to different days than Pandas
         # Pandas backend is probably doing this wrong
-        param(
-            'W',
-            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
-        ),
+        param('W', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
         'h',
         'm',
         's',
@@ -112,10 +109,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'Y',
         'M',
         'D',
-        param(
-            'W',
-            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
-        ),
+        param('W', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
     ],
 )
 @pytest.mark.xfail_unsupported
@@ -167,7 +161,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     'impala',
                     'postgres',
                     'dask',
-                    'hdf5',
                 )
             ),
         ),
@@ -423,14 +416,10 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
                     'pandas',
                     'pyspark',
                     'dask',
-                    'hdf5',
                 )
             ),
         ),
-        param(
-            'ns',
-            marks=pytest.mark.xpass_backends(('pandas', 'dask', 'hdf5')),
-        ),
+        param('ns', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
     ],
 )
 @pytest.mark.xfail_unsupported
