@@ -30,6 +30,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: install nix
         uses: cachix/install-nix-action@v16
@@ -53,11 +54,17 @@ jobs:
           name: ibis-squawk-bot[bot]
           email: ibis-squawk-bot[bot]@users.noreply.github.com
 
-      - name: commit setup.py and push to pull request
-        uses: EndBug/add-and-commit@v8
-        with:
-          add: setup.py
-          author_name: ibis-squawk-bot[bot]
-          author_email: ibis-squawk-bot[bot]@users.noreply.github.com
-          message: "chore(setup.py): regenerate"
-          push: true
+      - name: commit setup.py and push to PR
+        run: |
+          set -euo pipefail
+
+          git add setup.py
+
+          if git commit -m 'chore(setup.py): regenerate'; then
+            # pull in case another commit happened in the meantime
+            #
+            # `ours` is actually the *other* changeset, not the current branch, per
+            # https://stackoverflow.com/a/3443225/564538
+            git pull --rebase -s recursive -X ours
+            git push
+          fi
