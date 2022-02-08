@@ -181,40 +181,6 @@ def download(repo_url, directory):
 
 
 @cli.command()
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option(
-    '-d',
-    '--data-directory',
-    default=DATA_DIR,
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        writable=True,
-        readable=True,
-        path_type=Path,
-    ),
-)
-@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
-def parquet(tables, data_directory, ignore_missing_dependency, **params):
-    try:
-        import pyarrow as pa  # noqa: F401
-        import pyarrow.parquet as pq  # noqa: F401
-    except ImportError:
-        msg = 'PyArrow dependency is missing'
-        if ignore_missing_dependency:
-            logger.warning('Ignored: %s', msg)
-            return 0
-        else:
-            raise click.ClickException(msg)
-
-    for table, df in read_tables(tables, data_directory):
-        arrow_table = pa.Table.from_pandas(df)
-        target_path = data_directory / f'{table}.parquet'
-        pq.write_table(arrow_table, str(target_path))
-
-
-@cli.command()
 @click.option('-h', '--host', default='localhost')
 @click.option(
     '-P',
@@ -455,12 +421,37 @@ def dask(**params):
 
 
 @cli.command()
-def datafusion(**params):
-    """
-    The datafusion backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py datafusion` in the CI.
-    """
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
+def datafusion(tables, data_directory, ignore_missing_dependency, **params):
+    try:
+        import pyarrow as pa  # noqa: F401
+        import pyarrow.parquet as pq  # noqa: F401
+    except ImportError:
+        msg = 'PyArrow dependency is missing'
+        if ignore_missing_dependency:
+            logger.warning('Ignored: %s', msg)
+            return 0
+        else:
+            raise click.ClickException(msg)
+
+    for table, df in read_tables(tables, data_directory):
+        arrow_table = pa.Table.from_pandas(df)
+        target_path = data_directory / f'{table}.parquet'
+        pq.write_table(arrow_table, str(target_path))
 
 
 @cli.command()

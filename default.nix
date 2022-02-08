@@ -16,7 +16,6 @@ let
         "datafusion"
         "hdf5"
         "pandas"
-        "parquet"
         "sqlite"
       ];
 

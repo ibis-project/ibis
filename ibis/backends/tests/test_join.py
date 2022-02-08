@@ -10,7 +10,6 @@ all_db_join_supported = [
     'dask',
     'hdf5',
     'pandas',
-    'parquet',
     'pyspark',
 ]
 
