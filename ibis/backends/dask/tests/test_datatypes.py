@@ -8,7 +8,6 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-import ibis.expr.types as ir
 
 
 def test_no_infer_ambiguities():
@@ -85,14 +84,15 @@ def test_dask_dtype(dask_dtype, ibis_dtype):
     assert dt.dtype(dask_dtype) == ibis_dtype
 
 
-@pytest.mark.xfail(TypeError, reason="TODO - as_value_expr - #2553")
-def test_series_to_ibis_literal():
+def test_series_to_ibis_literal(core_client):
     values = [1, 2, 3, 4]
     s = dd.from_pandas(pd.Series(values), npartitions=1)
 
-    expr = ir.as_value_expr(s)
-    expected = ir.sequence(list(s))
-    assert expr.equals(expected)
+    expr = ibis.array(s)
+
+    assert expr.equals(ibis.array(values))
+
+    assert core_client.execute(expr) == pytest.approx([1, 2, 3, 4])
 
 
 @pytest.mark.parametrize(

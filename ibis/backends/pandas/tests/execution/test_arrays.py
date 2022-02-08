@@ -6,7 +6,6 @@ import pandas._testing as tm
 import pytest
 
 import ibis
-from ibis.common.exceptions import IbisTypeError
 
 
 @pytest.mark.parametrize('arr', [[1, 3, 5], np.array([1, 3, 5])])
@@ -81,16 +80,6 @@ def test_array_collect_rolling_partitioned(t, df):
         }
     )[expr.columns]
     tm.assert_frame_equal(result, expected)
-
-
-@pytest.mark.xfail(raises=IbisTypeError, reason='Not sure if this should work')
-def test_array_collect_scalar(client):
-    raw_value = 'abcd'
-    value = ibis.literal(raw_value)
-    expr = value.collect()
-    result = client.execute(expr)
-    expected = [raw_value]
-    tm.assert_numpy_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(

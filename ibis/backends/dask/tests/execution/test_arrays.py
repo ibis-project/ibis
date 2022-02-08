@@ -7,7 +7,6 @@ import pytest
 from dask.dataframe.utils import tm
 
 import ibis
-from ibis.common.exceptions import IbisTypeError
 
 
 def test_array_length(t, df):
@@ -77,21 +76,8 @@ def test_array_collect_rolling_partitioned(t, df):
     tm.assert_frame_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.xfail(raises=IbisTypeError, reason='Not sure if this should work')
-def test_array_collect_scalar(client):
-    raw_value = 'abcd'
-    value = ibis.literal(raw_value)
-    expr = value.collect()
-    result = client.execute(expr)
-    expected = [raw_value]
-    assert result == expected
-
-
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason='TODO - arrays - #2553'
-    # Need an ops.ArraySlice execution func that dispatches on dd.Series
-)
+# Need an ops.ArraySlice execution func that dispatches on dd.Series
+@pytest.mark.xfail(raises=NotImplementedError, reason="TODO - arrays - #2553")
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
