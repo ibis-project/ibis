@@ -144,6 +144,9 @@ nav:
           - SQLAlchemy Backends: api/backends/sqlalchemy.md
 extra:
   project_name: "ibis"
+  analytics:
+    provider: google
+    property: G-SLDPWBM521
   team:
     - name: "Active maintainers"
       members:
