@@ -56,16 +56,7 @@ jobs:
             --platform osx-64 \
             --platform win-64 \
             --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
-            --extras clickhouse \
-            --extras dask \
-            --extras geospatial \
-            --extras hdf5 \
-            --extras impala \
-            --extras mysql \
-            --extras parquet \
-            --extras postgres \
-            --extras pyspark \
-            --extras sqlite \
+            --extras all \
             --mamba
 
       - name: create conda environment
