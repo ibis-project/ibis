@@ -13,7 +13,6 @@ let
       backends = [
         "dask"
         "datafusion"
-        "hdf5"
         "pandas"
         "sqlite"
       ];
@@ -45,6 +44,8 @@ let
       '';
 
       checkPhase = ''
+        set -euo pipefail
+
         runHook preCheck
 
         tempdir="$(mktemp -d)"

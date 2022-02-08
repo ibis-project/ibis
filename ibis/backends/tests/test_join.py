@@ -7,7 +7,6 @@ import ibis.common.exceptions as exc
 # add here backends that passes join tests
 all_db_join_supported = [
     'dask',
-    'hdf5',
     'pandas',
     'pyspark',
 ]

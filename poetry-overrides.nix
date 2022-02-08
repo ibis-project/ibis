@@ -41,11 +41,6 @@ self: super:
     '';
   });
 
-  tables = super.tables.overridePythonAttrs (attrs: {
-    buildInputs = (attrs.buildInputs or [ ]) ++ (with pkgs; [ bzip2 c-blosc hdf5 lzo ]);
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.cython ];
-  });
-
   # TODO: remove this entire override when upstream nixpkgs datafusion PR
   # https://github.com/NixOS/nixpkgs/pull/152763 is merged
   datafusion =
