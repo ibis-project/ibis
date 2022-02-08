@@ -41,8 +41,6 @@ jobs:
             title: HDF5
           - name: pandas
             title: Pandas
-          - name: parquet
-            title: Parquet
           - name: sqlite
             title: SQLite
         exclude:
