@@ -148,13 +148,11 @@ def test_interval_films_schema(con):
 @pytest.mark.parametrize(
     ("column", "expected_dtype"),
     [
-        # ("a", dt.Interval("Y")),
-        # ("b", dt.Interval("M")),
+        # a, b and g are variable length intervals, like YEAR TO MONTH
         ("c", dt.Interval("D")),
         ("d", dt.Interval("h")),
         ("e", dt.Interval("m")),
         ("f", dt.Interval("s")),
-        # ("g", dt.Interval("M")),
         ("h", dt.Interval("h")),
         ("i", dt.Interval("m")),
         ("j", dt.Interval("s")),
@@ -170,13 +168,11 @@ def test_all_interval_types_schema(intervals, column, expected_dtype):
 @pytest.mark.parametrize(
     ("column", "expected_dtype"),
     [
-        # ("a", dt.Interval("Y")),
-        # ("b", dt.Interval("M")),
+        # a, b and g are variable length intervals, like YEAR TO MONTH
         ("c", dt.Interval("D")),
         ("d", dt.Interval("h")),
         ("e", dt.Interval("m")),
         ("f", dt.Interval("s")),
-        # ("g", dt.Interval("M")),
         ("h", dt.Interval("h")),
         ("i", dt.Interval("m")),
         ("j", dt.Interval("s")),

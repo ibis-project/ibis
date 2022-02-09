@@ -284,11 +284,6 @@ def batting(lahman):
 
 
 @pytest.fixture(scope='module')
-def awards_players(lahman):
-    return lahman.table('awards_players')
-
-
-@pytest.fixture(scope='module')
 def sel_cols(batting):
     cols = batting.columns
     start, end = cols.index('AB'), cols.index('H') + 1
@@ -298,11 +293,6 @@ def sel_cols(batting):
 @pytest.fixture(scope='module')
 def players_base(batting, sel_cols):
     return batting[sel_cols].sort_by(sel_cols[:3])
-
-
-@pytest.fixture(scope='module')
-def players(players_base):
-    return players_base.groupby('playerID')
 
 
 @pytest.fixture(scope='module')

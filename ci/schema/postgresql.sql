@@ -126,13 +126,10 @@ DROP TABLE IF EXISTS intervals CASCADE;
 
 CREATE TABLE IF NOT EXISTS intervals (
     -- enable year and month when relativedelta support lands
-    -- a INTERVAL YEAR,
-    -- b INTERVAL MONTH,
     c INTERVAL DAY,
     d INTERVAL HOUR,
     e INTERVAL MINUTE,
     f INTERVAL SECOND,
-    -- g INTERVAL YEAR TO MONTH,
     h INTERVAL DAY TO HOUR,
     i INTERVAL DAY TO MINUTE,
     j INTERVAL DAY TO SECOND,

@@ -161,11 +161,6 @@ def test_data_dir(env):
 
 
 @pytest.fixture
-def hdfs_superuser(env):
-    return env.hdfs_superuser
-
-
-@pytest.fixture
 def hdfs(env, tmp_dir):
     if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
         warnings.warn("Ignoring invalid Certificate Authority errors")
@@ -329,16 +324,6 @@ def temp_view(con):
     finally:
         assert name in con.list_tables(), name
         con.drop_view(name)
-
-
-@pytest.fixture
-def temp_view_db(con, temp_database):
-    name = _random_identifier('view')
-    try:
-        yield temp_database, name
-    finally:
-        assert name in con.list_tables(database=temp_database), name
-        con.drop_view(name, database=temp_database)
 
 
 @pytest.fixture

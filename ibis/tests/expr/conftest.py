@@ -53,11 +53,6 @@ def int_col(request):
     return request.param
 
 
-@pytest.fixture(params=list('h'))
-def bool_col(request):
-    return request.param
-
-
 @pytest.fixture(params=list('ef'))
 def float_col(request):
     return request.param
@@ -70,11 +65,6 @@ def numeric_col(request):
 
 @pytest.fixture(params=list('g'))
 def string_col(request):
-    return request.param
-
-
-@pytest.fixture(params=list('abcdefgh'))
-def col(request):
     return request.param
 
 

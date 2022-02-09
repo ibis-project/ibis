@@ -414,21 +414,6 @@ def t2(con):
 
 
 @pytest.fixture(scope="module")
-def t3(con):
-    return con.table("t3")
-
-
-@pytest.fixture(scope="module")
-def t4(con):
-    return con.table("t4")
-
-
-@pytest.fixture(scope="module")
-def first(con, t1):
-    return con.table("t1")
-
-
-@pytest.fixture(scope="module")
 def where_uncorrelated_subquery(foo, bar):
     return foo[foo.job.isin(bar.job)]
 

@@ -14,11 +14,6 @@ from ibis.common.exceptions import RelationError
 from ibis.expr.datatypes import Category
 
 
-@pytest.fixture(scope="module")
-def table(con):
-    return con.table("alltypes")
-
-
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 

@@ -289,11 +289,6 @@ def batting(lahman):
 
 
 @pytest.fixture(scope='module')
-def awards_players(lahman):
-    return lahman.table('awards_players')
-
-
-@pytest.fixture(scope='module')
 def sel_cols(batting):
     cols = batting.columns
     start, end = cols.index('AB'), cols.index('H') + 1
