@@ -88,7 +88,7 @@ def test_infer_exhaustive_dataframe(npartitions):
                         8.8000001907348633,
                         9.8999996185302734,
                     ],
-                    dtype='f4',
+                    dtype=np.float32,
                 ),
                 'int_col': np.array(
                     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i4'
@@ -146,8 +146,8 @@ def test_infer_exhaustive_dataframe(npartitions):
         ('bool_col', dt.boolean),
         ('bool_obj_col', dt.boolean),
         ('date_string_col', dt.string),
-        ('double_col', dt.double),
-        ('float_col', dt.float),
+        ('double_col', dt.float64),
+        ('float_col', dt.float32),
         ('int_col', dt.int32),
         ('month', dt.int64),
         ('smallint_col', dt.int16),

@@ -85,8 +85,8 @@ def test_sqla_schema_conversion(con):
         ('int', sat.Integer, True, dt.int32),
         ('integer', sat.INTEGER(), True, dt.int32),
         ('bigint', sat.BigInteger, False, dt.int64),
-        ('real', sat.REAL, True, dt.float),
-        ('bool', sat.Boolean, True, dt.boolean),
+        ('real', sat.REAL, True, dt.float32),
+        ('bool', sat.Boolean, True, dt.bool),
         ('timestamp', sat.DateTime, True, dt.timestamp),
     ]
 

@@ -39,8 +39,9 @@ ibis_type_to_sqla = {
     dt.String: sa.Text,
     dt.Decimal: sa.NUMERIC,
     # Mantissa-based
-    dt.Float: sa.REAL,
-    dt.Double: sa.FLOAT,
+    dt.Float16: sa.REAL,
+    dt.Float32: sa.REAL,
+    dt.Float64: sa.FLOAT,
     dt.Int8: sa.SmallInteger,
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
@@ -246,7 +247,7 @@ def sa_postgres_interval(_, satype, nullable=True):
 @dt.dtype.register(MySQLDialect, mysql.DOUBLE)
 def sa_mysql_double(_, satype, nullable=True):
     # TODO: handle asdecimal=True
-    return dt.Double(nullable=nullable)
+    return dt.Float64(nullable=nullable)
 
 
 @dt.dtype.register(Dialect, sa.types.String)

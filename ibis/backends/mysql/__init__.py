@@ -127,12 +127,12 @@ class Backend(BaseAlchemyBackend):
 
 @dt.dtype.register((mysql.DOUBLE, mysql.REAL))
 def mysql_double(satype, nullable=True):
-    return dt.Double(nullable=nullable)
+    return dt.Float64(nullable=nullable)
 
 
 @dt.dtype.register(mysql.FLOAT)
 def mysql_float(satype, nullable=True):
-    return dt.Float(nullable=nullable)
+    return dt.Float32(nullable=nullable)
 
 
 @dt.dtype.register(mysql.TINYINT)

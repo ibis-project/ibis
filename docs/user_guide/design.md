@@ -92,7 +92,7 @@ Similar objects are instantiated when you use ibis APIs:
 
 ```python
 import ibis
-t = ibis.table([('a', 'double')], name='t')
+t = ibis.table([('a', 'float')], name='t')
 log_1p = (1 + t.a).log()  # an Add and a Log are instantiated here
 ```
 

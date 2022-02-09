@@ -21,9 +21,10 @@ pytest.importorskip("clickhouse_driver")
     [
         ('int8', 'CAST(`double_col` AS Int8)'),
         ('int16', 'CAST(`double_col` AS Int16)'),
-        ('float', 'CAST(`double_col` AS Float32)'),
+        ('float32', 'CAST(`double_col` AS Float32)'),
+        ('float', 'CAST(`double_col` AS Float64)'),
         # alltypes.double_col is non-nullable
-        (dt.Double(nullable=False), '`double_col`'),
+        (dt.Float64(nullable=False), '`double_col`'),
     ],
 )
 def test_cast_double_col(alltypes, translate, to_type, expected):

@@ -32,8 +32,8 @@ IBIS_TYPE_TO_PANDAS_TYPE: Dict[dt.DataType, Union[Type, str]] = {
     dt.float16: np.float16,
     dt.float32: np.float32,
     dt.float64: np.float64,
-    dt.float: np.float32,
-    dt.double: np.float64,
+    dt.float32: np.float32,
+    dt.float64: np.float64,
     dt.int8: np.int8,
     dt.int16: np.int16,
     dt.int32: np.int32,
@@ -47,8 +47,8 @@ IBIS_TYPE_TO_PANDAS_TYPE: Dict[dt.DataType, Union[Type, str]] = {
 
 IBIS_TO_PYTHON_LITERAL_TYPES = {
     dt.boolean: bool,
-    dt.double: float,
-    dt.float: float,
+    dt.float64: float,
+    dt.float32: float,
     dt.int64: int,
     dt.int32: int,
     dt.int16: int,

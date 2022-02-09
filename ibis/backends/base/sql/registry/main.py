@@ -66,7 +66,7 @@ def sign(translator, expr):
     (arg,) = expr.op().args
     translated_arg = translator.translate(arg)
     translated_type = helpers.type_to_sql_string(expr.type())
-    if expr.type() != dt.float:
+    if expr.type() != dt.float32:
         return f'CAST(sign({translated_arg}) AS {translated_type})'
     return f'sign({translated_arg})'
 

@@ -20,10 +20,12 @@ class MySQLExprTranslator(AlchemyExprTranslator):
         {
             dt.Boolean: mysql.BOOLEAN,
             dt.Int8: mysql.TINYINT,
+            dt.Int16: mysql.INTEGER,
             dt.Int32: mysql.INTEGER,
             dt.Int64: mysql.BIGINT,
-            dt.Double: mysql.DOUBLE,
-            dt.Float: mysql.FLOAT,
+            dt.Float16: mysql.FLOAT,
+            dt.Float32: mysql.FLOAT,
+            dt.Float64: mysql.DOUBLE,
             dt.String: mysql.VARCHAR,
         }
     )

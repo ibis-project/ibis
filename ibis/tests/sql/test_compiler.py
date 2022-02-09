@@ -118,10 +118,10 @@ GROUP BY 1"""
 def test_pushdown_with_or():
     t = ibis.table(
         [
-            ('double_col', 'double'),
+            ('double_col', 'float64'),
             ('string_col', 'string'),
             ('int_col', 'int32'),
-            ('float_col', 'float'),
+            ('float_col', 'float32'),
         ],
         'functional_alltypes',
     )
