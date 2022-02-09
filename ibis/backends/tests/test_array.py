@@ -4,7 +4,9 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 
-pytestmark = pytest.mark.backends_never(["sqlite", "mysql"])
+pytestmark = pytest.mark.backends_never(
+    ["sqlite", "mysql"], reason="No array support"
+)
 
 
 @pytest.mark.backends_notimpl(

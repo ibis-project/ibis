@@ -29,7 +29,9 @@ aggregate_test_params = [
             pytest.mark.backends_notimpl(
                 ["datafusion", "postgres", "clickhouse", "impala"]
             ),
-            pytest.mark.backends_never(["sqlite", "mysql"]),
+            pytest.mark.backends_never(
+                ["sqlite", "mysql"], reason="no udf support"
+            ),
         ],
     ),
     param(

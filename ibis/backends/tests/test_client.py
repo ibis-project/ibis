@@ -28,7 +28,9 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     return temporary
 
 
-def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, temp_table):
+def test_load_data_sqlalchemy(
+    alchemy_backend, alchemy_con, alchemy_temp_table
+):
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -46,9 +48,9 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, temp_table):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    alchemy_con.create_table(temp_table, schema=sch)
-    alchemy_con.load_data(temp_table, df, if_exists='append')
-    result = alchemy_con.table(temp_table).execute()
+    alchemy_con.create_table(alchemy_temp_table, schema=sch)
+    alchemy_con.load_data(alchemy_temp_table, df, if_exists='append')
+    result = alchemy_con.table(alchemy_temp_table).execute()
 
     alchemy_backend.assert_frame_equal(df, result)
 
