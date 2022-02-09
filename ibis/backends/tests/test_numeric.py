@@ -21,31 +21,6 @@ else:
     from sqlalchemy.dialects import mysql, postgresql
 
 
-@pytest.fixture
-def df_decimal():
-    return pd.DataFrame(
-        {
-            'n1': [
-                decimal.Decimal('12.1234'),
-                decimal.Decimal('333.878787'),
-                decimal.Decimal('1090.4949'),
-            ],
-            'n2': [
-                decimal.Decimal('5454.0904'),
-                decimal.Decimal('904.889282'),
-                decimal.Decimal('9893.09022'),
-            ],
-        }
-    )
-
-
-@pytest.fixture
-def sch_decimal():
-    return ibis.schema(
-        [('index', 'int64'), ('n1', 'decimal'), ('n2', 'decimal')]
-    )
-
-
 @pytest.mark.parametrize(
     ('operand_fn', 'expected_operand_fn'),
     [
