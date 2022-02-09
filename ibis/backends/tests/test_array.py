@@ -4,14 +4,10 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 
-pytestmark = pytest.mark.backends_never(
-    ["sqlite", "mysql"], reason="No array support"
-)
+pytestmark = pytest.mark.never(["sqlite", "mysql"], reason="No array support")
 
 
-@pytest.mark.backends_notimpl(
-    ["impala", "postgres", "clickhouse", "datafusion"]
-)
+@pytest.mark.notimpl(["impala", "postgres", "clickhouse", "datafusion"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -26,7 +22,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.backends_notimpl(["impala"])
+@pytest.mark.notimpl(["impala"])
 def test_array_scalar(backend, con, alltypes, df):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -40,7 +36,7 @@ def test_array_scalar(backend, con, alltypes, df):
 
 
 # Issues #2370
-@pytest.mark.backends_notimpl(["impala", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion"])
 def test_array_concat(backend, con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -53,13 +49,13 @@ def test_array_concat(backend, con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.backends_notimpl(["impala", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion"])
 def test_array_length(backend, con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr) == 3
 
 
-@pytest.mark.backends_notimpl(["impala"])
+@pytest.mark.notimpl(["impala"])
 def test_list_literal(backend, con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -70,7 +66,7 @@ def test_list_literal(backend, con):
     assert np.array_equal(result, arr)
 
 
-@pytest.mark.backends_notimpl(["impala"])
+@pytest.mark.notimpl(["impala"])
 def test_np_array_literal(backend, con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)

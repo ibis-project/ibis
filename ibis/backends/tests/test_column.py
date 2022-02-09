@@ -12,7 +12,7 @@ import pytest
         pytest.param('timestamp_col', marks=pytest.mark.skip(reason='hangs')),
     ],
 )
-@pytest.mark.backends_notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_distinct_column(backend, alltypes, df, column):
     expr = alltypes[column].distinct()
     result = expr.execute()
@@ -20,7 +20,7 @@ def test_distinct_column(backend, alltypes, df, column):
     assert set(result) == set(expected)
 
 
-@pytest.mark.backends_notimpl(
+@pytest.mark.notimpl(
     [
         "postgres",
         "mysql",
@@ -47,7 +47,7 @@ def test_rowid(con, backend):
     pd.testing.assert_series_equal(result.iloc[:, 0], expected)
 
 
-@pytest.mark.backends_notimpl(
+@pytest.mark.notimpl(
     [
         "postgres",
         "mysql",
