@@ -60,8 +60,8 @@ def guid2(con):
             id='string_to_double',
         ),
         param(
-            lambda t: t.string_col.cast('float'),
-            lambda at: sa.cast(at.c.string_col, sa.REAL),
+            lambda t: t.string_col.cast('float32'),
+            lambda at: sa.cast(at.c.string_col, postgresql.REAL),
             id='string_to_float',
         ),
         param(

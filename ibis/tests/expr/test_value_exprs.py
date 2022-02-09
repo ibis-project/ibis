@@ -54,9 +54,10 @@ def test_null():
         (-129, 'int16'),
         (-32769, 'int32'),
         (-2147483649, 'int64'),
-        (1.5, 'double'),
+        (1.5, 'float64'),
         ('foo', 'string'),
-        (b'fooblob', 'binary'),
+        (b'fooblob', 'bytes'),
+        ([1, 2, 3], 'array<int8>'),
     ],
 )
 def test_literal_with_implicit_type(value, expected_type):
@@ -66,7 +67,7 @@ def test_literal_with_implicit_type(value, expected_type):
     assert expr.type() == dt.dtype(expected_type)
 
     assert isinstance(expr.op(), ops.Literal)
-    assert expr.op().value is value
+    assert expr.op().value == dt._normalize(expr.type(), value)
 
 
 @pytest.mark.parametrize(
@@ -103,17 +104,17 @@ multipolygon1 = [polygon1, polygon2]
     ['value', 'expected_type'],
     [
         (5, 'int16'),
-        (127, 'double'),
+        (127, 'float64'),
         (128, 'int64'),
-        (32767, 'double'),
-        (32768, 'float'),
+        (32767, 'float64'),
+        (32768, 'float32'),
         (2147483647, 'int64'),
         (-5, 'int16'),
         (-128, 'int32'),
         (-129, 'int64'),
-        (-32769, 'float'),
-        (-2147483649, 'double'),
-        (1.5, 'double'),
+        (-32769, 'float32'),
+        (-2147483649, 'float64'),
+        (1.5, 'float64'),
         ('foo', 'string'),
         (list(pointA), 'point'),
         (tuple(pointA), 'point'),
@@ -407,7 +408,7 @@ def test_notnull(table):
     assert isinstance(expr.op(), ops.NotNull)
 
 
-@pytest.mark.parametrize('column', ['e', 'f'], ids=['float', 'double'])
+@pytest.mark.parametrize('column', ['e', 'f'], ids=['float32', 'double'])
 def test_isnan_isinf_column(table, column):
     expr = table[column].isnan()
     assert isinstance(expr, ir.BooleanColumn)
@@ -494,7 +495,7 @@ def test_cast_same_type_noop(table):
     assert i.cast('int8') is i
 
 
-@pytest.mark.parametrize('type', ['int8', 'int32', 'double', 'float'])
+@pytest.mark.parametrize('type', ['int8', 'int32', 'double', 'float32'])
 def test_string_to_number(table, type):
     casted = table.g.cast(type)
     casted_literal = ibis.literal('5').cast(type).name('bar')
@@ -781,7 +782,7 @@ def test_string_mul(table, left, right):
         (operator.pow, 'b', 0, 'double'),
         (operator.pow, 'c', 0, 'double'),
         (operator.pow, 'd', 0, 'double'),
-        (operator.pow, 'e', 0, 'float'),
+        (operator.pow, 'e', 0, 'float32'),
         (operator.pow, 'f', 0, 'double'),
         (operator.pow, 'a', 2, 'double'),
         (operator.pow, 'b', 2, 'double'),
@@ -791,7 +792,7 @@ def test_string_mul(table, left, right):
         (operator.pow, 'b', 1.5, 'double'),
         (operator.pow, 'c', 1.5, 'double'),
         (operator.pow, 'd', 1.5, 'double'),
-        (operator.pow, 'e', 2, 'float'),
+        (operator.pow, 'e', 2, 'float32'),
         (operator.pow, 'f', 2, 'double'),
         (operator.pow, 'a', -2, 'double'),
         (operator.pow, 'b', -2, 'double'),
@@ -863,7 +864,7 @@ def test_substitute_dict():
         'array<map<string, array<array<double>>>>',
         'string',
         'double',
-        'float',
+        'float32',
         'int64',
     ],
 )
@@ -953,8 +954,8 @@ def test_string_temporal_compare(op, left, right):
     ('value', 'type', 'expected_type_class'),
     [
         (2.21, 'decimal', dt.Decimal),
-        (3.14, 'double', dt.Double),
-        (4.2, 'int64', dt.Double),
+        (3.14, 'float64', dt.Float64),
+        (4.2, 'int64', dt.Float64),
         (4, 'int64', dt.Int64),
     ],
 )
@@ -1123,8 +1124,8 @@ def test_nullable_column_propagated():
             ('a', dt.Int32(nullable=True)),
             ('b', dt.Int32(nullable=False)),
             ('c', dt.String(nullable=False)),
-            ('d', dt.double),  # nullable by default
-            ('f', dt.Double(nullable=False)),
+            ('d', dt.float64),  # nullable by default
+            ('f', dt.Float64(nullable=False)),
         ]
     )
 

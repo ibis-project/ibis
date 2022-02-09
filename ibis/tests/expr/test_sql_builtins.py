@@ -28,7 +28,7 @@ def sql_table():
             ('v2', 'decimal(10, 4)'),
             ('v3', 'int32'),
             ('v4', 'int64'),
-            ('v5', 'float'),
+            ('v5', 'float32'),
             ('v6', 'double'),
             ('v7', 'string'),
             ('v8', 'boolean'),

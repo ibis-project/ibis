@@ -21,7 +21,11 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update(
-        {dt.Double: postgresql.DOUBLE_PRECISION, dt.Float: postgresql.REAL}
+        {
+            dt.Float16: postgresql.REAL,
+            dt.Float32: postgresql.REAL,
+            dt.Float64: postgresql.DOUBLE_PRECISION,
+        }
     )
 
 

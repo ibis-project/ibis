@@ -80,7 +80,11 @@ def test_invalid_instance_of(klass, value, expected):
         pytest.param(dt.float64, 26.4, ibis.literal(26.4)),
         pytest.param(dt.double, 26.3, ibis.literal(26.3)),
         pytest.param(dt.string, 'bar', ibis.literal('bar')),
-        pytest.param(dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
+        pytest.param(
+            dt.Array(dt.float64),
+            [3.4, 5.6],
+            ibis.literal([3.4, 5.6]),
+        ),
         pytest.param(
             dt.Map(dt.string, dt.Array(dt.boolean)),
             {'a': [True, False], 'b': [True]},
@@ -100,7 +104,7 @@ def test_valid_value(dtype, value, expected):
         (dt.uint8, -3, IbisTypeError),
         (dt.int32, {}, IbisTypeError),
         (dt.string, 1, IbisTypeError),
-        (dt.Array(dt.float), ['s'], IbisTypeError),
+        (dt.Array(dt.float64), ['s'], IbisTypeError),
         (
             dt.Map(dt.string, dt.Array(dt.boolean)),
             {'a': [True, False], 'b': ['B']},

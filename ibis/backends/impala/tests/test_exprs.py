@@ -191,16 +191,14 @@ def _check_impala_output_types_match(con, table):
         return x
 
     left, right = t.schema(), table.schema()
-    for i, (n, left, right) in enumerate(
-        zip(left.names, left.types, right.types)
-    ):
+    for n, left, right in zip(left.names, left.types, right.types):
         left = _clean_type(left)
         right = _clean_type(right)
 
         if left != right:
             pytest.fail(
                 'Value for {} had left type {}'
-                ' and right type {}'.format(n, left, right)
+                ' and right type {}\nquery:\n{}'.format(n, left, right, query)
             )
 
 

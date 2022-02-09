@@ -84,6 +84,7 @@ def test_pickle_literal_interval():
         pytest.param(str(uuid.uuid4()), "string", str, id="str_uuid4_as_str"),
         pytest.param(0, "float", float, id="int_zero_as_float"),
         pytest.param(0.0, "float", float, id="float_zero_as_float"),
+        pytest.param(0.0, "float32", float, id="float32_zero_as_float"),
         pytest.param(42, "float", float, id="int_as_float"),
         pytest.param(42.0, "float", float, id="float_as_float"),
         pytest.param(42.0, None, float, id="float_implicit_type_as_float"),

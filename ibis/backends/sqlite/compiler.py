@@ -29,7 +29,13 @@ class SQLiteExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
-    _type_map.update({dt.Double: sa.types.REAL, dt.Float: sa.types.REAL})
+    _type_map.update(
+        {
+            dt.Float64: sa.types.REAL,
+            dt.Float16: sa.types.REAL,
+            dt.Float32: sa.types.REAL,
+        }
+    )
 
 
 rewrites = SQLiteExprTranslator.rewrites

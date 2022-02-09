@@ -99,3 +99,4 @@ junit.xml
 spark-warehouse
 docs/backends/support_matrix.csv
 __pycache__
+tags

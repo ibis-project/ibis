@@ -78,7 +78,7 @@ Sweet, now let’s aggregate by year and region:
 
 ```python
 >>> year = joined_all.odate.year().name('year')
->>> total = joined_all.amount.sum().cast('double').name('total')
+>>> total = joined_all.amount.sum().cast('float').name('total')
 >>> annual_amounts = (joined_all
 ...                   .group_by(['region', year])
 ...                   .aggregate(total))
