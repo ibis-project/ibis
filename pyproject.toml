@@ -148,9 +148,9 @@ markers = [
   "xfail_backends",
   "xfail_unsupported",
   "xpass_backends",
-  "backends_notimpl",
-  "backends_notyet",
-  "backends_never",
+  "notimpl",
+  "notyet",
+  "never",
   "ddl_only",
   "sqlalchemy_only"
 ]

@@ -65,7 +65,7 @@ def test_load_data_sqlalchemy(
         ),
     ],
 )
-@mark.backends_notimpl(["datafusion"])
+@mark.notimpl(["datafusion"])
 def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
 
@@ -91,13 +91,13 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
         'select * from functional_alltypes \nlimit 10\n',
     ],
 )
-@mark.backends_notimpl(["postgres", "mysql", "datafusion", "sqlite"])
+@mark.notimpl(["postgres", "mysql", "datafusion", "sqlite"])
 def test_sql(ddl_backend, ddl_con, sql):
     # execute the expression using SQL query
     ddl_con.sql(sql).execute()
 
 
-@mark.backends_notimpl(["datafusion", "clickhouse"])
+@mark.notimpl(["datafusion", "clickhouse"])
 def test_create_table_from_schema(rw_con, rw_backend, new_schema, temp_table):
     rw_con.create_table(temp_table, schema=new_schema)
 
@@ -107,7 +107,7 @@ def test_create_table_from_schema(rw_con, rw_backend, new_schema, temp_table):
         assert new_schema[k] == i_type
 
 
-@mark.backends_notimpl(
+@mark.notimpl(
     [
         "postgres",
         "sqlite",
@@ -129,8 +129,8 @@ def test_rename_table(rw_con, temp_table, new_schema):
     assert temp_table in rw_con.list_tables()
 
 
-@mark.backends_notimpl(["datafusion", "clickhouse"])
-@mark.backends_never(["impala", "pyspark"], reason="No non-nullable datatypes")
+@mark.notimpl(["datafusion", "clickhouse"])
+@mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 def test_nullable_input_output(rw_con, temp_table):
     sch = ibis.schema(
         [
@@ -169,7 +169,7 @@ def test_create_drop_view(ddl_con, ddl_backend, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.backends_notimpl(["postgres", "mysql", "clickhouse", "datafusion"])
+@mark.notimpl(["postgres", "mysql", "clickhouse", "datafusion"])
 def test_separate_database(
     ddl_con, alternate_current_database, current_data_db
 ):
@@ -279,7 +279,7 @@ def test_list_databases(alchemy_backend, alchemy_con):
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
-@mark.backends_never(
+@mark.never(
     ["postgres"], reason="schemas and databases are different in postgres"
 )
 def test_list_schemas(alchemy_backend, alchemy_con):

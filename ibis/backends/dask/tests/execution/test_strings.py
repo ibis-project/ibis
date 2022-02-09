@@ -93,9 +93,7 @@ from pytest import param
             lambda s: s.split(' '),
             lambda s: s.str.split(' '),
             id='split_spaces',
-            marks=pytest.mark.backends_notimpl(
-                ["dask"], reason='arrays - #2553'
-            ),
+            marks=pytest.mark.notimpl(["dask"], reason='arrays - #2553'),
         ),
     ],
 )

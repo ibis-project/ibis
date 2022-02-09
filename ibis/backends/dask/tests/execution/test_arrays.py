@@ -55,7 +55,7 @@ def test_array_collect(t, df):
     tm.assert_frame_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.backends_notimpl(["dask"], reason="windowing - #2553")
+@pytest.mark.notimpl(["dask"], reason="windowing - #2553")
 def test_array_collect_rolling_partitioned(t, df):
     window = ibis.trailing_window(1, order_by=t.plain_int64)
     colexpr = t.plain_float64.collect().over(window)
@@ -75,7 +75,7 @@ def test_array_collect_rolling_partitioned(t, df):
 
 
 # Need an ops.ArraySlice execution func that dispatches on dd.Series
-@pytest.mark.backends_notimpl(["dask"], reason="arrays - #2553")
+@pytest.mark.notimpl(["dask"], reason="arrays - #2553")
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
@@ -150,7 +150,7 @@ def test_array_index_scalar(client, index):
     assert result == expected
 
 
-@pytest.mark.backends_notimpl(["dask"], reason="arrays - #2553")
+@pytest.mark.notimpl(["dask"], reason="arrays - #2553")
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
@@ -164,7 +164,7 @@ def test_array_repeat(t, df, n, mul):
 # function, which assumes array representation is np.array.
 # NotImplementedError: Need an ops.ArrayConcat execution func that
 # dispatches on dd.Series
-@pytest.mark.backends_notimpl(["dask"], reason="arrays - #2553")
+@pytest.mark.notimpl(["dask"], reason="arrays - #2553")
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
 def test_array_concat(t, df, op):
     x = t.array_of_float64.cast('array<string>')

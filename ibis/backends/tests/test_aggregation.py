@@ -26,12 +26,10 @@ aggregate_test_params = [
         id='mean_udf',
         marks=[
             pytest.mark.udf,
-            pytest.mark.backends_notimpl(
+            pytest.mark.notimpl(
                 ["datafusion", "postgres", "clickhouse", "impala"]
             ),
-            pytest.mark.backends_never(
-                ["sqlite", "mysql"], reason="no udf support"
-            ),
+            pytest.mark.never(["sqlite", "mysql"], reason="no udf support"),
         ],
     ),
     param(
@@ -202,7 +200,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.cov(t.float_col),
             id='covar',
             marks=[
-                pytest.mark.backends_notimpl(
+                pytest.mark.notimpl(
                     [
                         "clickhouse",
                         "csv",
@@ -224,7 +222,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.corr(t.float_col),
             id='corr',
             marks=[
-                pytest.mark.backends_notimpl(
+                pytest.mark.notimpl(
                     [
                         "clickhouse",
                         "csv",
@@ -251,7 +249,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.arbitrary(how='first'),
             lambda t, where: t.double_col.iloc[0],
             id='arbitrary_first',
-            marks=pytest.mark.backends_notimpl(
+            marks=pytest.mark.notimpl(
                 ['impala', 'postgres', 'mysql', 'sqlite']
             ),
         ),
@@ -259,7 +257,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.arbitrary(how='last'),
             lambda t, where: t.double_col.iloc[-1],
             id='arbitrary_last',
-            marks=pytest.mark.backends_notimpl(
+            marks=pytest.mark.notimpl(
                 ['impala', 'postgres', 'mysql', 'sqlite']
             ),
         ),
@@ -276,7 +274,7 @@ def test_aggregate_grouped(
         ),
     ],
 )
-@mark.backends_notimpl(["datafusion"])
+@mark.notimpl(["datafusion"])
 def test_reduction_ops(
     backend,
     alltypes,
@@ -312,7 +310,7 @@ def test_reduction_ops(
         )
     ],
 )
-@mark.backends_notimpl(["datafusion"])
+@mark.notimpl(["datafusion"])
 def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
@@ -332,7 +330,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.backends_notimpl(["pandas", "dask", "csv", "hdf5", "parquet"])
+@mark.notimpl(["pandas", "dask", "csv", "hdf5", "parquet"])
 @pytest.mark.xfail_backends([('pyspark', '#2130'), 'datafusion'])
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
@@ -364,7 +362,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 @pytest.mark.xfail_backends(
     [('mysql', 'Issue #2131'), ('postgres', 'Issue #2132')]
 )
-@mark.backends_notimpl(
+@mark.notimpl(
     [
         "clickhouse",
         "datafusion",
@@ -395,7 +393,7 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
         param(lambda s: np.array(s), id='agg_to_ndarray'),
     ],
 )
-@mark.backends_notimpl(
+@mark.notimpl(
     [
         "clickhouse",
         "datafusion",
@@ -426,7 +424,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@mark.backends_notimpl(
+@mark.notimpl(
     [
         "clickhouse",
         "datafusion",
