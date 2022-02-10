@@ -77,10 +77,12 @@ extras_require = {
         "requests>=2,<3",
         "shapely>=1.6,<2",
         "sqlalchemy>=1.3,<1.5",
+        "duckdb>=0.3.2,<0.4.0",
     ],
     "clickhouse": ["clickhouse-driver>=0.1,<0.3"],
     "dask": ["dask[array,dataframe]>=2021.10.0", "pyarrow>=1,<8"],
     "datafusion": ["datafusion>=0.4,<0.5"],
+    "duckdb": ["duckdb>=0.3.2,<0.4.0"],
     "geospatial": [
         "geoalchemy2>=0.6,<0.11",
         "geopandas>=0.6,<0.11",
