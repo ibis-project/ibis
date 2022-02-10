@@ -12,6 +12,7 @@ import ibis.util
 from ibis.backends.pandas.client import ibis_dtype_to_pandas
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
 from ibis.expr import datatypes as dt
+from ibis.expr import lineage as lin
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
@@ -436,3 +437,21 @@ def add_partitioned_sorted_column(
     df = df.set_index(col_name, sorted=True, divisions=divisions)
 
     return df
+
+
+def is_row_order_preserving(exprs) -> bool:
+    """Detects if the operation preserves row ordering.
+
+    Certain operations we know will not affect the ordering of rows in the
+    dataframe (for example elementwise operations on ungrouped dataframes).
+    In these cases we may be able to avoid expensive joins and assign directly
+    into the parent dataframe.
+    """
+
+    def _is_row_order_preserving(expr: ir.Expr):
+        if isinstance(expr.op(), (ops.Reduction, ops.WindowOp)):
+            return (lin.halt, False)
+        else:
+            return (lin.proceed, True)
+
+    return lin.traverse(_is_row_order_preserving, exprs)

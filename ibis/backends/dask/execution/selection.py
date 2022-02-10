@@ -29,6 +29,7 @@ from ..execution.util import (
     add_partitioned_sorted_column,
     coerce_to_output,
     compute_sorted_frame,
+    is_row_order_preserving,
 )
 
 
@@ -130,7 +131,21 @@ def build_df_from_projection(
     Build up a df from individual pieces by dispatching to `compute_projection`
     for each expression.
     """
+    # Fast path for when we're assigning columns into the same table.
+    if (selection_exprs[0] is op.table) and all(
+        is_row_order_preserving(selection_exprs[1:])
+    ):
+        for expr in selection_exprs[1:]:
+            projection = compute_projection(expr, op, data, **kwargs)
+            if isinstance(projection, dd.Series):
+                data = data.assign(**{projection.name: projection})
+            else:
+                data = data.assign(
+                    **{c: projection[c] for c in projection.columns}
+                )
+        return data
 
+    # Slow path when we cannot do direct assigns
     # Create a unique row identifier and set it as the index. This is
     # used in dd.concat to merge the pieces back together.
     data = add_partitioned_sorted_column(data)
