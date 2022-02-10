@@ -75,4 +75,11 @@ self: super:
         sha256 = "sha256-JGyDxpfBXzduJaMF1sbmRm7KJajHYdVSj+WbiSETiY0=";
       };
     });
+
+  duckdb = super.duckdb.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.pybind11
+      self.setuptools-scm
+    ];
+  });
 }
