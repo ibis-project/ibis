@@ -7,6 +7,7 @@ let
     cachix
     commitlint
     curl
+    duckdb
     git
     niv
     nix-linter
