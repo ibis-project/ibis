@@ -54,4 +54,17 @@ self: super:
   mkdocs-literate-nav = super.mkdocs-literate-nav.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
   });
+
+  duckdb = super.duckdb.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.pybind11
+      self.setuptools-scm
+    ];
+  });
+
+  duckdb-engine = super.duckdb-engine.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.poetry-core
+    ];
+  });
 }

@@ -128,6 +128,8 @@ def pytest_collection_modifyitems(session, config, items):
 
         if "sqlite" in item.nodeid:
             item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+        if "duckdb" in item.nodeid:
+            item.add_marker(pytest.mark.xdist_group(name="duckdb"))
 
 
 @lru_cache(maxsize=None)
@@ -307,7 +309,9 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(keep=("sqlite", "postgres", "mysql")),
+    params=_get_backends_to_test(
+        keep=("sqlite", "postgres", "mysql", "duckdb")
+    ),
     scope='session',
 )
 def alchemy_backend(request, data_directory):

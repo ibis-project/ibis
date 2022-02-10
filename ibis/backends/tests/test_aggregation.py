@@ -26,7 +26,7 @@ aggregate_test_params = [
         id='mean_udf',
         marks=[
             pytest.mark.notimpl(
-                ["datafusion", "postgres", "clickhouse", "impala"]
+                ["datafusion", "postgres", "clickhouse", "impala", "duckdb"]
             ),
             pytest.mark.never(["sqlite", "mysql"], reason="no udf support"),
         ],
@@ -198,6 +198,7 @@ def test_aggregate_grouped(
                         "clickhouse",
                         "csv",
                         "dask",
+                        "duckdb",
                         "hdf5",
                         "impala",
                         "mysql",
@@ -220,6 +221,7 @@ def test_aggregate_grouped(
                         "clickhouse",
                         "csv",
                         "dask",
+                        "duckdb",
                         "hdf5",
                         "impala",
                         "mysql",
@@ -243,7 +245,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite']
+                ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
             ),
         ),
         param(
@@ -251,7 +253,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col.iloc[-1],
             id='arbitrary_last',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite']
+                ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
             ),
         ),
     ],
@@ -285,7 +287,16 @@ def test_reduction_ops(
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "mysql", "pandas", "postgres", "pyspark", "sqlite"]
+    [
+        "dask",
+        "datafusion",
+        "duckdb",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ]
 )
 def test_approx_median(backend, alltypes, df):
     expr = alltypes.double_col.approx_median()
@@ -312,7 +323,7 @@ def test_approx_median(backend, alltypes, df):
         )
     ],
 )
-@mark.notimpl(["datafusion"])
+@mark.notimpl(["datafusion", "duckdb"])
 def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
@@ -370,6 +381,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
         "datafusion",
         "pandas",
         "dask",
+        "duckdb",
         "hdf5",
         "csv",
         "parquet",
@@ -399,6 +411,7 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     [
         "clickhouse",
         "datafusion",
+        "duckdb",
         "impala",
         "mysql",
         "postgres",
@@ -430,6 +443,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     [
         "clickhouse",
         "datafusion",
+        "duckdb",
         "impala",
         "mysql",
         "postgres",

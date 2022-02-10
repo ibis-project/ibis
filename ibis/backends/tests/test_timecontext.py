@@ -37,7 +37,7 @@ def filter_by_time_context(df, context):
     ]
 
 
-@pytest.mark.notimpl(["dask"])
+@pytest.mark.notimpl(["dask", "duckdb"])
 @pytest.mark.min_spark_version('3.1')
 @pytest.mark.parametrize(
     'window',
@@ -66,7 +66,7 @@ def test_context_adjustment_window_udf(alltypes, df, context, window):
         tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask"])
+@pytest.mark.notimpl(["dask", "duckdb"])
 def test_context_adjustment_filter_before_window(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         window = ibis.trailing_window(
@@ -85,7 +85,7 @@ def test_context_adjustment_filter_before_window(alltypes, df, context):
         tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["duckdb", "pyspark"])
 def test_context_adjustment_multi_col_udf_non_grouped(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         w = ibis.window(preceding=None, following=None)

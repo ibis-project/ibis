@@ -55,7 +55,16 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mysql", "pandas", "pyspark", "sqlite"]
+    [
+        "dask",
+        "datafusion",
+        "duckdb",
+        "impala",
+        "mysql",
+        "pandas",
+        "pyspark",
+        "sqlite",
+    ]
 )
 def test_scalar_param_array(backend, con):
     value = [1, 2, 3]
@@ -68,6 +77,7 @@ def test_scalar_param_array(backend, con):
     [
         "clickhouse",
         "datafusion",
+        "duckdb",
         "impala",
         "mysql",
         "postgres",
@@ -90,6 +100,7 @@ def test_scalar_param_struct(backend, con):
     [
         "clickhouse",
         "datafusion",
+        "duckdb",
         "impala",
         "mysql",
         "postgres",

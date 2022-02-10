@@ -35,6 +35,8 @@ jobs:
         backend:
           - name: dask
             title: Dask
+          - name: duckdb
+            title: DuckDB
           - name: pandas
             title: Pandas
           - name: sqlite
@@ -99,7 +101,7 @@ jobs:
 
       - name: run non-pyspark tests
         if: ${{ matrix.backend.name != 'pyspark' }}
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
+        run: just ci-check -m ${{ matrix.backend.name }}
 
       - name: run pyspark tests
         if: ${{ matrix.backend.name == 'pyspark' }}

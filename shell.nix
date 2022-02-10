@@ -7,6 +7,7 @@ let
     cachix
     commitlint
     curl
+    duckdb
     git
     jq
     just

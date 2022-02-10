@@ -22,17 +22,15 @@ def test_distinct_column(backend, alltypes, df, column):
 
 @pytest.mark.notimpl(
     [
-        "postgres",
-        "mysql",
-        "hdf5",
-        "pandas",
-        "csv",
-        "parquet",
+        "clickhouse",
         "dask",
         "datafusion",
-        "clickhouse",
-        "pyspark",
+        "duckdb",
         "impala",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
     ]
 )
 def test_rowid(con, backend):
@@ -49,17 +47,15 @@ def test_rowid(con, backend):
 
 @pytest.mark.notimpl(
     [
-        "postgres",
-        "mysql",
-        "hdf5",
-        "pandas",
-        "csv",
-        "parquet",
+        "clickhouse",
         "dask",
         "datafusion",
-        "clickhouse",
-        "pyspark",
+        "duckdb",
         "impala",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
     ]
 )
 def test_named_rowid(con, backend):

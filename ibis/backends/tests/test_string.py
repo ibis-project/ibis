@@ -52,6 +52,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
                 [
                     "clickhouse",
                     "datafusion",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "postgres",
@@ -70,13 +71,15 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(["duckdb", "mysql", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(
+                ['datafusion', "duckdb", "mysql", "pyspark"]
+            ),
         ),
         param(
             lambda t: t.string_col.re_search(r'\\d+'),
@@ -90,6 +93,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
                     [
                         "dask",
                         "datafusion",
+                        "duckdb",
                         "mysql",
                         "pandas",
                         "postgres",
@@ -111,6 +115,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
                     [
                         "dask",
                         "datafusion",
+                        "duckdb",
                         "mysql",
                         "pandas",
                         "postgres",
@@ -132,6 +137,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
                     [
                         "dask",
                         "datafusion",
+                        "duckdb",
                         "mysql",
                         "pandas",
                         "postgres",
@@ -155,7 +161,12 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark_raw',
             marks=(
-                pytest.mark.notimpl(['impala']),
+                pytest.mark.notimpl(
+                    [
+                        'impala',
+                        "duckdb",
+                    ]
+                ),
                 pytest.mark.never(["mysql"], reason="not spark"),
             ),
         ),
@@ -165,7 +176,10 @@ def test_string_col_is_unicode(backend, alltypes, df):
             id='re_replace_spark',
             marks=(
                 pytest.mark.notimpl(['impala']),
-                pytest.mark.never(["datafusion", "mysql"], reason="not spark"),
+                pytest.mark.never(
+                    ["datafusion", "duckdb", "mysql"],
+                    reason="not spark",
+                ),
             ),
         ),
         param(
@@ -202,7 +216,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
             marks=pytest.mark.notimpl(
-                ["datafusion", "mysql", "pyspark", "sqlite"]
+                ["datafusion", "duckdb", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
@@ -210,7 +224,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
             marks=pytest.mark.notimpl(
-                ["datafusion", "mysql", "pyspark", "sqlite"]
+                ["datafusion", "duckdb", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
@@ -286,7 +300,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["clickhouse"]),
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),

@@ -31,7 +31,7 @@ def test_date_extract(backend, alltypes, df, attr):
         'day',
         param('day_of_year', marks=pytest.mark.notimpl(["impala"])),
         'quarter',
-        'epoch_seconds',
+        param('epoch_seconds', marks=pytest.mark.notimpl(["duckdb"])),
         param('week_of_year', marks=pytest.mark.notimpl(["sqlite"])),
         'hour',
         'minute',
@@ -85,6 +85,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             marks=pytest.mark.notimpl(
                 [
                     "clickhouse",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "postgres",
@@ -125,6 +126,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             marks=pytest.mark.notimpl(
                 [
                     "clickhouse",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "postgres",
@@ -157,7 +159,14 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             'W',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "postgres", "pyspark"]
+                [
+                    "clickhouse",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                ]
             ),
         ),
     ],
@@ -245,6 +254,7 @@ def test_integer_to_interval_timestamp(
         "clickhouse",
         "dask",
         "datafusion",
+        "duckdb",
         "impala",
         "mysql",
         "postgres",
@@ -296,7 +306,15 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             + (pd.Timedelta(days=4) - pd.Timedelta(days=2)),
             id='timestamp-add-interval-binop',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "dask", "impala", "mysql", "pandas", "postgres"]
+                [
+                    "clickhouse",
+                    "dask",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                ]
             ),
         ),
         param(
@@ -323,13 +341,13 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.notimpl(['pyspark']),
+            marks=pytest.mark.notimpl(["duckdb", "pyspark"]),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, be: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
-            marks=pytest.mark.notimpl(['pyspark']),
+            marks=pytest.mark.notimpl(["duckdb", 'pyspark']),
         ),
     ],
 )
@@ -433,7 +451,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 @pytest.mark.parametrize(
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
-@pytest.mark.notimpl(["clickhouse", "datafusion", "impala"])
+@pytest.mark.notimpl(["clickhouse", "datafusion", "duckdb", "impala"])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -450,9 +468,18 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
     'unit',
     [
         's',
-        param('ms', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
-        param('us', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
-        param('ns', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
+        param(
+            'ms',
+            marks=pytest.mark.notimpl(["clickhouse", "pyspark"]),
+        ),
+        param(
+            'us',
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark"]),
+        ),
+        param(
+            'ns',
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark"]),
+        ),
     ],
 )
 @pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
@@ -546,7 +573,7 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "duckdb"])
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -559,7 +586,7 @@ def test_now(backend, con):
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "duckdb"])
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
