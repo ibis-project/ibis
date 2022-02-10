@@ -34,8 +34,16 @@ def test_fillna_nullif(backend, con, expr, expected):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
 )
+@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
 def test_isna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -52,7 +60,7 @@ def test_isna(backend, alltypes):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "mysql", "postgres"]
+    ["clickhouse", "datafusion", "duckdb", "impala", "mysql", "postgres"]
 )
 def test_fillna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
@@ -85,12 +93,12 @@ def test_fillna(backend, alltypes):
         param(
             ibis.coalesce(ibis.NA, 4, ibis.NA),
             4,
-            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
+            marks=pytest.mark.notimpl(["pyspark", "datafusion", "duckdb"]),
         ),
         param(
             ibis.coalesce(ibis.NA, ibis.NA, 3.14),
             3.14,
-            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
+            marks=pytest.mark.notimpl(["pyspark", "datafusion", "duckdb"]),
         ),
     ],
 )
@@ -194,7 +202,15 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+    [
+        "clickhouse",
+        "datafusion",
+        "duckdb",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
@@ -242,6 +258,7 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
+@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -304,8 +321,16 @@ def test_dropna_invalid(alltypes):
     ],
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
 )
+@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
 def test_fillna_table(backend, alltypes, replacements):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -345,8 +370,16 @@ def test_mutate_rename(alltypes):
     ],
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
 )
+@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
 def test_dropna_table(backend, alltypes, how, subset):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)

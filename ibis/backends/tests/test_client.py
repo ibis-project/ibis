@@ -91,13 +91,13 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
         'select * from functional_alltypes \nlimit 10\n',
     ],
 )
-@mark.notimpl(["postgres", "mysql", "datafusion", "sqlite"])
+@mark.notimpl(["datafusion", "duckdb", "mysql", "postgres", "sqlite"])
 def test_sql(ddl_backend, ddl_con, sql):
     # execute the expression using SQL query
     ddl_con.sql(sql).execute()
 
 
-@mark.notimpl(["datafusion", "clickhouse"])
+@mark.notimpl(["clickhouse", "datafusion"])
 def test_create_table_from_schema(con, backend, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
@@ -109,13 +109,14 @@ def test_create_table_from_schema(con, backend, new_schema, temp_table):
 
 @mark.notimpl(
     [
-        "postgres",
-        "sqlite",
-        "mysql",
-        "pandas",
+        "clickhouse",
         "dask",
         "datafusion",
-        "clickhouse",
+        "duckdb",
+        "mysql",
+        "pandas",
+        "postgres",
+        "sqlite",
     ]
 )
 def test_rename_table(con, temp_table, new_schema):
@@ -129,7 +130,7 @@ def test_rename_table(con, temp_table, new_schema):
     assert temp_table in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "clickhouse"])
+@mark.notimpl(["clickhouse", "datafusion"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
@@ -147,9 +148,6 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
     assert t.schema().types[2].nullable
-
-
-# view tests
 
 
 @mark.only_on_backends(["impala"])
@@ -275,6 +273,7 @@ def test_list_databases(alchemy_backend, alchemy_con):
         'sqlite': ['main'],
         'postgres': ['postgres', 'ibis_testing'],
         'mysql': ['ibis_testing', 'information_schema'],
+        'duckdb': ['information_schema', 'main', 'temp'],
     }
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 

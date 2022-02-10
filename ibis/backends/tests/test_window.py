@@ -50,7 +50,7 @@ def calc_zscore(s):
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
             marks=pytest.mark.notimpl(
-                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+                ["duckdb", "impala", "mysql", "postgres", "pyspark", "sqlite"]
             ),
         ),
         param(
@@ -117,7 +117,7 @@ def calc_zscore(s):
             ),
             id='cumnotany',
             marks=pytest.mark.notyet(
-                ('impala', 'postgres', 'mysql', 'sqlite'),
+                ("duckdb", 'impala', 'postgres', 'mysql', 'sqlite'),
                 reason="notany() over window not supported",
             ),
         ),
@@ -141,7 +141,7 @@ def calc_zscore(s):
             ),
             id='cumnotall',
             marks=pytest.mark.xfail_backends(
-                ('impala', 'postgres', 'mysql', 'sqlite'),
+                ("duckdb", 'impala', 'postgres', 'mysql', 'sqlite'),
                 reason="notall() over window not supported",
             ),
         ),
@@ -218,7 +218,9 @@ def test_grouped_bounded_expanding_window(
             lambda df: (df.double_col.expanding().mean()),
             id='mean_udf',
             marks=[
-                pytest.mark.notimpl(["impala", "mysql", "postgres", "sqlite"])
+                pytest.mark.notimpl(
+                    ["duckdb", "impala", "mysql", "postgres", "sqlite"]
+                )
             ],
         ),
     ],
@@ -340,7 +342,7 @@ def test_grouped_bounded_preceding_window(
             lambda gb: (gb.double_col.transform('mean')),
             id='mean_udf',
             marks=pytest.mark.notimpl(
-                ["dask", "impala", "mysql", "postgres", "sqlite"]
+                ["dask", "duckdb", "impala", "mysql", "postgres", "sqlite"]
             ),
         ),
     ],
@@ -408,7 +410,15 @@ def test_grouped_unbounded_window(
             True,
             id='ordered-mean_udf',
             marks=pytest.mark.notimpl(
-                ["dask", "impala", "mysql", "pandas", "postgres", "sqlite"]
+                [
+                    "dask",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "sqlite",
+                ]
             ),
         ),
         param(
@@ -417,7 +427,7 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-mean_udf',
             marks=pytest.mark.notimpl(
-                ["impala", "mysql", "postgres", "sqlite"]
+                ["duckdb", "impala", "mysql", "postgres", "sqlite"]
             ),
         ),
         # Analytic ops
@@ -457,6 +467,7 @@ def test_grouped_unbounded_window(
             marks=pytest.mark.notimpl(
                 [
                     "dask",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -472,7 +483,7 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-zscore_udf',
             marks=pytest.mark.notimpl(
-                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+                ["duckdb", "impala", "mysql", "postgres", "pyspark", "sqlite"]
             ),
         ),
     ],

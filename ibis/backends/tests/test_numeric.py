@@ -54,6 +54,7 @@ else:
     ],
 )
 @pytest.mark.notimpl(["mysql", "sqlite", "datafusion"])
+@pytest.mark.notyet(["duckdb"], reason="no support for non-finite values")
 def test_isnan_isinf(
     backend,
     con,
@@ -148,6 +149,7 @@ def test_isnan_isinf(
                     "clickhouse",
                     "dask",
                     "datafusion",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -166,6 +168,7 @@ def test_isnan_isinf(
                     "clickhouse",
                     "dask",
                     "datafusion",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -423,7 +426,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite"])
+@pytest.mark.notimpl(["sqlite", "duckdb"])
 def test_sa_default_numeric_precision_and_scale(
     alchemy_con, alchemy_backend, dialects, default_precisions, default_scales
 ):
@@ -507,7 +510,15 @@ def test_random(con):
     ],
 )
 @pytest.mark.notimpl(
-    ["sqlite", "clickhouse", "datafusion", "impala", "mysql", "postgres"]
+    [
+        "clickhouse",
+        "duckdb",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
 )
 def test_clip(alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()

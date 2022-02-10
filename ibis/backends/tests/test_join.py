@@ -20,6 +20,7 @@ from pytest import param
                 [
                     "clickhouse",
                     "datafusion",
+                    "duckdb",
                     "mysql",
                     "postgres",
                     "sqlite",
@@ -33,6 +34,7 @@ from pytest import param
                 [
                     "clickhouse",
                     "datafusion",
+                    "duckdb",
                     "mysql",
                     "postgres",
                     "sqlite",
@@ -47,6 +49,7 @@ from pytest import param
                     "clickhouse",
                     "dask",
                     "datafusion",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -63,6 +66,7 @@ from pytest import param
                     "clickhouse",
                     "dask",
                     "datafusion",
+                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",

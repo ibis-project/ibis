@@ -708,6 +708,43 @@ def all(ctx):
         future.result()
 
 
+@load.command()
+@click.option('-D', '--database', default='ibis_testing')
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=SCRIPT_DIR / 'schema' / 'duckdb.sql',
+    help='Path to SQL file that initializes the database via DDL.',
+)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-d',
+    '--data-directory',
+    default=DATA_DIR,
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        writable=True,
+        readable=True,
+        path_type=Path,
+    ),
+)
+def duckdb(schema, tables, data_directory, database, **params):
+    import duckdb  # noqa: F401
+
+    logger.info('Initializing DuckDB...')
+    conn = duckdb.connect(f"ci/ibis-testing-data/{database}.ddb")
+    for stmt in filter(None, map(str.strip, schema.read().split(';'))):
+        conn.execute(stmt)
+
+    for table in tables:
+        src = data_directory / f'{table}.csv'
+        sql = f"INSERT INTO {table} SELECT * FROM '{src}';"
+        conn.execute(sql)
+
+
 if __name__ == '__main__':
     """
     Environment Variables are automatically parsed:
