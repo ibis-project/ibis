@@ -70,15 +70,16 @@ jobs:
       - name: install ibis
         run: poetry install --extras ${{ matrix.backend.name }}
 
+      - uses: extractions/setup-just@v1
+
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: install backend data
-        run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
+        run: just load-data ${{ matrix.backend.name }}
 
       - name: run tests
-        shell: bash
-        run: ./ci/run_tests.sh -m ${{ matrix.backend.name }} --numprocesses auto
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -114,15 +115,16 @@ jobs:
       - name: install minimum dask version
         run: poetry add --lock --optional dask@2021.10.0 --extras array --extras dataframe
 
+      - uses: extractions/setup-just@v1
+
       - name: install ibis
         run: poetry install --extras dask
 
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: run tests
-        shell: bash
-        run: ./ci/run_tests.sh -m dask --numprocesses auto
+        run: just ci-check -m dask --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -158,14 +160,16 @@ jobs:
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
 
+      - uses: extractions/setup-just@v1
+
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: install backend data
-        run: poetry run python ci/datamgr.py postgres
+        run: just load-data postgres
 
       - name: run tests
-        run: ./ci/run_tests.sh -m postgres --numprocesses auto
+        run: just ci-check -m postgres --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -213,11 +217,13 @@ jobs:
       - name: install ibis
         run: poetry install --extras pyspark
 
+      - uses: extractions/setup-just@v1
+
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: run tests
-        run: ./ci/run_tests.sh -m pyspark
+        run: just ci-check -m pyspark
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -276,14 +282,16 @@ jobs:
       - name: install ibis
         run: poetry install --extras impala
 
+      - uses: extractions/setup-just@v1
+
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: install backend data
-        run: poetry run python ci/datamgr.py impala
+        run: just load-data impala
 
       - name: run tests
-        run: ./ci/run_tests.sh -m impala
+        run: just ci-check -m impala
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -355,14 +363,16 @@ jobs:
         if: ${{ matrix.backend.name == 'postgres' }}
         run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
+      - uses: extractions/setup-just@v1
+
       - name: download backend data
-        run: poetry run python ci/datamgr.py download
+        run: just download-data
 
       - name: install backend data
-        run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
+        run: just load-data ${{ matrix.backend.name }}
 
       - name: run tests
-        run: ./ci/run_tests.sh -m ${{ matrix.backend.name }} --numprocesses auto
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2

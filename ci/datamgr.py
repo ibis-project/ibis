@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import collections
-import concurrent.futures
+import concurrent.futures as fut
+import io
 import itertools
 import logging
 import multiprocessing
@@ -11,24 +12,26 @@ import os
 import subprocess
 import tempfile
 import zipfile
-from io import BytesIO
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
 import click
-import pyarrow as pa
-import pyarrow.csv
 import sqlalchemy as sa
 
-import ibis
-import ibis.expr.datatypes as dt
-import ibis.expr.datatypes.pyarrow
+if TYPE_CHECKING:
+    import pyarrow as pa
 
+import ibis
+
+IBIS_HOME = Path(__file__).parent.parent
 SCRIPT_DIR = Path(__file__).parent.absolute()
-DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(
-    os.environ.get('IBIS_TEST_DATA_DIRECTORY', SCRIPT_DIR / DATA_DIR_NAME)
+    os.environ.get(
+        'IBIS_TEST_DATA_DIRECTORY',
+        SCRIPT_DIR / 'ibis-testing-data',
+    )
 )
+CPU_COUNT = multiprocessing.cpu_count()
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -131,7 +134,7 @@ logger = get_logger(Path(__file__).with_suffix('').name)
 
 def impala_raise_if_cannot_write_to_hdfs(con, env):
     test_path = os.path.join(env.test_data_dir, ibis.util.guid())
-    con.hdfs.put(test_path, BytesIO(ibis.util.guid().encode('UTF-8')))
+    con.hdfs.put(test_path, io.BytesIO(ibis.util.guid().encode('UTF-8')))
     con.hdfs.rm(test_path)
 
 
@@ -191,35 +194,26 @@ AVRO_SCHEMAS = {
 }
 
 
-def impala_create_table(method, *, env, path, schema):
-    table = method(
-        path,
-        schema,
-        name=os.path.basename(path),
-        database=env.test_data_db,
-        persist=True,
-    )
-    table.compute_stats()
-
-
 def impala_create_tables(con, env, executor):
     test_data_dir = env.test_data_dir
     avro_files = (
-        ("avro_file", os.path.join(test_data_dir, 'avro', path))
+        (con.avro_file, os.path.join(test_data_dir, 'avro', path))
         for path in con.hdfs.ls(os.path.join(test_data_dir, 'avro'))
     )
     parquet_files = (
-        ("parquet_file", os.path.join(test_data_dir, 'parquet', path))
+        (con.parquet_file, os.path.join(test_data_dir, 'parquet', path))
         for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
     )
     schemas = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
     for method, path in itertools.chain(parquet_files, avro_files):
+        logger.info(os.path.basename(path))
         yield executor.submit(
-            impala_create_table,
-            getattr(con, method),
-            env=env,
-            path=path,
-            schema=schemas.get(os.path.basename(path)),
+            method,
+            path,
+            schemas.get(os.path.basename(path)),
+            name=os.path.basename(path),
+            database=env.test_data_db,
+            persist=True,
         )
 
 
@@ -240,13 +234,15 @@ def impala_upload_udfs(con, ibis_home_dir, env):
 def load_impala_data(con, data_dir, env):
     impala_upload_ibis_test_data_to_hdfs(con, data_dir, env)
     impala_create_test_database(con, env)
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=multiprocessing.cpu_count()
-    ) as executor:
-        for future in concurrent.futures.as_completed(
-            impala_create_tables(con, env, executor)
-        ):
-            future.result()
+    with fut.ThreadPoolExecutor(max_workers=CPU_COUNT) as executor:
+        table_futures = (
+            executor.submit(table_future.result().compute_stats)
+            for table_future in fut.as_completed(
+                impala_create_tables(con, env, executor)
+            )
+        )
+        for stats_future in fut.as_completed(table_futures):
+            stats_future.result()
 
 
 def recreate_database(
@@ -276,6 +272,7 @@ def init_database(
         url.database = database
     except AttributeError:
         url = url.set(database=database)
+
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
@@ -290,23 +287,26 @@ def read_tables(
     names: Iterable[str],
     data_directory: Path,
 ) -> Iterator[tuple[str, pa.Table]]:
+    import pyarrow.csv as pa_csv
+
+    import ibis.expr.datatypes.pyarrow as pa_dt
+
     for name in names:
-        schema = TEST_TABLES.get(name)
-        if schema is not None:
-            convert_options = pa.csv.ConvertOptions(
-                column_types={
-                    name: dt.pyarrow.to_pyarrow_type(type)
-                    for name, type in schema.items()
-                }
-            )
-        else:
-            convert_options = None
-        path = data_directory / f'{name}.csv'
-        yield name, pa.csv.read_csv(path, convert_options=convert_options)
+        schema = TEST_TABLES[name]
+        convert_options = pa_csv.ConvertOptions(
+            column_types={
+                name: pa_dt.to_pyarrow_type(type)
+                for name, type in schema.items()
+            }
+        )
+        yield name, pa_csv.read_csv(
+            data_directory / f"{name}.csv",
+            convert_options=convert_options,
+        )
 
 
 @click.group()
-@click.option('--quiet/--verbose', '-q', default=False, is_flag=True)
+@click.option('--quiet/--verbose', '-q/-v', default=False, is_flag=True)
 def cli(quiet):
     if quiet:
         logger.setLevel(logging.ERROR)
@@ -643,9 +643,8 @@ def impala(data_dir):
             verify=env.auth_mechanism not in ('GSSAPI', 'LDAP'),
             user=env.webhdfs_user,
         ),
-        pool_size=multiprocessing.cpu_count(),
+        pool_size=CPU_COUNT,
     )
-    ibis_home_dir = Path(__file__).parent.parent
 
     # validate our environment before performing possibly expensive operations
     impala_raise_if_cannot_write_to_hdfs(con, env)
@@ -654,44 +653,28 @@ def impala(data_dir):
     load_impala_data(con, str(data_dir), env)
 
     # build and upload the UDFs
-    impala_build_udfs(ibis_home_dir)
-    impala_upload_udfs(con, ibis_home_dir, env)
+    impala_build_udfs(IBIS_HOME)
+    impala_upload_udfs(con, IBIS_HOME, env)
 
 
 @cli.command()
-def pandas(**params):
-    """
-    The pandas backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py pandas` in the CI.
-    """
+def pandas():
+    """No-op to allow `python ./datamgr.py pandas`."""
 
 
 @cli.command()
-def dask(**params):
-    """
-    The dask backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py dask` in the CI.
-    """
+def dask():
+    """No-op to allow `python ./datamgr.py dask`."""
 
 
 @cli.command()
-def datafusion(**params):
-    """
-    The datafusion backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py datafusion` in the CI.
-    """
+def datafusion():
+    """No-op to allow `python ./datamgr.py datafusion`."""
 
 
 @cli.command()
-def pyspark(**params):
-    """
-    The pyspark backend does not need test data, but we still
-    have an option for the backend for consistency, and to not
-    have to avoid calling `./datamgr.py pyspark` in the CI.
-    """
+def pyspark():
+    """No-op to allow `python ./datamgr.py pyspark`."""
 
 
 if __name__ == '__main__':
