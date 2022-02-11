@@ -81,9 +81,10 @@ jobs:
       - name: install ibis
         run: poetry install
 
+      - uses: extractions/setup-just@v1
+
       - name: run tests
-        shell: bash
-        run: ./ci/run_tests.sh -m core --numprocesses auto
+        run: just check
 
       - name: publish test report
         uses: actions/upload-artifact@v2

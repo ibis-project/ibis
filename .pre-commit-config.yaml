@@ -104,4 +104,15 @@ repos:
           - toml
           - yaml
           - markdown
+      - entry: just --fmt --unstable --check
+        exclude: ^$
+        files: ^justfile$
+        id: just
+        language: system
+        name: just
+        pass_filenames: false
+        stages:
+          - commit
+        types:
+          - file
     repo: local

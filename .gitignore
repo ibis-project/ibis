@@ -95,3 +95,4 @@ geography.db
 ci/udf/.ninja_deps
 ci/udf/.ninja_log
 ci/udf/build.ninja
+junit.xml

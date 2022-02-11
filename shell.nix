@@ -8,6 +8,8 @@ let
     commitlint
     curl
     git
+    jq
+    just
     niv
     nix-linter
     nixpkgs-fmt
@@ -15,6 +17,8 @@ let
     prettierTOML
     shellcheck
     shfmt
+    unzip
+    yj
   ];
 
   impalaUdfDeps = with pkgs; [
