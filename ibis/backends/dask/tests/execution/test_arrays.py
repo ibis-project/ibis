@@ -1,12 +1,13 @@
 import operator
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm
 
 import ibis
+
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
 
 
 def test_array_length(t, df):

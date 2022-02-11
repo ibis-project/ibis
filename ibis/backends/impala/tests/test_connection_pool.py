@@ -1,4 +1,9 @@
+import pytest
+
 import ibis
+
+pytest.importorskip("impala")
+pytest.importorskip("hdfs")
 
 
 def test_connection_pool_size(hdfs, env, test_data_db):

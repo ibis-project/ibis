@@ -1,9 +1,12 @@
 import pandas.testing as tm
-import pyarrow.compute as pc
+import pytest
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.udf.vectorized import elementwise, reduction
+
+pytest.importorskip("datafusion")
+pc = pytest.importorskip("pyarrow.compute")
 
 
 @elementwise(input_type=['string'], output_type='int64')

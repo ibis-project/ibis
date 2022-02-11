@@ -1,13 +1,14 @@
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm
 from pytest import param
 
 import ibis
 
-from ..client import DaskTable
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ..client import DaskTable  # noqa: E402
 
 
 def make_dask_data_frame(npartitions):

@@ -5,7 +5,14 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name
+
+pyspark = pytest.importorskip("pyspark")
+
+import pyspark.sql.functions as F  # noqa: E402
+
+from ibis.backends.pyspark.compiler import (  # noqa: E402
+    _can_be_replaced_by_column_name,
+)
 
 
 def test_basic(client):
@@ -52,8 +59,6 @@ def test_aggregation_col(client):
 
 
 def test_aggregation(client):
-    import pyspark.sql.functions as F
-
     table = client.table('basic_table')
     result = table.aggregate(table['id'].max()).compile()
     expected = table.compile().agg(F.max('id').alias('max'))
@@ -62,8 +67,6 @@ def test_aggregation(client):
 
 
 def test_groupby(client):
-    import pyspark.sql.functions as F
-
     table = client.table('basic_table')
     result = table.groupby('id').aggregate(table['id'].max()).compile()
     expected = table.compile().groupby('id').agg(F.max('id').alias('max'))
@@ -72,16 +75,13 @@ def test_groupby(client):
 
 
 def test_window(client):
-    import pyspark.sql.functions as F
-    from pyspark.sql.window import Window
-
     table = client.table('basic_table')
     w = ibis.window()
     result = table.mutate(
         grouped_demeaned=table['id'] - table['id'].mean().over(w)
     ).compile()
 
-    spark_window = Window.partitionBy()
+    spark_window = pyspark.sql.Window.partitionBy()
     spark_table = table.compile()
     expected = spark_table.withColumn(
         'grouped_demeaned',
@@ -182,8 +182,6 @@ def test_cast(client):
     ],
 )
 def test_string_to_timestamp(client, fn):
-    import pyspark.sql.functions as F
-
     table = client.table('date_table')
 
     result = table.mutate(date=fn(table)).compile()

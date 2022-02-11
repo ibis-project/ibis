@@ -8,6 +8,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
+pytest.importorskip("impala")
+pytest.importorskip("hdfs")
+
+pytestmark = pytest.mark.hdfs
+
 
 @pytest.fixture
 def exhaustive_df():
@@ -139,6 +144,7 @@ def test_writer_cleanup_deletes_hdfs_dir(con, hdfs, alltypes_df):
     assert not hdfs.exists(path)
 
 
+@pytest.mark.hdfs
 def test_writer_cleanup_context_manager(con, hdfs, alltypes_df):
     with DataFrameWriter(con, alltypes_df) as writer:
         path = writer.write_temp_csv()

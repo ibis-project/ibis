@@ -8,13 +8,14 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import sqlalchemy as sa
 from packaging.version import parse
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import config
 from ibis import literal as L
+
+sa = pytest.importorskip("sqlalchemy")
 
 
 @pytest.mark.parametrize(

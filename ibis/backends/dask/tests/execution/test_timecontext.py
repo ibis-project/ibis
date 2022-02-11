@@ -1,6 +1,4 @@
-import dask.dataframe as dd
 import pytest
-from dask.dataframe.utils import tm
 from pandas import Timedelta, Timestamp
 
 import ibis
@@ -14,6 +12,9 @@ from ibis.expr.timecontext import (
     compare_timecontext,
 )
 from ibis.expr.typing import TimeContext
+
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
 
 
 class CustomAsOfJoin(ops.AsOfJoin):

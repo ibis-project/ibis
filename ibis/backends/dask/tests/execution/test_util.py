@@ -1,6 +1,8 @@
 import pytest
 
-from ...execution.util import assert_identical_grouping_keys
+pytest.importorskip("dask.dataframe")
+
+from ...execution.util import assert_identical_grouping_keys  # noqa: E402
 
 
 @pytest.mark.parametrize(

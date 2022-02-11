@@ -4,6 +4,8 @@ from pandas import Timestamp
 import ibis
 from ibis import literal as L
 
+pytest.importorskip("clickhouse_driver")
+
 
 @pytest.mark.parametrize(
     'expr',

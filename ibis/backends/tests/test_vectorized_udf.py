@@ -11,8 +11,6 @@ import ibis.expr.datatypes as dt
 from ibis.expr.window import window
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
-pytestmark = pytest.mark.udf
-
 
 def _format_udf_return_type(func, result_formatter):
     """Call the given udf and return its result according to the given

@@ -1,18 +1,20 @@
 import operator
 from operator import methodcaller
 
-import dask.array as da
-import dask.dataframe as dd
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm
 
 import ibis
 import ibis.expr.datatypes as dt
 
-from ...execution import execute
+da = pytest.importorskip("dask.array")
+dd = pytest.importorskip("dask.dataframe")
+
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ...execution import execute  # noqa: E402
 
 
 def test_table_column(t, df):

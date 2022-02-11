@@ -4,6 +4,8 @@ from pkg_resources import parse_version
 import ibis.expr.datatypes as dt
 from ibis.backends.clickhouse.client import ClickhouseDataType
 
+pytest.importorskip("clickhouse_driver")
+
 
 def test_column_types(alltypes):
     df = alltypes.execute()

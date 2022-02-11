@@ -1,6 +1,6 @@
-def test_list_tables(client):
-    tables = set(client.list_tables())
-    assert {'awards_players', 'batting', 'functional_alltypes'} <= tables
+import pytest
+
+pytest.importorskip("datafusion")
 
 
 def test_register_csv(client, data_directory):

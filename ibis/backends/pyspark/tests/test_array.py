@@ -1,15 +1,11 @@
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
-import pyspark
 import pytest
 
 import ibis
 
-if pyspark.__version__ < '3.0.0':
-    null_representation = None
-else:
-    null_representation = np.nan
+pytest.importorskip("pyspark")
 
 
 def test_array_length(client):
@@ -92,9 +88,7 @@ def test_array_index(client, index):
     expected = pd.DataFrame(
         {
             'indexed': df.array_int.apply(
-                lambda x: x[index]
-                if -len(x) <= index < len(x)
-                else null_representation
+                lambda x: x[index] if -len(x) <= index < len(x) else np.nan
             )
         }
     )
@@ -107,9 +101,7 @@ def test_array_index_scalar(client, index):
     value = ibis.literal(raw_value)
     expr = value[index]
     result = client.execute(expr)
-    expected = (
-        raw_value[index] if index < len(raw_value) else null_representation
-    )
+    expected = raw_value[index] if index < len(raw_value) else np.nan
     assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 

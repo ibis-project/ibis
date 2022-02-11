@@ -16,7 +16,10 @@ from ibis.common.exceptions import IbisTypeError
 
 from .. import ddl
 
-pytestmark = pytest.mark.udf
+pytest.importorskip("impala")
+pytest.importorskip("hdfs")
+
+pytestmark = pytest.mark.hdfs
 
 
 @pytest.fixture(scope="module")

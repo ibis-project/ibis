@@ -101,8 +101,7 @@ First we need to load some data:
 You're now ready to run the test suite for the postgres backend:
 
 ```sh
-export PYTEST_BACKENDS=postgres
-pytest ibis/backends/postgres/tests ibis/backends/tests
+pytest -m postgres
 ```
 
 Running the tests may take some time, but eventually they should finish successfully.

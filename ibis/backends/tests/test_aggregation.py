@@ -25,7 +25,6 @@ aggregate_test_params = [
         'double_col',
         id='mean_udf',
         marks=[
-            pytest.mark.udf,
             pytest.mark.notimpl(
                 ["datafusion", "postgres", "clickhouse", "impala"]
             ),

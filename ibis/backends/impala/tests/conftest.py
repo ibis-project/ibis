@@ -3,7 +3,6 @@ import os
 import warnings
 from pathlib import Path
 
-import impala
 import pytest
 
 import ibis
@@ -58,10 +57,6 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         return None
 
 
-def isproperty(obj):
-    return isinstance(obj, property)
-
-
 class IbisTestEnv:
     def __init__(self):
         if options.impala is None:
@@ -70,7 +65,10 @@ class IbisTestEnv:
     def items(self):
         return [
             (name, getattr(self, name))
-            for name, _ in inspect.getmembers(type(self), predicate=isproperty)
+            for name, _ in inspect.getmembers(
+                type(self),
+                predicate=lambda obj: isinstance(obj, property),
+            )
         ]
 
     def __repr__(self):
@@ -233,6 +231,8 @@ CREATE TABLE IF NOT EXISTS {} (
 
 @pytest.fixture
 def tmp_db(env, con, test_data_db):
+    impala = pytest.importorskip("impala")
+
     tmp_db = env.tmp_db
 
     if tmp_db not in con.list_databases():

@@ -1,10 +1,13 @@
 import pandas as pd
 import pandas.testing as tm
-import pyspark.sql.functions as F
 import pytest
-from pyspark.sql import Window
 
 import ibis
+
+pyspark = pytest.importorskip("pyspark")
+
+import pyspark.sql.functions as F  # noqa: E402
+from pyspark.sql.window import Window  # noqa: E402
 
 
 @pytest.mark.parametrize(

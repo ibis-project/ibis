@@ -1,4 +1,8 @@
+import pytest
+
 import ibis
+
+pytest.importorskip("clickhouse_driver")
 
 
 def test_column_ref_quoting(translate):

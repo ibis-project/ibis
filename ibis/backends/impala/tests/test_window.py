@@ -8,6 +8,8 @@ from ibis.tests.util import assert_equal
 
 from ..compiler import ImpalaCompiler
 
+pytest.importorskip("impala")
+
 
 @pytest.fixture
 def alltypes(con):

@@ -8,9 +8,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import sqlalchemy as sa
 from pytest import param
-from sqlalchemy.dialects import postgresql
 
 import ibis
 import ibis.config as config
@@ -18,6 +16,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.expr.window import rows_with_max_lookback
+
+pytest.importorskip("psycopg2")
+sa = pytest.importorskip("sqlalchemy")
+
+from sqlalchemy.dialects import postgresql  # noqa: E402
 
 
 @pytest.fixture

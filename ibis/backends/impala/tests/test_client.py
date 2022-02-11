@@ -3,7 +3,6 @@ import datetime
 import pandas as pd
 import pytest
 import pytz
-from thrift.transport.TTransport import TTransportException
 
 import ibis
 import ibis.common.exceptions as com
@@ -11,6 +10,11 @@ import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
+
+pytest.importorskip("impala")
+pytest.importorskip("thrift")
+
+from thrift.transport.TTransport import TTransportException  # noqa: E402
 
 
 @pytest.fixture
@@ -258,6 +262,8 @@ def test_database_default_current_database(con):
 
 
 def test_close_drops_temp_tables(con, test_data_dir):
+    pytest.importorskip("hdfs")
+
     from posixpath import join as pjoin
 
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')

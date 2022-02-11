@@ -44,7 +44,7 @@ repos:
           - cython
           - pyi
           - python
-      - entry: pyupgrade --py37-plus
+      - entry: pyupgrade --py38-plus
         exclude: (setup.py)
         files: ""
         id: pyupgrade

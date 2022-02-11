@@ -8,8 +8,11 @@ import pytest
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
-from ibis.backends.sqlite import Backend
 from ibis.util import guid
+
+pytest.importorskip("sqlalchemy")
+
+from ibis.backends.sqlite import Backend  # noqa: E402
 
 
 def test_file_not_exist_and_create():

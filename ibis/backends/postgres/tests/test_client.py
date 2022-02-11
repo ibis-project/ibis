@@ -12,19 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import os
 
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.base.sql.alchemy import schema_from_table
 from ibis.tests.util import assert_equal
+
+pytest.importorskip("psycopg2")
+sa = pytest.importorskip("sqlalchemy")
+
+from sqlalchemy.dialects import postgresql  # noqa: E402
+
+from ibis.backends.base.sql.alchemy import schema_from_table  # noqa: E402
 
 POSTGRES_TEST_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing'

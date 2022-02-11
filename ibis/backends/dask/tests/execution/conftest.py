@@ -1,11 +1,12 @@
 import decimal
 
-import dask.dataframe as dd
 import pandas as pd
 import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+
+dd = pytest.importorskip("dask.dataframe")
 
 
 @pytest.fixture(scope='module')

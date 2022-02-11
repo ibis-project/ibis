@@ -10,6 +10,8 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import literal as L
 
+pytest.importorskip("clickhouse_driver")
+
 
 @pytest.mark.parametrize(
     ('left', 'right', 'type'),

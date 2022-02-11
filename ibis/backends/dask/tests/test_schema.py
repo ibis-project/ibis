@@ -1,11 +1,14 @@
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-from dask.dataframe.utils import tm
+import pytest
 
 import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
+
+dd = pytest.importorskip("dask.dataframe")
+
+from dask.dataframe.utils import tm  # noqa: E402
 
 
 def test_infer_exhaustive_dataframe(npartitions):

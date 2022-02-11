@@ -1,14 +1,16 @@
 from collections import OrderedDict
 
-import dask.dataframe as dd
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm
 
 import ibis
 import ibis.expr.datatypes as dt
 
-from ...execution import execute
+dd = pytest.importorskip("dask.dataframe")
+
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ...execution import execute  # noqa: E402
 
 
 @pytest.fixture(scope="module")

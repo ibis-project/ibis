@@ -1,13 +1,8 @@
 import datetime
 import textwrap
 
-import pytest
-
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
-
-pytest.importorskip('sqlalchemy')
-
 
 QUERY = """\
 SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`

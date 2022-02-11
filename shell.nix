@@ -12,7 +12,6 @@ let
     nix-linter
     nixpkgs-fmt
     poetry
-    pre-commit
     prettierTOML
     shellcheck
     shfmt
@@ -24,7 +23,7 @@ let
     cmake
   ];
 
-  backendTestDeps = [ pkgs.docker-compose ];
+  backendTestDeps = [ pkgs.docker-compose_2 ];
   vizDeps = [ pkgs.graphviz-nox ];
   pysparkDeps = [ pkgs.openjdk11 ];
   docDeps = [ pkgs.pandoc ];
@@ -45,6 +44,7 @@ let
     ++ sqliteDeps;
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
+  pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
 in
 pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
@@ -60,7 +60,8 @@ pkgs.mkShell {
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [
-    pkgs."ibisDevEnv${pythonShortVersion}"
+    pythonEnv
+    (pythonEnv.python.pkgs.toPythonApplication pkgs.pre-commit)
   ];
 
   PYTHONPATH = builtins.toPath ./.;
