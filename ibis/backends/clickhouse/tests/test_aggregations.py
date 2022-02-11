@@ -7,6 +7,8 @@ import pytest
 
 from ibis import literal as L
 
+pytest.importorskip("clickhouse_driver")
+
 
 @pytest.mark.parametrize(
     ('reduction', 'func_translated'),

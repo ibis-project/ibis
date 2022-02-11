@@ -1,4 +1,8 @@
+import pytest
+
 from .conftest import BackendTest
+
+pytest.importorskip("datafusion")
 
 
 def test_where_multiple_conditions(alltypes, alltypes_df):

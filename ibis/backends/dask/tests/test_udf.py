@@ -1,6 +1,5 @@
 import collections
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -13,9 +12,7 @@ from ibis.udf.vectorized import analytic, elementwise, reduction
 
 from ..udf import nullable
 
-# --------
-# Fixtures
-# --------
+dd = pytest.importorskip("dask.dataframe")
 
 
 @pytest.fixture

@@ -1,4 +1,7 @@
 import pandas.testing as tm
+import pytest
+
+pytest.importorskip("pyspark")
 
 
 def test_isnull(client):

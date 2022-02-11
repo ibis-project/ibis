@@ -224,7 +224,6 @@ def test_grouped_bounded_expanding_window(
             lambda df: (df.double_col.expanding().mean()),
             id='mean_udf',
             marks=[
-                pytest.mark.udf,
                 pytest.mark.skip_backends(['pyspark']),
             ],
         ),
@@ -353,7 +352,6 @@ def test_grouped_bounded_preceding_windows(
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda gb: (gb.double_col.transform('mean')),
             id='mean_udf',
-            marks=pytest.mark.udf,
         ),
     ],
 )
@@ -408,7 +406,6 @@ def test_grouped_unbounded_window(
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             id='mean_udf',
-            marks=pytest.mark.udf,
         ),
         # Analytic ops
         param(
@@ -425,7 +422,6 @@ def test_grouped_unbounded_window(
             lambda t, win: calc_zscore(t.double_col).over(win),
             lambda df: df.double_col.transform(calc_zscore.func),
             id='zscore_udf',
-            marks=pytest.mark.udf,
         ),
     ],
 )

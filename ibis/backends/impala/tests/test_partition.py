@@ -6,8 +6,14 @@ import pytest
 
 import ibis
 import ibis.util as util
-from ibis.backends.impala.compat import ImpylaError
 from ibis.tests.util import assert_equal
+
+pytest.importorskip("impala")
+pytest.importorskip("hdfs")
+
+pytestmark = pytest.mark.hdfs
+
+from ibis.backends.impala.compat import ImpylaError  # noqa: E402
 
 
 @pytest.fixture

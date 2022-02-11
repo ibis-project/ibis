@@ -6,6 +6,8 @@ import ibis.config as config
 import ibis.expr.types as ir
 from ibis import util
 
+pytest.importorskip("clickhouse_driver")
+
 
 def test_run_sql(con):
     query = 'SELECT * FROM ibis_testing.functional_alltypes'

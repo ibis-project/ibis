@@ -1,8 +1,10 @@
-import dask.dataframe as dd
 import pandas as pd
-from dask.dataframe.utils import tm
+import pytest
 
 import ibis
+
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
 
 
 def test_map_length_expr(t):

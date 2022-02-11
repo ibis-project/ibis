@@ -1,19 +1,20 @@
 import datetime
 from operator import methodcaller
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm  # noqa: E402
 from pkg_resources import parse_version
 from pytest import param
 
 import ibis
-from ibis import literal as L  # noqa: E402
+from ibis import literal as L
 from ibis.expr import datatypes as dt
 
-from ...execution import execute
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ...execution import execute  # noqa: E402
 
 
 @pytest.mark.parametrize(

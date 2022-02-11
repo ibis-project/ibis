@@ -1,12 +1,13 @@
 from itertools import product
 
-import clickhouse_driver
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
+
+clickhouse_driver = pytest.importorskip("clickhouse_driver")
 
 
 @pytest.fixture(scope='module')

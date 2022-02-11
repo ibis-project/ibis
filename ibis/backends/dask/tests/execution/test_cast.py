@@ -1,14 +1,16 @@
 import decimal
 
 import pytest
-from dask.dataframe.utils import tm  # noqa: E402
 from pandas import Timestamp
 from pytest import param
 
 import ibis
-import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.expr.datatypes as dt
 
-from ...execution import execute
+pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ...execution import execute  # noqa: E402
 
 
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])

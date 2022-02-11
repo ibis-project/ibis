@@ -3,14 +3,17 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
-import pyspark.sql.functions as F
-import pyspark.sql.types as pt
 import pytest
-from pyspark.sql import SparkSession
 
 import ibis
 from ibis import util
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+
+pytest.importorskip("pyspark")
+
+import pyspark.sql.functions as F  # noqa: E402
+import pyspark.sql.types as pt  # noqa: E402
+from pyspark.sql import SparkSession  # noqa: E402
 
 _pyspark_testing_client = None
 

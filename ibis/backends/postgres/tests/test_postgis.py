@@ -2,7 +2,14 @@ import pandas.testing as tm
 import pytest
 from numpy import testing
 
-pytestmark = pytest.mark.geo
+pytest.importorskip("psycopg2")
+pytest.importorskip("geoalchemy2")
+pytest.importorskip("geopandas")
+pytest.importorskip("shapely")
+
+sa = pytest.importorskip("sqlalchemy")
+
+pytestmark = pytest.mark.geospatial
 
 
 def test_load_geodata(con):

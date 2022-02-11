@@ -1,11 +1,12 @@
-import dask.dataframe as dd
 import pandas as pd
 import pytest
-from dask.dataframe.utils import tm
 from pandas import Timedelta, date_range
 from pytest import param
 
 import ibis
+
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
 
 # Note - computations in this file use the single threadsed scheduler (instead
 # of the default multithreaded scheduler) in order to avoid a flaky interaction

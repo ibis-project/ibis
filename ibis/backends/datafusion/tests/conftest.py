@@ -1,11 +1,12 @@
 from pathlib import Path
 
-import pyarrow as pa
 import pytest
 
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+
+pa = pytest.importorskip("pyarrow")
 
 
 class TestConf(BackendTest, RoundAwayFromZero):

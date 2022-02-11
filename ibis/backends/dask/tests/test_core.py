@@ -1,20 +1,23 @@
 from typing import Any
 
-import dask.dataframe as dd
 import pytest
-from dask.dataframe.utils import tm
 from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.dask import Backend
 from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 from ibis.expr.scope import Scope
 
-from ..core import execute, is_computable_input
-from ..dispatch import execute_node, post_execute, pre_execute
+dd = pytest.importorskip("dask.dataframe")
+
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ibis.backends.dask import Backend  # noqa: E402
+
+from ..core import execute, is_computable_input  # noqa: E402
+from ..dispatch import execute_node, post_execute, pre_execute  # noqa: E402
 
 
 @pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])

@@ -1,13 +1,14 @@
 import os
 from posixpath import join as pjoin
 
-import pyspark as ps
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
 from ibis.tests.util import assert_equal
+
+pyspark = pytest.importorskip("pyspark")
 
 
 def test_create_exists_view(client, alltypes, temp_view):
@@ -29,7 +30,7 @@ def test_drop_non_empty_database(client, alltypes, temp_table_db):
     client.create_table(temp_table, alltypes, database=temp_database)
     assert temp_table in client.list_tables(database=temp_database)
 
-    with pytest.raises(ps.sql.utils.AnalysisException):
+    with pytest.raises(pyspark.sql.utils.AnalysisException):
         client.drop_database(temp_database)
 
 

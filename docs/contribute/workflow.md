@@ -54,18 +54,25 @@ Next, you'll want to run a subset of the test suite.
     Make sure you've set up a [development environment](environment.md)
     before proceeding
 
-To run a subset of the ibis tests use the following command:
+Run the test suite:
 
 ```sh
-# The trailing comma in {sqlite/,} is intentional!
-
-PYTEST_BACKENDS="sqlite" pytest ibis/backends/{sqlite/,}/tests
+pytest -m core
 ```
 
-You can change `PYTEST_BACKENDS="sqlite"` to include one or more space-separated
-supported backends that you want to test.
+!!! tip "Each backend has a `pytest` marker"
 
-Setting `PYTEST_BACKENDS` unless you want to run the backend test suite
+    You can run the tests for a specific backend using
+
+    ```sh
+    pytest -m $the_backend_name
+    ```
+
+    For example, to run SQLite tests:
+
+    ```sh
+    pytest -m sqlite
+    ```
 
 ## Commit your changes
 

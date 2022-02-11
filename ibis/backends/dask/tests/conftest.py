@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Any
 
-import dask.dataframe as dd
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
+
+dd = pytest.importorskip("dask.dataframe")
 
 NPARTITIONS = 2
 

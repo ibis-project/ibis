@@ -87,8 +87,8 @@ jobs:
       - name: install ibis in development mode
         run: pip install -e .
 
-      - name: run simple tests
-        run: pytest ibis/tests --numprocesses auto
+      - name: run tests
+        run: pytest -m core --numprocesses auto
 
   check_poetry_lock:
     runs-on: ubuntu-latest

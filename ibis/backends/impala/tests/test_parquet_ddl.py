@@ -4,8 +4,14 @@ from posixpath import join as pjoin
 import pytest
 
 import ibis
-from ibis.backends.impala.compat import HS2Error
 from ibis.tests.util import assert_equal
+
+pytest.importorskip("impala")
+pytest.importorskip("hdfs")
+
+pytestmark = pytest.mark.hdfs
+
+from ibis.backends.impala.compat import HS2Error  # noqa: E402
 
 
 def test_cleanup_tmp_table_on_gc(con, test_data_dir):

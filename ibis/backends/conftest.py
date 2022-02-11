@@ -1,9 +1,11 @@
-import importlib
+from __future__ import annotations
+
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import Any
 
+import _pytest
 import pandas as pd
 import pytest
 
@@ -38,72 +40,115 @@ def data_directory() -> Path:
     )
 
 
-def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{util.guid()}'
-
-
-def _get_all_backends() -> List[str]:
-    """
-    Return the list of known backend names.
-    """
-    return [
-        entry_point.name
-        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
-    ]
-
-
-def _backend_name_to_class(backend_str: str):
-    """
-    Convert a backend string to the test configuration class for the backend.
-    """
-    try:
-        backend_package = getattr(ibis, backend_str).__module__
-    except AttributeError:
-        raise ValueError(
-            f'Unknown backend {backend_str}. '
-            f'Known backends: {_get_all_backends()}'
-        )
-
-    conftest = importlib.import_module(f'{backend_package}.tests.conftest')
-    return conftest.TestConf
+def _random_identifier(suffix: str) -> str:
+    return f"__ibis_test_{suffix}_{util.guid()}"
 
 
 @lru_cache(maxsize=None)
-def _get_backends_to_test(keep=None, discard=None):
+def _get_backend_names() -> frozenset[str]:
+    """Return the set of known backend names.
+
+    Notes
+    -----
+    This function returns a frozenset to prevent cache pollution.
+
+    If a `set` is used, then any in-place modifications to the set
+    are visible to every caller of this function.
     """
-    Get a list of `TestConf` classes of the backends to test.
+    return frozenset(
+        entry_point.name
+        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
+    )
 
-    The list of backends can be specified by the user with the
-    `PYTEST_BACKENDS` environment variable.
 
-    - If the variable is undefined or empty, then no backends are returned
-    - Otherwise the variable must contain a space-separated list of backends to
-      test
+def _get_backend_conf(backend_str: str):
+    """Convert a backend string to the test class for the backend."""
+    conftest = pytest.importorskip(
+        f"ibis.backends.{backend_str}.tests.conftest"
+    )
+    return conftest.TestConf
 
+
+def _get_backend_from_parts(parts: tuple[str, ...]) -> str | None:
+    """Return the backend part of a test file's path parts.
+
+    Examples
+    --------
+    >>> _get_backend_from_parts(("/", "ibis", "backends", "sqlite", "tests"))
+    "sqlite"
     """
-    backends_raw = os.environ.get('PYTEST_BACKENDS')
-
-    if not backends_raw:
-        return []
-
-    if backends_raw == "all":
-        backends = set(_get_all_backends())
-        # spark is just an alias to pyspark so don't re-run all spark tests
-        backends.discard("spark")
+    try:
+        index = parts.index("backends")
+    except ValueError:
+        return None
     else:
-        backends = set(backends_raw.split())
+        return parts[index + 1]
 
-    if discard is not None:
-        backends = backends.difference(discard.split())
 
-    if keep is not None:
-        backends = backends.intersection(keep.split())
+def pytest_ignore_collect(path, config):
+    # get the backend path part
+    #
+    # path is a py.path.local object hence the conversion to Path first
+    backend = _get_backend_from_parts(Path(path).parts)
+    if backend is None or backend not in _get_backend_names():
+        return False
 
-    backends = sorted(list(backends))
+    # we evaluate the marker early so that we don't trigger
+    # an import of conftest files for the backend, which will
+    # import the backend and thus require dependencies that may not
+    # exist
+    #
+    # alternatives include littering library code with pytest.importorskips
+    # and moving all imports close to their use site
+    #
+    # the latter isn't tenable for backends that use multiple dispatch
+    # since the rules are executed at import time
+    mark_expr = config.getoption("-m")
+    # we can't let the empty string pass through, since `'' in s` is `True` for
+    # any `s`; if no marker was passed don't ignore the collection of `path`
+    if not mark_expr:
+        return False
+    expr = _pytest.mark.expression.Expression.compile(mark_expr)
+    # we check the "backend" marker as well since if that's passed
+    # any file matching a backed should be skipped
+    keep = expr.evaluate(lambda s: s in (backend, "backend"))
+    return not keep
+
+
+def pytest_collection_modifyitems(session, config, items):
+    # add the backend marker to any tests are inside "ibis/backends"
+    all_backends = _get_backend_names()
+    for item in items:
+        parts = item.path.parts
+        backend = _get_backend_from_parts(parts)
+        if backend is not None and backend in all_backends:
+            item.add_marker(getattr(pytest.mark, backend))
+            item.add_marker(pytest.mark.backend)
+        elif "backends" not in parts:
+            # anything else is a "core" test and is run by default
+            item.add_marker(pytest.mark.core)
+
+
+@lru_cache(maxsize=None)
+def _get_backends_to_test(
+    keep: tuple[str, ...] = (),
+    discard: tuple[str, ...] = (),
+) -> list[Any]:
+    """Get a list of `TestConf` classes of the backends to test."""
+    backends = _get_backend_names()
+
+    if discard:
+        backends = backends.difference(discard)
+
+    if keep:
+        backends = backends.intersection(keep)
+
+    # spark is an alias for pyspark
+    backends = backends.difference(("spark",))
 
     return [
         pytest.param(
-            _backend_name_to_class(backend),
+            backend,
             marks=[getattr(pytest.mark, backend), pytest.mark.backend],
             id=backend,
         )
@@ -127,7 +172,7 @@ def pytest_runtest_call(item):
         )
     if not backend:
         # Check item path to see if test is in backend-specific folder
-        backend = set(_get_all_backends()).intersection(item.path.parts)
+        backend = set(_get_backend_names()).intersection(item.path.parts)
 
     if not backend:
         return
@@ -176,7 +221,7 @@ def pytest_runtest_call(item):
 
     for marker in item.iter_markers(name='min_spark_version'):
         min_version = marker.args[0]
-        if backend in ['spark', 'pyspark']:
+        if backend == 'pyspark':
             from distutils.version import LooseVersion
 
             import pyspark
@@ -248,7 +293,7 @@ def pytest_pyfunc_call(pyfuncitem):
             return
         backend_type = type(backend).__name__
 
-        if len(markers) == 0:
+        if not markers:
             # nothing has marked the failure as an expected one
             raise e
         elif len(markers) == 1:
@@ -262,20 +307,11 @@ def pytest_pyfunc_call(pyfuncitem):
             )
 
 
-pytestmark = pytest.mark.backend
-
-
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
 def backend(request, data_directory):
-    """
-    Instance of BackendTest.
-
-    (dask pandas clickhouse sqlite postgres pyspark impala hdf5 csv parquet
-    datafusion mysql)
-    """
-    # See #3021
-    # TODO Remove this to backend_test, since now that a `Backend` class exists
-    return request.param(data_directory)
+    """Return an instance of BackendTest."""
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -290,7 +326,7 @@ def con(backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(discard="dask csv parquet hdf5 pandas"),
+    params=_get_backends_to_test(discard=("dask", "pandas")),
     scope='session',
 )
 def ddl_backend(request, data_directory):
@@ -298,7 +334,8 @@ def ddl_backend(request, data_directory):
     Runs the SQL-ish backends
     (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
     """
-    return request.param(data_directory)
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -310,7 +347,7 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(keep="sqlite postgres mysql"),
+    params=_get_backends_to_test(keep=("sqlite", "postgres", "mysql")),
     scope='session',
 )
 def alchemy_backend(request, data_directory):
@@ -318,7 +355,8 @@ def alchemy_backend(request, data_directory):
     Runs the SQLAlchemy-based backends
     (sqlite, mysql, postgres)
     """
-    return request.param(data_directory)
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -329,16 +367,14 @@ def alchemy_con(alchemy_backend):
     return alchemy_backend.connection
 
 
-@pytest.fixture(
-    params=_get_backends_to_test(discard="csv parquet hdf5"),
-    scope='session',
-)
+@pytest.fixture(params=_get_backends_to_test(), scope='session')
 def rw_backend(request, data_directory):
     """
     Runs the non-file-based backends
     (dask pandas clickhouse sqlite postgres pyspark impala datafusion mysql)
     """
-    return request.param(data_directory)
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')

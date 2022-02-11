@@ -1,8 +1,10 @@
 from warnings import catch_warnings
 
 import pytest
-from dask.dataframe.utils import tm  # noqa: E402
 from pytest import param
+
+dd = pytest.importorskip("dask.dataframe")
+from dask.dataframe.utils import tm  # noqa: E402
 
 
 @pytest.mark.parametrize(

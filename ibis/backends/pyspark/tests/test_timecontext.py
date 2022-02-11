@@ -4,11 +4,19 @@ import pytest
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.backends.pyspark.compiler import compile_window_op, compiles
-from ibis.backends.pyspark.timecontext import combine_time_context
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
+
+pytest.importorskip("pyspark")
+
+from ibis.backends.pyspark.compiler import (  # noqa: E402
+    compile_window_op,
+    compiles,
+)
+from ibis.backends.pyspark.timecontext import (  # noqa: E402
+    combine_time_context,
+)
 
 
 def test_table_with_timecontext(client):

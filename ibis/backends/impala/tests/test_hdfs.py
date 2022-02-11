@@ -8,13 +8,17 @@ from pathlib import Path
 from posixpath import join as pjoin
 
 import pytest
-from hdfs.util import HdfsError
 
 import ibis
 import ibis.util as util
-from ibis.backends.impala.tests.conftest import IbisTestEnv
 
-from .. import HDFS
+pytest.importorskip("hdfs")
+pytest.importorskip("impala")
+
+from hdfs.util import HdfsError  # noqa: E402
+
+from ibis.backends.impala.hdfs import HDFS  # noqa: E402
+from ibis.backends.impala.tests.conftest import IbisTestEnv  # noqa: E402
 
 pytestmark = pytest.mark.hdfs
 
@@ -447,7 +451,6 @@ def random_hdfs_superuser_file(hdfs_superuser, tmp_dir, random_file):
     return remote_path
 
 
-@pytest.mark.superuser
 def test_chown_owner(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
     new_owner = 'randomowner'
     path = random_hdfs_superuser_file
@@ -455,7 +458,6 @@ def test_chown_owner(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
     assert hdfs_superuser.status(path)['owner'] == new_owner
 
 
-@pytest.mark.superuser
 def test_chown_group(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
     new_group = 'randomgroup'
     path = random_hdfs_superuser_file
@@ -463,7 +465,6 @@ def test_chown_group(hdfs_superuser, tmp_dir, random_hdfs_superuser_file):
     assert hdfs_superuser.status(path)['group'] == new_group
 
 
-@pytest.mark.superuser
 def test_chown_group_directory(
     hdfs_superuser,
     tmp_dir,
@@ -476,7 +477,6 @@ def test_chown_group_directory(
     assert hdfs_superuser.status(path)['group'] == new_group
 
 
-@pytest.mark.superuser
 def test_chown_owner_directory(
     hdfs_superuser,
     tmp_dir,

@@ -30,25 +30,25 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def dbpath(data_directory):
     default = str(data_directory / 'ibis_testing.db')
     return os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def con(dbpath):
     return ibis.sqlite.connect(dbpath)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def dialect():
     import sqlalchemy as sa
 
     return sa.dialects.sqlite.dialect()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def translate(dialect):
     from ibis.backends.sqlite import Backend
 
@@ -60,23 +60,23 @@ def translate(dialect):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sqla_compile(dialect):
     return lambda expr: str(
         expr.compile(dialect=dialect, compile_kwargs={'literal_binds': True})
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def alltypes_sqla(alltypes):
     return alltypes.op().sqla_table
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def df(alltypes):
     return alltypes.execute()

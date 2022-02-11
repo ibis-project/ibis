@@ -74,9 +74,7 @@ jobs:
 
       - name: run tests
         shell: bash
-        env:
-          PYTEST_BACKENDS: ${{ matrix.backend.name }}
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh -m ${{ matrix.backend.name }} --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -120,73 +118,13 @@ jobs:
 
       - name: run tests
         shell: bash
-        env:
-          PYTEST_BACKENDS: dask
-        run: ./ci/run_tests.sh
+        run: ./ci/run_tests.sh -m dask --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
           name: dask-min-version-${{ join(matrix.backend.deps, '-') }}-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
-  test_postgres:
-    name: PostgreSQL deps-unbounded python-${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version:
-          - "3.8"
-          - "3.9"
-    steps:
-      - name: checkout
-        uses: actions/checkout@v2
-
-      - name: start postgres container
-        run: docker compose up --build -d postgres
-
-      - name: install python
-        uses: actions/setup-python@v2
-        id: install_python
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: install libgeos for shapely
-        run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
-
-      - uses: syphar/restore-virtualenv@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ steps.install_python.outputs.python-version }}
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: postgres-geospatial-${{ steps.install_python.outputs.python-version }}
-
-      - run: python -m pip install --upgrade pip poetry
-
-      - name: install ibis
-        run: poetry install --extras postgres --extras geospatial
-
-      - name: download backend data
-        run: poetry run python ci/datamgr.py download
-
-      - name: install backend data
-        run: poetry run python ci/datamgr.py postgres
-
-      - name: run tests
-        env:
-          PYTEST_BACKENDS: postgres
-        run: ./ci/run_tests.sh --numprocesses auto
-
-      - name: publish test report
-        uses: actions/upload-artifact@v2
-        if: success() || failure()
-        with:
-          name: postgres-geospatial-${{ matrix.python-version }}
           path: junit.xml
 
   test_postgres_min_version:
@@ -223,9 +161,7 @@ jobs:
         run: poetry run python ci/datamgr.py postgres
 
       - name: run tests
-        env:
-          PYTEST_BACKENDS: postgres
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh -m postgres --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -277,9 +213,7 @@ jobs:
         run: poetry run python ci/datamgr.py download
 
       - name: run tests
-        run: ./ci/run_tests.sh
-        env:
-          PYTEST_BACKENDS: pyspark
+        run: ./ci/run_tests.sh -m pyspark
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -342,9 +276,7 @@ jobs:
         run: poetry run python ci/impalamgr.py load --data
 
       - name: run tests
-        env:
-          PYTEST_BACKENDS: impala
-        run: ./ci/run_tests.sh
+        run: ./ci/run_tests.sh -m impala
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -353,7 +285,7 @@ jobs:
           name: impala-${{ matrix.python-version }}
           path: junit.xml
 
-  test_mysql_clickhouse:
+  test_postgres_mysql_clickhouse:
     name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
@@ -367,12 +299,24 @@ jobs:
             title: MySQL
           - name: clickhouse
             title: ClickHouse
+          - name: postgres
+            title: PostgreSQL
+        include:
+          - python-version: "3.9"
+            backend:
+              name: postgres
+              title: PostgreSQL
+        exclude:
+          - python-version: "3.10"
+            backend:
+              name: postgres
+              title: PostgreSQL
     steps:
       - name: checkout
         uses: actions/checkout@v2
 
       - name: start ${{ matrix.backend.name }} container
-        run: docker compose up -d ${{ matrix.backend.name }}
+        run: docker compose up --build -d ${{ matrix.backend.name }}
 
       - name: install python
         uses: actions/setup-python@v2
@@ -393,7 +337,16 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - name: install ibis
+        if: ${{ matrix.backend.name != 'postgres' }}
         run: poetry install --extras ${{ matrix.backend.name }}
+
+      - name: install ibis
+        if: ${{ matrix.backend.name == 'postgres' }}
+        run: poetry install --extras ${{ matrix.backend.name }} --extras geospatial
+
+      - name: install libgeos for shapely
+        if: ${{ matrix.backend.name == 'postgres' }}
+        run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
 
       - name: download backend data
         run: poetry run python ci/datamgr.py download
@@ -402,9 +355,7 @@ jobs:
         run: poetry run python ci/datamgr.py ${{ matrix.backend.name }}
 
       - name: run tests
-        env:
-          PYTEST_BACKENDS: ${{ matrix.backend.name }}
-        run: ./ci/run_tests.sh --numprocesses auto
+        run: ./ci/run_tests.sh -m ${{ matrix.backend.name }} --numprocesses auto
 
       - name: publish test report
         uses: actions/upload-artifact@v2
@@ -419,8 +370,7 @@ jobs:
     needs:
       - test_dask_min_version
       - test_impala
-      - test_mysql_clickhouse
-      - test_postgres
+      - test_postgres_mysql_clickhouse
       - test_postgres_min_version
       - test_pyspark
       - test_simple_backends

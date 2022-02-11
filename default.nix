@@ -33,15 +33,11 @@ let
       );
 
       preConfigure = ''
-        rm -f setup.py
+        rm setup.py
       '';
 
       buildInputs = with pkgs; [ graphviz-nox ];
       checkInputs = with pkgs; [ graphviz-nox ];
-
-      preCheck = ''
-        export PYTEST_BACKENDS="${backendsString}"
-      '';
 
       checkPhase = ''
         set -euo pipefail
@@ -52,7 +48,8 @@ let
 
         cp -r ${pkgs.ibisTestingData}/* "$tempdir"
 
-        chmod -R u+rwx "$tempdir"
+        find "$tempdir" -type f -exec chmod u+rw {} +
+        find "$tempdir" -type d -exec chmod u+rwx {} +
 
         ln -s "$tempdir" ci/ibis-testing-data
 
@@ -62,10 +59,7 @@ let
 
         wait
 
-        pytest --numprocesses auto \
-          ibis/tests \
-          ibis/backends/tests \
-          ibis/backends/{${lib.concatStringsSep "," backends}}/tests
+        pytest --numprocesses auto -m '${lib.concatStringsSep " or " backends} or core'
 
         runHook postCheck
       '';
