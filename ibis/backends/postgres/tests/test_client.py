@@ -63,16 +63,6 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional')) == 1
 
 
-def test_database_layer(con, alltypes):
-    db = con.database()
-    t = db.functional_alltypes
-
-    # TODO: we can't use assert_equal here because of #2973
-    assert t.schema() == alltypes.schema()
-    assert t.op().name == alltypes.op().name
-    assert db.list_tables() == con.list_tables()
-
-
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
 
