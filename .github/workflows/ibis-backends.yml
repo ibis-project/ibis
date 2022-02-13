@@ -39,6 +39,8 @@ jobs:
             title: Pandas
           - name: sqlite
             title: SQLite
+          - name: datafusion
+            title: Datafusion
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -411,92 +413,11 @@ jobs:
           name: ${{ matrix.backend.name }}-${{ matrix.python-version }}
           path: junit.xml
 
-  test_datafusion:
-    name: DataFusion ${{ matrix.datafusion-version }} python-${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        datafusion-version:
-          - master
-          - latest
-        python-version:
-          - "3.9"
-    steps:
-      - name: checkout ibis
-        uses: actions/checkout@v2
-        with:
-          path: ibis
-
-      - name: checkout datafusion
-        uses: actions/checkout@v2
-        if: ${{ matrix.datafusion-version == 'master' }}
-        with:
-          path: datafusion
-          repository: datafusion-contrib/datafusion-python
-
-      - name: install rust
-        uses: actions-rs/toolchain@v1
-        if: ${{ matrix.datafusion-version == 'master' }}
-        with:
-          profile: minimal
-          toolchain: stable
-
-      - name: install python
-        id: install_python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: restore virtualenv
-        uses: syphar/restore-virtualenv@v1
-        with:
-          requirement_files: ibis/poetry.lock
-          custom_cache_key_element: datafusion-${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
-
-      - name: upgrade pip
-        run: pip install -U pip
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: ibis/poetry.lock
-          custom_cache_key_element: datafusion-${{ matrix.datafusion-version }}-${{ steps.install_python.outputs.python-version }}
-
-      - name: install maturin and poetry
-        run: pip install poetry maturin
-
-      - name: install datafusion
-        if: ${{ matrix.datafusion-version == 'master' }}
-        working-directory: datafusion
-        run: maturin develop
-
-      - name: install ibis
-        working-directory: ibis
-        run: poetry install --extras datafusion
-
-      - name: download backend data
-        working-directory: ibis
-        run: python ci/datamgr.py download
-
-      - name: run tests
-        working-directory: ibis
-        run: ./ci/run_tests.sh --numprocesses auto
-        env:
-          PYTEST_BACKENDS: datafusion
-
-      - name: publish test report
-        uses: actions/upload-artifact@v2
-        if: success() || failure()
-        with:
-          name: datafusion-${{ matrix.datafusion-version }}-${{ matrix.python-version }}
-          path: ibis/junit.xml
-
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
       - test_dask_min_version
-      - test_datafusion
       - test_impala
       - test_mysql_clickhouse
       - test_postgres
