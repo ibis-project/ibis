@@ -23,12 +23,7 @@ import operator
 import posixpath
 import tarfile
 from functools import wraps as implements
-from typing import IO, Any
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import IO, Any, Literal
 
 import ibis.common.exceptions as com
 from ibis.config import options

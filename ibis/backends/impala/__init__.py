@@ -8,12 +8,7 @@ import operator
 import re
 import weakref
 from posixpath import join as pjoin
-from typing import Any
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd

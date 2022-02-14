@@ -2116,7 +2116,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "3a02e10b5ca2f312e4d9b8559f1624c99331b5b37a14cae7df5a04b3dd10e46d"
+content-hash = "ee6c55329b11605afee39433d8d8e7b236637f668100ee4418bbca54fecb4e9f"
 
 [metadata.files]
 appnope = [
