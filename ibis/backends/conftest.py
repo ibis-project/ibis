@@ -368,24 +368,6 @@ def alchemy_con(alchemy_backend):
     return alchemy_backend.connection
 
 
-@pytest.fixture(params=_get_backends_to_test(), scope='session')
-def rw_backend(request, data_directory):
-    """
-    Runs the non-file-based backends
-    (dask pandas clickhouse sqlite postgres pyspark impala datafusion mysql)
-    """
-    cls = _get_backend_conf(request.param)
-    return cls(data_directory)
-
-
-@pytest.fixture(scope='session')
-def rw_con(rw_backend):
-    """
-    Instance of Client, already connected to the db (if applies).
-    """
-    return rw_backend.connection
-
-
 @pytest.fixture(scope='session')
 def alltypes(backend):
     return backend.functional_alltypes
@@ -470,13 +452,13 @@ def alchemy_temp_table(alchemy_con) -> str:
 
 
 @pytest.fixture
-def temp_table(rw_con) -> str:
+def temp_table(con) -> str:
     """
     Return a temporary table name.
 
     Parameters
     ----------
-    rw_con : ibis.backends.base.Client
+    con : ibis.backends.base.Client
 
     Yields
     ------
@@ -488,7 +470,7 @@ def temp_table(rw_con) -> str:
         yield name
     finally:
         try:
-            rw_con.drop_table(name, force=True)
+            con.drop_table(name, force=True)
         except NotImplementedError:
             pass
 
