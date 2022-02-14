@@ -14,6 +14,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Mapping,
     NamedTuple,
     Optional,
@@ -22,11 +23,6 @@ from typing import (
     TypeVar,
     Union,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 import pandas as pd
 import parsy as p

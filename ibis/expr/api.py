@@ -7,7 +7,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import IO, Iterable, Mapping, Sequence, TypeVar
+from typing import IO, Iterable, Literal, Mapping, Sequence, TypeVar
 
 import dateutil.parser
 import pandas as pd
@@ -114,11 +114,6 @@ from ibis.expr.window import (
     trailing_window,
     window,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 __all__ = (
     'aggregate',

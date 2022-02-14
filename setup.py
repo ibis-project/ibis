@@ -59,7 +59,6 @@ install_requires = [
 
 extras_require = {
     ':python_version < "3.10"': ["importlib-metadata>=4,<5"],
-    ':python_version < "3.8"': ["typing-extensions>=4.0.1,<5.0.0"],
     "all": [
         "clickhouse-driver>=0.1,<0.3",
         "dask[array,dataframe]>=2021.10.0",
