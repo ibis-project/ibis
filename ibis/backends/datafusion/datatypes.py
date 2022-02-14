@@ -39,7 +39,7 @@ def from_pyarrow_primitive(arrow_type, nullable=True):
 
 @dt.dtype.register(pa.TimestampType)
 def from_pyarrow_timestamp(arrow_type, nullable=True):
-    return dt.TimestampType(timezone=arrow_type.tz)
+    return dt.Timestamp(timezone=arrow_type.tz)
 
 
 @sch.infer.register(pa.Schema)
