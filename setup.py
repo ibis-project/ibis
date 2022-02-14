@@ -5,7 +5,6 @@ packages = [
     "ibis",
     "ibis.backends",
     "ibis.backends.base",
-    "ibis.backends.base.file",
     "ibis.backends.base.sql",
     "ibis.backends.base.sql.alchemy",
     "ibis.backends.base.sql.compiler",
