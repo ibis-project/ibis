@@ -120,7 +120,6 @@ def pytest_runtest_call(item):
         if key.endswith("backend")
     ]
     if len(backend) > 1:
-        breakpoint()
         raise ValueError(
             f"test {item.originalname} was supplied with multiple backend "
             f"objects simultaneously. This is likely due to a leaky fixture."
