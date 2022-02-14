@@ -98,10 +98,10 @@ def test_sql(ddl_backend, ddl_con, sql):
 
 
 @mark.notimpl(["datafusion", "clickhouse"])
-def test_create_table_from_schema(rw_con, rw_backend, new_schema, temp_table):
-    rw_con.create_table(temp_table, schema=new_schema)
+def test_create_table_from_schema(con, backend, new_schema, temp_table):
+    con.create_table(temp_table, schema=new_schema)
 
-    t = rw_con.table(temp_table)
+    t = con.table(temp_table)
 
     for k, i_type in t.schema().items():
         assert new_schema[k] == i_type
@@ -118,20 +118,20 @@ def test_create_table_from_schema(rw_con, rw_backend, new_schema, temp_table):
         "clickhouse",
     ]
 )
-def test_rename_table(rw_con, temp_table, new_schema):
+def test_rename_table(con, temp_table, new_schema):
     temp_table_original = f'{temp_table}_original'
-    rw_con.create_table(temp_table_original, schema=new_schema)
+    con.create_table(temp_table_original, schema=new_schema)
 
-    t = rw_con.table(temp_table_original)
+    t = con.table(temp_table_original)
     t.rename(temp_table)
 
-    assert rw_con.table(temp_table) is not None
-    assert temp_table in rw_con.list_tables()
+    assert con.table(temp_table) is not None
+    assert temp_table in con.list_tables()
 
 
 @mark.notimpl(["datafusion", "clickhouse"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
-def test_nullable_input_output(rw_con, temp_table):
+def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [
             ('foo', 'int64'),
@@ -140,9 +140,9 @@ def test_nullable_input_output(rw_con, temp_table):
         ]
     )
 
-    rw_con.create_table(temp_table, schema=sch)
+    con.create_table(temp_table, schema=sch)
 
-    t = rw_con.table(temp_table)
+    t = con.table(temp_table)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
