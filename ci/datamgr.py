@@ -1,13 +1,28 @@
 #!/usr/bin/env python
+
+from __future__ import annotations
+
+import collections
+import concurrent.futures
+import itertools
 import logging
+import multiprocessing
 import os
-import warnings
+import subprocess
+import tempfile
 import zipfile
+from io import BytesIO
 from pathlib import Path
+from typing import Any, Iterable, Iterator
 
 import click
-import pandas as pd
+import pyarrow as pa
+import pyarrow.csv
 import sqlalchemy as sa
+
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.datatypes.pyarrow
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
@@ -15,7 +30,77 @@ DATA_DIR = Path(
     os.environ.get('IBIS_TEST_DATA_DIRECTORY', SCRIPT_DIR / DATA_DIR_NAME)
 )
 
-TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting', 'awards_players']
+TEST_TABLES = {
+    "functional_alltypes": ibis.schema(
+        {
+            "index": "int64",
+            "Unnamed: 0": "int64",
+            "id": "int32",
+            "bool_col": "boolean",
+            "tinyint_col": "int8",
+            "smallint_col": "int16",
+            "int_col": "int32",
+            "bigint_col": "int64",
+            "float_col": "float32",
+            "double_col": "float64",
+            "date_string_col": "string",
+            "string_col": "string",
+            "timestamp_col": "timestamp",
+            "year": "int32",
+            "month": "int32",
+        }
+    ),
+    "diamonds": ibis.schema(
+        {
+            "carat": "float64",
+            "cut": "string",
+            "color": "string",
+            "clarity": "string",
+            "depth": "float64",
+            "table": "float64",
+            "price": "int64",
+            "x": "float64",
+            "y": "float64",
+            "z": "float64",
+        }
+    ),
+    "batting": ibis.schema(
+        {
+            "playerID": "string",
+            "yearID": "int64",
+            "stint": "int64",
+            "teamID": "string",
+            "lgID": "string",
+            "G": "int64",
+            "AB": "int64",
+            "R": "int64",
+            "H": "int64",
+            "X2B": "int64",
+            "X3B": "int64",
+            "HR": "int64",
+            "RBI": "int64",
+            "SB": "int64",
+            "CS": "int64",
+            "BB": "int64",
+            "SO": "int64",
+            "IBB": "int64",
+            "HBP": "int64",
+            "SH": "int64",
+            "SF": "int64",
+            "GIDP": "int64",
+        }
+    ),
+    "awards_players": ibis.schema(
+        {
+            "playerID": "string",
+            "awardID": "string",
+            "yearID": "int64",
+            "lgID": "string",
+            "tie": "string",
+            "notes": "string",
+        }
+    ),
+}
 
 
 def get_logger(name, level=None, format=None, propagate=False):
@@ -44,22 +129,153 @@ def get_logger(name, level=None, format=None, propagate=False):
 logger = get_logger(Path(__file__).with_suffix('').name)
 
 
-def recreate_database(driver, params, **kwargs):
-    database = params.pop("database", None)
-    url = sa.engine.url.URL(driver, **params)
+def impala_raise_if_cannot_write_to_hdfs(con, env):
+    test_path = os.path.join(env.test_data_dir, ibis.util.guid())
+    con.hdfs.put(test_path, BytesIO(ibis.util.guid().encode('UTF-8')))
+    con.hdfs.rm(test_path)
+
+
+def impala_upload_ibis_test_data_to_hdfs(con, data_path, env):
+    hdfs = con.hdfs
+    if hdfs.exists(env.test_data_dir):
+        hdfs.rmdir(env.test_data_dir)
+    hdfs.put(env.test_data_dir, data_path)
+
+
+def impala_create_test_database(con, env):
+    con.drop_database(env.test_data_db, force=True)
+    con.create_database(env.test_data_db)
+    con.create_table(
+        'alltypes',
+        schema=ibis.schema(
+            [
+                ('a', 'int8'),
+                ('b', 'int16'),
+                ('c', 'int32'),
+                ('d', 'int64'),
+                ('e', 'float'),
+                ('f', 'double'),
+                ('g', 'string'),
+                ('h', 'boolean'),
+                ('i', 'timestamp'),
+            ]
+        ),
+        database=env.test_data_db,
+    )
+
+
+PARQUET_SCHEMAS = {
+    'functional_alltypes': TEST_TABLES["functional_alltypes"].delete(
+        ["index", "Unnamed: 0"]
+    ),
+    'tpch_region': ibis.schema(
+        [
+            ('r_regionkey', 'int16'),
+            ('r_name', 'string'),
+            ('r_comment', 'string'),
+        ]
+    ),
+}
+
+
+AVRO_SCHEMAS = {
+    'tpch_region_avro': {
+        'type': 'record',
+        'name': 'a',
+        'fields': [
+            {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
+            {'name': 'R_NAME', 'type': ['null', 'string']},
+            {'name': 'R_COMMENT', 'type': ['null', 'string']},
+        ],
+    }
+}
+
+
+def impala_create_table(method, *, env, path, schema):
+    table = method(
+        path,
+        schema,
+        name=os.path.basename(path),
+        database=env.test_data_db,
+        persist=True,
+    )
+    table.compute_stats()
+
+
+def impala_create_tables(con, env, executor):
+    test_data_dir = env.test_data_dir
+    avro_files = (
+        ("avro_file", os.path.join(test_data_dir, 'avro', path))
+        for path in con.hdfs.ls(os.path.join(test_data_dir, 'avro'))
+    )
+    parquet_files = (
+        ("parquet_file", os.path.join(test_data_dir, 'parquet', path))
+        for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
+    )
+    schemas = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
+    for method, path in itertools.chain(parquet_files, avro_files):
+        yield executor.submit(
+            impala_create_table,
+            getattr(con, method),
+            env=env,
+            path=path,
+            schema=schemas.get(os.path.basename(path)),
+        )
+
+
+def impala_build_udfs(ibis_home_dir):
+    cwd = str(ibis_home_dir / 'ci' / 'udf')
+    subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd)
+    subprocess.run(["ninja"], cwd=cwd)
+
+
+def impala_upload_udfs(con, ibis_home_dir, env):
+    build_dir = ibis_home_dir / 'ci' / 'udf' / 'build'
+    bitcode_dir = os.path.join(env.test_data_dir, 'udf')
+    if con.hdfs.exists(bitcode_dir):
+        con.hdfs.rmdir(bitcode_dir)
+    con.hdfs.put(bitcode_dir, str(build_dir), verbose=True)
+
+
+def load_impala_data(con, data_dir, env):
+    impala_upload_ibis_test_data_to_hdfs(con, data_dir, env)
+    impala_create_test_database(con, env)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=multiprocessing.cpu_count()
+    ) as executor:
+        for future in concurrent.futures.as_completed(
+            impala_create_tables(con, env, executor)
+        ):
+            future.result()
+
+
+def recreate_database(
+    url: sa.engine.url.URL,
+    database: str,
+    **kwargs: Any,
+) -> None:
     engine = sa.create_engine(url, **kwargs)
 
-    if database is not None:
+    if url.database is not None:
         with engine.connect() as conn:
             conn.execute(f'DROP DATABASE IF EXISTS {database}')
             conn.execute(f'CREATE DATABASE {database}')
 
 
-def init_database(driver, params, schema=None, recreate=True, **kwargs):
+def init_database(
+    url: sa.engine.url.URL,
+    database: str,
+    schema: str | None = None,
+    recreate: bool = True,
+    **kwargs: Any,
+) -> sa.engine.Engine:
     if recreate:
-        recreate_database(driver, params.copy(), **kwargs)
+        recreate_database(url, database, **kwargs)
 
-    url = sa.engine.url.URL(driver, **params)
+    try:
+        url.database = database
+    except AttributeError:
+        url = url.set(database=database)
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
@@ -70,32 +286,23 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
     return engine
 
 
-def read_tables(names, data_directory):
+def read_tables(
+    names: Iterable[str],
+    data_directory: Path,
+) -> Iterator[tuple[str, pa.Table]]:
     for name in names:
+        schema = TEST_TABLES.get(name)
+        if schema is not None:
+            convert_options = pa.csv.ConvertOptions(
+                column_types={
+                    name: dt.pyarrow.to_pyarrow_type(type)
+                    for name, type in schema.items()
+                }
+            )
+        else:
+            convert_options = None
         path = data_directory / f'{name}.csv'
-
-        params = {}
-
-        if name == 'geo':
-            params['quotechar'] = '"'
-
-        df = pd.read_csv(str(path), index_col=None, header=0, **params)
-
-        if name == 'functional_alltypes':
-            df['bool_col'] = df['bool_col'].astype(bool)
-            # string_col is read in as dt.int64, but it's a string for tests
-            df['string_col'] = df['string_col'].astype(str)
-            df['date_string_col'] = df['date_string_col'].astype(str)
-            # timestamp_col has object dtype
-            df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
-
-        yield name, df
-
-
-def insert_tables(engine, names, data_directory):
-    for table, df in read_tables(names, data_directory):
-        with engine.begin() as con:
-            df.to_sql(table, con, if_exists="replace", index=False)
+        yield name, pa.csv.read_csv(path, convert_options=convert_options)
 
 
 @click.group()
@@ -171,7 +378,12 @@ def download(repo_url, directory):
     default=SCRIPT_DIR / 'schema' / 'postgresql.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES + ['geo'])
+@click.option(
+    '-t',
+    '--tables',
+    multiple=True,
+    default=list(TEST_TABLES) + ['geo'],
+)
 @click.option(
     '-d',
     '--data-directory',
@@ -185,67 +397,42 @@ def download(repo_url, directory):
         path_type=Path,
     ),
 )
-@click.option(
-    '--plpython/--no-plpython',
-    help='Create PL/Python extension in database',
-    default=True,
-)
-def postgres(schema, tables, data_directory, plpython, **params):
+def postgres(
+    host,
+    port,
+    username,
+    password,
+    database,
+    schema,
+    tables,
+    data_directory,
+):
     logger.info('Initializing PostgreSQL...')
     engine = init_database(
-        'postgresql', params, schema, isolation_level='AUTOCOMMIT'
+        url=sa.engine.make_url(
+            f"postgresql://{username}:{password}@{host}:{port}",
+        ),
+        database=database,
+        schema=schema,
+        isolation_level='AUTOCOMMIT',
     )
-
-    engine.execute("CREATE SEQUENCE IF NOT EXISTS test_sequence;")
-
-    use_postgis = 'geo' in tables
-    if use_postgis:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS postgis")
-
-    if plpython:
-        engine.execute("CREATE EXTENSION IF NOT EXISTS plpython3u")
 
     for table in tables:
         src = data_directory / f'{table}.csv'
-
-        # If we are loading the geo sample data, handle the data types
-        # specifically so that PostGIS understands them as geometries.
-        if table == 'geo':
-            if not use_postgis:
-                continue
-            from geoalchemy2 import Geometry, WKTElement
-
-            srid = 0
-            df = pd.read_csv(src)
-            df[df.columns[1:]] = df[df.columns[1:]].applymap(
-                lambda x: WKTElement(x, srid=srid)
-            )
-            df.to_sql(
-                'geo',
-                engine,
-                index=False,
-                dtype={
-                    "geo_point": Geometry("POINT", srid=srid),
-                    "geo_linestring": Geometry("LINESTRING", srid=srid),
-                    "geo_polygon": Geometry("POLYGON", srid=srid),
-                    "geo_multipolygon": Geometry("MULTIPOLYGON", srid=srid),
-                },
-            )
-        else:
-            # Here we insert rows using COPY table FROM STDIN, by way of
-            # psycopg2's `copy_expert` API.
-            #
-            # We could use DataFrame.to_sql(method=callable), but that incurs
-            # an unnecessary round trip and requires more code: the `data_iter`
-            # argument would have to be turned back into a CSV before being
-            # passed to `copy_expert`.
-            sql = (
-                f"COPY {table} FROM STDIN "
-                "WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
-            )
-            with src.open('r') as file:
-                with engine.begin() as con, con.connection.cursor() as cur:
-                    cur.copy_expert(sql=sql, file=file)
+        # Here we insert rows using COPY table FROM STDIN, by way of
+        # psycopg2's `copy_expert` API.
+        #
+        # We could use DataFrame.to_sql(method=callable), but that incurs
+        # an unnecessary round trip and requires more code: the `data_iter`
+        # argument would have to be turned back into a CSV before being
+        # passed to `copy_expert`.
+        sql = (
+            f"COPY {table} FROM STDIN "
+            "WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+        )
+        with src.open('r') as file:
+            with engine.begin() as con, con.connection.cursor() as cur:
+                cur.copy_expert(sql=sql, file=file)
 
     engine.execute('VACUUM FULL ANALYZE')
 
@@ -254,7 +441,7 @@ def postgres(schema, tables, data_directory, plpython, **params):
 @click.option(
     '-D',
     '--database',
-    default=SCRIPT_DIR / 'ibis_testing.db',
+    default=DATA_DIR / 'ibis_testing.db',
     type=click.Path(path_type=Path),
 )
 @click.option(
@@ -264,7 +451,12 @@ def postgres(schema, tables, data_directory, plpython, **params):
     default=SCRIPT_DIR / 'schema' / 'sqlite.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-t',
+    '--tables',
+    multiple=True,
+    default=list(TEST_TABLES.keys()),
+)
 @click.option(
     '-d',
     '--data-directory',
@@ -281,14 +473,37 @@ def postgres(schema, tables, data_directory, plpython, **params):
 def sqlite(database, schema, tables, data_directory, **params):
     logger.info('Initializing SQLite...')
 
-    try:
-        database.unlink()
-    except OSError:
-        pass
+    init_database(
+        url=sa.engine.make_url("sqlite://"),
+        database=str(database.absolute()),
+        schema=schema,
+    )
 
-    params['database'] = str(database)
-    engine = init_database('sqlite', params, schema, recreate=False)
-    insert_tables(engine, tables, data_directory)
+    exe = "sqlite3.exe" if os.name == "nt" else "sqlite3"
+    with tempfile.TemporaryDirectory() as d:
+        paths = []
+        for table in tables:
+            stem = f"{table}.csv"
+            dst = Path(d).joinpath(stem)
+            with dst.open("w") as f, data_directory.joinpath(stem).open(
+                "r"
+            ) as lines:
+                # skip the first line
+                f.write("".join(itertools.islice(lines, 1, None)))
+                f.seek(0)
+            paths.append((table, dst))
+        subprocess.run(
+            [exe, database],
+            input="\n".join(
+                [
+                    ".separator ,",
+                    *(
+                        f".import {str(path.absolute())!r} {table}"
+                        for table, path in paths
+                    ),
+                ]
+            ).encode(),
+        )
 
 
 @cli.command()
@@ -304,7 +519,12 @@ def sqlite(database, schema, tables, data_directory, **params):
     default=SCRIPT_DIR / 'schema' / 'mysql.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-t',
+    '--tables',
+    multiple=True,
+    default=list(TEST_TABLES.keys()),
+)
 @click.option(
     '-d',
     '--data-directory',
@@ -318,14 +538,37 @@ def sqlite(database, schema, tables, data_directory, **params):
         path_type=Path,
     ),
 )
-def mysql(schema, tables, data_directory, **params):
+def mysql(
+    host,
+    port,
+    username,
+    password,
+    database,
+    schema,
+    tables,
+    data_directory,
+):
     logger.info('Initializing MySQL...')
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        engine = init_database(
-            'mysql+pymysql', params, schema, isolation_level='AUTOCOMMIT'
-        )
-    insert_tables(engine, tables, data_directory)
+
+    engine = init_database(
+        url=sa.engine.make_url(
+            f"mysql+pymysql://{username}:{password}@{host}:{port}?local_infile=1",  # noqa: E501
+        ),
+        database=database,
+        schema=schema,
+        isolation_level='AUTOCOMMIT',
+    )
+    with engine.connect() as con:
+        for table in tables:
+            con.execute(
+                f"""\
+LOAD DATA LOCAL INFILE '{data_directory / f"{table}.csv"}'
+INTO TABLE {table}
+COLUMNS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\\n'
+IGNORE 1 LINES"""
+            )
 
 
 @cli.command()
@@ -341,7 +584,12 @@ def mysql(schema, tables, data_directory, **params):
     default=SCRIPT_DIR / 'schema' / 'clickhouse.sql',
     help='Path to SQL file that initializes the database via DDL.',
 )
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option(
+    '-t',
+    '--tables',
+    multiple=True,
+    default=list(TEST_TABLES.keys()),
+)
 @click.option(
     '-d',
     '--data-directory',
@@ -371,7 +619,43 @@ def clickhouse(schema, tables, data_directory, **params):
 
     for table, df in read_tables(tables, data_directory):
         query = f"INSERT INTO {table} VALUES"
-        client.insert_dataframe(query, df, settings={"use_numpy": True})
+        client.insert_dataframe(
+            query,
+            df.to_pandas(),
+            settings={"use_numpy": True},
+        )
+
+
+@cli.command()
+@click.option('--data-dir', help='Path to testing data', default=DATA_DIR)
+def impala(data_dir):
+    """Load impala test data for Ibis."""
+    from ibis.backends.impala.tests.conftest import IbisTestEnv
+
+    logger.info('Initializing Impala...')
+    env = IbisTestEnv()
+    con = ibis.impala.connect(
+        host=env.impala_host,
+        port=env.impala_port,
+        hdfs_client=ibis.impala.hdfs_connect(
+            host=env.nn_host,
+            port=env.webhdfs_port,
+            verify=env.auth_mechanism not in ('GSSAPI', 'LDAP'),
+            user=env.webhdfs_user,
+        ),
+        pool_size=multiprocessing.cpu_count(),
+    )
+    ibis_home_dir = Path(__file__).parent.parent
+
+    # validate our environment before performing possibly expensive operations
+    impala_raise_if_cannot_write_to_hdfs(con, env)
+
+    # load the data files
+    load_impala_data(con, str(data_dir), env)
+
+    # build and upload the UDFs
+    impala_build_udfs(ibis_home_dir)
+    impala_upload_udfs(con, ibis_home_dir, env)
 
 
 @cli.command()
@@ -393,37 +677,12 @@ def dask(**params):
 
 
 @cli.command()
-@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option(
-    '-d',
-    '--data-directory',
-    default=DATA_DIR,
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        writable=True,
-        readable=True,
-        path_type=Path,
-    ),
-)
-@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=True)
-def datafusion(tables, data_directory, ignore_missing_dependency, **params):
-    try:
-        import pyarrow as pa  # noqa: F401
-        import pyarrow.parquet as pq  # noqa: F401
-    except ImportError:
-        msg = 'PyArrow dependency is missing'
-        if ignore_missing_dependency:
-            logger.warning('Ignored: %s', msg)
-            return 0
-        else:
-            raise click.ClickException(msg)
-
-    for table, df in read_tables(tables, data_directory):
-        arrow_table = pa.Table.from_pandas(df)
-        target_path = data_directory / f'{table}.parquet'
-        pq.write_table(arrow_table, str(target_path))
+def datafusion(**params):
+    """
+    The datafusion backend does not need test data, but we still
+    have an option for the backend for consistency, and to not
+    have to avoid calling `./datamgr.py datafusion` in the CI.
+    """
 
 
 @cli.command()

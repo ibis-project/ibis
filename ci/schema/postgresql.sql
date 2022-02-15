@@ -1,3 +1,9 @@
+DROP SEQUENCE IF EXISTS test_sequence;
+CREATE SEQUENCE IF NOT EXISTS test_sequence;
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS plpython3u;
+
 DROP TABLE IF EXISTS diamonds CASCADE;
 
 CREATE TABLE diamonds (
@@ -161,3 +167,18 @@ CREATE TABLE IF NOT EXISTS not_supported_intervals (
     b INTERVAL YEAR,
     g INTERVAL YEAR TO MONTH
 );
+
+DROP TABLE IF EXISTS geo CASCADE;
+
+CREATE TABLE IF NOT EXISTS geo (
+    id BIGSERIAL PRIMARY KEY,
+    geo_point GEOMETRY(POINT),
+    geo_linestring GEOMETRY(LINESTRING),
+    geo_polygon GEOMETRY(POLYGON),
+    geo_multipolygon GEOMETRY(MULTIPOLYGON)
+);
+
+CREATE INDEX IF NOT EXISTS idx_geo_geo_linestring ON geo USING GIST (geo_linestring);
+CREATE INDEX IF NOT EXISTS idx_geo_geo_multipolygon ON geo USING GIST (geo_multipolygon);
+CREATE INDEX IF NOT EXISTS idx_geo_geo_point ON geo USING GIST (geo_point);
+CREATE INDEX IF NOT EXISTS idx_geo_geo_polygon ON geo USING GIST (geo_polygon);
