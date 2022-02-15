@@ -10,7 +10,7 @@ import ibis.util
 from ibis.expr import operations as ops
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
-from ibis.udf.vectorized import coerce_to_dataframe
+from ibis.udf.vectorized import _coerce_to_dataframe
 
 from ..core import execute
 from ..execution import constants
@@ -118,12 +118,12 @@ def coerce_to_output(
     result_name = getattr(expr, '_name', None)
 
     if isinstance(expr, (ir.DestructColumn, ir.StructColumn)):
-        return coerce_to_dataframe(result, expr.type())
+        return _coerce_to_dataframe(result, expr.type())
     elif isinstance(expr, (ir.DestructScalar, ir.StructScalar)):
         # Here there are two cases, if this is groupby aggregate,
         # then the result e a Series of tuple/list, or
         # if this is non grouped aggregate, then the result
-        return coerce_to_dataframe(result, expr.type())
+        return _coerce_to_dataframe(result, expr.type())
     elif isinstance(result, pd.Series):
         return result.rename(result_name)
     elif isinstance(expr.op(), ops.Reduction):
