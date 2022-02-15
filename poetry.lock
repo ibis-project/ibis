@@ -1398,7 +1398,7 @@ name = "pyarrow"
 version = "7.0.0"
 description = "Python library for Apache Arrow"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -2116,7 +2116,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "ee6c55329b11605afee39433d8d8e7b236637f668100ee4418bbca54fecb4e9f"
+content-hash = "63a01c3b8c794b5d3c8426e9c2338935babc0866c2cb8cd49e4ebab384edcac6"
 
 [metadata.files]
 appnope = [

@@ -21,6 +21,7 @@ let
     boost
     clang_12
     cmake
+    ninja
   ];
 
   backendTestDeps = [ pkgs.docker-compose_2 ];

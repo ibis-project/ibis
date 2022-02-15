@@ -92,3 +92,6 @@ site
 geography.db
 *.pbf
 *.pbf.zst
+ci/udf/.ninja_deps
+ci/udf/.ninja_log
+ci/udf/build.ninja

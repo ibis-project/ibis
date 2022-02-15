@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS functional_alltypes;
+
 CREATE TABLE functional_alltypes (
     "index" BIGINT,
     "Unnamed: 0" BIGINT,
@@ -19,6 +21,8 @@ CREATE TABLE functional_alltypes (
 
 CREATE INDEX ix_functional_alltypes_index ON "functional_alltypes" ("index");
 
+DROP TABLE IF EXISTS awards_players;
+
 CREATE TABLE awards_players (
     "playerID" TEXT,
     "awardID" TEXT,
@@ -27,6 +31,8 @@ CREATE TABLE awards_players (
     tie TEXT,
     notes TEXT
 );
+
+DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
     "playerID" TEXT,
@@ -52,6 +58,8 @@ CREATE TABLE batting (
     "SF" BIGINT,
     "GIDP" BIGINT
 );
+
+DROP TABLE IF EXISTS diamonds;
 
 CREATE TABLE diamonds (
     carat FLOAT,

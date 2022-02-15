@@ -34,6 +34,7 @@ packages = [
     "ibis.backends.tests",
     "ibis.common",
     "ibis.expr",
+    "ibis.expr.datatypes",
     "ibis.expr.operations",
     "ibis.expr.types",
     "ibis.tests",

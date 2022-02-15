@@ -42,6 +42,10 @@ jobs:
           - name: datafusion
             title: Datafusion
     steps:
+      - name: install sqlite
+        if: ${{ matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite' }}
+        run: choco install sqlite
+
       - name: checkout
         uses: actions/checkout@v2
 
@@ -252,7 +256,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev
+        run: sudo apt-get install -qq -y build-essential cmake ninja-build krb5-config python-dev libkrb5-dev libboost-all-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
@@ -273,7 +277,7 @@ jobs:
         run: poetry run python ci/datamgr.py download
 
       - name: install backend data
-        run: poetry run python ci/impalamgr.py load --data
+        run: poetry run python ci/datamgr.py impala
 
       - name: run tests
         run: ./ci/run_tests.sh -m impala
