@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime
 
 from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
-from ibis.config import get_option, set_option
+from ibis.config import options
 from ibis.expr import types as ir
 
 """Module that adds tracing to dask execution.
@@ -65,13 +65,11 @@ _logger = logging.getLogger('ibis.dask.trace')
 
 # A list of funcs that is traced
 _trace_funcs = set()
-_trace_root = "main_execute"
-_TRACE_CONFIG = 'dask.enable_trace'
 
 
 def enable():
     """Enable tracing."""
-    set_option(_TRACE_CONFIG, True)
+    options.dask.enable_trace = True
     logging.getLogger('ibis.dask.trace').setLevel(logging.DEBUG)
 
 
@@ -117,9 +115,7 @@ def trace(func):
         # when tests are distributed across multiple processes, for example.
         ibis.dask
 
-        trace_enabled = get_option(_TRACE_CONFIG)
-
-        if not trace_enabled:
+        if not options.dask.enable_trace:
             return func(*args, **kwargs)
         else:
             start = datetime.now()
