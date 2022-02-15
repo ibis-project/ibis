@@ -20,7 +20,7 @@ from ibis.expr.operations import (
 )
 
 
-def coerce_to_tuple(
+def _coerce_to_tuple(
     data: Union[List, np.ndarray, pd.Series],
     output_type: dt.Struct,
     index: Optional[pd.Index] = None,
@@ -34,7 +34,7 @@ def coerce_to_tuple(
     return tuple(data)
 
 
-def coerce_to_np_array(
+def _coerce_to_np_array(
     data: Union[List, np.ndarray, pd.Series],
     output_type: dt.Struct,
     index: Optional[pd.Index] = None,
@@ -48,7 +48,7 @@ def coerce_to_np_array(
     return np.array(data)
 
 
-def coerce_to_series(
+def _coerce_to_series(
     data: Union[List, np.ndarray, pd.Series],
     output_type: dt.DataType,
     original_index: Optional[pd.Index] = None,
@@ -88,7 +88,7 @@ def coerce_to_series(
     return result
 
 
-def coerce_to_dataframe(
+def _coerce_to_dataframe(
     data: Any,
     output_type: dt.Struct,
     original_index: Optional[pd.Index] = None,
@@ -121,25 +121,25 @@ def coerce_to_dataframe(
 
     Examples
     --------
-    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), dt.Struct([('b', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), dt.Struct([('b', 'int32')]))  # noqa: E501
        b
     0  1
     1  2
     2  3
     dtype: int32
-    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
     dtypes: [int32, int32, int32]
-    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe(pd.Series([range(3), range(3)]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  0  1  2
     1  0  1  2
     dtypes: [int32, int32, int32]
-    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
-    >>>  coerce_to_dataframe([1, 2, 3], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>>  _coerce_to_dataframe([1, 2, 3], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
        a  b  c
     0  1  2  3
     dtypes: [int32, int32, int32]
@@ -195,19 +195,19 @@ class UserDefinedFunction:
                 self.func_type is ElementWiseVectorizedUDF
                 or self.func_type is AnalyticVectorizedUDF
             ):
-                return coerce_to_dataframe
+                return _coerce_to_dataframe
             else:
                 # Case 2: Struct output, reduction UDF -> coerce to tuple
-                return coerce_to_tuple
+                return _coerce_to_tuple
         # Case 3: Vector output, non-reduction UDF -> coerce to Series
         elif (
             self.func_type is ElementWiseVectorizedUDF
             or self.func_type is AnalyticVectorizedUDF
         ):
-            return coerce_to_series
+            return _coerce_to_series
         # Case 4: Array output type, reduction UDF -> coerce to np.ndarray
         elif isinstance(self.output_type, dt.Array):
-            return coerce_to_np_array
+            return _coerce_to_np_array
         else:
             # Case 5: Default, do nothing (e.g. reduction UDF returning
             # len-0 value such as a single integer or float).
