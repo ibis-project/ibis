@@ -15,8 +15,8 @@ theme:
     - search.suggest
   icon:
     repo: fontawesome/brands/github
-  logo: static/img/logo_ibis.svg
-  favicon: static/img/favicon.ico
+  logo: static/icons/ibis/logo.svg
+  favicon: static/favicon.ico
   palette:
     scheme: slate
     primary: black
@@ -62,6 +62,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
+      options:
+        custom_icons:
+          - docs/static/icons
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.inlinehilite
@@ -77,12 +80,7 @@ markdown_extensions:
   - toc
 nav:
   - Home: index.md
-  - About:
-      - Introduction: about/index.md
-      - Team: about/team.md
-      - Roadmap: about/roadmap.md
-      - License: about/license.md
-  - Getting Started: getting_started.md
+  - Installation: getting_started.md
   - Tutorial:
       - Introduction: tutorial/01-Introduction-to-Ibis.ipynb
       - Aggregates and Joins: tutorial/02-Aggregates-Joins.ipynb
@@ -93,9 +91,9 @@ nav:
           - Complex Filtering: tutorial/06-Advanced-Topics-ComplexFiltering.ipynb
           - Analytics Tools: tutorial/07-Advanced-Topics-Analytics-Tools.ipynb
           - Geospatial Analysis: tutorial/08-Geospatial-Analysis.ipynb
+  - Ibis for SQL Programmers: user_guide/sql.ipynb
   - User Guide:
       - Configuration: user_guide/configuration.md
-      - Ibis for SQL Programmers: user_guide/sql.ipynb
       - TopK: user_guide/topk.md
       - Self Joins: user_guide/self_joins.md
       - UDFs: user_guide/udfs.md
@@ -115,6 +113,10 @@ nav:
       - PySpark: backends/pyspark.md
       - SQLite: backends/sqlite.md
   - Community:
+      - About:
+          - Team: about/team.md
+          - Roadmap: about/roadmap.md
+          - License: about/license.md
       - Ask a question (StackOverflow): https://stackoverflow.com/questions/tagged/ibis
       - Chat (Gitter): https://gitter.im/ibis-dev/Lobby
       - Code of Conduct: community/coc.md

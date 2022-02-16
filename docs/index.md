@@ -1,28 +1,121 @@
-<figure markdown> 
-  ![Image title](/static/img/ibis_sky.png){ width="300" }
-  <figcaption>Write your analytics code once, run it everywhere.</figcaption>
-</figure>
+---
+hide:
+  - toc
+---
+
+# :ibis-logo: Ibis
+
+<div markdown>
+## Expressive analytics in Python, whatever the scale.
+</div>
+
+<script 
+    src="https://asciinema.org/a/3mUlxagsW2jOZ2dsOlRvXRqaR.js"
+    data-autoplay="true"
+    data-preload="true"
+    data-loop="true"
+    data-rows=20
+    id="asciicast-3mUlxagsW2jOZ2dsOlRvXRqaR"
+    async>
+</script>
 
 ## Features
 
-Ibis provides a standard way to write analytics code, that then can be run in
-multiple engines.
+### SQL Coverage
 
-- **Full coverage of SQL features**: Anything you can write in a `SELECT` statement you can wrtite in Ibis
-- **Abstract over SQL differences**: Write standard code that translates to any SQL syntax
-- **High performance execution**: Execute at the speed of your backend, not your local computer
-- **Integration with community infrastructure**: Ibis works with existing Python tools
+#### Anything you can write in a `SELECT` statement you can write in Ibis.
 
-## Supported Backends
+=== "Group By"
 
-- Traditional DBMSs: [PostgreSQL](/backends/postgres), [MySQL](/backends/mysql), [SQLite](/backends/sqlite)
-- Analytical DBMSs: [OmniSciDB](/backends/omnisci), [ClickHouse](/backends/clickhouse), [Datafusion](/backends/datafusion)
-- Distributed DBMSs: [Impala](/backends/impala), [PySpark](/backends/pyspark), [BigQuery](/backends/bigquery)
-- In memory analytics: [pandas](/backends/pandas), [Dask](/backends/dask)
+    ##### SQL
+
+    ```sql
+    SELECT f, sum(a + b) AS d
+    FROM t
+    GROUP BY f
+    ```
+
+    ##### Ibis
+
+    ```python
+    t.group_by("f").aggregate(d=lambda t: (t.a + t.b).sum())
+    ```
+
+=== "Join"
+
+    ##### SQL
+
+    ```sql
+    SELECT exp(t.a) AS d
+    FROM t
+    LEFT SEMI JOIN s
+      ON t.x = t.y
+    ```
+
+    ##### Ibis
+
+    ```python
+    t.semi_join(s, t.x == t.y).select([lambda t: t.a.exp().name("d")])
+    ```
+
+=== "Window Functions"
+
+    ##### SQL
+
+    ```sql
+    SELECT *, avg(x) OVER (PARTITION BY y) as z
+    FROM t
+    ```
+
+    ##### Ibis
+
+    ```python
+    t.group_by("y").mutate(z=lambda t: t.x.avg())
+    ```
+
+!!! tip "Coming from SQL?"
+
+    Check out [Ibis for SQL Programmers](/user_guide/sql)!
+
+### Abstract Over SQL Dialects
+
+#### No more rewrites when scaling up or down.
+
+=== "BigQuery"
+
+    ```python
+    con = ibis.bigquery.connect(project_id=...)
+    ```
+
+=== "SQLite"
+
+    ```python
+    con = ibis.sqlite.connect("path/to/sqlite.db")
+    ```
+
+=== "PostgreSQL"
+
+    ```python
+    con = ibis.postgres.connect(user=..., host=..., port=...)
+    ```
+
+```python
+t = con.table("t")
+t.group_by("y").mutate(z=lambda t: t.x.avg())
+```
+
+### Ecosystem
+
+#### Ibis builds on top of and works with existing Python tools.
+
+```python
+t.semi_join(s, t.x == t.y).select([lambda t: t.a.exp().name("d")]).head(2)
+df = expr.execute()  # a pandas DataFrame!
+```
 
 ## Example
 
-Here's Ibis computing the number of citizens per squared kilometer in Asia:
+Let's compute the number of citizens per squared kilometer in Asia:
 
 ```python
 >>> import ibis
@@ -42,23 +135,23 @@ Here's Ibis computing the number of citizens per squared kilometer in Asia:
 
 === "SQL"
 
-    ??? tip "Coming from SQL?"
+    !!! tip "Coming from SQL?"
 
         Check out [Ibis for SQL Programmers](/user_guide/sql)!
 
     Ibis gives you the benefit of a programming language. You don't need to
     sacrifice maintainability to get to those insights!
 
-    === "SQL"
-
-        ``` sql title="docs/example.sql" linenums="1"
-        --8<-- "docs/example.sql"
-        ```
-
     === "Ibis"
 
         ``` py title="docs/example.py" linenums="1"
         --8<-- "docs/example.py"
+        ```
+
+    === "SQL"
+
+        ``` sql title="docs/example.sql" linenums="1"
+        --8<-- "docs/example.sql"
         ```
 
 === "SQLAlchemy"
@@ -73,14 +166,14 @@ Here's Ibis computing the number of citizens per squared kilometer in Asia:
         including the [PostgreSQL](/backends/postgres) and
         [SQLite](/backends/sqlite) backends!
 
-    === "SQLAlchemy"
-
-        ``` python title="docs/sqlalchemy_example.py" "linenums="1"
-        --8<-- "docs/sqlalchemy_example.py"
-        ```
-
     === "Ibis"
 
         ``` py title="docs/example.py" linenums="1"
         --8<-- "docs/example.py"
+        ```
+
+    === "SQLAlchemy"
+
+        ``` python title="docs/sqlalchemy_example.py" "linenums="1"
+        --8<-- "docs/sqlalchemy_example.py"
         ```
