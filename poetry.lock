@@ -834,7 +834,7 @@ python-versions = "*"
 
 [[package]]
 name = "krb5"
-version = "0.2.0"
+version = "0.3.0"
 description = "Kerberos API bindings for Python"
 category = "main"
 optional = true
@@ -1537,7 +1537,7 @@ sql = ["pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
 
 [[package]]
 name = "pyspnego"
-version = "0.3.1"
+version = "0.4.0"
 description = "Windows Negotiate Authentication Client and Server"
 category = "main"
 optional = true
@@ -1546,10 +1546,10 @@ python-versions = ">=3.6"
 [package.dependencies]
 cryptography = "*"
 gssapi = {version = ">=1.5.0", optional = true, markers = "sys_platform != \"win32\" and extra == \"kerberos\""}
-krb5 = {version = "*", optional = true, markers = "sys_platform != \"win32\" and extra == \"kerberos\""}
+krb5 = {version = ">=0.3.0", optional = true, markers = "sys_platform != \"win32\" and extra == \"kerberos\""}
 
 [package.extras]
-kerberos = ["gssapi (>=1.5.0)", "krb5"]
+kerberos = ["gssapi (>=1.5.0)", "krb5 (>=0.3.0)"]
 yaml = ["ruamel.yaml"]
 
 [[package]]
@@ -2679,15 +2679,15 @@ kerberos = [
     {file = "kerberos-1.3.1.tar.gz", hash = "sha256:cdd046142a4e0060f96a00eb13d82a5d9ebc0f2d7934393ed559bac773460a2c"},
 ]
 krb5 = [
-    {file = "krb5-0.2.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:21e40bd3f05db9d66aaa0e23556889f47cdb9ee5f32a48bd4103ba5c1b9f5db2"},
-    {file = "krb5-0.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:61a9c8aa2d71c12a26fd4110967e6a31002627ef20fc8199406281f8c833f196"},
-    {file = "krb5-0.2.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:6aadccabfd7bd2bfcd02afba67586fb34f09dc761adb706e313d2a1c4f17e7c0"},
-    {file = "krb5-0.2.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:0930bcc03dff6f87342f15214dfd971e3af3e1c7013e2b26858b9064cd869491"},
-    {file = "krb5-0.2.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:86d0ae09c4239cbe14a7da5ac46020eee3a9f9d9f54f11fc126f2e9a19bb3584"},
-    {file = "krb5-0.2.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:c99f9d78fa23b6ece55697be201fdffeb932d14a8302c1d4af0bd48553675d2e"},
-    {file = "krb5-0.2.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:a4e97e118d57ebae10cfaff11ece2b9f453c9c0406db9e18b9966c126014aad5"},
-    {file = "krb5-0.2.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:7873197ac130607000c70d5b6c6b2232c69c76d6b88142d7417dfb5bde2269d1"},
-    {file = "krb5-0.2.0.tar.gz", hash = "sha256:67df5e0f974ea97d4bfb4ef8f8cc4a2172894b6cdba01f3315f33abcfb2cc41b"},
+    {file = "krb5-0.3.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4c08f543f5f4ae3ad2e2b8d70b21d1a4f06a82495583feb283b9bc426cd9d786"},
+    {file = "krb5-0.3.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b99bf262c6eee88fb5c0476705e46c310230c2e1c9b5be365a3fbdae7d88899a"},
+    {file = "krb5-0.3.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:dcf10648273e5722df67645d1979cb4084c31d03d63e6445b54d308e01d86b6d"},
+    {file = "krb5-0.3.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:5db3964b13fb8ec2a40fdf50927d6ec05a7f77c2146e78c46712f0a0c8fce468"},
+    {file = "krb5-0.3.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:86bebf4ef64e57533ef6901907fabddff126aeae283d75464f06da86aab86e6a"},
+    {file = "krb5-0.3.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:d049fb3eb4ec11c9e81d8a1591a32b21b178b65bd03046933f7de1ddc981dc2a"},
+    {file = "krb5-0.3.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:246171f4176cda9fab9b62c12f6291ff609aa9e2448a78d999dcfb32e6ba6f76"},
+    {file = "krb5-0.3.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b21d53b8cb23cd99146d89e11cb863d935c451b2e1345501819f1d80db3cabe2"},
+    {file = "krb5-0.3.0.tar.gz", hash = "sha256:1d97da68aa8e563bedbbd5ac5fd02d3d84023b3526fd4df20dcbf7a89ee65d58"},
 ]
 locket = [
     {file = "locket-0.2.1-py2.py3-none-any.whl", hash = "sha256:12b6ada59d1f50710bca9704dbadd3f447dbf8dac6664575c1281cadab8e6449"},
@@ -3148,18 +3148,18 @@ pyspark = [
     {file = "pyspark-3.2.1.tar.gz", hash = "sha256:0b81359262ec6e9ac78c353344e7de026027d140c6def949ff0d80ab70f89a54"},
 ]
 pyspnego = [
-    {file = "pyspnego-0.3.1-cp310-cp310-win32.whl", hash = "sha256:b02c9b61f85c96f969c78f492b35915a590dddabf987687eb1256ef2fd8fbdcb"},
-    {file = "pyspnego-0.3.1-cp310-cp310-win_amd64.whl", hash = "sha256:6387b4631120205240d1be25aff7a78d41db9b99bb5803b3ac6b7b6ed80b8920"},
-    {file = "pyspnego-0.3.1-cp36-cp36m-win32.whl", hash = "sha256:19da2de9d55d73d05b2798d4e5bd7ee5980e573ae50dc2f2bc460df5eaffe5ea"},
-    {file = "pyspnego-0.3.1-cp36-cp36m-win_amd64.whl", hash = "sha256:37c4d80a0c90bd2b670c583b2efbd210c26f54b1f7661c0cbc684a954b88c1c3"},
-    {file = "pyspnego-0.3.1-cp37-cp37m-win32.whl", hash = "sha256:9235a3159a4e1648d6bb4d170b8d68ecf5b1f55fa2f3157335ce74df5c192468"},
-    {file = "pyspnego-0.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:e15d16b205fbc5e945244b974312e9796467913f69736fdad262edee0c3c105f"},
-    {file = "pyspnego-0.3.1-cp38-cp38-win32.whl", hash = "sha256:f4a00cc3796d34212b391caecb3fd636cdefea798cb4ac231f893bdade674f01"},
-    {file = "pyspnego-0.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:27dd07b6b918c289d2820c685b346a198498354cf3a1bfe9ec19cff9fa8fce2f"},
-    {file = "pyspnego-0.3.1-cp39-cp39-win32.whl", hash = "sha256:a0d41d43657cd4d4456ca734ec00b6e24c95a144499cfc429371a310c4b10d7a"},
-    {file = "pyspnego-0.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:6df4b5233ec28358992adadfef5be76807ca1424e7c0fbf430424759edc85f8b"},
-    {file = "pyspnego-0.3.1-py2.py3-none-any.whl", hash = "sha256:75a0d4be4236f6b7c2ded0b43fd03e942c48cdbe91c2856f45f22884b7e92ddc"},
-    {file = "pyspnego-0.3.1.tar.gz", hash = "sha256:ccb8d9cea310f1715d5ed3d2d092db9bf50ff2762cf94a0dd9dfab7774a727fe"},
+    {file = "pyspnego-0.4.0-cp310-cp310-win32.whl", hash = "sha256:f6a96d270d5008580e8b5bd14f966660a1de9fe2600a55f14feba6534a4c435d"},
+    {file = "pyspnego-0.4.0-cp310-cp310-win_amd64.whl", hash = "sha256:89905e90fb436ff5979827918a9f92425d4b7bec0d081aca573ec421786be006"},
+    {file = "pyspnego-0.4.0-cp36-cp36m-win32.whl", hash = "sha256:1c4710d95665e6501eaf60e78e243f0052bcba3692a8fc287b1fadcae7e674d9"},
+    {file = "pyspnego-0.4.0-cp36-cp36m-win_amd64.whl", hash = "sha256:b714f1a89c0f34572a8b30286e55f7c6332c135800d1a00188d319cb871bc398"},
+    {file = "pyspnego-0.4.0-cp37-cp37m-win32.whl", hash = "sha256:e7ae585feb22a42f643ba5d7426c5f235c12daced9c996607dbe094a835526ba"},
+    {file = "pyspnego-0.4.0-cp37-cp37m-win_amd64.whl", hash = "sha256:37145548b1bd5dee54947737b133fed6826092920ee6465f35c911a01eb5aaa7"},
+    {file = "pyspnego-0.4.0-cp38-cp38-win32.whl", hash = "sha256:3b84f27aa43df45dcbad10b64f175de4d9c487c7d55aa85e4bebcc1700009f4c"},
+    {file = "pyspnego-0.4.0-cp38-cp38-win_amd64.whl", hash = "sha256:57984d673737a41a42acce03f392b40d8fc523c898512beefefd61a305501892"},
+    {file = "pyspnego-0.4.0-cp39-cp39-win32.whl", hash = "sha256:0516647486976ab152de64ea314cfb3e22ac7a8702a25aaf42f2f6385c6947ba"},
+    {file = "pyspnego-0.4.0-cp39-cp39-win_amd64.whl", hash = "sha256:c6e9c571489263fc7f995c1479960d8db71aef9f793919c282c1d3fc7416ad08"},
+    {file = "pyspnego-0.4.0-py2.py3-none-any.whl", hash = "sha256:2a461012fba2681d7acca50ae080566907c1fbcc8435f36eacca57c0e252fee8"},
+    {file = "pyspnego-0.4.0.tar.gz", hash = "sha256:4f82abd01a24979cfca1980bd24948dddb07a05b283a65af10e62051ef62c7dd"},
 ]
 pytest = [
     {file = "pytest-7.0.1-py3-none-any.whl", hash = "sha256:9ce3ff477af913ecf6321fe337b93a2c0dcf2a0a1439c43f5452112c1e4280db"},
