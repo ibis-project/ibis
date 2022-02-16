@@ -10,12 +10,13 @@ hide:
 </div>
 
 <script 
-    src="https://asciinema.org/a/3mUlxagsW2jOZ2dsOlRvXRqaR.js"
+    src="https://asciinema.org/a/yp5Ww4XKyjJsUCXkEz5or9rPq.js"
     data-autoplay="true"
     data-preload="true"
     data-loop="true"
-    data-rows=20
-    id="asciicast-3mUlxagsW2jOZ2dsOlRvXRqaR"
+    data-i="4"
+    data-rows="20"
+    id="asciicast-yp5Ww4XKyjJsUCXkEz5or9rPq"
     async>
 </script>
 
