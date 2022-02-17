@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import collections
-import concurrent.futures as fut
-import io
+import concurrent.futures
 import itertools
 import logging
 import multiprocessing
@@ -15,15 +14,15 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-import click
-import sqlalchemy as sa
-
 if TYPE_CHECKING:
     import pyarrow as pa
 
+import click
+import sqlalchemy as sa
+
 import ibis
 
-IBIS_HOME = Path(__file__).parent.parent
+IBIS_HOME = Path(__file__).parent.parent.absolute()
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR = Path(
     os.environ.get(
@@ -134,15 +133,23 @@ logger = get_logger(Path(__file__).with_suffix('').name)
 
 def impala_raise_if_cannot_write_to_hdfs(con, env):
     test_path = os.path.join(env.test_data_dir, ibis.util.guid())
-    con.hdfs.put(test_path, io.BytesIO(ibis.util.guid().encode('UTF-8')))
-    con.hdfs.rm(test_path)
+    hdfs = con.hdfs
+    with tempfile.NamedTemporaryFile(mode="wb+", delete=True) as f:
+        f.write(ibis.util.guid().encode('UTF-8'))
+        f.seek(0)
+        hdfs.put_file(f.name, test_path)
+    hdfs.rm(test_path)
 
 
 def impala_upload_ibis_test_data_to_hdfs(con, data_path, env):
     hdfs = con.hdfs
     if hdfs.exists(env.test_data_dir):
         hdfs.rmdir(env.test_data_dir)
-    hdfs.put(env.test_data_dir, data_path)
+    hdfs.put(
+        data_path,
+        f"{os.path.dirname(env.test_data_dir)}/",
+        recursive=True,
+    )
 
 
 def impala_create_test_database(con, env):
@@ -193,55 +200,60 @@ AVRO_SCHEMAS = {
     }
 }
 
+ALL_SCHEMAS = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
 
-def impala_create_tables(con, env, executor):
+
+def impala_create_tables(con, env, *, executor=None):
     test_data_dir = env.test_data_dir
-    avro_files = (
+    avro_files = [
         (con.avro_file, os.path.join(test_data_dir, 'avro', path))
         for path in con.hdfs.ls(os.path.join(test_data_dir, 'avro'))
-    )
-    parquet_files = (
+    ]
+    parquet_files = [
         (con.parquet_file, os.path.join(test_data_dir, 'parquet', path))
         for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
-    )
-    schemas = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
+    ]
     for method, path in itertools.chain(parquet_files, avro_files):
         logger.info(os.path.basename(path))
-        yield executor.submit(
-            method,
-            path,
-            schemas.get(os.path.basename(path)),
+        args = path, ALL_SCHEMAS.get(os.path.basename(path))
+        kwargs = dict(
             name=os.path.basename(path),
             database=env.test_data_db,
             persist=True,
         )
+        if executor is not None:
+            yield executor.submit(method, *args, **kwargs)
+        else:
+            yield method(*args, **kwargs)
 
 
-def impala_build_udfs(ibis_home_dir):
-    cwd = str(ibis_home_dir / 'ci' / 'udf')
+def impala_build_udfs():
+    cwd = str(IBIS_HOME / 'ci' / 'udf')
     subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd)
     subprocess.run(["ninja"], cwd=cwd)
 
 
-def impala_upload_udfs(con, ibis_home_dir, env):
-    build_dir = ibis_home_dir / 'ci' / 'udf' / 'build'
+def impala_upload_udfs(con, env):
+    build_dir = IBIS_HOME / 'ci' / 'udf' / 'build'
     bitcode_dir = os.path.join(env.test_data_dir, 'udf')
     if con.hdfs.exists(bitcode_dir):
-        con.hdfs.rmdir(bitcode_dir)
-    con.hdfs.put(bitcode_dir, str(build_dir), verbose=True)
+        con.hdfs.rm(bitcode_dir, recursive=True)
+    con.hdfs.put(str(build_dir), bitcode_dir, recursive=True)
 
 
 def load_impala_data(con, data_dir, env):
     impala_upload_ibis_test_data_to_hdfs(con, data_dir, env)
     impala_create_test_database(con, env)
-    with fut.ThreadPoolExecutor(max_workers=CPU_COUNT) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=CPU_COUNT
+    ) as executor:
         table_futures = (
             executor.submit(table_future.result().compute_stats)
-            for table_future in fut.as_completed(
-                impala_create_tables(con, env, executor)
+            for table_future in concurrent.futures.as_completed(
+                impala_create_tables(con, env, executor=executor)
             )
         )
-        for stats_future in fut.as_completed(table_futures):
+        for stats_future in concurrent.futures.as_completed(table_futures):
             stats_future.result()
 
 
@@ -287,20 +299,20 @@ def read_tables(
     names: Iterable[str],
     data_directory: Path,
 ) -> Iterator[tuple[str, pa.Table]]:
-    import pyarrow.csv as pa_csv
+    import pyarrow.csv as pac
 
     import ibis.expr.datatypes.pyarrow as pa_dt
 
     for name in names:
         schema = TEST_TABLES[name]
-        convert_options = pa_csv.ConvertOptions(
+        convert_options = pac.ConvertOptions(
             column_types={
                 name: pa_dt.to_pyarrow_type(type)
                 for name, type in schema.items()
             }
         )
-        yield name, pa_csv.read_csv(
-            data_directory / f"{name}.csv",
+        yield name, pac.read_csv(
+            data_directory / f'{name}.csv',
             convert_options=convert_options,
         )
 
@@ -618,6 +630,8 @@ def clickhouse(schema, tables, data_directory, **params):
 @click.option('--data-dir', help='Path to testing data', default=DATA_DIR)
 def impala(data_dir):
     """Load impala test data for Ibis."""
+    import fsspec
+
     from ibis.backends.impala.tests.conftest import IbisTestEnv
 
     logger.info('Initializing Impala...')
@@ -625,11 +639,11 @@ def impala(data_dir):
     con = ibis.impala.connect(
         host=env.impala_host,
         port=env.impala_port,
-        hdfs_client=ibis.impala.hdfs_connect(
+        hdfs_client=fsspec.filesystem(
+            env.hdfs_protocol,
             host=env.nn_host,
-            port=env.webhdfs_port,
-            verify=env.auth_mechanism not in ('GSSAPI', 'LDAP'),
-            user=env.webhdfs_user,
+            port=env.hdfs_port,
+            user=env.hdfs_user,
         ),
         pool_size=CPU_COUNT,
     )
@@ -641,8 +655,8 @@ def impala(data_dir):
     load_impala_data(con, str(data_dir), env)
 
     # build and upload the UDFs
-    impala_build_udfs(IBIS_HOME)
-    impala_upload_udfs(con, IBIS_HOME, env)
+    impala_build_udfs()
+    impala_upload_udfs(con, env)
 
 
 @cli.command()
