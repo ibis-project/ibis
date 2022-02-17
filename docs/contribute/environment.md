@@ -17,10 +17,12 @@ There are two primary ways to setup a development environment.
 
 !!! info "Python 3.10 is supported on a best-effort basis"
 
-    As of 2022-01-05 there is *experimental* support for Python 3.10.
-    However, there are a number of problems with dependencies and development
-    tools that ibis uses and we cannot offically support Python 3.10 until
-    those are fixed.
+    As of 2022-02-17 there is support for Python 3.10 when using nix for development.
+
+    `conda-forge` is still in the process of migrating packages to Python 3.10.
+
+    See [the `conda-forge` Python 3.10 migration status
+    page](https://conda-forge.org/status/#python310) for more information.
 
 === "Nix (Linux, Python 3.8-3.10)"
 
