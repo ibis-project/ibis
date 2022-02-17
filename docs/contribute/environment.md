@@ -22,7 +22,7 @@ There are two primary ways to setup a development environment.
     tools that ibis uses and we cannot offically support Python 3.10 until
     those are fixed.
 
-=== "Nix (Linux, Python 3.8-3.9)"
+=== "Nix (Linux, Python 3.8-3.10)"
 
     1. [Download and install `nix`](https://nixos.org/download.html)
     1. Install `gh`:
