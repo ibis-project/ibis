@@ -2,33 +2,29 @@
 
 !!! danger "Before you start"
 
-    This section assumes you've already [set up a development environment](environment.md).
+    This section assumes you have a working [development environment](environment.md).
 
 !!! info "You may be able to skip this section"
 
-    If you haven't made changes to any core parts of ibis (e.g., `ibis/expr`)
+    If you haven't made changes to the core of ibis (e.g., `ibis/expr`)
     or any specific backends (`ibis/backends`) this material isn't necessary to
     follow to make a pull request.
 
-One the primary challenges when working with the ibis codebase is testing.
+## Motivation
 
-Ibis supports a execution against a number of backends with wildly varying
-deployment models:
+One the primary challenges when developing against the ibis codebase is testing
+backends that require non-trivial setup.
 
-- Single-node systems like SQLite
-- Multi-node client-server systems like PostgreSQL and MySQL
-- Systems that span a variety of different models like ClickHouse
-- Systems that are designed to run on premises, like Impala
+Moreover, many of the backends that ibis works with have very different
+deployment deployment models:
 
-This presents quite a challenge for testing. This page is all about how to work
-with the backend test suite.
+- **In-process** systems like SQLite
+- **Client-server** systems like PostgreSQL and MySQL
+- Systems that **run the gamut** of deployment models like ClickHouse
+- Systems that run **on-premises**, like Impala
 
-## Systems that can be tested without any additional infrastructure
-
-Many backends can be tested without `docker-compose`.
-
-The `sqlite`, `datafusion`, and any `pandas`-based backends can all be tested
-without needing to do anything except loading data.
+This section of the docs is all about how to work with the backend test suite
+infrastructure.
 
 ## Backend Testing with Compose
 
@@ -38,8 +34,7 @@ Here is the list of backends that can be tested using `docker-compose`.
 | ---------- | ----------------------- |
 | ClickHouse | `clickhouse`            |
 | PostgreSQL | `postgres`              |
-| impala     | `impala`                |
-| kudu       | `kudu`, `impala`        |
+| impala     | `impala`, `kudu`        |
 | mysql      | `mysql`                 |
 
 ### Testing a Compose Service
