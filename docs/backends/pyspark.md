@@ -14,13 +14,6 @@ or
 conda install -c conda-forge ibis-pyspark
 ```
 
-!!! note "Check your PySpark version"
-
-    When using the PySpark backend with PySpark 2.3.x, 2.4.x and pyarrow >=
-    0.15.0, you need to set `ARROW_PRE_0_15_IPC_FORMAT=1`. See
-    [here](https://spark.apache.org/docs/3.0.1/sql-pyspark-pandas-with-arrow.html#compatibility-setting-for-pyarrow--0150-and-spark-23x-24x)
-    for details
-
 ## Connect
 
 The PySpark client is accessible through the `ibis.pyspark` namespace.
