@@ -156,9 +156,6 @@ The best way to interact with a single table is through the
 ::: ibis.backends.impala.hdfs_connect
     rendering:
       heading_level: 3
-::: ibis.backends.impala.hdfs.HDFS
-    rendering:
-      heading_level: 3
 
 <!-- prettier-ignore-end -->
 

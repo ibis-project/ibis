@@ -1,8 +1,8 @@
 import inspect
 import os
-import warnings
 from pathlib import Path
 
+import fsspec
 import pytest
 
 import ibis
@@ -30,12 +30,11 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         from ibis.backends.impala.tests.conftest import IbisTestEnv
 
         env = IbisTestEnv()
-        hdfs_client = ibis.impala.hdfs_connect(
+        hdfs_client = fsspec.filesystem(
+            env.hdfs_protocol,
             host=env.nn_host,
-            port=env.webhdfs_port,
-            auth_mechanism=env.auth_mechanism,
-            verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
-            user=env.webhdfs_user,
+            port=env.hdfs_port,
+            user=env.hdfs_user,
         )
         auth_mechanism = env.auth_mechanism
         if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
@@ -45,7 +44,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             port=env.impala_port,
             auth_mechanism=env.auth_mechanism,
             hdfs_client=hdfs_client,
-            database='ibis_testing',
+            database=env.test_data_db,
         )
 
     @property
@@ -114,9 +113,8 @@ class IbisTestEnv:
         return os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
 
     @property
-    def webhdfs_port(self):
-        # 5070 is default for impala dev env
-        return int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 50070))
+    def hdfs_port(self):
+        return int(os.environ.get('IBIS_TEST_HDFS_PORT', 50070))
 
     @property
     def hdfs_superuser(self):
@@ -133,8 +131,12 @@ class IbisTestEnv:
         return os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
 
     @property
-    def webhdfs_user(self):
-        return os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
+    def hdfs_user(self):
+        return os.environ.get('IBIS_TEST_HDFS_USER', 'hdfs')
+
+    @property
+    def hdfs_protocol(self):
+        return os.environ.get("IBIS_TEST_HDFS_PROTOCOL", "webhdfs")
 
 
 @pytest.fixture
@@ -160,20 +162,15 @@ def test_data_dir(env):
 
 @pytest.fixture
 def hdfs(env, tmp_dir):
-    if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
-        warnings.warn("Ignoring invalid Certificate Authority errors")
-
-    client = ibis.impala.hdfs_connect(
+    client = fsspec.filesystem(
+        env.hdfs_protocol,
         host=env.nn_host,
-        port=env.webhdfs_port,
-        auth_mechanism=env.auth_mechanism,
-        verify=env.auth_mechanism not in {'GSSAPI', 'LDAP'},
-        user=env.webhdfs_user,
+        port=env.hdfs_port,
+        user=env.hdfs_user,
     )
 
     if not client.exists(tmp_dir):
         client.mkdir(tmp_dir)
-    client.chmod(tmp_dir, '777')
     return client
 
 

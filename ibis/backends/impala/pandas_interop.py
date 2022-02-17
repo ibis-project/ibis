@@ -80,7 +80,7 @@ class DataFrameWriter:
             if options.verbose:
                 util.log(f'Writing CSV to: {path}')
 
-            self.client.hdfs.put(path, tmp_file_path)
+            self.client.hdfs.put(tmp_file_path, path)
         return path
 
     def get_schema(self):
@@ -113,4 +113,4 @@ class DataFrameWriter:
 
     def cleanup(self):
         while self.temp_hdfs_dirs:
-            self.client.hdfs.rmdir(self.temp_hdfs_dirs.pop())
+            self.client.hdfs.rm(self.temp_hdfs_dirs.pop(), recursive=True)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import io
 import operator
+import os
 import re
 import weakref
 from posixpath import join as pjoin
@@ -39,7 +40,7 @@ from . import ddl, udf
 from .client import ImpalaConnection, ImpalaDatabase, ImpalaTable
 from .compat import HS2Error, ImpylaError
 from .compiler import ImpalaCompiler
-from .hdfs import HDFS, WebHDFS, hdfs_connect
+from .hdfs import hdfs_connect  # noqa: F401
 from .pandas_interop import DataFrameWriter
 from .udf import (  # noqa F408
     aggregate_function,
@@ -167,8 +168,6 @@ class Backend(BaseSQLBackend):
     name = 'impala'
     database_class = ImpalaDatabase
     table_expr_class = ImpalaTable
-    HDFS = HDFS
-    WebHDFS = WebHDFS
     compiler = ImpalaCompiler
 
     class Options(ibis.config.BaseModel):
@@ -253,16 +252,8 @@ class Backend(BaseSQLBackend):
         Backend
             Impala backend
         """
-        import hdfs
-
         new_backend._temp_objects = set()
-
-        if hdfs_client is None or isinstance(hdfs_client, HDFS):
-            new_backend._hdfs = hdfs_client
-        elif isinstance(hdfs_client, hdfs.Client):
-            new_backend._hdfs = WebHDFS(hdfs_client)
-        else:
-            raise TypeError(hdfs_client)
+        new_backend._hdfs = hdfs_client
 
         params = {
             'host': host,
@@ -317,7 +308,8 @@ class Backend(BaseSQLBackend):
             return schema.apply_to(df)
         return df
 
-    def _get_hdfs(self):
+    @property
+    def hdfs(self):
         if self._hdfs is None:
             raise com.IbisError(
                 'No HDFS connection; must pass connection '
@@ -325,13 +317,6 @@ class Backend(BaseSQLBackend):
                 'ibis.impala.connect'
             )
         return self._hdfs
-
-    def _set_hdfs(self, hdfs):
-        if not isinstance(hdfs, HDFS):
-            raise TypeError('must be HDFS instance')
-        self._hdfs = hdfs
-
-    hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
 
     @property
     def kudu(self):
@@ -804,8 +789,21 @@ class Backend(BaseSQLBackend):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            file_name = self.hdfs._find_any_file(hdfs_dir)
-            like_file = pjoin(hdfs_dir, file_name)
+            try:
+                file_name = next(
+                    fn
+                    for fn in (
+                        os.path.basename(f["name"])
+                        for f in self.hdfs.ls(hdfs_dir, detail=True)
+                        if f["type"].lower() == "file"
+                    )
+                    if not fn.startswith(("_", "."))
+                    if not fn.endswith((".tmp", ".copying"))
+                )
+            except StopIteration:
+                raise com.IbisError("No files found in the passed directory")
+            else:
+                like_file = pjoin(hdfs_dir, file_name)
 
         stmt = ddl.CreateTableParquet(
             name,
