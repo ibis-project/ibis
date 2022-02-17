@@ -14,11 +14,11 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
-if TYPE_CHECKING:
-    import pyarrow as pa
-
 import click
 import sqlalchemy as sa
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 import ibis
 
@@ -144,7 +144,7 @@ def impala_raise_if_cannot_write_to_hdfs(con, env):
 def impala_upload_ibis_test_data_to_hdfs(con, data_path, env):
     hdfs = con.hdfs
     if hdfs.exists(env.test_data_dir):
-        hdfs.rmdir(env.test_data_dir)
+        hdfs.rm(env.test_data_dir, recursive=True)
     hdfs.put(
         data_path,
         f"{os.path.dirname(env.test_data_dir)}/",
