@@ -154,7 +154,7 @@ python-versions = "*"
 name = "cffi"
 version = "1.15.0"
 description = "Foreign Function Interface for Python calling C code."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -279,25 +279,6 @@ tomli = {version = "*", optional = true, markers = "extra == \"toml\""}
 toml = ["tomli"]
 
 [[package]]
-name = "cryptography"
-version = "36.0.1"
-description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-category = "main"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-cffi = ">=1.12"
-
-[package.extras]
-docs = ["sphinx (>=1.6.5,!=1.8.0,!=3.1.0,!=3.1.1)", "sphinx-rtd-theme"]
-docstest = ["pyenchant (>=1.6.11)", "twine (>=1.12.0)", "sphinxcontrib-spelling (>=4.0.1)"]
-pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
-sdist = ["setuptools_rust (>=0.11.4)"]
-ssh = ["bcrypt (>=3.1.5)"]
-test = ["pytest (>=6.2.0)", "pytest-cov", "pytest-subtests", "pytest-xdist", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
-
-[[package]]
 name = "dask"
 version = "2022.2.0"
 description = "Parallel PyData with Task Scheduling"
@@ -354,7 +335,7 @@ python-versions = ">=3.6"
 name = "decorator"
 version = "5.1.1"
 description = "Decorators for Humans"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5"
 
@@ -365,14 +346,6 @@ description = "XML bomb protection for Python stdlib modules"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-
-[[package]]
-name = "docopt"
-version = "0.6.2"
-description = "Pythonic argument parser, that will make you smile"
-category = "main"
-optional = true
-python-versions = "*"
 
 [[package]]
 name = "docstring-parser"
@@ -541,36 +514,6 @@ python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*"
 
 [package.extras]
 docs = ["sphinx"]
-
-[[package]]
-name = "gssapi"
-version = "1.7.2"
-description = "Python GSSAPI Wrapper"
-category = "main"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-decorator = "*"
-
-[[package]]
-name = "hdfs"
-version = "2.6.0"
-description = "HdfsCLI: API and command line interface for HDFS."
-category = "main"
-optional = true
-python-versions = "*"
-
-[package.dependencies]
-docopt = "*"
-requests = ">=2.7.0"
-requests-kerberos = {version = ">=0.7.0", optional = true, markers = "extra == \"kerberos\""}
-six = ">=1.9.0"
-
-[package.extras]
-avro = ["fastavro (>=0.21.19)"]
-dataframe = ["fastavro (>=0.21.19)", "pandas (>=0.14.1)"]
-kerberos = ["requests-kerberos (>=0.7.0)"]
 
 [[package]]
 name = "idna"
@@ -831,14 +774,6 @@ description = "Kerberos high-level interface"
 category = "main"
 optional = true
 python-versions = "*"
-
-[[package]]
-name = "krb5"
-version = "0.3.0"
-description = "Kerberos API bindings for Python"
-category = "main"
-optional = true
-python-versions = ">=3.6"
 
 [[package]]
 name = "locket"
@@ -1400,7 +1335,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
@@ -1518,23 +1453,6 @@ ml = ["numpy (>=1.7)"]
 mllib = ["numpy (>=1.7)"]
 pandas_on_spark = ["numpy (>=1.14)", "pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
 sql = ["pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
-
-[[package]]
-name = "pyspnego"
-version = "0.4.0"
-description = "Windows Negotiate Authentication Client and Server"
-category = "main"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-cryptography = "*"
-gssapi = {version = ">=1.5.0", optional = true, markers = "sys_platform != \"win32\" and extra == \"kerberos\""}
-krb5 = {version = ">=0.3.0", optional = true, markers = "sys_platform != \"win32\" and extra == \"kerberos\""}
-
-[package.extras]
-kerberos = ["gssapi (>=1.5.0)", "krb5 (>=0.3.0)"]
-yaml = ["ruamel.yaml"]
 
 [[package]]
 name = "pytest"
@@ -1780,19 +1698,6 @@ urllib3 = ">=1.21.1,<1.27"
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
-
-[[package]]
-name = "requests-kerberos"
-version = "0.14.0"
-description = "A Kerberos authentication handler for python-requests"
-category = "main"
-optional = true
-python-versions = ">=3.6"
-
-[package.dependencies]
-cryptography = ">=1.3"
-pyspnego = {version = "*", extras = ["kerberos"]}
-requests = ">=1.1.0"
 
 [[package]]
 name = "shapely"
@@ -2084,12 +1989,12 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-all = ["clickhouse-driver", "dask", "datafusion", "geoalchemy2", "geopandas", "graphviz", "hdfs", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "shapely", "sqlalchemy"]
+all = ["clickhouse-driver", "dask", "datafusion", "fsspec", "geoalchemy2", "geopandas", "graphviz", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "shapely", "sqlalchemy"]
 clickhouse = ["clickhouse-driver"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["hdfs", "impyla", "requests"]
+impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
 pandas = []
 postgres = ["psycopg2", "sqlalchemy"]
@@ -2100,7 +2005,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "c9a5991d330c13711432417e956a2869349a5807a03967cd372cfe10a4a958a7"
+content-hash = "cdab8b5ed1dc7bac373bd4781f0a946da0610d1a7a3fae841ff247a0aee8cf3f"
 
 [metadata.files]
 appnope = [
@@ -2388,28 +2293,6 @@ coverage = [
     {file = "coverage-6.3.1-pp36.pp37.pp38-none-any.whl", hash = "sha256:463e52616ea687fd323888e86bf25e864a3cc6335a043fad6bbb037dbf49bbe2"},
     {file = "coverage-6.3.1.tar.gz", hash = "sha256:6c3f6158b02ac403868eea390930ae64e9a9a2a5bbfafefbb920d29258d9f2f8"},
 ]
-cryptography = [
-    {file = "cryptography-36.0.1-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:73bc2d3f2444bcfeac67dd130ff2ea598ea5f20b40e36d19821b4df8c9c5037b"},
-    {file = "cryptography-36.0.1-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:2d87cdcb378d3cfed944dac30596da1968f88fb96d7fc34fdae30a99054b2e31"},
-    {file = "cryptography-36.0.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:74d6c7e80609c0f4c2434b97b80c7f8fdfaa072ca4baab7e239a15d6d70ed73a"},
-    {file = "cryptography-36.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_24_aarch64.whl", hash = "sha256:6c0c021f35b421ebf5976abf2daacc47e235f8b6082d3396a2fe3ccd537ab173"},
-    {file = "cryptography-36.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5d59a9d55027a8b88fd9fd2826c4392bd487d74bf628bb9d39beecc62a644c12"},
-    {file = "cryptography-36.0.1-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0a817b961b46894c5ca8a66b599c745b9a3d9f822725221f0e0fe49dc043a3a3"},
-    {file = "cryptography-36.0.1-cp36-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:94ae132f0e40fe48f310bba63f477f14a43116f05ddb69d6fa31e93f05848ae2"},
-    {file = "cryptography-36.0.1-cp36-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:7be0eec337359c155df191d6ae00a5e8bbb63933883f4f5dffc439dac5348c3f"},
-    {file = "cryptography-36.0.1-cp36-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:e0344c14c9cb89e76eb6a060e67980c9e35b3f36691e15e1b7a9e58a0a6c6dc3"},
-    {file = "cryptography-36.0.1-cp36-abi3-win32.whl", hash = "sha256:4caa4b893d8fad33cf1964d3e51842cd78ba87401ab1d2e44556826df849a8ca"},
-    {file = "cryptography-36.0.1-cp36-abi3-win_amd64.whl", hash = "sha256:391432971a66cfaf94b21c24ab465a4cc3e8bf4a939c1ca5c3e3a6e0abebdbcf"},
-    {file = "cryptography-36.0.1-pp37-pypy37_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:bb5829d027ff82aa872d76158919045a7c1e91fbf241aec32cb07956e9ebd3c9"},
-    {file = "cryptography-36.0.1-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ebc15b1c22e55c4d5566e3ca4db8689470a0ca2babef8e3a9ee057a8b82ce4b1"},
-    {file = "cryptography-36.0.1-pp37-pypy37_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:596f3cd67e1b950bc372c33f1a28a0692080625592ea6392987dba7f09f17a94"},
-    {file = "cryptography-36.0.1-pp38-pypy38_pp73-macosx_10_10_x86_64.whl", hash = "sha256:30ee1eb3ebe1644d1c3f183d115a8c04e4e603ed6ce8e394ed39eea4a98469ac"},
-    {file = "cryptography-36.0.1-pp38-pypy38_pp73-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:ec63da4e7e4a5f924b90af42eddf20b698a70e58d86a72d943857c4c6045b3ee"},
-    {file = "cryptography-36.0.1-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ca238ceb7ba0bdf6ce88c1b74a87bffcee5afbfa1e41e173b1ceb095b39add46"},
-    {file = "cryptography-36.0.1-pp38-pypy38_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:ca28641954f767f9822c24e927ad894d45d5a1e501767599647259cbf030b903"},
-    {file = "cryptography-36.0.1-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:39bdf8e70eee6b1c7b289ec6e5d84d49a6bfa11f8b8646b5b3dfe41219153316"},
-    {file = "cryptography-36.0.1.tar.gz", hash = "sha256:53e5c1dc3d7a953de055d77bef2ff607ceef7a2aac0353b5d630ab67f7423638"},
-]
 dask = [
     {file = "dask-2022.2.0-py3-none-any.whl", hash = "sha256:feaf838faa23150faadaeb2483e8612cfb8fed51f62e635a1a6dd55d1d793ba4"},
     {file = "dask-2022.2.0.tar.gz", hash = "sha256:cefb5c63d1e26f6dfa650ddd1eb1a53e0cef623141b838820c6b34e6534ea409"},
@@ -2454,9 +2337,6 @@ decorator = [
 defusedxml = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
-]
-docopt = [
-    {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
 ]
 docstring-parser = [
     {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
@@ -2567,31 +2447,6 @@ greenlet = [
     {file = "greenlet-1.1.2-cp39-cp39-win_amd64.whl", hash = "sha256:013d61294b6cd8fe3242932c1c5e36e5d1db2c8afb58606c5a67efce62c1f5fd"},
     {file = "greenlet-1.1.2.tar.gz", hash = "sha256:e30f5ea4ae2346e62cedde8794a56858a67b878dd79f7df76a0767e356b1744a"},
 ]
-gssapi = [
-    {file = "gssapi-1.7.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:c02a563d7e8b4005ccfc1f6080eaf0805c052876397ea9fb03b7ee725bbbbccc"},
-    {file = "gssapi-1.7.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:3d07a74a57cf0df22d0db9452cf500d487736e91cbd21aefffefa3d53e8d8ca2"},
-    {file = "gssapi-1.7.2-cp310-cp310-win32.whl", hash = "sha256:14bde0adcb6fd435021292899f8111396e54c039b47f107e97c40608ee451b84"},
-    {file = "gssapi-1.7.2-cp310-cp310-win_amd64.whl", hash = "sha256:fcde5311a574c2ac314dddaf9608310bd7a4eae3b361ab6374c552428534b51b"},
-    {file = "gssapi-1.7.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:2b4b979c075062654a64aeb6faf579f3070d6e52a9c94b10e77eaea0ef88795d"},
-    {file = "gssapi-1.7.2-cp36-cp36m-win32.whl", hash = "sha256:b2b57d01debcaa79b91a9c7e40ccc200cbcae9afe48f15cc54901ddf733b4d91"},
-    {file = "gssapi-1.7.2-cp36-cp36m-win_amd64.whl", hash = "sha256:0b02bbdd850c079b1d453546579fc283f0646f56ff4b39cd3b0e27263a6af97e"},
-    {file = "gssapi-1.7.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:145bee55bff2461d2704b958bb6f45f6abf11442efe0f2e7a612f0ab049613f2"},
-    {file = "gssapi-1.7.2-cp37-cp37m-win32.whl", hash = "sha256:b199f59450c4cdc85d7d4f0f35f2b7b7420e536309d0370a5ea0734d56d06e38"},
-    {file = "gssapi-1.7.2-cp37-cp37m-win_amd64.whl", hash = "sha256:20b5365557684856c9b20160b26eaba664afd92a7c098b4bc0c0b2aaf7e5a31c"},
-    {file = "gssapi-1.7.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6ad1df7dd638485402c5b9afef5b7355d855266a09e2f7d55e5f0c8ee0f6a2e7"},
-    {file = "gssapi-1.7.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:65b2820fd547398c55c69ab6884245b268ea56702f6411149a3be6e520e3efd5"},
-    {file = "gssapi-1.7.2-cp38-cp38-win32.whl", hash = "sha256:5231e3d5d299cefe535a854b7e8d4700775704e75fa33fc3aba1cf83a3e2e7a0"},
-    {file = "gssapi-1.7.2-cp38-cp38-win_amd64.whl", hash = "sha256:33aa276927a82ec630bf580fdd187399062568e699901c33ff8191d3ae9daa4f"},
-    {file = "gssapi-1.7.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:fe5e95c88fd737117374223683e319b0d80024f7d176822f14a12be0663cc3d7"},
-    {file = "gssapi-1.7.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:7123301f368f4198c46c62ee791878e7174fe7eed05c5d602708e0c5ec6774db"},
-    {file = "gssapi-1.7.2-cp39-cp39-win32.whl", hash = "sha256:69983699e9ef39fb7f84b02039d739362fb39959285bb5fdd0efcc19943aa5b3"},
-    {file = "gssapi-1.7.2-cp39-cp39-win_amd64.whl", hash = "sha256:a01dbcd17760cdd77701006105e00a1bd213bd6e189b6602242f175ab488afee"},
-    {file = "gssapi-1.7.2.tar.gz", hash = "sha256:748efbcf7cfb31183cd75e5314493e79fe3521b3ec00d090a77e23f7c75fa59d"},
-]
-hdfs = [
-    {file = "hdfs-2.6.0-py3-none-any.whl", hash = "sha256:05912125cfc68075387f271654dac185dc1aba8b347519f6a14d1395e39d7749"},
-    {file = "hdfs-2.6.0.tar.gz", hash = "sha256:bc92ce4347f106d48b541f756caa930476998cfd3eed477ffbd63ae9ad1cdc22"},
-]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
@@ -2661,17 +2516,6 @@ kerberos = [
     {file = "kerberos-1.3.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:2e03c6a9d201d4aab5f899bfb8150de15335955bfce8ca43bfe9a41d7aae54dc"},
     {file = "kerberos-1.3.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:2002b3b1541fc51e2c081ee7048f55e5d9ca63dd09f0d7b951c263920db3a0bb"},
     {file = "kerberos-1.3.1.tar.gz", hash = "sha256:cdd046142a4e0060f96a00eb13d82a5d9ebc0f2d7934393ed559bac773460a2c"},
-]
-krb5 = [
-    {file = "krb5-0.3.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4c08f543f5f4ae3ad2e2b8d70b21d1a4f06a82495583feb283b9bc426cd9d786"},
-    {file = "krb5-0.3.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b99bf262c6eee88fb5c0476705e46c310230c2e1c9b5be365a3fbdae7d88899a"},
-    {file = "krb5-0.3.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:dcf10648273e5722df67645d1979cb4084c31d03d63e6445b54d308e01d86b6d"},
-    {file = "krb5-0.3.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:5db3964b13fb8ec2a40fdf50927d6ec05a7f77c2146e78c46712f0a0c8fce468"},
-    {file = "krb5-0.3.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:86bebf4ef64e57533ef6901907fabddff126aeae283d75464f06da86aab86e6a"},
-    {file = "krb5-0.3.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:d049fb3eb4ec11c9e81d8a1591a32b21b178b65bd03046933f7de1ddc981dc2a"},
-    {file = "krb5-0.3.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:246171f4176cda9fab9b62c12f6291ff609aa9e2448a78d999dcfb32e6ba6f76"},
-    {file = "krb5-0.3.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:b21d53b8cb23cd99146d89e11cb863d935c451b2e1345501819f1d80db3cabe2"},
-    {file = "krb5-0.3.0.tar.gz", hash = "sha256:1d97da68aa8e563bedbbd5ac5fd02d3d84023b3526fd4df20dcbf7a89ee65d58"},
 ]
 locket = [
     {file = "locket-0.2.1-py2.py3-none-any.whl", hash = "sha256:12b6ada59d1f50710bca9704dbadd3f447dbf8dac6664575c1281cadab8e6449"},
@@ -3127,20 +2971,6 @@ pyrsistent = [
 pyspark = [
     {file = "pyspark-3.2.1.tar.gz", hash = "sha256:0b81359262ec6e9ac78c353344e7de026027d140c6def949ff0d80ab70f89a54"},
 ]
-pyspnego = [
-    {file = "pyspnego-0.4.0-cp310-cp310-win32.whl", hash = "sha256:f6a96d270d5008580e8b5bd14f966660a1de9fe2600a55f14feba6534a4c435d"},
-    {file = "pyspnego-0.4.0-cp310-cp310-win_amd64.whl", hash = "sha256:89905e90fb436ff5979827918a9f92425d4b7bec0d081aca573ec421786be006"},
-    {file = "pyspnego-0.4.0-cp36-cp36m-win32.whl", hash = "sha256:1c4710d95665e6501eaf60e78e243f0052bcba3692a8fc287b1fadcae7e674d9"},
-    {file = "pyspnego-0.4.0-cp36-cp36m-win_amd64.whl", hash = "sha256:b714f1a89c0f34572a8b30286e55f7c6332c135800d1a00188d319cb871bc398"},
-    {file = "pyspnego-0.4.0-cp37-cp37m-win32.whl", hash = "sha256:e7ae585feb22a42f643ba5d7426c5f235c12daced9c996607dbe094a835526ba"},
-    {file = "pyspnego-0.4.0-cp37-cp37m-win_amd64.whl", hash = "sha256:37145548b1bd5dee54947737b133fed6826092920ee6465f35c911a01eb5aaa7"},
-    {file = "pyspnego-0.4.0-cp38-cp38-win32.whl", hash = "sha256:3b84f27aa43df45dcbad10b64f175de4d9c487c7d55aa85e4bebcc1700009f4c"},
-    {file = "pyspnego-0.4.0-cp38-cp38-win_amd64.whl", hash = "sha256:57984d673737a41a42acce03f392b40d8fc523c898512beefefd61a305501892"},
-    {file = "pyspnego-0.4.0-cp39-cp39-win32.whl", hash = "sha256:0516647486976ab152de64ea314cfb3e22ac7a8702a25aaf42f2f6385c6947ba"},
-    {file = "pyspnego-0.4.0-cp39-cp39-win_amd64.whl", hash = "sha256:c6e9c571489263fc7f995c1479960d8db71aef9f793919c282c1d3fc7416ad08"},
-    {file = "pyspnego-0.4.0-py2.py3-none-any.whl", hash = "sha256:2a461012fba2681d7acca50ae080566907c1fbcc8435f36eacca57c0e252fee8"},
-    {file = "pyspnego-0.4.0.tar.gz", hash = "sha256:4f82abd01a24979cfca1980bd24948dddb07a05b283a65af10e62051ef62c7dd"},
-]
 pytest = [
     {file = "pytest-7.0.1-py3-none-any.whl", hash = "sha256:9ce3ff477af913ecf6321fe337b93a2c0dcf2a0a1439c43f5452112c1e4280db"},
     {file = "pytest-7.0.1.tar.gz", hash = "sha256:e30905a0c131d3d94b89624a1cc5afec3e0ba2fbdb151867d8e0ebd49850f171"},
@@ -3374,10 +3204,6 @@ regex = [
 requests = [
     {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
     {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
-]
-requests-kerberos = [
-    {file = "requests-kerberos-0.14.0.tar.gz", hash = "sha256:cda9d1240ae5392e081869881c8742d0e171fd6a893a7ac0875db2748e966fd1"},
-    {file = "requests_kerberos-0.14.0-py2.py3-none-any.whl", hash = "sha256:da74ea478ccd8584de88092bdcd17a7c29d494374a340d1d8677189903c9ac6a"},
 ]
 shapely = [
     {file = "Shapely-1.8.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c5632cedea6d815b61eb4c264da1c3f24a8ce2ceba2f74e30fba340ca230563"},
