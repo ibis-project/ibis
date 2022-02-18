@@ -22,7 +22,6 @@ let
   ];
 
   impalaUdfDeps = with pkgs; [
-    boost
     clang_12
     cmake
     ninja
