@@ -95,7 +95,7 @@ jobs:
         run: just download-data
 
       - name: install backend data
-        run: just load-data ${{ matrix.backend.name }}
+        run: poetry run python ci/datamgr.py load ${{ matrix.backend.name }}
 
       - name: run non-pyspark tests
         if: ${{ matrix.backend.name != 'pyspark' }}
@@ -174,12 +174,12 @@ jobs:
           python-version: "3.8"
 
       - name: install libgeos for shapely
-        run: sudo apt-get install -qq -y build-essential libgeos-dev python-dev
+        run: sudo apt-get install -qq -y build-essential libgeos-dev
 
       - run: python -m pip install --upgrade pip poetry
 
       - name: install minimum postgres dependencies
-        run: poetry add --lock --optional "psycopg2@2.8.4" --optional "geoalchemy@0.6" --optional "geopandas@0.6" --optional "shapely@1.6"
+        run: poetry add --lock --optional "psycopg2@2.8.4" --optional "GeoAlchemy2@0.6.3" --optional "geopandas@0.6" --optional "Shapely@1.6"
 
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
@@ -190,7 +190,7 @@ jobs:
         run: just download-data
 
       - name: install backend data
-        run: just load-data postgres
+        run: poetry run python ci/datamgr.py load postgres
 
       - name: run tests
         run: just ci-check -m postgres --numprocesses auto
@@ -199,7 +199,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: success() || failure()
         with:
-          name: postgres-geospatial-bounded-3.8
+          name: postgres-geospatial-bounded-${{ steps.install_python.outputs.python-version }}
           path: junit.xml
 
   test_impala:
@@ -258,7 +258,7 @@ jobs:
         run: just download-data
 
       - name: install backend data
-        run: just load-data impala
+        run: poetry run python ci/datamgr.py load impala
 
       - name: run tests
         run: just ci-check -m impala
@@ -339,7 +339,7 @@ jobs:
         run: just download-data
 
       - name: install backend data
-        run: just load-data ${{ matrix.backend.name }}
+        run: poetry run python ci/datamgr.py load ${{ matrix.backend.name }}
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto

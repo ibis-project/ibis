@@ -10,6 +10,7 @@ services:
   impala:
     depends_on:
       - impala-postgres
+      - kudu
     environment:
       PGPASSWORD: postgres
     healthcheck:

@@ -39,10 +39,8 @@ let
       buildInputs = with pkgs; [ graphviz-nox ];
       checkInputs = with pkgs; [ sqlite graphviz-nox ];
 
-      checkPhase = ''
+      preCheck = ''
         set -euo pipefail
-
-        runHook preCheck
 
         tempdir="$(mktemp -d)"
 
@@ -54,10 +52,14 @@ let
         ln -s "$tempdir" ci/ibis-testing-data
 
         for backend in ${backendsString}; do
-          python ci/datamgr.py "$backend" &
+          python ci/datamgr.py load "$backend"
         done
+      '';
 
-        wait
+      checkPhase = ''
+        set -euo pipefail
+
+        runHook preCheck
 
         pytest --numprocesses auto -m '${lib.concatStringsSep " or " backends} or core'
 

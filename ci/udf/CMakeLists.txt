@@ -12,19 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(impala_test_udfs)
+project(impala_test_udfs LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.22)
+set(CMAKE_CXX_COMPILER clang++)
 
-# where to put generated libraries
+# where to put generated libraries and binaries
 set(LIBRARY_OUTPUT_PATH "build")
-# where to put generated binaries
 set(EXECUTABLE_OUTPUT_PATH "build")
-
-find_program(CLANG_EXECUTABLE clang++ REQUIRED)
-
-set(CLANG_INCLUDE_FLAGS)
-
-message(STATUS "Setup toolchain link flags ${TOOLCHAIN_LINK_FLAGS}")
 
 set(CLANG_IR_CXX_FLAGS "-emit-llvm" "-c" "-DIR_COMPILE" "-DNDEBUG"
   "-DHAVE_INTTYPES_H" "-DHAVE_NETINET_IN_H"
@@ -39,7 +33,7 @@ function(COMPILE_TO_IR SRC_FILE)
   set(OUTPUT_FILE "build/${BASE_NAME}.ll")
   add_custom_command(
     OUTPUT ${OUTPUT_FILE}
-    COMMAND ${CLANG_EXECUTABLE} ${CLANG_INCLUDE_FLAGS} ${CLANG_IR_CXX_FLAGS} ${SRC_FILE} -o ${OUTPUT_FILE}
+    COMMAND ${CMAKE_CXX_COMPILER} ${CLANG_INCLUDE_FLAGS} ${CLANG_IR_CXX_FLAGS} ${SRC_FILE} -o ${OUTPUT_FILE}
     DEPENDS ${SRC_FILE})
   add_custom_target(${BASE_NAME}-ir ALL DEPENDS ${OUTPUT_FILE})
 endfunction(COMPILE_TO_IR)
