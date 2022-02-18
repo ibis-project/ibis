@@ -22,25 +22,12 @@ set(EXECUTABLE_OUTPUT_PATH "build")
 
 find_program(CLANG_EXECUTABLE clang++ REQUIRED)
 
-# find boost headers and libs
-set(Boost_DEBUG TRUE)
-set(Boost_USE_MULTITHREADED ON)
-
-find_package(Boost REQUIRED)
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${Boost_LIBRARIES})
-
 set(CLANG_INCLUDE_FLAGS)
 
 message(STATUS "Setup toolchain link flags ${TOOLCHAIN_LINK_FLAGS}")
 
-set(CLANG_INCLUDE_FLAGS
-  ${CLANG_INCLUDE_FLAGS}
-  "-I${Boost_INCLUDE_DIRS}"
-)
-
 set(CLANG_IR_CXX_FLAGS "-emit-llvm" "-c" "-DIR_COMPILE" "-DNDEBUG"
-  "-DHAVE_INTTYPES_H" "-DHAVE_NETINET_IN_H" "-DBOOST_DATE_TIME_POSIX_TIME_STD_CONFIG"
+  "-DHAVE_INTTYPES_H" "-DHAVE_NETINET_IN_H"
   "-Wno-deprecated" "-Wno-c++11-extensions" "-O1")
 
 # Function to generate rule to cross compile a source file to an IR module.

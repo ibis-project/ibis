@@ -16,9 +16,9 @@
 #ifndef IMPALA_UDF_UDF_H
 #define IMPALA_UDF_UDF_H
 
-#include <assert.h>
-#include <boost/cstdint.hpp>
-#include <string.h>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
 
 /// This is the only Impala header required to develop UDFs and UDAs. This header
 /// contains the types that need to be used and the FunctionContext object. The context

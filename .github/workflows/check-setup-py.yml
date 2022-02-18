@@ -63,7 +63,7 @@ jobs:
           python-version: "3.9"
 
       - name: install system dependencies
-        run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev libboost-all-dev graphviz
+        run: sudo apt-get install -y -q build-essential cmake krb5-config python-dev libkrb5-dev graphviz
 
       - name: install poetry
         run: pip install poetry

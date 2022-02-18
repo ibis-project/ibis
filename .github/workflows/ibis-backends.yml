@@ -259,7 +259,7 @@ jobs:
         run: sudo apt-get update -qq -y
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential cmake ninja-build krb5-config python-dev libkrb5-dev libboost-all-dev
+        run: sudo apt-get install -qq -y build-essential cmake ninja-build krb5-config python-dev libkrb5-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
