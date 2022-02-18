@@ -9,9 +9,9 @@ import itertools
 import logging
 import multiprocessing
 import os
+import shutil
 import subprocess
 import tempfile
-import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator
 
@@ -316,47 +316,35 @@ def cli(quiet):
 
 @cli.command()
 @click.option(
-    '--repo-url', '-r', default='https://github.com/ibis-project/testing-data'
+    '--repo-url',
+    '-r',
+    default='https://github.com/ibis-project/testing-data',
+    help="Data repository URL",
+    show_default=True,
 )
-@click.option('-d', '--directory', default=DATA_DIR)
-def download(repo_url, directory):
-    from shutil import rmtree
-
-    from plumbum.cmd import curl
-
-    directory = Path(directory)
-    # download the master branch
-    url = repo_url + '/archive/master.zip'
-    # download the zip next to the target directory with the same name
-    path = directory.with_suffix('.zip')
-
-    if not path.exists():
-        logger.info(f'Downloading {url} to {path}...')
-        path.parent.mkdir(parents=True, exist_ok=True)
-        download = curl[url, '-o', path, '-L']
-        download(
-            stdout=click.get_binary_stream('stdout'),
-            stderr=click.get_binary_stream('stderr'),
-        )
-    else:
-        logger.info(f'Skipping download: {path} already exists')
-
-    logger.info(f'Extracting archive to {directory}')
-
-    # extract all files
-    extract_to = directory.with_name(directory.name + '_extracted')
-    with zipfile.ZipFile(str(path), 'r') as f:
-        f.extractall(str(extract_to))
-
-    # remove existent folder
-    if directory.exists():
-        rmtree(str(directory))
-
-    # rename to the target directory
-    (extract_to / 'testing-data-master').rename(directory)
-
-    # remove temporary extraction folder
-    extract_to.rmdir()
+@click.option(
+    "--rev",
+    "-R",
+    type=str,
+    default=None,
+    help="Git revision. Defaults to master",
+)
+@click.option(
+    '-d',
+    '--directory',
+    type=click.Path(file_okay=False, dir_okay=True, path_type=str),
+    default=DATA_DIR,
+    help="Output directory",
+    show_default=True,
+)
+def download(repo_url, rev, directory):
+    shutil.rmtree(directory, ignore_errors=True)
+    subprocess.run(
+        ["git", "clone", repo_url, directory]
+        + (["--depth", "1"] if rev is None else [])
+    )
+    if rev is not None:
+        subprocess.run(["git", "reset", "--hard", rev], cwd=directory)
 
 
 @cli.command()
