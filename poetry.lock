@@ -1989,11 +1989,11 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-all = ["clickhouse-driver", "dask", "datafusion", "fsspec", "geoalchemy2", "geopandas", "graphviz", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "shapely", "sqlalchemy"]
+all = ["clickhouse-driver", "dask", "datafusion", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "sqlalchemy"]
 clickhouse = ["clickhouse-driver"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-geospatial = ["geoalchemy2", "geopandas", "shapely"]
+geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
 pandas = []
@@ -2005,7 +2005,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "ad083fa93ef7572128cfdb553b742c95d2cb0dcbfb87f94fc50a49e27069f18d"
+content-hash = "1b445114673ff4481df0926fcfa06d92583c226d165d5d4c847d385d8f200a6b"
 
 [metadata.files]
 appnope = [

@@ -6,7 +6,6 @@ import collections
 import concurrent.futures
 import itertools
 import logging
-import multiprocessing
 import os
 import shutil
 import subprocess
@@ -30,7 +29,10 @@ DATA_DIR = Path(
         SCRIPT_DIR / 'ibis-testing-data',
     )
 )
-CPU_COUNT = multiprocessing.cpu_count()
+# without setting the pool size, connections are dropped from the urllib3
+# connection pool when the number of workers exceeds this value. this doesn't
+# appear to be configurable through fsspec
+URLLIB_DEFAULT_POOL_SIZE = 10
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -131,27 +133,6 @@ def get_logger(name, level=None, format=None, propagate=False):
 logger = get_logger(Path(__file__).with_suffix('').name)
 
 
-def impala_raise_if_cannot_write_to_hdfs(con, env):
-    test_path = os.path.join(env.test_data_dir, ibis.util.guid())
-    hdfs = con.hdfs
-    with tempfile.NamedTemporaryFile(mode="wb+", delete=True) as f:
-        f.write(ibis.util.guid().encode('UTF-8'))
-        f.seek(0)
-        hdfs.put_file(f.name, test_path)
-    hdfs.rm(test_path)
-
-
-def impala_upload_ibis_test_data_to_hdfs(con, data_path, env):
-    hdfs = con.hdfs
-    if hdfs.exists(env.test_data_dir):
-        hdfs.rm(env.test_data_dir, recursive=True)
-    hdfs.put(
-        data_path,
-        f"{os.path.dirname(env.test_data_dir)}/",
-        recursive=True,
-    )
-
-
 def impala_create_test_database(con, env):
     con.drop_database(env.test_data_db, force=True)
     con.create_database(env.test_data_db)
@@ -214,47 +195,34 @@ def impala_create_tables(con, env, *, executor=None):
         for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
     ]
     for method, path in itertools.chain(parquet_files, avro_files):
-        logger.info(os.path.basename(path))
-        args = path, ALL_SCHEMAS.get(os.path.basename(path))
-        kwargs = dict(
+        logger.debug(os.path.basename(path))
+        yield executor.submit(
+            method,
+            path,
+            ALL_SCHEMAS.get(os.path.basename(path)),
             name=os.path.basename(path),
             database=env.test_data_db,
             persist=True,
         )
-        if executor is not None:
-            yield executor.submit(method, *args, **kwargs)
-        else:
-            yield method(*args, **kwargs)
 
 
-def impala_build_udfs():
+def impala_build_and_upload_udfs(hdfs, env, *, fs):
+    logger.info("Building UDFs...")
+
     cwd = str(IBIS_HOME / 'ci' / 'udf')
     subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd)
     subprocess.run(["ninja"], cwd=cwd)
-
-
-def impala_upload_udfs(con, env):
     build_dir = IBIS_HOME / 'ci' / 'udf' / 'build'
     bitcode_dir = os.path.join(env.test_data_dir, 'udf')
-    if con.hdfs.exists(bitcode_dir):
-        con.hdfs.rm(bitcode_dir, recursive=True)
-    con.hdfs.put(str(build_dir), bitcode_dir, recursive=True)
 
+    hdfs.mkdir(bitcode_dir, create_parents=True)
 
-def load_impala_data(con, data_dir, env):
-    impala_upload_ibis_test_data_to_hdfs(con, data_dir, env)
-    impala_create_test_database(con, env)
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=CPU_COUNT
-    ) as executor:
-        table_futures = (
-            executor.submit(table_future.result().compute_stats)
-            for table_future in concurrent.futures.as_completed(
-                impala_create_tables(con, env, executor=executor)
-            )
+    for file in fs.find(build_dir):
+        bitcode_path = os.path.join(
+            bitcode_dir, os.path.relpath(file, build_dir)
         )
-        for stats_future in concurrent.futures.as_completed(table_futures):
-            stats_future.result()
+        logger.debug(f"{file} -> ${bitcode_path}")
+        yield hdfs.put_file, file, bitcode_path
 
 
 def recreate_database(
@@ -318,12 +286,15 @@ def read_tables(
 
 
 @click.group()
-@click.option('--quiet/--verbose', '-q/-v', default=False, is_flag=True)
-def cli(quiet):
-    if quiet:
-        logger.setLevel(logging.ERROR)
-    else:
-        logger.setLevel(logging.INFO)
+@click.option("-v", "--verbose", count=True)
+def cli(verbose):
+    codes = {0: logging.ERROR, 1: logging.INFO, 2: logging.DEBUG}
+    logger.setLevel(codes.get(verbose, logging.DEBUG))
+
+
+@cli.group()
+def load():
+    pass
 
 
 @cli.command()
@@ -359,7 +330,7 @@ def download(repo_url, rev, directory):
         subprocess.run(["git", "reset", "--hard", rev], cwd=directory)
 
 
-@cli.command()
+@load.command()
 @click.option('-h', '--host', default='localhost')
 @click.option(
     '-P',
@@ -437,7 +408,7 @@ def postgres(
     engine.execute('VACUUM FULL ANALYZE')
 
 
-@cli.command()
+@load.command()
 @click.option(
     '-D',
     '--database',
@@ -470,7 +441,7 @@ def postgres(
         path_type=Path,
     ),
 )
-def sqlite(database, schema, tables, data_directory, **params):
+def sqlite(database, schema, tables, data_directory):
     logger.info('Initializing SQLite...')
 
     init_database(
@@ -479,34 +450,28 @@ def sqlite(database, schema, tables, data_directory, **params):
         schema=schema,
     )
 
-    exe = "sqlite3.exe" if os.name == "nt" else "sqlite3"
-    with tempfile.TemporaryDirectory() as d:
-        paths = []
+    with tempfile.TemporaryDirectory() as tempdir:
         for table in tables:
-            stem = f"{table}.csv"
-            dst = Path(d).joinpath(stem)
-            with dst.open("w") as f, data_directory.joinpath(stem).open(
-                "r"
-            ) as lines:
-                # skip the first line
-                f.write("".join(itertools.islice(lines, 1, None)))
-                f.seek(0)
-            paths.append((table, dst))
+            basename = f"{table}.csv"
+            with Path(tempdir).joinpath(basename).open("w") as f:
+                with data_directory.joinpath(basename).open("r") as lines:
+                    # skip the first line
+                    f.write("".join(itertools.islice(lines, 1, None)))
         subprocess.run(
-            [exe, database],
+            ["sqlite3", database],
             input="\n".join(
                 [
                     ".separator ,",
                     *(
-                        f".import {str(path.absolute())!r} {table}"
-                        for table, path in paths
+                        f".import {str(path.absolute())!r} {path.stem}"
+                        for path in Path(tempdir).glob("*.csv")
                     ),
                 ]
             ).encode(),
         )
 
 
-@cli.command()
+@load.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=3306, type=int)
 @click.option('-u', '--username', default='ibis')
@@ -571,7 +536,7 @@ IGNORE 1 LINES"""
             )
 
 
-@cli.command()
+@load.command()
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=9000, type=int)
 @click.option('-u', '--user', default='default')
@@ -626,9 +591,16 @@ def clickhouse(schema, tables, data_directory, **params):
         )
 
 
-@cli.command()
+def hdfs_make_dir_and_put_file(fs, src, target):
+    logger.debug(f"{src} -> {target}")
+    fs.mkdir(os.path.dirname(target), create_parents=True)
+    fs.put_file(src, target)
+
+
+@load.command()
 @click.option('--data-dir', help='Path to testing data', default=DATA_DIR)
-def impala(data_dir):
+@click.pass_context
+def impala(ctx, data_dir):
     """Load impala test data for Ibis."""
     import fsspec
 
@@ -645,38 +617,95 @@ def impala(data_dir):
             port=env.hdfs_port,
             user=env.hdfs_user,
         ),
-        pool_size=CPU_COUNT,
+        pool_size=URLLIB_DEFAULT_POOL_SIZE,
     )
 
-    # validate our environment before performing possibly expensive operations
-    impala_raise_if_cannot_write_to_hdfs(con, env)
+    fs = fsspec.filesystem("file")
 
-    # load the data files
-    load_impala_data(con, str(data_dir), env)
+    data_files = {
+        data_file
+        for data_file in fs.find(data_dir)
+        # ignore sqlite databases and markdown files
+        if not data_file.endswith((".db", ".md"))
+        # ignore files in the test data .git directory
+        if (
+            # ignore .git
+            os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
+            != ".git"
+        )
+    }
 
-    # build and upload the UDFs
-    impala_build_udfs()
-    impala_upload_udfs(con, env)
+    executor = ctx.obj["executor"]
+
+    hdfs = con.hdfs
+    tasks = {
+        # make the database
+        executor.submit(impala_create_test_database, con, env),
+        # build and upload UDFs
+        *itertools.starmap(
+            executor.submit,
+            impala_build_and_upload_udfs(hdfs, env, fs=fs),
+        ),
+        # upload data files
+        *(
+            executor.submit(
+                hdfs_make_dir_and_put_file,
+                hdfs,
+                data_file,
+                os.path.join(
+                    env.test_data_dir,
+                    os.path.relpath(data_file, data_dir),
+                ),
+            )
+            for data_file in data_files
+        ),
+    }
+
+    for future in concurrent.futures.as_completed(tasks):
+        future.result()
+
+    # create the tables and compute stats
+    for future in concurrent.futures.as_completed(
+        executor.submit(table_future.result().compute_stats)
+        for table_future in concurrent.futures.as_completed(
+            impala_create_tables(con, env, executor=executor)
+        )
+    ):
+        future.result()
 
 
-@cli.command()
+@load.command()
 def pandas():
-    """No-op to allow `python ./datamgr.py pandas`."""
+    """No-op to allow `python ci/datamgr.py load pandas`."""
 
 
-@cli.command()
+@load.command()
 def dask():
-    """No-op to allow `python ./datamgr.py dask`."""
+    """No-op to allow `python ci/datamgr.py load dask`."""
 
 
-@cli.command()
+@load.command()
 def datafusion():
-    """No-op to allow `python ./datamgr.py datafusion`."""
+    """No-op to allow `python ci/datamgr.py load datafusion`."""
 
 
-@cli.command()
+@load.command()
 def pyspark():
-    """No-op to allow `python ./datamgr.py pyspark`."""
+    """No-op to allow `python ci/datamgr.py load pyspark`."""
+
+
+@load.command()
+@click.pass_context
+def all(ctx):
+    info_name = ctx.info_name
+    executor = ctx.obj["executor"]
+
+    for future in concurrent.futures.as_completed(
+        executor.submit(ctx.forward, command)
+        for name, command in ctx.parent.command.commands.items()
+        if name != info_name
+    ):
+        future.result()
 
 
 if __name__ == '__main__':
@@ -688,4 +717,7 @@ if __name__ == '__main__':
      - IBIS_TEST_{BACKEND}_PASSWORD
      - etc.
     """
-    cli(auto_envvar_prefix='IBIS_TEST')
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=URLLIB_DEFAULT_POOL_SIZE
+    ) as executor:
+        cli(auto_envvar_prefix='IBIS_TEST', obj=dict(executor=executor))

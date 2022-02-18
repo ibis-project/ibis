@@ -86,7 +86,7 @@ First we need to load some data:
 2.  In the original terminal, run
 
     ```sh
-    python ci/datamgr.py postgres
+    python ci/datamgr.py load postgres
     ```
 
     You should see a bit of logging, and the command should complete shortly thereafter.
