@@ -1,31 +1,16 @@
-# [ClickHouse](https://clickhouse.yandex/)
+---
+backend_name: ClickHouse
+backend_url: https://clickhouse.yandex/
+backend_module: clickhouse
+backend_param_style: connection parameters
+is_experimental: false
+backend_connection_example: |
+  >>> con = ibis.clickhouse.connect(host="localhost", port=9000)
+---
 
-## Install
-
-Install dependencies for Ibis's ClickHouse dialect (minimal supported version is `0.1.3`):
-
-```sh
-pip install 'ibis-framework[clickhouse]'
-```
-
-```sh
-conda install -c conda-forge ibis-clickhouse
-```
-
-## Connect
-
-Create a client by passing in database connection parameters such as `host`,
-`port`, `database`, and `user` to :func:`ibis.clickhouse.connect`:
-
-```python
-con = ibis.clickhouse.connect(host='clickhouse', port=9000)
-```
+{% include 'backends/template.md' %}
 
 ## API
-
-The ClickHouse client is accessible through the `ibis.clickhouse` namespace.
-
-Use `ibis.clickhouse.connect` to create a client.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.clickhouse.Backend

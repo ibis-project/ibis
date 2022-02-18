@@ -1,38 +1,19 @@
-# [Dask](https://dask.org/)
+---
+backend_name: Dask
+backend_url: https://dask.org
+backend_module: dask
+backend_param_style: a dictionary of paths
+is_experimental: true
+backend_connection_example: |
+  >>> import ibis
+  >>> data_sources = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
+  >>> client = ibis.dask.connect(data_sources)
+  >>> t = client.table("t")
+---
 
-!!! experimental
-
-    The Dask backend is experimental.
-
-## Install
-
-Install ibis along with its dependencies for the datafusion backend:
-
-```sh
-pip install 'ibis-framework[dask]'
-```
-
-```sh
-conda install -c conda-forge ibis-dask
-```
-
-## Connect
-
-Create a client by passing a dictionary that maps table names to paths to
-`ibis.dask.connect`:
-
-```python
->>> import ibis
->>> data_sources = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
->>> client = ibis.dask.connect(data_sources)
->>> t = client.table("t")
-```
+{% include 'backends/template.md' %}
 
 ## API
-
-The Dask client is accessible through the `ibis.dask` namespace.
-
-Use `ibis.dask.connect` to create a Dask client.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.dask.Backend

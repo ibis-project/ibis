@@ -1,40 +1,16 @@
-# [MySQL](https://www.mysql.com/)
+---
+backend_name: MySQL
+backend_url: https://www.mysql.com/
+backend_module: mysql
+backend_param_style: a SQLAlchemy-style URI
+is_experimental: false
+backend_connection_example: |
+  >>> con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql/ibis_testing')
+---
 
-## Install
-
-Install dependencies for Ibis's MySQL dialect:
-
-```sh
-pip install 'ibis-framework[mysql]'
-```
-
-or
-
-```sh
-conda install -c conda-forge ibis-mysql
-```
-
-## Connect
-
-Create a client by passing a connection string or individual parameters to
-`ibis.mysql.connect`:
-
-```python
-con = ibis.mysql.connect(url='mysql+pymysql://ibis:ibis@mysql/ibis_testing')
-con = ibis.mysql.connect(
-    user='ibis',
-    password='ibis',
-    host='mysql',
-    database='ibis_testing',
-)
-```
+{% include 'backends/template.md' %}
 
 ## API
-
-The MySQL client is accessible through the `ibis.mysql` namespace.
-
-Use `ibis.mysql.connect` with a SQLAlchemy-compatible connection string to
-create a client.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.mysql.Backend

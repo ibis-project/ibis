@@ -1,24 +1,15 @@
-# [PySpark](https://spark.apache.org/sql/)
+---
+backend_name: PySpark
+backend_url: https://spark.apache.org/docs/latest/api/python/
+backend_module: pyspark
+backend_param_style: PySpark things
+is_experimental: false
+backend_connection_example: |
+  >>> import ibis
+  >>> ibis.pyspark.connect(...)
+---
 
-## Install
-
-Install dependencies for Ibis's PySpark dialect:
-
-```sh
-pip install 'ibis-framework[pyspark]'
-```
-
-or
-
-```sh
-conda install -c conda-forge ibis-pyspark
-```
-
-## Connect
-
-The PySpark client is accessible through the `ibis.pyspark` namespace.
-
-Use `ibis.pyspark.connect` to create a client.
+{% include 'backends/template.md' %}
 
 ## API
 
