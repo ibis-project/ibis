@@ -20,8 +20,27 @@ _pyspark_testing_client = None
 
 def get_common_spark_testing_client(data_directory, connect):
     spark = (
-        SparkSession.builder.config('spark.default.parallelism', 4)
-        .config('spark.driver.bindAddress', '127.0.0.1')
+        SparkSession.builder.appName("ibis_testing")
+        .master("local[1]")
+        .config("spark.cores.max", 1)
+        .config("spark.driver.bindAddress", "127.0.0.1")
+        .config("spark.executor.heartbeatInterval", "3600s")
+        .config("spark.executor.instances", 1)
+        .config("spark.network.timeout", "4200s")
+        .config("spark.sql.execution.arrow.pyspark.enabled", False)
+        .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
+        .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
+        .config("spark.ui.showConsoleProgress", False)
+        .config('spark.default.parallelism', 1)
+        .config('spark.dynamicAllocation.enabled', False)
+        .config('spark.rdd.compress', False)
+        .config(
+            'spark.serializer', 'org.apache.spark.serializer.KryoSerializer'
+        )
+        .config('spark.shuffle.compress', False)
+        .config('spark.shuffle.spill.compress', False)
+        .config('spark.sql.shuffle.partitions', 1)
+        .config('spark.ui.enabled', False)
         .getOrCreate()
     )
     _spark_testing_client = connect(spark)
