@@ -73,7 +73,7 @@ pytest-cov = "^3.0.0"
 pytest-mock = "^3.6.1"
 pytest-randomly = "^3.10.1"
 pytest-xdist = "^2.3.0"
-pytkdocs = { version = "^0.15.0 || ^0.16.0", extras = ["numpy-style"] }
+pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
 pyupgrade = "^2.26.0"
 requests = ">=2,<3"
 setuptools = ">=57,<61"
