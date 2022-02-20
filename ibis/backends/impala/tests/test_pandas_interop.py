@@ -9,9 +9,6 @@ import ibis.expr.schema as sch
 from ibis.backends.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
 pytest.importorskip("impala")
-pytest.importorskip("hdfs")
-
-pytestmark = pytest.mark.hdfs
 
 
 @pytest.fixture
@@ -130,6 +127,7 @@ def test_alltypes_roundtrip(con, alltypes_df):
     _check_roundtrip(con, alltypes_df)
 
 
+@pytest.mark.hdfs
 def test_writer_cleanup_deletes_hdfs_dir(con, hdfs, alltypes_df):
     writer = DataFrameWriter(con, alltypes_df)
 

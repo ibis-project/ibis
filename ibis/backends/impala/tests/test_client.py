@@ -1,4 +1,5 @@
 import datetime
+from posixpath import join as pjoin
 
 import pandas as pd
 import pytest
@@ -12,42 +13,12 @@ import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
-pytest.importorskip("thrift")
-
-from thrift.transport.TTransport import TTransportException  # noqa: E402
+thrift = pytest.importorskip("thrift")
 
 
 @pytest.fixture
 def db(con, test_data_db):
     return con.database(test_data_db)
-
-
-def test_kerberos_deps_installed(env, test_data_db):
-    # This test raises an AttributeError or TTransportException
-    # if the required dependencies are installed. Both are generic
-    # errors and occur, because there is no kerberos server in
-    # the CI pipeline, but they imply our imports have succeeded.
-    # See: https://github.com/ibis-project/ibis/issues/2342
-    excs = (AttributeError, TTransportException)
-    try:
-        # TLDR: puresasl is using kerberos, and not pykerberos
-        #
-        # see https://github.com/requests/requests-kerberos/issues/63
-        # for why both libraries exist
-        from kerberos import GSSError
-    except ImportError:
-        pass
-    else:
-        excs += (GSSError,)
-
-    with pytest.raises(excs):
-        ibis.impala.connect(
-            host=env.impala_host,
-            database=test_data_db,
-            port=env.impala_port,
-            auth_mechanism='GSSAPI',
-            hdfs_client=None,
-        )
 
 
 @pytest.mark.xfail(
@@ -82,12 +53,7 @@ def test_get_table_ref(db):
 
 
 def test_run_sql(con, test_data_db):
-    query = """SELECT li.*
-FROM {}.tpch_lineitem li
-""".format(
-        test_data_db
-    )
-    table = con.sql(query)
+    table = con.sql(f"SELECT li.* FROM {test_data_db}.tpch_lineitem li")
 
     li = con.table('tpch_lineitem')
     assert isinstance(table, ir.TableExpr)
@@ -99,11 +65,7 @@ FROM {}.tpch_lineitem li
 
 
 def test_sql_with_limit(con):
-    query = """\
-SELECT *
-FROM functional_alltypes
-LIMIT 10"""
-    table = con.sql(query)
+    table = con.sql("SELECT * FROM functional_alltypes LIMIT 10")
     ex_schema = con.get_schema('functional_alltypes')
     assert_equal(table.schema(), ex_schema)
 
@@ -262,10 +224,6 @@ def test_database_default_current_database(con):
 
 
 def test_close_drops_temp_tables(con, test_data_dir):
-    pytest.importorskip("hdfs")
-
-    from posixpath import join as pjoin
-
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
 
     table = con.parquet_file(hdfs_path)
@@ -410,3 +368,27 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
     n = 10
     df = table.limit(n).execute()
     assert len(df) == n
+
+
+def test_connection_pool_size(hdfs, env, test_data_db):
+    client = ibis.impala.connect(
+        port=env.impala_port,
+        hdfs_client=hdfs,
+        host=env.impala_host,
+        database=test_data_db,
+    )
+
+    # the client cursor may or may not be GC'd, so the connection
+    # pool will contain either zero or one cursor
+    assert len(client.con.connection_pool) in (0, 1)
+
+
+def test_connection_pool_size_after_close(hdfs, env, test_data_db):
+    client = ibis.impala.connect(
+        port=env.impala_port,
+        hdfs_client=hdfs,
+        host=env.impala_host,
+        database=test_data_db,
+    )
+    client.close()
+    assert not client.con.connection_pool

@@ -7,9 +7,6 @@ import ibis
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
-pytest.importorskip("hdfs")
-
-pytestmark = pytest.mark.hdfs
 
 from ibis.backends.impala.compat import HS2Error  # noqa: E402
 

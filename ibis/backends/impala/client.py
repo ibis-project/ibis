@@ -241,7 +241,7 @@ class ImpalaCursor:
                     break
                 time.sleep(_sleep_interval(loop_start))
         except KeyboardInterrupt:
-            print('Canceling query')
+            util.log('Canceling query')
             self.cancel()
             raise
 

@@ -12,7 +12,6 @@ from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
-pytest.importorskip("hdfs")
 from ibis.backends.impala.compat import HS2Error  # noqa: E402
 
 
@@ -52,7 +51,7 @@ def test_create_database_with_location(con, tmp_dir, hdfs):
         try:
             con.drop_database(name)
         finally:
-            hdfs.rmdir(base)
+            hdfs.rm(base, recursive=True)
 
 
 @pytest.mark.hdfs
@@ -285,7 +284,6 @@ def test_change_format(con, table):
     assert 'Avro' in meta.hive_format
 
 
-@pytest.mark.hdfs
 def test_query_avro(con, test_data_dir, tmp_db):
     hdfs_path = pjoin(test_data_dir, 'avro/tpch_region_avro')
 
@@ -331,7 +329,6 @@ def test_create_table_reserved_identifier(con):
         con.drop_table(table_name)
 
 
-@pytest.mark.hdfs
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
     hdfs_path = pjoin(test_data_dir, 'csv')
 
@@ -361,7 +358,6 @@ def test_varchar_char_support(temp_char_table):
     assert isinstance(temp_char_table['group2'], ir.StringValue)
 
 
-@pytest.mark.hdfs
 def test_temp_table_concurrency(con, test_data_dir):
     def limit_10(i, hdfs_path):
         t = con.parquet_file(hdfs_path)

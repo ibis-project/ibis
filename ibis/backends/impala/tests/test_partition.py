@@ -1,3 +1,4 @@
+import os
 from posixpath import join as pjoin
 
 import pandas as pd
@@ -9,9 +10,6 @@ import ibis.util as util
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
-pytest.importorskip("hdfs")
-
-pytestmark = pytest.mark.hdfs
 
 from ibis.backends.impala.compat import ImpylaError  # noqa: E402
 
@@ -171,6 +169,7 @@ def test_add_drop_partition_no_location(con, temp_table):
     assert len(table.partitions()) == 1
 
 
+@pytest.mark.hdfs
 def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     schema = ibis.schema(
         [('foo', 'string'), ('year', 'int32'), ('month', 'int16')]
@@ -186,8 +185,9 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     basename = util.guid()
     path = f'/tmp/{subdir}/{basename}'
 
-    hdfs.mkdir(f'/tmp/{subdir}')
-    hdfs.chown(f'/tmp/{subdir}', owner='impala', group='supergroup')
+    parent = os.path.dirname(path)
+    hdfs.mkdir(parent, create_parents=True)
+    hdfs.chown(parent, owner='impala', group='supergroup')
 
     table.add_partition(part, location=path)
 
@@ -220,6 +220,7 @@ def test_add_drop_partition_hive_bug(con, temp_table):
     assert len(table.partitions()) == 1
 
 
+@pytest.mark.hdfs
 def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
     part_keys = ['year', 'month']
 
@@ -253,7 +254,7 @@ def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
         part_t.alter_partition(part, format='text', serde_properties=csv_props)
         part_t.load_data(chunk_path, partition=part)
 
-    hdfs.rmdir(hdfs_dir)
+    hdfs.rm(hdfs_dir, recursive=True)
     verify_partitioned_table(part_t, df, unique_keys)
 
 

@@ -30,9 +30,7 @@ assemble the client using `ibis.impala.connect`:
 import ibis
 
 hdfs = ibis.impala.hdfs_connect(host='impala', port=50070)
-con = ibis.impala.connect(
-    host='impala', database='ibis_testing', hdfs_client=hdfs
-)
+con = ibis.impala.connect(host='impala', database='ibis_testing', hdfs_client=hdfs)
 ```
 
 Both method calls can take `auth_mechanism='GSSAPI'` or `auth_mechanism='LDAP'`
@@ -152,6 +150,9 @@ The best way to interact with a single table is through the
 
 ## HDFS Interaction
 
+Ibis delegates all HDFS interaction to the
+[`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/) library.
+
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.hdfs_connect
     rendering:
@@ -168,9 +169,7 @@ To use Ibis with Impala, you first must connect to a cluster using the
 import ibis
 
 hdfs = ibis.impala.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
-client = ibis.impala.connect(
-    host=impala_host, port=impala_port, hdfs_client=hdfs
-)
+client = ibis.impala.connect(host=impala_host, port=impala_port, hdfs_client=hdfs)
 ```
 
 All examples here use the following block of code to connect to impala
@@ -179,8 +178,7 @@ using docker:
 ```python
 import ibis
 
-host = 'impala'
-hdfs = ibis.impala.hdfs_connect(host=host)
+hdfs = ibis.impala.hdfs_connect(host="localhost", port=50070)
 client = ibis.impala.connect(host=host, hdfs_client=hdfs)
 ```
 
@@ -211,7 +209,15 @@ interchangeably with any code expecting a `TableExpr`.
 Like all table expressions in Ibis, `ImpalaTable` has a `schema` method
 you can use to examine its schema:
 
-ImpalaTable.schema
+<!-- prettier-ignore-start -->
+::: ibis.backends.impala.client.ImpalaTable
+    rendering:
+      heading_level: 3
+    selection:
+      members:
+        - schema
+
+<!-- prettier-ignore-end -->
 
 While the client has a `drop_table` method you can use to drop tables,
 the table itself has a method `drop` that you can use:
@@ -258,7 +264,7 @@ top-level client connection or a database object.
 ### Creating tables from a table expression
 
 If you pass an Ibis expression to `create_table`, Ibis issues a
-`CREATE TABLE .. AS SELECT` (CTAS) statement:
+`CREATE TABLE ... AS SELECT` (CTAS) statement:
 
 ```python
 >>> table = db.table('functional_alltypes')
@@ -977,7 +983,8 @@ $ rm -rf parquet_dir/
 
 ```python
 >>> hdfs.get('/__ibis/ibis-testing-data/parquet/functional_alltypes',
-...          'parquet_dir')
+...          'parquet_dir',
+...           recursive=True)
 '/ibis/docs/source/tutorial/parquet_dir'
 ```
 
@@ -994,10 +1001,8 @@ Files and directories can be written to HDFS just as easily using `put`:
 
 ```python
 >>> path = '/__ibis/dir-write-example'
->>> if hdfs.exists(path):
-...    hdfs.rmdir(path)
->>> hdfs.put(path, 'parquet_dir', verbose=True)
-'/__ibis/dir-write-example'
+>>> hdfs.rm(path, recursive=True)
+>>> hdfs.put(path, 'parquet_dir', recursive=True)
 ```
 
 ```python
@@ -1007,10 +1012,10 @@ Files and directories can be written to HDFS just as easily using `put`:
  '9a41de519352ab07-4e76bc4d9fb5a78b_1277612014_data.0.parq']
 ```
 
-Delete files with `rm` or directories with `rmdir`:
+Delete files and directories with `rm`:
 
 ```python
->>> hdfs.rmdir('/__ibis/dir-write-example')
+>>> hdfs.rm('/__ibis/dir-write-example', recursive=True)
 ```
 
 ```bash
@@ -1083,7 +1088,7 @@ for you, all in good time.
 There's some CSV files in the test folder, so let's use those:
 
 ```python
->>> hdfs.get('/__ibis/ibis-testing-data/csv', 'csv-files')
+>>> hdfs.get('/__ibis/ibis-testing-data/csv', 'csv-files', recursive=True)
 '/ibis/docs/source/tutorial/csv-files'
 ```
 
@@ -1153,7 +1158,7 @@ schema:
 
 >>> path = '/__ibis/ibis-testing-data/avro/tpch.region'
 
->>> hdfs.mkdir(path)
+>>> hdfs.mkdir(path, create_parents=True)
 >>> table = con.avro_file(path, avro_schema)
 >>> table
 Empty DataFrame
@@ -1221,7 +1226,7 @@ you want for the data files
 >>> con.create_database(db, path='/__ibis/my-test-database', force=True)
 
 >>> # you may or may not have to give the impala user write and execute permissions to '/__ibis/my-test-database'
->>> hdfs.chmod('/__ibis/my-test-database', '777')
+>>> hdfs.chmod('/__ibis/my-test-database', 0o777)
 ```
 
 ```python
