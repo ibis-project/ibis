@@ -1,8 +1,6 @@
-import inspect
 import os
 from pathlib import Path
 
-import fsspec
 import pytest
 
 import ibis
@@ -27,23 +25,19 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def connect(data_directory: Path):
-        from ibis.backends.impala.tests.conftest import IbisTestEnv
+        fsspec = pytest.importorskip("fsspec")
 
         env = IbisTestEnv()
-        hdfs_client = fsspec.filesystem(
-            env.hdfs_protocol,
-            host=env.nn_host,
-            port=env.hdfs_port,
-            user=env.hdfs_user,
-        )
-        auth_mechanism = env.auth_mechanism
-        if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
-            print("Warning: ignoring invalid Certificate Authority errors")
         return ibis.impala.connect(
             host=env.impala_host,
             port=env.impala_port,
             auth_mechanism=env.auth_mechanism,
-            hdfs_client=hdfs_client,
+            hdfs_client=fsspec.filesystem(
+                env.hdfs_protocol,
+                host=env.nn_host,
+                port=env.hdfs_port,
+                user=env.hdfs_user,
+            ),
             database=env.test_data_db,
         )
 
@@ -61,28 +55,13 @@ class IbisTestEnv:
         if options.impala is None:
             ibis.backends.impala.Backend.register_options()
 
-    def items(self):
-        return [
-            (name, getattr(self, name))
-            for name, _ in inspect.getmembers(
-                type(self),
-                predicate=lambda obj: isinstance(obj, property),
-            )
-        ]
-
-    def __repr__(self):
-        lines = map('{}={!r},'.format, *zip(*self.items()))
-        return '{}(\n{}\n)'.format(
-            type(self).__name__, util.indent('\n'.join(lines), 4)
-        )
-
     @property
     def impala_host(self):
         return os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
 
     @property
     def impala_port(self):
-        return int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
+        return int(os.environ.get('IBIS_TEST_IMPALA_PORT', "21050"))
 
     @property
     def tmp_db(self):
@@ -162,6 +141,7 @@ def test_data_dir(env):
 
 @pytest.fixture
 def hdfs(env, tmp_dir):
+    fsspec = pytest.importorskip("fsspec")
     client = fsspec.filesystem(
         env.hdfs_protocol,
         host=env.nn_host,

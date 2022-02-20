@@ -836,12 +836,7 @@ class Backend(BaseSQLBackend):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if name not in self.list_databases():
-            if self._hdfs is None:
-                print(
-                    'Without an HDFS connection, certain functionality'
-                    ' may be disabled'
-                )
-            else:
+            if self._hdfs is not None:
                 self.create_database(name, path=path, force=True)
 
     def _drop_table(self, name: str) -> None:
