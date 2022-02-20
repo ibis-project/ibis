@@ -3,9 +3,7 @@ backend_name: PostgreSQL
 backend_url: https://www.postgresql.org/
 backend_module: postgres
 backend_param_style: a SQLAlchemy-style URI
-is_experimental: false
-backend_connection_example: |
-  >>> con = ibis.postgres.connect(url='postgresql://postgres:postgres@postgres:5432/ibis_testing')
+backend_connection_example: ibis.postgres.connect(url='postgresql://user:pass@host:port/db')
 ---
 
 {% include 'backends/template.md' %}

@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
 c = sa.table("companies")
-i = sa.table("investors")
+i = sa.table("investments")
 
 a = (
     sa.select(
@@ -25,6 +25,5 @@ a = (
     )
     .group_by(1)
     .order_by(sa.desc(2))
-    .alias("a")
 )
 expr = sa.select([(a.c.acq_ipos / a.c.num_investments).label("acq_rate")])

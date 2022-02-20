@@ -1,4 +1,4 @@
-# "Top-K" Filtering
+# Top-K Filtering
 
 A common analytical pattern involves subsetting based on some method of
 ranking. For example, “the 5 most frequently occurring widgets in a dataset”.

@@ -2,7 +2,7 @@
 
 !!! danger "Before you start"
 
-    This section assumes you have a working [development environment](environment.md).
+    This section assumes you have a working [development environment](01_environment.md).
 
 !!! info "You may be able to skip this section"
 
@@ -23,8 +23,7 @@ deployment deployment models:
 - Systems that **run the gamut** of deployment models like ClickHouse
 - Systems that run **on-premises**, like Impala
 
-This section of the docs is all about how to work with the backend test suite
-infrastructure.
+This section of the docs is describes how to work with the backend test suite.
 
 ## Backend Testing with Compose
 
@@ -45,7 +44,7 @@ Here is the list of backends that can be tested using `docker-compose`.
 
 Let's fire up a PostgreSQL server and run tests against it.
 
-#### Start the Service
+#### Start the `postgres` Service
 
 Open a new shell and run
 
@@ -53,7 +52,7 @@ Open a new shell and run
 docker-compose up --build postgres
 ```
 
-Test the connection in a different shell using
+Test the connection in the original shell using
 
 ```sh
 export PGPASSWORD=postgres
@@ -73,9 +72,9 @@ success
 
 Congrats, you now have a PostgreSQL server running and are ready to run tests!
 
-First we need to load some data:
-
 #### Load Data
+
+The backend needs to be populated with test data:
 
 1.  Download the data
 
@@ -99,6 +98,5 @@ You're now ready to run the test suite for the postgres backend:
 pytest -m postgres
 ```
 
-Running the tests may take some time, but eventually they should finish successfully.
-
-Please report any failures upstream, even if you're not sure if the failure is bug.
+Please [file an issue](https://github.com/ibis-project/ibis/issues/new) if the
+test suite fails for any reason.

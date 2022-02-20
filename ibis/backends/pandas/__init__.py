@@ -46,7 +46,12 @@ class BasePandasBackend(BaseBackend):
         self.dictionary = dictionary
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
-    def from_dataframe(self, df, name='df', client=None):
+    def from_dataframe(
+        self,
+        df: pd.DataFrame,
+        name: str = 'df',
+        client: BasePandasBackend | None = None,
+    ) -> ir.TableExpr:
         """Construct an ibis table from a pandas DataFrame.
 
         Parameters
@@ -61,7 +66,8 @@ class BasePandasBackend(BaseBackend):
 
         Returns
         -------
-        Table
+        TableExpr
+            A table expression
         """
         if client is None:
             return self.connect({name: df}).table(name)

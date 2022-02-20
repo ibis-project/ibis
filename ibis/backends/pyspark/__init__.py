@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 import pyspark
-import pyspark as ps
 from pyspark.sql import DataFrame
 from pyspark.sql.column import Column
 
@@ -86,8 +85,14 @@ class Backend(BaseSQLBackend):
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
 
-    def do_connect(self, session):
-        """Create a PySpark `Backend` for use with Ibis."""
+    def do_connect(self, session: pyspark.sql.SparkSession) -> None:
+        """Create a PySpark `Backend` for use with Ibis.
+
+        Parameters
+        ----------
+        session
+            A SparkSession instance
+        """
         self._context = session.sparkContext
         self._session = session
         self._catalog = session.catalog
@@ -194,8 +199,8 @@ class Backend(BaseSQLBackend):
         df = cursor.query.toPandas()  # blocks until finished
         return schema.apply_to(df)
 
-    def raw_sql(self, stmt):
-        query = self._session.sql(stmt)
+    def raw_sql(self, query: str) -> _PySparkCursor:
+        query = self._session.sql(query)
         return _PySparkCursor(query)
 
     def _get_schema_using_query(self, query):
@@ -207,7 +212,7 @@ class Backend(BaseSQLBackend):
             jtable = self._catalog._jcatalog.getTable(
                 self._fully_qualified_name(name, database)
             )
-        except ps.sql.utils.AnalysisException as e:
+        except pyspark.sql.utils.AnalysisException as e:
             raise com.IbisInputError(str(e)) from e
         return jtable
 

@@ -6,6 +6,7 @@ extra_css:
 theme:
   name: material
   features:
+    - content.code.annotate
     - content.tabs.link
     - header.autohide
     - navigation.indexes
@@ -19,13 +20,16 @@ theme:
   favicon: static/favicon.ico
   palette:
     scheme: slate
-    primary: black
+    primary: teal
     accent: lime
   custom_dir: docs/overrides
 plugins:
   - search
   - macros
   - autorefs
+  - exclude:
+      glob:
+        - backends/template.md
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -51,13 +55,15 @@ plugins:
       ignore:
         - "*.py"
       execute_ignore: "tutorial/*Geospatial*.ipynb"
-      include_source: false
+      include_source: true
       theme: dark
+  - literate-nav
 markdown_extensions:
   - admonition
   - attr_list
   - def_list
-  - md_in_html # used for the hero image
+  - footnotes
+  - md_in_html
   - meta
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
@@ -78,72 +84,6 @@ markdown_extensions:
       alternate_style: true
   - tables
   - toc
-nav:
-  - Home: index.md
-  - Installation: getting_started.md
-  - Tutorial:
-      - Introduction: tutorial/01-Introduction-to-Ibis.ipynb
-      - Aggregates and Joins: tutorial/02-Aggregates-Joins.ipynb
-      - Lazy Mode and Logging: tutorial/03-Expressions-Lazy-Mode-Logging.ipynb
-      - More Value Expressions: tutorial/04-More-Value-Expressions.ipynb
-      - Creating and Inserting Data: tutorial/05-IO-Create-Insert-External-Data.ipynb
-      - Advanced Topics:
-          - Complex Filtering: tutorial/06-Advanced-Topics-ComplexFiltering.ipynb
-          - Analytics Tools: tutorial/07-Advanced-Topics-Analytics-Tools.ipynb
-          - Geospatial Analysis: tutorial/08-Geospatial-Analysis.ipynb
-  - Ibis for SQL Programmers: user_guide/sql.ipynb
-  - User Guide:
-      - Configuration: user_guide/configuration.md
-      - TopK: user_guide/topk.md
-      - Self Joins: user_guide/self_joins.md
-      - UDFs: user_guide/udfs.md
-      - Design: user_guide/design.md
-      - Extending:
-          - Adding a per-element expression: user_guide/extending/extending_elementwise_expr.ipynb
-          - Adding a reduction expression: user_guide/extending/extending_reduce_expr.ipynb
-  - Backends:
-      - backends/index.md
-      - ClickHouse: backends/clickhouse.md
-      - Dask: backends/dask.md
-      - Datafusion: backends/datafusion.md
-      - Impala: backends/impala.md
-      - MySQL: backends/mysql.md
-      - Pandas: backends/pandas.md
-      - PostgreSQL: backends/postgres.md
-      - PySpark: backends/pyspark.md
-      - SQLite: backends/sqlite.md
-  - Community:
-      - About:
-          - Team: about/team.md
-          - Roadmap: about/roadmap.md
-          - License: about/license.md
-      - Ask a question (StackOverflow): https://stackoverflow.com/questions/tagged/ibis
-      - Chat (Gitter): https://gitter.im/ibis-dev/Lobby
-      - Code of Conduct: community/coc.md
-      - Ecosystem: community/ecosystem.md
-  - Contribute:
-      - Development Environment: contribute/environment.md
-      - Commit Workflow: contribute/workflow.md
-      - Development Style: contribute/style.md
-      - Backend Test Suite: contribute/backend_test_suite.md
-      - Maintainer's Guide: contribute/maintainers_guide.md
-  - Release Notes: release_notes.md
-  - API Reference:
-      - Expressions:
-          - api/expressions/index.md
-          - Top Level: api/expressions/top_level.md
-          - Tables: api/expressions/tables.md
-          - Generic Values: api/expressions/generic.md
-          - Numeric + Boolean: api/expressions/numeric.md
-          - Strings: api/expressions/strings.md
-          - Timestamps + Dates + Times: api/expressions/timestamps.md
-          - Collections: api/expressions/collections.md
-          - Geospatial: api/expressions/geospatial.md
-      - Data Types: api/datatypes.md
-      - Backend Interfaces:
-          - Base Class: api/backends/base.md
-          - Generic SQL Backends: api/backends/sql.md
-          - SQLAlchemy Backends: api/backends/sqlalchemy.md
 extra:
   project_name: "ibis"
   team:
@@ -161,5 +101,15 @@ extra:
       link: https://twitter.com/IbisData
     - icon: fontawesome/brands/github
       link: https://github.com/ibis-project/ibis
+  support_levels:
+    supported:
+      icon: :material-check-decagram:{ .verified }
+      description: Tested in CI. If this doesn't work for you, please [file an issue](https://github.com/ibis-project/ibis/issues/new).
+    bug:
+      icon: :material-bug:{ .bug }
+      description: Should work but doesn't because upstream is broken. Supported on a best-effort basis.
+    unsupported:
+      icon: :material-cancel:{ .cancel }
+      description: Unlikely to ever be supported or no upstream support.
 
 copyright: "Copyright &copy; 2014-2022, Ibis developers"

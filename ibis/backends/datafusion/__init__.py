@@ -143,8 +143,6 @@ class Backend(BaseBackend):
             The name of the table
         path
             The path to the Parquet file
-        schema
-            An optional schema
         """
         self._context.register_parquet(name, str(path))
 

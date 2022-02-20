@@ -911,6 +911,17 @@ Markdown = ">=3.3,<4.0"
 mkdocs = ">=1.1,<2.0"
 
 [[package]]
+name = "mkdocs-exclude"
+version = "1.0.2"
+description = "A mkdocs plugin that lets you exclude files or trees."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+mkdocs = "*"
+
+[[package]]
 name = "mkdocs-jupyter"
 version = "0.20.0"
 description = "Use Jupyter in mkdocs websites"
@@ -923,6 +934,17 @@ jupytext = ">=1.11.02,<2.0.0"
 mkdocs = ">=1.2.3,<2.0.0"
 mkdocs-material = ">=8.0.0,<9.0.0"
 nbconvert = ">=6.2.0,<7.0.0"
+
+[[package]]
+name = "mkdocs-literate-nav"
+version = "0.4.1"
+description = "MkDocs plugin to specify the navigation in Markdown instead of YAML"
+category = "dev"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[package.dependencies]
+mkdocs = ">=1.0.3,<2.0.0"
 
 [[package]]
 name = "mkdocs-macros-plugin"
@@ -2008,7 +2030,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "542593a855ad8f55a3a5e05dc66d10b5006db3f0a63d4b4cab9e5e91109300bf"
+content-hash = "3608439a9f60409e7262d8f047dcae4c424093c240df82e51be8c172e05dfbff"
 
 [metadata.files]
 appnope = [
@@ -2602,8 +2624,15 @@ mkdocs-autorefs = [
     {file = "mkdocs-autorefs-0.3.1.tar.gz", hash = "sha256:12baad29359f468b44d980ed35b713715409097a1d8e3d0ef90962db95205eda"},
     {file = "mkdocs_autorefs-0.3.1-py3-none-any.whl", hash = "sha256:f0fd7c115eaafda7fb16bf5ff5d70eda55d7c0599eac64f8b25eacf864312a85"},
 ]
+mkdocs-exclude = [
+    {file = "mkdocs-exclude-1.0.2.tar.gz", hash = "sha256:ba6fab3c80ddbe3fd31d3e579861fd3124513708271180a5f81846da8c7e2a51"},
+]
 mkdocs-jupyter = [
     {file = "mkdocs-jupyter-0.20.0.tar.gz", hash = "sha256:4d436d45dedc5e78760e24a54105ceef849aa6414e4ef13ddc99c915e9a8ea73"},
+]
+mkdocs-literate-nav = [
+    {file = "mkdocs-literate-nav-0.4.1.tar.gz", hash = "sha256:9efe26b662f2f901cae5807bfd51446d30ea7e033c2bc43a15d6282c7dfac1ab"},
+    {file = "mkdocs_literate_nav-0.4.1-py3-none-any.whl", hash = "sha256:a4b761792ba21defbe2dfd5e0de6ba451639e1ca0f0661c37eda83cc6261e4f9"},
 ]
 mkdocs-macros-plugin = [
     {file = "mkdocs-macros-plugin-0.6.4.tar.gz", hash = "sha256:3430a2b1c5c8f6e8d49d66614bded698a8d6fdf0e97a62141faba3958d8c3e8b"},

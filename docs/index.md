@@ -5,9 +5,7 @@ hide:
 
 # :ibis-logo: Ibis
 
-<div markdown>
-## Expressive analytics in Python, whatever the scale.
-</div>
+## Expressive analytics in Python at any scale.
 
 <script 
     src="https://asciinema.org/a/yp5Ww4XKyjJsUCXkEz5or9rPq.js"
@@ -39,7 +37,7 @@ hide:
     ##### Ibis
 
     ```python
-    t.group_by("f").aggregate(d=lambda t: (t.a + t.b).sum())
+    t.group_by("f").aggregate(d=t.a + t.b.sum())
     ```
 
 === "Join"
@@ -71,7 +69,7 @@ hide:
     ##### Ibis
 
     ```python
-    t.group_by("y").mutate(z=lambda t: t.x.avg())
+    t.group_by("y").mutate(z=t.x.avg())
     ```
 
 !!! tip "Coming from SQL?"
@@ -82,27 +80,27 @@ hide:
 
 #### No more rewrites when scaling up or down.
 
-=== "BigQuery"
-
-    ```python
-    con = ibis.bigquery.connect(project_id=...)
-    ```
-
 === "SQLite"
 
     ```python
-    con = ibis.sqlite.connect("path/to/sqlite.db")
+    con = ibis.sqlite.connect("my_sqlite.db")
     ```
 
 === "PostgreSQL"
 
     ```python
-    con = ibis.postgres.connect(user=..., host=..., port=...)
+    con = ibis.postgres.connect(user="me", host="my_computer", port=9090)
+    ```
+
+=== "BigQuery"
+
+    ```python
+    con = ibis.bigquery.connect(project_id="my_project_id", dataset_id="my_dataset_id")
     ```
 
 ```python
 t = con.table("t")
-t.group_by("y").mutate(z=lambda t: t.x.avg())
+t.group_by("y").mutate(z=t.x.avg())
 ```
 
 ### Ecosystem
@@ -178,3 +176,7 @@ Let's compute the number of citizens per squared kilometer in Asia:
         ``` python title="docs/sqlalchemy_example.py" "linenums="1"
         --8<-- "docs/sqlalchemy_example.py"
         ```
+
+    ??? question "Want the data?"
+
+Download the example SQLite database at https://storage.googleapis.com/ibis-testing-data/crunchbase.db!

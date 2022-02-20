@@ -16,3 +16,15 @@
   -webkit-mask-image: var(--md-admonition-icon--experimental);
   mask-image: var(--md-admonition-icon--experimental);
 }
+.verified {
+  color: #00c853;
+}
+.unverified {
+  color: #ff9100;
+}
+.bug {
+  color: #f50057;
+}
+.cancel {
+  color: #ff5252;
+}
