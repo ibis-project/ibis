@@ -2005,7 +2005,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "f3738d776bc84beb2abecf0212e12053e1c29079e4fe4dba48d1fdfadced83b8"
+content-hash = "ad083fa93ef7572128cfdb553b742c95d2cb0dcbfb87f94fc50a49e27069f18d"
 
 [metadata.files]
 appnope = [
