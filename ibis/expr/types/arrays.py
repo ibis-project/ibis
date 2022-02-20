@@ -46,7 +46,8 @@ def array(
     values. This is equivalent to
 
     ```python
-    ibis.literal(values)  # `values` is a `list`
+    values = [1, 2, 3]
+    ibis.literal(values)
     ```
 
     Parameters

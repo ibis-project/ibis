@@ -1,19 +1,28 @@
-# [Pandas](https://pandas.pydata.org/)
+---
+backend_name: Pandas
+backend_url: https://pandas.pydata.org/
+backend_module: pandas
+intro: Ibis's pandas backend is available in core Ibis.
+backend_param_style: a dictionary of paths
+do_connect_base: BasePandasBackend
+backend_connection_example: 'ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})'
+is_core: true
+---
 
-Ibis's pandas backend is available in core Ibis:
+{% include 'backends/template.md' %}
 
-Create a client by supplying a dictionary of DataFrames using
-`ibis.pandas.connect`. The keys become the table names:
+## API
 
-```python
-import pandas as pd
-con = ibis.pandas.connect(
-    {
-       'A': pd._testing.makeDataFrame(),
-       'B': pd._testing.makeDataFrame(),
-    }
-)
-```
+<!-- prettier-ignore-start -->
+::: ibis.backends.pandas.BasePandasBackend
+    rendering:
+      heading_level: 3
+
+::: ibis.backends.pandas.Backend
+    rendering:
+      heading_level: 3
+
+<!-- prettier-ignore-end -->
 
 ## User Defined functions (UDF)
 

@@ -1,5 +1,9 @@
 # Installation
 
+!!! question "Looking for a specific backend?"
+
+    Checkout the [backends](backends/index.md) section!
+
 Ibis is available through `pip`, `conda` and `mamba`.
 
 === "pip"

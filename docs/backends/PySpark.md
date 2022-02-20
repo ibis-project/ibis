@@ -3,10 +3,9 @@ backend_name: PySpark
 backend_url: https://spark.apache.org/docs/latest/api/python/
 backend_module: pyspark
 backend_param_style: PySpark things
-is_experimental: false
 backend_connection_example: |
-  >>> import ibis
-  >>> ibis.pyspark.connect(...)
+  session = pyspark.sql.SparkSession.builder.getOrCreate()
+  ibis.pyspark.connect(session)
 ---
 
 {% include 'backends/template.md' %}

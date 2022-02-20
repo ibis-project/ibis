@@ -1,37 +1,18 @@
-# [Impala](https://impala.apache.org/)
+---
+backend_name: Impala
+backend_url: https://impala.apache.org/
+backend_module: impala
+backend_param_style: connection parameters
+backend_connection_example: |
+  hdfs = ibis.impala.hdfs_connect(host='impala', port=50070)
+  ibis.impala.connect(host='impala', database='ibis_testing', hdfs_client=hdfs)
+intro: |
+  One goal of Ibis is to provide an integrated Python API for an Impala cluster
+  without requiring you to switch back and forth between Python code and the
+  Impala shell.
+---
 
-One goal of Ibis is to provide an integrated Python API for an Impala cluster
-without requiring you to switch back and forth between Python code and the
-Impala shell (where one would be using a mix of DDL and SQL statements).
-
-If you find an Impala task that you cannot perform with Ibis, please get in
-touch on the [GitHub issue tracker](http://github.com/ibis-project/ibis).
-
-While interoperability between the Hadoop / Spark ecosystems and pandas / the
-PyData stack is overall poor (but improving), we also show some ways that you
-can use pandas with Ibis and Impala.
-
-## Install
-
-Install dependencies for Ibis's Impala dialect:
-
-    pip install 'ibis-framework[impala]'
-
-or
-
-    conda install -c conda-forge ibis-impala
-
-## Connect
-
-To create an Ibis client, you must first connect your services and
-assemble the client using `ibis.impala.connect`:
-
-```python
-import ibis
-
-hdfs = ibis.impala.hdfs_connect(host='impala', port=50070)
-con = ibis.impala.connect(host='impala', database='ibis_testing', hdfs_client=hdfs)
-```
+{% include 'backends/template.md' %}
 
 Both method calls can take `auth_mechanism='GSSAPI'` or `auth_mechanism='LDAP'`
 to connect to Kerberos clusters. Depending on your cluster setup, this may also
@@ -42,6 +23,18 @@ These methods are available on the Impala client object after connecting to
 your HDFS cluster (`ibis.impala.hdfs_connect`) and connecting to Impala with
 `ibis.impala.connect`. See `backends.impala` for a tutorial on using this
 backend.
+
+## Connection API
+
+<!-- prettier-ignore-start -->
+::: ibis.backends.impala.Backend
+    rendering:
+      heading_level: 3
+    selection:
+      members:
+        - do_connect
+
+<!-- prettier-ignore-end -->
 
 ## Database methods
 

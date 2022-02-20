@@ -1,51 +1,37 @@
 # Backends
 
-This document describes the classes of backends, how they work, and any details
-about each backend that are relevant to end users.
-
-For more information on a specific backend, check the next backend pages:
-
-There are currently three classes of backends that live in ibis.
-
-1. String generating backends
-1. Expression generating backends
-1. Direct execution backends
-
 ## String Generating Backends
 
-The first category of backend translates ibis expressions into strings.
-Generally speaking these backends also need to handle their own execution. They
-work by translating each node into a string, and passing the generated string
-to the database through a driver API.
+The first category of backend translate Ibis expressions into strings.
+Generally speaking these backends handle their own execution.
 
-- [Apache Impala](https://impala.apache.org/)
-- [Clickhouse](https://clickhouse.yandex/)
-- [Google BigQuery](https://cloud.google.com/bigquery/)
-- [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
-- [OmniSciDB](https://www.omnisci.com/)
+The compiler turns each expression into a string and passes that string to the
+database through a driver API.
+
+- [Apache Impala](Impala.md)
+- [ClickHouse](ClickHouse.md)
+- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery/)
+- [OmniSciDB](https://github.com/omnisci/ibis-omniscidb)
 
 ## Expression Generating Backends
 
-The second category of backends translates ibis expressions into other
-expressions. Currently, all expression generating backends generate [SQLAlchemy
-expressions](http://docs.sqlalchemy.org/en/latest/core/tutorial.html).
+The next category of backends translates ibis expressions into other
+expressions.
 
-Instead of generating strings at each translation step, these backends build up
-an expression. These backends tend to execute their expressions directly
-through the driver APIs provided by SQLAlchemy (or one of its transitive
-dependencies).
+Instead of generating strings for each expression these backends produce
+another kind of expression and typically have high-level APIs for execution.
 
-- [PostgreSQL](https://www.postgresql.org/)
-- [SQLite](https://www.sqlite.org/)
-- [MySQL](https://www.mysql.com/)
+- [Dask](Dask.md)
+- [Datafusion](Datafusion.md)
+- [MySQL](MySQL.md)
+- [PostgreSQL](PostgreSQL.md)
+- [PySpark](PySpark.md)
+- [SQLite](SQLite.md)
 
 ## Direct Execution Backends
 
-The only existing backend that directly executes ibis expressions is the pandas
-backend. A full description of the implementation can be found in the module
-docstring of the pandas backend located in `ibis/backends/pandas/core.py`.
+The pandas backend is the only direction execution backend. A full description
+of the implementation can be found in the module docstring of the pandas
+backend located in `ibis/backends/pandas/core.py`.
 
-- [Pandas](http://pandas.pydata.org/)
-- [PySpark](https://spark.apache.org/sql/)
-- [Dask](https://dask.org/) (Experimental)
-- [Datafusion](https://arrow.apache.org/datafusion/)
+- [Pandas](Pandas.md)

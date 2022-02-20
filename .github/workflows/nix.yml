@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   nix:
+    # TODO: we can't use macos-latest here until watchdog is fixed
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

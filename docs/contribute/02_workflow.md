@@ -51,7 +51,7 @@ Next, you'll want to run a subset of the test suite.
 
 !!! warning "You need a development environment before running tests"
 
-    Make sure you've set up a [development environment](environment.md)
+    Make sure you've set up a [development environment](01_environment.md)
     before proceeding
 
 Run the test suite:
@@ -84,7 +84,7 @@ pytest -m core
 !!! tip
 
     `cz` is already installed in your environment if you followed the [setup
-    instructions](environment.md)
+    instructions](01_environment.md)
 
 Next, you'll want to commit your changes.
 

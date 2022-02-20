@@ -3,9 +3,7 @@ backend_name: ClickHouse
 backend_url: https://clickhouse.yandex/
 backend_module: clickhouse
 backend_param_style: connection parameters
-is_experimental: false
-backend_connection_example: |
-  >>> con = ibis.clickhouse.connect(host="localhost", port=9000)
+backend_connection_example: ibis.clickhouse.connect(host="localhost", port=9000)
 ---
 
 {% include 'backends/template.md' %}

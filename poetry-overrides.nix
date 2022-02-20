@@ -50,4 +50,8 @@ self: super:
         sha256 = "sha256-JGyDxpfBXzduJaMF1sbmRm7KJajHYdVSj+WbiSETiY0=";
       };
     });
+
+  mkdocs-literate-nav = super.mkdocs-literate-nav.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
+  });
 }

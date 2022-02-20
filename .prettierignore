@@ -7,5 +7,6 @@ result
 result-*
 docs/release_notes.md
 docs/overrides/*.html
+docs/SUMMARY.md
 site
 ci/udf/CMakeFiles
