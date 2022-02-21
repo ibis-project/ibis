@@ -6,13 +6,9 @@ from pytest import param
 
 import ibis
 
-# add here backends that support json types
-all_db_geo_supported = ['postgres']
-
 
 @pytest.mark.parametrize('data', [param({'status': True}, id='status')])
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_json(backend, con, data, alltypes):
+def test_json(data, alltypes):
     json_value = json.dumps(data)
     lit = ibis.literal(json_value, type='json').name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)
@@ -21,8 +17,7 @@ def test_json(backend, con, data, alltypes):
 
 
 @pytest.mark.parametrize('data', [param({'status': True}, id='status')])
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_jsonb(backend, con, data, alltypes):
+def test_jsonb(data, alltypes):
     jsonb_value = json.dumps(data).encode('utf8')
     lit = ibis.literal(jsonb_value, type='jsonb').name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)

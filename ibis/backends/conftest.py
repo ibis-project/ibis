@@ -11,15 +11,12 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.util as util
 
 try:
     import importlib.metadata as importlib_metadata
 except ImportError:
     import importlib_metadata
-
-from .tests.base import BackendTest
 
 
 @pytest.fixture(scope='session')
@@ -211,15 +208,6 @@ def pytest_runtest_call(item):
                     )
                 )
 
-    for marker in item.iter_markers(name="xpass_backends"):
-        if backend not in marker.args[0]:
-            item.add_marker(
-                pytest.mark.xfail(
-                    reason=f'{backend} not in xpass list: {marker.args[0]}',
-                    **marker.kwargs,
-                )
-            )
-
     for marker in item.iter_markers(name='min_spark_version'):
         min_version = marker.args[0]
         if backend == 'pyspark':
@@ -273,38 +261,6 @@ def pytest_runtest_call(item):
                 pytest.mark.xfail(
                     **marker.kwargs,
                 )
-            )
-
-
-@pytest.hookimpl(hookwrapper=True)
-def pytest_pyfunc_call(pyfuncitem):
-    """Dynamically add an xfail marker for specific backends."""
-    outcome = yield
-    try:
-        outcome.get_result()
-    except (
-        com.OperationNotDefinedError,
-        com.UnsupportedOperationError,
-        com.UnsupportedBackendType,
-        NotImplementedError,
-    ) as e:
-        markers = list(pyfuncitem.iter_markers(name="xfail_unsupported"))
-        backend = pyfuncitem.funcargs.get("backend", None)
-        if backend is None:
-            return
-        backend_type = type(backend).__name__
-
-        if not markers:
-            # nothing has marked the failure as an expected one
-            raise e
-        elif len(markers) == 1:
-            if not isinstance(backend, BackendTest):
-                pytest.fail(f"Backend has type {backend_type!r}")
-            pytest.xfail(reason=f"{backend_type!r}: {e}")
-        else:
-            pytest.fail(
-                f"More than one xfail_unsupported marker found on test "
-                f"{pyfuncitem}"
             )
 
 
@@ -368,6 +324,26 @@ def alchemy_con(alchemy_backend):
     return alchemy_backend.connection
 
 
+@pytest.fixture(
+    params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
+    scope='session',
+)
+def udf_backend(request, data_directory):
+    """
+    Runs the UDF-supporting backends
+    """
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
+
+
+@pytest.fixture(scope='session')
+def udf_con(udf_backend):
+    """
+    Instance of Client, already connected to the db (if applies).
+    """
+    return udf_backend.connection
+
+
 @pytest.fixture(scope='session')
 def alltypes(backend):
     return backend.functional_alltypes
@@ -376,6 +352,11 @@ def alltypes(backend):
 @pytest.fixture(scope='session')
 def sorted_alltypes(backend, alltypes):
     return alltypes.sort_by('id')
+
+
+@pytest.fixture(scope='session')
+def udf_alltypes(udf_backend):
+    return udf_backend.functional_alltypes
 
 
 @pytest.fixture(scope='session')
@@ -388,13 +369,6 @@ def awards_players(backend):
     return backend.awards_players
 
 
-@pytest.fixture(scope='session')
-def geo(backend):
-    if backend.geo is None:
-        pytest.skip(f'Geo Spatial type not supported for {backend}.')
-    return backend.geo
-
-
 @pytest.fixture
 def analytic_alltypes(alltypes):
     return alltypes
@@ -403,6 +377,11 @@ def analytic_alltypes(alltypes):
 @pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def udf_df(udf_alltypes):
+    return udf_alltypes.execute()
 
 
 @pytest.fixture(scope='session')

@@ -169,12 +169,6 @@ def test_aggregate_grouped(
             id='max',
         ),
         param(
-            lambda t, where: t.double_col.approx_median(),
-            lambda t, where: t.double_col.median(),
-            id='approx_median',
-            marks=pytest.mark.xpass_backends(['clickhouse']),
-        ),
-        param(
             lambda t, where: t.double_col.std(how='sample'),
             lambda t, where: t.double_col.std(ddof=1),
             id='std',
@@ -288,6 +282,15 @@ def test_reduction_ops(
 
     expected = expected_fn(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "mysql", "pandas", "postgres", "pyspark", "sqlite"]
+)
+def test_approx_median(backend, alltypes, df):
+    expr = alltypes.double_col.approx_median()
+    result = expr.execute()
+    assert result is not None
 
 
 @pytest.mark.parametrize(

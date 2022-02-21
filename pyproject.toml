@@ -142,8 +142,6 @@ markers = [
   "skip_backends: skip tests on the provided backends",
   "skip_missing_feature: skip tests with a known missing feature",
   "xfail_backends: xfail tests on the provided backends",
-  "xfail_unsupported: xfail tests on the provided backends if the operation is unsupported",
-  "xpass_backends: allow backend tests to pass that are otherwise xfailing",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",
   "never: tests for functionality that a backend is likely to never implement",

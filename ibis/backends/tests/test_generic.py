@@ -3,6 +3,7 @@ import decimal
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -19,7 +20,7 @@ from ibis import literal as L
         (L(10).nullif(5), 10),
     ],
 )
-@pytest.mark.xfail_backends(["datafusion"])  # not implemented
+@pytest.mark.notimpl(["datafusion"])
 def test_fillna_nullif(backend, con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
@@ -32,7 +33,9 @@ def test_fillna_nullif(backend, con, expr, expected):
         assert con.execute(expr) == expected
 
 
-@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+)
 def test_isna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -48,7 +51,9 @@ def test_isna(backend, alltypes):
         backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "mysql", "postgres"]
+)
 def test_fillna(backend, alltypes):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -72,12 +77,23 @@ def test_fillna(backend, alltypes):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (ibis.coalesce(5, None, 4), 5),
-        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
-        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+        param(
+            ibis.coalesce(5, None, 4),
+            5,
+            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
+        ),
+        param(
+            ibis.coalesce(ibis.NA, 4, ibis.NA),
+            4,
+            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
+        ),
+        param(
+            ibis.coalesce(ibis.NA, ibis.NA, 3.14),
+            3.14,
+            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
+        ),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_coalesce(backend, con, expr, expected):
     result = con.execute(expr)
 
@@ -90,8 +106,8 @@ def test_coalesce(backend, con, expr, expected):
         assert result == expected
 
 
-@pytest.mark.skip_backends(['dask'])  # TODO - identicalTo - #2553
-@pytest.mark.xfail_unsupported
+# TODO(dask) - identicalTo - #2553
+@pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark"])
 def test_identical_to(backend, alltypes, con, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
     df = sorted_df
@@ -122,7 +138,6 @@ def test_identical_to(backend, alltypes, con, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.sort_by('id')
     expr = sorted_alltypes[
@@ -146,7 +161,6 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.sort_by('id')
     expr = sorted_alltypes[
@@ -162,12 +176,14 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.parametrize(
     ('predicate_fn', 'expected_fn'),
     [
-        (lambda t: t['bool_col'], lambda df: df['bool_col']),
+        param(
+            lambda t: t['bool_col'],
+            lambda df: df['bool_col'],
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
         (lambda t: ~t['bool_col'], lambda df: ~df['bool_col']),
     ],
 )
-@pytest.mark.skip_backends(['dask', 'datafusion'])  # TODO - sorting - #2553
-@pytest.mark.xfail_unsupported
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     sorted_alltypes = alltypes.sort_by('id')
     table = sorted_alltypes[predicate_fn(sorted_alltypes)].sort_by('id')
@@ -177,8 +193,9 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['dask', 'pandas', 'pyspark'])
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+)
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
     table = sorted_alltypes
@@ -195,7 +212,7 @@ def test_filter_with_window_op(backend, alltypes, sorted_df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
@@ -223,9 +240,8 @@ def test_case_where(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-# Pr 2635
-@pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['postgres'])
+# TODO: some of these are notimpl (datafusion) others are probably never
+@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -287,7 +303,9 @@ def test_dropna_invalid(alltypes):
         ({'none_col': 1}),
     ],
 )
-@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+)
 def test_fillna_table(backend, alltypes, replacements):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
@@ -326,7 +344,9 @@ def test_mutate_rename(alltypes):
         ('all', 'none_col'),
     ],
 )
-@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "mysql", "postgres", "sqlite"]
+)
 def test_dropna_table(backend, alltypes, how, subset):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)

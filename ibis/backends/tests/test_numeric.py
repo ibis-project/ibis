@@ -53,7 +53,7 @@ else:
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["mysql", "sqlite", "datafusion"])
 def test_isnan_isinf(
     backend,
     con,
@@ -84,27 +84,100 @@ def test_isnan_isinf(
     [
         param(L(-5).abs(), 5, id='abs-neg'),
         param(L(5).abs(), 5, id='abs'),
-        param(ibis.least(L(10), L(1)), 1, id='least'),
-        param(ibis.greatest(L(10), L(1)), 10, id='greatest'),
+        param(
+            ibis.least(L(10), L(1)),
+            1,
+            id='least',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            ibis.greatest(L(10), L(1)),
+            10,
+            id='greatest',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
         param(L(5.5).round(), 6.0, id='round'),
-        param(L(5.556).round(2), 5.56, id='round-digits'),
+        param(
+            L(5.556).round(2),
+            5.56,
+            id='round-digits',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
         param(L(5.556).ceil(), 6.0, id='ceil'),
         param(L(5.556).floor(), 5.0, id='floor'),
-        param(L(5.556).exp(), math.exp(5.556), id='expr'),
-        param(L(5.556).sign(), 1, id='sign-pos'),
-        param(L(-5.556).sign(), -1, id='sign-neg'),
-        param(L(0).sign(), 0, id='sign-zero'),
+        param(
+            L(5.556).exp(),
+            math.exp(5.556),
+            id='expr',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            L(5.556).sign(),
+            1,
+            id='sign-pos',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            L(-5.556).sign(),
+            -1,
+            id='sign-neg',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            L(0).sign(),
+            0,
+            id='sign-zero',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
         param(L(5.556).sqrt(), math.sqrt(5.556), id='sqrt'),
-        param(L(5.556).log(2), math.log(5.556, 2), id='log-base'),
+        param(
+            L(5.556).log(2),
+            math.log(5.556, 2),
+            id='log-base',
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
         param(L(5.556).ln(), math.log(5.556), id='ln'),
         param(L(5.556).log2(), math.log(5.556, 2), id='log2'),
         param(L(5.556).log10(), math.log10(5.556), id='log10'),
-        param(L(5.556).radians(), math.radians(5.556), id='radians'),
-        param(L(5.556).degrees(), math.degrees(5.556), id='degrees'),
+        param(
+            L(5.556).radians(),
+            math.radians(5.556),
+            id='radians',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param(
+            L(5.556).degrees(),
+            math.degrees(5.556),
+            id='degrees',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)
     if isinstance(result, decimal.Decimal):
@@ -123,6 +196,7 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             lambda t: (-t.double_col).abs(),
             lambda t: (-t.double_col).abs(),
             id='abs-neg',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.abs(),
@@ -143,15 +217,16 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             lambda t: t.double_col.sign(),
             lambda t: np.sign(t.double_col),
             id='sign',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: (-t.double_col).sign(),
             lambda t: np.sign(-t.double_col),
             id='sign-negative',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_simple_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -178,11 +253,13 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).exp(),
             lambda t: np.exp(t.double_col + 1),
             id='exp',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -196,7 +273,6 @@ def test_simple_math_functions_columns(
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
@@ -218,11 +294,13 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.add(0.05).round(3),
             lambda be, t: be.round(t.double_col + 0.05, 3),
             id='round-with-param',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id='least-all-columns',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col, -2),
@@ -230,11 +308,13 @@ def test_complex_math_functions_columns(
                 list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='least-scalar',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
         ),
         param(
             lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id='greatest-all-columns',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda be, t: be.greatest(
@@ -244,10 +324,10 @@ def test_complex_math_functions_columns(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='greatest-scalar',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_backend_specific_numerics(
     backend, con, df, alltypes, expr_fn, expected_fn
 ):
@@ -257,6 +337,7 @@ def test_backend_specific_numerics(
     backend.assert_series_equal(result, expected)
 
 
+# marks=pytest.mark.notimpl(["datafusion"]),
 @pytest.mark.parametrize(
     'op',
     [
@@ -265,11 +346,13 @@ def test_backend_specific_numerics(
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        operator.pow,
+        param(
+            operator.pow,
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
     ],
     ids=lambda op: op.__name__,
 )
-@pytest.mark.xfail_unsupported
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
@@ -330,9 +413,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.skipif(
-    sa is None, reason="Tests available for sqlalchemy based backend"
-)
 @pytest.mark.parametrize(
     'dialects, default_precisions, default_scales',
     [
@@ -343,16 +423,16 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.only_on_backends(['postgres', 'mysql'])
+@pytest.mark.notimpl(["sqlite"])
 def test_sa_default_numeric_precision_and_scale(
-    con, backend, dialects, default_precisions, default_scales
+    alchemy_con, alchemy_backend, dialects, default_precisions, default_scales
 ):
     # TODO: find a better way to access ibis.sql.alchemy
     from ibis.backends.base.sql.alchemy import schema_from_table
 
-    dialect = dialects[backend.name()]
-    default_precision = default_precisions[backend.name()]
-    default_scale = default_scales[backend.name()]
+    dialect = dialects[alchemy_backend.name()]
+    default_precision = default_precisions[alchemy_backend.name()]
+    default_scale = default_scales[alchemy_backend.name()]
 
     typespec = [
         # name, sqlalchemy type, ibis type
@@ -371,7 +451,7 @@ def test_sa_default_numeric_precision_and_scale(
 
     # Create a table with the numeric types.
     table_name = 'test_sa_default_param_decimal'
-    engine = con.con
+    engine = alchemy_con.con
     table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
 
     # Check that we can correctly recover the default precision and scale.
@@ -379,10 +459,20 @@ def test_sa_default_numeric_precision_and_scale(
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)
-    con.drop_table(table_name, force=True)
+    alchemy_con.drop_table(table_name, force=True)
 
 
-@pytest.mark.only_on_backends(['postgres', 'mysql'])
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "impala",
+        "pandas",
+        "pyspark",
+        "sqlite",
+    ]
+)
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
@@ -396,8 +486,6 @@ def test_random(con):
     assert result != result2
 
 
-@pytest.mark.only_on_backends(['pandas', 'dask', 'pyspark'])
-@pytest.mark.xfail_unsupported
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
@@ -418,6 +506,9 @@ def test_random(con):
         ),
     ],
 )
+@pytest.mark.notimpl(
+    ["sqlite", "clickhouse", "datafusion", "impala", "mysql", "postgres"]
+)
 def test_clip(alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
@@ -426,14 +517,13 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.skip_backends(
+@pytest.mark.notimpl(
     [
-        'pandas',
-        'dask',
-        'csv',
-        'datafusion',
-        'pyspark',
-        'clickhouse',
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "pandas",
+        "pyspark",
     ]
 )
 def test_histogram(con, alltypes):
