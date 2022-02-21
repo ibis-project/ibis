@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -63,7 +64,7 @@ def _get_backend_names() -> frozenset[str]:
 
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
-    conftest = pytest.importorskip(
+    conftest = importlib.import_module(
         f"ibis.backends.{backend_str}.tests.conftest"
     )
     return conftest.TestConf
