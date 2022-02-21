@@ -1,5 +1,3 @@
-import uuid
-
 import pytest
 from pytest import param
 
@@ -26,80 +24,149 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.contains('6'),
             lambda t: t.string_col.str.contains('6'),
             id='contains',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.like('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='like',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.like('6^%'),
             lambda t: t.string_col.str.contains('6%'),
             id='complex_like_escape',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.like('6^%%'),
             lambda t: t.string_col.str.contains('6%.*'),
             id='complex_like_escape_match',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.ilike('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
         ),
         param(
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.xfail_backends(['pyspark']),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.xfail_backends(['pyspark']),
+            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.xfail_backends(['pyspark']),
+            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_search(r'\\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark_raw',
-            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
+            marks=(
+                # TODO: check if this test should pass with pyspark
+                # and if not, remove it
+                pytest.mark.notimpl(["pyspark"], reason="regression"),
+                pytest.mark.never(
+                    [
+                        "dask",
+                        "datafusion",
+                        "mysql",
+                        "pandas",
+                        "postgres",
+                        "sqlite",
+                    ],
+                    reason="not spark",
+                ),
+            ),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark',
-            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
+            marks=(
+                # TODO: check if this test should pass with pyspark
+                # and if not, remove it
+                pytest.mark.notimpl(["pyspark"], reason="regression"),
+                pytest.mark.never(
+                    [
+                        "dask",
+                        "datafusion",
+                        "mysql",
+                        "pandas",
+                        "postgres",
+                        "sqlite",
+                    ],
+                    reason="not spark",
+                ),
+            ),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark_raw',
-            marks=pytest.mark.xpass_backends(['clickhouse', 'impala']),
+            marks=(
+                # TODO: check if this test should pass with pyspark
+                # and if not, remove it
+                pytest.mark.notimpl(["pyspark"], reason="regression"),
+                pytest.mark.never(
+                    [
+                        "dask",
+                        "datafusion",
+                        "mysql",
+                        "pandas",
+                        "postgres",
+                        "sqlite",
+                    ],
+                    reason="not spark",
+                ),
+            ),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_spark',
-            marks=pytest.mark.xfail_backends(['impala']),
+            marks=(
+                pytest.mark.notimpl(['impala']),
+                pytest.mark.never(["datafusion"], reason="not spark"),
+            ),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_spark_raw',
-            marks=pytest.mark.xfail_backends(['impala']),
+            marks=(
+                pytest.mark.notimpl(['impala']),
+                pytest.mark.never(["mysql"], reason="not spark"),
+            ),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_spark',
-            marks=pytest.mark.xfail_backends(['impala']),
+            marks=(
+                pytest.mark.notimpl(['impala']),
+                pytest.mark.never(["datafusion", "mysql"], reason="not spark"),
+            ),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -110,31 +177,41 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.translate('0', 'a'),
             lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "mysql"]),
         ),
         param(
             lambda t: t.string_col.find('a'),
             lambda t: t.string_col.str.find('a'),
             id='find',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.lpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
             id='lpad',
+            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.rpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='right'),
             id='rpad',
+            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
+            marks=pytest.mark.notimpl(
+                ["datafusion", "mysql", "pyspark", "sqlite"]
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
+            marks=pytest.mark.notimpl(
+                ["datafusion", "mysql", "pyspark", "sqlite"]
+            ),
         ),
         param(
             lambda t: t.string_col.lower(),
@@ -155,9 +232,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            marks=pytest.mark.xfail_backends(
-                [('dask', '#TODO - dtype - #2553')]
-            ),
+            # TODO(dask) - dtype - #2553
+            marks=pytest.mark.notimpl(["clickhouse", "dask", "datafusion"]),
         ),
         param(
             lambda t: t.string_col.length(),
@@ -168,31 +244,49 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.startswith('foo'),
             lambda t: t.string_col.str.startswith('foo'),
             id='startswith',
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "dask", "datafusion", "pandas"]
+            ),
         ),
         param(
             lambda t: t.string_col.endswith('foo'),
             lambda t: t.string_col.str.endswith('foo'),
             id='endswith',
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "dask", "datafusion", "pandas"]
+            ),
         ),
         param(
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
             id='strip',
+            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
             id='lstrip',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                ]
+            ),
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
             id='rstrip',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                ]
+            ),
         ),
         param(
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
+            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
@@ -208,6 +302,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col.right(2),
             lambda t: t.date_string_col.str[-2:],
             id='right',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
         ),
         param(
             lambda t: t.date_string_col[1:3],
@@ -218,25 +313,22 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
             id='expr_slice_begin',
-            marks=pytest.mark.xfail_backends(
-                [('dask', '#TODO: substring #2553')]
-            ),
+            # TODO: substring #2553
+            marks=pytest.mark.notimpl(["dask", "pyspark"]),
         ),
         param(
             lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
             id='expr_slice_end',
-            marks=pytest.mark.xfail_backends(
-                [('dask', '#TODO: substring #2553')]
-            ),
+            # TODO: substring #2553
+            marks=pytest.mark.notimpl(["dask", "pyspark"]),
         ),
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
             id='expr_empty_slice',
-            marks=pytest.mark.xfail_backends(
-                [('dask', '#TODO: substring #2553')]
-            ),
+            # TODO: substring #2553
+            marks=pytest.mark.notimpl(["dask", "pyspark"]),
         ),
         param(
             lambda t: t.date_string_col[
@@ -244,24 +336,25 @@ def test_string_col_is_unicode(backend, alltypes, df):
             ],
             lambda t: t.date_string_col.str[-2:-1],
             id='expr_slice_begin_end',
-            marks=pytest.mark.xfail_backends(
-                [('dask', '#TODO: substring #2553')]
-            ),
+            # TODO: substring #2553
+            marks=pytest.mark.notimpl(["dask", "pyspark"]),
         ),
         param(
             lambda t: t.date_string_col.split('/'),
             lambda t: t.date_string_col.str.split('/'),
             id='split',
-            marks=pytest.mark.xfail_backends([('bigquery', '#2372')]),
+            marks=pytest.mark.notimpl(
+                ["dask", "datafusion", "impala", "mysql", "sqlite"]
+            ),
         ),
         param(
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
             id='join',
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()
@@ -270,20 +363,8 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'data, data_type',
-    [param('123e4567-e89b-12d3-a456-426655440000', 'uuid', id='uuid')],
-)
-@pytest.mark.only_on_backends(['postgres'])
-def test_special_strings(backend, con, alltypes, data, data_type):
-    lit = ibis.literal(data, type=data_type).name('tmp')
-    expr = alltypes[[alltypes.id, lit]].head(1)
-    df = expr.execute()
-    assert df['tmp'].iloc[0] == uuid.UUID(data)
-
-
-@pytest.mark.xfail_backends([('clickhouse', '#2642')])
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["clickhouse"], reason="non nullable types #2891")
+@pytest.mark.notimpl(["datafusion"])
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()

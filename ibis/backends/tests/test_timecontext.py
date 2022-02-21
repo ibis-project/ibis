@@ -7,6 +7,17 @@ from ibis.config import option_context
 
 from .test_vectorized_udf import calc_mean, create_demean_struct_udf
 
+pytestmark = pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ]
+)
+
 GROUPBY_COL = 'month'
 ORDERBY_COL = 'timestamp_col'
 TARGET_COL = 'float_col'
@@ -26,7 +37,7 @@ def filter_by_time_context(df, context):
     ]
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.notimpl(["dask"])
 @pytest.mark.min_spark_version('3.1')
 @pytest.mark.parametrize(
     'window',
@@ -55,7 +66,7 @@ def test_context_adjustment_window_udf(alltypes, df, context, window):
         tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas', 'pyspark'])
+@pytest.mark.notimpl(["dask"])
 def test_context_adjustment_filter_before_window(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         window = ibis.trailing_window(
@@ -74,7 +85,7 @@ def test_context_adjustment_filter_before_window(alltypes, df, context):
         tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.only_on_backends(['pandas'])
+@pytest.mark.notimpl(["pyspark"])
 def test_context_adjustment_multi_col_udf_non_grouped(alltypes, df, context):
     with option_context('context_adjustment.time_col', 'timestamp_col'):
         w = ibis.window(preceding=None, following=None)

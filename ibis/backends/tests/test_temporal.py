@@ -1,4 +1,3 @@
-import itertools
 import warnings
 
 import numpy as np
@@ -8,13 +7,12 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_date_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col.date(), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -31,22 +29,25 @@ def test_date_extract(backend, alltypes, df, attr):
         'year',
         'month',
         'day',
-        'day_of_year',
+        param('day_of_year', marks=pytest.mark.notimpl(["impala"])),
         'quarter',
         'epoch_seconds',
-        'week_of_year',
+        param('week_of_year', marks=pytest.mark.notimpl(["sqlite"])),
         'hour',
         'minute',
         'second',
         param(
             'millisecond',
-            marks=pytest.mark.xfail_backends(
-                [('sqlite', "#2156"), ('pyspark', '#2159')]
+            marks=(
+                pytest.mark.xfail_backends(
+                    [('sqlite', "#2156"), ('pyspark', '#2159')]
+                ),
+                pytest.mark.notimpl(["clickhouse"]),
             ),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract(backend, alltypes, df, attr):
     if attr == 'millisecond':
         expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
@@ -79,18 +80,62 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         'Y',
         'M',
         'D',
-        # Spark truncation to week truncates to different days than Pandas
-        # Pandas backend is probably doing this wrong
-        param('W', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
-        'h',
-        'm',
-        's',
-        'ms',
-        'us',
-        'ns',
+        param(
+            'W',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param('h', marks=pytest.mark.notimpl(["sqlite"])),
+        param('m', marks=pytest.mark.notimpl(["sqlite"])),
+        param('s', marks=pytest.mark.notimpl(["impala", "sqlite"])),
+        param(
+            'ms',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "impala",
+                    "mysql",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param(
+            'us',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "impala",
+                    "mysql",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param(
+            'ns',
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -109,10 +154,15 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         'Y',
         'M',
         'D',
-        param('W', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
+        param(
+            'W',
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "impala", "mysql", "postgres", "pyspark"]
+            ),
+        ),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
 
@@ -132,47 +182,38 @@ def test_date_truncate(backend, alltypes, df, unit):
             'Y',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.notimpl(['dask']),
         ),
         param('Q', pd.offsets.DateOffset, marks=pytest.mark.xfail),
         param(
             'M',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.notimpl(['dask']),
         ),
         param(
             'W',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.xfail_backends(['dask']),
+            marks=pytest.mark.notimpl(['dask']),
         ),
-        ('D', pd.offsets.DateOffset),
-        ('h', pd.Timedelta),
-        ('m', pd.Timedelta),
-        ('s', pd.Timedelta),
+        param('D', pd.offsets.DateOffset),
+        param('h', pd.Timedelta),
+        param('m', pd.Timedelta),
+        param('s', pd.Timedelta),
         param(
             'ms',
             pd.Timedelta,
-            marks=pytest.mark.xpass_backends(
-                (
-                    'pandas',
-                    'bigquery',
-                    'impala',
-                    'postgres',
-                    'dask',
-                )
-            ),
+            marks=pytest.mark.notimpl(["clickhouse", "mysql"]),
         ),
         param(
             'us',
             pd.Timedelta,
-            marks=pytest.mark.xfail_backends(('clickhouse', 'sqlite')),
+            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['pyspark'])
+@pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"])
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -198,9 +239,19 @@ def test_integer_to_interval_timestamp(
 @pytest.mark.parametrize(
     'unit', ['Y', param('Q', marks=pytest.mark.xfail), 'M', 'W', 'D']
 )
-@pytest.mark.xfail_unsupported
 # TODO - DateOffset - #2553
-@pytest.mark.skip_backends(['dask', 'pyspark'])
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "impala",
+        "mysql",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ]
+)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
@@ -226,17 +277,6 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('unit', ['h', 'm', 's', 'ms', 'us'])
-@pytest.mark.xfail_unsupported
-def test_integer_to_interval_date_failure(backend, con, alltypes, df, unit):
-    interval = alltypes.int_col.to_interval(unit=unit)
-    array = alltypes.date_string_col.split('/')
-    month, day, year = array[0], array[1], array[2]
-    date_col = ibis.literal('-').join(['20' + year, month, day]).cast('date')
-    with pytest.raises(TypeError):
-        date_col + interval
-
-
 date_value = pd.Timestamp('2017-12-31')
 timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
 
@@ -255,6 +295,9 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, be: t.timestamp_col
             + (pd.Timedelta(days=4) - pd.Timedelta(days=2)),
             id='timestamp-add-interval-binop',
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "dask", "impala", "mysql", "pandas", "postgres"]
+            ),
         ),
         param(
             lambda t, be: t.timestamp_col - ibis.interval(days=17),
@@ -280,17 +323,17 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.xfail_backends(['pyspark']),
+            marks=pytest.mark.notimpl(['pyspark']),
         ),
         param(
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, be: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
+            marks=pytest.mark.notimpl(['pyspark']),
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['pyspark'])
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend)
     expected = expected_fn(df, backend)
@@ -301,17 +344,30 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
+plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)  # noqa: E731
+minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
+
+
 @pytest.mark.parametrize(
     ('timedelta', 'temporal_fn'),
-    itertools.product(
-        ['36500d', '5W', '3d', '1.5d', '2h', '3m', '10s'],
-        [
-            lambda t, td: t.timestamp_col + pd.Timedelta(td),
-            lambda t, td: t.timestamp_col - pd.Timedelta(td),
-        ],
-    ),
+    [
+        ('36500d', plus),
+        ('5W', plus),
+        ('3d', plus),
+        param('1.5d', plus, marks=pytest.mark.notimpl(["mysql"])),
+        param('2h', plus, marks=pytest.mark.notimpl(["mysql"])),
+        param('3m', plus, marks=pytest.mark.notimpl(["mysql"])),
+        param('10s', plus, marks=pytest.mark.notimpl(["mysql"])),
+        ('36500d', minus),
+        ('5W', minus),
+        ('3d', minus),
+        param('1.5d', minus, marks=pytest.mark.notimpl(["mysql"])),
+        param('2h', minus, marks=pytest.mark.notimpl(["mysql"])),
+        param('3m', minus, marks=pytest.mark.notimpl(["mysql"])),
+        param('10s', minus, marks=pytest.mark.notimpl(["mysql"])),
+    ],
 )
-@pytest.mark.only_on_backends(['dask', 'pandas'])
+@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "sqlite"])
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -322,16 +378,6 @@ def test_temporal_binop_pandas_timedelta(
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)
-
-
-@pytest.mark.only_on_backends(['pyspark'])
-def test_temporal_binop_invalid_interval_unit(con, alltypes):
-    expr = alltypes.timestamp_col + pd.Timedelta('1ns')
-    with pytest.raises(
-        com.UnsupportedArgumentError,
-        match='Interval unit "ns" is not allowed*',
-    ):
-        con.execute(expr)
 
 
 @pytest.mark.parametrize(
@@ -345,8 +391,7 @@ def test_temporal_binop_invalid_interval_unit(con, alltypes):
         lambda t: t.timestamp_col != pd.Timestamp('20100301'),
     ],
 )
-@pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['pyspark', 'sqlite', 'datafusion'])
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):
@@ -356,8 +401,7 @@ def test_timestamp_comparison_filter(
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
-@pytest.mark.skip_backends(['pyspark'])
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -367,10 +411,10 @@ def test_interval_add_cast_scalar(backend, alltypes):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail_unsupported
-@pytest.mark.xfail_backends(
+@pytest.mark.never(
     ['pyspark'], reason="PySpark does not support casting columns to intervals"
 )
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -389,7 +433,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 @pytest.mark.parametrize(
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["clickhouse", "datafusion", "impala"])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
@@ -406,27 +450,13 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
     'unit',
     [
         's',
-        'ms',
-        param(
-            'us',
-            marks=pytest.mark.xpass_backends(
-                (
-                    'bigquery',
-                    'impala',
-                    'pandas',
-                    'pyspark',
-                    'dask',
-                )
-            ),
-        ),
-        param('ns', marks=pytest.mark.xpass_backends(('pandas', 'dask'))),
+        param('ms', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
+        param('us', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
+        param('ns', marks=pytest.mark.notimpl(["clickhouse", "pyspark"])),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
 def test_to_timestamp(backend, con, unit):
-    if unit not in backend.supported_to_timestamp_units:
-        pytest.skip(f'Unit {unit!r} not supported by {backend} to_timestamp')
-
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
 
@@ -454,7 +484,7 @@ def test_to_timestamp(backend, con, unit):
         ('2017-01-07', 5, 'Saturday'),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion", "impala"])
 def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index())
@@ -464,7 +494,7 @@ def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_day_of_week_column(backend, con, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -494,7 +524,7 @@ def test_day_of_week_column(backend, con, alltypes, df):
         ),
     ],
 )
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_day_of_week_column_group_by(
     backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -516,7 +546,7 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["datafusion"])
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -528,9 +558,8 @@ def test_now(backend, con):
     assert result.year == pandas_now.year
 
 
-# # TODO - limit - #2553
-@pytest.mark.xfail_backends(['dask'])
-@pytest.mark.xfail_unsupported
+@pytest.mark.notimpl(["dask"], reason="Limit #2553")
+@pytest.mark.notimpl(["datafusion"])
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)

@@ -35,9 +35,6 @@ polygon_0 = ibis.literal(
     type='polygon;4326:geometry',
 ).name('p')
 
-# add here backends that support geo spatial types
-all_db_geo_supported = ['postgres']
-
 # test input data with shapely geometries
 shp_point_0 = shapely.geometry.Point(0, 0)
 shp_point_1 = shapely.geometry.Point(1, 1)
@@ -72,10 +69,9 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
         (point_geog_2, {'postgres': "'SRID=4326;POINT (2 2)'::geography"}),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_literal_geospatial_explicit(backend, con, expr, expected):
+def test_literal_geospatial_explicit(con, expr, expected):
     result = str(con.compile(expr))
-    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
+    result_expected = f"SELECT {expected['postgres']} AS tmp"
     # use `in` op because if name is specified omniscidb doesn't compile
     # with alias but postgresql does. but if name is not provided,
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
@@ -97,10 +93,9 @@ def test_literal_geospatial_explicit(backend, con, expr, expected):
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_literal_geospatial_inferred(backend, con, shp, expected):
+def test_literal_geospatial_inferred(con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
+    result_expected = f"SELECT {expected['postgres']} AS tmp"
     # omniscidb uses tmp as a default alias but postgres doesn't use alias
     assert result in result_expected
 
@@ -119,10 +114,9 @@ def test_literal_geospatial_inferred(backend, con, shp, expected):
         (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
+def test_literal_multi_geospatial_inferred(con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = f"SELECT {expected[backend.name()]} AS tmp"
+    result_expected = f"SELECT {expected['postgres']} AS tmp"
     assert result in result_expected
 
 
@@ -133,27 +127,40 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
         param(lambda t: t['geo_point'].x(), [0, 1, 2, 3, 4], id='x'),
         param(lambda t: t['geo_point'].y(), [0, 1, 2, 3, 4], id='y'),
         param(
-            lambda t: t['geo_linestring'].x_min(), [0, 1, 2, 3, 4], id='x_min'
+            lambda t: t['geo_linestring'].x_min(),
+            [0, 1, 2, 3, 4],
+            id='x_min',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
-            lambda t: t['geo_linestring'].x_max(), [1, 2, 3, 4, 5], id='x_max'
+            lambda t: t['geo_linestring'].x_max(),
+            [1, 2, 3, 4, 5],
+            id='x_max',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
-            lambda t: t['geo_linestring'].y_min(), [0, 1, 2, 3, 4], id='y_min'
+            lambda t: t['geo_linestring'].y_min(),
+            [0, 1, 2, 3, 4],
+            id='y_min',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
-            lambda t: t['geo_linestring'].y_max(), [1, 2, 3, 4, 5], id='y_max'
+            lambda t: t['geo_linestring'].y_max(),
+            [1, 2, 3, 4, 5],
+            id='y_max',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
             lambda t: t['geo_multipolygon'].n_rings(),
             [2, 3, 1, 1, 1],
             id='n_rings',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
             lambda t: t['geo_polygon'].set_srid(4326).perimeter(),
             [96.34, 114.36, 10.24, 10.24, 10.24],
             id='perimeter',
-            marks=pytest.mark.skip_backends(
+            marks=pytest.mark.notimpl(
                 ['postgres'], reason='TODO: fix different results issue'
             ),
         ),
@@ -161,17 +168,15 @@ def test_literal_multi_geospatial_inferred(backend, con, shp, expected):
             lambda t: t['geo_multipolygon'].n_points(),
             [7, 11, 5, 5, 5],
             id='n_points',
-            marks=pytest.mark.skip_backends(
+            marks=pytest.mark.notimpl(
                 ['postgres'], reason='TODO: fix different results issue'
             ),
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_geo_spatial_unops(backend, geo, expr_fn, expected):
+def test_geo_spatial_unops(geotable, expr_fn, expected):
     """Testing for geo spatial unary operations."""
-    expr = expr_fn(geo)
+    expr = expr_fn(geotable)
     result = expr.execute()
     testing.assert_almost_equal(result, expected, decimal=2)
 
@@ -217,21 +222,21 @@ def test_geo_spatial_unops(backend, geo, expr_fn, expected):
             lambda t: t['geo_linestring'].max_distance(point_geom_0_srid0),
             {'postgres': [1.41, 2.82, 4.24, 5.66, 7.08]},
             id='max_distance',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
             lambda t: t.geo_polygon.contains(ibis.geo_point(30, 10)),
             {'postgres': [True, False, False, False, False]},
             id='point',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_geo_spatial_binops(backend, geo, expr_fn, expected):
+def test_geo_spatial_binops(geotable, expr_fn, expected):
     """Testing for geo spatial binary operations."""
-    expr = expr_fn(geo)
+    expr = expr_fn(geotable)
     result = expr.execute()
-    testing.assert_almost_equal(result, expected[backend.name()], decimal=2)
+    testing.assert_almost_equal(result, expected["postgres"], decimal=2)
 
 
 @pytest.mark.parametrize(
@@ -246,6 +251,7 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
             lambda t: t['geo_linestring'].point_n(1),
             [True, True, True, True, True],
             id='point_n',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
             lambda t: t['geo_linestring'].start_point(),
@@ -254,25 +260,21 @@ def test_geo_spatial_binops(backend, geo, expr_fn, expected):
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_get_point(backend, geo, expr_fn, expected):
+def test_get_point(geotable, expr_fn, expected):
     """Testing for geo spatial get point operations."""
-    arg = expr_fn(geo)
+    arg = expr_fn(geotable)
     # Note: there is a difference in how OmnisciDB and PostGIS consider
     # boundaries with the contains predicate. Work around this by adding a
     # small buffer.
-    expr = geo['geo_linestring'].buffer(0.01).contains(arg)
-    result = geo[geo, expr.name('tmp')].execute()['tmp']
+    expr = geotable['geo_linestring'].buffer(0.01).contains(arg)
+    result = geotable[geotable, expr.name('tmp')].execute()['tmp']
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
 @pytest.mark.parametrize(('arg', 'expected'), [(polygon_0, [1.98] * 5)])
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_area(backend, geo, arg, expected):
+def test_area(geotable, arg, expected):
     """Testing for geo spatial area operation."""
-    expr = geo[geo.id, arg.area().name('tmp')]
+    expr = geotable[geotable.id, arg.area().name('tmp')]
     result = expr.execute()['tmp']
     testing.assert_almost_equal(result, expected, decimal=2)
 
@@ -288,13 +290,11 @@ def test_area(backend, geo, arg, expected):
         (lambda t: t.geo_multipolygon.srid(), {'postgres': 0}),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_srid(backend, geo, condition, expected):
+def test_srid(geotable, condition, expected):
     """Testing for geo spatial srid operation."""
-    expr = geo[geo.id, condition(geo).name('tmp')]
+    expr = geotable[geotable.id, condition(geotable).name('tmp')]
     result = expr.execute()['tmp'][[0]]
-    assert np.all(result == expected[backend.name()])
+    assert np.all(result == expected["postgres"])
 
 
 @pytest.mark.parametrize(
@@ -308,11 +308,9 @@ def test_srid(backend, geo, condition, expected):
         (lambda t: t.geo_multipolygon.set_srid(4326).srid(), 4326),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_set_srid(backend, geo, condition, expected):
+def test_set_srid(geotable, condition, expected):
     """Testing for geo spatial set_srid operation."""
-    expr = geo[geo.id, condition(geo).name('tmp')]
+    expr = geotable[geotable.id, condition(geotable).name('tmp')]
     result = expr.execute()['tmp'][[0]]
     assert np.all(result == expected)
 
@@ -342,11 +340,9 @@ def test_set_srid(backend, geo, condition, expected):
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_transform(backend, geo, condition, expected):
+def test_transform(geotable, condition, expected):
     """Testing for geo spatial transform operation."""
-    expr = geo[geo.id, condition(geo).name('tmp')]
+    expr = geotable[geotable.id, condition(geotable).name('tmp')]
     result = expr.execute()['tmp'][[0]]
     assert np.all(result == expected)
 
@@ -363,12 +359,10 @@ def test_transform(backend, geo, condition, expected):
         param(lambda t: point_geog_2, id='point_geog_2'),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_cast_geography(backend, geo, expr_fn):
+def test_cast_geography(geotable, expr_fn):
     """Testing for geo spatial transform operation."""
-    p = expr_fn(geo).cast('geography')
-    expr = geo[geo.id, p.distance(p).name('tmp')]
+    p = expr_fn(geotable).cast('geography')
+    expr = geotable[geotable.id, p.distance(p).name('tmp')]
     result = expr.execute()['tmp'][[0]]
     # distance from a point to a same point should be 0
     assert np.all(result == 0)
@@ -386,26 +380,22 @@ def test_cast_geography(backend, geo, expr_fn):
         param(lambda t: point_geog_2, id='point_geog_2'),
     ],
 )
-@pytest.mark.only_on_backends(all_db_geo_supported)
-@pytest.mark.xfail_unsupported
-def test_cast_geometry(backend, geo, expr_fn):
+def test_cast_geometry(geotable, expr_fn):
     """Testing for geo spatial transform operation."""
-    p = expr_fn(geo).cast('geometry')
-    expr = geo[geo.id, p.distance(p).name('tmp')]
+    p = expr_fn(geotable).cast('geometry')
+    expr = geotable[geotable.id, p.distance(p).name('tmp')]
     result = expr.execute()['tmp'][[0]]
     # distance from a point to a same point should be 0
     assert np.all(result == 0)
 
 
-@pytest.mark.only_on_backends(all_db_geo_supported)
-def test_geo_dataframe(backend, geo):
+def test_geo_dataframe(geotable):
     """Testing for geo dataframe output."""
     import geopandas
 
-    assert isinstance(geo.execute(), geopandas.geodataframe.GeoDataFrame)
+    assert isinstance(geotable.execute(), geopandas.geodataframe.GeoDataFrame)
 
 
-@pytest.mark.only_on_backends(['postgres'])
 @pytest.mark.parametrize(
     'modifier',
     [
@@ -482,7 +472,7 @@ def test_geo_dataframe(backend, geo):
         ),
     ],
 )
-def test_geo_literals_smoke(backend, shape, value, modifier, expected):
+def test_geo_literals_smoke(con, shape, value, modifier, expected):
     """Smoke tests for geo spatial literals"""
     expr_type = '{}{}{}'.format(
         shape,
@@ -496,10 +486,9 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
         '::{}'.format(modifier['geo_type']) if 'geo_type' in modifier else '',
     )
 
-    assert str(backend.api.compile(expr)) == result_expected
+    assert str(con.compile(expr)) == result_expected
 
 
-@pytest.mark.only_on_backends(all_db_geo_supported)
 @pytest.mark.parametrize(
     'fn_expr',
     [
@@ -522,25 +511,36 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
         pytest.param(
             lambda t: t.geo_linestring.max_distance(t.geo_point),
             id='linestring_max_distance',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(
-            lambda t: t.geo_linestring.point_n(1), id='linestring_point_n'
+            lambda t: t.geo_linestring.point_n(1),
+            id='linestring_point_n',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(
             lambda t: t.geo_linestring.start_point(),
             id='linestring_start_point',
         ),
         pytest.param(
-            lambda t: t.geo_linestring.x_max(), id='linestring_x_max'
+            lambda t: t.geo_linestring.x_max(),
+            id='linestring_x_max',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(
-            lambda t: t.geo_linestring.x_min(), id='linestring_x_min'
+            lambda t: t.geo_linestring.x_min(),
+            id='linestring_x_min',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(
-            lambda t: t.geo_linestring.y_max(), id='linestring_y_max'
+            lambda t: t.geo_linestring.y_max(),
+            id='linestring_y_max',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(
-            lambda t: t.geo_linestring.y_min(), id='linestring_y_min'
+            lambda t: t.geo_linestring.y_min(),
+            id='linestring_y_min',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(lambda t: t.geo_polygon.area(), id='polygon_area'),
         pytest.param(
@@ -550,26 +550,25 @@ def test_geo_literals_smoke(backend, shape, value, modifier, expected):
             lambda t: t.geo_multipolygon.n_points(), id='multipolygon_n_points'
         ),
         pytest.param(
-            lambda t: t.geo_multipolygon.n_rings(), id='multipolygon_n_rings'
+            lambda t: t.geo_multipolygon.n_rings(),
+            id='multipolygon_n_rings',
+            marks=pytest.mark.notimpl(["postgres"]),
         ),
         # TODO: the mock tests don't support multipoint and multilinestring
         #       yet, but once they do, add some more tests here.
     ],
 )
-@pytest.mark.xfail_unsupported
-def test_geo_ops_smoke(backend, fn_expr):
+def test_geo_ops_smoke(geotable, fn_expr):
     """Smoke tests for geo spatial operations."""
-    geo_table = backend.geo
-    assert fn_expr(geo_table).compile() != ''
+    assert fn_expr(geotable).compile() != ''
 
 
-@pytest.mark.only_on_backends(["postgres"])
-def test_geo_equals(backend, geo):
+def test_geo_equals(geotable):
     # Fix https://github.com/ibis-project/ibis/pull/2956
-    expr = geo.mutate(
+    expr = geotable.mutate(
         [
-            geo.geo_point.y().name('Location_Latitude'),
-            geo.geo_point.y().name('Latitude'),
+            geotable.geo_point.y().name('Location_Latitude'),
+            geotable.geo_point.y().name('Latitude'),
         ]
     )
 
@@ -587,7 +586,7 @@ def test_geo_equals(backend, geo):
 
     # simple test using ==
     expected = 'SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0'
-    expr = geo.geo_point == geo.geo_point
+    expr = geotable.geo_point == geotable.geo_point
     assert str(expr.compile().compile()) == expected
     assert expr.execute().all()
 
@@ -595,9 +594,9 @@ def test_geo_equals(backend, geo):
     expected = (
         'SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0'
     )
-    expr = geo.geo_point.geo_equals(geo.geo_point)
+    expr = geotable.geo_point.geo_equals(geotable.geo_point)
     assert str(expr.compile().compile()) == expected
     assert expr.execute().all()
 
     # equals returns a boolean object
-    assert geo.geo_point.equals(geo.geo_point)
+    assert geotable.geo_point.equals(geotable.geo_point)

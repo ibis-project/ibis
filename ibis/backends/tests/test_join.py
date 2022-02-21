@@ -2,40 +2,78 @@ import pandas as pd
 import pytest
 from pytest import param
 
-import ibis.common.exceptions as exc
-
-# add here backends that passes join tests
-all_db_join_supported = [
-    'dask',
-    'pandas',
-    'pyspark',
-]
-
 
 @pytest.mark.parametrize(
-    'how',
+    "how",
     [
-        'inner',
-        'left',
-        'right',
-        'outer',
         param(
-            'semi',
-            marks=pytest.mark.xfail(
-                raises=(exc.OperationNotDefinedError, NotImplementedError),
-                reason='Semi join not implemented',
+            "inner",
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+        ),
+        param(
+            "left",
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+        ),
+        param(
+            "right",
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "datafusion",
+                    "mysql",
+                    "postgres",
+                    "sqlite",
+                    "impala",
+                ]
             ),
         ),
         param(
-            'anti',
-            marks=pytest.mark.xfail(
-                raises=(exc.OperationNotDefinedError, NotImplementedError),
-                reason='Anti join not implemented',
+            "outer",
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "datafusion",
+                    "mysql",
+                    "postgres",
+                    "sqlite",
+                    "impala",
+                ]
+            ),
+        ),
+        param(
+            "semi",
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param(
+            "anti",
+            marks=pytest.mark.notimpl(
+                [
+                    "clickhouse",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
             ),
         ),
     ],
 )
-@pytest.mark.only_on_backends(all_db_join_supported)
 def test_join_project_left_table(backend, con, batting, awards_players, how):
 
     left = batting[batting.yearID == 2015]
