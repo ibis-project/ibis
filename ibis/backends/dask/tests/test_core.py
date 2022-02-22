@@ -17,10 +17,10 @@ from dask.dataframe.utils import tm  # noqa: E402
 from ibis.backends.dask import Backend  # noqa: E402
 
 from ..core import execute, is_computable_input  # noqa: E402
-from ..dispatch import execute_node, post_execute, pre_execute  # noqa: E402
+from ..dispatch import execute_node, pre_execute  # noqa: E402
 
 
-@pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])
+@pytest.mark.parametrize('func', [execute_node, pre_execute])
 def test_no_execute_ambiguities(func):
     assert not ambiguities(func.funcs)
 
@@ -91,23 +91,6 @@ def test_missing_data_on_custom_client():
         ),
     ):
         con.execute(t)
-
-
-def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
-    count = [0]
-
-    @post_execute.register(ops.InnerJoin, dd.DataFrame)
-    def tmp_left_join_exe(op, lhs, **kwargs):
-        count[0] += 1
-        return lhs
-
-    left = ibis_table
-    right = left.view()
-    join = left.join(right, 'plain_strings')[left.plain_int64]
-    result = join.execute()
-    assert result is not None
-    assert len(result.index) > 0
-    assert count[0] == 1
 
 
 def test_is_computable_input():

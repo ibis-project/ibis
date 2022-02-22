@@ -16,6 +16,3 @@ pre_execute.funcs.update(core_dispatch.pre_execute.funcs)
 
 execute_literal = Dispatcher('execute_literal')
 execute_literal.funcs.update(core_dispatch.execute_literal.funcs)
-
-post_execute = Dispatcher('post_execute')
-post_execute.funcs.update(core_dispatch.post_execute.funcs)

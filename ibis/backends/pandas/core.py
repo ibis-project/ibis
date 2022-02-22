@@ -65,29 +65,6 @@ Then, when an expression is ready to be evaluated we call
 then :func:`~ibis.backends.pandas.dispatch.execute_node` on the expression
 with its now-materialized arguments.
 
-4. ``post_execute``
--------------------
-The final step--``post_execute``--is called immediately after the previous call
-to ``execute_node`` and takes the instance of the
-:class:`~ibis.expr.operations.Node` just computed and the result of the
-computation.
-
-The purpose of this function is to allow additional computation to happen in
-the context of the current level of the execution loop. You might be wondering
-That may sound vague, so let's look at an example.
-
-Let's say you want to take a three day rolling average, and you want to include
-3 days of data prior to the first date of the input. You don't want to see that
-data in the result for a few reasons, one of which is that it would break the
-contract of window functions: given N rows of input there are N rows of output.
-
-Defining a ``post_execute`` rule for :class:`~ibis.expr.operations.WindowOp`
-allows you to encode such logic. One might want to implement this using
-:class:`~ibis.expr.operations.ScalarParameter`, in which case the ``scope``
-passed to ``post_execute`` would be the bound values passed in at the time the
-``execute`` method was called.
-
-
 Scope
 -----
 Scope is used across the execution phases, it iss a map that maps Ibis
@@ -125,7 +102,7 @@ from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 
 from . import aggcontext as agg_ctx
-from .dispatch import execute_literal, execute_node, post_execute, pre_execute
+from .dispatch import execute_literal, execute_node, pre_execute
 from .trace import trace
 
 integer_types = np.integer, int
@@ -221,17 +198,6 @@ def execute_with_scope(
         timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
-        # XXX: we *explicitly* pass in scope and not new_scope here so that
-        # post_execute sees the scope of execute_with_scope, not the scope of
-        # execute_until_in_scope
-        post_execute_=functools.partial(
-            post_execute,
-            scope=scope,
-            timecontext=timecontext,
-            aggcontext=aggcontext,
-            clients=clients,
-            **kwargs,
-        ),
         **kwargs,
     ).get_value(op, timecontext)
     return result
@@ -244,7 +210,6 @@ def execute_until_in_scope(
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
     clients=None,
-    post_execute_=None,
     **kwargs,
 ) -> Scope:
     """Execute until our op is in `scope`.
@@ -261,7 +226,6 @@ def execute_until_in_scope(
     # these should never be None
     assert aggcontext is not None, 'aggcontext is None'
     assert clients is not None, 'clients is None'
-    assert post_execute_ is not None, 'post_execute_ is None'
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
@@ -330,7 +294,6 @@ def execute_until_in_scope(
             new_scope,
             timecontext=timecontext,
             aggcontext=aggcontext,
-            post_execute_=post_execute_,
             clients=clients,
             **kwargs,
         )
@@ -365,8 +328,7 @@ def execute_until_in_scope(
         clients=clients,
         **kwargs,
     )
-    computed = post_execute_(op, result, timecontext=timecontext)
-    return Scope({op: computed}, timecontext)
+    return Scope({op: result}, timecontext)
 
 
 execute = Dispatcher('execute')

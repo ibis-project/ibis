@@ -65,7 +65,7 @@ def compute_sorted_frame(
         computed_sort_keys, ascending=ascending, kind='mergesort'
     )
     # TODO: we'll eventually need to return this frame with the temporary
-    # columns and drop them in the caller (maybe using post_execute?)
+    # columns and drop them in the caller
     ngrouping_keys = len(group_by)
     return (
         result,
