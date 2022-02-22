@@ -16,6 +16,7 @@ from dask.dataframe.utils import tm  # noqa: E402
 
 from ibis.backends.dask import Backend  # noqa: E402
 
+from .. import execution  # noqa: F401,E402
 from ..core import execute, is_computable_input  # noqa: E402
 from ..dispatch import execute_node  # noqa: E402
 

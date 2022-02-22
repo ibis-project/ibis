@@ -25,7 +25,7 @@ from ibis.expr.typing import TimeContext
 
 from ..core import execute
 from ..dispatch import execute_node
-from ..execution.util import (
+from .util import (
     add_partitioned_sorted_column,
     coerce_to_output,
     compute_sorted_frame,

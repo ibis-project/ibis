@@ -11,9 +11,7 @@ from ..aggcontext import Transform
 from ..dispatch import execute_node
 
 
-@execute_node.register(
-    ops.ElementWiseVectorizedUDF, SeriesGroupBy, [SeriesGroupBy]
-)
+@execute_node.register(ops.ElementWiseVectorizedUDF, [SeriesGroupBy])
 def execute_udf_node_groupby(op, *args, **kwargs):
     func = op.func
 
@@ -55,9 +53,14 @@ def execute_udf_node(op, *args, **kwargs):
     pd.Series,
     [pd.Series],
 )
-def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
+@execute_node.register(
+    (ops.AnalyticVectorizedUDF, ops.ReductionVectorizedUDF),
+    pd.Series,
+    pd.Series,
+)
+def execute_udaf_node_no_groupby(op, arg, *args, aggcontext, **kwargs):
     func = op.func
-    return aggcontext.agg(args[0], func, *args[1:])
+    return aggcontext.agg(arg, func, *args)
 
 
 # An execution rule to handle analytic and reduction UDFs over
@@ -69,7 +72,12 @@ def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
     SeriesGroupBy,
     [SeriesGroupBy],
 )
-def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
+@execute_node.register(
+    (ops.AnalyticVectorizedUDF, ops.ReductionVectorizedUDF),
+    SeriesGroupBy,
+    SeriesGroupBy,
+)
+def execute_udaf_node_groupby(op, arg, *args, aggcontext, **kwargs):
     func = op.func
     if isinstance(aggcontext, Transform):
         # We are aggregating over an unbounded (and GROUPED) window,
@@ -81,7 +89,7 @@ def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         # for every argument excluding the first (pandas performs
         # the iteration for the first argument) for each argument
         # that is a SeriesGroupBy.
-        iters = ((data for _, data in arg) for arg in args[1:])
+        iters = ((data for _, data in gb) for gb in args)
 
         # TODO: Unify calling convension here to be more like
         # window
@@ -90,7 +98,7 @@ def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
             # TODO: might be inefficient to do this on every call
             return func(first, *map(next, rest))
 
-        return aggcontext.agg(args[0], aggregator, *iters)
+        return aggcontext.agg(arg, aggregator, *iters)
     else:
         # We are either:
         # 1) Aggregating over a bounded window, which uses a Window
@@ -99,4 +107,4 @@ def execute_udaf_node_groupby(op, *args, aggcontext, **kwargs):
         # 3) Aggregating using an Aggregate node (with GROUPING), which
         #   uses a Summarize aggregation context
         # No pre-processing to be done for any case.
-        return aggcontext.agg(args[0], func, *args[1:])
+        return aggcontext.agg(arg, func, *args)
