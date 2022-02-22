@@ -57,7 +57,10 @@ class Expr:
             return output
 
         if not IS_RICH_INSTALLED or not ibis.options.repr.rich.enabled:
-            return repr(result)
+            import pandas as pd
+
+            with pd.option_context('display.max_rows', ibis.options.repr.rows):
+                return repr(result)
 
         try:
             console = Console()
@@ -66,7 +69,8 @@ class Expr:
             return capture.get()
         except Exception as e:
             warnings.warn(e)
-            return repr(result)
+            with pd.option_context('display.max_rows', ibis.options.repr.rows):
+                return repr(result)
 
     def __hash__(self) -> int:
         return hash(self._key)
