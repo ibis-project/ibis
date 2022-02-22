@@ -93,7 +93,7 @@ There are two primary ways to setup a development environment.
 
     1. Install your local copy of `ibis` into the Conda environment. In the root of the project run:
 
-            pip install .
+            pip install -e .
 
     1. If you want to run the backend test suite you'll need to install `docker-compose`:
 
