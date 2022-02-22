@@ -48,7 +48,18 @@ class Expr:
             )
             return output
         else:
-            return repr(result)
+            try:
+                from rich.console import Console
+            except ImportError:
+                return repr(result)
+
+            try:
+                console = Console()
+                with console.capture() as capture:
+                    console.print(self)
+                return capture.get()
+            except Exception:
+                return repr(result)
 
     def __hash__(self) -> int:
         return hash(self._key)

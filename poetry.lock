@@ -265,6 +265,17 @@ tomlkit = ">=0.5.3,<1.0.0"
 typing-extensions = ">=4.0.1,<5.0.0"
 
 [[package]]
+name = "commonmark"
+version = "0.9.1"
+description = "Python parser for the CommonMark Markdown spec"
+category = "main"
+optional = true
+python-versions = "*"
+
+[package.extras]
+test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
+
+[[package]]
 name = "coverage"
 version = "6.3.2"
 description = "Code coverage measurement for Python"
@@ -1383,7 +1394,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 name = "pygments"
 version = "2.11.2"
 description = "Pygments is a syntax highlighting package written in Python."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5"
 
@@ -1703,6 +1714,22 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
 use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
 
 [[package]]
+name = "rich"
+version = "11.2.0"
+description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
+category = "main"
+optional = true
+python-versions = ">=3.6.2,<4.0.0"
+
+[package.dependencies]
+colorama = ">=0.4.0,<0.5.0"
+commonmark = ">=0.9.0,<0.10.0"
+pygments = ">=2.6.0,<3.0.0"
+
+[package.extras]
+jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
+
+[[package]]
 name = "shapely"
 version = "1.8.0"
 description = "Geometric objects, predicates, and operations"
@@ -1992,7 +2019,7 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
-all = ["clickhouse-driver", "dask", "datafusion", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "sqlalchemy"]
+all = ["clickhouse-driver", "dask", "datafusion", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "rich", "Shapely", "sqlalchemy"]
 clickhouse = ["clickhouse-driver"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
@@ -2001,6 +2028,7 @@ impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
 pandas = []
 postgres = ["psycopg2", "sqlalchemy"]
+pretty = ["rich"]
 pyspark = ["pyarrow", "pyspark"]
 sqlite = ["sqlalchemy"]
 visualization = ["graphviz"]
@@ -2008,7 +2036,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "542593a855ad8f55a3a5e05dc66d10b5006db3f0a63d4b4cab9e5e91109300bf"
+content-hash = "f95599336f321ed84e82503a763c97b70ba518e9b7d1ca14143022c9bf090628"
 
 [metadata.files]
 appnope = [
@@ -2252,6 +2280,10 @@ colorama = [
 commitizen = [
     {file = "commitizen-2.21.0-py3-none-any.whl", hash = "sha256:1d388afffa9c9c9729986a81501916d6134a88847a922a2a5563e04fe27de069"},
     {file = "commitizen-2.21.0.tar.gz", hash = "sha256:afdc1aa16160426c5a0b13a8a4f3c222e0c815740711d774d32a896bd86f961c"},
+]
+commonmark = [
+    {file = "commonmark-0.9.1-py2.py3-none-any.whl", hash = "sha256:da2f38c92590f83de410ba1a3cbceafbc74fee9def35f9251ba9a971d6d66fd9"},
+    {file = "commonmark-0.9.1.tar.gz", hash = "sha256:452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60"},
 ]
 coverage = [
     {file = "coverage-6.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:9b27d894748475fa858f9597c0ee1d4829f44683f3813633aaf94b19cb5453cf"},
@@ -3178,6 +3210,10 @@ regex = [
 requests = [
     {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
     {file = "requests-2.27.1.tar.gz", hash = "sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61"},
+]
+rich = [
+    {file = "rich-11.2.0-py3-none-any.whl", hash = "sha256:d5f49ad91fb343efcae45a2b2df04a9755e863e50413623ab8c9e74f05aee52b"},
+    {file = "rich-11.2.0.tar.gz", hash = "sha256:1a6266a5738115017bb64a66c59c717e7aa047b3ae49a011ede4abdeffc6536e"},
 ]
 shapely = [
     {file = "Shapely-1.8.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c5632cedea6d815b61eb4c264da1c3f24a8ce2ceba2f74e30fba340ca230563"},

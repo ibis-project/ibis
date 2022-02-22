@@ -1380,3 +1380,29 @@ def test_repr_list_of_lists_in_table():
     lit = ibis.literal([[1]])
     expr = t[t, lit.name('array_of_array')]
     repr(expr)
+
+
+def test_rich_repr():
+    pytest.importorskip("rich")
+
+    con = ibis.pandas.connect(
+        {
+            "t": pd.DataFrame(
+                {
+                    "foo_bar_baz": range(300, 600),
+                    "bar_baz_quux": [60] * 300,
+                    "stringz": list("abcde") * 60,
+                }
+            ),
+        }
+    )
+    t = con.table("t")
+
+    interactive = ibis.options.interactive
+    ibis.options.interactive = True
+    try:
+        assert repr(t)
+        assert repr(t.foo_bar_baz)
+        assert repr(t.foo_bar_baz.mean())
+    finally:
+        ibis.options.interactive = interactive

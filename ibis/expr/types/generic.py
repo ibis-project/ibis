@@ -61,9 +61,7 @@ class ScalarExpr(ValueExpr):
         return str(self.type())
 
     def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
+        """Promote this scalar expression to a table projection."""
         from .relations import TableExpr
 
         roots = self.op().root_tables()
@@ -76,6 +74,9 @@ class ScalarExpr(ValueExpr):
 
         table = TableExpr(roots[0])
         return table.projection([self])
+
+    def __rich_console__(self, console, options):
+        return console.render(str(self.execute()))
 
 
 @public
@@ -102,6 +103,9 @@ class ColumnExpr(ValueExpr):
 
         table = TableExpr(roots[0])
         return table.projection([self])
+
+    def __rich_console__(self, console, options):
+        return self.to_projection().__rich_console__(console, options)
 
 
 @public

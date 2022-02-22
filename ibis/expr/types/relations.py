@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Any, Iterable
 
 import numpy as np
 from public import public
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
 
@@ -41,6 +43,26 @@ class TableExpr(Expr):
         from ibis.expr.analysis import ExprValidator
 
         ExprValidator([self]).validate_all(exprs)
+
+    def __rich_console__(self, console, options):
+        from rich.table import Table
+
+        repr_row_limit = ibis.options.repr_row_limit
+        result = self.limit(repr_row_limit + 1).execute()
+
+        table = Table(highlight=True)
+
+        columns = self.columns
+        for column in columns:
+            table.add_column(column, justify="center")
+
+        for row in result.itertuples(index=False):
+            table.add_row(*map(repr, row))
+
+        if len(result) > repr_row_limit:
+            table.add_row(*itertools.repeat("⋮", len(columns)))
+
+        return console.render(table, options=options)
 
     def __contains__(self, name):
         return name in self.schema()
