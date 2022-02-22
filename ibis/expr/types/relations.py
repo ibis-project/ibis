@@ -47,8 +47,8 @@ class TableExpr(Expr):
     def __rich_console__(self, console, options):
         from rich.table import Table
 
-        repr_row_limit = ibis.options.repr_row_limit
-        result = self.limit(repr_row_limit + 1).execute()
+        nrows = ibis.options.repr.rows
+        result = self.limit(nrows + 1).execute()
 
         table = Table(highlight=True)
 
@@ -59,7 +59,7 @@ class TableExpr(Expr):
         for row in result.itertuples(index=False):
             table.add_row(*map(repr, row))
 
-        if len(result) > repr_row_limit:
+        if len(result) > nrows:
             table.add_row(*itertools.repeat("⋮", len(columns)))
 
         return console.render(table, options=options)

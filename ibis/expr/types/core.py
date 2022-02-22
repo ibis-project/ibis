@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 import webbrowser
 from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
@@ -19,6 +20,13 @@ if TYPE_CHECKING:
     from ibis.expr.format import FormatMemo
 
     from .generic import ValueExpr
+
+try:
+    from rich.console import Console
+except ImportError:
+    IS_RICH_INSTALLED = False
+else:
+    IS_RICH_INSTALLED = True
 
 
 @public
@@ -47,19 +55,18 @@ class Expr:
                 'Expression repr follows:\n{}'.format(e.args[0], self._repr())
             )
             return output
-        else:
-            try:
-                from rich.console import Console
-            except ImportError:
-                return repr(result)
 
-            try:
-                console = Console()
-                with console.capture() as capture:
-                    console.print(self)
-                return capture.get()
-            except Exception:
-                return repr(result)
+        if not IS_RICH_INSTALLED or not ibis.options.repr.rich.enabled:
+            return repr(result)
+
+        try:
+            console = Console()
+            with console.capture() as capture:
+                console.print(self)
+            return capture.get()
+        except Exception as e:
+            warnings.warn(e)
+            return repr(result)
 
     def __hash__(self) -> int:
         return hash(self._key)

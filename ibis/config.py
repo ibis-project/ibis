@@ -30,14 +30,29 @@ class SQL(BaseModel):
     )
 
 
+class Rich(BaseModel):
+    enabled: bool = Field(
+        default=True,
+        description="Use `rich` for table formatting if it's installed.",
+    )
+
+
+class Repr(BaseModel):
+    rows: int = Field(
+        default=10,
+        description="The number of rows to display in interactive mode.",
+    )
+    rich: Rich = Rich()
+
+
 class Options(BaseSettings):
     interactive: bool = Field(
         default=False,
-        description="Show the first few rows of computing an expression when in a repl.",  # noqa: E501
-    )
-    repr_row_limit: int = Field(
-        default=10,
-        description="The number of rows to show in the interactive repr.",
+        description=(
+            "Show the first 10 rows of computing an expression when in a "
+            "repl. The number of rows can be adjust by setting "
+            "`ibis.options.repr.rows`."
+        ),
     )
     verbose: bool = False
     verbose_log: Optional[Callable[[str], None]] = None
@@ -48,6 +63,7 @@ class Options(BaseSettings):
     default_backend: Any = None
     context_adjustment: ContextAdjustment = ContextAdjustment()
     sql: SQL = SQL()
+    repr: Repr = Repr()
 
     clickhouse: Optional[BaseModel] = None
     dask: Optional[BaseModel] = None
