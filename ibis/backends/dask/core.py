@@ -202,11 +202,6 @@ def execute_until_in_scope(
     else:
         arg_timecontexts = [None] * len(computable_args)
 
-    # Short circuit: if pre_execute puts op in scope, then we don't need to
-    # execute its computable_args
-    if scope.get_value(op, timecontext) is not None:
-        return scope
-
     # recursively compute each node's arguments until we've changed type.
     # compute_time_context should return with a list with the same length
     # as computable_args, the two lists will be zipping together for
