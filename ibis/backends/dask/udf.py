@@ -11,7 +11,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-from ibis.backends.pandas.udf import nullable  # noqa
 
 from .dispatch import execute_node, pre_execute
 from .execution.util import (

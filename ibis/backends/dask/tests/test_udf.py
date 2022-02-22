@@ -10,8 +10,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
-from ..udf import nullable
-
 dd = pytest.importorskip("dask.dataframe")
 
 
@@ -310,16 +308,6 @@ def test_udaf_groupby_multikey_tzcol(t_timestamp, df_timestamp):
         .compute()
     )
     tm.assert_frame_equal(result, expected)
-
-
-def test_nullable():
-    t = ibis.table([('a', 'int64')])
-    assert nullable(t.a.type()) == (type(None),)
-
-
-def test_nullable_non_nullable_field():
-    t = ibis.table([('a', dt.String(nullable=False))])
-    assert nullable(t.a.type()) == ()
 
 
 def test_compose_udfs(t2, df2):
