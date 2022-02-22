@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from public import public
 
+import ibis
 import ibis.common.exceptions as com
 
 from .core import Expr
@@ -77,6 +78,9 @@ class ScalarExpr(ValueExpr):
         table = TableExpr(roots[0])
         return table.projection([self])
 
+    def _repr_html_(self) -> str | None:
+        return None
+
 
 @public
 class ColumnExpr(ValueExpr):
@@ -102,6 +106,12 @@ class ColumnExpr(ValueExpr):
 
         table = TableExpr(roots[0])
         return table.projection([self])
+
+    def _repr_html_(self) -> str | None:
+        if not ibis.options.interactive:
+            return None
+
+        return self.execute().to_frame()._repr_html_()
 
 
 @public

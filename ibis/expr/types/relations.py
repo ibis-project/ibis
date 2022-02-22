@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 import numpy as np
 from public import public
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
 
@@ -44,6 +45,12 @@ class TableExpr(Expr):
 
     def __contains__(self, name):
         return name in self.schema()
+
+    def _repr_html_(self) -> str | None:
+        if not ibis.options.interactive:
+            return None
+
+        return self.execute()._repr_html_()
 
     def __getitem__(self, what):
         from .analytic import AnalyticExpr
