@@ -77,7 +77,7 @@ Setting `PYTEST_BACKENDS` unless you want to run the backend test suite
 !!! tip
 
     `cz` is already installed in your environment if you followed the [setup
-    instructions](environment.md)
+    instructions](environment.md). If not run `pip install commitizen`.
 
 Next, you'll want to commit your changes.
 
