@@ -35,6 +35,10 @@ class Options(BaseSettings):
         default=False,
         description="Show the first few rows of computing an expression when in a repl.",  # noqa: E501
     )
+    repr_row_limit: int = Field(
+        default=10,
+        description="The number of rows to show in the interactive repr.",
+    )
     verbose: bool = False
     verbose_log: Optional[Callable[[str], None]] = None
     graphviz_repr: bool = Field(

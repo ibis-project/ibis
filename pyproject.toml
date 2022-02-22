@@ -47,6 +47,7 @@ pyarrow = { version = ">=1,<8", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
+rich = { version = ">=11.2.0,<12", optional = true }
 Shapely = { version = ">=1.6,<1.8.1", optional = true }
 sqlalchemy = { version = ">=1.3,<1.5", optional = true }
 
@@ -95,6 +96,7 @@ all = [
   "pymysql",
   "pyspark",
   "requests",
+  "rich",
   "Shapely",
   "sqlalchemy",
 ]
@@ -106,6 +108,7 @@ impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
 pandas = []
 postgres = ["psycopg2", "sqlalchemy"]
+pretty = ["rich"]
 pyspark = ["pyarrow", "pyspark"]
 sqlite = ["sqlalchemy"]
 visualization = ["graphviz"]
