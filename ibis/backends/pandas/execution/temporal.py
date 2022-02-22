@@ -232,7 +232,7 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 
 
 @execute_node.register(ops.TimestampNow)
-def pre_execute_timestamp_now(op, *args, **kwargs):
+def execute_timestamp_now(op, *args, **kwargs):
     return pd.Timestamp('now')
 
 

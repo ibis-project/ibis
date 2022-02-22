@@ -11,4 +11,5 @@ from .selection import *  # noqa: F401,F403
 from .strings import *  # noqa: F401,F403
 from .structs import *  # noqa: F401,F403
 from .temporal import *  # noqa: F401,F403
+from .udf import *  # noqa: F401,F403
 from .window import *  # noqa: F401,F403

@@ -11,8 +11,5 @@ for types, func in pandas_dispatch.execute_node.funcs.items():
 execute = Dispatcher('execute')
 execute.funcs.update(core_dispatch.execute.funcs)
 
-pre_execute = Dispatcher('pre_execute')
-pre_execute.funcs.update(core_dispatch.pre_execute.funcs)
-
 execute_literal = Dispatcher('execute_literal')
 execute_literal.funcs.update(core_dispatch.execute_literal.funcs)
