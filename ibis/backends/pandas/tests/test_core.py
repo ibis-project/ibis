@@ -11,10 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.core import is_computable_input
-from ibis.backends.pandas.dispatch import (
-    execute_node,
-    pre_execute,
-)
+from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import execute
 from ibis.expr.scope import Scope
 
@@ -40,7 +37,7 @@ def ibis_table(core_client):
     return core_client.table('df')
 
 
-@pytest.mark.parametrize('func', [execute_node, pre_execute])
+@pytest.mark.parametrize('func', [execute_node])
 def test_no_execute_ambiguities(func):
     assert not ambiguities(func.funcs)
 
@@ -59,26 +56,6 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     t = Backend().from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
-
-
-def test_pre_execute_basic():
-    """
-    Test that pre_execute has intercepted execution and provided its own
-    scope dict
-    """
-
-    @pre_execute.register(ops.Add)
-    def pre_execute_test(op, *clients, scope=None, **kwargs):
-        return Scope({op: 4}, None)
-
-    one = ibis.literal(1)
-    expr = one + one
-    result = execute(expr)
-    assert result == 4
-
-    del pre_execute.funcs[(ops.Add,)]
-    pre_execute.reorder()
-    pre_execute._cache.clear()
 
 
 def test_execute_parameter_only():

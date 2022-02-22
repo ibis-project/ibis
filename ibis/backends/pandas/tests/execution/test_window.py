@@ -8,13 +8,10 @@ from pandas.util import testing as tm
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.aggcontext import AggregationContext, window_agg_udf
-from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import get_aggcontext
-from ibis.expr.scope import Scope
 from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.udf.vectorized import reduction
 
@@ -581,30 +578,6 @@ def test_window_with_mlb():
                 ibis.trailing_window(rows_with_mlb, order_by='time')
             )
         )
-
-
-def test_window_has_pre_execute_scope():
-    signature = ops.Lag, Backend
-    called = [0]
-
-    @pre_execute.register(*signature)
-    def test_pre_execute(op, client, **kwargs):
-        called[0] += 1
-        return Scope()
-
-    data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
-    df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
-    client = Backend().connect({'df': df})
-    t = client.table('df')
-    window = ibis.window(order_by='value')
-    expr = t.key.lag(1).over(window).name('foo')
-    result = expr.execute()
-    assert result is not None
-
-    # once in window op at the top to pickup any scope changes before computing
-    # twice in window op when calling execute on the ops.Lag node at the
-    # beginning of execute and once before the actual computation
-    assert called[0] == 3
 
 
 def test_window_grouping_key_has_scope(t, df):

@@ -11,8 +11,8 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.udf.vectorized as udf
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pandas.udf import udf
 
 
 @pytest.mark.parametrize(

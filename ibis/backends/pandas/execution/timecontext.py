@@ -8,9 +8,6 @@ For operations like window, asof_join that adjust time context in execution,
 implement ``compute_time_context`` to pass different time contexts to child
 nodes.
 
-If ``pre_execute`` preloads any data, it should use timecontext to trim data
-to be in the time range.
-
 ``execute_node`` of a leaf node can use timecontext to trim data, or to pass
 it as a filter in the database query.
 

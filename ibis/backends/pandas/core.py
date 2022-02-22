@@ -48,16 +48,7 @@ time context, such as window, asof_join, etc.
 By default, this function simply pass the unchanged time context to all
 children nodes.
 
-
-2. ``pre_execute``
-------------------
-Second, ``pre_execute`` is called.
-This function serves a similar purpose to ``data_preload``, the key difference
-being that ``pre_execute`` is called *every time* there's a call to execute.
-
-By default this function does nothing.
-
-3. ``execute_node``
+2. ``execute_node``
 -------------------
 
 Then, when an expression is ready to be evaluated we call
@@ -102,7 +93,7 @@ from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
 
 from . import aggcontext as agg_ctx
-from .dispatch import execute_literal, execute_node, pre_execute
+from .dispatch import execute_literal, execute_node
 from .trace import trace
 
 integer_types = np.integer, int
@@ -174,32 +165,21 @@ def execute_with_scope(
     """
     op = expr.op()
 
-    # Call pre_execute, to allow clients to intercept the expression before
-    # computing anything *and* before associating leaf nodes with data. This
-    # allows clients to provide their own data for each leaf.
     if clients is None:
         clients = expr._find_backends()
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
 
-    pre_executed_scope = pre_execute(
-        op,
-        *clients,
-        scope=scope,
-        timecontext=timecontext,
-        aggcontext=aggcontext,
-        **kwargs,
-    )
-    new_scope = scope.merge_scope(pre_executed_scope)
     result = execute_until_in_scope(
         expr,
-        new_scope,
+        scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
         clients=clients,
         **kwargs,
     ).get_value(op, timecontext)
+
     return result
 
 
@@ -249,8 +229,6 @@ def execute_until_in_scope(
     # computable whereas ``list``s are not
     computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
 
-    # pre_executed_states is a list of states with same the length of
-    # computable_args, these states are passed to each arg
     if timecontext:
         arg_timecontexts = compute_time_context(
             op,
@@ -261,22 +239,6 @@ def execute_until_in_scope(
         )
     else:
         arg_timecontexts = [None] * len(computable_args)
-
-    pre_executed_scope = pre_execute(
-        op,
-        *clients,
-        scope=scope,
-        timecontext=timecontext,
-        aggcontext=aggcontext,
-        **kwargs,
-    )
-
-    new_scope = scope.merge_scope(pre_executed_scope)
-
-    # Short circuit: if pre_execute puts op in scope, then we don't need to
-    # execute its computable_args
-    if new_scope.get_value(op, timecontext) is not None:
-        return new_scope
 
     # recursively compute each node's arguments until we've changed type.
     # compute_time_context should return with a list with the same length
@@ -291,7 +253,7 @@ def execute_until_in_scope(
     scopes = [
         execute_until_in_scope(
             arg,
-            new_scope,
+            scope,
             timecontext=timecontext,
             aggcontext=aggcontext,
             clients=clients,
@@ -311,7 +273,7 @@ def execute_until_in_scope(
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
 
-    new_scope = new_scope.merge_scopes(scopes)
+    new_scope = Scope().merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
         new_scope.get_value(arg.op(), timecontext)

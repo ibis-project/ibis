@@ -41,7 +41,6 @@ class BasePandasBackend(BaseBackend):
         """
         # register dispatchers
         from . import execution  # noqa F401
-        from . import udf  # noqa F401
 
         self.dictionary = dictionary
         self.schemas: MutableMapping[str, sch.Schema] = {}

@@ -4,7 +4,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.udf import udf
+import ibis.udf.vectorized as udf
 
 
 def make_t():

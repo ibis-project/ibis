@@ -6,8 +6,6 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base import BaseBackend
-from ibis.expr.scope import Scope
 
 from ..core import (
     date_types,
@@ -16,7 +14,7 @@ from ..core import (
     timedelta_types,
     timestamp_types,
 )
-from ..dispatch import execute_node, pre_execute
+from ..dispatch import execute_node
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, str)
@@ -233,11 +231,9 @@ def execute_timestamp_from_unix(op, data, **kwargs):
     return pd.to_datetime(data, unit=op.unit)
 
 
-@pre_execute.register(ops.TimestampNow)
-@pre_execute.register(ops.TimestampNow, BaseBackend)
+@execute_node.register(ops.TimestampNow)
 def pre_execute_timestamp_now(op, *args, **kwargs):
-    timecontext = kwargs.get('timecontext', None)
-    return Scope({op: pd.Timestamp('now')}, timecontext)
+    return pd.Timestamp('now')
 
 
 @execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))

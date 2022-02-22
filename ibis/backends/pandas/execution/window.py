@@ -30,7 +30,7 @@ from ..core import (
     timedelta_types,
     timestamp_types,
 )
-from ..dispatch import execute_node, pre_execute
+from ..dispatch import execute_node
 from ..execution import util
 
 
@@ -281,18 +281,9 @@ def execute_window_op(
         # adjusted_timecontext in later execution phases
         adjusted_timecontext = arg_timecontexts[0]
 
-    pre_executed_scope = pre_execute(
-        operand_op,
-        *clients,
-        scope=scope,
-        timecontext=adjusted_timecontext,
-        aggcontext=aggcontext,
-        **kwargs,
-    )
     if scope is None:
-        scope = pre_executed_scope
-    else:
-        scope = scope.merge_scope(pre_executed_scope)
+        scope = Scope()
+
     (root,) = op.root_tables()
     root_expr = root.to_expr()
 

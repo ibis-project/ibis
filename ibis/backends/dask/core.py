@@ -83,7 +83,6 @@ stored in value
 
 See ibis.common.scope for details about the implementaion.
 """
-import functools
 from typing import Optional
 
 import dask.dataframe as dd
