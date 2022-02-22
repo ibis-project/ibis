@@ -79,24 +79,4 @@ datatype : ibis.expr.datatypes.DataType
 )
 
 
-post_execute = Dispatcher(
-    'post_execute',
-    doc="""\
-Execute code on the result of a computation.
-
-Parameters
-----------
-op : ibis.expr.operations.Node
-    The operation that was just executed
-data : object
-    The result of the computation
-""",
-)
-
-
-@post_execute.register(ops.Node, object)
-def post_execute_default(op, data, **kwargs):
-    return data
-
-
 execute = Dispatcher("execute")

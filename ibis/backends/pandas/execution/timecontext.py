@@ -14,8 +14,6 @@ to be in the time range.
 ``execute_node`` of a leaf node can use timecontext to trim data, or to pass
 it as a filter in the database query.
 
-In some cases, data need to be trimmed in ``post_execute``.
-
 Note: In order to use the feature we implemented here, there must be a
 column of Timestamp type, and named as 'time' in TableExpr. And this 'time'
 column should be preserved across the expression tree. If 'time' column is
