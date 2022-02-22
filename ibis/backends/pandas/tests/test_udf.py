@@ -9,7 +9,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.udf import nullable, udf
+from ibis.backends.pandas.udf import udf
 
 
 @pytest.fixture
@@ -209,16 +209,6 @@ def test_udaf_groupby():
 
     columns = ['key', 'my_corr']
     tm.assert_frame_equal(result[columns], expected[columns])
-
-
-def test_nullable():
-    t = ibis.table([('a', 'int64')])
-    assert nullable(t.a.type()) == (type(None),)
-
-
-def test_nullable_non_nullable_field():
-    t = ibis.table([('a', dt.String(nullable=False))])
-    assert nullable(t.a.type()) == ()
 
 
 def test_udaf_parameter_mismatch():
