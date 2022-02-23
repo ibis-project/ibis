@@ -19,7 +19,7 @@ fmt:
 
 # run all non-backend tests in parallel; additional arguments are forwarded to pytest
 check *args:
-    pytest -m 'not backend' -q -n auto {{ args }}
+    pytest -m 'not backend' -q -n auto --dist loadgroup {{ args }}
 
 # run pytest for ci; additional arguments are forwarded to pytest
 ci-check *args:
@@ -43,7 +43,7 @@ test +backends:
     pytest_args=("-m" "$(sed 's/ / or /g' <<< '{{ backends }}')")
 
     if ! [[ "{{ backends }}" =~ impala|pyspark ]]; then
-        pytest_args+=("-n" "auto" "-q")
+        pytest_args+=("-n" "auto" "-q" "--dist" "loadgroup")
     fi
 
     pytest "${pytest_args[@]}"
