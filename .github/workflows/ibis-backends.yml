@@ -99,7 +99,7 @@ jobs:
 
       - name: run non-pyspark tests
         if: ${{ matrix.backend.name != 'pyspark' }}
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
 
       - name: run pyspark tests
         if: ${{ matrix.backend.name == 'pyspark' }}

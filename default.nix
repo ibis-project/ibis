@@ -61,7 +61,7 @@ let
 
         runHook preCheck
 
-        pytest --numprocesses auto -m '${lib.concatStringsSep " or " backends} or core'
+        pytest --numprocesses auto --dist loadgroup -m '${lib.concatStringsSep " or " backends} or core'
 
         runHook postCheck
       '';

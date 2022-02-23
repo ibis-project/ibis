@@ -126,6 +126,9 @@ def pytest_collection_modifyitems(session, config, items):
             # anything else is a "core" test and is run by default
             item.add_marker(pytest.mark.core)
 
+        if "sqlite" in item.nodeid:
+            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
+
 
 @lru_cache(maxsize=None)
 def _get_backends_to_test(
