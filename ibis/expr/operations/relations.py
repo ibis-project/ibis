@@ -11,7 +11,7 @@ from ...common import exceptions as com
 from .. import rules as rlz
 from .. import schema as sch
 from .. import types as ir
-from .core import Node, all_equal, distinct_roots
+from .core import Node, UnaryOp, all_equal, distinct_roots
 from .sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
@@ -80,6 +80,36 @@ class DatabaseTable(PhysicalTable):
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
+
+@public
+class RbsFileTable(PhysicalTable):
+    name = rlz.instance_of(str)
+    schema = rlz.instance_of(sch.Schema)
+
+    def __init__(self, path):
+        from pyarrow.ipc import RecordBatchStreamReader
+        from ibis.expr.datatypes.pyarrow import infer_pyarrow_schema
+        self.name = path
+
+        with RecordBatchStreamReader(path) as reader:
+            self.schema = infer_pyarrow_schema(reader.schema)
+
+@public
+class WriteRbsFile(TableNode, sch.HasSchema):
+    """Node that writes to a local Arrow RecordBatchStream file"""
+
+    # TODO: What table should this node output? Empty table?
+    # Do we need an sink type expression in ibis?
+    table = rlz.table
+    output_path = rlz.instance_of(str)
+
+    def __init__(self, table, path):
+        self.table = table
+        self.output_path = path
+
+    @property
+    def schema(self):
+        return self.table.schema()
 
 
 @public

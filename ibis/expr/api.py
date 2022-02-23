@@ -209,6 +209,7 @@ __all__ = (
     'trailing_window',
     'where',
     'window',
+    'read_rbs',
 )
 
 
@@ -326,6 +327,11 @@ def table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
         schema = _schema(pairs=schema)
 
     node = ops.UnboundTable(schema, name=name)
+    return node.to_expr()
+
+
+def read_rbs(path: str) -> ir.TableExpr:
+    node = ops.RbsFileTable(path)
     return node.to_expr()
 
 
@@ -5458,6 +5464,8 @@ def _rowid(self) -> ir.IntegerValue:
     """
     return ops.RowID().to_expr()
 
+def write_rbs(table, path) -> ir.TableExpr:
+    return ops.WriteRbsFile(table, path).to_expr()
 
 _table_methods = {
     'aggregate': aggregate,
@@ -5493,6 +5501,7 @@ _table_methods = {
     'difference': _table_difference,
     'view': _table_view,
     'rowid': _rowid,
+    'write_rbs': write_rbs,
 }
 
 
