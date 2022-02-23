@@ -76,7 +76,7 @@ class ScalarExpr(ValueExpr):
         return table.projection([self])
 
     def __rich_console__(self, console, options):
-        return console.render(str(self.execute()))
+        return console.render(str(self.execute()), options=options)
 
 
 @public
@@ -88,9 +88,7 @@ class ColumnExpr(ValueExpr):
         return self._arg
 
     def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
+        """Promote this column expression to a table projection."""
         from .relations import TableExpr
 
         roots = self.op().root_tables()
@@ -105,7 +103,14 @@ class ColumnExpr(ValueExpr):
         return table.projection([self])
 
     def __rich_console__(self, console, options):
-        return self.to_projection().__rich_console__(console, options)
+        name = self._safe_name
+        named = self.name(
+            name
+            if name is not None
+            else f"unnamed({self.op().__class__.__name__})"
+        )
+        projection = named.to_projection()
+        return console.render(projection, options=options)
 
 
 @public

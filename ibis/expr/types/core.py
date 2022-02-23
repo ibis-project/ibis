@@ -5,6 +5,7 @@ import warnings
 import webbrowser
 from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
+import pandas as pd
 from public import public
 
 import ibis
@@ -27,6 +28,11 @@ except ImportError:
     IS_RICH_INSTALLED = False
 else:
     IS_RICH_INSTALLED = True
+
+
+def _repr_pandas(result: pd.DataFrame | pd.Series, nrows: int) -> str:
+    with pd.option_context('display.max_rows', nrows):
+        return repr(result)
 
 
 @public
@@ -56,11 +62,9 @@ class Expr:
             )
             return output
 
-        if not IS_RICH_INSTALLED or not ibis.options.repr.rich.enabled:
-            import pandas as pd
-
-            with pd.option_context('display.max_rows', ibis.options.repr.rows):
-                return repr(result)
+        repr_options = ibis.options.repr
+        if not IS_RICH_INSTALLED or not repr_options.rich.enabled:
+            return _repr_pandas(result, repr_options.rows)
 
         try:
             console = Console()
@@ -68,9 +72,8 @@ class Expr:
                 console.print(self)
             return capture.get()
         except Exception as e:
-            warnings.warn(e)
-            with pd.option_context('display.max_rows', ibis.options.repr.rows):
-                return repr(result)
+            warnings.warn(str(e))
+            return _repr_pandas(result, repr_options.rows)
 
     def __hash__(self) -> int:
         return hash(self._key)
@@ -89,7 +92,7 @@ class Expr:
 
     @property
     def _safe_name(self) -> str | None:
-        """Get the name of an expression `expr` if one exists
+        """Get the name of an expression `expr` if one exists.
 
         Returns
         -------

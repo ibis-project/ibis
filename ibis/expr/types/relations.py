@@ -56,7 +56,7 @@ class TableExpr(Expr):
         for column in columns:
             table.add_column(column, justify="center")
 
-        for row in result.iloc[:-1].itertuples(index=False):
+        for row in result.iloc[:nrows].itertuples(index=False):
             table.add_row(*map(repr, row))
 
         if len(result) > nrows:
