@@ -84,7 +84,7 @@ jobs:
       - uses: extractions/setup-just@v1
 
       - name: run tests
-        run: just check
+        run: just check --junitxml=junit.xml
 
       - name: publish test report
         uses: actions/upload-artifact@v2
