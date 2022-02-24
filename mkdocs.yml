@@ -17,7 +17,7 @@ theme:
   icon:
     repo: fontawesome/brands/github
   logo: static/icons/ibis/logo.svg
-  favicon: static/favicon.ico
+  favicon: static/icons/ibis/logo.svg
   palette:
     scheme: slate
     primary: teal

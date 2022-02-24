@@ -2,11 +2,10 @@
 
 ## String Generating Backends
 
-The first category of backend translate Ibis expressions into strings.
-Generally speaking these backends handle their own execution.
+The first category of backend translate Ibis expressions into string queries.
 
-The compiler turns each expression into a string and passes that string to the
-database through a driver API.
+The compiler turns each expression into a string query and passes that query to the
+database through a driver API for execution.
 
 - [Apache Impala](Impala.md)
 - [ClickHouse](ClickHouse.md)
@@ -15,8 +14,8 @@ database through a driver API.
 
 ## Expression Generating Backends
 
-The next category of backends translates ibis expressions into other
-expressions.
+The next category of backends translates ibis expressions into another
+system's expressions, for example, SQLAlchemy.
 
 Instead of generating strings for each expression these backends produce
 another kind of expression and typically have high-level APIs for execution.
@@ -30,7 +29,7 @@ another kind of expression and typically have high-level APIs for execution.
 
 ## Direct Execution Backends
 
-The pandas backend is the only direction execution backend. A full description
+The pandas backend is the only direct execution backend. A full description
 of the implementation can be found in the module docstring of the pandas
 backend located in `ibis/backends/pandas/core.py`.
 

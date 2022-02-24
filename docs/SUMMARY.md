@@ -6,13 +6,12 @@
     * [Lazy Mode and Logging](tutorial/03-Expressions-Lazy-Mode-Logging.ipynb)
     * [More Value Expressions](tutorial/04-More-Value-Expressions.ipynb)
     * [Creating and Inserting External Data](tutorial/05-IO-Create-Insert-External-Data.ipynb)
-    * Advanced Topics
-        * [Complex Filtering](tutorial/06-ComplexFiltering.ipynb)
-        * [Analytics Tools](tutorial/07-Analytics-Tools.ipynb)
-        * [Geospatial Analysis](tutorial/08-Geospatial-Analysis.ipynb)
+    * [Complex Filtering](tutorial/06-ComplexFiltering.ipynb)
+    * [Analytics Tools](tutorial/07-Analytics-Tools.ipynb)
+    * [Geospatial Analysis](tutorial/08-Geospatial-Analysis.ipynb)
 * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
 * [User Guide](user_guide/)
-* [Backends](backends/)
+* [Execution Backends](backends/)
 * [Contribute](contribute/)
 * Community
     * [About](about/)

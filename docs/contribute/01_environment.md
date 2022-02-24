@@ -126,6 +126,12 @@ hide:
 
     {% endfor %}
 
+Once you've set up an environment, try building the documentation:
+
+```sh
+mkdocs serve
+```
+
 {% for data in config.extra.support_levels.values() %}
 [^{{ loop.index }}]: {{ data.description }}
 {% endfor %}
