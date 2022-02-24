@@ -3,7 +3,7 @@
 {% if is_experimental %}
 !!! experimental "{% if version_added %}New in v{{ version_added }}{% else %}Experimental{% endif %}"
 
-    The {{ backend_name }} backend is experimental and is subject to breaking changes.
+    The {{ backend_name }} backend is experimental and is subject to backwards incompatible changes.
 
 {% endif %}
 
