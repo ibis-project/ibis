@@ -1157,6 +1157,16 @@ def compile_outer_join(t, expr, scope, timecontext, **kwargs):
     return compile_join(t, expr, scope, timecontext, how='outer')
 
 
+@compiles(ops.LeftSemiJoin)
+def compile_left_semi_join(t, expr, scope, timecontext, **kwargs):
+    return compile_join(t, expr, scope, timecontext, how='leftsemi')
+
+
+@compiles(ops.LeftAntiJoin)
+def compile_left_anti_join(t, expr, scope, timecontext, **kwargs):
+    return compile_join(t, expr, scope, timecontext, how='leftanti')
+
+
 def compile_join(t, expr, scope, timecontext, *, how):
     op = expr.op()
 
