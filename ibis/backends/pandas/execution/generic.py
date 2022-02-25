@@ -1022,7 +1022,10 @@ def execute_node_nullif_scalar_series(op, value, series, **kwargs):
 
 
 def coalesce(values):
-    return functools.reduce(lambda x, y: x if not pd.isnull(x) else y, values)
+    return functools.reduce(
+        lambda a1, a2: np.where(pd.isnull(a1), a2, a1),
+        values,
+    )
 
 
 @toolz.curry
