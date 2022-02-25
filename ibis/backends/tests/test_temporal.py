@@ -1,3 +1,4 @@
+import operator
 import warnings
 
 import numpy as np
@@ -401,20 +402,24 @@ def test_temporal_binop_pandas_timedelta(
 @pytest.mark.parametrize(
     'comparison_fn',
     [
-        lambda t: t.timestamp_col > pd.Timestamp('20100301'),
-        lambda t: t.timestamp_col >= pd.Timestamp('20100301'),
-        lambda t: t.timestamp_col < pd.Timestamp('20100301'),
-        lambda t: t.timestamp_col <= pd.Timestamp('20100301'),
-        lambda t: t.timestamp_col == pd.Timestamp('20100301'),
-        lambda t: t.timestamp_col != pd.Timestamp('20100301'),
+        operator.gt,
+        operator.ge,
+        operator.lt,
+        operator.le,
+        operator.eq,
+        operator.ne,
     ],
 )
-@pytest.mark.notimpl(["datafusion", "sqlite"])
+@pytest.mark.notimpl(["sqlite"])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):
-    expr = alltypes.filter(comparison_fn(alltypes))
-    expected = df[comparison_fn(df)]
+    ts = pd.Timestamp('20100301', tz="UTC").to_pydatetime()
+    expr = alltypes.filter(
+        comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
+    )
+    col = df.timestamp_col.dt.tz_localize("UTC")
+    expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
@@ -502,13 +507,13 @@ def test_to_timestamp(backend, con, unit):
 @pytest.mark.parametrize(
     ('date', 'expected_index', 'expected_day'),
     [
-        ('2017-01-01', 6, 'Sunday'),
-        ('2017-01-02', 0, 'Monday'),
-        ('2017-01-03', 1, 'Tuesday'),
-        ('2017-01-04', 2, 'Wednesday'),
-        ('2017-01-05', 3, 'Thursday'),
-        ('2017-01-06', 4, 'Friday'),
-        ('2017-01-07', 5, 'Saturday'),
+        param('2017-01-01', 6, 'Sunday', id="sunday"),
+        param('2017-01-02', 0, 'Monday', id="monday"),
+        param('2017-01-03', 1, 'Tuesday', id="tuesday"),
+        param('2017-01-04', 2, 'Wednesday', id="wednesday"),
+        param('2017-01-05', 3, 'Thursday', id="thursday"),
+        param('2017-01-06', 4, 'Friday', id="friday"),
+        param('2017-01-07', 5, 'Saturday', id="saturday"),
     ],
 )
 @pytest.mark.notimpl(["datafusion", "impala"])
@@ -541,13 +546,15 @@ def test_day_of_week_column(backend, con, alltypes, df):
 @pytest.mark.parametrize(
     ('day_of_week_expr', 'day_of_week_pandas'),
     [
-        (
+        param(
             lambda t: t.timestamp_col.day_of_week.index().count(),
             lambda s: s.dt.dayofweek.count(),
+            id="day_of_week_index",
         ),
-        (
+        param(
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
+            id="day_of_week_full_name",
         ),
     ],
 )

@@ -260,8 +260,8 @@ def test_non_equijoin(alltypes):
         [
             ('any_inner_join', 'ANY INNER JOIN'),
             ('inner_join', 'ALL INNER JOIN'),
-            ('any_left_join', 'ANY LEFT JOIN'),
-            ('left_join', 'ALL LEFT JOIN'),
+            ('any_left_join', 'ANY LEFT OUTER JOIN'),
+            ('left_join', 'ALL LEFT OUTER JOIN'),
         ],
         [
             ('playerID', 'playerID'),

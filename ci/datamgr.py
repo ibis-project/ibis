@@ -198,7 +198,7 @@ def cli(verbose):
 
 @cli.command()
 @click.pass_context
-def create(ctx):
+def generate_parquet(ctx):
     import pyarrow.parquet as pq
 
     executor = ctx.obj["executor"]

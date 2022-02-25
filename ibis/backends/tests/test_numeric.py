@@ -531,7 +531,6 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
 
 @pytest.mark.notimpl(
     [
-        "clickhouse",
         "dask",
         "datafusion",
         "pandas",
