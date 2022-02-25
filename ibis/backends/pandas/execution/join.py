@@ -89,13 +89,26 @@ def _construct_join_predicate_columns(op, **kwargs):
             predicate.right, **kwargs
         )
         on[right_pred_root].append(new_right_column)
+    return on[left_op], on[right_op]
+
+
+@execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
+def execute_join(op, left, right, **kwargs):
+    op_type = type(op)
+
+    try:
+        how = constants.JOIN_TYPES[op_type]
+    except KeyError:
+        raise NotImplementedError(f'{op_type.__name__} not supported')
+
+    left_on, right_on = _construct_join_predicate_columns(op, **kwargs)
 
     df = pd.merge(
         left,
         right,
         how=how,
-        left_on=on[left_op],
-        right_on=on[right_op],
+        left_on=left_on,
+        right_on=right_on,
         suffixes=constants.JOIN_SUFFIXES,
     )
     return df
