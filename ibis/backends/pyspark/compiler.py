@@ -649,6 +649,17 @@ def compile_arbitrary(t, expr, scope, timecontext, context=None, **kwargs):
     )
 
 
+@compiles(ops.Coalesce)
+def compile_coalesce(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    src_columns = t.translate(op.arg, scope, timecontext)
+    if len(src_columns) == 1:
+        return src_columns[0]
+    else:
+        return F.coalesce(*src_columns)
+
+
 @compiles(ops.Greatest)
 def compile_greatest(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
