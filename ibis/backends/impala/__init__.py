@@ -474,8 +474,6 @@ class Backend(BaseSQLBackend):
 
         names, types = zip(*pairs)
         ibis_types = [udf.parse_type(type.lower()) for type in types]
-        names = [name.lower() for name in names]
-
         return sch.Schema(names, ibis_types)
 
     @property
@@ -990,13 +988,6 @@ class Backend(BaseSQLBackend):
         cur.fetchall()
         names, ibis_types = self._adapt_types(cur.description)
         cur.release()
-
-        # per #321; most Impala tables will be lower case already, but Avro
-        # data, depending on the version of Impala, might have field names in
-        # the metastore cased according to the explicit case in the declared
-        # avro schema. This is very annoying, so it's easier to just conform on
-        # all lowercase fields from Impala.
-        names = [x.lower() for x in names]
 
         return sch.Schema(names, ibis_types)
 
