@@ -167,9 +167,16 @@ class Schema:
         -----
         Mutates `df`
         """
+        schema_names = self.names
+        data_columns = df.columns
 
-        for column, dtype in self.items():
+        assert len(schema_names) == len(
+            data_columns
+        ), "schema column count does not match input data column count"
+
+        for column, dtype in zip(data_columns, self.types):
             pandas_dtype = dtype.to_pandas()
+
             col = df[column]
             col_dtype = col.dtype
 
@@ -181,8 +188,14 @@ class Schema:
                 not_equal = True
 
             if not_equal or isinstance(dtype, dt.String):
-                df[column] = convert(col_dtype, dtype, col)
+                new_col = convert(col_dtype, dtype, col)
+            else:
+                new_col = col
+            df[column] = new_col
 
+        # return data with the schema's columns which may be different than the
+        # input columns
+        df.columns = schema_names
         return df
 
 

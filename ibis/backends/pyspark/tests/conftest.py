@@ -23,7 +23,6 @@ def get_common_spark_testing_client(data_directory, connect):
         SparkSession.builder.appName("ibis_testing")
         .master("local[1]")
         .config("spark.cores.max", 1)
-        .config("spark.driver.bindAddress", "127.0.0.1")
         .config("spark.executor.heartbeatInterval", "3600s")
         .config("spark.executor.instances", 1)
         .config("spark.network.timeout", "4200s")

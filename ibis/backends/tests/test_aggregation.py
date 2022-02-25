@@ -375,19 +375,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
 @pytest.mark.xfail_backends(
     [('mysql', 'Issue #2131'), ('postgres', 'Issue #2132')]
 )
-@mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "pandas",
-        "dask",
-        "duckdb",
-        "hdf5",
-        "csv",
-        "parquet",
-        "pyspark",
-    ]
-)
+@mark.notimpl(["datafusion", "duckdb", "pandas", "dask", "pyspark"])
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -395,7 +383,8 @@ def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # and the field used by TopK
     t = alltypes.sort_by(alltypes.string_col)
     df = df.sort_values('string_col')
-    result = result_fn(t).execute()
+    expr = result_fn(t)
+    result = expr.execute()
     expected = expected_fn(df)
     assert result.shape[0] == expected.shape[0]
 

@@ -1,3 +1,7 @@
+import pandas as pd
+import pandas.util.testing as tm
+import pytest
+
 import ibis
 from ibis.expr import datatypes as dt
 
@@ -166,3 +170,21 @@ def test_nullable_output():
     assert 'bar  int64[non-nullable]' in sch_str
     assert 'baz  boolean' in sch_str
     assert 'baz  boolean[non-nullable]' not in sch_str
+
+
+@pytest.fixture
+def df():
+    return pd.DataFrame({"A": pd.Series([1], dtype="int8"), "b": ["x"]})
+
+
+def test_apply_to_column_rename(df):
+    schema = ibis.schema([("a", "int8"), ("B", "string")])
+    expected = df.rename({"A": "a", "b": "B"}, axis=1)
+    tm.assert_frame_equal(schema.apply_to(df.copy()), expected)
+
+
+def test_apply_to_column_order(df):
+    schema = ibis.schema([("a", "int8"), ("b", "string")])
+    expected = df.rename({"A": "a"}, axis=1)
+    new_df = schema.apply_to(df.copy())
+    tm.assert_frame_equal(new_df, expected)
