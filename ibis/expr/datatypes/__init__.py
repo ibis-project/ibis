@@ -1078,7 +1078,6 @@ def parse_type(text: str) -> DataType:
         | spaceless_string("int16").result(int16)
         | spaceless_string("int32").result(int32)
         | spaceless_string("int64").result(int64)
-        | spaceless_string("integer").result(int32)
         | spaceless_string("uint8").result(uint8)
         | spaceless_string("uint16").result(uint16)
         | spaceless_string("uint32").result(uint32)

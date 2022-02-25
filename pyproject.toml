@@ -37,7 +37,7 @@ dask = { version = ">=2021.10.0", optional = true, extras = [
   "dataframe"
 ] }
 datafusion = { version = ">=0.4,<0.5", optional = true }
-duckdb = { version = ">=0.3.2,<1", optional = true }
+duckdb = { version = ">=0.3.2,<0.4.0", optional = true }
 duckdb-engine = { version = ">=0.1.8,<0.2.0", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 GeoAlchemy2 = { version = ">=0.6.3,<0.11", optional = true }
@@ -107,7 +107,7 @@ all = [
 clickhouse = ["clickhouse-driver"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine"]
+duckdb = ["duckdb", "duckdb-engine", "sqlalchemy"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]

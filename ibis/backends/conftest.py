@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import platform
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -319,8 +320,14 @@ def alchemy_backend(request, data_directory):
     Runs the SQLAlchemy-based backends
     (sqlite, mysql, postgres)
     """
-    cls = _get_backend_conf(request.param)
-    return cls(data_directory)
+    if request.param == "duckdb" and platform.system() == "Windows":
+        pytest.xfail(
+            "windows prevents two connections to the same duckdb file "
+            "even in the same process"
+        )
+    else:
+        cls = _get_backend_conf(request.param)
+        return cls(data_directory)
 
 
 @pytest.fixture(scope='session')

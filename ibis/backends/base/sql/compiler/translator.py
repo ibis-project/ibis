@@ -266,7 +266,13 @@ class ExprTranslator:
 
     def _trans_param(self, expr):
         raw_value = self.context.params[expr.op()]
-        literal = ibis.literal(raw_value, type=expr.type())
+        dtype = expr.type()
+        if isinstance(dtype, dt.Struct):
+            literal = ibis.struct(raw_value, type=dtype)
+        elif isinstance(dtype, dt.Map):
+            literal = ibis.map(raw_value, type=dtype)
+        else:
+            literal = ibis.literal(raw_value, type=dtype)
         return self.translate(literal)
 
     @classmethod

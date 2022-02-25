@@ -2041,7 +2041,7 @@ all = ["clickhouse-driver", "dask", "datafusion", "duckdb", "duckdb-engine", "fs
 clickhouse = ["clickhouse-driver"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine"]
+duckdb = ["duckdb", "duckdb-engine", "sqlalchemy"]
 geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
@@ -2054,7 +2054,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "25f9f2c73188421a9f77728bf0ef931d85589e258403e6b766f6c123e9447b2a"
+content-hash = "774c4a57b2a46bcd70d6a8611624e4411e8547a00db8a44080adbb858cf67173"
 
 [metadata.files]
 appnope = [

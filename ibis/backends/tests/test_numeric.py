@@ -427,15 +427,16 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     ],
 )
 @pytest.mark.notimpl(["sqlite", "duckdb"])
+@pytest.mark.only_on_backends(["sqlite", "duckdb", "postgres", "mysql"])
 def test_sa_default_numeric_precision_and_scale(
-    alchemy_con, alchemy_backend, dialects, default_precisions, default_scales
+    con, backend, dialects, default_precisions, default_scales
 ):
     # TODO: find a better way to access ibis.sql.alchemy
     from ibis.backends.base.sql.alchemy import schema_from_table
 
-    dialect = dialects[alchemy_backend.name()]
-    default_precision = default_precisions[alchemy_backend.name()]
-    default_scale = default_scales[alchemy_backend.name()]
+    dialect = dialects[backend.name()]
+    default_precision = default_precisions[backend.name()]
+    default_scale = default_scales[backend.name()]
 
     typespec = [
         # name, sqlalchemy type, ibis type
@@ -454,7 +455,7 @@ def test_sa_default_numeric_precision_and_scale(
 
     # Create a table with the numeric types.
     table_name = 'test_sa_default_param_decimal'
-    engine = alchemy_con.con
+    engine = con.con
     table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
 
     # Check that we can correctly recover the default precision and scale.
@@ -462,7 +463,7 @@ def test_sa_default_numeric_precision_and_scale(
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)
-    alchemy_con.drop_table(table_name, force=True)
+    con.drop_table(table_name, force=True)
 
 
 @pytest.mark.notimpl(
