@@ -1,35 +1,17 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pytest import param
 
 import ibis
-from ibis.backends.pandas import Backend
 
-join_type = pytest.mark.parametrize(
+# SEMI and ANTI are checked in backend tests
+mutating_join_type = pytest.mark.parametrize(
     'how',
-    [
-        'inner',
-        'left',
-        'right',
-        'outer',
-        param(
-            'semi',
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason='Semi join not implemented'
-            ),
-        ),
-        param(
-            'anti',
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError, reason='Anti join not implemented'
-            ),
-        ),
-    ],
+    ['inner', 'left', 'right', 'outer'],
 )
 
 
-@join_type
+@mutating_join_type
 def test_join(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[
         left, right.other_value, right.key3
@@ -49,7 +31,7 @@ def test_cross_join(left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_project_left_table(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
     result = expr.execute()
@@ -68,7 +50,7 @@ def test_cross_join_project_left_table(left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(
         right, [left.key == right.key, left.key2 == right.key3], how=how
@@ -80,7 +62,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_multiple_predicates_written_as_one(
     how, left, right, df1, df2
 ):
@@ -95,7 +77,7 @@ def test_join_with_multiple_predicates_written_as_one(
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_invalid_predicates(how, left, right):
     predicate = (left.key == right.key) & (left.key2 <= right.key3)
     expr = left.join(right, predicate, how=how)
@@ -108,7 +90,7 @@ def test_join_with_invalid_predicates(how, left, right):
         expr.execute()
 
 
-@join_type
+@mutating_join_type
 @pytest.mark.xfail(reason='Hard to detect this case')
 def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
     left = left.mutate(x=left.value * 2)
@@ -121,7 +103,7 @@ def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
         expr.execute()
 
 
-@join_type
+@mutating_join_type
 def test_join_with_duplicate_non_key_columns_not_selected(
     how, left, right, df1, df2
 ):
@@ -141,7 +123,7 @@ def test_join_with_duplicate_non_key_columns_not_selected(
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_post_expression_selection(how, left, right, df1, df2):
     join = left.join(right, left.key == right.key, how=how)
     expr = join[left.key, left.value, right.other_value]
@@ -152,7 +134,7 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_post_expression_filter(how, left):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
@@ -170,7 +152,7 @@ def test_join_with_post_expression_filter(how, left):
     tm.assert_frame_equal(result, expected)
 
 
-@join_type
+@mutating_join_type
 def test_multi_join_with_post_expression_filter(how, left, df1):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
@@ -197,7 +179,7 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     tm.assert_frame_equal(result, expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
     join = left.join(right, right.key.length() == left.key.length(), how=how)
@@ -217,7 +199,7 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
     join = left.join(right, right.key.length() == left.key.length(), how=how)
@@ -239,7 +221,7 @@ def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@join_type
+@mutating_join_type
 def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     # also test that the order of operands in the predicate doesn't matter
     right = client.table('df3')
@@ -358,7 +340,7 @@ def test_keyed_asof_join_with_tolerance(
 def test_select_on_unambiguous_join(how, func):
     df_t = pd.DataFrame({'a0': [1, 2, 3], 'b1': list("aab")})
     df_s = pd.DataFrame({'a1': [2, 3, 4], 'b2': list("abc")})
-    con = Backend().connect({"t": df_t, "s": df_s})
+    con = ibis.pandas.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     method = getattr(t, f"{how}_join")
@@ -388,7 +370,7 @@ def test_select_on_unambiguous_asof_join(func):
     df_s = pd.DataFrame(
         {'a1': [2, 3, 4], 'b2': pd.date_range("20171230", periods=3)}
     )
-    con = Backend().connect({"t": df_t, "s": df_s})
+    con = ibis.pandas.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)

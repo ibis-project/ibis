@@ -56,8 +56,13 @@ class ClickhouseSelect(Select):
 class ClickhouseTableSetFormatter(TableSetFormatter):
 
     _join_names = {
-        ops.InnerJoin: 'ALL INNER JOIN',
-        ops.LeftJoin: 'ALL LEFT JOIN',
+        ops.InnerJoin: 'INNER JOIN',
+        ops.LeftJoin: 'LEFT OUTER JOIN',
+        ops.RightJoin: 'RIGHT OUTER JOIN',
+        ops.OuterJoin: 'FULL OUTER JOIN',
+        ops.CrossJoin: 'CROSS JOIN',
+        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
+        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
         ops.AnyInnerJoin: 'ANY INNER JOIN',
         ops.AnyLeftJoin: 'ANY LEFT JOIN',
     }

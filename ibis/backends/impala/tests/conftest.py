@@ -41,13 +41,29 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             database=env.test_data_db,
         )
 
+    def _get_original_column_names(self, tablename: str) -> list[str]:
+        import pyarrow.parquet as pq
+
+        pq_file = pq.ParquetFile(
+            self.data_directory
+            / "parquet"
+            / tablename
+            / f"{tablename}.parquet"
+        )
+        return pq_file.schema.names
+
+    def _get_renamed_table(self, tablename: str) -> ir.TableExpr:
+        t = self.connection.table(tablename)
+        original_names = self._get_original_column_names(tablename)
+        return t.relabel(dict(zip(t.columns, original_names)))
+
     @property
     def batting(self) -> ir.TableExpr:
-        return None
+        return self._get_renamed_table("batting")
 
     @property
     def awards_players(self) -> ir.TableExpr:
-        return None
+        return self._get_renamed_table("awards_players")
 
 
 class IbisTestEnv:

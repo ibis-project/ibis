@@ -1,3 +1,4 @@
+import functools
 import operator
 
 import pandas as pd
@@ -40,15 +41,35 @@ def execute_cross_join(op, left, right, **kwargs):
     )
 
 
-@execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
-def execute_join(op, left, right, **kwargs):
-    op_type = type(op)
+def _get_semi_anti_join_filter(op, left, right, **kwargs):
+    left_on, right_on = _construct_join_predicate_columns(op, **kwargs)
+    inner = pd.merge(
+        left,
+        right,
+        how="inner",
+        left_on=left_on,
+        right_on=right_on,
+        suffixes=constants.JOIN_SUFFIXES,
+    )
+    predicates = [left.loc[:, key].isin(inner.loc[:, key]) for key in left_on]
+    return functools.reduce(operator.and_, predicates)
 
-    try:
-        how = constants.JOIN_TYPES[op_type]
-    except KeyError:
-        raise NotImplementedError(f'{op_type.__name__} not supported')
 
+@execute_node.register(ops.LeftSemiJoin, pd.DataFrame, pd.DataFrame)
+def execute_left_semi_join(op, left, right, **kwargs):
+    """Execute a left semi join in pandas."""
+    inner_filt = _get_semi_anti_join_filter(op, left, right, **kwargs)
+    return left.loc[inner_filt, :]
+
+
+@execute_node.register(ops.LeftAntiJoin, pd.DataFrame, pd.DataFrame)
+def execute_left_anti_join(op, left, right, **kwargs):
+    """Execute a left anti join in pandas."""
+    inner_filt = _get_semi_anti_join_filter(op, left, right, **kwargs)
+    return left.loc[~inner_filt, :]
+
+
+def _construct_join_predicate_columns(op, **kwargs):
     left_op = op.left.op()
     right_op = op.right.op()
 

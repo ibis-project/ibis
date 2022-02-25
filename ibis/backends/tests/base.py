@@ -72,6 +72,7 @@ class BackendTest(abc.ABC):
 
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)
+        self.data_directory = data_directory
 
     def __str__(self):
         return f'<BackendTest {self.name()}>'

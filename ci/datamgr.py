@@ -167,6 +167,11 @@ PARQUET_SCHEMAS = {
         ]
     ),
 }
+PARQUET_SCHEMAS.update(
+    (table, schema)
+    for table, schema in TEST_TABLES.items()
+    if table != "functional_alltypes"
+)
 
 
 AVRO_SCHEMAS = {
@@ -182,6 +187,30 @@ AVRO_SCHEMAS = {
 }
 
 ALL_SCHEMAS = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
+
+
+@click.group()
+@click.option("-v", "--verbose", count=True)
+def cli(verbose):
+    codes = {0: logging.ERROR, 1: logging.INFO, 2: logging.DEBUG}
+    logger.setLevel(codes.get(verbose, logging.DEBUG))
+
+
+@cli.command()
+@click.pass_context
+def create(ctx):
+    import pyarrow.parquet as pq
+
+    executor = ctx.obj["executor"]
+
+    for name, table in read_tables(
+        (name for name in TEST_TABLES if name != "functional_alltypes"),
+        DATA_DIR,
+    ):
+        logger.info(f"Creating {name}.parquet from CSV")
+        dirname = DATA_DIR / "parquet" / name
+        dirname.mkdir(parents=True, exist_ok=True)
+        executor.submit(pq.write_table, table, dirname / f"{name}.parquet")
 
 
 def impala_create_tables(con, env, *, executor=None):
@@ -283,13 +312,6 @@ def read_tables(
             data_directory / f'{name}.csv',
             convert_options=convert_options,
         )
-
-
-@click.group()
-@click.option("-v", "--verbose", count=True)
-def cli(verbose):
-    codes = {0: logging.ERROR, 1: logging.INFO, 2: logging.DEBUG}
-    logger.setLevel(codes.get(verbose, logging.DEBUG))
 
 
 @cli.group()
@@ -755,6 +777,11 @@ if __name__ == '__main__':
      - etc.
     """
     with concurrent.futures.ThreadPoolExecutor(
-        max_workers=URLLIB_DEFAULT_POOL_SIZE
+        max_workers=int(
+            os.environ.get(
+                "IBIS_DATA_MAX_WORKERS",
+                URLLIB_DEFAULT_POOL_SIZE,
+            )
+        )
     ) as executor:
         cli(auto_envvar_prefix='IBIS_TEST', obj=dict(executor=executor))
