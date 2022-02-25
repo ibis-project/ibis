@@ -1398,3 +1398,21 @@ def test_repr_html():
         assert t.a.sum()._repr_html_() is None
     finally:
         ibis.options.interactive = interactive
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected_type"),
+    [
+        (ibis.coalesce(ibis.NA, 1), dt.int8),
+        (ibis.coalesce(1, ibis.NA), dt.int8),
+        (ibis.coalesce(ibis.NA, 1000), dt.int16),
+        (ibis.coalesce(ibis.NA), dt.null),
+        (ibis.coalesce(ibis.NA, ibis.NA), dt.null),
+        (
+            ibis.coalesce(ibis.NA, ibis.NA.cast("array<string>")),
+            dt.Array(dt.string),
+        ),
+    ],
+)
+def test_coalesce_type_inference_with_nulls(expr, expected_type):
+    assert expr.type() == expected_type

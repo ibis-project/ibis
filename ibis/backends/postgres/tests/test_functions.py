@@ -464,11 +464,6 @@ def test_coalesce(con, expr, expected):
     [
         param(ibis.coalesce(ibis.NA, ibis.NA), None, id='all_null'),
         param(
-            ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast('double')),
-            None,
-            id='all_nulls_with_one_cast',
-        ),
-        param(
             ibis.coalesce(
                 ibis.NA.cast('int8'),
                 ibis.NA.cast('int8'),
@@ -480,7 +475,12 @@ def test_coalesce(con, expr, expected):
     ],
 )
 def test_coalesce_all_na(con, expr, expected):
-    assert con.execute(expr) == expected
+    assert con.execute(expr) is None
+
+
+def test_coalesce_all_na_double(con):
+    expr = ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast('double'))
+    assert np.isnan(con.execute(expr))
 
 
 def test_numeric_builtins_work(alltypes, df):

@@ -196,10 +196,12 @@ class CoalesceLike(ValueOp):
     arg = rlz.value_list_of(rlz.any)
 
     def output_type(self):
-        first = self.arg[0]
-        ty = first.type()
-        dtype = getattr(ty, "largest", ty)
-        # self.arg is a list of value expressions
+        # filter out null types
+        non_null_exprs = [arg for arg in self.arg if arg.type() != dt.null]
+        if not non_null_exprs:
+            dtype = dt.null
+        else:
+            dtype = rlz.highest_precedence_dtype(non_null_exprs)
         return rlz.shape_like(self.arg, dtype)
 
 
