@@ -55,10 +55,15 @@ self: super:
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
   });
 
+  pybind11 = super.pybind11.overridePythonAttrs (_: {
+    postBuild = ''
+      make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
+    '';
+  });
+
   duckdb = super.duckdb.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
       self.pybind11
-      self.setuptools-scm
     ];
   });
 

@@ -93,12 +93,12 @@ def test_fillna(backend, alltypes):
         param(
             ibis.coalesce(ibis.NA, 4, ibis.NA),
             4,
-            marks=pytest.mark.notimpl(["pyspark", "datafusion", "duckdb"]),
+            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
         ),
         param(
             ibis.coalesce(ibis.NA, ibis.NA, 3.14),
             3.14,
-            marks=pytest.mark.notimpl(["pyspark", "datafusion", "duckdb"]),
+            marks=pytest.mark.notimpl(["pyspark", "datafusion"]),
         ),
     ],
 )

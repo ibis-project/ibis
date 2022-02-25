@@ -1,7 +1,11 @@
+import collections
+
+import numpy as np
 import sqlalchemy as sa
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import unary
+from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 
 from ..postgres.registry import fixed_arity, operation_registry
 
@@ -53,12 +57,53 @@ def _timestamp_from_unix(t, expr):
         return sa.func.to_timestamp(arg)
 
 
-# TODO(gil): this is working except the results of the
-# substraction are being truncated
-def _timestamp_diff(t, expr):
-    sa_left, sa_right = map(t.translate, expr.op().args)
-    ts = sa.text(f"TIMESTAMP '{sa_right.value}'")
-    return sa_left.op("-")(ts)
+def _literal(t, expr):
+    dtype = expr.type()
+    sqla_type = to_sqla_type(dtype)
+    op = expr.op()
+    value = op.value
+
+    if isinstance(dtype, dt.Interval):
+        return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
+    elif isinstance(dtype, dt.Set) or (
+        isinstance(value, collections.abc.Sequence)
+        and not isinstance(value, str)
+    ):
+        return sa.cast(sa.func.list_value(*value), sqla_type)
+    elif isinstance(value, np.ndarray):
+        return sa.cast(sa.func.list_value(*value.tolist()), sqla_type)
+    elif isinstance(value, collections.abc.Mapping):
+        if isinstance(dtype, dt.Struct):
+            placeholders = ", ".join(
+                f"{key!r}: :v{i}" for i, key in enumerate(value.keys())
+            )
+            return sa.text(f"{{{placeholders}}}").bindparams(
+                *(
+                    sa.bindparam(f"v{i:d}", val)
+                    for i, (key, val) in enumerate(value.items())
+                )
+            )
+        raise NotImplementedError(
+            f"Ibis dtype `{dtype}` with mapping type "
+            f"`{type(value).__name__}` isn't yet supported with the duckdb "
+            "backend"
+        )
+    return sa.literal(value)
+
+
+def _array_column(t, expr):
+    (arg,) = expr.op().args
+    sqla_type = to_sqla_type(expr.type())
+    return sa.cast(sa.func.list_value(*map(t.translate, arg)), sqla_type)
+
+
+def _struct_field(t, expr):
+    op = expr.op()
+    return sa.func.struct_extract(
+        t.translate(op.arg),
+        sa.text(repr(op.field)),
+        type_=to_sqla_type(expr.type()),
+    )
 
 
 operation_registry.update(
@@ -70,9 +115,11 @@ operation_registry.update(
         ops.Translate: fixed_arity('replace', 3),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.TimestampFromUNIX: _timestamp_from_unix,
-        # TODO(gil): this should work except sqlalchemy doesn't know how to
-        # render duckdb timestamps
-        # ops.TimestampDiff: fixed_arity('age', 2),
-        ops.TimestampDiff: _timestamp_diff,
+        ops.TimestampDiff: fixed_arity('age', 2),
+        ops.Literal: _literal,
+        ops.ArrayColumn: _array_column,
+        ops.ArrayConcat: fixed_arity('array_concat', 2),
+        # TODO: map operations, but DuckDB's maps are multimaps
+        ops.StructField: _struct_field,
     }
 )

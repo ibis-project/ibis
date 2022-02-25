@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import os
+from pathlib import Path
 
 import duckdb
 import sqlalchemy as sa
@@ -14,20 +14,12 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from .compiler import DuckDBSQLCompiler
 
 
-# TODO: AlchemyTable calls infer on the sqla_table attribute in the super call
-# in DuckDBTable -- it wants a sa.Table this is a hack to get it to make it
-# through the parent __init__ without barfing
-@sch.infer.register(sa.sql.selectable.TableClause)
-def schema_passthrough(table, schema=None):
-    return schema
-
-
 class Backend(BaseAlchemyBackend):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
 
-    def current_database(self):
-        raise NotImplementedError
+    def current_database(self) -> str:
+        return "main"
 
     @property
     def version(self) -> str:
@@ -41,12 +33,12 @@ class Backend(BaseAlchemyBackend):
 
     def do_connect(
         self,
-        path: str = ":memory:",
+        path: str | Path = ":memory:",
         read_only: bool = False,
     ) -> None:
         """Create an Ibis client connected to a DuckDB database."""
         if path != ":memory:":
-            path = os.path.abspath(path)
+            path = Path(path).absolute()
         super().do_connect(
             sa.create_engine(
                 f"duckdb:///{path}",
@@ -75,8 +67,9 @@ class Backend(BaseAlchemyBackend):
         )
 
     def fetch_from_cursor(
-        self, cursor: duckdb.DuckDBPyConnection, schema: sch.Schema
+        self,
+        cursor: duckdb.DuckDBPyConnection,
+        schema: sch.Schema,
     ):
         df = cursor.cursor.fetch_df()
-        df = schema.apply_to(df)
-        return df
+        return schema.apply_to(df)

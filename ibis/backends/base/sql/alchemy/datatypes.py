@@ -1,3 +1,4 @@
+import functools
 from typing import Optional
 
 import sqlalchemy as sa
@@ -47,35 +48,54 @@ ibis_type_to_sqla = {
 }
 
 
+@functools.singledispatch
 def to_sqla_type(itype, type_map=None):
     if type_map is None:
         type_map = ibis_type_to_sqla
-    if isinstance(itype, dt.Decimal):
-        return sa.types.NUMERIC(itype.precision, itype.scale)
-    elif isinstance(itype, dt.Date):
-        return sa.Date()
-    elif isinstance(itype, dt.Timestamp):
-        # SQLAlchemy DateTimes do not store the timezone, just whether the db
-        # supports timezones.
-        return sa.TIMESTAMP(bool(itype.timezone))
-    elif isinstance(itype, dt.Array):
-        ibis_type = itype.value_type
-        if not isinstance(ibis_type, (dt.Primitive, dt.String)):
-            raise TypeError(
-                'Type {} is not a primitive type or string type'.format(
-                    ibis_type
-                )
-            )
-        return sa.ARRAY(to_sqla_type(ibis_type, type_map=type_map))
-    elif geospatial_supported and isinstance(itype, dt.GeoSpatial):
-        if itype.geotype == 'geometry':
-            return ga.Geometry
-        elif itype.geotype == 'geography':
-            return ga.Geography
-        else:
-            return ga.types._GISType
+    return type_map[type(itype)]
+
+
+@to_sqla_type.register(dt.Decimal)
+def _(itype, **kwargs):
+    return sa.types.NUMERIC(itype.precision, itype.scale)
+
+
+@to_sqla_type.register(dt.Interval)
+def _(itype, **kwargs):
+    return sa.types.Interval()
+
+
+@to_sqla_type.register(dt.Date)
+def _(itype, **kwargs):
+    return sa.Date()
+
+
+@to_sqla_type.register(dt.Timestamp)
+def _(itype, **kwargs):
+    return sa.TIMESTAMP(bool(itype.timezone))
+
+
+@to_sqla_type.register(dt.Array)
+def _(itype, **kwargs):
+    ibis_type = itype.value_type
+    if not isinstance(ibis_type, (dt.Primitive, dt.String)):
+        raise TypeError(f'Type {ibis_type} is not a primitive or string type')
+    return sa.ARRAY(to_sqla_type(ibis_type, **kwargs))
+
+
+@to_sqla_type.register(dt.Struct)
+def _(itype, **kwargs):
+    return sa.TupleType([to_sqla_type(type) for type in itype.types])
+
+
+@to_sqla_type.register(dt.GeoSpatial)
+def _(itype, **kwargs):
+    if itype.geotype == 'geometry':
+        return ga.Geometry
+    elif itype.geotype == 'geography':
+        return ga.Geography
     else:
-        return type_map[type(itype)]
+        return ga.types._GISType
 
 
 @dt.dtype.register(Dialect, sa.types.NullType)
