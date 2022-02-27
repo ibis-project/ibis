@@ -177,6 +177,4 @@ Let's compute the number of citizens per squared kilometer in Asia:
         --8<-- "docs/sqlalchemy_example.py"
         ```
 
-    ??? question "Want the data?"
-
 Download the example SQLite database at https://storage.googleapis.com/ibis-testing-data/crunchbase.db!
