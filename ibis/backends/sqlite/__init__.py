@@ -14,12 +14,10 @@
 
 from __future__ import annotations
 
-import errno
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import sqlalchemy
+import sqlalchemy as sa
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -38,11 +36,6 @@ class Backend(BaseAlchemyBackend):
     database_class = Database
     compiler = SQLiteCompiler
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._con: sqlalchemy.engine.Engine = None
-        self._meta: sqlalchemy.MetaData = None
-
     def __getstate__(self) -> dict:
         r = super().__getstate__()
         r.update(
@@ -55,31 +48,7 @@ class Backend(BaseAlchemyBackend):
         )
         return r
 
-    @property
-    def con(self) -> sqlalchemy.engine.Engine:
-        if self._con is None:
-            self.reconnect()
-        return self._con
-
-    @con.setter
-    def con(self, v: sqlalchemy.engine.Engine | None):
-        self._con = v
-
-    @property
-    def meta(self) -> sqlalchemy.MetaData:
-        if self._meta is None:
-            self.reconnect()
-        return self._meta
-
-    @meta.setter
-    def meta(self, v: sqlalchemy.MetaData):
-        self._meta = v
-
-    def do_connect(
-        self,
-        path: str | Path | None = None,
-        create: bool = False,
-    ) -> None:
+    def do_connect(self, path: str | Path | None = None) -> None:
         """Create an Ibis client connected to a SQLite database.
 
         Multiple database files can be created using the `attach()` method
@@ -90,29 +59,26 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If None, creates an
             in-memory transient database and you can use attach() to add more
             files
-        create
-            If the database file does not exist, create it
         """
-        self.database_name = "base"
+        self.database_name = "main"
 
-        super().do_connect(sqlalchemy.create_engine("sqlite://"))
-        if path is not None:
-            self.attach(self.database_name, path, create=create)
+        engine = sa.create_engine(
+            f"sqlite:///{path if path is not None else ':memory:'}"
+        )
 
-        udf.register_all(self.con)
+        @sa.event.listens_for(engine, "connect")
+        def connect(dbapi_connection, connection_record):
+            """Register UDFs on connection."""
+            udf.register_all(dbapi_connection)
 
-        self._meta = sqlalchemy.MetaData(bind=self.con)
+        super().do_connect(engine)
 
-    def list_tables(self, like=None, database=None):
-        if database is None:
-            database = self.current_database
-        return super().list_tables(like, database=database)
+        self._meta = sa.MetaData(bind=self.con)
 
     def attach(
         self,
         name: str,
         path: str | Path,
-        create: bool = False,
     ) -> None:
         """Connect another SQLite database file to the current connection.
 
@@ -122,25 +88,12 @@ class Backend(BaseAlchemyBackend):
             Database name within SQLite
         path
             Path to sqlite3 database file
-        create
-            If the database file does not exist, create file if `True`
-            otherwise raise an exception
         """
-        if not os.path.exists(path) and not create:
-            raise FileNotFoundError(
-                errno.ENOENT, os.strerror(errno.ENOENT), path
-            )
-
         quoted_name = self.con.dialect.identifier_preparer.quote(name)
-        self.raw_sql(
-            "ATTACH DATABASE {path!r} AS {name}".format(
-                path=path, name=quoted_name
-            )
-        )
-        self.has_attachment = True
+        self.raw_sql(f"ATTACH DATABASE {path!r} AS {quoted_name}")
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
-        return sqlalchemy.Table(
+        return sa.Table(
             name,
             self.meta,
             schema=schema or self.current_database,
@@ -168,6 +121,10 @@ class Backend(BaseAlchemyBackend):
 
     def _table_from_schema(
         self, name, schema, database: str | None = None
-    ) -> sqlalchemy.Table:
+    ) -> sa.Table:
         columns = self._columns_from_schema(name, schema)
-        return sqlalchemy.Table(name, self.meta, schema=database, *columns)
+        return sa.Table(name, self.meta, schema=database, *columns)
+
+    @property
+    def _current_schema(self) -> str | None:
+        return self.current_database

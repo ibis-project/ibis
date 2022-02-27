@@ -1,4 +1,3 @@
-import os
 import uuid
 
 import numpy as np
@@ -8,25 +7,8 @@ import pytest
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
-from ibis.util import guid
 
 pytest.importorskip("sqlalchemy")
-
-from ibis.backends.sqlite import Backend  # noqa: E402
-
-
-def test_file_not_exist_and_create():
-    path = f'__ibis_tmp_{guid()}.db'
-
-    with pytest.raises(FileNotFoundError):
-        ibis.sqlite.connect(path)
-
-    con = ibis.sqlite.connect(path, create=True)
-    try:
-        assert os.path.exists(path)
-    finally:
-        con.con.dispose()
-        os.remove(path)
 
 
 def test_table(con):
@@ -60,7 +42,7 @@ def test_list_tables(con):
 
 
 def test_attach_file(dbpath):
-    client = Backend().connect(None)
+    client = ibis.sqlite.connect(None)
 
     client.attach('foo', dbpath)
     client.attach('bar', dbpath)
@@ -79,7 +61,7 @@ def test_compile_toplevel():
     result = ibis.sqlite.compile(expr)
     expected = """\
 SELECT sum(t0.foo) AS sum 
-FROM t0 AS t0"""  # noqa
+FROM t0 AS t0"""  # noqa: W291
     assert str(result) == expected
 
 
@@ -103,7 +85,7 @@ def test_verbose_log_queries(con):
     assert len(queries) == 1
     (query,) = queries
     expected = 'SELECT t0.year \n'
-    expected += 'FROM base.functional_alltypes AS t0\n'
+    expected += 'FROM functional_alltypes AS t0\n'
     expected += ' LIMIT ? OFFSET ?'
     assert query == expected
 

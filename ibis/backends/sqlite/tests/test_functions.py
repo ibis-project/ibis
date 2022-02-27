@@ -604,15 +604,44 @@ def test_column_access_after_sort(alltypes, df, column):
     tm.assert_series_equal(result, expected)
 
 
-def test_simple_join(con):
-    con.raw_sql('CREATE TABLE mj1 (id1 INTEGER, val1 REAL)')
-    con.raw_sql('INSERT INTO mj1 VALUES (1, 10), (2, 20)')
-    con.raw_sql('CREATE TABLE mj2 (id2 INTEGER, val2 REAL)')
-    con.raw_sql('INSERT INTO mj2 VALUES (1, 15), (2, 25)')
+@pytest.fixture
+def mj1(con):
+    con.create_table(
+        "mj1",
+        schema=ibis.schema(dict(id1="int32", val1="float64")),
+        force=True,
+    )
+    try:
+        con.insert(
+            "mj1",
+            pd.DataFrame(dict(id1=[1, 2], val1=[10, 20])),
+            overwrite=True,
+        )
+        yield con.table("mj1")
+    finally:
+        con.drop_table("mj1", force=True)
 
-    t1 = con.table('mj1', database="main")
-    t2 = con.table('mj2', database="main")
-    joined = t1.join(t2, t1.id1 == t2.id2)
+
+@pytest.fixture
+def mj2(con):
+    con.create_table(
+        "mj2",
+        schema=ibis.schema(dict(id2="int32", val2="float64")),
+        force=True,
+    )
+    try:
+        con.insert(
+            "mj2",
+            pd.DataFrame(dict(id2=[1, 2], val2=[15, 25])),
+            overwrite=True,
+        )
+        yield con.table("mj2")
+    finally:
+        con.drop_table("mj2", force=True)
+
+
+def test_simple_join(con, mj1, mj2):
+    joined = mj1.join(mj2, mj1.id1 == mj2.id2)
     result = joined.val2.execute()
     assert len(result) == 2
 
@@ -768,6 +797,6 @@ def test_count_on_order_by(con):
         expr.compile().compile(compile_kwargs={'literal_binds': True})
     )
     expected = (
-        'SELECT count(\'*\') AS count \n' 'FROM base.batting AS t0'
+        'SELECT count(\'*\') AS count \n' 'FROM batting AS t0'
     )  # noqa: W291
     assert result == expected

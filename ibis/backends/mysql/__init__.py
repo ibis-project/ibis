@@ -1,7 +1,7 @@
 import contextlib
 import warnings
 
-import sqlalchemy
+import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
@@ -103,7 +103,7 @@ class Backend(BaseAlchemyBackend):
         )
 
         self.database_name = alchemy_url.database
-        super().do_connect(sqlalchemy.create_engine(alchemy_url))
+        super().do_connect(sa.create_engine(alchemy_url))
 
     @contextlib.contextmanager
     def begin(self):
