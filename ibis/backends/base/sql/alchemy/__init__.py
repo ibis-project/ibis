@@ -5,7 +5,7 @@ import getpass
 from typing import Literal
 
 import pandas as pd
-import sqlalchemy
+import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -60,16 +60,15 @@ class BaseAlchemyBackend(BaseSQLBackend):
     database_class = AlchemyDatabase
     table_class = AlchemyTable
     compiler = AlchemyCompiler
-    has_attachment = False
 
     def _build_alchemy_url(
         self, url, host, port, user, password, database, driver
     ):
         if url is not None:
-            return sqlalchemy.engine.url.make_url(url)
+            return sa.engine.url.make_url(url)
 
         user = user or getpass.getuser()
-        return sqlalchemy.engine.url.URL(
+        return sa.engine.url.URL(
             driver,
             host=host,
             port=port,
@@ -78,10 +77,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
             database=database,
         )
 
-    def do_connect(self, con: sqlalchemy.engine.Engine) -> None:
+    @property
+    def _current_schema(self) -> str | None:
+        return None
+
+    def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
-        self._inspector = sqlalchemy.inspect(self.con)
-        self.meta = sqlalchemy.MetaData(bind=self.con)
+        self._inspector = sa.inspect(self.con)
+        self.meta = sa.MetaData(bind=self.con)
         self._schemas: dict[str, sch.Schema] = {}
 
     @property
@@ -89,7 +92,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return '.'.join(map(str, self.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None):
-        inspector = sqlalchemy.inspect(self.con)
+        inspector = sa.inspect(self.con)
         tables = inspector.get_table_names(
             schema=database
         ) + inspector.get_view_names(schema=database)
@@ -199,19 +202,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _columns_from_schema(
         self, name: str, schema: sch.Schema
-    ) -> list[sqlalchemy.Column]:
+    ) -> list[sa.Column]:
         return [
-            sqlalchemy.Column(
-                colname, to_sqla_type(dtype), nullable=dtype.nullable
-            )
+            sa.Column(colname, to_sqla_type(dtype), nullable=dtype.nullable)
             for colname, dtype in zip(schema.names, schema.types)
         ]
 
     def _table_from_schema(
         self, name: str, schema: sch.Schema, database: str | None = None
-    ) -> sqlalchemy.Table:
+    ) -> sa.Table:
         columns = self._columns_from_schema(name, schema)
-        return sqlalchemy.Table(name, self.meta, *columns)
+        return sa.Table(name, self.meta, *columns)
 
     def drop_table(
         self,
@@ -292,18 +293,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 'yet implemented'
             )
 
-        params = {}
-        if self.has_attachment:
-            # for database with attachment
-            # see: https://github.com/ibis-project/ibis/issues/1930
-            params['schema'] = self.current_database
-
         data.to_sql(
             table_name,
             con=self.con,
             index=False,
             if_exists=if_exists,
-            **params,
+            schema=self._current_schema,
         )
 
     def truncate_table(
@@ -341,15 +336,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _log(self, sql):
         try:
             query_str = str(sql)
-        except sqlalchemy.exc.UnsupportedCompilationError:
+        except sa.exc.UnsupportedCompilationError:
             pass
         else:
             util.log(query_str)
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
-        return sqlalchemy.Table(
-            name, self.meta, schema=schema, autoload=autoload
-        )
+        return sa.Table(name, self.meta, schema=schema, autoload=autoload)
 
     def _sqla_table_to_expr(self, table):
         node = self.table_class(table, self)
@@ -393,19 +386,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 'yet implemented'
             )
 
-        params = {}
-        if self.has_attachment:
-            # for database with attachment
-            # see: https://github.com/ibis-project/ibis/issues/1930
-            params['schema'] = self.current_database
-
         if isinstance(obj, pd.DataFrame):
             obj.to_sql(
                 table_name,
                 self.con,
                 index=False,
                 if_exists='replace' if overwrite else 'append',
-                **params,
+                schema=self._current_schema,
             )
         elif isinstance(obj, ir.TableExpr):
             to_table_expr = self.table(table_name)

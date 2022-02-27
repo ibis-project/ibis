@@ -1,7 +1,7 @@
 """PostgreSQL backend."""
 import contextlib
 
-import sqlalchemy
+import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
@@ -100,7 +100,7 @@ class Backend(BaseAlchemyBackend):
             driver=f'postgresql+{driver}',
         )
         self.database_name = alchemy_url.database
-        super().do_connect(sqlalchemy.create_engine(alchemy_url))
+        super().do_connect(sa.create_engine(alchemy_url))
 
     def list_databases(self, like=None):
         # http://dba.stackexchange.com/a/1304/58517

@@ -271,31 +271,7 @@ def _number_of_arguments(callable):
     return len(parameters)
 
 
-def _register_function(func, con):
-    """Register a Python callable with a SQLite connection `con`.
-
-    Parameters
-    ----------
-    func : callable
-    con : sqlalchemy.Connection
-    """
-    nargs = _number_of_arguments(func)
-    con.connection.connection.create_function(func.__name__, nargs, func)
-
-
-def _register_aggregate(agg, con):
-    """Register a Python class that performs aggregation in SQLite.
-
-    Parameters
-    ----------
-    agg : type
-    con : sqlalchemy.Connection
-    """
-    nargs = _number_of_arguments(agg.step) - 1  # because self
-    con.connection.connection.create_aggregate(agg.__name__, nargs, agg)
-
-
-def register_all(con):
+def register_all(dbapi_connection):
     """Register all udf and udaf with the connection.
 
     All udf and udaf are defined in this file with the `udf` and `udaf`
@@ -306,7 +282,14 @@ def register_all(con):
     con : sqlalchemy.Connection
     """
     for func in _SQLITE_UDF_REGISTRY:
-        con.run_callable(functools.partial(_register_function, func))
+        dbapi_connection.create_function(
+            func.__name__, _number_of_arguments(func), func
+        )
 
     for agg in _SQLITE_UDAF_REGISTRY:
-        con.run_callable(functools.partial(_register_aggregate, agg))
+        dbapi_connection.create_aggregate(
+            agg.__name__,
+            # substract one to ignore the `self` argument of the step method
+            _number_of_arguments(agg.step) - 1,
+            agg,
+        )
