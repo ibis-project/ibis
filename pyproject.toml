@@ -181,6 +181,9 @@ add_ignore = ["D100", "D101", "D102", "D103", "D104", "D105"]
 
 [tool.conda-lock]
 channels = ["conda-forge"]
+# we need this because conda-lock doesn't map dependencies' extras to
+# conda-forge packages and we use the array and dataframe extras from dask
+dependencies = { dask = "*" }
 
 [build-system]
 requires = ["poetry-core>=1", "setuptools"]
