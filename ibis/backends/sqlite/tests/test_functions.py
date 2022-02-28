@@ -797,6 +797,6 @@ def test_count_on_order_by(con):
         expr.compile().compile(compile_kwargs={'literal_binds': True})
     )
     expected = (
-        'SELECT count(\'*\') AS count \n' 'FROM batting AS t0'
-    )  # noqa: W291
+        "SELECT count('*') AS count \nFROM main.batting AS t0"  # noqa: W291
+    )
     assert result == expected
