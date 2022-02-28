@@ -118,10 +118,10 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
 ```python
 >>> import ibis
->>> db = ibis.sqlite.connect('geography.db')
->>> countries = db.table('countries')
->>> asian_countries = countries.filter(countries['continent'] == 'AS')
->>> density_in_asia = asian_countries['population'].sum() / asian_countries['area_km2'].sum()
+>>> db = ibis.sqlite.connect("geography.db")
+>>> countries = db.table("countries")
+>>> asian_countries = countries.filter(countries.continent == "AS")
+>>> density_in_asia = asian_countries.population.sum() / asian_countries.area_km2.sum()
 >>> density_in_asia.execute()
 130.7019141926602
 ```
@@ -162,8 +162,8 @@ Let's compute the number of citizens per squared kilometer in Asia:
     !!! success "Ibis :heart:'s SQLAlchemy"
 
         Ibis generates SQLAlchemy expressions for some of our backends
-        including the [PostgreSQL](/backends/postgres) and
-        [SQLite](/backends/sqlite) backends!
+        including the [PostgreSQL](/backends/PostgreSQL) and
+        [SQLite](/backends/SQLite) backends!
 
     === "Ibis"
 
@@ -173,8 +173,10 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
     === "SQLAlchemy"
 
-        ``` python title="docs/sqlalchemy_example.py" "linenums="1"
+        ``` py title="docs/sqlalchemy_example.py" "linenums="1"
         --8<-- "docs/sqlalchemy_example.py"
         ```
 
-Download the example SQLite database at https://storage.googleapis.com/ibis-testing-data/crunchbase.db!
+<div class="download-button" markdown>
+[:fontawesome-solid-cloud-arrow-down: Download the example data](https://storage.googleapis.com/ibis-testing-data/crunchbase.db){ .md-button .md-button--primary }
+</div>
