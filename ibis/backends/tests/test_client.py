@@ -272,20 +272,16 @@ def test_insert_overwrite_from_expr(
 def test_list_databases(alchemy_backend, alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
-        'sqlite': ['main', 'base'],
+        'sqlite': ['main'],
         'postgres': ['postgres', 'ibis_testing'],
         'mysql': ['ibis_testing', 'information_schema'],
     }
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
-@mark.never(
-    ["postgres"], reason="schemas and databases are different in postgres"
-)
 def test_list_schemas(alchemy_backend, alchemy_con):
     with pytest.warns(FutureWarning):
-        schemas = alchemy_con.list_schemas()
-    assert schemas == alchemy_con.list_databases()
+        alchemy_con.list_schemas()
 
 
 def test_verify(ddl_backend, ddl_con):
