@@ -1,5 +1,6 @@
-SELECT *,
-       acq_ipos / num_investments::float AS acq_rate
+SELECT
+  *,
+  CAST(acq_ipos / num_investments AS FLOAT) AS acq_rate
 FROM (
   SELECT
     COALESCE(i.investor_name, 'NO INVESTOR') AS investor_name,
