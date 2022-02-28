@@ -1,8 +1,12 @@
 """PostgreSQL backend."""
+
+from __future__ import annotations
+
 import contextlib
 
 import sqlalchemy as sa
 
+from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .compiler import PostgreSQLCompiler
@@ -112,17 +116,12 @@ class Backend(BaseAlchemyBackend):
         ]
         return self._filter_with_like(databases, like)
 
+    @util.deprecated(version='2.0', instead='`list_databases`')
     def list_schemas(self, like=None):
         """List all the schemas in the current database."""
         # In Postgres we support schemas, which in other engines (e.g. MySQL)
         # are databases
         return super().list_databases(like)
-
-    def list_tables(self, like=None, database=None):
-        # PostgreSQL requires passing `database=None` for current database
-        if database == self.current_database:
-            database = None
-        return super().list_tables(like, database)
 
     @contextlib.contextmanager
     def begin(self):
@@ -133,33 +132,6 @@ class Backend(BaseAlchemyBackend):
                 yield bind
             finally:
                 bind.execute(f"SET TIMEZONE = '{previous_timezone}'")
-
-    def table(self, name, database=None, schema=None):
-        """Create a table expression that references a particular a table
-        called `name` in a PostgreSQL database called `database`.
-
-        Parameters
-        ----------
-        name : str
-            The name of the table to retrieve.
-        database : str, optional
-            The database in which the table referred to by `name` resides. If
-            ``None`` then the ``current_database`` is used.
-        schema : str, optional
-            The schema in which the table resides.  If ``None`` then the
-            `public` schema is assumed.
-
-        Returns
-        -------
-        table : TableExpr
-            A table expression.
-        """
-        if database is not None and database != self.current_database:
-            return self.database(name=database).table(name=name, schema=schema)
-        else:
-            alch_table = self._get_sqla_table(name, schema=schema)
-            node = self.table_class(alch_table, self, self._schemas.get(name))
-            return self.table_expr_class(node)
 
     def udf(
         self,

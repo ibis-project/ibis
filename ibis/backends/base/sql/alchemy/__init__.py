@@ -92,10 +92,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return '.'.join(map(str, self.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None):
-        inspector = sa.inspect(self.con)
-        tables = inspector.get_table_names(
+        tables = self._inspector.get_table_names(
             schema=database
-        ) + inspector.get_view_names(schema=database)
+        ) + self._inspector.get_view_names(schema=database)
         return self._filter_with_like(tables, like)
 
     def list_databases(self, like=None):
@@ -333,7 +332,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return self.database_name
 
     @util.deprecated(version='2.0', instead='`list_databases`')
-    def list_schemas(self):
+    def list_schemas(self, like: str | None = None) -> list[str]:
         return self.list_databases()
 
     def _log(self, sql):
@@ -361,23 +360,41 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def table(
         self,
         name: str,
-        **kwargs: Any,
+        database: str | None = None,
+        schema: str | None = None,
     ) -> ir.TableExpr:
-        """Create a table expression from a table in the SQLite database.
+        """Create a table expression from a table in the database.
 
         Parameters
         ----------
         name
             Table name
-        kwargs
-            Backend specific arguments.
+        database
+            The database the table resides in
+        schema
+            The schema inside `database` where the table resides.
+
+            !!! warning "`schema` refers to database organization"
+
+                The `schema` parameter does **not** refer to the column names
+                and types of `table`.
 
         Returns
         -------
         TableExpr
             Table expression
         """
-        sqla_table = self._get_sqla_table(name, **kwargs)
+        if database is not None and database != self.current_database:
+            return self.database(database=database).table(
+                name=name,
+                database=database,
+                schema=schema,
+            )
+        sqla_table = self._get_sqla_table(
+            name,
+            database=database,
+            schema=schema,
+        )
         return self._sqla_table_to_expr(sqla_table)
 
     def insert(
