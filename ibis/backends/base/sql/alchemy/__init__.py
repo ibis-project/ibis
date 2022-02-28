@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import getpass
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 import sqlalchemy as sa
@@ -152,6 +152,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         expr: pd.DataFrame | ir.TableExpr | None = None,
         schema: sch.Schema | None = None,
         database: str | None = None,
+        force: bool = False,
     ) -> None:
         """Create a table.
 
@@ -165,6 +166,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             An ibis schema
         database
             A database
+        force
+            Check whether a table exists before creating it
         """
         if database == self.current_database:
             # avoid fully qualified name
@@ -194,7 +197,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         )
 
         with self.begin() as bind:
-            t.create(bind=bind)
+            t.create(bind=bind, checkfirst=force)
             if expr is not None:
                 bind.execute(
                     t.insert().from_select(list(expr.columns), expr.compile())
@@ -310,7 +313,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         t.delete().execute()
 
     def schema(self, name: str) -> sch.Schema:
-        """Get a schema object from the current database for the table `name`.
+        """Get an ibis schema from the current database for the table `name`.
 
         Parameters
         ----------
@@ -320,7 +323,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Returns
         -------
         Schema
-            The schema of the object `name`.
+            The ibis schema of `name`
         """
         return self.database().schema(name)
 
@@ -341,12 +344,41 @@ class BaseAlchemyBackend(BaseSQLBackend):
         else:
             util.log(query_str)
 
-    def _get_sqla_table(self, name, schema=None, autoload=True):
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        autoload: bool = True,
+        **kwargs: Any,
+    ) -> sa.Table:
         return sa.Table(name, self.meta, schema=schema, autoload=autoload)
 
-    def _sqla_table_to_expr(self, table):
-        node = self.table_class(table, self)
+    def _sqla_table_to_expr(self, table: sa.Table) -> ir.TableExpr:
+        schema = self._schemas.get(table.name)
+        node = self.table_class(table, self, schema)
         return self.table_expr_class(node)
+
+    def table(
+        self,
+        name: str,
+        **kwargs: Any,
+    ) -> ir.TableExpr:
+        """Create a table expression from a table in the SQLite database.
+
+        Parameters
+        ----------
+        name
+            Table name
+        kwargs
+            Backend specific arguments.
+
+        Returns
+        -------
+        TableExpr
+            Table expression
+        """
+        sqla_table = self._get_sqla_table(name, **kwargs)
+        return self._sqla_table_to_expr(sqla_table)
 
     def insert(
         self,
