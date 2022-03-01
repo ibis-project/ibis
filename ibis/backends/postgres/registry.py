@@ -30,6 +30,7 @@ from ibis.backends.base.sql.alchemy import (
     unary,
     variance_reduction,
 )
+from ibis.backends.base.sql.alchemy.registry import get_col_or_deferred_col
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -524,7 +525,8 @@ def _table_column(t, expr):
     table = op.table
 
     sa_table = get_sqla_table(ctx, table)
-    out_expr = getattr(sa_table.c, op.name)
+
+    out_expr = get_col_or_deferred_col(sa_table, op.name)
 
     expr_type = expr.type()
 

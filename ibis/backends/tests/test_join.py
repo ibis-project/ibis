@@ -175,3 +175,23 @@ def test_filtering_join(backend, con, batting, awards_players, how):
     ).sort_values(result_order)[list(left.columns)]
 
     backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.skip_backends(
+    ["dask", "pandas"], reason="insane memory explosion"
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="pyspark doesn't support joining on differing column names",
+)
+@pytest.mark.notimpl(["datafusion", "pyspark"])
+def test_join_then_filter_no_column_overlap(awards_players, batting):
+    left = batting[batting.yearID == 2015]
+    year = left.yearID.name("year")
+    left = left[year, "RBI"]
+    right = awards_players[awards_players.lgID == 'NL']
+
+    expr = left.join(right, left.year == right.yearID)
+    filters = [expr.RBI == 9]
+    q = expr.filter(filters)
+    q.execute()
