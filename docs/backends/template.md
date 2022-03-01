@@ -9,6 +9,8 @@
 
 {% if intro %}{{ intro }}{% endif %}
 
+{% if not development_only %}
+
 ## Install
 
 Install dependencies for the {{ backend_name }} backend:
@@ -27,6 +29,13 @@ Install dependencies for the {{ backend_name }} backend:
     ```
 
 {% endfor %}
+
+{% else %}
+!!! info "The {{ backend_name }} backend isn't released yet!"
+
+    [Set up a development environment](/contribute/01_environment) to use this backend.
+
+{% endif %}
 
 ## Connect
 

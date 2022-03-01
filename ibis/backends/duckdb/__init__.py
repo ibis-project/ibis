@@ -35,7 +35,15 @@ class Backend(BaseAlchemyBackend):
         path: str | Path = ":memory:",
         read_only: bool = False,
     ) -> None:
-        """Create an Ibis client connected to a DuckDB database."""
+        """Create an Ibis client connected to a DuckDB database.
+
+        Parameters
+        ----------
+        path
+            Path to a duckdb database
+        read_only
+            Whether the database is read-only
+        """
         if path != ":memory:":
             path = Path(path).absolute()
         super().do_connect(
