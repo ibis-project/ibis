@@ -7,6 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 
+from ..base.sql.alchemy.registry import _table_column
 from ..postgres.registry import fixed_arity, operation_registry
 
 operation_registry = operation_registry.copy()
@@ -108,18 +109,19 @@ def _struct_field(t, expr):
 
 operation_registry.update(
     {
-        ops.Round: _round,
-        ops.Log2: unary(sa.func.log2),
-        ops.Modulus: _mod,
-        ops.Log: _log,
-        ops.Translate: fixed_arity('replace', 3),
-        ops.DayOfWeekName: unary(sa.func.dayname),
-        ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.TimestampDiff: fixed_arity('age', 2),
-        ops.Literal: _literal,
         ops.ArrayColumn: _array_column,
         ops.ArrayConcat: fixed_arity('array_concat', 2),
+        ops.DayOfWeekName: unary(sa.func.dayname),
+        ops.Literal: _literal,
+        ops.Log2: unary(sa.func.log2),
+        ops.Log: _log,
         # TODO: map operations, but DuckDB's maps are multimaps
+        ops.Modulus: _mod,
+        ops.Round: _round,
         ops.StructField: _struct_field,
+        ops.TableColumn: _table_column,
+        ops.TimestampDiff: fixed_arity('age', 2),
+        ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.Translate: fixed_arity('replace', 3),
     }
 )
