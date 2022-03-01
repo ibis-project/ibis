@@ -8,7 +8,6 @@ import duckdb
 import sqlalchemy as sa
 
 import ibis.expr.schema as sch
-import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .compiler import DuckDBSQLCompiler
@@ -46,25 +45,6 @@ class Backend(BaseAlchemyBackend):
             )
         )
         self._meta = sa.MetaData(bind=self.con)
-
-    def table(self, name: str, database: str | None = None) -> ir.TableExpr:
-        """Create a table expression from a table in the SQLite database.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Name of the attached database that the table is located in.
-
-        Returns
-        -------
-        TableExpr
-            Table expression
-        """
-        return self._sqla_table_to_expr(
-            self._get_sqla_table(name, schema=database)
-        )
 
     def fetch_from_cursor(
         self,
