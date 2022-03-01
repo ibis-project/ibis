@@ -19,11 +19,14 @@ Install dependencies for the {{ backend_name }} backend:
     pip install 'ibis-framework{% if not is_core %}[{{ backend_module }}]{% endif %}'
     ```
 
-=== "conda"
+{% for mgr in ["conda", "mamba"] %}
+=== "{{ mgr }}"
 
     ```sh
-    conda install -c conda-forge ibis{% if not is_core %}-{{ backend_module }}{% endif %}
+    {{ mgr }} install -c conda-forge ibis-{% if is_core %}framework{% else %}{{ backend_module }}{% endif %}
     ```
+
+{% endfor %}
 
 ## Connect
 
