@@ -53,5 +53,8 @@ jobs:
 
           yesterday="${{ steps.set_date.outputs.yesterday }}"
 
-          gsutil cp -Z workflows.json "gs://ibis-workflow-data/${yesterday}/workflows.json"
-          gsutil cp -Z jobs.json "gs://ibis-workflow-data/${yesterday}/jobs.json"
+          for table in workflows jobs; do
+            gsuri="gs://ibis-workflow-data/${yesterday}/${table}.json"
+            gsutil cp -Z "${table}.json" "${gsuri}"
+            bq --synchronous_mode --headless load --source_format NEWLINE_DELIMITED_JSON "workflows.${table}" "${gsuri}"
+          done
