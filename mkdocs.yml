@@ -61,6 +61,7 @@ plugins:
 markdown_extensions:
   - admonition
   - attr_list
+  - codehilite
   - def_list
   - footnotes
   - md_in_html
