@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 import pandas as pd
 from clickhouse_driver.client import Client as _DriverClient
@@ -39,13 +39,15 @@ class Backend(BaseSQLBackend):
 
     def do_connect(
         self,
-        host: str = 'localhost',
+        host: str = "localhost",
         port: int = 9000,
-        database: str = 'default',
-        user: str = 'default',
-        password: str = '',
-        client_name: str = 'ibis',
-        compression: str | bool = _default_compression,
+        database: str = "default",
+        user: str = "default",
+        password: str = "",
+        client_name: str = "ibis",
+        compression: (
+            Literal["lz4", "lz4hc", "quicklz", "zstd"] | bool
+        ) = _default_compression,
     ):
         """Create a ClickHouse client for use with Ibis.
 
@@ -62,33 +64,22 @@ class Backend(BaseSQLBackend):
         password
             Password to authenticate with
         client_name
-            This will appear in clickhouse server logs
+            Name of client that wil appear in clickhouse server logs
         compression
-            Weather or not to use compression.
-            Default is lz4 if installed else False.
-            Possible choices: lz4, lz4hc, quicklz, zstd, True, False
-            True is equivalent to 'lz4'.
+            Whether or not to use compression.
+            Default is `'lz4'` if installed else False.
+            True is equivalent to `'lz4'`.
 
         Examples
         --------
         >>> import ibis
         >>> import os
-        >>> clickhouse_host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST',
-        ...                                  'localhost')
-        >>> clickhouse_port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT',
-        ...                                      9000))
-        >>> client = ibis.clickhouse.connect(
-        ...     host=clickhouse_host,
-        ...     port=clickhouse_port
-        ... )
+        >>> clickhouse_host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
+        >>> clickhouse_port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
+        >>> client = ibis.clickhouse.connect(host=clickhouse_host,  port=clickhouse_port)
         >>> client  # doctest: +ELLIPSIS
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-
-        Returns
-        -------
-        ClickhouseClient
-            A clickhouse client
-        """
+        """  # noqa: E501
         self.con = _DriverClient(
             host=host,
             port=port,

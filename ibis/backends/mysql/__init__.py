@@ -1,7 +1,10 @@
+"""The MySQL backend."""
+
 from __future__ import annotations
 
 import contextlib
 import warnings
+from typing import Literal
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
@@ -18,15 +21,14 @@ class Backend(BaseAlchemyBackend):
 
     def do_connect(
         self,
-        host='localhost',
-        user=None,
-        password=None,
-        port=3306,
-        database=None,
-        url=None,
-        driver='pymysql',
-    ):
-
+        host: str = "localhost",
+        user: str | None = None,
+        password: str | None = None,
+        port: int = 3306,
+        database: str | None = None,
+        url: str | None = None,
+        driver: Literal["pymysql"] = "pymysql",
+    ) -> None:
         """Create an Ibis client using the passed connection parameters.
 
         Parameters
@@ -46,11 +48,6 @@ class Backend(BaseAlchemyBackend):
             connection arguments are ignored.
         driver
             Python MySQL database driver
-
-        Returns
-        -------
-        Backend
-            An instance of a MySQL backend
 
         Examples
         --------

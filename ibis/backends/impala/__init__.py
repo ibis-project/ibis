@@ -8,9 +8,11 @@ import operator
 import os
 import re
 import weakref
+from pathlib import Path
 from posixpath import join as pjoin
 from typing import Any, Literal
 
+import fsspec
 import numpy as np
 import pandas as pd
 from pydantic import Field
@@ -180,23 +182,29 @@ class Backend(BaseSQLBackend):
             description="HDFS path for storage of temporary data",
         )
 
-    def hdfs_connect(self, *args, **kwargs):
+    @staticmethod
+    def hdfs_connect(
+        *args: Any,
+        **kwargs: Any,
+    ) -> fsspec.spec.AbstractFileSystem:
         return hdfs_connect(*args, **kwargs)
 
     def do_connect(
-        new_backend,
-        host='localhost',
-        port=21050,
-        database='default',
-        timeout=45,
-        use_ssl=False,
-        ca_cert=None,
-        user=None,
-        password=None,
-        auth_mechanism='NOSASL',
-        kerberos_service_name='impala',
-        pool_size=8,
-        hdfs_client=None,
+        self,
+        host: str = "localhost",
+        port: int = 21050,
+        database: str = "default",
+        timeout: int = 45,
+        use_ssl: bool = False,
+        ca_cert: str | Path | None = None,
+        user: str | None = None,
+        password: str | None = None,
+        auth_mechanism: Literal[
+            "NOSASL", "PLAIN", "GSSAPI", "LDAP"
+        ] = "NOSASL",
+        kerberos_service_name: str = "impala",
+        pool_size: int = 8,
+        hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
     ):
         """Create an Impala Backend for use with Ibis.
 
@@ -221,24 +229,24 @@ class Backend(BaseSQLBackend):
         password
             LDAP password to authenticate
         auth_mechanism
-            {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}.
-            Use NOSASL for non-secured Impala connections.  Use PLAIN for
-            non-secured Hive clusters.  Use LDAP for LDAP authenticated
-            connections.  Use GSSAPI for Kerberos-secured clusters.
+            |   Value    | Meaning                        |
+            | :--------: | :----------------------------- |
+            | `'NOSASL'` | insecure Impala connections    |
+            | `'PLAIN'`  | insecure Hive clusters         |
+            |  `'LDAP'`  | LDAP authenticated connections |
+            | `'GSSAPI'` | Kerberos-secured clusters      |
         kerberos_service_name
-            Specify particular impalad service principal.
+            Specify a particular `impalad` service principal.
 
         Examples
         --------
-        >>> import ibis
         >>> import os
+        >>> import ibis
         >>> hdfs_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
         >>> hdfs_port = int(os.environ.get('IBIS_TEST_NN_PORT', 50070))
         >>> impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
         >>> impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
         >>> hdfs = ibis.impala.hdfs_connect(host=hdfs_host, port=hdfs_port)
-        >>> hdfs  # doctest: +ELLIPSIS
-        <ibis.filesystems.WebHDFS object at 0x...>
         >>> client = ibis.impala.connect(
         ...     host=impala_host,
         ...     port=impala_port,
@@ -246,14 +254,9 @@ class Backend(BaseSQLBackend):
         ... )
         >>> client  # doctest: +ELLIPSIS
         <ibis.backends.impala.Backend object at 0x...>
-
-        Returns
-        -------
-        Backend
-            Impala backend
         """
-        new_backend._temp_objects = set()
-        new_backend._hdfs = hdfs_client
+        self._temp_objects = set()
+        self._hdfs = hdfs_client
 
         params = {
             'host': host,
@@ -261,15 +264,15 @@ class Backend(BaseSQLBackend):
             'database': database,
             'timeout': timeout,
             'use_ssl': use_ssl,
-            'ca_cert': ca_cert,
+            'ca_cert': str(ca_cert),
             'user': user,
             'password': password,
             'auth_mechanism': auth_mechanism,
             'kerberos_service_name': kerberos_service_name,
         }
-        new_backend.con = ImpalaConnection(pool_size=pool_size, **params)
+        self.con = ImpalaConnection(pool_size=pool_size, **params)
 
-        new_backend._ensure_temp_db_exists()
+        self._ensure_temp_db_exists()
 
     @property
     def version(self):

@@ -13,7 +13,7 @@
 
 ## Install
 
-Install dependencies for the {{ backend_name }} backend:
+Install ibis and dependencies for the {{ backend_name }} backend:
 
 === "pip"
 
@@ -39,10 +39,37 @@ Install dependencies for the {{ backend_name }} backend:
 
 ## Connect
 
+### API
+
+Create a client by passing in {{ backend_param_style }} to `ibis.{{ backend_module }}.connect`.
+
 <!-- prettier-ignore-start -->
-Create a client by passing in {{ backend_param_style }} to [`ibis.{{ backend_module }}.connect`][ibis.backends.{{ backend_module }}.{{ do_connect_base or "Backend" }}.do_connect]:
+See [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.Backend.do_connect]
+for connection parameter information.
 <!-- prettier-ignore-end -->
 
-```python
-{{ backend_connection_example }}
-```
+<!-- prettier-ignore-start -->
+!!! info "`ibis.{{ backend_module }}.connect` is a thin wrapper around [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.Backend.do_connect]."
+<!-- prettier-ignore-end -->
+
+### Connection Parameters
+
+<!-- prettier-ignore-start -->
+::: ibis.backends.{{ backend_module }}.Backend.do_connect
+    rendering:
+      heading_level: 4
+<!-- prettier-ignore-end -->
+
+{% if not exclude_backend_api %}
+
+## Backend API
+
+<!-- prettier-ignore-start -->
+::: ibis.backends.{{ backend_module }}.Backend
+    rendering:
+      heading_level: 3
+    selection:
+      inherited_members: true
+<!-- prettier-ignore-end -->
+
+{% endif %}

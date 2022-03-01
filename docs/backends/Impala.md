@@ -3,13 +3,11 @@ backend_name: Impala
 backend_url: https://impala.apache.org/
 backend_module: impala
 backend_param_style: connection parameters
-backend_connection_example: |
-  hdfs = ibis.impala.hdfs_connect(host='impala', port=50070)
-  ibis.impala.connect(host='impala', database='ibis_testing', hdfs_client=hdfs)
 intro: |
   One goal of Ibis is to provide an integrated Python API for an Impala cluster
   without requiring you to switch back and forth between Python code and the
   Impala shell.
+exclude_backend_api: true
 ---
 
 {% include 'backends/template.md' %}
@@ -23,18 +21,6 @@ These methods are available on the Impala client object after connecting to
 your HDFS cluster (`ibis.impala.hdfs_connect`) and connecting to Impala with
 `ibis.impala.connect`. See `backends.impala` for a tutorial on using this
 backend.
-
-## Connection API
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    rendering:
-      heading_level: 3
-    selection:
-      members:
-        - do_connect
-
-<!-- prettier-ignore-end -->
 
 ## Database methods
 

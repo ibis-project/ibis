@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+from typing import Literal
 
 import sqlalchemy as sa
 
@@ -19,14 +20,14 @@ class Backend(BaseAlchemyBackend):
 
     def do_connect(
         self,
-        host='localhost',
-        user=None,
-        password=None,
-        port=5432,
-        database=None,
-        url=None,
-        driver='psycopg2',
-    ):
+        host: str = 'localhost',
+        user: str | None = None,
+        password: str | None = None,
+        port: int = 5432,
+        database: str | None = None,
+        url: str | None = None,
+        driver: Literal["psycopg2"] = "psycopg2",
+    ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
 
         Parameters
@@ -42,20 +43,17 @@ class Backend(BaseAlchemyBackend):
         database
             Database to connect to
         url
-            Complete SQLAlchemy connection string. If passed, the other
-            connection arguments are ignored.
+            SQLAlchemy connection string.
+
+            If passed, the other connection arguments are ignored.
         driver
             Database driver
-
-        Returns
-        -------
-        Backend
-            Ibis backend instance
 
         Examples
         --------
         >>> import os
         >>> import getpass
+        >>> import ibis
         >>> host = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
         >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
         >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')

@@ -59,6 +59,11 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If None, creates an
             in-memory transient database and you can use attach() to add more
             files
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
         self.database_name = "main"
 

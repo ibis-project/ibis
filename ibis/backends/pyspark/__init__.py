@@ -92,6 +92,13 @@ class Backend(BaseSQLBackend):
         ----------
         session
             A SparkSession instance
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import pyspark
+        >>> session = pyspark.sql.SparkSession.builder.getOrCreate()
+        >>> ibis.pyspark.connect(session)
         """
         self._context = session.sparkContext
         self._session = session

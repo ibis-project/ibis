@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, MutableMapping
 
 import dask
 import dask.dataframe as dd
@@ -28,7 +28,23 @@ class Backend(BasePandasBackend):
     table_class = DaskTable
     backend_table_type = dd.DataFrame
 
-    def do_connect(self, dictionary):
+    def do_connect(
+        self,
+        dictionary: MutableMapping[str, dd.DataFrame],
+    ) -> None:
+        """Construct a Dask backend client from a dictionary of data sources.
+
+        Parameters
+        ----------
+        dictionary
+            Mapping from `str` table names to Dask DataFrames.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> data = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
+        >>> ibis.dask.connect(data)
+        """
         # register dispatchers
         from . import udf  # noqa: F401
 

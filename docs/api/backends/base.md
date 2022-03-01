@@ -3,6 +3,5 @@
 <!-- prettier-ignore-start -->
 ::: ibis.backends.base.BaseBackend
     selection:
-      filters:
-        - "!^_filter_with_like"
+      inherited_members: true
 <!-- prettier-ignore-end -->

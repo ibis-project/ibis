@@ -5,24 +5,10 @@ backend_module: pandas
 intro: Ibis's pandas backend is available in core Ibis.
 backend_param_style: a dictionary of paths
 do_connect_base: BasePandasBackend
-backend_connection_example: 'ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})'
 is_core: true
 ---
 
 {% include 'backends/template.md' %}
-
-## API
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.pandas.BasePandasBackend
-    rendering:
-      heading_level: 3
-
-::: ibis.backends.pandas.Backend
-    rendering:
-      heading_level: 3
-
-<!-- prettier-ignore-end -->
 
 ## User Defined functions (UDF)
 
