@@ -68,7 +68,7 @@ jobs:
           java-version: 11
 
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: install python
         uses: actions/setup-python@v3
@@ -128,7 +128,7 @@ jobs:
           - "3.10"
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: install python
         uses: actions/setup-python@v3
@@ -164,7 +164,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: start postgres container
         run: docker compose up --build -d postgres
@@ -222,7 +222,7 @@ jobs:
           - "3.9"
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: start impala and kudu containers
         run: docker compose up -d impala kudu
@@ -300,7 +300,7 @@ jobs:
               title: PostgreSQL
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: start ${{ matrix.backend.name }} container
         run: docker compose up --build -d ${{ matrix.backend.name }}
