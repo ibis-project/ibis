@@ -11,7 +11,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: output dependency list
         id: set-matrix
@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(needs.generate_updates.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: cachix/install-nix-action@v16
         with:

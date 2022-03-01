@@ -23,7 +23,7 @@ jobs:
           - python
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: github/codeql-action/init@v1
         with:
           languages: ${{ matrix.language }}
