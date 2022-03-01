@@ -18,6 +18,29 @@ hide:
     async>
 </script>
 
+## Installation
+
+=== "pip"
+
+    ```sh
+    pip install ibis-framework
+    ```
+
+{% for mgr in ["conda", "mamba"] %}
+=== "{{ mgr }}"
+
+    ```sh
+    {{ mgr }} install -c conda-forge ibis-framework
+    ```
+
+{% endfor %}
+
+Try it out!
+
+```python
+python -c 'import ibis; print(ibis.__version__)'
+```
+
 ## Features
 
 ### SQL Coverage
@@ -180,3 +203,13 @@ Let's compute the number of citizens per squared kilometer in Asia:
 <div class="download-button" markdown>
 [:fontawesome-solid-cloud-arrow-down: Download the example data](https://storage.googleapis.com/ibis-testing-data/crunchbase.db){ .md-button .md-button--primary }
 </div>
+
+## What's Next?
+
+!!! question "Need a specific backend?"
+
+    Take a look at the [backends](/backends) documentation!
+
+!!! tip "Interested in contributing?"
+
+    Get started by [setting up a development environment](/contribute/01_environment)!

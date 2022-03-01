@@ -1,5 +1,4 @@
 * [Home](index.md)
-* [Installation](installation.md)
 * Tutorial
     * [Introduction to Ibis](tutorial/01-Introduction-to-Ibis.ipynb)
     * [Aggregating and Joining](tutorial/02-Aggregates-Joins.ipynb)
