@@ -27,7 +27,11 @@ from ... import util
     instead="Use fsspec.filesystem(\"webhdfs\", ...) directly",
     version="3.0.0",
 )
-def hdfs_connect(*args: Any, protocol: str = "webhdfs", **kwargs: Any) -> Any:
+def hdfs_connect(
+    *args: Any,
+    protocol: str = "webhdfs",
+    **kwargs: Any,
+) -> fsspec.spec.AbstractFileSystem:
     """Connect to HDFS using `fsspec`.
 
     This function is a thing wrapper around `fsspec.filesystem`. All arguments

@@ -37,7 +37,12 @@ class BasePandasBackend(BaseBackend):
         Parameters
         ----------
         dictionary
-            Dictionary mapping string table names to pandas DataFrames.
+            Mutable mapping of string table names to pandas DataFrames.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
         """
         # register dispatchers
         from . import execution  # noqa F401

@@ -49,6 +49,12 @@ class Backend(BaseBackend):
         ----------
         config
             Mapping of table names to files.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
+        >>> ibis.datafusion.connect(config)
         """
         if isinstance(config, df.ExecutionContext):
             self._context = config
