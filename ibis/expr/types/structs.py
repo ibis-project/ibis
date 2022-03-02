@@ -104,70 +104,25 @@ class StructValue(Value):
         """Return a mapping from field name to field type of the struct."""
         return util.frozendict(self.type().pairs)
 
-    def destructure(self) -> DestructValue:
-        """Destructure `self` into a `DestructValue`.
+    def destructure(self) -> list[ir.ValueExpr]:
+        """Destructure a ``StructValue`` into the corresponding struct fields.
 
         When assigned, a destruct value will be destructured and assigned to
         multiple columns.
 
         Returns
         -------
-        DestructValue
-            A destruct value expression.
+        list[AnyValue]
+            Value expressions corresponding to the struct fields.
         """
-        return DestructValue(self._arg)
+        return [self[field_name] for field_name in self.type().names]
 
 
 @public
 class StructScalar(Scalar, StructValue):
-    def destructure(self) -> DestructScalar:
-        """Destructure `self` into a `DestructScalar`.
-
-        When assigned, a destruct scalar will be destructured and assigned to
-        multiple columns.
-
-        Returns
-        -------
-        DestructScalar
-            A destruct scalar expression.
-        """
-        return DestructScalar(self._arg)
-
-
-@public
-class StructColumn(Column, StructValue):
-    def destructure(self) -> DestructColumn:
-        """Destructure `self` into a `DestructColumn`.
-
-        When assigned, a destruct column will be destructured and assigned to
-        multiple columns.
-
-        Returns
-        -------
-        DestructColumn
-            A destruct column expression.
-        """
-        return DestructColumn(self._arg)
-
-
-@public
-class DestructValue(Value):
-    """Class that represents a destruct value.
-
-    When assigning a destruct column, the field inside this destruct column
-    will be destructured and assigned to multiple columnns.
-    """
-
-    def name(self, name):
-        res = super().name(name)
-        return self.__class__(res.op())
-
-
-@public
-class DestructScalar(Scalar, DestructValue):
     pass
 
 
 @public
-class DestructColumn(Column, DestructValue):
+class StructColumn(Column, StructValue):
     pass

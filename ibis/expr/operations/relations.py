@@ -396,16 +396,7 @@ class Selection(TableNode, sch.HasSchema):
         names = []
 
         for projection in self.selections:
-            # TODO(kszucs): use an operation for it
-            if isinstance(projection, ir.DestructColumn):
-                # If this is a destruct, then we destructure
-                # the result and assign to multiple columns
-                struct_type = projection.type()
-                for name in struct_type.names:
-                    names.append(name)
-                    types.append(struct_type[name])
-            # elif isinstance(projection, ir.Value):
-            elif isinstance(projection, Value):
+            if isinstance(projection, Value):
                 names.append(projection.resolve_name())
                 types.append(projection.output_dtype)
             elif isinstance(projection, TableNode):
@@ -633,16 +624,8 @@ class Aggregation(TableNode, sch.HasSchema):
         types = []
 
         for e in self.by + self.metrics:
-            if isinstance(e, ir.DestructValue):
-                # If this is a destruct, then we destructure
-                # the result and assign to multiple columns
-                struct_type = e.output_dtype
-                for name in struct_type.names:
-                    names.append(name)
-                    types.append(struct_type[name])
-            else:
-                names.append(e.resolve_name())
-                types.append(e.output_dtype)
+            names.append(e.resolve_name())
+            types.append(e.output_dtype)
 
         return sch.Schema(names, types)
 
