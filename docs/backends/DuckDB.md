@@ -8,12 +8,3 @@ development_only: true
 ---
 
 {% include 'backends/template.md' %}
-
-## API
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.duckdb.Backend
-    rendering:
-      heading_level: 3
-
-<!-- prettier-ignore-end -->
