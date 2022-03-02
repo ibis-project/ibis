@@ -43,7 +43,7 @@ cases contributors do not have to remember to generate and commit these files.
 2.  Run `poetry lock --no-update`
 3.  Regenerate `setup.py`:
 
-    !!! danger "Do not manually edit `setup.py`"
+    !!! failure "Do not manually edit `setup.py`"
 
         `setup.py` is [automatically
         generated](https://github.com/ibis-project/ibis/blob/master/dev/poetry2setup.py)

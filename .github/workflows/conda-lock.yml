@@ -64,27 +64,22 @@ jobs:
             --mamba
 
           # not great, but conda-forge is missing packages for duckdb and
-          # clickhouse-cityhash
+          # clickhouse-cityhash for windows
           conda lock \
             --file pyproject.toml \
             --file "${python_version_file}" \
             --platform win-64 \
-            --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
-            -e clickhouse-driver \
+            --filename-template 'conda-lock/{platform}-3.9.lock' \
             -e dask \
             -e datafusion \
-            -e fsspec \
-            -e GeoAlchemy2 \
-            -e geopandas \
-            -e graphviz \
-            -e impyla \
-            -e psycopg2 \
-            -e pyarrow \
-            -e pymysql \
+            -e geospatial \
+            -e impala \
+            -e mysql \
+            -e pandas \
+            -e postgres \
             -e pyspark \
-            -e requests \
-            -e Shapely \
-            -e sqlalchemy \
+            -e sqlite \
+            -e visualization \
             --mamba
 
       - name: create conda environment

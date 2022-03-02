@@ -19,6 +19,7 @@ from .compiler import ClickhouseCompiler
 _default_compression: str | bool
 
 try:
+    import clickhouse_cityhash  # noqa: F401
     import lz4  # noqa: F401
 
     _default_compression = 'lz4'
