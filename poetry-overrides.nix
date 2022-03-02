@@ -80,4 +80,10 @@ self: super:
       ];
     }
   );
+
+  mkdocs-gen-files = super.mkdocs-gen-files.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.poetry
+    ];
+  });
 }
