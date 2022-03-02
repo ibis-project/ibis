@@ -58,6 +58,11 @@ hide:
 
 === "Conda"
 
+    !!! info "Some optional dependencies are not available through `conda`/`mamba`".
+
+        1. `python-duckdb` and `duckdb-engine`. Required for the DuckDB backend.
+        1. `clickhouse-cityhash`. Required for compression support in the ClickHouse backend.
+
     #### Support Matrix
 
     |      Python Version :material-arrow-right: |                      Python 3.8                      |                      Python 3.9                  |                  Python 3.10                   |

@@ -59,9 +59,32 @@ jobs:
             --file "${python_version_file}" \
             --platform linux-64 \
             --platform osx-64 \
-            --platform win-64 \
             --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
             --extras all \
+            --mamba
+
+          # not great, but conda-forge is missing packages for duckdb and
+          # clickhouse-cityhash
+          conda lock \
+            --file pyproject.toml \
+            --file "${python_version_file}" \
+            --platform win-64 \
+            --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
+            -e clickhouse-driver \
+            -e dask \
+            -e datafusion \
+            -e fsspec \
+            -e GeoAlchemy2 \
+            -e geopandas \
+            -e graphviz \
+            -e impyla \
+            -e psycopg2 \
+            -e pyarrow \
+            -e pymysql \
+            -e pyspark \
+            -e requests \
+            -e Shapely \
+            -e sqlalchemy \
             --mamba
 
       - name: create conda environment

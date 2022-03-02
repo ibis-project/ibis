@@ -74,7 +74,7 @@ extras_require = {
         "geopandas>=0.6,<0.11",
         "graphviz>=0.16,<0.20",
         "impyla[kerberos]>=0.17,<0.19",
-        "lz4>=4.0.0,<5",
+        "lz4>=3.1.10,<5",
         "psycopg2>=2.8.4,<3",
         "pyarrow>=1,<8",
         "pymysql>=1,<2",
@@ -86,7 +86,7 @@ extras_require = {
     "clickhouse": [
         "clickhouse-cityhash>=1.0.2,<2",
         "clickhouse-driver>=0.1,<0.3",
-        "lz4>=4.0.0,<5",
+        "lz4>=3.1.10,<5",
     ],
     "dask": ["dask[array,dataframe]>=2021.10.0", "pyarrow>=1,<8"],
     "datafusion": ["datafusion>=0.4,<0.5"],
