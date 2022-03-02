@@ -1,6 +1,3 @@
-import tempfile
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -497,27 +494,31 @@ def test_elementwise_udf_overwrite_destruct_and_assign(
 
 
 @pytest.mark.min_spark_version('3.1')
-def test_elementwise_udf_destruct_exact_once(udf_backend, udf_alltypes):
-    with tempfile.TemporaryDirectory() as tempdir:
-
-        @elementwise(
-            input_type=[dt.double],
-            output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
-        )
-        def add_one_struct_exact_once(v):
-            key = v.iloc[0]
-            path = Path(f"{tempdir}/{key}")
-            assert not path.exists()
-            path.touch()
-            return v + 1, v + 2
-
-        result = udf_alltypes.mutate(
-            add_one_struct_exact_once(udf_alltypes['index']).destructure()
+def test_elementwise_udf_destruct_exact_once(
+    udf_backend, udf_alltypes, tmp_path
+):
+    if udf_backend.name() in ['pandas', 'dask']:
+        pytest.skip(
+            "Pandas and dask backends doesn't cache intermediate UDF results"
         )
 
-        result = result.execute()
+    @elementwise(
+        input_type=[dt.double],
+        output_type=dt.Struct(['col1', 'col2'], [dt.double, dt.double]),
+    )
+    def add_one_struct_exact_once(v):
+        key = v.iloc[0]
+        path = tmp_path / str(key)
+        assert not path.exists()
+        path.touch()
+        return v + 1, v + 2
 
-        assert len(result) > 0
+    result = udf_alltypes.mutate(
+        add_one_struct_exact_once(udf_alltypes['index']).destructure()
+    )
+    result = result.execute()
+
+    assert len(result) > 0
 
 
 def test_elementwise_udf_multiple_overwrite_destruct(
@@ -550,9 +551,7 @@ def test_elementwise_udf_named_destruct(udf_backend, udf_alltypes):
     add_one_struct_udf = create_add_one_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     )
-    with pytest.raises(
-        com.ExpressionError, match=r".*Cannot name a destruct.*"
-    ):
+    with pytest.raises(TypeError, match=r".*cannot be inferred.*"):
         udf_alltypes.mutate(
             new_struct=add_one_struct_udf(
                 udf_alltypes['double_col']

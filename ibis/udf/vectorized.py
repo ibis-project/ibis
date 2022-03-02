@@ -5,6 +5,7 @@ Warning: This is an experimental module and API here can change without notice.
 DO NOT USE DIRECTLY.
 """
 
+import collections
 import functools
 from typing import Any, List, Optional, Tuple, Union
 
@@ -13,6 +14,7 @@ import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
+import ibis.util as util
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,
@@ -20,7 +22,7 @@ from ibis.expr.operations import (
 )
 
 
-def _coerce_to_tuple(
+def _coerce_to_dict(
     data: Union[List, np.ndarray, pd.Series],
     output_type: dt.Struct,
     index: Optional[pd.Index] = None,
@@ -31,7 +33,14 @@ def _coerce_to_tuple(
     (2) An np.ndarray
     (3) A Series
     """
-    return tuple(data)
+    if util.is_iterable(data):
+        return dict(zip(output_type.names, data))
+    elif isinstance(data, collections.abc.Mapping):
+        return data
+    else:
+        raise ValueError(
+            f"Cannot coerce value with type {type(data)} to dict: {data}"
+        )
 
 
 def _coerce_to_np_array(
@@ -198,7 +207,7 @@ class UserDefinedFunction:
                 return _coerce_to_dataframe
             else:
                 # Case 2: Struct output, reduction UDF -> coerce to tuple
-                return _coerce_to_tuple
+                return _coerce_to_dict
         # Case 3: Vector output, non-reduction UDF -> coerce to Series
         elif (
             self.func_type is ElementWiseVectorizedUDF

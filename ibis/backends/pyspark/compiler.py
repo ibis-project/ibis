@@ -139,19 +139,6 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     for selection in op.selections:
         if isinstance(selection, types.TableExpr):
             col_in_selection_order.extend(selection.columns)
-        elif isinstance(selection, types.DestructColumn):
-            struct_col = t.translate(selection, scope, adjusted_timecontext)
-            # assign struct col and drop it later
-            # This is a work around to ensure that the struct_col
-            # is only executed once
-            struct_col_name = f"destruct_col_{guid()}"
-            result_table = result_table.withColumn(struct_col_name, struct_col)
-            col_to_drop.append(struct_col_name)
-            cols = [
-                result_table[struct_col_name][name].alias(name)
-                for name in selection.type().names
-            ]
-            col_in_selection_order.extend(cols)
         elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
@@ -211,6 +198,13 @@ def compile_column(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     table = t.translate(op.table, scope, timecontext)
     return table[op.name]
+
+
+@compiles(ops.StructField)
+def compile_struct_field(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext)
+    return arg[op.field]
 
 
 @compiles(ops.DistinctColumn)

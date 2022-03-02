@@ -78,66 +78,25 @@ class StructValue(AnyValue):
 
         return ops.StructField(self, name).to_expr().name(name)
 
-    def destructure(self) -> DestructValue:
-        """Destructure `self` into a `DestructValue`.
+    def destructure(self) -> list[ir.ValueExpr]:
+        """Destructure a ``StructValue`` into the corresponding struct fields.
 
         When assigned, a destruct value will be destructured and assigned to
         multiple columns.
 
         Returns
         -------
-        DestructValue
-            A destruct value expression.
+        list[AnyValue]
+            Value expressions corresponding to the struct fields.
         """
-        return DestructValue(self._arg, self._dtype).name("")
+        return [self[field_name] for field_name in self.type().names]
 
 
 @public
 class StructScalar(AnyScalar, StructValue):
-    def destructure(self) -> DestructScalar:
-        """Destructure `self` into a `DestructScalar`.
-
-        When assigned, a destruct scalar will be destructured and assigned to
-        multiple columns.
-
-        Returns
-        -------
-        DestructScalar
-            A destruct scalar expression.
-        """
-        return DestructScalar(self._arg, self._dtype).name("")
-
-
-@public
-class StructColumn(AnyColumn, StructValue):
-    def destructure(self) -> DestructColumn:
-        """Destructure `self` into a `DestructColumn`.
-
-        When assigned, a destruct column will be destructured and assigned to
-        multiple columns.
-
-        Returns
-        -------
-        DestructColumn
-            A destruct column expression.
-        """
-        return DestructColumn(self._arg, self._dtype).name("")
-
-
-@public
-class DestructValue(AnyValue):
-    """Class that represents a destruct value.
-
-    When assigning a destruct column, the field inside this destruct column
-    will be destructured and assigned to multiple columnns.
-    """
-
-
-@public
-class DestructScalar(AnyScalar, DestructValue):
     pass
 
 
 @public
-class DestructColumn(AnyColumn, DestructValue):
+class StructColumn(AnyColumn, StructValue):
     pass
