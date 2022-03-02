@@ -72,4 +72,12 @@ self: super:
       self.poetry-core
     ];
   });
+
+  lz4 = super.lz4.overridePythonAttrs (
+    attrs: lib.optionalAttrs (lib.versionOlder super.lz4.version "4.0.0") {
+      nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+        self.pkgconfig
+      ];
+    }
+  );
 }
