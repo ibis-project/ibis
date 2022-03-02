@@ -31,3 +31,27 @@
 .download-button {
   text-align: center;
 }
+.support-matrix .md-typeset__table {
+  display: table;
+  min-width: 100%;
+}
+.support-matrix .md-typeset table:not([class]) {
+  display: table;
+  min-width: 100%;
+}
+
+.md-typeset__scrollwrap {
+  overflow-x: unset;
+}
+body > div.md-container > main > div > div.md-content > article > div > div > div > table > thead > tr > th:nth-child(1) {
+  min-width: 9.2rem;
+}
+
+.md-typeset table:not([class]) th {
+  text-align: center;
+  padding: 0.9375em 0.5em;
+}
+.md-typeset table:not([class]) td {
+  text-align: center;
+  padding: 0.9375em 0.5em;
+}

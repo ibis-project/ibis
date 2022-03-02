@@ -30,6 +30,9 @@ plugins:
   - exclude:
       glob:
         - backends/template.md
+  - gen-files:
+      scripts:
+        - gen_matrix.py
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -75,18 +78,17 @@ plugins:
             show_root_heading: true
             show_root_toc_entry: true
             show_source: false
-  - mkdocs-jupyter:
-      execute: true
-      ignore:
-        - "*.py"
-      execute_ignore: "tutorial/*Geospatial*.ipynb"
-      include_source: true
-      theme: dark
+  # - mkdocs-jupyter:
+  #     execute: true
+  #     ignore:
+  #       - "*.py"
+  #     execute_ignore: "tutorial/*Geospatial*.ipynb"
+  #     include_source: true
+  #     theme: dark
   - literate-nav
 markdown_extensions:
   - admonition
   - attr_list
-  - codehilite
   - def_list
   - footnotes
   - md_in_html
@@ -108,7 +110,6 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
-  - tables
   - toc
 extra:
   project_name: "ibis"
