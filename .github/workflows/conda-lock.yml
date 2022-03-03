@@ -128,17 +128,23 @@ jobs:
           commit-message: "chore(conda-lock): relock"
           branch: "create-pull-request/conda-relock"
           delete-branch: true
+          add-paths: conda-lock/*.lock
+          committer: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           title: "chore(conda-lock): relock"
           body: "Relock conda-lock environment files"
-          labels: dependencies,autorebase:opt-in
+          labels: |
+            dependencies
+            autorebase:opt-in
 
       - uses: juliangruber/approve-pull-request-action@v1.1.1
+        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
           number: ${{ steps.create_pr.outputs.pull-request-number }}
 
       - uses: peter-evans/enable-pull-request-automerge@v1
+        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
           pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
