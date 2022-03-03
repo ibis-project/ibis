@@ -9,23 +9,213 @@ from .typing import V
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 import ibis.common.exceptions as com
 
 
 @public
 class ArrayValue(AnyValue):
-    pass  # noqa: E701,E302
+    def length(self) -> ir.IntegerValue:
+        """Compute the length of an array.
+
+        Returns
+        -------
+        IntegerValue
+            The integer length of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> a = ibis.array([1, 2, 3])
+        >>> a.length()
+        int64 = ArrayLength
+          value: array<int8> = [1, 2, 3]
+        """
+        import ibis.expr.operations as ops
+
+        return ops.ArrayLength(self).to_expr()
+
+    def __getitem__(
+        self,
+        index: int | ir.IntegerValue | slice,
+    ) -> ir.ValueExpr:
+        """Extract one or more elements of `self`.
+
+        Parameters
+        ----------
+        index
+            Index into `array`
+
+        Returns
+        -------
+        ValueExpr
+            - If `index` is an [`int`][int] or
+              [`IntegerValue`][ibis.expr.types.IntegerValue] then the return
+              type is the element type of `self`.
+            - If `index` is a [`slice`][slice] then the return type is the same
+              type as the input.
+
+        Examples
+        --------
+        Extract a single element
+
+        >>> import ibis
+        >>> x = ibis.array([1, 2, 3, 4])
+        >>> x[2]
+        int8 = ArrayIndex
+          value: array<int8> = [1, 2, 3, 4]
+          index:
+            value: int8 = 2
+
+        Extract a range of elements
+
+        >>> import ibis
+        >>> x = ibis.array([1, 2, 3, 4])
+        >>> x[1:3]
+        array<int8> = ArraySlice
+          value: array<int8> = [1, 2, 3, 4]
+          start:
+            value: int8 = 1
+          stop:
+            value: int8 = 3
+        """
+        import ibis.expr.operations as ops
+
+        if isinstance(index, slice):
+            start = index.start
+            stop = index.stop
+            step = index.step
+
+            if step is not None and step != 1:
+                raise NotImplementedError('step can only be 1')
+
+            op = ops.ArraySlice(self, start if start is not None else 0, stop)
+        else:
+            op = ops.ArrayIndex(self, index)
+        return op.to_expr()
+
+    def __add__(self, other: ArrayValue) -> ArrayValue:
+        """Concatenate this array with another.
+
+        Parameters
+        ----------
+        other
+            Array to concat with `self`
+
+        Returns
+        -------
+        ArrayValue
+            `self` concatenated with `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> a = ibis.array([1, 2])
+        >>> b = ibis.array([3, 4, 5])
+        >>> a + b
+        array<int8> = ArrayConcat
+          left:
+            value: array<int8> = [1, 2]
+          right:
+            value: array<int8> = [3, 4, 5]
+        """
+        import ibis.expr.operations as ops
+
+        return ops.ArrayConcat(self, other).to_expr()
+
+    def __radd__(self, other: ArrayValue) -> ArrayValue:
+        """Concatenate this array with another.
+
+        Parameters
+        ----------
+        other
+            Array to concat with `self`
+
+        Returns
+        -------
+        ArrayValue
+            `self` concatenated with `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> a = ibis.array([1, 2])
+        >>> b = ibis.array([3, 4, 5])
+        >>> b + a
+        array<int8> = ArrayConcat
+          left:
+            value: array<int8> = [3, 4, 5]
+          right:
+            value: array<int8> = [1, 2]
+        """
+        import ibis.expr.operations as ops
+
+        return ops.ArrayConcat(self, other).to_expr()
+
+    def __mul__(self, n: int | ir.IntegerValue) -> ArrayValue:
+        """Repeat this array `n` times.
+
+        Parameters
+        ----------
+        n
+            Number of times to repeat `self`.
+
+        Returns
+        -------
+        ArrayValue
+            `self` repeated `n` times
+
+        Examples
+        --------
+        >>> import ibis
+        >>> x = ibis.array([1, 2])
+        >>> x * 2
+        array<int8> = ArrayRepeat
+          value: array<int8> = [1, 2]
+          times:
+            value: int8 = 2
+        """
+        import ibis.expr.operations as ops
+
+        return ops.ArrayRepeat(self, n).to_expr()
+
+    def __rmul__(self, n: int | ir.IntegerValue) -> ArrayValue:
+        """Repeat this array `n` times.
+
+        Parameters
+        ----------
+        n
+            Number of times to repeat `self`.
+
+        Returns
+        -------
+        ArrayValue
+            `self` repeated `n` times
+
+        Examples
+        --------
+        >>> import ibis
+        >>> x = ibis.array([1, 2])
+        >>> 2 * x
+        array<int8> = ArrayRepeat
+          value: array<int8> = [1, 2]
+          times:
+            value: int8 = 2
+        """
+        import ibis.expr.operations as ops
+
+        return ops.ArrayRepeat(self, n).to_expr()
 
 
 @public
 class ArrayScalar(AnyScalar, ArrayValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class ArrayColumn(AnyColumn, ArrayValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public

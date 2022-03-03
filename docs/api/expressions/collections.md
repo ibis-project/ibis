@@ -5,4 +5,10 @@ structs.
 
 ::: ibis.expr.types.arrays
 ::: ibis.expr.types.maps
+
+<!-- prettier-ignore-start -->
 ::: ibis.expr.types.structs
+    selection:
+      filters:
+        - "!^Destruct.*"
+<!-- prettier-ignore-end -->
