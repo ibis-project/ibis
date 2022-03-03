@@ -11,6 +11,7 @@ from .typing import V
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 
 @public
@@ -53,15 +54,77 @@ class StructValue(AnyValue):
             frozenset(itertools.chain(dir(type(self)), self.type().names))
         )
 
+    def __getitem__(self, name: str) -> ir.ValueExpr:
+        """Extract the `name` field from this struct.
+
+        Parameters
+        ----------
+        name
+            The name of the field to access.
+
+        Returns
+        -------
+        ValueExpr
+            An expression with the type of the field being accessed.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> s = ibis.struct(dict(fruit="pear", weight=0))
+        >>> s['fruit']  # doctest: +NORMALIZE_WHITESPACE
+        fruit: string = StructField
+          value: struct<fruit: string, weight: int8> = OrderedDict([('fruit', 'pear'), ('weight', 0)])
+          field:
+            fruit
+        """  # noqa: E501
+        import ibis.expr.operations as ops
+
+        return ops.StructField(self, name).to_expr().name(name)
+
+    def destructure(self) -> DestructValue:
+        """Destructure `self` into a `DestructValue`.
+
+        When assigned, a destruct value will be destructured and assigned to
+        multiple columns.
+
+        Returns
+        -------
+        DestructValue
+            A destruct value expression.
+        """
+        return DestructValue(self._arg, self._dtype).name("")
+
 
 @public
 class StructScalar(AnyScalar, StructValue):
-    pass  # noqa: E701,E302
+    def destructure(self) -> DestructScalar:
+        """Destructure `self` into a `DestructScalar`.
+
+        When assigned, a destruct scalar will be destructured and assigned to
+        multiple columns.
+
+        Returns
+        -------
+        DestructScalar
+            A destruct scalar expression.
+        """
+        return DestructScalar(self._arg, self._dtype).name("")
 
 
 @public
 class StructColumn(AnyColumn, StructValue):
-    pass  # noqa: E701,E302
+    def destructure(self) -> DestructColumn:
+        """Destructure `self` into a `DestructColumn`.
+
+        When assigned, a destruct column will be destructured and assigned to
+        multiple columns.
+
+        Returns
+        -------
+        DestructColumn
+            A destruct column expression.
+        """
+        return DestructColumn(self._arg, self._dtype).name("")
 
 
 @public
@@ -69,7 +132,7 @@ class DestructValue(AnyValue):
     """Class that represents a destruct value.
 
     When assigning a destruct column, the field inside this destruct column
-    will be destructured and assigned to multipe columnns.
+    will be destructured and assigned to multiple columnns.
     """
 
 
