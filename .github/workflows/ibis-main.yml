@@ -87,7 +87,7 @@ jobs:
         run: just check --junitxml=junit.xml
 
       - name: publish test report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
           name: no-backends-${{ matrix.os }}-${{ matrix.python-version }}

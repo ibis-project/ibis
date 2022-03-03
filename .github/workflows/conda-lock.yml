@@ -88,7 +88,7 @@ jobs:
 
       - name: upload conda lock files
         continue-on-error: ${{ matrix.python-version == '3.10' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock/*-${{ matrix.python-version }}.lock
