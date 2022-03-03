@@ -14,10 +14,10 @@ from ibis.config import options
 from ibis.expr.typing import TimeContext
 
 if TYPE_CHECKING:
-    import ibis.expr.operations as ops
-    from ibis.backends.base import BaseBackend
-    from ibis.expr.format import FormatMemo
-
+    from ...backends.base import BaseBackend
+    from .. import operations as ops
+    from .. import types as ir
+    from ..format import FormatMemo
     from .generic import ValueExpr
 
 
@@ -317,3 +317,46 @@ class UnnamedMarker:
 
 
 unnamed = UnnamedMarker()
+
+
+def _binop(
+    op_class: type[ops.BinaryOp],
+    left: ir.ValueExpr,
+    right: ir.ValueExpr,
+) -> ir.ValueExpr | NotImplemented:
+    """Try to construct a binary operation.
+
+    Parameters
+    ----------
+    op_class
+        The [`BinaryOp`][ibis.expr.operations.BinaryOp] subclass for the
+        operation
+    left
+        Left operand
+    right
+        Right operand
+
+    Returns
+    -------
+    ValueExpr
+        A value expression
+
+    Examples
+    --------
+    >>> import ibis.expr.operations as ops
+    >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
+    >>> expr
+    time = TimeAdd
+      left:
+        value: time = datetime.time(1, 0)
+      right:
+        value: interval<int8>(unit='h') = 1
+    >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
+    NotImplemented
+    """
+    try:
+        node = op_class(left, right)
+    except (com.IbisTypeError, NotImplementedError):
+        return NotImplemented
+    else:
+        return node.to_expr()
