@@ -115,7 +115,7 @@ jobs:
           body: "Relock conda-lock environment files"
           labels: dependencies,autorebase:opt-in
 
-      - uses: juliangruber/approve-pull-request-action@v1.1.0
+      - uses: juliangruber/approve-pull-request-action@v1.1.1
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
           number: ${{ steps.create_pr.outputs.pull-request-number }}
