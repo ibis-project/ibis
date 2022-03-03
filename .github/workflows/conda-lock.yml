@@ -98,7 +98,7 @@ jobs:
           token: ${{ steps.generate_pr_token.outputs.token }}
 
       - name: download conda lock files
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock
@@ -145,7 +145,7 @@ jobs:
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
       - name: download conda lock files
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
           path: conda-lock
