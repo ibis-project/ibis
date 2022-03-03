@@ -97,7 +97,7 @@ python -c 'import ibis; print(ibis.__version__)'
 
 !!! tip "Coming from SQL?"
 
-    Check out [Ibis for SQL Programmers](/user_guide/sql)!
+    Check out [Ibis for SQL Programmers](/ibis-for-sql-programmers/)
 
 ### Abstract Over SQL Dialects
 
