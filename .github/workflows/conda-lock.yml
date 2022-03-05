@@ -1,5 +1,5 @@
 # vim: filetype=yaml
-name: Relock conda environment files
+name: Generate Conda Lockfiles
 
 on:
   schedule:
@@ -54,12 +54,13 @@ jobs:
             echo '  - python=${{ matrix.python-version }}'
           } > "${python_version_file}"
 
+          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
           conda lock \
             --file pyproject.toml \
             --file "${python_version_file}" \
             --platform linux-64 \
             --platform osx-64 \
-            --filename-template 'conda-lock/{platform}-${{ matrix.python-version }}.lock' \
+            --filename-template "${template}" \
             --extras all \
             --mamba
 
@@ -69,7 +70,7 @@ jobs:
             --file pyproject.toml \
             --file "${python_version_file}" \
             --platform win-64 \
-            --filename-template 'conda-lock/{platform}-3.9.lock' \
+            --filename-template "${template}" \
             -e dask \
             -e datafusion \
             -e geospatial \
