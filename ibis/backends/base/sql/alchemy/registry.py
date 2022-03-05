@@ -496,6 +496,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.FloorDivide: _floor_divide,
     # other
     ops.SortKey: _sort_key,
+    ops.Date: unary(lambda arg: sa.cast(arg, sa.DATE)),
 }
 
 

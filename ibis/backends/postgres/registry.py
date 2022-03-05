@@ -119,15 +119,10 @@ def _timestamp_truncate(t, expr):
 
 
 def _interval_from_integer(t, expr):
-    arg, unit = expr.op().args
-    sa_arg = t.translate(arg)
+    op = expr.op()
+    sa_arg = t.translate(op.arg)
     interval = sa.text(f"INTERVAL '1 {expr.type().resolution}'")
     return sa_arg * interval
-
-
-def _timestamp_add(t, expr):
-    sa_args = list(map(t.translate, expr.op().args))
-    return sa_args[0] + sa_args[1]
 
 
 def _is_nan(t, expr):
@@ -678,7 +673,6 @@ operation_registry.update(
         ops.Round: _round,
         ops.Modulus: _mod,
         # dates and times
-        ops.Date: unary(lambda x: sa.cast(x, sa.Date)),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.IntervalFromInteger: _interval_from_integer,

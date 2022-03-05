@@ -240,7 +240,6 @@ operation_registry.update(
         ops.Round: _round,
         ops.RandomScalar: _random,
         # dates and times
-        ops.Date: unary(sa.func.date),
         ops.DateAdd: infix_op('+'),
         ops.DateSub: infix_op('-'),
         ops.DateDiff: fixed_arity(sa.func.datediff, 2),
