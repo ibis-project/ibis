@@ -1,5 +1,4 @@
 import math
-import operator
 from datetime import date, datetime
 from operator import methodcaller
 
@@ -525,21 +524,6 @@ def test_literal_none_to_nullable_colum(alltypes):
     result = expr['nullable_string_column'].execute()
     expected = pd.Series([None] * nrows, name='nullable_string_column')
     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ('attr', 'expected'),
-    [
-        (operator.methodcaller('year'), {2009, 2010}),
-        (operator.methodcaller('month'), set(range(1, 13))),
-        (operator.methodcaller('day'), set(range(1, 32))),
-    ],
-)
-def test_date_extract_field(db, alltypes, attr, expected):
-    t = alltypes
-    expr = attr(t.timestamp_col.cast('date')).distinct()
-    result = expr.execute().astype(int)
-    assert set(result) == expected
 
 
 def test_timestamp_from_integer(con, alltypes, translate):

@@ -1,6 +1,5 @@
 import datetime
 import math
-import operator
 import sqlite3
 import uuid
 
@@ -740,21 +739,6 @@ def test_compile_with_one_unnamed_table():
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
     expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
     assert str(result) == str(expected)
-
-
-@pytest.mark.parametrize(
-    ('attr', 'expected'),
-    [
-        (operator.methodcaller('year'), {2009, 2010}),
-        (operator.methodcaller('month'), set(range(1, 13))),
-        (operator.methodcaller('day'), set(range(1, 32))),
-    ],
-)
-def test_date_extract_field(alltypes, attr, expected):
-    t = alltypes
-    expr = attr(t.timestamp_col.cast('date')).distinct()
-    result = expr.execute().astype(int)
-    assert set(result) == expected
 
 
 def test_scalar_parameter(alltypes):

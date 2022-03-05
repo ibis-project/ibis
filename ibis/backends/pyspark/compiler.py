@@ -213,15 +213,6 @@ def compile_column(t, expr, scope, timecontext, **kwargs):
     return table[op.name]
 
 
-@compiles(ops.DistinctColumn)
-def compile_distinct(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    root_table_expr = op.root_tables()[0].to_expr()
-    src_table = t.translate(root_table_expr, scope, timecontext)
-    src_column_name = op.arg.get_name()
-    return src_table.select(src_column_name).distinct()[src_column_name]
-
-
 @compiles(ops.SelfReference)
 def compile_self_reference(t, expr, scope, timecontext, **kwargs):
     op = expr.op()

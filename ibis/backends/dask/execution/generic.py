@@ -353,11 +353,6 @@ def execute_log_series_gb_series_gb(op, left, right, **kwargs):
     return result.groupby(left.index)
 
 
-@execute_node.register(ops.DistinctColumn, dd.Series)
-def execute_series_distinct(op, data, **kwargs):
-    return data.unique()
-
-
 @execute_node.register(ops.Union, dd.DataFrame, dd.DataFrame, bool)
 def execute_union_dataframe_dataframe(
     op, left: dd.DataFrame, right: dd.DataFrame, distinct, **kwargs

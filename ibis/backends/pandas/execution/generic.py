@@ -796,11 +796,6 @@ def execute_between(op, data, lower, upper, **kwargs):
     return data.between(lower, upper)
 
 
-@execute_node.register(ops.DistinctColumn, pd.Series)
-def execute_series_distinct(op, data, **kwargs):
-    return pd.Series(data.unique(), name=data.name)
-
-
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame, bool)
 def execute_union_dataframe_dataframe(
     op, left: pd.DataFrame, right: pd.DataFrame, distinct, **kwargs

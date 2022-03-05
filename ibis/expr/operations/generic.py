@@ -445,25 +445,3 @@ class SearchedCase(ValueOp):
         exprs = self.results + [self.default]
         dtype = rlz.highest_precedence_dtype(exprs)
         return rlz.shape_like(self.cases, dtype)
-
-
-@public
-class DistinctColumn(ValueOp):
-
-    """
-    COUNT(DISTINCT ...) is really just syntactic suger, but we provide a
-    distinct().count() nicety for users nonetheless.
-
-    For all intents and purposes, like Distinct, but can be distinguished later
-    for evaluation if the result should be array-like versus table-like. Also
-    for calling count()
-    """
-
-    arg = rlz.column(rlz.any)
-    output_type = rlz.typeof('arg')
-
-    def count(self):
-        """Only valid if the distinct contains a single column"""
-        from .reductions import CountDistinct
-
-        return CountDistinct(self.arg)

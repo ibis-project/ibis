@@ -656,7 +656,7 @@ def test_not_exists(con, not_exists):
             ).distinct(),
         ),
         (
-            lambda t: t.string_col.distinct(),
+            lambda t: t[["string_col"]].distinct(),
             lambda sat: sa.select([sat.c.string_col.distinct()]),
         ),
         (

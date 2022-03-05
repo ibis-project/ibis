@@ -69,9 +69,9 @@ FROM functional_alltypes"""
     assert result == expected
 
 
-def test_array_distinct(con):
+def test_column_distinct(con):
     t = con.table('functional_alltypes')
-    expr = t.string_col.distinct()
+    expr = t[["string_col"]].distinct()
 
     result = Compiler.to_sql(expr)
     expected = """SELECT DISTINCT `string_col`

@@ -1345,22 +1345,6 @@ def test_negate_boolean(con, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    ('opname', 'expected'),
-    [
-        ('year', {2009, 2010}),
-        ('month', set(range(1, 13))),
-        ('day', set(range(1, 32))),
-    ],
-)
-def test_date_extract_field(db, opname, expected):
-    op = operator.methodcaller(opname)
-    t = db.functional_alltypes
-    expr = op(t.timestamp_col.cast('date')).distinct()
-    result = expr.execute().astype(int)
-    assert set(result) == expected
-
-
 @pytest.mark.parametrize('opname', ['sum', 'mean', 'min', 'max', 'std', 'var'])
 def test_boolean_reduction(alltypes, opname, df):
     op = operator.methodcaller(opname)
