@@ -90,7 +90,7 @@ class ValueExpr(Expr):
         Returns
         -------
         IntegerValue
-            The hash value of `arg`
+            The hash value of `self`
         """
         import ibis.expr.operations as ops
 
@@ -101,8 +101,6 @@ class ValueExpr(Expr):
 
         Parameters
         ----------
-        arg
-            Expression to cast
         target_type
             Type to cast to
 
@@ -155,7 +153,7 @@ class ValueExpr(Expr):
         return ops.Coalesce([self, *args]).to_expr()
 
     def typeof(self) -> ir.StringValue:
-        """Return the data type of the argument.
+        """Return the data type of the expression.
 
         The values of the returned strings are necessarily backend dependent.
 
@@ -174,7 +172,7 @@ class ValueExpr(Expr):
         Parameters
         ----------
         fill_value
-            Value to replace `NA` values in `arg` with
+            Value with which to replace `NA` values in `self`
 
         Examples
         --------
@@ -186,7 +184,7 @@ class ValueExpr(Expr):
         Returns
         -------
         ValueExpr
-            `arg` filled with `fill_value` where it is `NA`
+            `self` filled with `fill_value` where it is `NA`
         """
         import ibis.expr.operations as ops
 
@@ -278,7 +276,7 @@ class ValueExpr(Expr):
         Returns
         -------
         BooleanValue
-            Whether `arg`'s values are not contained in `values`
+            Whether `self`'s values are not contained in `values`
         """
         import ibis.expr.operations as ops
 
@@ -562,6 +560,260 @@ class ColumnExpr(ValueExpr):
             return None
 
         return self.execute().to_frame()._repr_html_()
+
+    def bottomk(self, k: int, by: ValueExpr | None = None) -> ir.TopKExpr:
+        raise NotImplementedError("bottomk is not implemented")
+
+    def distinct(self) -> ColumnExpr:
+        """Compute the set of unique values.
+
+        Cannot be used in conjunction with other array expressions from the
+        same context.
+
+        Returns
+        -------
+        ColumnExpr
+            Distinct values
+        """
+        import ibis.expr.operations as ops
+
+        return ops.DistinctColumn(self).to_expr()
+
+    def approx_nunique(
+        self,
+        where: ir.BooleanValue | None = None,
+    ) -> ir.IntegerScalar:
+        import ibis.expr.operations as ops
+
+        return ops.HLLCardinality(self, where).to_expr().name("approx_nunique")
+
+    def approx_median(
+        self,
+        where: ir.BooleanValue | None = None,
+    ) -> ScalarExpr:
+        import ibis.expr.operations as ops
+
+        return ops.CMSMedian(self, where).to_expr().name("approx_median")
+
+    def max(self, where: ir.BooleanValue | None = None) -> ScalarExpr:
+        import ibis.expr.operations as ops
+
+        return ops.Max(self, where).to_expr().name("max")
+
+    def min(self, where: ir.BooleanValue | None = None) -> ScalarExpr:
+        import ibis.expr.operations as ops
+
+        return ops.Min(self, where).to_expr().name("min")
+
+    def nunique(
+        self, where: ir.BooleanValue | None = None
+    ) -> ir.IntegerScalar:
+        import ibis.expr.operations as ops
+
+        return ops.CountDistinct(self, where).to_expr().name("nunique")
+
+    def topk(
+        self,
+        k: int,
+        by: ir.ValueExpr | None = None,
+    ) -> ir.TopKExpr:
+        """Return a "top k" expression.
+
+        Parameters
+        ----------
+        k
+            Return this number of rows
+        by
+            An expression. Defaults to the count
+
+        Returns
+        -------
+        TopKExpr
+            A top-k expression
+        """
+        import ibis.expr.operations as ops
+
+        op = ops.TopK(self, k, by=by if by is not None else self.count())
+        return op.to_expr()
+
+    def summary(
+        self,
+        exact_nunique: bool = False,
+        prefix: str = "",
+        suffix: str = "",
+    ) -> list[ir.NumericScalar]:
+        """Compute a set of summary metrics.
+
+        Parameters
+        ----------
+        exact_nunique
+            Compute the exact number of distinct values. Typically slower if
+            `True`.
+        prefix
+            String prefix for metric names
+        suffix
+            String suffix for metric names
+
+        Returns
+        -------
+        list[NumericScalar]
+            Metrics list
+        """
+        if exact_nunique:
+            unique_metric = self.nunique().name('uniques')
+        else:
+            unique_metric = self.approx_nunique().name('uniques')
+
+        metrics = [
+            self.count(),
+            self.isnull().sum().name('nulls'),
+            unique_metric,
+        ]
+        metrics = [m.name(f"{prefix}{m.get_name()}{suffix}") for m in metrics]
+
+        return metrics
+
+    def arbitrary(
+        self,
+        where: ir.BooleanValue | None = None,
+        how: str | None = None,
+    ) -> ScalarExpr:
+        """Select an arbitrary value in a column.
+
+        Parameters
+        ----------
+        where
+            A filter expression
+        how
+            Heavy selects a frequently occurring value using the heavy hitters
+            algorithm. Heavy is only supported by Clickhouse backend.
+
+        Returns
+        -------
+        ScalarExpr
+            An expression
+        """
+        import ibis.expr.operations as ops
+
+        return ops.Arbitrary(self, how=how, where=where).to_expr()
+
+    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+        """Compute the number of rows in an expression.
+
+        Parameters
+        ----------
+        where
+            Filter expression
+
+        Returns
+        -------
+        IntegerScalar
+            Number of elements in an expression
+        """
+        import ibis.expr.operations as ops
+
+        op = self.op()
+        if isinstance(op, ops.DistinctColumn):
+            result = ops.CountDistinct(op.args[0], where).to_expr()
+        else:
+            result = ops.Count(self, where).to_expr()
+
+        return result.name("count")
+
+    def value_counts(self, metric_name: str = "count") -> ir.TableExpr:
+        """Compute a frequency table.
+
+        Returns
+        -------
+        TableExpr
+            Frequency table expression
+        """
+        from .relations import find_base_table
+
+        base = find_base_table(self)
+        metric = base.count().name(metric_name)
+
+        if not self.has_name():
+            expr = self.name("unnamed")
+        else:
+            expr = self
+
+        return base.group_by(expr).aggregate(metric)
+
+    def first(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.FirstValue(self).to_expr()
+
+    def last(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.LastValue(self).to_expr()
+
+    def rank(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.MinRank(self).to_expr()
+
+    def dense_rank(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.DenseRank(self).to_expr()
+
+    def percent_rank(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.PercentRank(self).to_expr()
+
+    def cummin(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.CumulativeMin(self).to_expr()
+
+    def cummax(self) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.CumulativeMax(self).to_expr()
+
+    def lag(
+        self,
+        offset: int | ir.IntegerValue | None = None,
+        default: ValueExpr | None = None,
+    ) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.Lag(self, offset, default).to_expr()
+
+    def lead(
+        self,
+        offset: int | ir.IntegerValue | None = None,
+        default: ValueExpr | None = None,
+    ) -> ColumnExpr:
+        import ibis.expr.operations as ops
+
+        return ops.Lead(self, offset, default).to_expr()
+
+    def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+        import ibis.expr.operations as ops
+
+        return ops.NTile(self, buckets).to_expr()
+
+    def nth(self, n: int | ir.IntegerValue) -> ColumnExpr:
+        """Return the `n`th value over a window.
+
+        Parameters
+        ----------
+        n
+            Desired rank value
+
+        Returns
+        -------
+        ColumnExpr
+            The nth value over a window
+        """
+        import ibis.expr.operations as ops
+
+        return ops.NthValue(self, n).to_expr()
 
 
 @public
