@@ -234,7 +234,7 @@ https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_1.tar.bz2#
 https://conda.anaconda.org/conda-forge/win-64/fontconfig-2.13.96-h1989441_0.tar.bz2#75ebd1dd2111aae6507f435fa8fc9181
 https://conda.anaconda.org/conda-forge/win-64/fonttools-4.29.1-py39hb82d6ee_0.tar.bz2#fa499a29d932a8fdbe7b2bf02c3faa8b
 https://conda.anaconda.org/conda-forge/noarch/ghp-import-2.0.2-pyhd8ed1ab_0.tar.bz2#f4ce65728f64a3c1486a9b43ef32a174
-https://conda.anaconda.org/conda-forge/win-64/hdf5-1.12.1-nompi_h2a0e4a3_103.tar.bz2#40337a06ec22609b3314e2afc80384f3
+https://conda.anaconda.org/conda-forge/win-64/hdf5-1.12.1-nompi_h2a0e4a3_104.tar.bz2#709e87acdf50633bd823c4467a9b50a1
 https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.2.0-hd8ed1ab_0.tar.bz2#0213ccecb06d99c195f126d1ad595beb
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
 https://conda.anaconda.org/conda-forge/noarch/jinja2-3.0.3-pyhd8ed1ab_0.tar.bz2#036d872c653780cb26e797e2e2f61b4c
@@ -313,7 +313,7 @@ https://conda.anaconda.org/conda-forge/win-64/libgdal-3.4.1-hb48b412_5.tar.bz2#3
 https://conda.anaconda.org/conda-forge/noarch/mapclassify-2.4.3-pyhd8ed1ab_0.tar.bz2#908bbfb54da154042c5cbda77b37a3d1
 https://conda.anaconda.org/conda-forge/noarch/mkdocstrings-0.17.0-pyhd8ed1ab_0.tar.bz2#6a7c23446f94a291871604978fd292e6
 https://conda.anaconda.org/conda-forge/win-64/nbconvert-6.4.2-py39hcbf5309_0.tar.bz2#bd11fcabc73adf7dc06c19aee866ba60
-https://conda.anaconda.org/conda-forge/win-64/pango-1.50.3-h6a11761_0.tar.bz2#3f98038a8ce166d65d65e2665de510eb
+https://conda.anaconda.org/conda-forge/win-64/pango-1.50.4-h6a11761_0.tar.bz2#2bb9a9825cdf4261a04956ec7f8dd12f
 https://conda.anaconda.org/conda-forge/noarch/prompt_toolkit-3.0.27-hd8ed1ab_0.tar.bz2#9f53f459a7690c8f1f3a0d81acf8a75f
 https://conda.anaconda.org/conda-forge/win-64/pyarrow-7.0.0-py39ha05331a_2_cpu.tar.bz2#294ce7689d3db14a9fa32af05add6d7f
 https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2#7c1c427246b057b8fa97200ecdb2ed62
