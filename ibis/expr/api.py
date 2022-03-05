@@ -17,7 +17,6 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.expr.window as win
 from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
@@ -114,7 +113,6 @@ __all__ = (
     'aggregate',
     'array',
     'case',
-    'cast',
     'coalesce',
     'cross_join',
     'cumulative_window',
@@ -524,7 +522,7 @@ def case() -> bl.SearchedCaseBuilder:
 
     Returns
     -------
-    bl.SearchedCaseBuilder
+    SearchedCaseBuilder
         A builder object to use for constructing a case expression.
     """
     return bl.SearchedCaseBuilder()
@@ -763,128 +761,6 @@ def _extract_field(name, klass):
 # Generic value API
 
 
-def cast(arg: ir.ValueExpr, target_type: dt.DataType) -> ir.ValueExpr:
-    """Cast value(s) to indicated data type.
-
-    Parameters
-    ----------
-    arg
-        Expression to cast
-    target_type
-        Type to cast to
-
-    Returns
-    -------
-    ValueExpr
-        Casted expression
-    """
-    # validate
-    op = ops.Cast(arg, to=target_type)
-
-    if op.to.equals(arg.type()):
-        # noop case if passed type is the same
-        return arg
-
-    if isinstance(op.to, (dt.Geography, dt.Geometry)):
-        from_geotype = arg.type().geotype or 'geometry'
-        to_geotype = op.to.geotype
-        if from_geotype == to_geotype:
-            return arg
-
-    result = op.to_expr()
-    if not arg.has_name():
-        return result
-    expr_name = f'cast({arg.get_name()}, {op.to})'
-    return result.name(expr_name)
-
-
-def typeof(arg: ir.ValueExpr) -> ir.StringValue:
-    """Return the data type of the argument according to the current backend.
-
-    Parameters
-    ----------
-    arg
-        An expression
-
-    Returns
-    -------
-    StringValue
-        A string indicating the type of the value
-    """
-    return ops.TypeOf(arg).to_expr()
-
-
-def hash(arg: ir.ValueExpr, how: str = 'fnv') -> ir.IntegerValue:
-    """Compute an integer hash value for the indicated value expression.
-
-    Parameters
-    ----------
-    arg
-        An expression
-    how
-        Hash algorithm to use
-
-    Returns
-    -------
-    IntegerValue
-        The hash value of `arg`
-    """
-    return ops.Hash(arg, how).to_expr()
-
-
-def fillna(arg: ir.ValueExpr, fill_value: ir.ScalarExpr) -> ir.ValueExpr:
-    """Replace any null values with the indicated fill value.
-
-    Parameters
-    ----------
-    arg
-        An expression
-    fill_value
-        Value to replace `NA` values in `arg` with
-
-    Examples
-    --------
-    >>> import ibis
-    >>> table = ibis.table([('col', 'int64'), ('other_col', 'int64')])
-    >>> result = table.col.fillna(5)
-    >>> result2 = table.col.fillna(table.other_col * 3)
-
-    Returns
-    -------
-    ValueExpr
-        `arg` filled with `fill_value` where it is `NA`
-    """
-    return ops.IfNull(arg, fill_value).to_expr()
-
-
-def coalesce(*args: ir.ValueExpr) -> ir.ValueExpr:
-    """Compute the first non-null value(s) from the passed arguments.
-
-    Parameters
-    ----------
-    args
-        Arguments to choose from
-
-    Examples
-    --------
-    >>> import ibis
-    >>> expr1 = None
-    >>> expr2 = 4
-    >>> result = ibis.coalesce(expr1, expr2, 5)
-
-    Returns
-    -------
-    ValueExpr
-        Coalesced expression
-
-    See Also
-    --------
-    pandas.DataFrame.combine_first
-    """
-    op = ops.Coalesce(args)
-    return op.to_expr()
-
-
 def greatest(*args: ir.ValueExpr) -> ir.ValueExpr:
     """Compute the largest value among the supplied arguments.
 
@@ -944,44 +820,6 @@ def where(
     return op.to_expr()
 
 
-def over(expr: ir.ValueExpr, window: win.Window) -> ir.ValueExpr:
-    """Construct a window expression.
-
-    Parameters
-    ----------
-    expr
-        A value expression
-    window
-        Window specification
-
-    Returns
-    -------
-    ValueExpr
-        A window function expression
-
-    See Also
-    --------
-    ibis.window
-    """
-    prior_op = expr.op()
-
-    if isinstance(prior_op, ops.WindowOp):
-        op = prior_op.over(window)
-    else:
-        op = ops.WindowOp(expr, window)
-
-    result = op.to_expr()
-
-    try:
-        name = expr.get_name()
-    except com.ExpressionError:
-        pass
-    else:
-        result = result.name(name)
-
-    return result
-
-
 def value_counts(
     arg: ir.ValueExpr, metric_name: str = 'count'
 ) -> ir.TableExpr:
@@ -1008,101 +846,6 @@ def value_counts(
     return base.group_by(arg).aggregate(metric)
 
 
-def nullif(value: ir.ValueExpr, null_if_expr: ir.ValueExpr) -> ir.ValueExpr:
-    """Set values to null if they equal the values `null_if_expr`.
-
-    Commonly use to avoid divide-by-zero problems by replacing zero with NULL
-    in the divisor.
-
-    Parameters
-    ----------
-    value
-        Value expression
-    null_if_expr
-        Expression indicating what values should be NULL
-
-    Returns
-    -------
-    ir.ValueExpr
-        Value expression
-    """
-    return ops.NullIf(value, null_if_expr).to_expr()
-
-
-def between(
-    arg: ir.ValueExpr, lower: ir.ValueExpr, upper: ir.ValueExpr
-) -> ir.BooleanValue:
-    """Check if `arg` is between `lower` and `upper`, inclusive.
-
-    Parameters
-    ----------
-    arg
-        Expression
-    lower
-        Lower bound
-    upper
-        Upper bound
-
-    Returns
-    -------
-    BooleanValue
-        Expression indicating membership in the provided range
-    """
-    lower, upper = rlz.any(lower), rlz.any(upper)
-    op = ops.Between(arg, lower, upper)
-    return op.to_expr()
-
-
-def isin(
-    arg: ir.ValueExpr, values: ir.ValueExpr | Sequence[ir.ValueExpr]
-) -> ir.BooleanValue:
-    """Check whether `arg`'s values are contained within `values`.
-
-    Parameters
-    ----------
-    arg
-        Expression
-    values
-        Values or expression to check for membership
-
-    Examples
-    --------
-    >>> import ibis
-    >>> table = ibis.table([('string_col', 'string')])
-    >>> table2 = ibis.table([('other_string_col', 'string')])
-    >>> expr = table.string_col.isin(['foo', 'bar', 'baz'])
-    >>> expr2 = table.string_col.isin(table2.other_string_col)
-
-    Returns
-    -------
-    BooleanValue
-        Expression indicating membership
-    """
-    op = ops.Contains(arg, values)
-    return op.to_expr()
-
-
-def notin(
-    arg: ir.ValueExpr, values: ir.ValueExpr | Sequence[ir.ValueExpr]
-) -> ir.BooleanValue:
-    """Check whether `arg`'s values are not contained in `values`.
-
-    Parameters
-    ----------
-    arg
-        Expression
-    values
-        Values or expression to check for lack of membership
-
-    Returns
-    -------
-    BooleanValue
-        Whether `arg`'s values are not contained in `values`
-    """
-    op = ops.NotContains(arg, values)
-    return op.to_expr()
-
-
 add = _binop_expr('__add__', ops.Add)
 sub = _binop_expr('__sub__', ops.Subtract)
 mul = _binop_expr('__mul__', ops.Multiply)
@@ -1117,140 +860,7 @@ rdiv = _rbinop_expr('__rdiv__', ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', ops.FloorDivide)
 
 
-def substitute(
-    arg: ir.ValueExpr,
-    value: ir.ValueExor,
-    replacement=None,
-    else_=None,
-):
-    """Replace one or more values in a value expression.
-
-    Parameters
-    ----------
-    arg
-        Value expression
-    value
-        Expression or mapping
-    replacement
-        Expression. If an expression is passed to value, this must be passed.
-    else_
-        Expression
-
-    Returns
-    -------
-    ValueExpr
-        Replaced values
-    """
-    expr = arg.case()
-    if isinstance(value, dict):
-        for k, v in sorted(value.items()):
-            expr = expr.when(k, v)
-    else:
-        expr = expr.when(value, replacement)
-
-    if else_ is not None:
-        expr = expr.else_(else_)
-    else:
-        expr = expr.else_(arg)
-
-    return expr.end()
-
-
-def _case(arg):
-    """Create a new SimpleCaseBuilder to chain multiple if-else statements.
-
-    Add new search expressions with the `.when` method. These must be
-    comparable with this column expression. Conclude by calling `.end()`
-
-    Parameters
-    ----------
-    arg
-        A value expression
-
-    Returns
-    -------
-    bl.SimpleCaseBuilder
-        A case builder
-
-    Examples
-    --------
-    >>> import ibis
-    >>> t = ibis.table([('string_col', 'string')], name='t')
-    >>> expr = t.string_col
-    >>> case_expr = (expr.case()
-    ...              .when('a', 'an a')
-    ...              .when('b', 'a b')
-    ...              .else_('null or (not a and not b)')
-    ...              .end())
-    >>> case_expr  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        string_col : string
-    <BLANKLINE>
-    SimpleCase[string*]
-      base:
-        string_col = Column[string*] 'string_col' from table
-          ref_0
-      cases:
-        Literal[string]
-          a
-        Literal[string]
-          b
-      results:
-        Literal[string]
-          an a
-        Literal[string]
-          a b
-      default:
-        Literal[string]
-          null or (not a and not b)
-    """
-    return bl.SimpleCaseBuilder(arg)
-
-
-def cases(arg, case_result_pairs, default=None) -> ir.ValueExpr:
-    """Create a case expression in one shot.
-
-    Returns
-    -------
-    ValueExpr
-        Value expression
-    """
-    builder = arg.case()
-    for case, result in case_result_pairs:
-        builder = builder.when(case, result)
-    if default is not None:
-        builder = builder.else_(default)
-    return builder.end()
-
-
-_generic_value_methods = {
-    'hash': hash,
-    'cast': cast,
-    'coalesce': coalesce,
-    'typeof': typeof,
-    'fillna': fillna,
-    'nullif': nullif,
-    'between': between,
-    'isin': isin,
-    'notin': notin,
-    'isnull': _unary_op('isnull', ops.IsNull),
-    'notnull': _unary_op('notnull', ops.NotNull),
-    'over': over,
-    'case': _case,
-    'cases': cases,
-    'substitute': substitute,
-    '__eq__': _binop_expr('__eq__', ops.Equals),
-    '__ne__': _binop_expr('__ne__', ops.NotEquals),
-    '__ge__': _binop_expr('__ge__', ops.GreaterEqual),
-    '__gt__': _binop_expr('__gt__', ops.Greater),
-    '__le__': _binop_expr('__le__', ops.LessEqual),
-    '__lt__': _binop_expr('__lt__', ops.Less),
-    'collect': _unary_op('collect', ops.ArrayCollect),
-    'identical_to': _binop_expr('identical_to', ops.IdenticalTo),
-}
+coalesce = ir.ValueExpr.coalesce
 
 
 approx_nunique = _agg_function('approx_nunique', ops.HLLCardinality, True)
@@ -1445,7 +1055,6 @@ _generic_column_methods = {
 
 # TODO: should bound to AnyValue and AnyColumn instead, but that breaks
 #       doc builds, because it checks methods on ColumnExpr
-_add_methods(ir.ValueExpr, _generic_value_methods)
 _add_methods(ir.ColumnExpr, _generic_column_methods)
 
 
