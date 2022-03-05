@@ -314,68 +314,11 @@ def test_scalar_isin_list_with_array(table):
     assert isinstance(not_expr, ir.BooleanColumn)
 
 
-def test_distinct_basic(functional_alltypes):
+def test_distinct_table(functional_alltypes):
     expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
     assert isinstance(expr, ir.TableExpr)
     assert expr.op().table is functional_alltypes
-
-    expr = functional_alltypes.string_col.distinct()
-    assert isinstance(expr.op(), ops.DistinctColumn)
-
-    assert isinstance(expr, ir.StringColumn)
-
-
-@pytest.mark.xfail(reason='NYT')
-def test_distinct_array_interactions(functional_alltypes):
-    # array cardinalities / shapes are likely to be different.
-    a = functional_alltypes.int_col.distinct()
-    b = functional_alltypes.bigint_col
-
-    with pytest.raises(ir.RelationError):
-        a + b
-
-
-@pytest.mark.parametrize('where', [lambda t: None, lambda t: t.int_col != 0])
-def test_distinct_count(functional_alltypes, where):
-    result = functional_alltypes.string_col.distinct().count(
-        where=where(functional_alltypes)
-    )
-    assert isinstance(result.op(), ops.CountDistinct)
-
-    expected = functional_alltypes.string_col.nunique(
-        where=where(functional_alltypes)
-    ).name('count')
-    assert result.equals(expected)
-
-
-def test_distinct_unnamed_array_expr():
-    table = ibis.table(
-        [('year', 'int32'), ('month', 'int32'), ('day', 'int32')], 'foo'
-    )
-
-    # it works!
-    expr = (
-        ibis.literal('-')
-        .join(
-            [
-                table.year.cast('string'),
-                table.month.cast('string'),
-                table.day.cast('string'),
-            ]
-        )
-        .distinct()
-    )
-    repr(expr)
-
-
-def test_distinct_count_numeric_types(functional_alltypes):
-    metric = (
-        functional_alltypes.bigint_col.distinct()
-        .count()
-        .name('unique_bigints')
-    )
-    functional_alltypes.group_by('string_col').aggregate(metric)
 
 
 def test_nunique(functional_alltypes):

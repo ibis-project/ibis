@@ -620,21 +620,6 @@ class AnyColumn(ColumnExpr, AnyValue):
     def bottomk(self, k: int, by: ValueExpr | None = None) -> ir.TopKExpr:
         raise NotImplementedError("bottomk is not implemented")
 
-    def distinct(self) -> ColumnExpr:
-        """Compute the set of unique values.
-
-        Cannot be used in conjunction with other array expressions from the
-        same context.
-
-        Returns
-        -------
-        ColumnExpr
-            Distinct values
-        """
-        import ibis.expr.operations as ops
-
-        return ops.DistinctColumn(self).to_expr()
-
     def approx_nunique(
         self,
         where: ir.BooleanValue | None = None,
@@ -768,13 +753,7 @@ class AnyColumn(ColumnExpr, AnyValue):
         """
         import ibis.expr.operations as ops
 
-        op = self.op()
-        if isinstance(op, ops.DistinctColumn):
-            result = ops.CountDistinct(op.args[0], where).to_expr()
-        else:
-            result = ops.Count(self, where).to_expr()
-
-        return result.name("count")
+        return ops.Count(self, where).to_expr().name("count")
 
     def value_counts(self, metric_name: str = "count") -> ir.TableExpr:
         """Compute a frequency table.

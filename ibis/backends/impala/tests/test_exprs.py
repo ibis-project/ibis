@@ -51,14 +51,6 @@ def test_summary_execute(alltypes):
     assert isinstance(result, pd.DataFrame)
 
 
-def test_distinct_array(con, alltypes):
-    table = alltypes
-
-    expr = table.string_col.distinct()
-    result = con.execute(expr)
-    assert isinstance(result, pd.Series)
-
-
 def test_decimal_metadata(con):
     table = con.table('tpch_lineitem')
 

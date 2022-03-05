@@ -395,13 +395,6 @@ def test_complex_sort_by(t, df):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-def test_distinct(t, df):
-    expr = t.dup_strings.distinct()
-    result = expr.execute()
-    expected = pd.Series(df.dup_strings.unique(), name='dup_strings')
-    tm.assert_series_equal(result, expected)
-
-
 def test_count_distinct(t, df):
     expr = t.dup_strings.nunique()
     result = expr.execute()

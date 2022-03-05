@@ -317,20 +317,8 @@ class SelectBuilder:
                 # Something more complicated.
                 base_table = L.find_source_table(expr)
 
-                if isinstance(op, ops.DistinctColumn):
-                    expr = op.arg
-                    try:
-                        name = op.arg.get_name()
-                    except Exception:
-                        name = 'tmp'
-
-                    table_expr = base_table.projection(
-                        [expr.name(name)]
-                    ).distinct()
-                    result_handler = _get_column(name)
-                else:
-                    table_expr = base_table.projection([expr.name('tmp')])
-                    result_handler = _get_column('tmp')
+                table_expr = base_table.projection([expr.name('tmp')])
+                result_handler = _get_column('tmp')
 
             return table_expr, result_handler
         else:
