@@ -20,7 +20,7 @@ import ibis
 import ibis.common.exceptions as com
 
 from .. import datatypes as dt
-from .core import Expr
+from .core import Expr, _binop
 
 
 @public
@@ -79,6 +79,67 @@ class ValueExpr(Expr):
 
         return factory
 
+
+@public
+class ScalarExpr(ValueExpr):
+    def _type_display(self):
+        return str(self.type())
+
+    def to_projection(self):
+        """
+        Promote this column expression to a table projection
+        """
+        from .relations import TableExpr
+
+        roots = self.op().root_tables()
+        if len(roots) > 1:
+            raise com.RelationError(
+                'Cannot convert scalar expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
+
+        table = TableExpr(roots[0])
+        return table.projection([self])
+
+    def _repr_html_(self) -> str | None:
+        return None
+
+
+@public
+class ColumnExpr(ValueExpr):
+    def _type_display(self):
+        return str(self.type())
+
+    def parent(self):
+        return self._arg
+
+    def to_projection(self):
+        """
+        Promote this column expression to a table projection
+        """
+        from .relations import TableExpr
+
+        roots = self.op().root_tables()
+        if len(roots) > 1:
+            raise com.RelationError(
+                'Cannot convert array expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
+
+        table = TableExpr(roots[0])
+        return table.projection([self])
+
+    def _repr_html_(self) -> str | None:
+        if not ibis.options.interactive:
+            return None
+
+        return self.execute().to_frame()._repr_html_()
+
+
+@public
+class AnyValue(ValueExpr):
     def hash(self, how: str = "fnv") -> ir.IntegerValue:
         """Compute an integer hash value.
 
@@ -151,6 +212,40 @@ class ValueExpr(Expr):
         import ibis.expr.operations as ops
 
         return ops.Coalesce([self, *args]).to_expr()
+
+    def greatest(self, *args: ir.ValueExpr) -> ir.ValueExpr:
+        """Compute the largest value among the supplied arguments.
+
+        Parameters
+        ----------
+        args
+            Arguments to choose from
+
+        Returns
+        -------
+        ValueExpr
+            Maximum of the passed arguments
+        """
+        import ibis.expr.operations as ops
+
+        return ops.Greatest([self, *args]).to_expr()
+
+    def least(self, *args: ir.ValueExpr) -> ir.ValueExpr:
+        """Compute the smallest value among the supplied arguments.
+
+        Parameters
+        ----------
+        args
+            Arguments to choose from
+
+        Returns
+        -------
+        ValueExpr
+            Minimum of the passed arguments
+        """
+        import ibis.expr.operations as ops
+
+        return ops.Least([self, *args]).to_expr()
 
     def typeof(self) -> ir.StringValue:
         """Return the data type of the expression.
@@ -457,110 +552,76 @@ class ValueExpr(Expr):
         except (com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
+    def group_concat(
+        self,
+        sep: str = ",",
+        where: ir.BooleanValue | None = None,
+    ) -> ir.StringScalar:
+        """Concatenate values using the indicated separator to produce a string.
+
+        Parameters
+        ----------
+        sep
+            Separator will be used to join strings
+        where
+            Filter expression
+
+        Returns
+        -------
+        StringScalar
+            Concatenated string expression
+        """
+        import ibis.expr.operations as ops
+
+        return ops.GroupConcat(self, sep=sep, where=where).to_expr()
+
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __eq__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.Equals, self, other)
+        return _binop(ops.Equals, self, rlz.any(other))
 
-    def __ne__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __ne__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.NotEquals, self, other)
+        return _binop(ops.NotEquals, self, rlz.any(other))
 
-    def __ge__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __ge__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.GreaterEqual, self, other)
+        return _binop(ops.GreaterEqual, self, rlz.any(other))
 
-    def __gt__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __gt__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.Greater, self, other)
+        return _binop(ops.Greater, self, rlz.any(other))
 
-    def __le__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __le__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.LessEqual, self, other)
+        return _binop(ops.LessEqual, self, rlz.any(other))
 
-    def __lt__(self, other: ValueExpr) -> ir.BooleanValue:
+    def __lt__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
+        import ibis.expr.rules as rlz
 
-        return _binop(ops.Less, self, other)
-
-
-def _binop(
-    op_class: type[ops.Comparison],
-    left: ValueExpr,
-    right: ValueExpr,
-) -> ir.BooleanValue | NotImplemented:
-    import ibis.expr.rules as rlz
-
-    try:
-        return op_class(left, rlz.any(right)).to_expr()
-    except (com.IbisTypeError, NotImplementedError):
-        return NotImplemented
+        return _binop(ops.Less, self, rlz.any(other))
 
 
 @public
-class ScalarExpr(ValueExpr):
-    def _type_display(self):
-        return str(self.type())
-
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
-        from .relations import TableExpr
-
-        roots = self.op().root_tables()
-        if len(roots) > 1:
-            raise com.RelationError(
-                'Cannot convert scalar expression '
-                'involving multiple base table references '
-                'to a projection'
-            )
-
-        table = TableExpr(roots[0])
-        return table.projection([self])
-
-    def _repr_html_(self) -> str | None:
-        return None
+class AnyScalar(ScalarExpr, AnyValue):
+    pass  # noqa: E701,E302
 
 
 @public
-class ColumnExpr(ValueExpr):
-    def _type_display(self):
-        return str(self.type())
-
-    def parent(self):
-        return self._arg
-
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
-        from .relations import TableExpr
-
-        roots = self.op().root_tables()
-        if len(roots) > 1:
-            raise com.RelationError(
-                'Cannot convert array expression '
-                'involving multiple base table references '
-                'to a projection'
-            )
-
-        table = TableExpr(roots[0])
-        return table.projection([self])
-
-    def _repr_html_(self) -> str | None:
-        if not ibis.options.interactive:
-            return None
-
-        return self.execute().to_frame()._repr_html_()
-
+class AnyColumn(ColumnExpr, AnyValue):
     def bottomk(self, k: int, by: ValueExpr | None = None) -> ir.TopKExpr:
         raise NotImplementedError("bottomk is not implemented")
 
@@ -814,21 +875,6 @@ class ColumnExpr(ValueExpr):
         import ibis.expr.operations as ops
 
         return ops.NthValue(self, n).to_expr()
-
-
-@public
-class AnyValue(ValueExpr):
-    pass  # noqa: E701,E302
-
-
-@public
-class AnyScalar(ScalarExpr, AnyValue):
-    pass  # noqa: E701,E302
-
-
-@public
-class AnyColumn(ColumnExpr, AnyValue):
-    pass  # noqa: E701,E302
 
 
 @public
