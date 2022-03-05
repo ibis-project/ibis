@@ -484,7 +484,7 @@ ssh = ["paramiko"]
 
 [[package]]
 name = "geoalchemy2"
-version = "0.10.2"
+version = "0.11.0"
 description = "Using SQLAlchemy with Spatial Databases"
 category = "main"
 optional = true
@@ -2088,7 +2088,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "efc03838b80111e51a811406808935fa581118a341eb56372539e06cf1d693f3"
+content-hash = "e4e316baa44594129d1f96925f4ee6aba962670a9dfb6c3b9b8b0ddfa69c33ea"
 
 [metadata.files]
 appnope = [
@@ -2603,8 +2603,8 @@ fsspec = [
     {file = "fsspec-2022.2.0.tar.gz", hash = "sha256:20322c659538501f52f6caa73b08b2ff570b7e8ea30a86559721d090e473ad5c"},
 ]
 geoalchemy2 = [
-    {file = "GeoAlchemy2-0.10.2-py2.py3-none-any.whl", hash = "sha256:22350c34c4c31faead91b2f0146b68835dcd66c34122ba1f2277a9dfb6543baa"},
-    {file = "GeoAlchemy2-0.10.2.tar.gz", hash = "sha256:3db833746e11bc802b754751ec94eaab81009a9ad8fe647d461fe76d1a47a3fd"},
+    {file = "GeoAlchemy2-0.11.0-py2.py3-none-any.whl", hash = "sha256:9e505bbef4a743b3dc3e789d9bf96c2da5474440e92b9e4d402e2f72d04cdc8e"},
+    {file = "GeoAlchemy2-0.11.0.tar.gz", hash = "sha256:19f0578f632ee0885efb92b9166cf0277147918b2e06f8de0f18422ca4687b5c"},
 ]
 geopandas = [
     {file = "geopandas-0.10.2-py2.py3-none-any.whl", hash = "sha256:1722853464441b603d9be3d35baf8bde43831424a891e82a8545eb8997b65d6c"},
