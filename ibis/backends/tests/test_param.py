@@ -27,10 +27,8 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ('start_string', 'end_string'),
     [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
 )
-@pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"])
-def test_date_scalar_parameter(
-    backend, alltypes, df, start_string, end_string
-):
+@pytest.mark.notimpl(["datafusion", "pyspark"])
+def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
     col = alltypes.timestamp_col.date()

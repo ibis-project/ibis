@@ -13,9 +13,20 @@ from ibis.backends.pandas.execution.temporal import day_name
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
-@pytest.mark.notimpl(["datafusion", "sqlite"])
-def test_date_extract(backend, alltypes, df, attr):
-    expr = getattr(alltypes.timestamp_col.date(), attr)()
+@pytest.mark.parametrize(
+    "expr_fn",
+    [
+        param(lambda c: c.date(), id="date"),
+        param(
+            lambda c: c.cast("date"),
+            id="cast",
+            marks=pytest.mark.notimpl(["impala"]),
+        ),
+    ],
+)
+@pytest.mark.notimpl(["datafusion"])
+def test_date_extract(backend, alltypes, df, attr, expr_fn):
+    expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
     result = expr.execute()
@@ -172,16 +183,17 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
                     "mysql",
                     "postgres",
                     "pyspark",
+                    "sqlite",
                 ]
             ),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "sqlite"])
+@pytest.mark.notimpl(["datafusion"])
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit)
 
-    dtype = f'datetime64[{unit}]'
+    dtype = f"datetime64[{unit}]"
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
 
     result = expr.execute()

@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 import toolz
+from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common.exceptions as com
@@ -7,6 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
+    AlchemyExprTranslator,
     fixed_arity,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
@@ -19,32 +21,55 @@ operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
 
+sqlite_cast = Dispatcher("sqlite_cast")
+
+
+@sqlite_cast.register(AlchemyExprTranslator, ir.IntegerValue, dt.Timestamp)
+def _unixepoch(t, arg, _):
+    return sa.func.datetime(t.translate(arg), "unixepoch")
+
+
+@sqlite_cast.register(AlchemyExprTranslator, ir.StringValue, dt.Timestamp)
+def _string_to_timestamp(t, arg, _):
+    return sa.func.strftime('%Y-%m-%d %H:%M:%f', t.translate(arg))
+
+
+@sqlite_cast.register(AlchemyExprTranslator, ir.IntegerValue, dt.Date)
+def _integer_to_date(t, arg, _):
+    return sa.func.date(sa.func.datetime(t.translate(arg), "unixepoch"))
+
+
+@sqlite_cast.register(
+    AlchemyExprTranslator,
+    (ir.StringValue, ir.TimestampValue),
+    dt.Date,
+)
+def _string_or_timestamp_to_date(t, arg, _):
+    return sa.func.date(t.translate(arg))
+
+
+@sqlite_cast.register(
+    AlchemyExprTranslator,
+    ir.ValueExpr,
+    (dt.Date, dt.Timestamp),
+)
+def _value_to_temporal(t, arg, _):
+    raise com.UnsupportedOperationError(type(arg))
+
+
+@sqlite_cast.register(AlchemyExprTranslator, ir.CategoryValue, dt.Int32)
+def _category_to_int(t, arg, _):
+    return t.translate(arg)
+
+
+@sqlite_cast.register(AlchemyExprTranslator, ir.ValueExpr, dt.DataType)
+def _default_cast_impl(t, arg, target_type):
+    return sa.cast(t.translate(arg), t.get_sqla_type(target_type))
+
+
 def _cast(t, expr):
-    # It's not all fun and games with SQLite
-
     op = expr.op()
-    arg, target_type = op.args
-    sa_arg = t.translate(arg)
-    sa_type = t.get_sqla_type(target_type)
-
-    if isinstance(target_type, dt.Timestamp):
-        if isinstance(arg, ir.IntegerValue):
-            return sa.func.datetime(sa_arg, 'unixepoch')
-        elif isinstance(arg, ir.StringValue):
-            return sa.func.strftime('%Y-%m-%d %H:%M:%f', sa_arg)
-        raise com.UnsupportedOperationError(type(arg))
-
-    if isinstance(target_type, dt.Date):
-        if isinstance(arg, ir.IntegerValue):
-            return sa.func.date(sa.func.datetime(sa_arg, 'unixepoch'))
-        elif isinstance(arg, ir.StringValue):
-            return sa.func.date(sa_arg)
-        raise com.UnsupportedOperationError(type(arg))
-
-    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
-        return sa_arg
-    else:
-        return sa.cast(sa_arg, sa_type)
+    return sqlite_cast(t, op.arg, op.to)
 
 
 def _substr(t, expr):
@@ -237,6 +262,7 @@ operation_registry.update(
         ops.Greatest: varargs(sa.func.max),
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         ops.DateTruncate: _truncate(sa.func.date),
+        ops.Date: unary(sa.func.date),
         ops.TimestampTruncate: _truncate(sa.func.datetime),
         ops.Strftime: _strftime,
         ops.ExtractYear: _strftime_int('%Y'),
