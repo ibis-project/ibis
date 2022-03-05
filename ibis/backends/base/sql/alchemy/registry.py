@@ -458,7 +458,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.TypeOf: unary(sa.func.typeof),
     ops.Literal: _literal,
     ops.ValueList: _value_list,
-    ops.NullLiteral: lambda *args: sa.null(),
+    ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,

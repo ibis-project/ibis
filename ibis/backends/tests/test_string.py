@@ -185,7 +185,17 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.repeat(2),
             lambda t: t.string_col * 2,
-            id='repeat',
+            id="repeat_method",
+        ),
+        param(
+            lambda t: 2 * t.string_col,
+            lambda t: 2 * t.string_col,
+            id="repeat_left",
+        ),
+        param(
+            lambda t: t.string_col * 2,
+            lambda t: t.string_col * 2,
+            id="repeat_right",
         ),
         param(
             lambda t: t.string_col.translate('0', 'a'),

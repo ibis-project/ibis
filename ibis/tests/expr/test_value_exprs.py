@@ -694,18 +694,26 @@ def test_chained_comparisons_not_allowed(table):
 
 
 @pytest.mark.parametrize(
-    'operation', [operator.add, operator.mul, operator.truediv, operator.sub]
+    'operation',
+    [operator.add, operator.sub, operator.truediv],
 )
-def test_binop_string_type_error(table, operation):
-    # Strings are not valid for any numeric arithmetic
-    ints = table.d
-    strs = table.g
+@pytest.mark.parametrize(("left", "right"), [("d", "g"), ("g", "d")])
+def test_binop_string_type_error(table, operation, left, right):
+    a = table[left]
+    b = table[right]
 
     with pytest.raises(TypeError):
-        operation(ints, strs)
+        operation(a, b)
 
-    with pytest.raises(TypeError):
-        operation(strs, ints)
+
+@pytest.mark.parametrize(("left", "right"), [("d", "g"), ("g", "d")])
+def test_string_mul(table, left, right):
+    a = table[left]
+    b = table[right]
+
+    expr = a * b
+    assert isinstance(expr, ir.StringColumn)
+    assert isinstance(expr.op(), ops.Repeat)
 
 
 @pytest.mark.parametrize(
