@@ -92,9 +92,9 @@ def startswith(translator, expr):
 
 
 def endswith(translator, expr):
-    arg, start = expr.op().args
+    arg, end = expr.op().args
 
     arg_formatted = translator.translate(arg)
-    end_formatted = translator.translate(start)
+    end_formatted = translator.translate(end)
 
     return f"{arg_formatted} like concat('%', {end_formatted})"

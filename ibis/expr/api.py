@@ -3890,8 +3890,8 @@ _string_value_methods = {
     'rpad': _rpad,
     '__add__': _string_concat,
     '__radd__': lambda *args: _string_concat(*args[::-1]),
-    '__mul__': mul,
-    '__rmul__': mul,
+    '__mul__': _binop_expr('__mul__', ops.Repeat),
+    '__rmul__': _binop_expr('__rmul__', ops.Repeat),
 }
 
 
