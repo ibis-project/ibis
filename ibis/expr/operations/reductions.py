@@ -36,16 +36,15 @@ class Arbitrary(Filterable, Reduction):
 class BitAnd(Filterable, Reduction):
     """Aggregate bitwise AND operation.
 
-    All elements in an integer column are ANDed together. This can be used
-    to determine which bit flags are set on all elements.
+    All elements in an integer column are ANDed together.
+
+    This can be used to determine which bit flags are set on all elements.
 
     Resources:
 
-    * `BigQuery BIT_AND
-      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and>`_
-    * `MySQL BIT_AND
-      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and>`_
-    """
+    * BigQuery [`BIT_AND`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and)
+    * MySQL [`BIT_AND`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and)
+    """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')
@@ -60,11 +59,9 @@ class BitOr(Filterable, Reduction):
 
     Resources:
 
-    * `BigQuery BIT_OR
-      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or>`_
-    * `MySQL BIT_OR
-      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or>`_
-    """
+    * BigQuery [`BIT_OR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or)
+    * MySQL [`BIT_OR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or)
+    """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')
@@ -79,11 +76,9 @@ class BitXor(Filterable, Reduction):
 
     Resources:
 
-    * `BigQuery BIT_XOR
-      <https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor>`_
-    * `MySQL BIT_XOR
-      <https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor>`_
-    """
+    * BigQuery [`BIT_XOR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor)
+    * MySQL [`BIT_XOR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor)
+    """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
     output_type = rlz.scalar_like('arg')

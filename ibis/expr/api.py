@@ -677,44 +677,6 @@ def _extract_field(name, klass):
     return f
 
 
-# ---------------------------------------------------------------------
-# Generic value API
-
-
-def greatest(*args: ir.ValueExpr) -> ir.ValueExpr:
-    """Compute the largest value among the supplied arguments.
-
-    Parameters
-    ----------
-    args
-        Arguments to choose from
-
-    Returns
-    -------
-    ValueExpr
-        Maximum of the passed arguments
-    """
-    op = ops.Greatest(args)
-    return op.to_expr()
-
-
-def least(*args: ir.ValueExpr) -> ir.ValueExpr:
-    """Compute the smallest value among the supplied arguments.
-
-    Parameters
-    ----------
-    args
-        Arguments to choose from
-
-    Returns
-    -------
-    ValueExpr
-        Minimum of the passed arguments
-    """
-    op = ops.Least(args)
-    return op.to_expr()
-
-
 def where(
     boolean_expr: ir.BooleanValue,
     true_expr: ir.ValueExpr,
@@ -754,7 +716,9 @@ rdiv = _rbinop_expr('__rdiv__', ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', ops.FloorDivide)
 
 
-coalesce = ir.ValueExpr.coalesce
+coalesce = ir.AnyValue.coalesce
+greatest = ir.AnyValue.greatest
+least = ir.AnyValue.least
 
 
 def _numeric_summary(
