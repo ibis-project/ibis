@@ -159,7 +159,7 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
     !!! tip "Coming from SQL?"
 
-        Check out [Ibis for SQL Programmers](/user_guide/sql)!
+        Check out [Ibis for SQL Programmers](/ibis-for-sql-programmers)!
 
     Ibis gives you the benefit of a programming language. You don't need to
     sacrifice maintainability to get to those insights!

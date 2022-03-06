@@ -14,7 +14,7 @@ if you're interested in working on them!
 The following backends provide some level of support for user-defined functions:
 
 - [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
-- [Pandas](/backends/pandas)
-- [PostgreSQL](/backends/postgres)
-- [Datafusion](/backends/datafusion)
-- [Impala](/backends/impala)
+- [Pandas](/backends/Pandas)
+- [PostgreSQL](/backends/PostgreSQL)
+- [Datafusion](/backends/Datafusion)
+- [Impala](/backends/Impala)
