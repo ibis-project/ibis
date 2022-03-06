@@ -74,3 +74,11 @@ down:
 # load data into running backends; requires a running backend
 load-data *backends="all":
     python ci/datamgr.py -v load {{ backends }}
+
+checklinks *args:
+    #!/usr/bin/env bash
+    mapfile -t files < <(find site -name '*.html' \
+        -and \( -not \( -wholename 'site/SUMMARY/index.html' \
+                        -or -wholename 'site/user_guide/design/index.html' \
+                        -or -wholename 'site/overrides/main.html' \) \))
+    lychee "${files[@]}" --base site --require-https {{ args }}

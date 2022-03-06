@@ -804,8 +804,7 @@ and SQLite support, along with several critical bug fixes.
 
 ## New Features
 
--   Apache Kudu (incubating) integration for Impala users. See the [blog
-    post](http://blog.ibis-project.org/kudu-impala-ibis) for now. Will
+-   Apache Kudu (incubating) integration for Impala users. Will
     add some documentation here when possible.
 -   Add `use_https` option to `ibis.hdfs_connect` for WebHDFS
     connections in secure (Kerberized) clusters without SSL enabled.
@@ -1020,7 +1019,7 @@ improvements, bug fixes, and other new features.
 
 # 0.3 (2015-07-20)
 
-First public release. See <http://ibis-project.org> for more.
+First public release. See https://ibis-project.org for more.
 
 ## New Features
 

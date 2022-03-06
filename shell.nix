@@ -11,6 +11,7 @@ let
     git
     jq
     just
+    lychee
     niv
     nix-linter
     nixpkgs-fmt
