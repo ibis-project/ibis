@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from .. import types as ir
+
 from public import public
 
 from .generic import AnyColumn, AnyScalar, AnyValue
@@ -5,7 +12,25 @@ from .generic import AnyColumn, AnyScalar, AnyValue
 
 @public
 class BinaryValue(AnyValue):
-    pass  # noqa: E701,E302
+    def hashbytes(
+        self,
+        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+    ) -> ir.BinaryValue:
+        """Compute the binary hash value of `arg`.
+
+        Parameters
+        ----------
+        how
+            Hash algorithm to use
+
+        Returns
+        -------
+        BinaryValue
+            Binary expression
+        """
+        from .. import operations as ops
+
+        return ops.HashBytes(self, how).to_expr()
 
 
 @public

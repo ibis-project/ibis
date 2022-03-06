@@ -13,37 +13,37 @@ class StringUnaryOp(UnaryOp):
 
 @public
 class Uppercase(StringUnaryOp):
-    """Convert string to all uppercase"""
+    pass
 
 
 @public
 class Lowercase(StringUnaryOp):
-    """Convert string to all lowercase"""
+    pass
 
 
 @public
 class Reverse(StringUnaryOp):
-    """Reverse string"""
+    pass
 
 
 @public
 class Strip(StringUnaryOp):
-    """Remove whitespace from left and right sides of string"""
+    pass
 
 
 @public
 class LStrip(StringUnaryOp):
-    """Remove whitespace from left side of string"""
+    pass
 
 
 @public
 class RStrip(StringUnaryOp):
-    """Remove whitespace from right side of string"""
+    pass
 
 
 @public
 class Capitalize(StringUnaryOp):
-    """Return a capitalized version of input string"""
+    pass
 
 
 @public
@@ -213,8 +213,6 @@ class ParseURL(ValueOp):
 
 @public
 class StringLength(UnaryOp):
-    """Compute the length of a string."""
-
     output_type = rlz.shape_like('arg', dt.int32)
 
 
