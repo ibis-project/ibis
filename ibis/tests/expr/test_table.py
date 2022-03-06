@@ -1431,3 +1431,13 @@ def test_filter_applied_to_join():
         predicates=[countries["iso_alpha3"] == gdp["country_code"]],
     ).filter(gdp["year"] == 2017)
     assert expr.columns == ["iso_alpha3", "country_code", "year"]
+
+
+@pytest.mark.parametrize("how", ["inner", "left", "outer", "right"])
+def test_join_suffixes(how):
+    left = ibis.table([("id", "int64"), ("first_name", "string")])
+    right = ibis.table([("id", "int64"), ("last_name", "string")])
+
+    method = getattr(left, f"{how}_join")
+    expr = method(right, suffixes=("_left", "_right"))
+    assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
