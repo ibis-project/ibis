@@ -4889,7 +4889,7 @@ def _regular_join_method(
         TableExpr
             Joined `left` and `right`
         """  # noqa: E501
-        return self.join(other, predicates, how=how)
+        return self.join(other, predicates, how=how, suffixes=suffixes)
 
     f.__name__ = name
     return f
