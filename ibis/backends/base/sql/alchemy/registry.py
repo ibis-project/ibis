@@ -485,6 +485,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.StringSQLLike: _string_like,
     ops.StartsWith: _startswith,
     ops.EndsWith: _endswith,
+    ops.StringConcat: varargs(sa.func.concat),
     # math
     ops.Ln: unary(sa.func.ln),
     ops.Exp: unary(sa.func.exp),

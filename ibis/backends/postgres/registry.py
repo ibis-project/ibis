@@ -668,7 +668,12 @@ operation_registry.update(
         ops.RegexReplace: _regex_replace,
         ops.Translate: fixed_arity('translate', 3),
         ops.RegexExtract: _regex_extract_,
-        ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
+        ops.StringSplit: fixed_arity(
+            lambda col, sep: sa.func.string_to_array(
+                col, sep, type_=sa.ARRAY(col.type)
+            ),
+            2,
+        ),
         ops.StringJoin: _string_join,
         ops.FindInSet: _find_in_set,
         # math
