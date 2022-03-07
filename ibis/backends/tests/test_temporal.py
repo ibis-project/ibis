@@ -580,7 +580,7 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "duckdb"])
+@pytest.mark.notimpl(["datafusion"])
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -593,8 +593,8 @@ def test_now(backend, con):
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion", "duckdb"])
-def test_now_from_projection(backend, con, alltypes, df):
+@pytest.mark.notimpl(["datafusion"])
+def test_now_from_projection(backend, alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
     result = expr.execute()
