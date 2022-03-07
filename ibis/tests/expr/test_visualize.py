@@ -80,6 +80,16 @@ def test_custom_expr_with_not_implemented_type():
     assert key(expr) in graph.source
 
 
+@pytest.fixture
+def with_graphviz():
+    old = ibis.options.graphviz_repr
+    ibis.options.graphviz_repr = True
+    try:
+        yield
+    finally:
+        ibis.options.graphviz_repr = old
+
+
 @pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
 def test_join(how):
     left = ibis.table([('a', 'int64'), ('b', 'string')])
@@ -103,7 +113,7 @@ def test_sort_by():
     bool(os.environ.get('APPVEYOR', None)),
     reason='Not sure what the prerequisites for running this on Windows are',
 )
-def test_optional_graphviz_repr():
+def test_optional_graphviz_repr(with_graphviz):
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
     expr = (
         t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('b')
@@ -144,7 +154,7 @@ def test_asof_join():
     assert key(result) in graph.source
 
 
-def test_html_escape():
+def test_html_escape(with_graphviz):
     # Check that we correctly escape HTML <> characters in the graphviz
     # representation. If an error is thrown, _repr_png_ returns None.
     expr = ibis.table([('<a & b>', ibis.expr.datatypes.Array('string'))])
