@@ -38,7 +38,7 @@ class Options(BaseSettings):
     verbose: bool = False
     verbose_log: Optional[Callable[[str], None]] = None
     graphviz_repr: bool = Field(
-        default=True,
+        default=False,
         description="Render expressions as GraphViz PNGs when running in a Jupyter notebook.",  # noqa: E501
     )
     default_backend: Any = None
