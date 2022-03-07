@@ -32,46 +32,52 @@ def test_date_extract(backend, alltypes, df, attr):
         'day',
         param('day_of_year', marks=pytest.mark.notimpl(["impala"])),
         'quarter',
-        param('epoch_seconds', marks=pytest.mark.notimpl(["duckdb"])),
-        param('week_of_year', marks=pytest.mark.notimpl(["sqlite"])),
         'hour',
         'minute',
         'second',
-        param(
-            'millisecond',
-            marks=(
-                pytest.mark.xfail_backends(
-                    [('sqlite', "#2156"), ('pyspark', '#2159')]
-                ),
-                pytest.mark.notimpl(["clickhouse"]),
-            ),
-        ),
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract(backend, alltypes, df, attr):
-    if attr == 'millisecond':
-        expected = (df.timestamp_col.dt.microsecond // 1000).astype('int32')
-    elif attr == 'epoch_seconds':
-        expected = df.timestamp_col.astype('int64') // int(1e9)
-    elif attr == 'week_of_year':
-        expected = df.timestamp_col.dt.isocalendar().week.astype('int32')
-    else:
-        expected = getattr(df.timestamp_col.dt, attr.replace('_', '')).astype(
-            'int32'
-        )
-
-    expr = getattr(alltypes.timestamp_col, attr)()
+    method = getattr(alltypes.timestamp_col, attr)
+    expr = method()
     result = expr.execute()
-    if attr == 'epoch_seconds' and backend.name() in [
-        'bigquery',
-        'postgres',
-        'pyspark',
-    ]:
-        # note: these backends cast to bigint are not changing the result
-        result = result.astype('int64')
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(
+        getattr(df.timestamp_col.dt, attr.replace('_', '')).astype('int32')
+    )
+    backend.assert_series_equal(result, expected)
 
+
+@pytest.mark.notimpl(["datafusion", "clickhouse"])
+@pytest.mark.xfail_backends([('sqlite', "#2156"), ('pyspark', '#2159')])
+def test_timestamp_extract_milliseconds(backend, alltypes, df):
+    expr = alltypes.timestamp_col.millisecond()
+    result = expr.execute()
+    expected = backend.default_series_rename(
+        (df.timestamp_col.dt.microsecond // 1_000).astype('int32')
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
+    expr = alltypes.timestamp_col.epoch_seconds()
+    result = expr.execute()
+
+    result = result.astype(backend.epoch_seconds_return_type)
+    expected = backend.default_series_rename(
+        df.timestamp_col.astype("int64") // 1_000_000_000
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_timestamp_extract_week_of_year(backend, alltypes, df):
+    expr = alltypes.timestamp_col.week_of_year()
+    result = expr.execute()
+    expected = backend.default_series_rename(
+        df.timestamp_col.dt.isocalendar().week.astype("int32")
+    )
     backend.assert_series_equal(result, expected)
 
 
