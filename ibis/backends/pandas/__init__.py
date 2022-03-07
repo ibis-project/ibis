@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from typing import Any, MutableMapping
 
 import pandas as pd
@@ -7,6 +8,7 @@ from pydantic import Field
 
 import ibis.common.exceptions as com
 import ibis.config
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
@@ -157,6 +159,19 @@ class BasePandasBackend(BaseBackend):
     @classmethod
     def _convert_object(cls, obj: Any) -> Any:
         return cls.backend_table_type(obj)
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+        execution = importlib.import_module(
+            f"ibis.backends.{cls.name}.execution"
+        )
+        execute_node = execution.execute_node
+        op_classes = {op for op, *_ in execute_node.funcs.keys()}
+        return operation in op_classes or any(
+            issubclass(operation, op_impl)
+            for op_impl in op_classes
+            if issubclass(op_impl, ops.ValueOp)
+        )
 
 
 class Backend(BasePandasBackend):

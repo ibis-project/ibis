@@ -1,10 +1,7 @@
-import collections
-import importlib
-import operator
+import io
 from pathlib import Path
 
-import mkdocs_gen_files
-import tabulate
+import pandas as pd
 import tomli
 
 import ibis
@@ -28,43 +25,35 @@ def get_leaf_classes(op):
             yield from get_leaf_classes(child_class)
 
 
-with mkdocs_gen_files.open(
-    Path("backends") / "99_support_matrix.md",
-    "w",
-) as f:
-    print("# Operation Support Matrix", file=f)
-    print('<div class="support-matrix" markdown>', file=f)
+ICONS = {
+    True: ":material-check-decagram:{ .verified }",
+    False: ":material-cancel:{ .cancel }",
+}
 
-    support = collections.defaultdict(list)
 
-    possible_ops = sorted(
-        set(get_leaf_classes(ops.ValueOp)), key=operator.attrgetter("__name__")
+def main():
+    dst = Path(__file__).parent.joinpath(
+        "docs",
+        "backends",
+        "support_matrix.csv",
     )
+    possible_ops = set(get_leaf_classes(ops.ValueOp))
 
-    for op in possible_ops:
-        support["operation"].append(f"`{op.__name__}`")
-        for name, backend in get_backends():
-            try:
-                translator = backend.compiler.translator_class
-                ops = translator._registry.keys() | translator._rewrites.keys()
-                supported = op in ops
-            except AttributeError:
-                if name in ("dask", "pandas"):
-                    execution = importlib.import_module(
-                        f"ibis.backends.{name}.execution"
-                    )
-                    execute_node = execution.execute_node
-                    ops = {op for op, *_ in execute_node.funcs.keys()}
-                    supported = op in ops or any(
-                        issubclass(op, other) for other in ops
-                    )
-                else:
-                    continue
-            if supported:
-                support[name].append(":material-check-decagram:{ .verified }")
-            else:
-                support[name].append(":material-cancel:{ .cancel }")
+    support = {
+        "operation": [f"`{op.__name__}`" for op in possible_ops],
+    }
+    for name, backend in get_backends():
+        support[name] = list(map(backend.has_operation, possible_ops))
 
-    table = tabulate.tabulate(support, headers="keys", tablefmt="pipe")
-    print(table, file=f)
-    print('</div>', file=f)
+    df = pd.DataFrame(support).set_index("operation").sort_index()
+    counts = df.sum().sort_values(ascending=False)
+    df = df.loc[:, counts.index].replace(ICONS)
+    out = io.BytesIO()
+    df.to_csv(out)
+    ops_bytes = out.getvalue()
+
+    if not dst.exists() or ops_bytes != dst.read_bytes():
+        dst.write_bytes(ops_bytes)
+
+
+main()
