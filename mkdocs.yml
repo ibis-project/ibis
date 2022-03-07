@@ -11,6 +11,7 @@ theme:
     - header.autohide
     - navigation.indexes
     - navigation.instant
+    - navigation.tracking
     - search.highlight
     - search.share
     - search.suggest
@@ -25,14 +26,16 @@ theme:
   custom_dir: docs/overrides
 plugins:
   - search
-  - macros
   - autorefs
   - exclude:
       glob:
         - backends/template.md
+        - backends/support_matrix.csv
   - gen-files:
       scripts:
         - gen_matrix.py
+  - table-reader
+  - macros
   - mkdocstrings:
       enable_inventory: true
       handlers:
@@ -78,13 +81,13 @@ plugins:
             show_root_heading: true
             show_root_toc_entry: true
             show_source: false
-  # - mkdocs-jupyter:
-  #     execute: true
-  #     ignore:
-  #       - "*.py"
-  #     execute_ignore: "tutorial/*Geospatial*.ipynb"
-  #     include_source: true
-  #     theme: dark
+  - mkdocs-jupyter:
+      execute: true
+      ignore:
+        - "*.py"
+      execute_ignore: "tutorial/*Geospatial*.ipynb"
+      include_source: true
+      theme: dark
   - literate-nav
 markdown_extensions:
   - admonition
@@ -110,7 +113,9 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
-  - toc
+  - toc:
+      permalink: true
+      permalink_title: "Anchor link to this section for reference"
 extra:
   project_name: "ibis"
   team:

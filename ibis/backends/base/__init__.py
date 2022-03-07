@@ -566,3 +566,30 @@ class BaseBackend(abc.ABC):
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "drop_view"'
         )
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+        """Return whether the backend implements support for `operation`.
+
+        Parameters
+        ----------
+        operation
+            A class corresponding to an operation.
+
+        Returns
+        -------
+        bool
+            Whether the backend implements the operation.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.operations as ops
+        >>> ibis.sqlite.has_operation(ops.ArrayIndex)
+        False
+        >>> ibis.postgres.has_operation(ops.ArrayIndex)
+        True
+        """
+        raise NotImplementedError(
+            f"{cls.name} backend has not implemented `has_operation` API"
+        )

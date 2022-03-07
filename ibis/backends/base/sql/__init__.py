@@ -252,3 +252,9 @@ class BaseSQLBackend(BaseBackend):
         cur.release()
 
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+        translator = cls.compiler.translator_class
+        op_classes = translator._registry.keys() | translator._rewrites.keys()
+        return operation in op_classes

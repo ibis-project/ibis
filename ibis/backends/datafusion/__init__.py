@@ -8,6 +8,7 @@ import datafusion as df
 import pyarrow as pa
 
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
@@ -195,3 +196,14 @@ class Backend(BaseBackend):
         **kwargs: Any,
     ):
         return translate(expr)
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+        from .compiler import translate
+
+        op_classes = translate.registry
+        return operation in op_classes or any(
+            issubclass(operation, op_impl)
+            for op_impl in op_classes
+            if issubclass(op_impl, ops.ValueOp)
+        )

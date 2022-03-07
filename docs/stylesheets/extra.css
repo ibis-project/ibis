@@ -5,52 +5,79 @@
 .md-typeset details.experimental {
   border-color: rgb(43, 155, 70);
 }
+
 .md-typeset .experimental > .admonition-title,
 .md-typeset .experimental > summary {
   background-color: rgba(43, 155, 70, 0.1);
   border-color: rgb(43, 155, 70);
 }
+
 .md-typeset .experimental > .admonition-title::before,
 .md-typeset .experimental > summary::before {
   background-color: rgb(43, 155, 70);
   -webkit-mask-image: var(--md-admonition-icon--experimental);
   mask-image: var(--md-admonition-icon--experimental);
 }
+
 .verified {
   color: #00c853;
 }
+
 .unverified {
   color: #ff9100;
 }
+
 .bug {
   color: #f50057;
 }
+
 .cancel {
   color: #ff5252;
 }
+
 .download-button {
   text-align: center;
 }
+
 .support-matrix .md-typeset__table {
   display: table;
   min-width: 100%;
 }
+
 .support-matrix .md-typeset table:not([class]) {
   display: table;
   min-width: 100%;
 }
 
 .md-typeset__scrollwrap {
-  overflow-x: unset;
+  transform: rotateX(180deg);
+  overflow-x: auto;
 }
-body > div.md-container > main > div > div.md-content > article > div > div > div > table > thead > tr > th:nth-child(1) {
-  min-width: 9.2rem;
+
+.md-typeset__scrollwrap > .md-typeset__table {
+  transform: rotateX(180deg);
+}
+
+body
+  > div.md-container
+  > main
+  > div
+  > div.md-content
+  > article
+  > div.md-typeset__scrollwrap
+  > div
+  > table
+  > thead
+  > tr
+  > th:nth-child(1) {
+  min-width: 8.8rem;
 }
 
 .md-typeset table:not([class]) th {
   text-align: center;
   padding: 0.9375em 0.5em;
 }
+
 .md-typeset table:not([class]) td {
   text-align: center;
   padding: 0.9375em 0.5em;

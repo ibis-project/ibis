@@ -979,6 +979,17 @@ python-versions = "*"
 mkdocs = "*"
 
 [[package]]
+name = "mkdocs-gen-files"
+version = "0.3.4"
+description = "MkDocs plugin to programmatically generate documentation pages during the build"
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[package.dependencies]
+mkdocs = ">=1.0.3,<2.0.0"
+
+[[package]]
 name = "mkdocs-jupyter"
 version = "0.20.0"
 description = "Use Jupyter in mkdocs websites"
@@ -1044,6 +1055,20 @@ description = "Extension pack for Python Markdown."
 category = "dev"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "mkdocs-table-reader-plugin"
+version = "1.0.0"
+description = "MkDocs plugin to directly insert tables from files into markdown."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+mkdocs = ">=1.0"
+pandas = ">=1.1"
+PyYAML = ">=5.4.1"
+tabulate = ">=0.8.7"
 
 [[package]]
 name = "mkdocstrings"
@@ -1878,6 +1903,17 @@ pure-eval = "*"
 tests = ["pytest", "typeguard", "pygments", "littleutils", "cython"]
 
 [[package]]
+name = "tabulate"
+version = "0.8.9"
+description = "Pretty-print tabular data"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.extras]
+widechars = ["wcwidth"]
+
+[[package]]
 name = "termcolor"
 version = "1.1.0"
 description = "ANSII Color formatting for output in terminal."
@@ -2107,7 +2143,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "ebd39cbaa4824940f4ec2acd877af49d2ed2a1af842be884a0a003d9d65005f4"
+content-hash = "34e890835e1d400ec9387a4074c914291ef8dd24af0e241553dbe7e327ca4cb2"
 
 [metadata.files]
 appnope = [
@@ -2946,6 +2982,10 @@ mkdocs-autorefs = [
 mkdocs-exclude = [
     {file = "mkdocs-exclude-1.0.2.tar.gz", hash = "sha256:ba6fab3c80ddbe3fd31d3e579861fd3124513708271180a5f81846da8c7e2a51"},
 ]
+mkdocs-gen-files = [
+    {file = "mkdocs-gen-files-0.3.4.tar.gz", hash = "sha256:c69188486bdc1e74bd2b9b7ebbde9f9eb21052ae7762f1b35420cfbfc6d7122e"},
+    {file = "mkdocs_gen_files-0.3.4-py3-none-any.whl", hash = "sha256:07f43245c87a03cfb03884e767655c2a61def24d07e47fb3a8d26b1581524d6a"},
+]
 mkdocs-jupyter = [
     {file = "mkdocs-jupyter-0.20.0.tar.gz", hash = "sha256:4d436d45dedc5e78760e24a54105ceef849aa6414e4ef13ddc99c915e9a8ea73"},
 ]
@@ -2964,6 +3004,10 @@ mkdocs-material = [
 mkdocs-material-extensions = [
     {file = "mkdocs-material-extensions-1.0.3.tar.gz", hash = "sha256:bfd24dfdef7b41c312ede42648f9eb83476ea168ec163b613f9abd12bbfddba2"},
     {file = "mkdocs_material_extensions-1.0.3-py3-none-any.whl", hash = "sha256:a82b70e533ce060b2a5d9eb2bc2e1be201cf61f901f93704b4acf6e3d5983a44"},
+]
+mkdocs-table-reader-plugin = [
+    {file = "mkdocs-table-reader-plugin-1.0.0.tar.gz", hash = "sha256:ef222ca5e82431a3b98fbdcc935d6d5247e8a8d4ad9a616bdcbc40f20eb18db0"},
+    {file = "mkdocs_table_reader_plugin-1.0.0-py3-none-any.whl", hash = "sha256:ea5cc6d642bd80bde733f4418c3ce3a4bb9c9327247810d864502a6912cc2d87"},
 ]
 mkdocstrings = [
     {file = "mkdocstrings-0.17.0-py3-none-any.whl", hash = "sha256:103fc1dd58cb23b7e0a6da5292435f01b29dc6fa0ba829132537f3f556f985de"},
@@ -3606,6 +3650,10 @@ sqlparse = [
 stack-data = [
     {file = "stack_data-0.2.0-py3-none-any.whl", hash = "sha256:999762f9c3132308789affa03e9271bbbe947bf78311851f4d485d8402ed858e"},
     {file = "stack_data-0.2.0.tar.gz", hash = "sha256:45692d41bd633a9503a5195552df22b583caf16f0b27c4e58c98d88c8b648e12"},
+]
+tabulate = [
+    {file = "tabulate-0.8.9-py3-none-any.whl", hash = "sha256:d7c013fe7abbc5e491394e10fa845f8f32fe54f8dc60c6622c6cf482d25d47e4"},
+    {file = "tabulate-0.8.9.tar.gz", hash = "sha256:eb1d13f25760052e8931f2ef80aaf6045a6cceb47514db8beab24cded16f13a7"},
 ]
 termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},
