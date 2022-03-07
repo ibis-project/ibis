@@ -64,14 +64,13 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds()
     result = expr.execute()
 
-    result = result.astype(backend.epoch_seconds_return_type)
     expected = backend.default_series_rename(
-        df.timestamp_col.astype("int64") // 1_000_000_000
+        (df.timestamp_col.view("int64") // 1_000_000_000).astype("int32")
     )
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year()
     result = expr.execute()

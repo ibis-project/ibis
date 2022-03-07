@@ -694,7 +694,7 @@ operation_registry.update(
         ops.ExtractDay: _extract('day'),
         ops.ExtractDayOfYear: _extract('doy'),
         ops.ExtractQuarter: _extract('quarter'),
-        ops.ExtractEpochSeconds: _extract('epoch', sa.BigInteger),
+        ops.ExtractEpochSeconds: _extract('epoch', sa.Integer),
         ops.ExtractWeekOfYear: _extract('week'),
         ops.ExtractHour: _extract('hour'),
         ops.ExtractMinute: _extract('minute'),
