@@ -753,18 +753,19 @@ def all(ctx):
         path_type=Path,
     ),
 )
-def duckdb(schema, tables, data_directory, database, **params):
+def duckdb(schema, tables, data_directory, database, **_):
     import duckdb  # noqa: F401
 
     logger.info('Initializing DuckDB...')
-    conn = duckdb.connect(f"ci/ibis-testing-data/{database}.ddb")
+    conn = duckdb.connect(str(data_directory / f"{database}.ddb"))
     for stmt in filter(None, map(str.strip, schema.read().split(';'))):
         conn.execute(stmt)
 
     for table in tables:
         src = data_directory / f'{table}.csv'
-        sql = f"INSERT INTO {table} SELECT * FROM '{src}';"
-        conn.execute(sql)
+        conn.execute(
+            f"COPY {table} FROM '{src}' (DELIMITER ',', HEADER, SAMPLE_SIZE 1)"
+        )
 
 
 if __name__ == '__main__':
