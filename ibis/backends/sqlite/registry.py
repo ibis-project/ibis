@@ -111,18 +111,6 @@ def _string_find(t, expr):
     return f(sa_arg, sa_substr) - 1
 
 
-def _infix_op(infix_sym):
-    def formatter(t, expr):
-        op = expr.op()
-        left, right = op.args
-
-        left_arg = t.translate(left)
-        right_arg = t.translate(right)
-        return left_arg.op(infix_sym)(right_arg)
-
-    return formatter
-
-
 def _strftime(t, expr):
     arg, format = expr.op().args
     sa_arg = t.translate(arg)
@@ -132,9 +120,7 @@ def _strftime(t, expr):
 
 def _strftime_int(fmt):
     def translator(t, expr):
-        (arg,) = expr.op().args
-        sa_arg = t.translate(arg)
-        return sa.cast(sa.func.strftime(fmt, sa_arg), sa.INTEGER)
+        return t.translate(expr.op().arg.strftime(fmt).cast(dt.int32))
 
     return translator
 
@@ -182,10 +168,6 @@ def _truncate(func):
         return func(sa_arg, modifier)
 
     return translator
-
-
-def _now(t, expr):
-    return sa.func.datetime('now')
 
 
 def _millisecond(t, expr):
@@ -252,6 +234,54 @@ def _rpad(t, expr):
     return arg + _generic_pad(arg, length, pad)
 
 
+def _extract_week_of_year(t, expr):
+    """ISO week of year.
+
+    This solution is based on https://stackoverflow.com/a/15511864 and handle
+    the edge cases when computing ISO week from non-ISO week.
+
+    The implementation gives the same results as `datetime.isocalendar()`.
+
+    The year's week that "wins" the day is the year with more alloted days.
+
+    For example:
+
+    ```
+    $ cal '2011-01-01'
+        January 2011
+    Su Mo Tu We Th Fr Sa
+                      |1|
+     2  3  4  5  6  7  8
+     9 10 11 12 13 14 15
+    16 17 18 19 20 21 22
+    23 24 25 26 27 28 29
+    30 31
+    ```
+
+    Here the ISO week number is `52` since the day occurs in a week with more
+    days in the week occuring in the _previous_ week's year.
+
+    ```
+    $ cal '2012-12-31'
+        December 2012
+    Su Mo Tu We Th Fr Sa
+                       1
+     2  3  4  5  6  7  8
+     9 10 11 12 13 14 15
+    16 17 18 19 20 21 22
+    23 24 25 26 27 28 29
+    30 |31|
+    ```
+
+    Here the ISO week of year is `1` since the day occurs in a week with more
+    days in the week occuring in the _next_ week's year.
+    """
+    arg = t.translate(expr.op().arg)
+    return (
+        sa.func.strftime("%j", sa.func.date(arg, "-3 days", "weekday 4")) - 1
+    ) / 7 + 1
+
+
 operation_registry.update(
     {
         ops.Cast: _cast,
@@ -268,6 +298,7 @@ operation_registry.update(
         ops.ExtractYear: _strftime_int('%Y'),
         ops.ExtractMonth: _strftime_int('%m'),
         ops.ExtractDay: _strftime_int('%d'),
+        ops.ExtractWeekOfYear: _extract_week_of_year,
         ops.ExtractDayOfYear: _strftime_int('%j'),
         ops.ExtractQuarter: _extract_quarter,
         ops.ExtractEpochSeconds: _extract_epoch_seconds,
@@ -275,7 +306,7 @@ operation_registry.update(
         ops.ExtractMinute: _strftime_int('%M'),
         ops.ExtractSecond: _strftime_int('%S'),
         ops.ExtractMillisecond: _millisecond,
-        ops.TimestampNow: _now,
+        ops.TimestampNow: fixed_arity(lambda: sa.func.datetime("now"), 0),
         ops.IdenticalTo: _identical_to,
         ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
         ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
