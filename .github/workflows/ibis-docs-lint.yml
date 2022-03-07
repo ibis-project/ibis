@@ -101,6 +101,7 @@ jobs:
             --exclude-mail \
             --exclude fonts.gstatic.com \
             --exclude github.com \
+            --exclude github.io \
             --no-progress \
             --github-token ${{ steps.generate_token.outputs.token }}
 
