@@ -1373,7 +1373,7 @@ def _extract_component_from_datetime(
 ):
     op = expr.op()
     date_col = t.translate(op.arg, scope, timecontext)
-    return extract_fn(date_col)
+    return extract_fn(date_col).cast('integer')
 
 
 @compiles(ops.ExtractYear)
