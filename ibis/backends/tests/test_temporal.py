@@ -272,10 +272,8 @@ def test_integer_to_interval_timestamp(
         "clickhouse",
         "dask",
         "datafusion",
-        "duckdb",
         "impala",
         "mysql",
-        "postgres",
         "pyspark",
         "sqlite",
     ]

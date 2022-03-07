@@ -124,5 +124,6 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Translate: fixed_arity('replace', 3),
         ops.TimestampNow: fixed_arity('now', 0),
+        ops.ArrayIndex: fixed_arity('list_element', 2),
     }
 )
