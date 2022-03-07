@@ -710,7 +710,7 @@ operation_registry.update(
         ops.StandardDev: variance_reduction('stddev'),
         ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
-        ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
+        ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
