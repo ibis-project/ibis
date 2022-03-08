@@ -41,13 +41,15 @@ def calc_zscore(s):
             id='dense_rank',
         ),
         param(
-            # these can't be equivalent, because pandas doesn't have a way to
-            # compute percentile rank with a strict less-than ordering
-            #
-            # cume_dist() is the corresponding function in databases that
-            # support window functions
             lambda t, win: t.id.percent_rank().over(win),
-            lambda t: t.id.rank(pct=True),
+            lambda t: t.apply(
+                lambda df: (
+                    df.sort_values("id")
+                    .id.rank(method="min")
+                    .sub(1)
+                    .div(len(df) - 1)
+                )
+            ).reset_index(drop=True, level=[0]),
             id='percent_rank',
         ),
         param(
@@ -179,7 +181,6 @@ def calc_zscore(s):
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
-
     expr = alltypes.mutate(
         val=result_fn(
             alltypes,
@@ -227,7 +228,6 @@ def test_grouped_bounded_expanding_window(
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
-
     expr = alltypes.mutate(
         val=result_fn(
             alltypes,
@@ -246,7 +246,6 @@ def test_ungrouped_bounded_expanding_window(
 
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
 def test_grouped_bounded_following_window(backend, alltypes, df):
-
     window = ibis.window(
         preceding=0,
         following=2,
@@ -552,6 +551,19 @@ def test_grouped_bounded_range_window(backend, alltypes, df, con):
         .set_index('id')
         .sort_index()
     )
+
+    left, right = result.val, expected.val
+
+    backend.assert_series_equal(left, right)
+
+
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark"])
+def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
+    expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
+
+    result = expr.execute().set_index('id').sort_index()
+    column = df.id.rank(method="min").sub(1).div(len(df) - 1)
+    expected = df.assign(val=column).set_index('id').sort_index()
 
     left, right = result.val, expected.val
 

@@ -560,7 +560,16 @@ def execute_series_dense_rank(op, data, **kwargs):
     return data.rank(method='dense', ascending=True).astype('int64') - 1
 
 
-@execute_node.register(ops.PercentRank, (pd.Series, SeriesGroupBy))
+@execute_node.register(ops.PercentRank, SeriesGroupBy)
+def execute_series_group_by_percent_rank(op, data, **kwargs):
+    return (
+        data.rank(method="min", ascending=True)
+        .sub(1)
+        .div(data.transform("count").sub(1))
+    )
+
+
+@execute_node.register(ops.PercentRank, pd.Series)
 def execute_series_percent_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='min', ascending=True, pct=True)
+    return data.rank(method="min", ascending=True).sub(1).div(len(data) - 1)
