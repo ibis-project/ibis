@@ -62,125 +62,22 @@ def test_string_col_is_unicode(backend, alltypes, df):
             ),
         ),
         param(
-            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
-            lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark"]),
-        ),
-        param(
-            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract',
-            marks=pytest.mark.notimpl(["duckdb", "mysql", "pyspark"]),
-        ),
-        param(
-            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace',
-            marks=pytest.mark.notimpl(
-                ['datafusion', "duckdb", "mysql", "pyspark"]
-            ),
-        ),
-        param(
-            lambda t: t.string_col.re_search(r'\\d+'),
-            lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search_spark_raw',
-            marks=(
-                # TODO: check if this test should pass with pyspark
-                # and if not, remove it
-                pytest.mark.notimpl(["pyspark"], reason="regression"),
-                pytest.mark.never(
-                    [
-                        "dask",
-                        "datafusion",
-                        "duckdb",
-                        "mysql",
-                        "pandas",
-                        "postgres",
-                        "sqlite",
-                    ],
-                    reason="not spark",
-                ),
-            ),
-        ),
-        param(
-            lambda t: t.string_col.re_extract(r'(\\d+)', 0),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_spark',
-            marks=(
-                # TODO: check if this test should pass with pyspark
-                # and if not, remove it
-                pytest.mark.notimpl(["pyspark"], reason="regression"),
-                pytest.mark.never(
-                    [
-                        "dask",
-                        "datafusion",
-                        "duckdb",
-                        "mysql",
-                        "pandas",
-                        "postgres",
-                        "sqlite",
-                    ],
-                    reason="not spark",
-                ),
-            ),
-        ),
-        param(
-            lambda t: t.string_col.re_replace(r'\\d+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace_spark_raw',
-            marks=(
-                # TODO: check if this test should pass with pyspark
-                # and if not, remove it
-                pytest.mark.notimpl(["pyspark"], reason="regression"),
-                pytest.mark.never(
-                    [
-                        "dask",
-                        "datafusion",
-                        "duckdb",
-                        "mysql",
-                        "pandas",
-                        "postgres",
-                        "sqlite",
-                    ],
-                    reason="not spark",
-                ),
-            ),
-        ),
-        param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search_spark',
-            marks=(
-                pytest.mark.notimpl(['impala']),
-                pytest.mark.never(["datafusion"], reason="not spark"),
-            ),
+            id='re_search',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_spark_raw',
-            marks=(
-                pytest.mark.notimpl(
-                    [
-                        'impala',
-                        "duckdb",
-                    ]
-                ),
-                pytest.mark.never(["mysql"], reason="not spark"),
-            ),
+            id='re_extract',
+            marks=pytest.mark.notimpl(["mysql"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace_spark',
-            marks=(
-                pytest.mark.notimpl(['impala']),
-                pytest.mark.never(
-                    ["datafusion", "duckdb", "mysql"],
-                    reason="not spark",
-                ),
-            ),
+            id='re_replace',
+            marks=pytest.mark.notimpl(['datafusion', "mysql"]),
         ),
         param(
             lambda t: t.string_col.repeat(2),
