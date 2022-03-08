@@ -1313,11 +1313,7 @@ def compile_dense_rank(t, expr, scope, timecontext, **kwargs):
 
 @compiles(ops.PercentRank)
 def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
-    raise com.UnsupportedOperationError(
-        'Pyspark percent_rank() function indexes from 0 '
-        'instead of 1, and does not match expected '
-        'output of ibis expressions.'
-    )
+    return F.percent_rank()
 
 
 @compiles(ops.NTile)

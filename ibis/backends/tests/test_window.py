@@ -49,9 +49,6 @@ def calc_zscore(s):
             lambda t, win: t.id.percent_rank().over(win),
             lambda t: t.id.rank(pct=True),
             id='percent_rank',
-            marks=pytest.mark.notimpl(
-                ["duckdb", "impala", "mysql", "postgres", "pyspark", "sqlite"]
-            ),
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
@@ -70,7 +67,7 @@ def calc_zscore(s):
             id='last',
         ),
         param(
-            lambda t, win: ibis.row_number().over(win),
+            lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id='row_number',
             marks=pytest.mark.notimpl(["pandas"]),
@@ -180,7 +177,7 @@ def calc_zscore(s):
 )
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
 def test_grouped_bounded_expanding_window(
-    backend, alltypes, df, con, result_fn, expected_fn
+    backend, alltypes, df, result_fn, expected_fn
 ):
 
     expr = alltypes.mutate(
@@ -228,7 +225,7 @@ def test_grouped_bounded_expanding_window(
 # Some backends do not support non-grouped window specs
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
 def test_ungrouped_bounded_expanding_window(
-    backend, alltypes, df, con, result_fn, expected_fn
+    backend, alltypes, df, result_fn, expected_fn
 ):
 
     expr = alltypes.mutate(
@@ -248,7 +245,7 @@ def test_ungrouped_bounded_expanding_window(
 
 
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
-def test_grouped_bounded_following_window(backend, alltypes, df, con):
+def test_grouped_bounded_following_window(backend, alltypes, df):
 
     window = ibis.window(
         preceding=0,
@@ -304,9 +301,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, con):
     ],
 )
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
-def test_grouped_bounded_preceding_window(
-    backend, alltypes, df, con, window_fn
-):
+def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
 
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
@@ -358,7 +353,7 @@ def test_grouped_bounded_preceding_window(
 )
 @pytest.mark.notimpl(["clickhouse", "datafusion"])
 def test_grouped_unbounded_window(
-    backend, alltypes, df, con, result_fn, expected_fn, ordered
+    backend, alltypes, df, result_fn, expected_fn, ordered
 ):
     # Define a window that is
     # 1) Grouped
