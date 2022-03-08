@@ -1,4 +1,5 @@
 import collections
+import operator
 
 import numpy as np
 import sqlalchemy as sa
@@ -25,13 +26,9 @@ def _round(t, expr):
     if digits is None:
         return sa.func.round(sa_arg)
 
-    result = sa.func.round(sa_arg, t.translate(digits))
-    return result
+    return sa.func.round(sa_arg, t.translate(digits))
 
 
-def _mod(t, expr):
-    left, right = map(t.translate, expr.op().args)
-    return left % right
 
 
 def _log(t, expr):
@@ -111,6 +108,32 @@ def _struct_field(t, expr):
     )
 
 
+def _regex_extract(t, expr):
+    string, pattern, index = map(t.translate, expr.op().args)
+    result = sa.case(
+        [
+            (
+                sa.func.regexp_matches(string, pattern),
+                sa.func.regexp_extract(
+                    string,
+                    pattern,
+                    # DuckDB requires the index to be a constant so we compile
+                    # the value and inline it using sa.text
+                    sa.text(
+                        str(
+                            (index + 1).compile(
+                                compile_kwargs=dict(literal_binds=True)
+                            )
+                        )
+                    ),
+                ),
+            )
+        ],
+        else_="",
+    )
+    return result
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
@@ -120,7 +143,7 @@ operation_registry.update(
         ops.Log2: unary(sa.func.log2),
         ops.Log: _log,
         # TODO: map operations, but DuckDB's maps are multimaps
-        ops.Modulus: _mod,
+        ops.Modulus: fixed_arity(operator.mod, 2),
         ops.Round: _round,
         ops.StructField: _struct_field,
         ops.TableColumn: _table_column,
@@ -129,5 +152,7 @@ operation_registry.update(
         ops.Translate: fixed_arity('replace', 3),
         ops.TimestampNow: fixed_arity('now', 0),
         ops.ArrayIndex: fixed_arity('list_element', 2),
+        ops.RegexExtract: _regex_extract,
+        ops.RegexReplace: fixed_arity("regexp_replace", 3),
     }
 )
