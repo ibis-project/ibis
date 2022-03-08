@@ -73,6 +73,12 @@ class UnboundTable(PhysicalTable):
 
 
 @public
+class LocalTable(PhysicalTable):
+    schema = rlz.instance_of(sch.Schema)
+    name = rlz.instance_of(str)
+
+
+@public
 class DatabaseTable(PhysicalTable):
     name = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
