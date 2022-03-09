@@ -133,17 +133,11 @@ def test_mutating_join(backend, con, batting, awards_players, how):
     [
         param(
             "semi",
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "dask", "datafusion", "impala"]
-            ),
+            marks=pytest.mark.notimpl(["dask", "datafusion"]),
         ),
         param(
             "anti",
-            marks=pytest.mark.notimpl(
-                # clickhouse and impala are broken, the rest are not
-                # implemented
-                ["clickhouse", "dask", "datafusion", "impala"]
-            ),
+            marks=pytest.mark.notimpl(["dask", "datafusion"]),
         ),
     ],
 )
