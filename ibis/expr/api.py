@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import collections
 import datetime
-import functools
 import numbers
-import operator
 from typing import Iterable, Literal, Mapping, Sequence, TypeVar
 
 import dateutil.parser
@@ -20,7 +18,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as win
-import ibis.util as util
 from ibis.expr.random import random  # noqa
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa
