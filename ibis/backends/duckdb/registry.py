@@ -29,6 +29,14 @@ def _round(t, expr):
     return sa.func.round(sa_arg, t.translate(digits))
 
 
+_LOG_BASE_FUNCS = {
+    2: sa.func.log2,
+    10: sa.func.log,
+}
+
+
+def _generic_log(arg, base):
+    return sa.func.ln(arg) / sa.func.ln(base)
 
 
 def _log(t, expr):
@@ -36,12 +44,13 @@ def _log(t, expr):
     sa_arg = t.translate(arg)
     if base is not None:
         sa_base = t.translate(base)
-        if sa_base.value == 2:
-            return sa.func.log2(sa_arg)
-        elif sa_base.value == 10:
-            return sa.func.log(sa_arg)
+        try:
+            base_value = sa_base.value
+        except AttributeError:
+            return _generic_log(sa_arg, sa_base)
         else:
-            raise NotImplementedError
+            func = _LOG_BASE_FUNCS.get(base_value, _generic_log)
+            return func(sa_arg)
     return sa.func.ln(sa_arg)
 
 
@@ -141,6 +150,7 @@ operation_registry.update(
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
+        ops.Ln: unary(sa.func.ln),
         ops.Log: _log,
         # TODO: map operations, but DuckDB's maps are multimaps
         ops.Modulus: fixed_arity(operator.mod, 2),
