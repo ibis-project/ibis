@@ -67,9 +67,38 @@ class ValueExpr(Expr):
         return self.op().resolve_name()
 
     def name(self, name: str) -> ValueExpr:
+        """Change the name of the expression to `name`.
+
+        Parameters
+        ----------
+        name
+            New expression name.
+
+        Returns
+        -------
+        ValueExpr
+            `self` with name `name`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> t = ibis.table(dict(a="int64"))
+        >>> t.a.name("b")
+        UnboundTable[r0, name=unbound_table_0]
+          a int64
+
+        b: int64 = r0.a
+        """
         return self._factory(self._arg, name=name)
 
     def type(self) -> dt.DataType:
+        """Return the element type of the expression.
+
+        Returns
+        -------
+        DataType
+            Element type of `self`
+        """
         return self._dtype
 
     @property
