@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from .generic import AnyColumn, AnyScalar, AnyValue
@@ -20,7 +22,28 @@ class NumericColumn(AnyColumn, NumericValue):
 
 @public
 class IntegerValue(NumericValue):
-    pass  # noqa: E701,E302
+    def convert_base(
+        self,
+        from_base: IntegerValue,
+        to_base: IntegerValue,
+    ) -> IntegerValue:
+        """Convert an integer from one base to another.
+
+        Parameters
+        ----------
+        from_base
+            Numeric base of `arg`
+        to_base
+            New base
+
+        Returns
+        -------
+        IntegerValue
+            Converted expression
+        """
+        import ibis.expr.operations as ops
+
+        return ops.BaseConvert(self, from_base, to_base).to_expr()
 
 
 @public

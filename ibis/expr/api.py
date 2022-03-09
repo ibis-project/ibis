@@ -1693,34 +1693,9 @@ _numeric_value_methods = {
 }
 
 
-def convert_base(
-    arg: ir.IntegerValue | ir.StringValue,
-    from_base: ir.IntegerValue,
-    to_base: ir.IntegerValue,
-) -> ir.IntegerValue:
-    """Convert an integer or string from one base to another.
-
-    Parameters
-    ----------
-    arg
-        Integer or string expression
-    from_base
-        Base of `arg`
-    to_base
-        New base
-
-    Returns
-    -------
-    IntegerValue
-        Converted expression
-    """
-    return ops.BaseConvert(arg, from_base, to_base).to_expr()
-
-
 _integer_value_methods = {
     'to_timestamp': _integer_to_timestamp,
     'to_interval': _integer_to_interval,
-    'convert_base': convert_base,
 }
 
 
