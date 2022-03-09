@@ -802,6 +802,29 @@ class StringValue(AnyValue):
 
         return rlz.string(other).concat(self)
 
+    def convert_base(
+        self,
+        from_base: int | ir.IntegerValue,
+        to_base: int | ir.IntegerValue,
+    ) -> ir.IntegerValue:
+        """Convert a string representing an integer from one base to another.
+
+        Parameters
+        ----------
+        from_base
+            Numeric base of the expression
+        to_base
+            New base
+
+        Returns
+        -------
+        IntegerValue
+            Converted expression
+        """
+        import ibis.expr.operations as ops
+
+        return ops.BaseConvert(self, from_base, to_base).to_expr()
+
 
 @public
 class StringScalar(AnyScalar, StringValue):
