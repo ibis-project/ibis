@@ -39,7 +39,7 @@ jobs:
           condarc-file: ci/condarc
 
       - name: install conda-lock
-        run: mamba install conda-lock
+        run: mamba install 'conda-lock <1.0'
 
       - name: generate lock file
         continue-on-error: ${{ matrix.python-version == '3.10' }}
@@ -56,6 +56,7 @@ jobs:
 
           template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
           conda lock \
+            --kind explicit \
             --file pyproject.toml \
             --file "${python_version_file}" \
             --platform linux-64 \
@@ -67,6 +68,7 @@ jobs:
           # not great, but conda-forge is missing packages for duckdb and
           # clickhouse-cityhash for windows
           conda lock \
+            --kind explicit \
             --file pyproject.toml \
             --file "${python_version_file}" \
             --platform win-64 \
