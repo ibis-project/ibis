@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 from public import public
 
 from ... import util
+from .core import _binop
 from .generic import AnyColumn, AnyScalar, AnyValue
 
 
@@ -824,6 +825,15 @@ class StringValue(AnyValue):
         import ibis.expr.operations as ops
 
         return ops.BaseConvert(self, from_base, to_base).to_expr()
+
+    def __mul__(
+        self, n: int | ir.IntegerValue
+    ) -> StringValue | NotImplemented:
+        import ibis.expr.operations as ops
+
+        return _binop(ops.Repeat, self, n)
+
+    __rmul__ = __mul__
 
 
 @public

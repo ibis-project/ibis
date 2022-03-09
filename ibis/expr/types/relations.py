@@ -572,8 +572,8 @@ class TableExpr(Expr):
                 bar = Column[float64*] 'bar' from table
                   ref_0
 
-        Use the [`Expr.name`][ibis.expr.types.Expr.name] method to name the new
-        columns.
+        Use the [`ValueExpr.name`][ibis.expr.types.generic.ValueExpr.name]
+        method to name the new columns.
 
         >>> new_columns = [ibis.literal(5).name('baz',),
         ...                (table.foo + table.bar).name('qux')]
@@ -683,7 +683,7 @@ class TableExpr(Expr):
                   None
               <ibis.expr.window.Window object at 0x...>
 
-        Note the [`Window`][ibis.expr.window.Window] objects here.
+        Note the `Window` objects here.
 
         Their existence means that the result of the aggregation will be
         broadcast across the number of rows in the input column.
@@ -900,8 +900,6 @@ class TableExpr(Expr):
 
         Parameters
         ----------
-        table
-            Table expression
         name
             Column name to replace
         expr
@@ -1151,13 +1149,14 @@ class TableExpr(Expr):
         Parameters
         ----------
         client
-            A client to use to create the SQLQueryResult operation. This is
+            A client to use to create the SQLQueryResult operation. This can be
             useful if you're compiling an expression that derives from an
-            [`UnboundTable`][ibis.expr.operations.UnboundTable] operation.
+            `UnboundTable` operation.
 
         Returns
         -------
-        sql_query_result : TableExpr
+        TableExpr
+            A table expression with `self` as an opaque SQL query
         """
         from .. import operations as ops
 

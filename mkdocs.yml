@@ -3,6 +3,10 @@ site_url: https://ibis-project.org
 repo_url: https://github.com/ibis-project/ibis
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 theme:
   name: material
   features:
@@ -96,6 +100,8 @@ markdown_extensions:
   - footnotes
   - md_in_html
   - meta
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.emoji:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
