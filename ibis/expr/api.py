@@ -2408,60 +2408,7 @@ _geospatial_column_methods = {'unary_union': geo_unary_union}
 _add_methods(ir.GeoSpatialValue, _geospatial_value_methods)
 _add_methods(ir.GeoSpatialColumn, _geospatial_column_methods)
 
-# ----------------------------------------------------------------------
-# Boolean API
-
-
-# TODO: logical binary operators for BooleanValue
-
-
-def ifelse(
-    arg: ir.ValueExpr, true_expr: ir.ValueExpr, false_expr: ir.ValueExpr
-) -> ir.ValueExpr:
-    """Construct a ternary conditional expression.
-
-    Examples
-    --------
-    bool_expr.ifelse(0, 1)
-    e.g., in SQL: CASE WHEN bool_expr THEN 0 else 1 END
-
-    Returns
-    -------
-    ValueExpr
-        The value of `true_expr` if `arg` is `True` else `false_expr`
-    """
-    # Result will be the result of promotion of true/false exprs. These
-    # might be conflicting types; same type resolution as case expressions
-    # must be used.
-    case = bl.SearchedCaseBuilder()
-    return case.when(arg, true_expr).else_(false_expr).end()
-
-
-_boolean_value_methods = {
-    'ifelse': ifelse,
-    '__and__': _boolean_binary_op('__and__', ops.And),
-    '__or__': _boolean_binary_op('__or__', ops.Or),
-    '__xor__': _boolean_binary_op('__xor__', ops.Xor),
-    '__rand__': _boolean_binary_rop('__rand__', ops.And),
-    '__ror__': _boolean_binary_rop('__ror__', ops.Or),
-    '__rxor__': _boolean_binary_rop('__rxor__', ops.Xor),
-    '__invert__': _boolean_unary_op('__invert__', ops.Not),
-}
-
-
-_boolean_column_methods = {
-    'any': _unary_op('any', ops.Any),
-    'notany': _unary_op('notany', ops.NotAny),
-    'all': _unary_op('all', ops.All),
-    'notall': _unary_op('notany', ops.NotAll),
-    'cumany': _unary_op('cumany', ops.CumulativeAny),
-    'cumall': _unary_op('cumall', ops.CumulativeAll),
-}
-
-
-_add_methods(ir.BooleanValue, _boolean_value_methods)
-_add_methods(ir.BooleanColumn, _boolean_column_methods)
-
+ifelse = ir.BooleanValue.ifelse
 
 # ---------------------------------------------------------------------
 # Decimal API
