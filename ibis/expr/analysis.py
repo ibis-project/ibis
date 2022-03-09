@@ -351,20 +351,6 @@ class ExprSimplifier:
 
         if isinstance(root, ops.Selection):
             can_lift = False
-            all_simple_columns = all(
-                isinstance(sel.op(), ops.TableColumn)
-                and sel.op().name == sel.get_name()
-                for sel in root.selections
-                if isinstance(sel, ir.ValueExpr)
-                if sel.has_name()
-            )
-
-            # If there are predicates or sort keys,
-            # then we cannot lift the root
-            no_predicates_or_sort_keys = not (
-                root.predicates or root.sort_keys
-            )
-
             for val in root.selections:
                 value_op = val.op()
                 if (
@@ -373,15 +359,6 @@ class ExprSimplifier:
                 ):
                     can_lift = True
                     lifted_root = self.lift(val)
-                elif (
-                    all_simple_columns
-                    and no_predicates_or_sort_keys
-                    and isinstance(val, ir.ValueExpr)
-                    and val.has_name()
-                    and node.name == val.get_name()
-                ):
-                    can_lift = True
-                    lifted_root = self.lift(value_op.table)
 
             if can_lift and not block:
                 lifted_node = ops.TableColumn(lifted_root, node.name)
