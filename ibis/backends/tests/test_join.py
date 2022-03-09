@@ -195,3 +195,16 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     filters = [expr.RBI == 9]
     q = expr.filter(filters)
     q.execute()
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="pyspark doesn't support joining on differing column names",
+)
+def test_mutate_then_join_no_column_overlap(batting, awards_players):
+    left = batting.mutate(year=batting.yearID)
+    left = left["year", "RBI"]
+    right = awards_players
+    expr = left.join(right, left.year == right.yearID)
+    expr.execute()

@@ -41,25 +41,6 @@ def test_rewrite_join_projection_without_other_ops(con):
     assert not op.table.equals(ex_expr)
 
 
-def test_rewrite_past_projection(con):
-    table = con.table('test1')
-
-    # Rewrite past a projection
-    table3 = table[['c', 'f']]
-    expr = table3['c'] == 2
-
-    result = L.substitute_parents(expr)
-    expected = table['c'] == 2
-    assert_equal(result, expected)
-
-    # Unsafe to rewrite past projection
-    table5 = table[(table.f * 2).name('c'), table.f]
-    expr = table5['c'] == 2
-    result = L.substitute_parents(expr)
-    expected = expr
-    assert result.equals(expected)
-
-
 def test_multiple_join_deeper_reference():
     # Join predicates down the chain might reference one or more root
     # tables in the hierarchy.
