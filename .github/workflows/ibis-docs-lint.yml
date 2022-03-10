@@ -90,21 +90,6 @@ jobs:
           private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
           repository: ibis-project/ibis-project.org
 
-      - name: verify all links
-        working-directory: ibis
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          set -euo pipefail
-
-          nix develop -f shell.nix --ignore-environment --keep-going -c \
-            just checklinks \
-            --exclude-mail \
-            --exclude fonts.gstatic.com \
-            --exclude github.com \
-            --exclude github.io \
-            --no-progress \
-            --github-token ${{ steps.generate_token.outputs.token }}
-
       - name: Add config to docs
         working-directory: ibis
         run: |
