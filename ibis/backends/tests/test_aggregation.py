@@ -238,7 +238,7 @@ def test_aggregate_grouped(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
             id='approx_nunique',
-            marks=pytest.mark.xfail_backends(['mysql', 'sqlite', 'pyspark']),
+            marks=pytest.mark.notyet(['mysql', 'sqlite', 'pyspark']),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first'),
@@ -344,7 +344,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
     ],
 )
 @mark.notimpl(["pandas", "dask", "csv", "hdf5", "parquet"])
-@pytest.mark.xfail_backends([('pyspark', '#2130'), 'datafusion'])
+@pytest.mark.notyet(["pyspark", "datafusion"])
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -371,10 +371,9 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@pytest.mark.xfail_backends(['sqlite'], reason='Issue #2128')
-@pytest.mark.xfail_backends(
-    [('mysql', 'Issue #2131'), ('postgres', 'Issue #2132')]
-)
+@pytest.mark.notyet(['sqlite'], reason='Issue #2128')
+@pytest.mark.notyet(["mysql"], reason="Issue #2131")
+@pytest.mark.notyet(["postgres"], reason="Issue #2132")
 @mark.notimpl(["datafusion", "duckdb", "pandas", "dask", "pyspark"])
 def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend

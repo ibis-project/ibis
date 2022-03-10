@@ -140,7 +140,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumnotall',
-            marks=pytest.mark.xfail_backends(
+            marks=pytest.mark.notyet(
                 ("duckdb", 'impala', 'postgres', 'mysql', 'sqlite'),
                 reason="notall() over window not supported",
             ),

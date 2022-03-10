@@ -384,8 +384,6 @@ def test_mod(backend, alltypes, df):
 
 
 def test_floating_mod(backend, alltypes, df):
-    if not backend.supports_floating_modulus:
-        pytest.skip(f'{backend} does not support floating modulus operation')
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
 
     result = expr.execute()
@@ -406,10 +404,11 @@ def test_floating_mod(backend, alltypes, df):
         'double_col',
     ],
 )
+@pytest.mark.notyet(
+    ["datafusion", "duckdb", "mysql", "postgres", "pyspark", "sqlite"]
+)
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
-    if not backend.supports_divide_by_zero:
-        pytest.skip(f'{backend} does not support safe division by zero')
     expr = alltypes[column] / denominator
     expected = backend.default_series_rename(df[column].div(denominator))
     result = expr.execute()
@@ -427,7 +426,10 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     ],
 )
 @pytest.mark.notimpl(["sqlite", "duckdb"])
-@pytest.mark.only_on_backends(["sqlite", "duckdb", "postgres", "mysql"])
+@pytest.mark.never(
+    ["clickhouse", "dask", "datafusion", "impala", "pandas", "pyspark"],
+    reason="Not SQLAlchemy backends",
+)
 def test_sa_default_numeric_precision_and_scale(
     con, backend, dialects, default_precisions, default_scales
 ):

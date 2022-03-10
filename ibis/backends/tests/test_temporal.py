@@ -60,7 +60,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 
 
 @pytest.mark.notimpl(["datafusion", "clickhouse"])
-@pytest.mark.xfail_backends([('sqlite', "#2156"), ('pyspark', '#2159')])
+@pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond()
     result = expr.execute()
