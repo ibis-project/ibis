@@ -360,17 +360,22 @@ def flatten_iterable(iterable):
             yield item
 
 
+def deprecated_msg(name, *, instead, version=''):
+    msg = f'`{name}` is deprecated'
+    if version:
+        msg += f' as of v{version}'
+
+    msg += f'; use {instead}.'
+    return msg
+
+
 def warn_deprecated(name, *, instead, version='', stacklevel=1):
     """Warn about deprecated usage.
 
     The message includes a stacktrace and what to do instead.
     """
-    msg = f'"{name}" is deprecated'
-    if version:
-        msg += f' since v{version}'
 
-    msg += f'; use {instead}.'
-
+    msg = deprecated_msg(name, instead=instead, version=version)
     warnings.warn(msg, FutureWarning, stacklevel=stacklevel + 1)
 
 
@@ -379,6 +384,19 @@ def deprecated(*, instead, version=''):
     what to do instead."""
 
     def decorator(func):
+        msg = deprecated_msg(func.__name__, instead=instead, version=version)
+
+        docstr = func.__doc__ or ""
+        first, *rest = docstr.split("\n\n", maxsplit=1)
+        # count leading spaces and add them to the deprecation warning so the
+        # docstring parses correctly
+        leading_spaces = " " * sum(
+            1
+            for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
+        )
+        warning_doc = f'{leading_spaces}!!! warning "DEPRECATED: {msg}"'
+        func.__doc__ = "\n\n".join([first, warning_doc, *rest])
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             warn_deprecated(
