@@ -12,6 +12,7 @@ let
     jq
     just
     lychee
+    mariadb
     niv
     nix-linter
     nixpkgs-fmt

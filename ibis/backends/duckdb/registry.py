@@ -7,10 +7,15 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 
-from ..base.sql.alchemy.registry import _table_column
+from ..base.sql.alchemy.registry import _geospatial_functions, _table_column
 from ..postgres.registry import fixed_arity, operation_registry
 
-operation_registry = operation_registry.copy()
+operation_registry = {
+    op: operation_registry[op]
+    # duckdb does not support geospatial operations, but shares most of the
+    # remaining postgres rules
+    for op in operation_registry.keys() - _geospatial_functions.keys()
+}
 
 
 def _round(t, expr):
@@ -40,7 +45,6 @@ def _log(t, expr):
             return sa.func.log(sa_arg)
         else:
             raise NotImplementedError
-        return sa.func.log(sa_base, sa_arg)
     return sa.func.ln(sa_arg)
 
 
@@ -58,7 +62,7 @@ def _timestamp_from_unix(t, expr):
         return sa.func.to_timestamp(arg)
 
 
-def _literal(t, expr):
+def _literal(_, expr):
     dtype = expr.type()
     sqla_type = to_sqla_type(dtype)
     op = expr.op()
@@ -81,7 +85,7 @@ def _literal(t, expr):
             return sa.text(f"{{{placeholders}}}").bindparams(
                 *(
                     sa.bindparam(f"v{i:d}", val)
-                    for i, (key, val) in enumerate(value.items())
+                    for i, val in enumerate(value.values())
                 )
             )
         raise NotImplementedError(

@@ -604,8 +604,8 @@ if geospatial_supported:
         #   ST_GeomFromEWKT
         #   ST_GeomFromText
     }
-
-    sqlalchemy_operation_registry.update(_geospatial_functions)
+else:
+    _geospatial_functions = {}
 
 
 for _k, _v in _binary_ops.items():

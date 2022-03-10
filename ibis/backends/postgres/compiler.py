@@ -1,3 +1,4 @@
+import toolz
 from sqlalchemy.dialects import postgresql
 
 import ibis.expr.datatypes as dt
@@ -6,6 +7,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
 )
+from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
 
 from .registry import operation_registry
 
@@ -15,7 +17,7 @@ class PostgresUDFNode(ops.ValueOp):
 
 
 class PostgreSQLExprTranslator(AlchemyExprTranslator):
-    _registry = operation_registry
+    _registry = toolz.merge(operation_registry, _geospatial_functions)
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update(
