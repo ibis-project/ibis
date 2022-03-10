@@ -183,36 +183,9 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
-    for marker in item.iter_markers(name="only_on_backends"):
-        if backend not in marker.args[0]:
-            pytest.skip(
-                f"only_on_backends: {backend} is not in {marker.args[0]} "
-                f"{nodeid}"
-            )
-
     for marker in item.iter_markers(name="skip_backends"):
         if backend in marker.args[0]:
             pytest.skip(f"skip_backends: {backend} {nodeid}")
-
-    for marker in item.iter_markers(name="xfail_backends"):
-        for entry in marker.args[0]:
-            if isinstance(entry, tuple):
-                name, reason = entry
-            else:
-                name = entry
-                reason = marker.kwargs.get("reason")
-
-            if backend == name:
-                item.add_marker(
-                    pytest.mark.xfail(
-                        reason=reason or f'{backend} in xfail list: {name}',
-                        **{
-                            k: v
-                            for k, v in marker.kwargs.items()
-                            if k != "reason"
-                        },
-                    )
-                )
 
     for marker in item.iter_markers(name='min_spark_version'):
         min_version = marker.args[0]
@@ -266,6 +239,21 @@ def pytest_runtest_call(item):
             item.add_marker(
                 pytest.mark.xfail(
                     **marker.kwargs,
+                )
+            )
+
+    # Something has been exposed as broken by a new test and it shouldn't be
+    # imperative for a contributor to fix it just because they happened to
+    # bring it to attention  -- USE SPARINGLY
+    for marker in item.iter_markers(name="broken"):
+        if backend in marker.args[0]:
+            reason = marker.kwargs.get("reason")
+            item.add_marker(
+                pytest.mark.xfail(
+                    reason=reason or f"Feature is failing on {backend}",
+                    **{
+                        k: v for k, v in marker.kwargs.items() if k != "reason"
+                    },
                 )
             )
 

@@ -150,7 +150,10 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.only_on_backends(["impala"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "duckdb", "mysql", "postgres", "sqlite"]
+)
+@mark.notyet(["pyspark"])
 def test_create_drop_view(ddl_con, ddl_backend, temp_view):
     # setup
     table_name = 'functional_alltypes'
@@ -293,7 +296,6 @@ def test_verify(ddl_backend, ddl_con):
         assert ddl_backend.api.verify(expr)
 
 
-@mark.only_on_backends(["postgres"])
 def test_not_verify(alchemy_con, alchemy_backend):
     # There is no expression that can't be compiled to any backend
     # Testing `not verify()` only for an expression not supported in postgres
