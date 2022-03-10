@@ -57,7 +57,7 @@ class MagicString(StringOp):
 
 
 def test_argument_is_deprecated():
-    msg = r"\"Argument\" is deprecated since v3\.0; use Validator\."
+    msg = r".*Argument.* is deprecated .* v3\.0; use Validator\."
     with pytest.warns(FutureWarning, match=msg):
         Argument(str)
 
