@@ -147,6 +147,7 @@ operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
         ops.ArrayConcat: fixed_arity('array_concat', 2),
+        ops.ArrayIndex: fixed_arity('list_element', 2),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -161,7 +162,6 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Translate: fixed_arity('replace', 3),
         ops.TimestampNow: fixed_arity('now', 0),
-        ops.ArrayIndex: fixed_arity('list_element', 2),
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: fixed_arity("regexp_replace", 3),
     }

@@ -788,10 +788,13 @@ def compile_log(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
-    # Spark log method only takes float
-    return F.log(
-        float(t.translate(op.base, scope, timecontext, raw=True)), src_column
-    )
+    raw_base = t.translate(op.base, scope, timecontext, raw=True)
+    try:
+        base = float(raw_base)
+    except TypeError:
+        return F.log(src_column) / F.log(raw_base)
+    else:
+        return F.log(base, src_column)
 
 
 @compiles(ops.Ln)

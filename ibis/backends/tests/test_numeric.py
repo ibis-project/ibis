@@ -274,6 +274,20 @@ def test_simple_math_functions_columns(
             lambda t: np.log10(t.double_col + 1),
             id='log10',
         ),
+        param(
+            lambda t: (t.double_col + 1).log(
+                ibis.greatest(
+                    9_000,
+                    t.bigint_col,
+                )
+            ),
+            lambda t: (
+                np.log(t.double_col + 1)
+                / np.log(np.maximum(9_000, t.bigint_col))
+            ),
+            id="log_base_bigint",
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion"]),
+        ),
     ],
 )
 def test_complex_math_functions_columns(
