@@ -908,7 +908,7 @@ class TableExpr(Expr):
         Returns
         -------
         TableExpr
-            Table expression
+            Table expression with new columns
         """
         expr = self._ensure_expr(expr)
 
@@ -1156,7 +1156,7 @@ class TableExpr(Expr):
         Returns
         -------
         TableExpr
-            A table expression with `self` as an opaque SQL query
+            An opaque SQL query
         """
         from .. import operations as ops
 
