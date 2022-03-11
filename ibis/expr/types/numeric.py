@@ -3,13 +3,13 @@ from __future__ import annotations
 import collections
 from typing import TYPE_CHECKING, Literal, Sequence
 
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
-
 from public import public
 
 from .core import _binop
 from .generic import AnyColumn, AnyScalar, AnyValue
+
+if TYPE_CHECKING:
+    from .. import types as ir
 
 
 @public
@@ -353,6 +353,26 @@ class NumericValue(AnyValue):
         return _binop(ops.Modulus, other, self)
 
     rmod = __rmod__
+
+    def point(self, right: int | float | NumericValue) -> ir.PointValue:
+        """Return a point constructed from the coordinate values.
+
+        Constant coordinates result in construction of a `POINT` literal or
+        column.
+
+        Parameters
+        ----------
+        right
+            Y coordinate
+
+        Returns
+        -------
+        PointValue
+            Points
+        """
+        from .. import operations as ops
+
+        return ops.GeoPoint(self, right).to_expr()
 
 
 @public
