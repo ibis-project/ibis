@@ -118,6 +118,7 @@ __all__ = (
     'cumulative_window',
     'date',
     'desc',
+    'asc',
     'Expr',
     'geo_area',
     'geo_as_binary',
@@ -345,6 +346,31 @@ def desc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.DeferredSortKey(expr, ascending=False)
     else:
         return ops.SortKey(expr, ascending=False).to_expr()
+
+
+def asc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
+    """Create a ascending sort key from `asc` or column name.
+
+    Parameters
+    ----------
+    expr
+        The expression or column name to use for sorting
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('g', 'string')])
+    >>> result = t.group_by('g').size('count').sort_by(ibis.asc('count'))
+
+    Returns
+    -------
+    ops.DeferredSortKey
+        A deferred sort key
+    """
+    if not isinstance(expr, Expr):
+        return ops.DeferredSortKey(expr)
+    else:
+        return ops.SortKey(expr).to_expr()
 
 
 def timestamp(
