@@ -37,7 +37,7 @@ dask = { version = ">=2021.10.0", optional = true, extras = [
   "array",
   "dataframe"
 ] }
-datafusion = { version = ">=0.4,<0.5", optional = true }
+datafusion = { version = ">=0.4,<0.6", optional = true }
 duckdb = { version = ">=0.3.2,<0.4.0", optional = true }
 duckdb-engine = { version = ">=0.1.8,<0.2.0", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
