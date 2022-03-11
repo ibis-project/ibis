@@ -1,3 +1,4 @@
+import functools
 import operator
 from typing import Any, Dict
 
@@ -290,10 +291,10 @@ def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
-def _string_like(t, expr):
-    arg, pattern, escape = expr.op().args
-    result = t.translate(arg).like(t.translate(pattern), escape=escape)
-    return result
+def _string_like(method_name, t, expr):
+    op = expr.op()
+    method = getattr(t.translate(op.arg), method_name)
+    return method(t.translate(op.pattern), escape=op.escape)
 
 
 def _startswith(t, expr):
@@ -482,7 +483,8 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.StringAscii: unary(sa.func.ascii),
     ops.StringLength: unary(sa.func.length),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.StringSQLLike: _string_like,
+    ops.StringSQLLike: functools.partial(_string_like, "like"),
+    ops.StringSQLILike: functools.partial(_string_like, "ilike"),
     ops.StartsWith: _startswith,
     ops.EndsWith: _endswith,
     ops.StringConcat: varargs(sa.func.concat),
