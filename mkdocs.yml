@@ -1,5 +1,6 @@
 site_name: Ibis Project
 site_url: https://ibis-project.org
+strict: true
 repo_url: https://github.com/ibis-project/ibis
 extra_css:
   - stylesheets/extra.css

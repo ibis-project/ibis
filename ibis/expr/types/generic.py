@@ -67,12 +67,12 @@ class ValueExpr(Expr):
         return self.op().resolve_name()
 
     def name(self, name: str) -> ValueExpr:
-        """Change the name of the expression to `name`.
+        """Rename an expression to `name`.
 
         Parameters
         ----------
         name
-            New expression name.
+            The new name of the expression
 
         Returns
         -------
@@ -92,12 +92,12 @@ class ValueExpr(Expr):
         return self._factory(self._arg, name=name)
 
     def type(self) -> dt.DataType:
-        """Return the element type of the expression.
+        """Return the data type of an expression.
 
         Returns
         -------
         DataType
-            Element type of `self`
+            Type of the expression
         """
         return self._dtype
 
