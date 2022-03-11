@@ -52,32 +52,46 @@ def test_string_col_is_unicode(backend, alltypes, df):
                 [
                     "clickhouse",
                     "datafusion",
-                    "duckdb",
                     "impala",
-                    "mysql",
-                    "postgres",
                     "pyspark",
-                    "sqlite",
                 ]
             ),
+        ),
+        param(
+            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
+            lambda t: t.string_col.str.contains(r'\d+'),
+            id='re_search_posix',
+            marks=pytest.mark.notimpl(["datafusion", "pyspark"]),
+        ),
+        param(
+            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
+            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
+            id='re_extract_posix',
+            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
+        ),
+        param(
+            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
+            id='re_replace_posix',
+            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["impala", "datafusion"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.notimpl(["mysql"]),
+            marks=pytest.mark.notimpl(["impala", "mysql"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.notimpl(['datafusion', "mysql"]),
+            marks=pytest.mark.notimpl(["impala", "datafusion", "mysql"]),
         ),
         param(
             lambda t: t.string_col.repeat(2),
