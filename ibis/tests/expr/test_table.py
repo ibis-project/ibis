@@ -386,6 +386,17 @@ def test_sort_by_desc_deferred_sort_key(table):
     assert_equal(result, expected2)
 
 
+def test_sort_by_asc_deferred_sort_key(table):
+    result = table.group_by('g').size().sort_by(ibis.asc('count'))
+
+    tmp = table.group_by('g').size()
+    expected = tmp.sort_by(tmp['count'])
+    expected2 = tmp.sort_by(ibis.asc(tmp['count']))
+
+    assert_equal(result, expected)
+    assert_equal(result, expected2)
+
+
 def test_slice_convenience(table):
     expr = table[:5]
     expr2 = table[:5:1]
@@ -1217,6 +1228,10 @@ def test_sort_by2(table):
 
     result = m.sort_by(ibis.desc(lambda x: x.foo))
     expected = m.sort_by(ibis.desc('foo'))
+    assert_equal(result, expected)
+
+    result = m.sort_by(ibis.asc(lambda x: x.foo))
+    expected = m.sort_by('foo')
     assert_equal(result, expected)
 
 
