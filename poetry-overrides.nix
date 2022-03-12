@@ -16,40 +16,19 @@ self: super:
       });
   });
 
-  # TODO: remove this entire override when upstream nixpkgs datafusion PR
-  # https://github.com/NixOS/nixpkgs/pull/152763 is merged
-  datafusion =
-    let
-      cargoLock = pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/apache/arrow-datafusion/6.0.0/python/Cargo.lock";
-        sha256 = "sha256-xiv3drEU5jOGsEIh0U01ZQ1NBKobxO2ctp4mxy9iigw=";
-      };
+  datafusion = super.datafusion.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ])
+      ++ (with pkgs.rustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
-      postUnpack = ''
-        # TODO: apache/arrow-datafusion should ship the Cargo.lock file in the Python package
-        cp "${cargoLock}" $sourceRoot/Cargo.lock
-        chmod u+w $sourceRoot/Cargo.lock
-      '';
-    in
-    super.datafusion.overridePythonAttrs (attrs: {
-      nativeBuildInputs = (attrs.nativeBuildInputs or [ ])
-        ++ (with pkgs.rustPlatform; [ cargoSetupHook maturinBuildHook ]);
+    buildInputs = (attrs.buildInputs or [ ])
+      ++ lib.optionals stdenv.isDarwin [ pkgs.libiconv ];
 
-      buildInputs = (attrs.buildInputs or [ ])
-        ++ lib.optionals stdenv.isDarwin [ pkgs.libiconv ];
-
-      inherit postUnpack;
-
-      patches = [ ./patches/Cargo.lock.patch ];
-
-      cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
-        inherit (attrs) src;
-        inherit postUnpack;
-        sourceRoot = "${attrs.pname}-${attrs.version}";
-        patches = [ ./patches/Cargo.lock.patch ];
-        sha256 = "sha256-JGyDxpfBXzduJaMF1sbmRm7KJajHYdVSj+WbiSETiY0=";
-      };
-    });
+    cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
+      inherit (attrs) src;
+      sourceRoot = "${attrs.pname}-${attrs.version}";
+      sha256 = "sha256-YOl1A4J8R5zut1qhzartSBlp6H30gH2mEMXQ3I1v3lY=";
+    };
+  });
 
   mkdocs-literate-nav = super.mkdocs-literate-nav.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
