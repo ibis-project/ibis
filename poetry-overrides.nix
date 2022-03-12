@@ -51,26 +51,10 @@ self: super:
       };
     });
 
-  mkdocs-literate-nav = super.mkdocs-literate-nav.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry ];
-  });
-
   pybind11 = super.pybind11.overridePythonAttrs (_: {
     postBuild = ''
       make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
     '';
-  });
-
-  duckdb = super.duckdb.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.pybind11
-    ];
-  });
-
-  duckdb-engine = super.duckdb-engine.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.poetry-core
-    ];
   });
 
   lz4 = super.lz4.overridePythonAttrs (
