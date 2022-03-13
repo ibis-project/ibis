@@ -12,6 +12,8 @@ from dask.dataframe.utils import tm  # noqa: E402
 
 from ...execution import execute  # noqa: E402
 
+TIMESTAMP = "2022-03-13 06:59:10.467417"
+
 
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])
 @pytest.mark.parametrize(
@@ -88,7 +90,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     ],
 )
 def test_cast_timestamp_scalar_naive(to, expected):
-    literal_expr = ibis.literal(Timestamp('now'))
+    literal_expr = ibis.literal(Timestamp(TIMESTAMP))
     value = literal_expr.cast(to)
     result = execute(value)
     raw = execute(literal_expr)
@@ -109,7 +111,7 @@ def test_cast_timestamp_scalar_naive(to, expected):
 )
 @pytest.mark.parametrize('tz', ['UTC', 'America/New_York'])
 def test_cast_timestamp_scalar(to, expected, tz):
-    literal_expr = ibis.literal(Timestamp('now').tz_localize(tz))
+    literal_expr = ibis.literal(Timestamp(TIMESTAMP).tz_localize(tz))
     value = literal_expr.cast(to)
     result = execute(value)
     raw = execute(literal_expr)
