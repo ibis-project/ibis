@@ -293,14 +293,14 @@ def test_select_filter_mutate(backend, alltypes, df):
 
 def test_fillna_invalid(alltypes):
     with pytest.raises(
-        com.IbisTypeError, match=r"value \['invalid_col'\] is not a field in.*"
+        com.IbisTypeError, match=r"\['invalid_col'\] is not a field in.*"
     ):
         alltypes.fillna({'invalid_col': 0.0})
 
 
 def test_dropna_invalid(alltypes):
     with pytest.raises(
-        com.IbisTypeError, match=r"value 'invalid_col' is not a field in.*"
+        com.IbisTypeError, match=r"'invalid_col' is not a field in.*"
     ):
         alltypes.dropna(subset=['invalid_col'])
 

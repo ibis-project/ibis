@@ -55,7 +55,7 @@ class Parameter(inspect.Parameter):
         name,
         kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
         *,
-        validator=EMPTY
+        validator=EMPTY,
     ):
         super().__init__(
             name,
@@ -159,16 +159,17 @@ class AnnotableMeta(type):
             params.values(), key=lambda p: p.default is EMPTY, reverse=True
         )
 
-        attribs['__slots__'] = tuple(slots)
-        attribs['__signature__'] = inspect.Signature(params)
+        attribs["__slots__"] = tuple(slots)
+        attribs["__signature__"] = inspect.Signature(params)
+        attribs["argnames"] = tuple(attribs["__signature__"].parameters.keys())
 
         return super().__new__(metacls, clsname, bases, attribs)
 
 
 class Annotable(metaclass=AnnotableMeta):
-    """
-    Base class for dataclass-like objects with custom validation rules.
-    """
+    """Base class for objects with custom validation rules."""
+
+    __slots__ = ("_args",)
 
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)
@@ -177,6 +178,7 @@ class Annotable(metaclass=AnnotableMeta):
             param = self.__signature__.parameters[name]
             setattr(self, name, param.validate(self, value))
         self._validate()
+        self._args = None  # materialize _args lazily
 
     def _validate(self):
         pass
@@ -187,25 +189,24 @@ class Annotable(metaclass=AnnotableMeta):
         return type(self) == type(other) and self.args == other.args
 
     def __getstate__(self) -> Dict[str, Any]:
-        return {
-            key: getattr(self, key)
-            for key in self.__signature__.parameters.keys()
-        }
-
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        """
-        Parameters
-        ----------
-        state: Dict[str, Any]
-            A dictionary storing the objects attributes.
-        """
-        for key, value in state.items():
-            setattr(self, key, value)
-
-    @property
-    def argnames(self):
-        return tuple(self.__signature__.parameters.keys())
+        return {key: getattr(self, key) for key in self.argnames}
 
     @property
     def args(self):
-        return tuple(getattr(self, name) for name in self.argnames)
+        if (result := self._args) is None:
+            result = self._args = tuple(
+                getattr(self, key) for key in self.argnames
+            )
+        return result
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set state after unpickling.
+
+        Parameters
+        ----------
+        state
+            A dictionary storing the objects attributes.
+        """
+        self._args = None
+        for key, value in state.items():
+            setattr(self, key, value)
