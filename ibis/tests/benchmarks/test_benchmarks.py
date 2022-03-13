@@ -461,3 +461,20 @@ def test_op_args(benchmark):
     t = ibis.table([("a", "int64")])
     expr = t[["a"]]
     benchmark(lambda op: op.args, expr.op())
+
+
+def test_complex_datatype_parse(benchmark):
+    type_str = "array<struct<a: array<string>, b: map<string, array<int64>>>>"
+    benchmark(dt.parse_type, type_str)
+
+
+@pytest.mark.parametrize("func", [str, hash])
+def test_complex_datatype_builtins(benchmark, func):
+    datatype = dt.Array(
+        dt.Struct.from_dict(
+            dict(
+                a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))
+            )
+        )
+    )
+    benchmark(func, datatype)
