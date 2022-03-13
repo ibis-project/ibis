@@ -1,9 +1,14 @@
+import functools
+import itertools
+import string
+
 import numpy as np
 import pandas as pd
 import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis.backends.pandas.udf import udf
 
 
@@ -333,3 +338,114 @@ def high_card_grouped_rolling_udf_wm(t):
 def test_execute(benchmark, expression_fn, pt):
     expr = expression_fn(pt)
     benchmark(expr.execute)
+
+
+def test_repr_tpc_h02(benchmark):
+    part = ibis.table(
+        dict(
+            p_partkey="int64",
+            p_size="int64",
+            p_type="string",
+            p_mfgr="string",
+        ),
+        name="part",
+    )
+    supplier = ibis.table(
+        dict(
+            s_suppkey="int64",
+            s_nationkey="int64",
+            s_name="string",
+            s_acctbal="decimal(15, 3)",
+            s_address="string",
+            s_phone="string",
+            s_comment="string",
+        ),
+        name="supplier",
+    )
+    partsupp = ibis.table(
+        dict(
+            ps_partkey="int64",
+            ps_suppkey="int64",
+            ps_supplycost="decimal(15, 3)",
+        ),
+        name="partsupp",
+    )
+    nation = ibis.table(
+        dict(n_nationkey="int64", n_regionkey="int64", n_name="string"),
+        name="nation",
+    )
+    region = ibis.table(
+        dict(r_regionkey="int64", r_name="string"), name="region"
+    )
+
+    REGION = "EUROPE"
+    SIZE = 25
+    TYPE = "BRASS"
+
+    expr = (
+        part.join(partsupp, part.p_partkey == partsupp.ps_partkey)
+        .join(supplier, supplier.s_suppkey == partsupp.ps_suppkey)
+        .join(nation, supplier.s_nationkey == nation.n_nationkey)
+        .join(region, nation.n_regionkey == region.r_regionkey)
+    )
+
+    subexpr = (
+        partsupp.join(supplier, supplier.s_suppkey == partsupp.ps_suppkey)
+        .join(nation, supplier.s_nationkey == nation.n_nationkey)
+        .join(region, nation.n_regionkey == region.r_regionkey)
+    )
+
+    subexpr = subexpr[
+        (subexpr.r_name == REGION) & (expr.p_partkey == subexpr.ps_partkey)
+    ]
+
+    filters = [
+        expr.p_size == SIZE,
+        expr.p_type.like(f"%{TYPE}"),
+        expr.r_name == REGION,
+        expr.ps_supplycost == subexpr.ps_supplycost.min(),
+    ]
+    q = expr.filter(filters)
+
+    q = q.select(
+        [
+            q.s_acctbal,
+            q.s_name,
+            q.n_name,
+            q.p_partkey,
+            q.p_mfgr,
+            q.s_address,
+            q.s_phone,
+            q.s_comment,
+        ]
+    )
+
+    expr = q.sort_by(
+        [
+            ibis.desc(q.s_acctbal),
+            q.n_name,
+            q.s_name,
+            q.p_partkey,
+        ]
+    ).limit(100)
+
+    benchmark(repr, expr)
+
+
+def test_repr_huge_union(benchmark):
+    n = 10
+    raw_types = [
+        "int64",
+        "float64",
+        "string",
+        "array<struct<a: array<string>, b: map<string, array<int64>>>>",
+    ]
+    tables = [
+        ibis.table(
+            list(zip(string.ascii_letters, itertools.cycle(raw_types))),
+            name=f"t{i:d}",
+        )
+        for i in range(n)
+    ]
+    expr = functools.reduce(ir.TableExpr.union, tables)
+    benchmark(repr, expr)
