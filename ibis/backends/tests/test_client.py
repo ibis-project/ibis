@@ -14,16 +14,16 @@ def new_schema():
 
 
 def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
-
     con.drop_table(temp_table_name, force=True)
     con.create_table(temp_table_name, schema=schema)
     temporary = con.table(temp_table_name)
-    assert len(temporary.execute()) == 0
+    assert temporary.execute().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
-        con.load_data(temp_table_name, data, if_exists='append')
-        assert len(temporary.execute()) == len(data.index)
-        tm.assert_frame_equal(temporary.execute(), data)
+        con.load_data(temp_table_name, data, if_exists="append")
+        result = temporary.execute()
+        assert len(result) == len(data.index)
+        tm.assert_frame_equal(result, data)
 
     return temporary
 
@@ -122,12 +122,15 @@ def test_create_table_from_schema(con, backend, new_schema, temp_table):
 def test_rename_table(con, temp_table, new_schema):
     temp_table_original = f'{temp_table}_original'
     con.create_table(temp_table_original, schema=new_schema)
+    try:
+        t = con.table(temp_table_original)
+        t.rename(temp_table)
 
-    t = con.table(temp_table_original)
-    t.rename(temp_table)
-
-    assert con.table(temp_table) is not None
-    assert temp_table in con.list_tables()
+        assert con.table(temp_table) is not None
+        assert temp_table in con.list_tables()
+    finally:
+        con.drop_table(temp_table_original, force=True)
+        con.drop_table(temp_table, force=True)
 
 
 @mark.notimpl(["clickhouse", "datafusion"])
@@ -183,91 +186,129 @@ def test_separate_database(
     assert tmp_db.name == alternate_current_database
 
 
-def test_insert_no_overwrite_from_dataframe(
-    alchemy_backend, alchemy_con, test_employee_schema, test_employee_data_2
-):
-    temp_table = f'temp_to_table_{guid()}'
-    temporary = _create_temp_table_with_schema(
+@pytest.fixture
+def employee_empty_temp_table(alchemy_con, test_employee_schema):
+    temp_table_name = f"temp_to_table_{guid()}"
+    _create_temp_table_with_schema(
         alchemy_con,
-        temp_table,
+        temp_table_name,
         test_employee_schema,
     )
+    try:
+        yield temp_table_name
+    finally:
+        alchemy_con.drop_table(temp_table_name)
 
-    alchemy_con.insert(temp_table, obj=test_employee_data_2, overwrite=False)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
+
+@pytest.fixture
+def employee_data_1_temp_table(
+    alchemy_con,
+    test_employee_schema,
+    test_employee_data_1,
+):
+    temp_table_name = f"temp_to_table_{guid()}"
+    _create_temp_table_with_schema(
+        alchemy_con,
+        temp_table_name,
+        test_employee_schema,
+        data=test_employee_data_1,
+    )
+    try:
+        yield temp_table_name
+    finally:
+        alchemy_con.drop_table(temp_table_name)
+
+
+@pytest.fixture
+def employee_data_2_temp_table(
+    alchemy_con,
+    test_employee_schema,
+    test_employee_data_2,
+):
+    temp_table_name = f"temp_to_table_{guid()}"
+    _create_temp_table_with_schema(
+        alchemy_con,
+        temp_table_name,
+        test_employee_schema,
+        data=test_employee_data_2,
+    )
+    try:
+        yield temp_table_name
+    finally:
+        alchemy_con.drop_table(temp_table_name)
+
+
+def test_insert_no_overwrite_from_dataframe(
+    alchemy_backend,
+    alchemy_con,
+    test_employee_data_2,
+    employee_empty_temp_table,
+):
+    temporary = alchemy_con.table(employee_empty_temp_table)
+    alchemy_con.insert(
+        employee_empty_temp_table,
+        obj=test_employee_data_2,
+        overwrite=False,
+    )
+    result = temporary.execute()
+    assert len(result) == 3
+    tm.assert_frame_equal(result, test_employee_data_2)
 
 
 def test_insert_overwrite_from_dataframe(
     alchemy_backend,
     alchemy_con,
-    test_employee_schema,
-    test_employee_data_1,
+    employee_data_1_temp_table,
     test_employee_data_2,
 ):
+    temporary = alchemy_con.table(employee_data_1_temp_table)
 
-    temp_table = f'temp_to_table_{guid()}'
-    temporary = _create_temp_table_with_schema(
-        alchemy_con,
-        temp_table,
-        test_employee_schema,
-        data=test_employee_data_1,
+    alchemy_con.insert(
+        employee_data_1_temp_table,
+        obj=test_employee_data_2,
+        overwrite=True,
     )
-
-    alchemy_con.insert(temp_table, obj=test_employee_data_2, overwrite=True)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), test_employee_data_2)
+    result = temporary.execute()
+    assert len(result) == 3
+    tm.assert_frame_equal(result, test_employee_data_2)
 
 
 def test_insert_no_overwite_from_expr(
-    alchemy_backend, alchemy_con, test_employee_schema, test_employee_data_2
+    alchemy_backend,
+    alchemy_con,
+    employee_empty_temp_table,
+    employee_data_2_temp_table,
 ):
-    temp_table = f'temp_to_table_{guid()}'
-    temporary = _create_temp_table_with_schema(
-        alchemy_con,
-        temp_table,
-        test_employee_schema,
-    )
+    temporary = alchemy_con.table(employee_empty_temp_table)
+    from_table = alchemy_con.table(employee_data_2_temp_table)
 
-    from_table_name = f'temp_from_table_{guid()}'
-    from_table = _create_temp_table_with_schema(
-        alchemy_con,
-        from_table_name,
-        test_employee_schema,
-        data=test_employee_data_2,
+    alchemy_con.insert(
+        employee_empty_temp_table,
+        obj=from_table,
+        overwrite=False,
     )
-
-    alchemy_con.insert(temp_table, obj=from_table, overwrite=False)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), from_table.execute())
+    result = temporary.execute()
+    assert len(result) == 3
+    tm.assert_frame_equal(result, from_table.execute())
 
 
 def test_insert_overwrite_from_expr(
     alchemy_backend,
     alchemy_con,
-    test_employee_schema,
-    test_employee_data_1,
-    test_employee_data_2,
+    employee_data_1_temp_table,
+    employee_data_2_temp_table,
 ):
-    temp_table = f'temp_to_table_{guid()}'
-    temporary = _create_temp_table_with_schema(
-        alchemy_con,
-        temp_table,
-        test_employee_schema,
-        data=test_employee_data_1,
-    )
+    temporary = alchemy_con.table(employee_data_1_temp_table)
+    from_table = alchemy_con.table(employee_data_2_temp_table)
 
-    from_table_name = f'temp_from_table_{guid()}'
-    from_table = _create_temp_table_with_schema(
-        alchemy_con,
-        from_table_name,
-        test_employee_schema,
-        data=test_employee_data_2,
+    alchemy_con.insert(
+        employee_data_1_temp_table,
+        obj=from_table,
+        overwrite=True,
     )
-
-    alchemy_con.insert(temp_table, obj=from_table, overwrite=True)
-    assert len(temporary.execute()) == 3
-    tm.assert_frame_equal(temporary.execute(), from_table.execute())
+    result = temporary.execute()
+    assert len(result) == 3
+    tm.assert_frame_equal(result, from_table.execute())
 
 
 def test_list_databases(alchemy_backend, alchemy_con):
