@@ -449,3 +449,15 @@ def test_repr_huge_union(benchmark):
     ]
     expr = functools.reduce(ir.TableExpr.union, tables)
     benchmark(repr, expr)
+
+
+def test_op_argnames(benchmark):
+    t = ibis.table([("a", "int64")])
+    expr = t[["a"]]
+    benchmark(lambda op: op.argnames, expr.op())
+
+
+def test_op_args(benchmark):
+    t = ibis.table([("a", "int64")])
+    expr = t[["a"]]
+    benchmark(lambda op: op.args, expr.op())

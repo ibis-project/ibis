@@ -146,6 +146,7 @@ addopts = [
   "--ignore=dist-packages",
   "--strict-markers",
   "--benchmark-skip",
+  "--benchmark-autosave",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = ["site-packages", "dist-packages"]
