@@ -702,6 +702,9 @@ class Set(Variadic):
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.value_type}>"
 
+    def _literal_value_hash_key(self, value):
+        return self, _tuplize(value)
+
 
 class Enum(DataType):
     """Enumeration values."""
@@ -823,7 +826,7 @@ class GeoSpatial(DataType):
             )
             if isinstance(value, geo_shapes):
                 return self, value.wkt
-        return self, value
+        return self, _tuplize(value) if util.is_iterable(value) else value
 
 
 class Geometry(GeoSpatial):

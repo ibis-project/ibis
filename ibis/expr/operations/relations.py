@@ -265,12 +265,7 @@ class AsOfJoin(Join):
             signature.parameters["tolerance"].validate(self, tolerance),
         )
 
-    def _validate_args(self, args: list[str]):
-        # this should be removed altogether
-        for arg in args:
-            argument = self.__signature__.parameters[arg]
-            value = argument.validate(self, getattr(self, arg))
-            setattr(self, arg, value)
+        self.__init_args__()
 
 
 @public

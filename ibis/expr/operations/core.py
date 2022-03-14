@@ -1,4 +1,3 @@
-import collections
 import functools
 import itertools
 
@@ -57,16 +56,9 @@ def all_equal(left, right, cache=None):
     return left == right
 
 
-def _maybe_get_op(value):
-    try:
-        return value.op()
-    except AttributeError:
-        return value
-
-
 @public
 class Node(Annotable):
-    __slots__ = '_expr_cached', '_hash'
+    __slots__ = ("_expr_cached",)
 
     def __repr__(self):
         return self._repr()
@@ -107,20 +99,7 @@ class Node(Annotable):
         # analyzed deeper
         return False
 
-    def flat_args(self):
-        for arg in self.args:
-            if not isinstance(arg, str) and isinstance(
-                arg, collections.abc.Iterable
-            ):
-                yield from arg
-            else:
-                yield arg
-
     def __hash__(self):
-        if not hasattr(self, '_hash'):
-            self._hash = hash(
-                (type(self), *map(_maybe_get_op, self.flat_args()))
-            )
         return self._hash
 
     def __eq__(self, other):
@@ -153,9 +132,12 @@ class Node(Annotable):
         return self.equals(other)
 
     def to_expr(self):
-        if not hasattr(self, '_expr_cached'):
-            self._expr_cached = self._make_expr()
-        return self._expr_cached
+        try:
+            result = self._expr_cached
+        except AttributeError:
+            result = self._make_expr()
+            object.__setattr__(self, "_expr_cached", result)
+        return result
 
     def _make_expr(self):
         klass = self.output_type()

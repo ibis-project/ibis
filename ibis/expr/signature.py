@@ -169,16 +169,36 @@ class AnnotableMeta(type):
 class Annotable(metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __slots__ = ("_args",)
+    __slots__ = (
+        "args",
+        "_hash",
+    )
 
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)
         bound.apply_defaults()
         for name, value in bound.arguments.items():
             param = self.__signature__.parameters[name]
-            setattr(self, name, param.validate(self, value))
+            arg = param.validate(self, value)
+            object.__setattr__(self, name, arg)
         self._validate()
-        self._args = None  # materialize _args lazily
+        self.__init_args__()
+
+    def __init_args__(self):
+        object.__setattr__(
+            self,
+            "args",
+            tuple(getattr(self, argname) for argname in self.argnames),
+        )
+        object.__setattr__(self, "_hash", self._make_hash())
+
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(
+            "cannot set {!r} attribute of immutable object of type {}".format(
+                name,
+                self.__class__.__name__,
+            )
+        )
 
     def _validate(self):
         pass
@@ -191,14 +211,6 @@ class Annotable(metaclass=AnnotableMeta):
     def __getstate__(self) -> Dict[str, Any]:
         return {key: getattr(self, key) for key in self.argnames}
 
-    @property
-    def args(self):
-        if (result := self._args) is None:
-            result = self._args = tuple(
-                getattr(self, key) for key in self.argnames
-            )
-        return result
-
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Set state after unpickling.
 
@@ -207,6 +219,26 @@ class Annotable(metaclass=AnnotableMeta):
         state
             A dictionary storing the objects attributes.
         """
-        self._args = None
+        args = ()
         for key, value in state.items():
-            setattr(self, key, value)
+            object.__setattr__(self, key, value)
+            args += (value,)
+        object.__setattr__(self, "args", args)
+        object.__setattr__(self, "_hash", self._make_hash())
+
+    def _make_hash(self) -> int:
+        return hash((type(self), *map(_maybe_get_op, self.flat_args())))
+
+    def flat_args(self):
+        for arg in self.args:
+            if util.is_iterable(arg):
+                yield from arg
+            else:
+                yield arg
+
+
+def _maybe_get_op(value):
+    try:
+        return value.op()
+    except AttributeError:
+        return value

@@ -47,6 +47,8 @@ class TableColumn(ValueOp):
                 f"value {name!r} is not a field in {table.columns}"
             )
 
+        self.__init_args__()
+
     def parent(self):
         return self.table
 
@@ -282,7 +284,7 @@ class Literal(ValueOp):
     def root_tables(self):
         return []
 
-    def __hash__(self) -> int:
+    def _make_hash(self) -> int:
         """Return the hash of a literal value.
 
         We override this method to make sure that we can handle things that
