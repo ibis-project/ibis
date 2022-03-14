@@ -166,10 +166,10 @@ def test_nullable_output():
 
     sch_str = str(sch)
     assert 'foo  int64' in sch_str
-    assert 'foo  int64[non-nullable]' not in sch_str
-    assert 'bar  int64[non-nullable]' in sch_str
+    assert 'foo  !int64' not in sch_str
+    assert 'bar  !int64' in sch_str
     assert 'baz  boolean' in sch_str
-    assert 'baz  boolean[non-nullable]' not in sch_str
+    assert 'baz  !boolean' not in sch_str
 
 
 @pytest.fixture

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 import builtins
 import collections
@@ -5,7 +7,6 @@ import datetime
 import decimal
 import enum
 import functools
-import itertools
 import numbers
 import re
 import typing
@@ -13,15 +14,11 @@ import uuid as _uuid
 from typing import (
     Iterable,
     Iterator,
-    List,
     Literal,
     Mapping,
     NamedTuple,
-    Optional,
     Sequence,
-    Tuple,
     TypeVar,
-    Union,
 )
 
 import pandas as pd
@@ -47,13 +44,20 @@ class DataType:
 
     nullable: bool
     """Whether the data type can hold `NULL` values."""
+    _pretty: str
+    """Pretty representation of the datatype."""
+    _hash: int | None
+    """Hash of the datatype."""
 
-    __slots__ = ('nullable',)
+    __slots__ = "nullable", "_pretty", "_hash"
+    _ignored_hash_slots = "_pretty", "_hash"
 
     def __init__(self, nullable: bool = True, **kwargs) -> None:
         self.nullable = nullable
+        self._pretty = self.name.lower()
+        self._hash = None
 
-    def __call__(self, nullable: bool = True) -> "DataType":
+    def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
             raise TypeError(
                 "__call__ only accepts the 'nullable' argument. "
@@ -62,13 +66,21 @@ class DataType:
             )
         return self._factory(nullable=nullable)
 
-    def _factory(self, nullable: bool = True) -> "DataType":
+    @property
+    def _slot_list(self) -> tuple[str, ...]:
+        return tuple(
+            slot
+            for slot in toolz.unique((*self.__slots__, "nullable"))
+            if slot not in self._ignored_hash_slots
+        )
+
+    def _factory(self, nullable: bool = True) -> DataType:
         slots = {
             slot: getattr(self, slot)
-            for slot in self.__slots__
-            if slot != 'nullable'
+            for slot in self._slot_list
+            if slot != "nullable"
         }
-        return type(self)(nullable=nullable, **slots)
+        return self.__class__(nullable=nullable, **slots)
 
     def __eq__(self, other) -> bool:
         return self.equals(other)
@@ -76,50 +88,48 @@ class DataType:
     def __ne__(self, other) -> bool:
         return not (self == other)
 
+    def _make_hash(self) -> int:
+        custom_parts = tuple(getattr(self, slot) for slot in self._slot_list)
+        return hash((self.__class__, *custom_parts, self.nullable))
+
     def __hash__(self) -> int:
-        custom_parts = tuple(
-            getattr(self, slot)
-            for slot in toolz.unique(self.__slots__ + ('nullable',))
-        )
-        return hash((type(self),) + custom_parts)
+        if (result := self._hash) is None:
+            self._hash = result = self._make_hash()
+        return result
 
     def __repr__(self) -> str:
-        return '{}({})'.format(
-            self.name,
-            ', '.join(
-                f'{slot}={getattr(self, slot)!r}'
-                for slot in toolz.unique(self.__slots__ + ('nullable',))
-            ),
+        args = ", ".join(
+            f"{slot}={getattr(self, slot)!r}" for slot in self._slot_list
         )
+        return f"{self.__class__.__name__}({args})"
 
     def __str__(self) -> str:
-        return '{}{}'.format(
-            self.name.lower(), '[non-nullable]' if not self.nullable else ''
-        )
+        prefix = "!" * (not self.nullable)
+        return f"{prefix}{self._pretty}"
 
     @property
     def name(self) -> str:
         """Return the name of the data type."""
-        return type(self).__name__
+        return self.__class__.__name__
 
     def equals(
         self,
-        other: "DataType",
-        cache: Optional[Mapping[typing.Any, bool]] = None,
+        other: DataType,
+        cache: Mapping[typing.Any, bool] | None = None,
     ) -> bool:
         """Return whether this data type equals `other`."""
         if isinstance(other, str):
             raise TypeError(
                 'Comparing datatypes to strings is not allowed. Convert '
-                '{!r} to the equivalent DataType instance.'.format(other)
+                f'{other!r} to the equivalent DataType instance.'
             )
         return (
-            isinstance(other, type(self))
+            isinstance(other, self.__class__)
             and self.nullable == other.nullable
-            and self.__slots__ == other.__slots__
+            and self._slot_list == other._slot_list
             and all(
                 getattr(self, slot) == getattr(other, slot)
-                for slot in self.__slots__
+                for slot in self._slot_list
             )
         )
 
@@ -139,7 +149,7 @@ class DataType:
         """Return a column expression with this data type."""
         return functools.partial(self.column, dtype=self)
 
-    def _literal_value_hash_key(self, value) -> Tuple["DataType", typing.Any]:
+    def _literal_value_hash_key(self, value) -> tuple[DataType, typing.Any]:
         """Return a hash for `value`."""
         return self, value
 
@@ -154,12 +164,6 @@ class Primitive(DataType):
     """Values with known size."""
 
     __slots__ = ()
-
-    def __repr__(self) -> str:
-        name = self.name.lower()
-        if not self.nullable:
-            return f'{name}[non-nullable]'
-        return name
 
 
 class Null(DataType):
@@ -270,17 +274,12 @@ class Timestamp(DataType):
     __slots__ = ('timezone',)
 
     def __init__(
-        self, timezone: Optional[str] = None, nullable: bool = True
+        self, timezone: str | None = None, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.timezone = timezone
-
-    def __str__(self) -> str:
-        timezone = self.timezone
-        typename = self.name.lower()
-        if timezone is None:
-            return typename
-        return f'{typename}({timezone!r})'
+        if timezone is not None:
+            self._pretty += f"({timezone!r})"
 
 
 class SignedInteger(Integer):
@@ -454,14 +453,10 @@ class Decimal(DataType):
         super().__init__(nullable=nullable)
         self.precision = precision  # type: int
         self.scale = scale  # type: int
-
-    def __str__(self) -> str:
-        return '{}({:d}, {:d})'.format(
-            self.name.lower(), self.precision, self.scale
-        )
+        self._pretty += f"({self.precision:d}, {self.scale:d})"
 
     @property
-    def largest(self) -> "Decimal":
+    def largest(self) -> Decimal:
         """Return the largest decimal type."""
         return Decimal(38, self.scale)
 
@@ -532,6 +527,7 @@ class Interval(DataType):
 
         self.unit = unit
         self.value_type = value_type
+        self._pretty += f"<{self.value_type.name.lower()}>(unit={self.unit!r})"
 
     @property
     def bounds(self):
@@ -541,12 +537,6 @@ class Interval(DataType):
     def resolution(self):
         """The interval unit's name."""
         return self._units[self.unit]
-
-    def __str__(self):
-        unit = self.unit
-        typename = self.name.lower()
-        value_type_name = self.value_type.name.lower()
-        return f'{typename}<{value_type_name}>(unit={unit!r})'
 
 
 class Category(DataType):
@@ -577,7 +567,7 @@ class Category(DataType):
 class Struct(DataType):
     """Structured values."""
 
-    names: List[str]
+    names: list[str]
     """Field names of the struct."""
     types: Sequence[DataType]
     """Types of the fields of the struct."""
@@ -614,22 +604,25 @@ class Struct(DataType):
         super().__init__(nullable=nullable)
         self.names = names
         self.types = types
+        self._pretty += "<{}>".format(
+            ', '.join(map("{}: {}".format, names, types))
+        )
 
     @classmethod
     def from_tuples(
         cls,
-        pairs: Iterable[Tuple[str, Union[str, DataType]]],
+        pairs: Iterable[tuple[str, str | DataType]],
         nullable: bool = True,
-    ) -> "Struct":
+    ) -> Struct:
         names, types = zip(*pairs)
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @classmethod
     def from_dict(
         cls,
-        pairs: Mapping[str, Union[str, DataType]],
+        pairs: Mapping[str, str | DataType],
         nullable: bool = True,
-    ) -> "Struct":
+    ) -> Struct:
         names, types = pairs.keys(), pairs.values()
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
@@ -640,20 +633,19 @@ class Struct(DataType):
     def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]
 
-    def __hash__(self) -> int:
+    def _make_hash(self) -> int:
         return hash(
-            (type(self), tuple(self.names), tuple(self.types), self.nullable)
+            (
+                self.__class__,
+                tuple(self.names),
+                tuple(self.types),
+                self.nullable,
+            )
         )
 
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
             self.name, list(self.pairs.items()), self.nullable
-        )
-
-    def __str__(self) -> str:
-        return '{}<{}>'.format(
-            self.name.lower(),
-            ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items())),
         )
 
     def _literal_value_hash_key(self, value):
@@ -683,13 +675,11 @@ class Array(Variadic):
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: Union[str, DataType], nullable: bool = True
+        self, value_type: str | DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
-
-    def __str__(self) -> str:
-        return f'{self.name.lower()}<{self.value_type}>'
+        self._pretty += f"<{self.value_type}>"
 
     def _literal_value_hash_key(self, value):
         return self, _tuplize(value)
@@ -706,13 +696,11 @@ class Set(Variadic):
     __slots__ = ('value_type',)
 
     def __init__(
-        self, value_type: Union[str, DataType], nullable: bool = True
+        self, value_type: str | DataType, nullable: bool = True
     ) -> None:
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
-
-    def __str__(self) -> str:
-        return f'{self.name.lower()}<{self.value_type}>'
+        self._pretty += f"<{self.value_type}>"
 
 
 class Enum(DataType):
@@ -754,11 +742,7 @@ class Map(Variadic):
         super().__init__(nullable=nullable)
         self.key_type = dtype(key_type)
         self.value_type = dtype(value_type)
-
-    def __str__(self) -> str:
-        return '{}<{}, {}>'.format(
-            self.name.lower(), self.key_type, self.value_type
-        )
+        self._pretty += f"<{self.key_type}, {self.value_type}>"
 
     def _literal_value_hash_key(self, value):
         return self, _tuplize(value.items())
@@ -787,17 +771,17 @@ class GeoSpatial(DataType):
 
     __slots__ = 'geotype', 'srid'
 
-    geotype: Optional[Literal['geography', 'geometry']]
+    geotype: Literal['geography', 'geometry'] | None
     """The specific geospatial type"""
-    srid: Optional[int]
+    srid: int | None
     """The spatial reference identifier."""
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
     def __init__(
         self,
-        geotype: Optional[Literal['geography', 'geometry']] = None,
-        srid: Optional[int] = None,
+        geotype: Literal['geography', 'geometry'] | None = None,
+        srid: int | None = None,
         nullable: bool = True,
     ) -> None:
         """Geospatial data type base class
@@ -822,13 +806,10 @@ class GeoSpatial(DataType):
         self.geotype = geotype
         self.srid = srid
 
-    def __str__(self) -> str:
-        geo_op = self.name.lower()
         if self.geotype is not None:
-            geo_op += ':' + self.geotype
+            self._pretty += ':' + self.geotype
         if self.srid is not None:
-            geo_op += ';' + str(self.srid)
-        return geo_op
+            self._pretty += ';' + str(self.srid)
 
     def _literal_value_hash_key(self, value):
         if IS_SHAPELY_AVAILABLE:
@@ -856,9 +837,7 @@ class Geometry(GeoSpatial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geotype = 'geometry'
-
-    def __str__(self) -> str:
-        return self.name.lower()
+        self._pretty = self.name.lower()
 
 
 class Geography(GeoSpatial):
@@ -872,9 +851,7 @@ class Geography(GeoSpatial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geotype = 'geography'
-
-    def __str__(self) -> str:
-        return self.name.lower()
+        self._pretty = self.name.lower()
 
 
 class Point(GeoSpatial):
@@ -1020,7 +997,36 @@ def spaceless_string(s: str):
     return spaceless(p.string(s, transform=str.lower))
 
 
+@functools.lru_cache(maxsize=100)
 def parse_type(text: str) -> DataType:
+    """Parse a type from a [`str`][str] `text`.
+
+    The default `maxsize` parameter for caching is chosen to cache the most
+    commonly used types--there are about 30--along with some capacity for less
+    common but repeatedly-used complex types.
+
+    Parameters
+    ----------
+    text
+        The type string to parse
+
+    Examples
+    --------
+    Parse an array type from a string
+
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> dt.parse_type("array<int64>")
+    Array(value_type=int64, nullable=True)
+
+    You can avoid parsing altogether by constructing objects directly
+
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> ty = dt.parse_type("array<int64>")
+    >>> ty == dt.Array(dt.int64)
+    True
+    """
     precision = scale = srid = p.digit.at_least(1).concat().map(int)
 
     lparen = spaceless_string("(")
@@ -1220,8 +1226,8 @@ validate_type = dtype
 
 
 def _get_timedelta_units(
-    timedelta: Union[datetime.timedelta, pd.Timedelta],
-) -> List[str]:
+    timedelta: datetime.timedelta | pd.Timedelta,
+) -> list[str]:
     # pandas Timedelta has more granularity
     if isinstance(timedelta, pd.Timedelta):
         unit_fields = timedelta.components._fields
@@ -1256,7 +1262,7 @@ def from_string(value: str) -> DataType:
 
 
 @dtype.register(list)
-def from_list(values: List[typing.Any]) -> Array:
+def from_list(values: list[typing.Any]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
@@ -1314,7 +1320,7 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
 
 
 @infer.register(list)
-def infer_list(values: List[typing.Any]) -> Array:
+def infer_list(values: list[typing.Any]) -> Array:
     """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
     if not values:
         return Array(null)
@@ -1400,7 +1406,7 @@ def infer_boolean(value: bool) -> Boolean:
 
 
 @infer.register((type(None), Null))
-def infer_null(value: Optional[Null]) -> Null:
+def infer_null(value: Null | None) -> Null:
     return null
 
 
@@ -1444,7 +1450,7 @@ castable = Dispatcher('castable')
 
 @castable.register(DataType, DataType)
 def can_cast_subtype(source: DataType, target: DataType, **kwargs) -> bool:
-    return isinstance(target, type(source))
+    return isinstance(target, source.__class__)
 
 
 @castable.register(Any, DataType)
@@ -1470,7 +1476,7 @@ Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
 def can_cast_to_differently_signed_integer_type(
-    source: Integral, target: Integral, value: Optional[int] = None, **kwargs
+    source: Integral, target: Integral, value: int | None = None, **kwargs
 ) -> bool:
     if value is None:
         return False
@@ -1512,7 +1518,7 @@ def can_cast_intervals(source: Interval, target: Interval, **kwargs) -> bool:
 
 @castable.register(Integer, Boolean)
 def can_cast_integer_to_boolean(
-    source: Integer, target: Boolean, value: Optional[int] = None, **kwargs
+    source: Integer, target: Boolean, value: int | None = None, **kwargs
 ) -> bool:
     return value is not None and (value == 0 or value == 1)
 
@@ -1527,8 +1533,8 @@ def can_cast_integer_to_interval(
 @castable.register(String, (Date, Time, Timestamp))
 def can_cast_string_to_temporal(
     source: String,
-    target: Union[Date, Time, Timestamp],
-    value: Optional[str] = None,
+    target: Date | Time | Timestamp,
+    value: str | None = None,
     **kwargs,
 ) -> bool:
     if value is None:
@@ -1608,9 +1614,7 @@ def can_cast_special_string(source, target, **kwargs):
     return True
 
 
-def cast(
-    source: Union[str, DataType], target: Union[str, DataType], **kwargs
-) -> DataType:
+def cast(source: str | DataType, target: str | DataType, **kwargs) -> DataType:
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, result_target = dtype(source), dtype(target)
 
