@@ -145,6 +145,7 @@ addopts = [
   "--ignore=site-packages",
   "--ignore=dist-packages",
   "--strict-markers",
+  "--strict-config",
   "--benchmark-skip",
 ]
 empty_parameter_set_mark = "fail_at_collect"

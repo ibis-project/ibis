@@ -196,14 +196,11 @@ def test_aggregate_grouped(
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "csv",
                         "dask",
                         "duckdb",
-                        "hdf5",
                         "impala",
                         "mysql",
                         "pandas",
-                        "parquet",
                         "postgres",
                         "pyspark",
                         "sqlite",
@@ -219,14 +216,11 @@ def test_aggregate_grouped(
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "csv",
                         "dask",
                         "duckdb",
-                        "hdf5",
                         "impala",
                         "mysql",
                         "pandas",
-                        "parquet",
                         "postgres",
                         "pyspark",
                         "sqlite",
@@ -343,7 +337,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.notimpl(["pandas", "dask", "csv", "hdf5", "parquet"])
+@mark.notimpl(["pandas", "dask"])
 @pytest.mark.notyet(["pyspark", "datafusion"])
 def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
