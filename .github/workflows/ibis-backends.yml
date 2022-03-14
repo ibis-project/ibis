@@ -344,7 +344,7 @@ jobs:
         run: poetry run python ci/datamgr.py load ${{ matrix.backend.name }}
 
       - name: run tests
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: publish test report
         uses: actions/upload-artifact@v3

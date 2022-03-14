@@ -17,9 +17,9 @@ fmt:
     isort .
     pyupgrade --py38-plus ibis/**/*.py
 
-# run all non-backend tests in parallel; additional arguments are forwarded to pytest
+# run all non-backend tests; additional arguments are forwarded to pytest
 check *args:
-    pytest -m 'not backend' -q -n auto --dist loadgroup {{ args }}
+    pytest -m core {{ args }}
 
 # run pytest for ci; additional arguments are forwarded to pytest
 ci-check *args:
