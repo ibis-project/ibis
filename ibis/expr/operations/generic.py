@@ -39,7 +39,8 @@ class TableColumn(ValueOp):
         schema = table.schema()
 
         if isinstance(name, int):
-            self.name = name = schema.name_at_position(name)
+            name = schema.name_at_position(name)
+            object.__setattr__(self, "name", name)
 
         if name not in schema:
             raise com.IbisTypeError(

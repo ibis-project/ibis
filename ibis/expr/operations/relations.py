@@ -251,10 +251,19 @@ class AsOfJoin(Join):
 
     def __init__(self, left, right, predicates, by, tolerance):
         super().__init__(left, right, predicates)
-        self.by = _clean_join_predicates(self.left, self.right, by)
-        self.tolerance = tolerance
-
-        self._validate_args(['by', 'tolerance'])
+        signature = self.__signature__
+        object.__setattr__(
+            self,
+            "by",
+            signature.parameters["by"].validate(
+                self, _clean_join_predicates(self.left, self.right, by)
+            ),
+        )
+        object.__setattr__(
+            self,
+            "tolerance",
+            signature.parameters["tolerance"].validate(self, tolerance),
+        )
 
     def _validate_args(self, args: list[str]):
         # this should be removed altogether

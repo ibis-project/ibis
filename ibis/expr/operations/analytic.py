@@ -22,7 +22,11 @@ class WindowOp(ValueOp):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.expr = propagate_down_window(self.expr, self.window)
+        object.__setattr__(
+            self,
+            "expr",
+            propagate_down_window(self.expr, self.window),
+        )
 
     def over(self, window):
         new_window = self.window.combine(window)
