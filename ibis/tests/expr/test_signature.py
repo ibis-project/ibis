@@ -351,3 +351,12 @@ def test_multiple_inheritance_optional_argument_order():
         how = Optional(IsStr, default="strict")
 
     assert str(Between.__signature__) == "(min, max, where=None, how=None)"
+
+
+def test_immutability():
+    class ValueOp(Annotable):
+        a = IsInt
+
+    op = ValueOp(1)
+    with pytest.raises(TypeError):
+        op.a = 3
