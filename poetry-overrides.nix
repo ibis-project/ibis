@@ -49,4 +49,10 @@ self: super:
       self.poetry
     ];
   });
+
+  mkdocs-autorefs = super.mkdocs-autorefs.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.pdm-pep517
+    ];
+  });
 }
