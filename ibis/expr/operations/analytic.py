@@ -27,6 +27,7 @@ class WindowOp(ValueOp):
             "expr",
             propagate_down_window(self.expr, self.window),
         )
+        self.__init_args__()
 
     def over(self, window):
         new_window = self.window.combine(window)
