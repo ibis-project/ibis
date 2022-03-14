@@ -91,7 +91,7 @@ jobs:
         run: pip install -e .
 
       - name: run tests
-        run: pytest -m core --numprocesses auto
+        run: pytest -m core
 
   check_poetry_lock:
     runs-on: ubuntu-latest
