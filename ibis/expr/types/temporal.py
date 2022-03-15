@@ -491,7 +491,7 @@ class IntervalValue(AnyValue):
             return self
 
         result = util.convert_unit(self, self._dtype.unit, target_unit)
-        result.type().unit = target_unit
+        object.__setattr__(result.type(), "unit", target_unit)
         return result
 
     @property

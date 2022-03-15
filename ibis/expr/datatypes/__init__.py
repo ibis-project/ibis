@@ -28,7 +28,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import parsy as p
-import toolz
+from cached_property import cached_property
 from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
@@ -46,20 +46,21 @@ except ImportError:
 class DataType(util.CachedEqMixin):
     """Base class for all data types."""
 
-    nullable: bool
-    """Whether the data type can hold `NULL` values."""
-    _pretty: str
-    """Pretty representation of the datatype."""
-    _hash: int | None
-    """Hash of the datatype."""
+    _fields_ = ()
 
-    __slots__ = "nullable", "_pretty", "_hash"
-    _ignored_hash_slots = "_pretty", "_hash"
+    def __init__(self, nullable: bool = True, **fields: typing.Any) -> None:
+        object.__setattr__(self, "nullable", nullable)
+        for name, value in fields.items():
+            if name not in self._fields_:
+                raise ValueError(
+                    f"field `{name}` is not defined in `_fields_`"
+                )
+            object.__setattr__(self, name, value)
 
-    def __init__(self, nullable: bool = True, **kwargs) -> None:
-        self.nullable = nullable
-        self._pretty = self.name.lower()
-        self._hash = None
+    def __setattr__(self, key: str, _: typing.Any) -> None:
+        raise TypeError(
+            f"cannot set {key!r} attribute of immutable instance {self.name!r}"
+        )
 
     def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
@@ -71,20 +72,39 @@ class DataType(util.CachedEqMixin):
         return self._factory(nullable=nullable)
 
     @property
-    def _slot_list(self) -> tuple[str, ...]:
-        return tuple(
-            slot
-            for slot in toolz.unique((*self.__slots__, "nullable"))
-            if slot not in self._ignored_hash_slots
-        )
+    def _pretty_piece(self) -> str:
+        return ""
 
-    def _factory(self, nullable: bool = True) -> DataType:
-        slots = {
-            slot: getattr(self, slot)
-            for slot in self._slot_list
-            if slot != "nullable"
-        }
-        return self.__class__(nullable=nullable, **slots)
+    @cached_property
+    def _fields(self) -> tuple[str, ...]:
+        return (*self._fields_, "nullable")
+
+    @property
+    def name(self) -> str:
+        """Return the name of the data type."""
+        return self.__class__.__name__
+
+    @cached_property
+    def _str(self) -> str:
+        prefix = "!" * (not self.nullable)
+        return f"{prefix}{self.name.lower()}{self._pretty_piece}"
+
+    def __str__(self) -> str:
+        return self._str
+
+    def __repr__(self) -> str:
+        args = ", ".join(
+            f"{slot}={getattr(self, slot)!r}" for slot in self._fields
+        )
+        return f"{self.name}({args})"
+
+    @cached_property
+    def _hash(self) -> int:
+        custom_parts = (getattr(self, slot) for slot in self._fields)
+        return hash((self.__class__, *custom_parts, self.nullable))
+
+    def __hash__(self) -> int:
+        return self._hash
 
     def equals(
         self,
@@ -97,30 +117,6 @@ class DataType(util.CachedEqMixin):
                 f'{other!r} to the equivalent DataType instance.'
             )
         return super().equals(other, cache=cache)
-
-    def _make_hash(self) -> int:
-        custom_parts = tuple(getattr(self, slot) for slot in self._slot_list)
-        return hash((self.__class__, *custom_parts, self.nullable))
-
-    def __hash__(self) -> int:
-        if (result := self._hash) is None:
-            self._hash = result = self._make_hash()
-        return result
-
-    def __repr__(self) -> str:
-        args = ", ".join(
-            f"{slot}={getattr(self, slot)!r}" for slot in self._slot_list
-        )
-        return f"{self.__class__.__name__}({args})"
-
-    def __str__(self) -> str:
-        prefix = "!" * (not self.nullable)
-        return f"{prefix}{self._pretty}"
-
-    @property
-    def name(self) -> str:
-        """Return the name of the data type."""
-        return self.__class__.__name__
 
     def __component_eq__(
         self,
@@ -146,6 +142,10 @@ class DataType(util.CachedEqMixin):
                 f"DataType and {type(other)}"
             )
 
+    def _factory(self, nullable: bool = True) -> DataType:
+        slots = {slot: getattr(self, slot) for slot in self._fields_}
+        return self.__class__(nullable=nullable, **slots)
+
     def castable(self, target, **kwargs):
         """Return whether this data type is castable to `target`."""
         return castable(self, target, **kwargs)
@@ -166,8 +166,6 @@ class DataType(util.CachedEqMixin):
 class Any(DataType):
     """Values of any type."""
 
-    __slots__ = ()
-
     def __fields_eq__(
         self,
         other: DataType,
@@ -178,8 +176,6 @@ class Any(DataType):
 
 class Primitive(DataType):
     """Values with known size."""
-
-    __slots__ = ()
 
     def __fields_eq__(
         self,
@@ -195,8 +191,6 @@ class Null(DataType):
     scalar = ir.NullScalar
     column = ir.NullColumn
 
-    __slots__ = ()
-
     def __fields_eq__(
         self,
         other: DataType,
@@ -207,8 +201,6 @@ class Null(DataType):
 
 class Variadic(DataType):
     """Values with unknown size."""
-
-    __slots__ = ()
 
     def __fields_eq__(
         self,
@@ -224,8 +216,6 @@ class Boolean(Primitive):
     scalar = ir.BooleanScalar
     column = ir.BooleanColumn
 
-    __slots__ = ()
-
 
 class Bounds(NamedTuple):
     lower: int
@@ -237,8 +227,6 @@ class Integer(Primitive):
 
     scalar = ir.IntegerScalar
     column = ir.IntegerColumn
-
-    __slots__ = ()
 
     @property
     def _nbytes(self) -> int:
@@ -260,8 +248,6 @@ class String(Variadic):
     scalar = ir.StringScalar
     column = ir.StringColumn
 
-    __slots__ = ()
-
 
 class Binary(Variadic):
     """A type representing a sequence of bytes.
@@ -278,16 +264,12 @@ class Binary(Variadic):
     scalar = ir.BinaryScalar
     column = ir.BinaryColumn
 
-    __slots__ = ()
-
 
 class Date(Primitive):
     """Date values."""
 
     scalar = ir.DateScalar
     column = ir.DateColumn
-
-    __slots__ = ()
 
 
 class Time(Primitive):
@@ -296,27 +278,30 @@ class Time(Primitive):
     scalar = ir.TimeScalar
     column = ir.TimeColumn
 
-    __slots__ = ()
-
 
 class Timestamp(DataType):
     """Timestamp values."""
 
-    timezone: str
+    _fields_ = ("timezone",)
+
+    timezone: str | None
     """The timezone of values of this type."""
 
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
-    __slots__ = ('timezone',)
-
     def __init__(
-        self, timezone: str | None = None, nullable: bool = True
+        self,
+        timezone: str | None = None,
+        nullable: bool = True,
     ) -> None:
-        super().__init__(nullable=nullable)
-        self.timezone = timezone
-        if timezone is not None:
-            self._pretty += f"({timezone!r})"
+        super().__init__(nullable=nullable, timezone=timezone)
+
+    @property
+    def _pretty_piece(self) -> str:
+        if (timezone := self.timezone) is not None:
+            return f"({timezone!r})"
+        return ""
 
     def __fields_eq__(
         self,
@@ -362,8 +347,6 @@ class Floating(Primitive):
     scalar = ir.FloatingScalar
     column = ir.FloatingColumn
 
-    __slots__ = ()
-
     @property
     def largest(self):
         """Return the largest type of floating point values."""
@@ -380,77 +363,66 @@ class Floating(Primitive):
 class Int8(SignedInteger):
     """Signed 8-bit integers."""
 
-    __slots__ = ()
     _nbytes = 1
 
 
 class Int16(SignedInteger):
     """Signed 16-bit integers."""
 
-    __slots__ = ()
     _nbytes = 2
 
 
 class Int32(SignedInteger):
     """Signed 32-bit integers."""
 
-    __slots__ = ()
     _nbytes = 4
 
 
 class Int64(SignedInteger):
     """Signed 64-bit integers."""
 
-    __slots__ = ()
     _nbytes = 8
 
 
 class UInt8(UnsignedInteger):
     """Unsigned 8-bit integers."""
 
-    __slots__ = ()
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
     """Unsigned 16-bit integers."""
 
-    __slots__ = ()
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
     """Unsigned 32-bit integers."""
 
-    __slots__ = ()
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
     """Unsigned 64-bit integers."""
 
-    __slots__ = ()
     _nbytes = 8
 
 
 class Float16(Floating):
     """16-bit floating point numbers."""
 
-    __slots__ = ()
     _nbytes = 2
 
 
 class Float32(Floating):
     """32-bit floating point numbers."""
 
-    __slots__ = ()
     _nbytes = 4
 
 
 class Float64(Floating):
     """64-bit floating point numbers."""
 
-    __slots__ = ()
     _nbytes = 8
 
 
@@ -462,6 +434,8 @@ Double = Float64
 class Decimal(DataType):
     """Fixed-precision decimal values."""
 
+    _fields_ = "precision", "scale"
+
     precision: int
     """The number of values after the decimal point."""
 
@@ -471,10 +445,11 @@ class Decimal(DataType):
     scalar = ir.DecimalScalar
     column = ir.DecimalColumn
 
-    __slots__ = 'precision', 'scale'
-
     def __init__(
-        self, precision: int, scale: int, nullable: bool = True
+        self,
+        precision: int,
+        scale: int,
+        nullable: bool = True,
     ) -> None:
         if not isinstance(precision, numbers.Integral):
             raise TypeError('Decimal type precision must be an integer')
@@ -493,16 +468,16 @@ class Decimal(DataType):
                     precision, scale
                 )
             )
-
-        super().__init__(nullable=nullable)
-        self.precision = precision  # type: int
-        self.scale = scale  # type: int
-        self._pretty += f"({self.precision:d}, {self.scale:d})"
+        super().__init__(nullable=nullable, precision=precision, scale=scale)
 
     @property
     def largest(self) -> Decimal:
         """Return the largest decimal type."""
-        return Decimal(38, self.scale)
+        return self.__class__(38, self.scale)
+
+    @property
+    def _pretty_piece(self) -> str:
+        return f"({self.precision:d}, {self.scale:d})"
 
     def __fields_eq__(
         self,
@@ -515,15 +490,16 @@ class Decimal(DataType):
 class Interval(DataType):
     """Interval values."""
 
-    value_type: DataType
-    """The underlying type of the stored values."""
+    _fields_ = "unit", "value_type"
+
     unit: str
     """The time unit of the interval."""
 
+    value_type: DataType
+    """The underlying type of the stored values."""
+
     scalar = ir.IntervalScalar
     column = ir.IntervalColumn
-
-    __slots__ = 'value_type', 'unit'
 
     # based on numpy's units
     _units = {
@@ -557,11 +533,10 @@ class Interval(DataType):
 
     def __init__(
         self,
-        unit: str = 's',
-        value_type: Integer = None,
+        unit: str = "s",
+        value_type: DataType | None = None,
         nullable: bool = True,
     ) -> None:
-        super().__init__(nullable=nullable)
         if unit not in self._units:
             try:
                 unit = self._convert_timedelta_unit_to_interval_unit(unit)
@@ -574,11 +549,9 @@ class Interval(DataType):
             value_type = dtype(value_type)
 
         if not isinstance(value_type, Integer):
-            raise TypeError("Interval's inner type must be an Integer subtype")
+            raise TypeError("Interval inner type must be an Integer subtype")
 
-        self.unit = unit
-        self.value_type = value_type
-        self._pretty += f"<{self.value_type}>(unit={self.unit!r})"
+        super().__init__(nullable=nullable, unit=unit, value_type=value_type)
 
     @property
     def bounds(self):
@@ -599,26 +572,34 @@ class Interval(DataType):
             cache=cache,
         )
 
+    @property
+    def _pretty_piece(self) -> str:
+        return f"<{self.value_type}>(unit={self.unit!r})"
+
 
 class Category(DataType):
+    _fields_ = ("cardinality",)
+
+    cardinality: int | None
+
     scalar = ir.CategoryScalar
     column = ir.CategoryColumn
 
-    __slots__ = ('cardinality',)
-
-    def __init__(self, cardinality=None, nullable=True):
-        super().__init__(nullable=nullable)
-        self.cardinality = cardinality
+    def __init__(
+        self,
+        cardinality: int | None = None,
+        nullable: bool = True,
+    ) -> None:
+        super().__init__(nullable=nullable, cardinality=cardinality)
 
     def __repr__(self):
         if self.cardinality is not None:
-            cardinality = self.cardinality
+            cardinality = repr(self.cardinality)
         else:
-            cardinality = 'unknown'
-        return f'{self.name}(cardinality={cardinality!r})'
+            cardinality = "unknown"
+        return f"{self.name}(cardinality={cardinality})"
 
     def to_integer_type(self):
-        # TODO: this should be removed I guess
         if self.cardinality is None:
             return int64
         else:
@@ -635,46 +616,35 @@ class Category(DataType):
 class Struct(DataType):
     """Structured values."""
 
-    names: list[str]
+    _fields_ = "names", "types"
+
+    names: Sequence[str]
     """Field names of the struct."""
+
     types: Sequence[DataType]
     """Types of the fields of the struct."""
 
     scalar = ir.StructScalar
     column = ir.StructColumn
 
-    __slots__ = 'names', 'types'
-
     def __init__(
         self,
         names: Iterable[str],
-        types: Iterable[DataType],
+        types: Iterable[str | DataType],
         nullable: bool = True,
     ) -> None:
-        """Construct a struct type from `names` and `types`.
 
-        Parameters
-        ----------
-        names
-            Sequence of strings indicating the name of each field in the
-            struct.
-        types
-            Sequence of strings or :class:`~ibis.expr.datatypes.DataType`
-            instances, one for each field
-        nullable
-            Whether the struct can be null
-        """
-        if not (names and types):
-            raise ValueError('names and types must not be empty')
+        names = tuple(names)
+        if not names:
+            raise ValueError("names must not be empty")
+
+        types = tuple(map(dtype, types))
+        if not types:
+            raise ValueError("types must not be empty")
+
         if len(names) != len(types):
-            raise ValueError('names and types must have the same length')
-
-        super().__init__(nullable=nullable)
-        self.names = names
-        self.types = types
-        self._pretty += "<{}>".format(
-            ", ".join(map("{}: {}".format, self.names, self.types))
-        )
+            raise ValueError("names and types must have the same length")
+        super().__init__(nullable=nullable, names=names, types=types)
 
     @classmethod
     def from_tuples(
@@ -727,23 +697,27 @@ class Struct(DataType):
             self.name, list(self.pairs.items()), self.nullable
         )
 
+    @property
+    def _pretty_piece(self) -> str:
+        pairs = ", ".join(map("{}: {}".format, self.names, self.types))
+        return f"<{pairs}>"
+
 
 class Array(Variadic):
     """Array values."""
 
+    _fields_ = ("value_type",)
+
     value_type: DataType
     """The type of the elements of the array."""
+
     scalar = ir.ArrayScalar
     column = ir.ArrayColumn
-
-    __slots__ = ('value_type',)
 
     def __init__(
         self, value_type: str | DataType, nullable: bool = True
     ) -> None:
-        super().__init__(nullable=nullable)
-        self.value_type = dtype(value_type)
-        self._pretty += f"<{self.value_type}>"
+        super().__init__(nullable=nullable, value_type=dtype(value_type))
 
     def __fields_eq__(
         self,
@@ -752,23 +726,28 @@ class Array(Variadic):
     ) -> bool:
         return self.value_type.equals(other.value_type, cache=cache)
 
+    @property
+    def _pretty_piece(self) -> str:
+        return f"<{self.value_type}>"
+
 
 class Set(Variadic):
     """Set values."""
 
+    _fields_ = ("value_type",)
+
     value_type: DataType
     """The type of the elements of the set."""
+
     scalar = ir.SetScalar
     column = ir.SetColumn
 
-    __slots__ = ('value_type',)
+    def __init__(self, value_type: DataType, nullable: bool = True) -> None:
+        super().__init__(nullable=nullable, value_type=dtype(value_type))
 
-    def __init__(
-        self, value_type: str | DataType, nullable: bool = True
-    ) -> None:
-        super().__init__(nullable=nullable)
-        self.value_type = dtype(value_type)
-        self._pretty += f"<{self.value_type}>"
+    @property
+    def _pretty_piece(self) -> str:
+        return f"<{self.value_type}>"
 
     def __fields_eq__(
         self,
@@ -781,22 +760,28 @@ class Set(Variadic):
 class Enum(DataType):
     """Enumeration values."""
 
+    _fields_ = "rep_type", "value_type"
+
     rep_type: DataType
     """The type of the key of the enumeration."""
+
     value_type: DataType
     """The type of the elements of the enumeration."""
 
     scalar = ir.EnumScalar
     column = ir.EnumColumn
 
-    __slots__ = 'rep_type', 'value_type'
-
     def __init__(
-        self, rep_type: DataType, value_type: DataType, nullable: bool = True
+        self,
+        rep_type: str | DataType,
+        value_type: str | DataType,
+        nullable: bool = True,
     ) -> None:
-        super().__init__(nullable=nullable)
-        self.rep_type = dtype(rep_type)
-        self.value_type = dtype(value_type)
+        super().__init__(
+            nullable=nullable,
+            rep_type=dtype(rep_type),
+            value_type=dtype(value_type),
+        )
 
     def __fields_eq__(
         self,
@@ -812,22 +797,28 @@ class Enum(DataType):
 class Map(Variadic):
     """Associative array values."""
 
+    _fields_ = "key_type", "value_type"
+
     key_type: DataType
     """The type of the key of the map."""
+
     value_type: DataType
     """The type of the values of the map."""
+
     scalar = ir.MapScalar
     column = ir.MapColumn
 
-    __slots__ = 'key_type', 'value_type'
-
     def __init__(
-        self, key_type: DataType, value_type: DataType, nullable: bool = True
+        self,
+        key_type: str | DataType,
+        value_type: str | DataType,
+        nullable: bool = True,
     ) -> None:
-        super().__init__(nullable=nullable)
-        self.key_type = dtype(key_type)
-        self.value_type = dtype(value_type)
-        self._pretty += f"<{self.key_type}, {self.value_type}>"
+        super().__init__(
+            nullable=nullable,
+            key_type=dtype(key_type),
+            value_type=dtype(value_type),
+        )
 
     def __fields_eq__(
         self,
@@ -838,6 +829,10 @@ class Map(Variadic):
             other.key_type,
             cache=cache,
         ) and self.value_type.equals(other.value_type, cache=cache)
+
+    @property
+    def _pretty_piece(self) -> str:
+        return f"<{self.key_type}, {self.value_type}>"
 
 
 class JSON(String):
@@ -861,47 +856,41 @@ class JSONB(Binary):
 class GeoSpatial(DataType):
     """Geospatial values."""
 
-    __slots__ = 'geotype', 'srid'
+    _fields_ = "geotype", "srid"
 
-    geotype: Literal['geography', 'geometry'] | None
+    geotype: Literal["geography", "geometry"] | None
     """The specific geospatial type"""
+
     srid: int | None
     """The spatial reference identifier."""
+
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
     def __init__(
         self,
-        geotype: Literal['geography', 'geometry'] | None = None,
+        geotype: Literal["geography", "geometry"] | None = None,
         srid: int | None = None,
         nullable: bool = True,
     ) -> None:
-        """Geospatial data type base class
-
-        Parameters
-        ----------
-        geotype
-            Specification of geospatial type which could be `geography` or
-            `geometry`.
-        srid
-            Spatial Reference System Identifier
-        nullable
-            Whether the value can be null
-        """
-        super().__init__(nullable=nullable)
-
-        if geotype not in (None, 'geometry', 'geography'):
+        if geotype is not None and geotype not in (
+            "geometry",
+            "geography",
+        ):
             raise ValueError(
-                'The `geotype` parameter should be `geometry` or `geography`'
+                "The `geotype` parameter should be "
+                "`None` or `'geometry'` or `'geography'`"
             )
+        super().__init__(nullable=nullable, geotype=geotype, srid=srid)
 
-        self.geotype = geotype
-        self.srid = srid
-
+    @property
+    def _pretty_piece(self) -> str:
+        piece = ""
         if self.geotype is not None:
-            self._pretty += ':' + self.geotype
+            piece += f":{self.geotype}"
         if self.srid is not None:
-            self._pretty += ';' + str(self.srid)
+            piece += f";{self.srid}"
+        return piece
 
     def __fields_eq__(
         self,
@@ -917,12 +906,8 @@ class Geometry(GeoSpatial):
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
-    __slots__ = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.geotype = 'geometry'
-        self._pretty = self.name.lower()
+    def __init__(self, srid: int | None = None, nullable: bool = True) -> None:
+        super().__init__(geotype="geometry", srid=srid, nullable=nullable)
 
 
 class Geography(GeoSpatial):
@@ -931,12 +916,8 @@ class Geography(GeoSpatial):
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
-    __slots__ = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.geotype = 'geography'
-        self._pretty = self.name.lower()
+    def __init__(self, srid: int | None = None, nullable: bool = True) -> None:
+        super().__init__(geotype="geography", srid=srid, nullable=nullable)
 
 
 class Point(GeoSpatial):
@@ -945,16 +926,12 @@ class Point(GeoSpatial):
     scalar = ir.PointScalar
     column = ir.PointColumn
 
-    __slots__ = ()
-
 
 class LineString(GeoSpatial):
     """A sequence of 2 or more points."""
 
     scalar = ir.LineStringScalar
     column = ir.LineStringColumn
-
-    __slots__ = ()
 
 
 class Polygon(GeoSpatial):
@@ -967,16 +944,12 @@ class Polygon(GeoSpatial):
     scalar = ir.PolygonScalar
     column = ir.PolygonColumn
 
-    __slots__ = ()
-
 
 class MultiLineString(GeoSpatial):
     """A set of one or more line strings."""
 
     scalar = ir.MultiLineStringScalar
     column = ir.MultiLineStringColumn
-
-    __slots__ = ()
 
 
 class MultiPoint(GeoSpatial):
@@ -985,8 +958,6 @@ class MultiPoint(GeoSpatial):
     scalar = ir.MultiPointScalar
     column = ir.MultiPointColumn
 
-    __slots__ = ()
-
 
 class MultiPolygon(GeoSpatial):
     """A set of one or more polygons."""
@@ -994,16 +965,15 @@ class MultiPolygon(GeoSpatial):
     scalar = ir.MultiPolygonScalar
     column = ir.MultiPolygonColumn
 
-    __slots__ = ()
-
 
 class UUID(DataType):
     """A 128-bit number used to identify information in computer systems."""
 
+    nullable: bool = True
+    """Whether the data type can hold `NULL` values."""
+
     scalar = ir.UUIDScalar
     column = ir.UUIDColumn
-
-    __slots__ = ()
 
     def __fields_eq__(
         self,
@@ -1019,16 +989,12 @@ class MACADDR(String):
     scalar = ir.MACADDRScalar
     column = ir.MACADDRColumn
 
-    __slots__ = ()
-
 
 class INET(String):
     """IP addresses."""
 
     scalar = ir.INETScalar
     column = ir.INETColumn
-
-    __slots__ = ()
 
 
 # ---------------------------------------------------------------------
@@ -1329,10 +1295,7 @@ def _get_timedelta_units(
         unit_fields = ['days', 'seconds', 'microseconds']
         base_object = timedelta
 
-    time_units = [
-        field for field in unit_fields if getattr(base_object, field) > 0
-    ]
-    return time_units
+    return [field for field in unit_fields if getattr(base_object, field) > 0]
 
 
 @dtype.register(object)
