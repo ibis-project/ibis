@@ -596,11 +596,6 @@ def _array_slice(t, expr):
     return sa_arg[sa_start + 1 : sa_stop]
 
 
-def _string_join(t, expr):
-    sep, elements = expr.op().args
-    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
-
-
 def _literal(t, expr):
     dtype = expr.type()
     op = expr.op()
@@ -669,7 +664,6 @@ operation_registry.update(
             ),
             2,
         ),
-        ops.StringJoin: _string_join,
         ops.FindInSet: _find_in_set,
         # math
         ops.Log: _log,
