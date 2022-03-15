@@ -169,10 +169,7 @@ class AnnotableMeta(type):
 class Annotable(metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __slots__ = (
-        "args",
-        "_hash",
-    )
+    __slots__ = "args", "_hash"
 
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)
