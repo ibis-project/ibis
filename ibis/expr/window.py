@@ -84,7 +84,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     return preceding_value
 
 
-class Window(util.CachedEqMixin):
+class Window(util.EqMixin):
     """A window frame.
 
     Notes
@@ -107,7 +107,7 @@ class Window(util.CachedEqMixin):
     ):
         import ibis.expr.operations as ops
 
-        self._group_by = list(
+        self._group_by = tuple(
             toolz.unique(
                 util.promote_list([] if group_by is None else group_by),
                 key=lambda value: getattr(value, "_key", value),
@@ -120,7 +120,7 @@ class Window(util.CachedEqMixin):
                 expr = ops.SortKey(expr).to_expr()
             _order_by.append(expr)
 
-        self._order_by = list(
+        self._order_by = tuple(
             toolz.unique(
                 _order_by, key=lambda value: getattr(value, "_key", value)
             )
@@ -276,7 +276,7 @@ class Window(util.CachedEqMixin):
         )
 
     def group_by(self, expr):
-        new_groups = self._group_by + util.promote_list(expr)
+        new_groups = self._group_by + tuple(util.promote_list(expr))
         return self._replace(group_by=new_groups)
 
     def _replace(self, **kwds):
@@ -291,7 +291,7 @@ class Window(util.CachedEqMixin):
         return Window(**new_kwds)
 
     def order_by(self, expr):
-        new_sorts = self._order_by + util.promote_list(expr)
+        new_sorts = self._order_by + tuple(util.promote_list(expr))
         return self._replace(order_by=new_sorts)
 
     def __component_eq__(

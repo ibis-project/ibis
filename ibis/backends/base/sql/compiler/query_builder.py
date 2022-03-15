@@ -178,7 +178,7 @@ class TableSetFormatter:
         return buf.getvalue()
 
 
-class Select(DML, util.CachedEqMixin):
+class Select(DML, util.EqMixin):
 
     """
     A SELECT statement which, after execution, might yield back to the user a

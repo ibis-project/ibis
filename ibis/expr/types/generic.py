@@ -112,9 +112,6 @@ class ValueExpr(Expr):
 
 @public
 class ScalarExpr(ValueExpr):
-    def _type_display(self):
-        return str(self.type())
-
     def to_projection(self):
         """
         Promote this column expression to a table projection
@@ -138,9 +135,6 @@ class ScalarExpr(ValueExpr):
 
 @public
 class ColumnExpr(ValueExpr):
-    def _type_display(self):
-        return str(self.type())
-
     def parent(self):
         return self._arg
 

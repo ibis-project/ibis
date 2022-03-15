@@ -1,283 +1,605 @@
-from collections import defaultdict
-from typing import Any, Dict, Set
+from __future__ import annotations
 
+import collections
+import functools
+import textwrap
+import types
+from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
+
+import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
+import ibis.expr.window as win
 import ibis.util as util
 
+Aliases = Mapping[ops.TableNode, int]
+Deps = Deque[Tuple[int, ops.TableNode]]
 
-class FormatMemo:
+
+class Alias:
+    __slots__ = ("value",)
+
+    def __init__(self, value: int) -> None:
+        self.value = value
+
+    def __str__(self) -> str:
+        return f"r{self.value}"
+
+
+def fmt(expr: ir.Expr) -> str:
+    """Format `expr`.
+
+    Main entry point for the `Expr.__repr__` implementation.
+
+    Returns
+    -------
+    str
+        Formatted expression
     """
-    Class used to manage memoization of intermediate ibis expression format
-    results in ExprFormatter.
+    *deps, root = util.toposort(util.to_op_dag(expr))
+    deps = collections.deque(
+        (Alias(alias), dep)
+        for alias, dep in enumerate(
+            dep for dep in deps if isinstance(dep, ops.TableNode)
+        )
+    )
+
+    aliases = {dep: alias for alias, dep in deps}
+    pieces = []
+
+    while deps:
+        alias, node = deps.popleft()
+        formatted = fmt_table_op(node, aliases=aliases, deps=deps)
+        pieces.append(f"{alias} := {formatted}")
+
+    pieces.append(
+        fmt_root(root, name=expr._safe_name, aliases=aliases, deps=deps)
+    )
+    depth = ibis.options.repr.depth or 0
+    if depth and depth < len(pieces):
+        return fmt_truncated(pieces, depth=depth)
+    return "\n\n".join(pieces)
+
+
+def fmt_truncated(
+    pieces: Iterable[str],
+    *,
+    depth: int,
+    sep: str = "\n\n",
+    ellipsis: str = util.VERTICAL_ELLIPSIS,
+) -> str:
+    if depth == 1:
+        return pieces[-1]
+
+    first_n = depth // 2
+    last_m = depth - first_n
+    return sep.join([*pieces[:first_n], ellipsis, *pieces[-last_m:]])
+
+
+def selection_maxlen(expressions: Iterable[ir.ValueExpr]) -> int:
+    """Compute the length of the longest name of input expressions.
 
     Parameters
     ----------
-    get_text_repr: bool
-         Defaults to ``False``. Determines whether or not the memoization
-         should use proper alias names. Using the same alias names for
-         equivalent expressions is more optimal for memoization / recursion
-         but does not accurately display aliases in the representation
+    expressions
+        Expressions whose name to compute the maximum length of
+
+    Returns
+    -------
+    int
+        Max length
     """
-
-    def __init__(self, get_text_repr: bool = False):
-        self.formatted: Dict[str, Any] = {}
-        self.aliases: Dict[str, str] = {}
-        self.ops: Dict[str, ops.Node] = {}
-        self.counts: Dict[str, int] = defaultdict(int)
-        self._repr_memo: Dict[ir.Expr, str] = {}
-        self.subexprs: Dict[ops.Node, str] = {}
-        self.visit_memo: Set[ops.Node] = set()
-        self.get_text_repr = get_text_repr
-
-    def __contains__(self, obj):
-        return self._key(obj) in self.formatted
-
-    def _key(self, expr) -> str:
-        memo = self._repr_memo
-        try:
-            result = memo[expr]
-        except KeyError:
-            result = memo[expr] = self._format(expr)
-        return result
-
-    def _format(self, expr):
-        return expr.op()._repr(memo=self)
-
-    def observe(self, expr, formatter=None):
-        if formatter is None:
-            formatter = self._format
-        key = self._key(expr)
-        if key not in self.formatted:
-            self.aliases[key] = f'r{len(self.formatted):d}'
-            self.formatted[key] = formatter(expr)
-            self.ops[key] = expr.op()
-
-        self.counts[key] += 1
-
-    def count(self, expr):
-        return self.counts[self._key(expr)]
-
-    def get_alias(self, expr):
-        return self.aliases[self._key(expr)]
-
-    def get_formatted(self, expr):
-        return self.formatted[self._key(expr)]
-
-
-class ExprFormatter:
-    """For creating a nice tree-like representation of an expression graph.
-
-    Notes
-    -----
-    TODO: detect reused DAG nodes and do not display redundant information
-
-    """
-
-    def __init__(
-        self,
-        expr,
-        indent_size: int = 2,
-        base_level: int = 0,
-        memo: FormatMemo = None,
-        memoize: bool = True,
-    ):
-        self.expr = expr
-        self.indent_size = indent_size
-        self.base_level = base_level
-
-        self.memoize = memoize
-
-        # For tracking "extracted" objects, like tables, that we don't want to
-        # print out more than once, and simply alias in the expression tree
-        if memo is None:
-            memo = FormatMemo()
-
-        self.memo = memo
-
-    def get_result(self):
-        what = self.expr.op()
-
-        if self.memoize:
-            self._memoize_tables()
-
-        if isinstance(what, ops.TableNode) and what.has_schema():
-            # This should also catch aggregations
-            if not self.memoize and self.expr in self.memo:
-                text = f"ref: {self.memo.get_alias(self.expr)}"
-            elif isinstance(what, ops.PhysicalTable):
-                text = self._format_table(self.expr)
-            else:
-                # Any other node type
-                text = self._format_node(self.expr)
-        elif isinstance(what, ops.TableColumn):
-            text = self._format_column(self.expr)
-        elif isinstance(what, ops.Literal):
-            text = f"value: {self._get_type_display()} = {what.value!r}"
-        elif isinstance(what, ops.ScalarParameter):
-            text = self._get_type_display()
-        elif isinstance(what, ops.Node):
-            text = self._format_node(self.expr)
-
-        if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            raw_name = self.expr.get_name()
-            if isinstance(self.expr.op(), ops.ScalarParameter):
-                name = f"$({raw_name})"
-            else:
-                name = raw_name
-            text = f'{name}: {text}'
-
-        if self.memoize:
-            alias_to_text = sorted(
-                (
-                    self.memo.aliases[x],
-                    self.memo.formatted[x],
-                    self.memo.ops[x],
-                )
-                for x in self.memo.formatted
-            )
-
-            # A hack to suppress printing out of a ref that is the result of
-            # the top level expression
-            refs = [y for _, y, op in alias_to_text if not op.equals(what)]
-
-            text = '\n\n'.join(refs + [text])
-
-        return self._indent(text, self.base_level)
-
-    def _memoize_tables(self):
-        table_memo_ops = (ops.Aggregation, ops.Selection, ops.SelfReference)
-        expr = self.expr
-        if expr.op() in self.memo.visit_memo:
-            return
-
-        stack = [expr]
-        seen = set()
-        memo = self.memo
-
-        while stack:
-            e = stack.pop()
-            op = e.op()
-
-            if op not in seen:
-                seen.add(op)
-
-                if isinstance(op, ops.PhysicalTable):
-                    memo.observe(e, self._format_table)
-                elif isinstance(op, ops.Node):
-                    stack.extend(
-                        arg
-                        for arg in reversed(op.args)
-                        if isinstance(arg, ir.Expr)
-                    )
-                    if isinstance(op, table_memo_ops):
-                        memo.observe(e, self._format_node)
-                elif isinstance(op, ops.TableNode) and op.has_schema():
-                    memo.observe(e, self._format_table)
-                memo.visit_memo.add(op)
-
-    def _indent(self, text, indents: int = 1):
-        return util.indent(text, self.indent_size * indents)
-
-    def _format_table(self, expr):
-        table = expr.op()
-        column_names = table.schema.names
-        max_name_len = max(map(len, column_names))
-        # format the schema
-        rows = list(
-            map(
-                "{} {}".format,
-                (name.ljust(max_name_len) for name in column_names),
-                table.schema.types,
-            )
+    try:
+        return max(
+            len(name)
+            for expr in expressions
+            if (name := expr._safe_name) is not None
         )
-        opname = type(table).__name__
-        opline = f'{opname}[{self.memo.get_alias(expr)}, name={table.name}]'
-        return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
+    except ValueError:
+        return 0
 
-    def _format_column(self, expr):
-        # HACK: if column is pulled from a Filter of another table, this parent
-        # will not be found in the memo
-        col = expr.op()
-        parent = col.parent()
 
-        if parent not in self.memo:
-            self.memo.observe(parent, formatter=self._format_node)
+@functools.singledispatch
+def fmt_root(op: ops.Node, *, aliases: Aliases, **_: Any) -> str:
+    """Fallback formatting implementation."""
+    raw_parts = fmt_fields(
+        op,
+        dict.fromkeys(op.argnames, fmt_value),
+        aliases=aliases,
+    )
+    return f"{op.__class__.__name__}\n{raw_parts}"
 
-        table_formatted = self.memo.get_alias(parent)
 
-        type_display = self._get_type_display(self.expr)
-        return f"{type_display} = {table_formatted}.{col.name}"
+@fmt_root.register
+def _fmt_root_table_node(op: ops.TableNode, **kwargs: Any) -> str:
+    return fmt_table_op(op, **kwargs)
 
-    def _format_node(self, expr):
-        op = expr.op()
-        formatted_args = []
 
-        def visit(what, extra_indents=0):
-            if isinstance(what, ir.Expr):
-                result = self._format_subexpr(what)
+@fmt_root.register
+def _fmt_root_value_op(
+    op: ops.ValueOp, *, name: str, aliases: Aliases, **_: Any
+) -> str:
+    value = fmt_value(op, aliases=aliases)
+    prefix = f"{name}: " if name is not None else ""
+    return f"{prefix}{value}{type_info(op.to_expr().type())}"
+
+
+@fmt_root.register
+def _fmt_foot_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
+    return fmt_value(op, aliases=aliases)
+
+
+@functools.singledispatch
+def fmt_table_op(op: ops.TableNode, **_: Any) -> str:
+    assert False, f"`fmt_table_op` not implemented for operation: {type(op)}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
+    top = f"{op.__class__.__name__}[{op.name}]"
+    formatted_schema = fmt_schema(op.schema)
+    return f"{top}\n{formatted_schema}"
+
+
+def fmt_schema(schema: sch.Schema) -> str:
+    """Format `schema`.
+
+    Parameters
+    ----------
+    schema
+        Ibis schema to format
+
+    Returns
+    -------
+    str
+        Formatted schema
+    """
+    names = schema.names
+    maxlen = max(map(len, names))
+    cols = [f"{name:<{maxlen}} {typ}" for name, typ in schema.items()]
+    depth = ibis.options.repr.table_columns
+    if depth is not None and depth < len(cols):
+        first_column_name = names[0]
+        raw = fmt_truncated(
+            cols,
+            depth=depth,
+            sep="\n",
+            ellipsis=util.VERTICAL_ELLIPSIS.center(len(first_column_name)),
+        )
+    else:
+        raw = "\n".join(cols)
+
+    return util.indent(raw, spaces=2)
+
+
+@fmt_table_op.register
+def _fmt_table_op_sql_query_result(op: ops.SQLQueryResult, **_: Any) -> str:
+    short_query = textwrap.shorten(
+        op.query,
+        ibis.options.repr.query_text_length,
+        placeholder=f" {util.HORIZONTAL_ELLIPSIS}",
+    )
+    query = f"query: {short_query!r}"
+    top = op.__class__.__name__
+    formatted_schema = fmt_schema(op.schema)
+    schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
+    return f"{top}\n{util.indent(query, spaces=2)}\n{schema_field}"
+
+
+@functools.singledispatch
+def fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
+    assert False, f"join type {type(op)} not implemented"
+
+
+@fmt_join.register(ops.Join)
+def _fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
+    # format the operator and its relation inputs
+    left = aliases[op.left.op()]
+    right = aliases[op.right.op()]
+    top = f"{op.__class__.__name__}[{left}, {right}]"
+
+    # format the join predicates
+    # if only one, put it directly after the join on thes same line
+    # if more than one put each on a separate line
+    preds = op.predicates
+    formatted_preds = [fmt_value(pred, aliases=aliases) for pred in preds]
+    has_one_pred = len(preds) == 1
+    sep = " " if has_one_pred else "\n"
+    joined_predicates = util.indent(
+        "\n".join(formatted_preds),
+        spaces=2 * (not has_one_pred),
+    )
+    trailing_sep = "\n" + "\n" * (not has_one_pred)
+    return f"{top}{sep}{joined_predicates}", trailing_sep
+
+
+@fmt_join.register(ops.AsOfJoin)
+def _fmt_asof_join(op: ops.AsOfJoin, *, aliases: Aliases) -> tuple[str, str]:
+    left = aliases[op.left.op()]
+    right = aliases[op.right.op()]
+    top = f"{op.__class__.__name__}[{left}, {right}]"
+    raw_parts = fmt_fields(
+        op,
+        dict(predicates=fmt_value, by=fmt_value, tolerance=fmt_value),
+        aliases=aliases,
+    )
+    return f"{top}\n{raw_parts}", "\n\n"
+
+
+@fmt_table_op.register
+def _fmt_table_op_join(
+    op: ops.Join,
+    *,
+    aliases: Aliases,
+    deps: Deps,
+    **_: Any,
+) -> str:
+    # first, format the current join operation
+    result, join_sep = fmt_join(op, aliases=aliases)
+    formatted_joins = [result, join_sep]
+
+    # process until the first non-Join dependency is popped in other words
+    # process all runs of joins
+    alias, current = None, None
+    if deps:
+        alias, current = deps.popleft()
+
+        while isinstance(current, ops.Join):
+            # copy the alias so that mutations to the value aren't shared
+            # format the `current` join
+            formatted_join, join_sep = fmt_join(current, aliases=aliases)
+            formatted_joins.append(f"{alias} := {formatted_join}")
+            formatted_joins.append(join_sep)
+
+            if not deps:
+                break
+
+            alias, current = deps.popleft()
+
+        if current is not None and not isinstance(current, ops.Join):
+            # the last node popped from `deps` isn't a join which means we
+            # still need to process it, so we put it at the front of the queue
+            deps.appendleft((alias, current))
+
+    # we don't want the last trailing separator so remove it from the end
+    formatted_joins.pop()
+    return "".join(formatted_joins)
+
+
+@fmt_table_op.register
+def _(op: ops.CrossJoin, *, aliases: Aliases, **_: Any) -> str:
+    left = aliases[op.left.op()]
+    right = aliases[op.right.op()]
+    return f"{op.__class__.__name__}[{left}, {right}]"
+
+
+def _fmt_set_op(
+    op: ops.SetOp,
+    *,
+    aliases: Aliases,
+    distinct: bool | None = None,
+) -> str:
+    args = [str(aliases[op.left.op()]), str(aliases[op.right.op()])]
+    if distinct is not None:
+        args.append(f"distinct={distinct}")
+    return f"{op.__class__.__name__}[{', '.join(args)}]"
+
+
+@fmt_table_op.register
+def _fmt_table_op_set_op(op: ops.SetOp, *, aliases: Aliases, **_: Any) -> str:
+    return _fmt_set_op(op, aliases=aliases)
+
+
+@fmt_table_op.register
+def _fmt_table_op_union(op: ops.Union, *, aliases: Aliases, **_: Any) -> str:
+    return _fmt_set_op(op, aliases=aliases, distinct=op.distinct)
+
+
+@fmt_table_op.register(ops.SelfReference)
+@fmt_table_op.register(ops.Distinct)
+def _fmt_table_op_self_reference_distinct(
+    op: ops.Distinct | ops.SelfReference,
+    *,
+    aliases: Aliases,
+    **_: Any,
+) -> str:
+    return f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+
+
+@fmt_table_op.register
+def _fmt_table_op_fillna(op: ops.FillNa, *, aliases: Aliases, **_: Any) -> str:
+    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    raw_parts = fmt_fields(op, dict(replacements=fmt_value), aliases=aliases)
+    return f"{top}\n{raw_parts}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_dropna(op: ops.DropNa, *, aliases: Aliases, **_: Any) -> str:
+    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    how = f"how: {op.how!r}"
+    raw_parts = fmt_fields(op, dict(subset=fmt_value), aliases=aliases)
+    return f"{top}\n{util.indent(how, spaces=2)}\n{raw_parts}"
+
+
+def fmt_fields(
+    op: ops.TableNode,
+    fields: Mapping[str, Callable[[Any, Aliases], str]],
+    *,
+    aliases: Aliases,
+) -> str:
+    parts = []
+
+    for field, formatter in fields.items():
+        if exprs := [
+            expr
+            for expr in util.promote_list(getattr(op, field))
+            if expr is not None
+        ]:
+            field_fmt = [formatter(expr, aliases=aliases) for expr in exprs]
+
+            parts.append(f"{field}:")
+            parts.append(util.indent("\n".join(field_fmt), spaces=2))
+
+    return util.indent("\n".join(parts), spaces=2)
+
+
+@fmt_table_op.register
+def _fmt_table_op_selection(
+    op: ops.Selection, *, aliases: Aliases, **_: Any
+) -> str:
+    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    raw_parts = fmt_fields(
+        op,
+        dict(
+            selections=functools.partial(
+                fmt_selection_column,
+                maxlen=selection_maxlen(op.selections),
+            ),
+            predicates=fmt_value,
+            sort_keys=fmt_value,
+        ),
+        aliases=aliases,
+    )
+    return f"{top}\n{raw_parts}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_aggregation(
+    op: ops.Aggregation, *, aliases: Aliases, **_: Any
+) -> str:
+    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    raw_parts = fmt_fields(
+        op,
+        dict(
+            metrics=functools.partial(
+                fmt_selection_column,
+                maxlen=selection_maxlen(op.metrics),
+            ),
+            by=functools.partial(
+                fmt_selection_column,
+                maxlen=selection_maxlen(op.by),
+            ),
+            having=fmt_value,
+            predicates=fmt_value,
+            sort_keys=fmt_value,
+        ),
+        aliases=aliases,
+    )
+    return f"{top}\n{raw_parts}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_limit(op: ops.Limit, *, aliases: Aliases, **_: Any) -> str:
+    params = [str(aliases[op.table.op()]), f"n={op.n:d}"]
+    if offset := op.offset:
+        params.append(f"offset={offset:d}")
+    return f"{op.__class__.__name__}[{', '.join(params)}]"
+
+
+@functools.singledispatch
+def fmt_selection_column(value_expr: ir.ValueExpr, **_: Any) -> str:
+    assert False, (
+        "expression type not implemented for "
+        f"fmt_selection_column: {type(value_expr)}"
+    )
+
+
+def type_info(datatype: dt.DataType) -> str:
+    """Format `datatype` for display next to a column."""
+    return f"  # {datatype}" if ibis.options.repr.show_types else ""
+
+
+@fmt_selection_column.register
+def _fmt_selection_column_value_expr(
+    expr: ir.ValueExpr, *, aliases: Aliases, maxlen: int = 0
+) -> str:
+    raw_name = expr._safe_name
+    assert raw_name is not None, (
+        "`_safe_name` property should never be None when formatting a "
+        "selection column expression"
+    )
+    name = f"{raw_name}:"
+    # the additional 1 is for the colon
+    aligned_name = f"{name:<{maxlen + 1}}"
+    value = fmt_value(expr, aliases=aliases)
+    return f"{aligned_name} {value}{type_info(expr.type())}"
+
+
+@fmt_selection_column.register
+def _fmt_selection_column_table_expr(
+    expr: ir.TableExpr, *, aliases: Aliases, **_: Any
+) -> str:
+    return str(aliases[expr.op()])
+
+
+_BIN_OP_CHARS = {
+    # comparison operations
+    ops.Equals: "==",
+    ops.NotEquals: "!=",
+    ops.Less: "<",
+    ops.LessEqual: "<=",
+    ops.Greater: ">",
+    ops.GreaterEqual: ">=",
+    # binary operations
+    ops.Add: "+",
+    ops.Subtract: "-",
+    ops.Multiply: "*",
+    ops.Divide: "/",
+    ops.FloorDivide: "//",
+    ops.Modulus: "%",
+    ops.Power: "**",
+    ops.And: "&",
+    ops.Or: "|",
+    ops.Xor: "^",
+}
+
+
+@functools.singledispatch
+def fmt_value(obj, **_: Any) -> str:
+    """Format a value expression or operation.
+
+    [`repr`][repr] the object if we don't have a specific formatting rule.
+    """
+    return repr(obj)
+
+
+@fmt_value.register
+def _fmt_value_function_type(func: types.FunctionType, **_: Any) -> str:
+    return func.__name__
+
+
+@fmt_value.register
+def _fmt_value_expr(expr: ir.Expr, *, aliases: Aliases) -> str:
+    """Format a value expression.
+
+    Forwards the call on to the specific operation dispatch rule.
+    """
+    return fmt_value(expr.op(), aliases=aliases)
+
+
+@fmt_value.register
+def _fmt_value_node(op: ops.Node, **_: Any) -> str:
+    assert False, f"`fmt_value` not implemented for operation: {type(op)}"
+
+
+@fmt_value.register
+def _fmt_value_binary_op(op: ops.BinaryOp, *, aliases: Aliases) -> str:
+    left = fmt_value(op.left, aliases=aliases)
+    right = fmt_value(op.right, aliases=aliases)
+    op_char = _BIN_OP_CHARS[type(op)]
+    return f"{left} {op_char} {right}"
+
+
+@fmt_value.register
+def _fmt_value_negate(op: ops.Negate, *, aliases: Aliases) -> str:
+    op_name = "Not" if isinstance(op.arg.type(), dt.Boolean) else "Negate"
+    operand = fmt_value(op.arg, aliases=aliases)
+    return f"{op_name}({operand})"
+
+
+@fmt_value.register
+def _fmt_value_literal(op: ops.Literal, **_: Any) -> str:
+    return repr(op.value)
+
+
+@fmt_value.register
+def _fmt_value_datatype(datatype: dt.DataType, **_: Any) -> str:
+    return str(datatype)
+
+
+@fmt_value.register
+def _fmt_value_value_op(op: ops.ValueOp, *, aliases: Aliases) -> str:
+    args = []
+    # loop over argument names and original expression
+    for argname, orig_expr in zip(op.argnames, op.args):
+        # promote argument to a list, so that we don't accidentially repr
+        # entire subtrees when all we want is the formatted argument value
+        if exprs := [
+            expr for expr in util.promote_list(orig_expr) if expr is not None
+        ]:
+            # format the individual argument values
+            formatted_args = ", ".join(
+                fmt_value(expr, aliases=aliases) for expr in exprs
+            )
+            # if the original argument was a non-string iterable, display it as
+            # a list
+            value = (
+                f"[{formatted_args}]"
+                if util.is_iterable(orig_expr)
+                else formatted_args
+            )
+            # `arg` and `expr` are noisy, so we ignore printing them as a
+            # special case
+            if argname not in ("arg", "expr"):
+                formatted = f"{argname}={value}"
             else:
-                result = self._indent(str(what))
+                formatted = value
+            args.append(formatted)
 
-            if extra_indents > 0:
-                result = util.indent(result, self.indent_size)
+    return f"{op.__class__.__name__}({', '.join(args)})"
 
-            formatted_args.append(result)
 
-        arg_names = getattr(op, 'display_argnames', op.argnames)
+@fmt_value.register
+def _fmt_value_table_column(op: ops.TableColumn, *, aliases: Aliases) -> str:
+    return f"{aliases[op.table.op()]}.{op.name}"
 
-        if not arg_names:
-            for arg in op.flat_args():
-                visit(arg)
-        else:
-            arg_name_pairs = zip(op.args, arg_names)
-            for arg, name in arg_name_pairs:
-                if name == 'arg' and isinstance(op, ops.ValueOp):
-                    # don't display first argument's name in repr
-                    name = None
-                if name is not None:
-                    name = self._indent(f'{name}:')
-                if util.is_iterable(arg):
-                    if name is not None and len(arg) > 0:
-                        formatted_args.append(name)
-                        indents = 1
-                    else:
-                        indents = 0
-                    for x in arg:
-                        visit(x, extra_indents=indents)
-                else:
-                    if name is not None:
-                        formatted_args.append(name)
-                        indents = 1
-                    else:
-                        indents = 0
-                    visit(arg, extra_indents=indents)
 
-        opname = type(op).__name__
-        type_display = self._get_type_display(expr)
-        if isinstance(op, ops.TableNode):
-            try:
-                opline = f"{opname}[{self.memo.get_alias(expr)}]"
-            except KeyError:
-                opline = opname
-        else:
-            opline = f"{type_display} = {opname}"
-        return '\n'.join([opline] + formatted_args)
+@fmt_value.register
+def _fmt_value_scalar_parameter(op: ops.ScalarParameter, **_: Any) -> str:
+    return f"$({op.dtype})"
 
-    def _format_subexpr(self, expr):
-        subexprs = self.memo.subexprs
-        if self.memo.get_text_repr:
-            key = expr._key
-        else:
-            key = expr.op()
-        try:
-            result = subexprs[key]
-        except KeyError:
-            formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
-            result = subexprs[key] = self._indent(formatter.get_result(), 1)
-        return result
 
-    def _get_type_display(self, expr=None):
-        if expr is None:
-            expr = self.expr
-        return expr._type_display()
+@fmt_value.register
+def _fmt_value_sort_key(op: ops.SortKey, *, aliases: Aliases) -> str:
+    expr = fmt_value(op.expr, aliases=aliases)
+    sort_direction = " asc" if op.ascending else "desc"
+    return f"{sort_direction}|{expr}"
+
+
+@fmt_value.register
+def _fmt_value_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
+    """Format a table as value.
+
+    This function is called when a table is used in a value expression. An
+    example is `table.count()`.
+    """
+    return op.name
+
+
+@fmt_value.register
+def _fmt_value_string_sql_like(
+    op: ops.StringSQLLike, *, aliases: Aliases
+) -> str:
+    expr = fmt_value(op.arg, aliases=aliases)
+    pattern = fmt_value(op.pattern, aliases=aliases)
+    prefix = "I" * isinstance(op, ops.StringSQLILike)
+    return f"{expr} {prefix}LIKE {pattern}"
+
+
+@fmt_value.register
+def _fmt_value_window(win: win.Window, *, aliases: Aliases) -> str:
+    args = []
+    for field, value in (
+        ("_group_by", win._group_by),
+        ("_order_by", win._order_by),
+        ("preceding", win.preceding),
+        ("following", win.following),
+        ("max_lookback", win.max_lookback),
+        ("how", win.how),
+    ):
+        disp_field = field.lstrip("_")
+        if value is not None:
+            if isinstance(value, tuple):
+                # don't show empty sequences
+                if not value:
+                    continue
+                elements = ", ".join(
+                    fmt_value(val, aliases=aliases) for val in value
+                )
+                formatted = f"[{elements}]"
+            else:
+                formatted = fmt_value(value, aliases=aliases)
+            args.append(f"{disp_field}={formatted}")
+    return f"{win.__class__.__name__}({', '.join(args)})"

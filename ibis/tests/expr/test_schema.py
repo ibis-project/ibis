@@ -159,7 +159,7 @@ def test_nullable_output():
     sch = ibis.schema(
         [
             ('foo', 'int64'),
-            ('bar', ibis.expr.datatypes.int64(nullable=False)),
+            ('bar', dt.int64(nullable=False)),
             ('baz', 'boolean'),
         ]
     )

@@ -16,9 +16,6 @@ class AnalyticExpr(Expr):
 
         return factory
 
-    def _type_display(self):
-        return str(self.type())
-
     def type(self):
         return 'analytic'
 

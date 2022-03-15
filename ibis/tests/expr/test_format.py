@@ -1,20 +1,11 @@
+import re
+
+import pytest
+
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.expr.format import ExprFormatter
-from ibis.expr.types import Expr
-
-
-def test_format_custom_expr():
-    class CustomExpr(Expr):
-        def _type_display(self):
-            return 'my-custom'
-
-    op = ibis.literal(1234567890).op()
-    expr = CustomExpr(op)
-
-    result = repr(expr)
-    assert 'my-custom' in result
-    assert '1234567890' in result
+import ibis.expr.format
+import ibis.expr.operations as ops
 
 
 def test_format_table_column(table):
@@ -43,25 +34,8 @@ def test_table_type_output():
     expr = foo.dept_id == foo.view().dept_id
     result = repr(expr)
 
-    assert 'SelfReference[r1]' in result
-    assert 'UnboundTable[r0, name=foo]' in result
-
-
-def test_memoize_aggregate_correctly(table):
-    agg_expr = (table['c'].sum() / table['c'].mean() - 1).name('analysis')
-    metrics = [
-        table['a'].sum().name('sum(a)'),
-        table['b'].mean().name('mean(b)'),
-        agg_expr,
-    ]
-
-    result = table.aggregate(metrics, by=['g'])
-
-    formatter = ExprFormatter(result)
-    formatted = formatter.get_result()
-
-    alias = formatter.memo.get_alias(table)
-    assert formatted.count(alias) == 7
+    assert 'SelfReference[r0]' in result
+    assert 'UnboundTable[foo]' in result
 
 
 def test_aggregate_arg_names(table):
@@ -166,7 +140,6 @@ def test_named_value_expr_show_name(table):
 
     result2 = repr(expr2)
 
-    # not really committing to a particular output yet
     assert 'baz' in result2
 
 
@@ -193,8 +166,10 @@ def test_memoize_filtered_tables_in_join():
 
     result = repr(joined)
 
-    # Join, and one for each aggregation
-    assert result.count('predicates') == 3
+    # one for each aggregation
+    # joins are shown without the word `predicates` above them
+    # since joins only have predicates as arguments
+    assert result.count('predicates') == 2
 
 
 def test_argument_repr_shows_name():
@@ -207,10 +182,10 @@ def test_argument_repr_shows_name():
 
 def test_scalar_parameter_formatting():
     value = ibis.param('array<date>')
-    assert str(value) == 'array<date>'
+    assert re.match(r"^param_\d+: \$\(array<date>\)$", str(value)) is not None
 
     value = ibis.param('int64').name('my_param')
-    assert str(value) == '$(my_param): int64'
+    assert str(value) == 'my_param: $(int64)'
 
 
 def test_same_column_multiple_aliases():
@@ -218,40 +193,132 @@ def test_same_column_multiple_aliases():
     expr = table[table.col.name('fakealias1'), table.col.name('fakealias2')]
     result = repr(expr)
 
-    assert "UnboundTable[r0, name=t]" in result
+    assert "UnboundTable[t]" in result
     assert "col int64" in result
-    assert "fakealias1: int64 = r0.col" in result
-    assert "fakealias2: int64 = r0.col" in result
+    assert "fakealias1: r0.col" in result
+    assert "fakealias2: r0.col" in result
 
 
 def test_scalar_parameter_repr():
     value = ibis.param(dt.timestamp).name('value')
-    assert repr(value) == "$(value): timestamp"
+    assert repr(value) == "value: $(timestamp)"
 
     value_op = value.op()
-    assert repr(value_op) == "ScalarParameter(type=timestamp)"
+    assert "ScalarParameter" in repr(value_op)
 
 
 def test_repr_exact():
-    # XXX: This is the only exact repr test. Do
+    # NB: This is the only exact repr test. Do
     # not add new exact repr tests. New repr tests
-    # should check for the presence of substrings.
+    # should only check for the presence of substrings.
     table = ibis.table(
-        [('col', 'int64'), ("col2", "string"), ("col3", "double")],
-        name='t',
+        [("col", "int64"), ("col2", "string"), ("col3", "double")],
+        name="t",
     ).mutate(col4=lambda t: t.col2.length())
     result = repr(table)
     expected = """\
-UnboundTable[r0, name=t]
+r0 := UnboundTable[t]
   col  int64
   col2 string
   col3 float64
 
-Selection[r1]
-  table:
-    ref: r0
+Selection[r0]
   selections:
-    ref: r0
-    col4: int32 = StringLength
-      col2: string = r0.col2"""
+    r0
+    col4: StringLength(r0.col2)"""
     assert result == expected
+
+
+def test_complex_repr():
+    t = (
+        ibis.table(dict(a="int64"), name="t")
+        .filter([lambda t: t.a < 42, lambda t: t.a >= 42])
+        .mutate(x=lambda t: t.a + 42)
+        .group_by("x")
+        .aggregate(y=lambda t: t.a.sum())
+        .limit(10)
+    )
+    repr(t)
+
+
+def test_value_exprs_repr():
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+    assert "r0.a" in repr(t.a)
+    assert "Sum(r0.a)" in repr(t.a.sum())
+
+
+@pytest.fixture
+def show_types():
+    old = ibis.options.repr.show_types
+    ibis.options.repr.show_types = True
+    try:
+        yield
+    finally:
+        ibis.options.repr.show_types = old
+
+
+def test_show_types(show_types):
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+    expr = t.a / 1.0
+    assert "# int64" in repr(t.a)
+    assert "# float64" in repr(expr)
+    assert "# float64" in repr(expr.sum())
+
+
+@pytest.mark.parametrize("cls", ops.TableNode.__subclasses__())
+def test_tables_have_format_rules(cls):
+    assert cls in ibis.expr.format.fmt_table_op.registry
+
+
+def test_window_no_group_by():
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+    expr = t.a.mean().over(ibis.window(preceding=0))
+    result = repr(expr)
+    assert "preceding=0" in result
+    assert "group_by=[]" not in result
+
+
+def test_window_group_by():
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+    expr = t.a.mean().over(ibis.window(group_by=t.b))
+    result = repr(expr)
+    assert "preceding=0" not in result
+    assert "group_by=[r0.b]" in result
+
+
+def test_fillna():
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+
+    expr = t.fillna({"a": 3})
+    repr(expr)
+
+    expr = t.fillna(3)
+    repr(expr)
+
+    expr = t.fillna("foo")
+    repr(expr)
+
+
+def test_asof_join():
+    left = ibis.table([("time1", 'int32'), ('value', 'double')])
+    right = ibis.table([("time2", 'int32'), ('value2', 'double')])
+    joined = left.asof_join(right, [("time1", "time2")]).inner_join(
+        right, left.value == right.value2
+    )
+    rep = repr(joined)
+    assert rep.count("InnerJoin") == 1
+    assert rep.count("AsOfJoin") == 1
+
+
+def test_two_inner_joins():
+    left = ibis.table(
+        [("time1", 'int32'), ('value', 'double'), ('a', 'string')]
+    )
+    right = ibis.table(
+        [("time2", 'int32'), ('value2', 'double'), ('b', 'string')]
+    )
+    joined = left.inner_join(right, left.a == right.b).inner_join(
+        right, left.value == right.value2
+    )
+    rep = repr(joined)
+    assert rep.count("InnerJoin") == 2

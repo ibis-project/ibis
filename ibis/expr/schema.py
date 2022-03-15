@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import collections
 from typing import Hashable, MutableMapping
 
@@ -32,7 +33,7 @@ result : pd.Series
 )
 
 
-class Schema(util.CachedEqMixin):
+class Schema(util.EqMixin):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -213,33 +214,19 @@ class Schema(util.CachedEqMixin):
         return df
 
 
-class HasSchema:
-
-    """
-    Base class representing a structured dataset with a well-defined
-    schema.
-
-    Base implementation is for tables that do not reference a particular
-    concrete dataset or database table.
-    """
-
-    def __repr__(self):
-        return f'{type(self).__name__}({repr(self.schema)})'
+class HasSchema(abc.ABC):
+    """Mixin representing a structured dataset with a schema."""
 
     def has_schema(self):
         return True
-
-    def equals(self, other, cache=None):
-        return type(self) == type(other) and self.schema.equals(
-            other.schema, cache=cache
-        )
 
     def root_tables(self):
         return [self]
 
     @property
-    def schema(self):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def schema(self) -> Schema:
+        """Return a schema."""
 
 
 schema = Dispatcher('schema')

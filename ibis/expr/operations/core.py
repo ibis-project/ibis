@@ -1,21 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Hashable, MutableMapping
+from typing import Any
 
 import toolz
 from public import public
 
-from ... import util
 from ...common import exceptions as com
 from .. import rules as rlz
 from ..signature import Annotable
-
-
-def _safe_repr(x, memo=None):
-    try:
-        return x._repr(memo=memo)
-    except AttributeError:
-        return repr(x)
 
 
 @public
@@ -26,8 +18,22 @@ def distinct_roots(*expressions):
 
 
 @public
-class Node(util.CachedEqMixin, Annotable):
-    __slots__ = ()
+class Node(Annotable):
+    __slots__ = ("_flat_ops",)
+
+    def __post_init__(self):
+        import ibis.expr.types as ir
+
+        super().__post_init__()
+        object.__setattr__(
+            self,
+            "_flat_ops",
+            tuple(
+                arg.op()
+                for arg in self.flat_args()
+                if isinstance(arg, ir.Expr)
+            ),
+        )
 
     def _type_check(self, other: Any) -> None:
         if not isinstance(other, Node):
@@ -35,46 +41,9 @@ class Node(util.CachedEqMixin, Annotable):
                 f"Cannot compare non-Node object {type(other)} with Node"
             )
 
-    def __component_eq__(
-        self,
-        other: Node,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return len(self.args) == len(other.args) and all(
-            (
-                (self_arg is None and other_arg is None)
-                or self_arg.equals(other_arg, cache=cache)
-            )
-            for self_arg, other_arg in zip(self.args, other.args)
-        )
-
-    def __repr__(self):
-        return self._repr()
-
-    def _repr(self, memo=None):
-        if memo is None:
-            from ibis.expr.format import FormatMemo
-
-            memo = FormatMemo()
-
-        opname = type(self).__name__
-        pprint_args = []
-
-        def _pp(x):
-            return _safe_repr(x, memo=memo)
-
-        for x in self.args:
-            if isinstance(x, (tuple, list)):
-                pp = repr(list(map(_pp, x)))
-            else:
-                pp = _pp(x)
-            pprint_args.append(pp)
-
-        return '{}({})'.format(opname, ', '.join(pprint_args))
-
     @property
     def inputs(self):
-        return tuple(self.args)
+        return self.args
 
     @property
     def exprs(self):
@@ -106,11 +75,10 @@ class Node(util.CachedEqMixin, Annotable):
         return klass(self)
 
     def output_type(self):
-        """
-        This function must resolve the output type of the expression and return
-        the node wrapped in the appropriate ValueExpr type.
-        """
-        raise NotImplementedError
+        """Resolve the output type of the expression."""
+        raise NotImplementedError(
+            f"output_type not implemented for {type(self)}"
+        )
 
 
 @public

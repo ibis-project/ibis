@@ -231,27 +231,16 @@ class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
         other: Annotable,
         cache: MutableMapping[Hashable, bool],
     ) -> bool:
-        return self.args == other.args
+        return util.seq_eq(self.args, other.args, cache=cache)
 
     def __getstate__(self) -> dict[str, Any]:
         return {key: getattr(self, key) for key in self.argnames}
 
     def flat_args(self):
+        import ibis.expr.schema as sch
+
         for arg in self.args:
-            if util.is_iterable(arg):
+            if not isinstance(arg, sch.Schema) and util.is_iterable(arg):
                 yield from arg
             else:
                 yield arg
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        """Set state after unpickling.
-
-        Parameters
-        ----------
-        state
-            A dictionary storing the objects attributes.
-        """
-        self._args = None
-        self._hash = None
-        for key, value in state.items():
-            setattr(self, key, value)
