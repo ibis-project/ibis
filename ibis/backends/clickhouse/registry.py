@@ -566,6 +566,46 @@ def _string_like(translator, expr):
     )
 
 
+def _string_ilike(translator, expr):
+    op = expr.op()
+    return 'lower({}) LIKE lower({})'.format(
+        translator.translate(op.arg),
+        translator.translate(op.pattern),
+    )
+
+
+def _startswith(translator, expr):
+    op = expr.op()
+    arg = op.arg
+    start = op.start
+    tr_arg = translator.translate(arg)
+    tr_start = translator.translate(start)
+    return f"startsWith({tr_arg}, {tr_start})"
+
+
+def _endswith(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    end = translator.translate(op.end)
+    return f"endsWith({arg}, {end})"
+
+
+def _lpad(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    length = translator.translate(op.length)
+    pad = translator.translate(op.pad)
+    return f"leftPad({arg}, {length}, {pad})"
+
+
+def _rpad(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    length = translator.translate(op.length)
+    pad = translator.translate(op.pad)
+    return f"rightPad({arg}, {length}, {pad})"
+
+
 def _group_concat(translator, expr):
     arg, sep, where = expr.op().args
     if where is not None:
@@ -646,6 +686,14 @@ operation_registry = {
     ops.StringJoin: _string_join,
     ops.StringSplit: _string_split,
     ops.StringSQLLike: _string_like,
+    ops.StringSQLILike: _string_ilike,
+    ops.StartsWith: _startswith,
+    ops.EndsWith: _endswith,
+    ops.LPad: _lpad,
+    ops.RPad: _rpad,
+    ops.LStrip: _unary('trimLeft'),
+    ops.RStrip: _unary('trimRight'),
+    ops.Strip: _unary('trimBoth'),
     ops.Repeat: _string_repeat,
     ops.RegexSearch: _fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
