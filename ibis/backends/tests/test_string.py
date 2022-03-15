@@ -262,7 +262,24 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
             id='join',
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
+        ),
+        param(
+            lambda t: t.string_col + t.date_string_col,
+            lambda t: t.string_col + t.date_string_col,
+            id='concat_columns',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+        ),
+        param(
+            lambda t: t.string_col + 'a',
+            lambda t: t.string_col + 'a',
+            id='concat_column_scalar',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+        ),
+        param(
+            lambda t: 'a' + t.string_col,
+            lambda t: 'a' + t.string_col,
+            id='concat_scalar_column',
+            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
         ),
     ],
 )

@@ -434,6 +434,11 @@ def _sort_key(t, expr):
     return sort_direction(t.translate(by))
 
 
+def _string_join(t, expr):
+    sep, elements = expr.op().args
+    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -482,6 +487,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Uppercase: unary(sa.func.upper),
     ops.StringAscii: unary(sa.func.ascii),
     ops.StringLength: unary(sa.func.length),
+    ops.StringJoin: _string_join,
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: functools.partial(_string_like, "like"),
     ops.StringSQLILike: functools.partial(_string_like, "ilike"),
