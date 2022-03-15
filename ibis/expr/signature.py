@@ -216,12 +216,9 @@ class Annotable(metaclass=AnnotableMeta):
         state
             A dictionary storing the objects attributes.
         """
-        args = ()
         for key, value in state.items():
             object.__setattr__(self, key, value)
-            args += (value,)
-        object.__setattr__(self, "args", args)
-        object.__setattr__(self, "_hash", self._make_hash())
+        self.__init_args__()
 
     def _make_hash(self) -> int:
         return hash((type(self), *map(_maybe_get_op, self.flat_args())))
