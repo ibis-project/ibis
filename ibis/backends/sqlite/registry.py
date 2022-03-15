@@ -1,3 +1,6 @@
+import functools
+import operator
+
 import sqlalchemy as sa
 import toolz
 from multipledispatch import Dispatcher
@@ -282,12 +285,31 @@ def _extract_week_of_year(t, expr):
     ) / 7 + 1
 
 
+def _string_join(t, expr):
+    sep, elements = expr.op().args
+    return functools.reduce(
+        operator.add,
+        map(t.translate, toolz.interpose(sep, elements)),
+    )
+
+
+def _string_concat(t, expr):
+    # yes, `arg`. for variadic functions `arg` is the list of arguments.
+    #
+    # `args` is always the list of values of the fields declared in the
+    # operation
+    args = expr.op().arg
+    return functools.reduce(operator.add, map(t.translate, args))
+
+
 operation_registry.update(
     {
         ops.Cast: _cast,
         ops.Substring: _substr,
         ops.StrRight: _string_right,
         ops.StringFind: _string_find,
+        ops.StringJoin: _string_join,
+        ops.StringConcat: _string_concat,
         ops.Least: varargs(sa.func.min),
         ops.Greatest: varargs(sa.func.max),
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
