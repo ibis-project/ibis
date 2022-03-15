@@ -48,14 +48,7 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.ilike('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
-            marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                    "datafusion",
-                    "impala",
-                    "pyspark",
-                ]
-            ),
+            marks=pytest.mark.notimpl(["datafusion", "impala", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
@@ -124,13 +117,11 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.lpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
             id='lpad',
-            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.rpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='right'),
             id='rpad',
-            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.find_in_set(['1']),
@@ -179,43 +170,28 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.startswith('foo'),
             lambda t: t.string_col.str.startswith('foo'),
             id='startswith',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "dask", "datafusion", "pandas"]
-            ),
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
         ),
         param(
             lambda t: t.string_col.endswith('foo'),
             lambda t: t.string_col.str.endswith('foo'),
             id='endswith',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "dask", "datafusion", "pandas"]
-            ),
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
         ),
         param(
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
             id='strip',
-            marks=pytest.mark.notimpl(["clickhouse"]),
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
             id='lstrip',
-            marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                ]
-            ),
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
             id='rstrip',
-            marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                ]
-            ),
         ),
         param(
             lambda t: t.string_col.capitalize(),
