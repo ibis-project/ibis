@@ -9,7 +9,14 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 
+from ..base.sql.compiler.query_builder import Union
 from .registry import operation_registry
+
+
+class ClickhouseUnion(Union):
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION DISTINCT' if distinct else 'UNION ALL'
 
 
 class ClickhouseSelectBuilder(SelectBuilder):
@@ -116,3 +123,4 @@ class ClickhouseCompiler(Compiler):
     table_set_formatter_class = ClickhouseTableSetFormatter
     select_builder_class = ClickhouseSelectBuilder
     select_class = ClickhouseSelect
+    union_class = ClickhouseUnion

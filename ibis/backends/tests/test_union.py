@@ -4,7 +4,7 @@ from pytest import param
 
 
 @pytest.mark.parametrize('distinct', [False, True])
-@pytest.mark.notimpl(["clickhouse", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_union(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()
     expected = df if distinct else pd.concat([df, df], axis=0)
@@ -29,7 +29,7 @@ def test_union(backend, alltypes, df, distinct):
         ),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_union_no_sort(backend, alltypes, df, distinct):
     result = alltypes.union(alltypes, distinct=distinct).execute()
     expected = df if distinct else pd.concat([df, df], axis=0)
