@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   clickhouse:
-    image: yandex/clickhouse-server:20-alpine
+    image: yandex/clickhouse-server:22-alpine
     ports:
       - 8123:8123
       - 9000:9000
