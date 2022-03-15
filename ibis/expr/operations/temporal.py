@@ -302,8 +302,8 @@ class IntervalBinaryOp(BinaryOp):
         dtype_type = type(left_dtype)
         additional_args = {
             attr: getattr(left_dtype, attr)
-            for attr in dtype_type.__slots__
-            if attr not in {'unit', 'value_type'}
+            for attr in left_dtype._fields
+            if attr not in ("unit", "value_type")
         }
         dtype = dtype_type(left_dtype.unit, expr.type(), **additional_args)
         return rlz.shape_like(self.args, dtype=dtype)
