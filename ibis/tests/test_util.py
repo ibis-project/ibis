@@ -34,3 +34,26 @@ def test_flatten_invalid_input(case):
 
     with pytest.raises(TypeError):
         list(flat)
+
+
+def test_toposort_empty_graph():
+    assert not list(util.toposort({}))
+
+
+def test_toposort_simple():
+    dag = {1: [2, 3], 2: [3], 3: []}
+    assert list(util.toposort(dag)) == [3, 2, 1]
+
+
+def test_toposort_cycle():
+    # 1 depends on itself
+    dag = {1: [1, 2, 3], 2: [3], 3: []}
+    with pytest.raises(ValueError):
+        list(util.toposort(dag))
+
+
+def test_toposort_missing_key():
+    # 3 is a dependency but not a key
+    dag = {1: [1, 2, 3], 2: [3]}
+    with pytest.raises(KeyError):
+        list(util.toposort(dag))

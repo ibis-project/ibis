@@ -62,7 +62,7 @@ def _not_constructible(cls: type[DataType]) -> type[DataType]:
 
 @public
 @_not_constructible
-class DataType(util.CachedEqMixin):
+class DataType(util.EqMixin):
     """Base class for all data types.
 
     [`DataType`][ibis.expr.datatypes.DataType] instances are
@@ -123,23 +123,15 @@ class DataType(util.CachedEqMixin):
 
     @cached_property
     def _hash(self) -> int:
-        custom_parts = (getattr(self, slot) for slot in self._fields)
-        return hash((self.__class__, *custom_parts, self.nullable))
+        return hash(
+            (
+                self.__class__,
+                *(getattr(self, slot) for slot in self._fields),
+            )
+        )
 
     def __hash__(self) -> int:
         return self._hash
-
-    def equals(
-        self,
-        other: typing.Any,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        if not isinstance(other, DataType):
-            raise TypeError(
-                'Comparing datatypes to other types is not allowed. Convert '
-                f'{other!r} to the equivalent DataType instance.'
-            )
-        return super().equals(other, cache=cache)
 
     def __component_eq__(
         self,
@@ -698,7 +690,6 @@ class Struct(DataType):
         types
             Types of the fields of the struct
         """
-
         names = tuple(names)
         if not names:
             raise ValueError("names must not be empty")
@@ -731,7 +722,7 @@ class Struct(DataType):
             Struct data type instance
         """
         names, types = zip(*pairs)
-        return cls(list(names), list(map(dtype, types)), nullable=nullable)
+        return cls(names, types, nullable=nullable)
 
     @classmethod
     def from_dict(
@@ -752,7 +743,7 @@ class Struct(DataType):
             Struct data type instance
         """
         names, types = pairs.keys(), pairs.values()
-        return cls(list(names), list(map(dtype, types)), nullable=nullable)
+        return cls(names, types, nullable=nullable)
 
     @property
     def pairs(self) -> Mapping[str, DataType]:

@@ -69,7 +69,7 @@ def execute_window_op(
         [
             window.preceding is None,
             window.following is None,
-            window._order_by == [],
+            not window._order_by,
         ]
     ):
         raise NotImplementedError(

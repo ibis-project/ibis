@@ -4,7 +4,7 @@ from ... import util
 from ...common import exceptions as com
 from .. import rules as rlz
 from .. import types as ir
-from .core import Node, _safe_repr
+from .core import Node
 
 
 def _to_sort_key(key, *, table=None):
@@ -69,15 +69,6 @@ class SortKey(Node):
         ),
         default=True,
     )
-
-    def __repr__(self):
-        # Temporary
-        rows = [
-            'Sort key:',
-            f'  ascending: {self.ascending!s}',
-            util.indent(_safe_repr(self.expr), 2),
-        ]
-        return '\n'.join(rows)
 
     def output_type(self):
         return ir.SortExpr

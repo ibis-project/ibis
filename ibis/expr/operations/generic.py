@@ -265,11 +265,6 @@ class Literal(ValueOp):
     )
     dtype = rlz.datatype
 
-    def __repr__(self):
-        return '{}({})'.format(
-            type(self).__name__, ', '.join(map(repr, self.args))
-        )
-
     def equals(self, other, cache=None):
         # Check types
         if not (
@@ -311,9 +306,6 @@ class ScalarParameter(ValueOp):
 
     def resolve_name(self):
         return f'param_{self.counter:d}'
-
-    def __repr__(self):
-        return f'{type(self).__name__}(type={self.dtype})'
 
     def __hash__(self):
         return hash((self.dtype, self.counter))

@@ -8,10 +8,12 @@ import itertools
 import logging
 import operator
 import os
+import textwrap
 import types
 import warnings
 from numbers import Real
 from typing import (
+    TYPE_CHECKING,
     Any,
     Hashable,
     Iterable,
@@ -27,9 +29,20 @@ import toolz
 
 from ibis.config import options
 
+if TYPE_CHECKING:
+    from .expr import operations as ops
+    from .expr import types as ir
+
+    Graph = Mapping[ops.Node, Sequence[ops.Node]]
+
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
 V = TypeVar("V")
+
+# https://www.compart.com/en/unicode/U+22EE
+VERTICAL_ELLIPSIS = "\u22EE"
+# https://www.compart.com/en/unicode/U+2026
+HORIZONTAL_ELLIPSIS = "\u2026"
 
 
 class frozendict(Mapping, Hashable):
@@ -74,15 +87,18 @@ def indent(text: str, spaces: int) -> str:
 
     Parameters
     ----------
-    text : string
-    spaces : string
+    text
+        Text to indent
+    spaces
+        Number of leading spaces per line
 
     Returns
     -------
-    string
+    str
+        Indented text
     """
     prefix = ' ' * spaces
-    return ''.join(prefix + line for line in text.splitlines(True))
+    return textwrap.indent(text, prefix=prefix)
 
 
 def is_one_of(values: Sequence[T], t: type[U]) -> Iterator[bool]:
@@ -453,18 +469,33 @@ class EqMixin(abc.ABC):
             return NotImplemented
 
     def __ne__(self, other: Any) -> bool | NotImplemented:
-        return not (self == other)
+        try:
+            return not self.equals(other, cache={})
+        except TypeError:
+            return NotImplemented
 
     def equals(
         self,
-        other: Any,
+        other: Hashable,
         cache: MutableMapping[Hashable, bool] | None = None,
     ) -> bool:
-        if self is other:
-            return True
+        if cache is None:
+            cache = {}
 
-        self._type_check(other)
-        return self.__component_eq__(other, cache=cache)
+        key = self, other
+
+        if (result := cache.get(key)) is None:
+            if self is other:
+                result = cache[key] = True
+            else:
+                # only type check if we have to do the comparison
+                self._type_check(other)
+                result = cache[
+                    key
+                ] = self._hash == other._hash and self.__component_eq__(
+                    other, cache=cache
+                )
+        return result
 
     def _type_check(self, other: Any) -> None:
         """Check whether `self` can be compared with `other`."""
@@ -483,32 +514,22 @@ class EqMixin(abc.ABC):
         """Compare the individual fields of a subclass."""
 
 
-class CachedEqMixin(EqMixin):
-    """A mixin for abstracting cached equality checks."""
-
-    __slots__ = ()
-
-    def equals(
-        self,
-        other: Hashable,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        if cache is None:
-            cache = {}
-
-        key = self, other
-
-        if (result := cache.get(key)) is None:
-            # only type check if we're going to do the comparison
-            self._type_check(other)
-            result = cache[key] = self is other or (
-                self._hash == other._hash
-                and self.__component_eq__(other, cache=cache)
-            )
-        return result
+C = TypeVar("C", bound=EqMixin)
 
 
-C = TypeVar("C", bound=CachedEqMixin)
+def _try_eq(
+    left: Any,
+    right: Any,
+    *,
+    cache: MutableMapping[Hashable, bool],
+) -> bool:
+    try:
+        return (left is None and right is None) or left.equals(
+            right,
+            cache=cache,
+        )
+    except AttributeError:
+        return left == right
 
 
 def seq_eq(
@@ -534,5 +555,86 @@ def seq_eq(
         Whether the expressions of `lefts` and `rights` are equal
     """
     return len(lefts) == len(rights) and all(
-        left.equals(right, cache=cache) for left, right in zip(lefts, rights)
+        _try_eq(left, right, cache=cache) for left, right in zip(lefts, rights)
     )
+
+
+def to_op_dag(expr: ir.Expr) -> Graph:
+    """Convert `expr` into a directed acyclic graph.
+
+    Parameters
+    ----------
+    expr
+        An ibis expression
+
+    Returns
+    -------
+    Graph
+        A directed acyclic graph of ibis operations
+    """
+    stack = [expr.op()]
+    dag = {}
+
+    while stack:
+        if (node := stack.pop()) not in dag:
+            dag[node] = children = node._flat_ops
+            stack.extend(children)
+    return dag
+
+
+def get_dependents(dependencies: Graph) -> Graph:
+    """Convert dependencies to dependents.
+
+    Parameters
+    ----------
+    dependencies
+        A mapping of [`ops.Node`][ibis.expr.operations.Node]s to a set of that
+        node's `ops.Node` dependencies.
+
+    Returns
+    -------
+    Graph
+        A mapping of [`ops.Node`][ibis.expr.operations.Node]s to a set of that
+        node's `ops.Node` dependents.
+    """
+    dependents = {src: [] for src in dependencies.keys()}
+    for src, dests in dependencies.items():
+        for dest in dests:
+            dependents[dest].append(src)
+    return dependents
+
+
+def toposort(graph: Graph) -> Iterator[ops.Node]:
+    """Topologically sort `graph` using Kahn's algorithm.
+
+    Parameters
+    ----------
+    graph
+        A DAG built from an ibis expression.
+
+    Yields
+    ------
+    Node
+        An operation node
+    """
+    if not graph:
+        return
+
+    dependents = get_dependents(graph)
+    in_degree = {
+        node: len(dependencies) for node, dependencies in graph.items()
+    }
+    queue = collections.deque(
+        node for node, count in in_degree.items() if not count
+    )
+    while queue:
+        dependency = queue.popleft()
+        yield dependency
+        for dependent in dependents[dependency]:
+            in_degree[dependent] -= 1
+
+            if not in_degree[dependent]:
+                queue.append(dependent)
+
+    if any(in_degree.values()):
+        raise ValueError("cycle in expression graph")

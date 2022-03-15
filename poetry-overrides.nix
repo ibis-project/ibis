@@ -61,4 +61,8 @@ self: super:
       self.ipython_genutils
     ];
   });
+
+  pytest-profiling = super.pytest-profiling.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.setuptools-git ];
+  });
 }

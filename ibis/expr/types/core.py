@@ -4,6 +4,7 @@ import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, Hashable, Mapping, MutableMapping
 
+from cached_property import cached_property
 from public import public
 
 import ibis
@@ -17,38 +18,37 @@ if TYPE_CHECKING:
     from ...backends.base import BaseBackend
     from .. import operations as ops
     from .. import types as ir
-    from ..format import FormatMemo
     from .generic import ValueExpr
 
 
 @public
-class Expr(util.EqMixin):
+class Expr:
     """Base expression class"""
-
-    def _type_display(self) -> str:
-        return type(self).__name__
 
     def __init__(self, arg: ops.Node) -> None:
         # TODO: all inputs must inherit from a common table API
         self._arg = arg
 
     def __repr__(self) -> str:
-        from ibis.expr.format import FormatMemo
-
         if not config.options.interactive:
-            return self._repr(memo=FormatMemo(get_text_repr=True))
+            return self._repr()
 
         try:
             result = self.execute()
         except com.TranslationError as e:
-            output = (
-                'Translation to backend failed\n'
-                'Error message: {}\n'
-                'Expression repr follows:\n{}'.format(e.args[0], self._repr())
-            )
-            return output
-        else:
-            return repr(result)
+            lines = [
+                "Translation to backend failed",
+                f"Error message: {e.args[0]}",
+                "Expression repr follows:",
+                self._repr(),
+            ]
+            return "\n".join(lines)
+        return repr(result)
+
+    def _repr(self) -> str:
+        from ibis.expr.format import fmt
+
+        return fmt(self)
 
     def __hash__(self) -> int:
         return hash(self._key)
@@ -60,12 +60,7 @@ class Expr(util.EqMixin):
 
     __nonzero__ = __bool__
 
-    def _repr(self, memo: FormatMemo | None = None) -> str:
-        from ibis.expr.format import ExprFormatter
-
-        return ExprFormatter(self, memo=memo).get_result()
-
-    @property
+    @cached_property
     def _safe_name(self) -> str | None:
         """Get the name of an expression `expr` if one exists
 
@@ -315,18 +310,25 @@ class Expr(util.EqMixin):
         else:
             return True
 
+    def equals(
+        self, other: Any, cache: MutableMapping[Hashable, bool] | None = None
+    ) -> bool:
+        if self is other:
+            return True
+
+        if cache is None:
+            cache = {}
+
+        self._type_check(other)
+        return self._safe_name == other._safe_name and self._arg.equals(
+            other._arg, cache=cache
+        )
+
     def _type_check(self, other: Any) -> None:
         if not isinstance(other, Expr):
             raise TypeError(
                 f"Cannot compare non-Expr object {type(other)} with Expr"
             )
-
-    def __component_eq__(
-        self,
-        other: ir.Expr,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        return self._arg.equals(other._arg, cache=cache)
 
 
 class UnnamedMarker:

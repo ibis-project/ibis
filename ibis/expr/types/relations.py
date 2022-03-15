@@ -78,9 +78,6 @@ class TableExpr(Expr):
 
         return factory
 
-    def _type_display(self):
-        return 'table'
-
     def _is_valid(self, exprs):
         try:
             self._assert_valid(util.promote_list(exprs))
