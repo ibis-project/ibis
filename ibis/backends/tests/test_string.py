@@ -212,8 +212,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.date_string_col.right(2),
             lambda t: t.date_string_col.str[-2:],
-            id='right',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            id="right",
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.date_string_col[1:3],

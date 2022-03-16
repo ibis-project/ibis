@@ -551,14 +551,6 @@ def _string_join(translator, expr):
     )
 
 
-def _string_repeat(translator, expr):
-    value, times = expr.op().args
-    result = 'arrayStringConcat(arrayMap(x -> {}, range({})))'.format(
-        translator.translate(value), translator.translate(times)
-    )
-    return result
-
-
 def _string_like(translator, expr):
     value, pattern = expr.op().args[:2]
     return '{} LIKE {}'.format(
@@ -574,38 +566,6 @@ def _string_ilike(translator, expr):
     )
 
 
-def _startswith(translator, expr):
-    op = expr.op()
-    arg = op.arg
-    start = op.start
-    tr_arg = translator.translate(arg)
-    tr_start = translator.translate(start)
-    return f"startsWith({tr_arg}, {tr_start})"
-
-
-def _endswith(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    end = translator.translate(op.end)
-    return f"endsWith({arg}, {end})"
-
-
-def _lpad(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    length = translator.translate(op.length)
-    pad = translator.translate(op.pad)
-    return f"leftPad({arg}, {length}, {pad})"
-
-
-def _rpad(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    length = translator.translate(op.length)
-    pad = translator.translate(op.pad)
-    return f"rightPad({arg}, {length}, {pad})"
-
-
 def _group_concat(translator, expr):
     arg, sep, where = expr.op().args
     if where is not None:
@@ -613,6 +573,13 @@ def _group_concat(translator, expr):
     return 'arrayStringConcat(groupArray({}), {})'.format(
         *map(translator.translate, (arg, sep))
     )
+
+
+def _string_right(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    nchars = translator.translate(op.nchars)
+    return f"substring({arg}, -({nchars}))"
 
 
 # TODO: clickhouse uses different string functions
@@ -687,23 +654,24 @@ operation_registry = {
     ops.StringSplit: _string_split,
     ops.StringSQLLike: _string_like,
     ops.StringSQLILike: _string_ilike,
-    ops.StartsWith: _startswith,
-    ops.EndsWith: _endswith,
-    ops.LPad: _lpad,
-    ops.RPad: _rpad,
+    ops.StartsWith: _fixed_arity("startsWith", 2),
+    ops.EndsWith: _fixed_arity("endsWith", 2),
+    ops.LPad: _fixed_arity("leftPad", 3),
+    ops.RPad: _fixed_arity("rightPad", 3),
     ops.LStrip: _unary('trimLeft'),
     ops.RStrip: _unary('trimRight'),
     ops.Strip: _unary('trimBoth'),
-    ops.Repeat: _string_repeat,
+    ops.Repeat: _fixed_arity("repeat", 2),
     ops.RegexSearch: _fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: _fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
+    ops.StrRight: _string_right,
     # Temporal operations
     ops.Date: _unary('toDate'),
     ops.DateTruncate: _truncate,
-    ops.TimestampNow: lambda *args: 'now()',
+    ops.TimestampNow: lambda *_: 'now()',
     ops.TimestampTruncate: _truncate,
     ops.TimeTruncate: _truncate,
     ops.IntervalFromInteger: _interval_from_integer,
@@ -718,7 +686,7 @@ operation_registry = {
     ops.ExtractMinute: _unary('toMinute'),
     ops.ExtractSecond: _unary('toSecond'),
     # Other operations
-    ops.E: lambda *args: 'e()',
+    ops.E: lambda *_: 'e()',
     ops.Literal: _literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
