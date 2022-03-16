@@ -67,6 +67,11 @@ class BaseSQLBackend(BaseBackend):
         schema = self._get_schema_using_query(limited_query)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
+    def _get_schema_using_query(self, query):
+        raise NotImplementedError(
+            f"Backend {self.name} does not support .sql()"
+        )
+
     def raw_sql(self, query: str, results: bool = False) -> Any:
         """Execute a query string.
 
