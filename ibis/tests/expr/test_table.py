@@ -1024,7 +1024,7 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ['bar_id']
 
-    with pytest.raises(NotImplementedError, match="string __getitem__"):
+    with pytest.raises(com.IbisTypeError, match="Argument is not a table"):
         left.inner_join(invalid_right, join_key)
 
 
@@ -1379,8 +1379,12 @@ def test_multiple_db_different_backends():
     backend1_table = con1.table('alltypes')
     backend2_table = con2.table('alltypes')
 
-    with pytest.raises(RelationError):
-        backend1_table.union(backend2_table)
+    expr = backend1_table.union(backend2_table)
+    with pytest.raises(
+        ValueError,
+        match=re.compile("multiple backends", flags=re.IGNORECASE),
+    ):
+        expr.compile()
 
 
 def test_merge_as_of_allows_overlapping_columns():

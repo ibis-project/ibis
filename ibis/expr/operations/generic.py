@@ -10,6 +10,7 @@ import pandas as pd
 from public import public
 
 from ...common import exceptions as com
+from ...util import frozendict
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
@@ -30,21 +31,18 @@ class TableColumn(ValueOp):
     table = rlz.table
     name = rlz.instance_of((str, int))
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        name = self.name
-        table = self.table
-
+    def __init__(self, table, name):
         schema = table.schema()
 
         if isinstance(name, int):
-            self.name = name = schema.name_at_position(name)
+            name = schema.name_at_position(name)
 
         if name not in schema:
             raise com.IbisTypeError(
                 f"value {name!r} is not a field in {table.columns}"
             )
+
+        super().__init__(table=table, name=name)
 
     def parent(self):
         return self.table
@@ -232,17 +230,15 @@ class Literal(ValueOp):
                     datetime.datetime,
                     datetime.time,
                     datetime.timedelta,
-                    dict,
                     enum.Enum,
                     float,
                     frozenset,
                     int,
-                    list,
+                    frozendict,
                     np.generic,
                     np.ndarray,
                     pd.Timedelta,
                     pd.Timestamp,
-                    set,
                     str,
                     tuple,
                     type(None),
@@ -250,6 +246,7 @@ class Literal(ValueOp):
                     decimal.Decimal,
                 )
             ),
+            # this seems buggy
             rlz.is_computable_input,
         )
     )
@@ -280,15 +277,6 @@ class Literal(ValueOp):
 
     def root_tables(self):
         return []
-
-    def __hash__(self) -> int:
-        """Return the hash of a literal value.
-
-        We override this method to make sure that we can handle things that
-        aren't eminently hashable like an ``array<array<int64>>``.
-
-        """
-        return hash(self.dtype._literal_value_hash_key(self.value))
 
 
 @public
@@ -455,8 +443,9 @@ class SimpleCase(ValueOp):
     results = rlz.value_list_of(rlz.any)
     default = rlz.any
 
-    def _validate(self):
-        assert len(self.cases) == len(self.results)
+    def __init__(self, cases, results, **kwargs):
+        assert len(cases) == len(results)
+        super().__init__(cases=cases, results=results, **kwargs)
 
     def root_tables(self):
         return distinct_roots(*self.flat_args())
@@ -473,8 +462,9 @@ class SearchedCase(ValueOp):
     results = rlz.value_list_of(rlz.any)
     default = rlz.any
 
-    def _validate(self):
-        assert len(self.cases) == len(self.results)
+    def __init__(self, cases, results, default):
+        assert len(cases) == len(results)
+        super().__init__(cases=cases, results=results, default=default)
 
     def root_tables(self):
         return distinct_roots(*self.flat_args())

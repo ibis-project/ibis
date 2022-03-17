@@ -596,7 +596,7 @@ def apply_filter(expr, predicates):
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
         # GH1344: We can't sub in things with correlated subqueries
-        simplified_predicates = [
+        simplified_predicates = tuple(
             # Originally this line tried substituting op.table in for expr, but
             # that is too aggressive in the presence of filters that occur
             # after aggregations.
@@ -606,7 +606,7 @@ def apply_filter(expr, predicates):
             if not has_reduction(predicate)
             else predicate
             for predicate in predicates
-        ]
+        )
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Aggregation(
@@ -643,12 +643,12 @@ def _filter_selection(expr, predicates):
         # Potential fusion opportunity. The predicates may need to be
         # rewritten in terms of the child table. This prevents the broken
         # ref issue (described in more detail in #59)
-        simplified_predicates = [
+        simplified_predicates = tuple(
             sub_for(predicate, [(expr, op.table)])
             if not has_reduction(predicate)
             else predicate
             for predicate in predicates
-        ]
+        )
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Selection(
@@ -662,7 +662,9 @@ def _filter_selection(expr, predicates):
     can_pushdown = _can_pushdown(op, predicates)
 
     if can_pushdown:
-        simplified_predicates = [substitute_parents(x) for x in predicates]
+        simplified_predicates = tuple(
+            substitute_parents(x) for x in predicates
+        )
         fused_predicates = op.predicates + simplified_predicates
         result = ops.Selection(
             op.table,
@@ -927,6 +929,7 @@ class ExprValidator:
 
     def validate(self, expr):
         op = expr.op()
+
         if isinstance(op, ops.TableColumn):
             if self._among_roots(op.table.op()):
                 return True

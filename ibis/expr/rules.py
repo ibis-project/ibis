@@ -172,8 +172,8 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
     return type(inner(item, **kwargs) for item in arg)
 
 
-list_of = container_of(type=list)
-tuple_of = container_of(type=tuple)
+# TODO(kszucs): remove list_of rule eventually
+list_of = tuple_of = container_of(type=tuple)
 
 
 @validator
@@ -192,7 +192,7 @@ def value_list_of(inner, arg, **kwargs):
 def sort_key(key, *, from_=None, this):
     import ibis.expr.operations as ops
 
-    table = getattr(this, from_) if from_ is not None else None
+    table = this[from_] if from_ is not None else None
     return ops.sortkeys._to_sort_key(key, table=table)
 
 
@@ -210,11 +210,6 @@ def instance_of(klasses, arg, **kwargs):
             f'is not an instance of {klasses}'
         )
     return arg
-
-
-@validator
-def coerce_to(klass, arg, **kwargs):
-    return klass(arg)
 
 
 @validator
@@ -431,9 +426,9 @@ def column_from(name, column, *, this):
     checks if the column in the table is equal to the column being
     passed.
     """
-    if not hasattr(this, name):
+    if name not in this:
         raise com.IbisTypeError(f"Could not get table {name} from {this}")
-    table = getattr(this, name)
+    table = this[name]
 
     if isinstance(column, (str, int)):
         return table[column]
@@ -472,7 +467,7 @@ def function_of(
     if not util.is_function(fn):
         raise com.IbisTypeError('argument `fn` must be a function or lambda')
 
-    return output_rule(fn(preprocess(getattr(this, argument))), this=this)
+    return output_rule(fn(preprocess(this[argument])), this=this)
 
 
 @validator
@@ -573,7 +568,7 @@ def window(win, *, from_base_table_of, this):
             "`win` argument should be of type `ibis.expr.window.Window`; "
             f"got type {type(win).__name__}"
         )
-    table = ir.relations.find_base_table(getattr(this, from_base_table_of))
+    table = ir.relations.find_base_table(this[from_base_table_of])
     if table is not None:
         win = win.bind(table)
 

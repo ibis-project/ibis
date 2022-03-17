@@ -157,13 +157,17 @@ def build_df_from_projection(
     return dd.concat(data_pieces, axis=1).reset_index(drop=True)
 
 
-@execute_node.register(ops.Selection, dd.DataFrame)
+@execute_node.register(ops.Selection, dd.DataFrame, tuple, tuple, tuple)
 def execute_selection_dataframe(
-    op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
+    op,
+    data,
+    selections,
+    predicates,
+    sort_keys,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
 ):
-    selections = op.selections
-    predicates = op.predicates
-    sort_keys = op.sort_keys
     result = data
 
     if selections:

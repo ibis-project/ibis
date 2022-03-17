@@ -98,3 +98,4 @@ ci/udf/build.ninja
 junit.xml
 spark-warehouse
 docs/backends/support_matrix.csv
+__pycache__

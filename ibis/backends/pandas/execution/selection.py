@@ -369,13 +369,17 @@ def build_df_from_projection(
     return pd.concat(new_pieces, axis=1)
 
 
-@execute_node.register(ops.Selection, pd.DataFrame)
+@execute_node.register(ops.Selection, pd.DataFrame, tuple, tuple, tuple)
 def execute_selection_dataframe(
-    op, data, scope: Scope, timecontext: Optional[TimeContext], **kwargs
+    op,
+    data,
+    selections,
+    predicates,
+    sort_keys,
+    scope: Scope,
+    timecontext: Optional[TimeContext],
+    **kwargs,
 ):
-    selections = op.selections
-    predicates = op.predicates
-    sort_keys = op.sort_keys
     result = data
 
     # Build up the individual pandas structures from column expressions

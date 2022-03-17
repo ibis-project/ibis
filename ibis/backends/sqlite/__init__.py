@@ -121,7 +121,7 @@ class Backend(BaseAlchemyBackend):
             Table expression
         """
         alch_table = self._get_sqla_table(name, schema=database)
-        node = self.table_class(alch_table, self)
+        node = self.table_class(source=self, sqla_table=alch_table)
         return self.table_expr_class(node)
 
     def _table_from_schema(

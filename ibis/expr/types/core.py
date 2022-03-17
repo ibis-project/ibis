@@ -51,7 +51,7 @@ class Expr:
             return repr(result)
 
     def __hash__(self) -> int:
-        return hash(self._key)
+        return hash((self.__class__, self._safe_name, self._arg))
 
     def __bool__(self) -> bool:
         raise ValueError(

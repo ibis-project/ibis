@@ -419,11 +419,13 @@ class MockAlchemyBackend(MockBackend):
 
     def _inject_table(self, name, schema):
         try:
-            table = self.meta.tables[name]
+            alchemy_table = self.meta.tables[name]
         except KeyError:
-            table = table_from_schema(name, self.meta, schema)
+            alchemy_table = table_from_schema(name, self.meta, schema)
 
-        return self.table_class(table, self).to_expr()
+        return self.table_class(
+            source=self, sqla_table=alchemy_table, schema=schema
+        ).to_expr()
 
 
 GEO_TABLE = {

@@ -21,8 +21,8 @@ def _compute_join_column(column_expr, **kwargs):
     return new_column, root_table
 
 
-@execute_node.register(ops.CrossJoin, pd.DataFrame, pd.DataFrame)
-def execute_cross_join(op, left, right, **kwargs):
+@execute_node.register(ops.CrossJoin, pd.DataFrame, pd.DataFrame, tuple)
+def execute_cross_join(op, left, right, predicates, **kwargs):
     """Execute a cross join in pandas.
 
     Notes
@@ -32,6 +32,7 @@ def execute_cross_join(op, left, right, **kwargs):
     by cross join.
 
     """
+    assert not predicates, "cross join predicates must be empty"
     return pd.merge(
         left,
         right,
@@ -41,8 +42,12 @@ def execute_cross_join(op, left, right, **kwargs):
     )
 
 
-def _get_semi_anti_join_filter(op, left, right, **kwargs):
-    left_on, right_on = _construct_join_predicate_columns(op, **kwargs)
+def _get_semi_anti_join_filter(op, left, right, predicates, **kwargs):
+    left_on, right_on = _construct_join_predicate_columns(
+        op,
+        predicates,
+        **kwargs,
+    )
     inner = pd.merge(
         left,
         right,
@@ -55,27 +60,39 @@ def _get_semi_anti_join_filter(op, left, right, **kwargs):
     return functools.reduce(operator.and_, predicates)
 
 
-@execute_node.register(ops.LeftSemiJoin, pd.DataFrame, pd.DataFrame)
-def execute_left_semi_join(op, left, right, **kwargs):
+@execute_node.register(ops.LeftSemiJoin, pd.DataFrame, pd.DataFrame, tuple)
+def execute_left_semi_join(op, left, right, predicates, **kwargs):
     """Execute a left semi join in pandas."""
-    inner_filt = _get_semi_anti_join_filter(op, left, right, **kwargs)
+    inner_filt = _get_semi_anti_join_filter(
+        op,
+        left,
+        right,
+        predicates,
+        **kwargs,
+    )
     return left.loc[inner_filt, :]
 
 
-@execute_node.register(ops.LeftAntiJoin, pd.DataFrame, pd.DataFrame)
-def execute_left_anti_join(op, left, right, **kwargs):
+@execute_node.register(ops.LeftAntiJoin, pd.DataFrame, pd.DataFrame, tuple)
+def execute_left_anti_join(op, left, right, predicates, **kwargs):
     """Execute a left anti join in pandas."""
-    inner_filt = _get_semi_anti_join_filter(op, left, right, **kwargs)
+    inner_filt = _get_semi_anti_join_filter(
+        op,
+        left,
+        right,
+        predicates,
+        **kwargs,
+    )
     return left.loc[~inner_filt, :]
 
 
-def _construct_join_predicate_columns(op, **kwargs):
+def _construct_join_predicate_columns(op, predicates, **kwargs):
     left_op = op.left.op()
     right_op = op.right.op()
 
     on = {left_op: [], right_op: []}
 
-    for predicate in map(operator.methodcaller('op'), op.predicates):
+    for predicate in map(operator.methodcaller('op'), predicates):
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
@@ -92,8 +109,8 @@ def _construct_join_predicate_columns(op, **kwargs):
     return on[left_op], on[right_op]
 
 
-@execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
-def execute_join(op, left, right, **kwargs):
+@execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame, tuple)
+def execute_join(op, left, right, predicates, **kwargs):
     op_type = type(op)
 
     try:
@@ -101,7 +118,9 @@ def execute_join(op, left, right, **kwargs):
     except KeyError:
         raise NotImplementedError(f'{op_type.__name__} not supported')
 
-    left_on, right_on = _construct_join_predicate_columns(op, **kwargs)
+    left_on, right_on = _construct_join_predicate_columns(
+        op, predicates, **kwargs
+    )
 
     df = pd.merge(
         left,
@@ -115,12 +134,17 @@ def execute_join(op, left, right, **kwargs):
 
 
 @execute_node.register(
-    ops.AsOfJoin, pd.DataFrame, pd.DataFrame, (pd.Timedelta, type(None))
+    ops.AsOfJoin,
+    pd.DataFrame,
+    pd.DataFrame,
+    tuple,
+    tuple,
+    (pd.Timedelta, type(None)),
 )
-def execute_asof_join(op, left, right, tolerance, **kwargs):
+def execute_asof_join(op, left, right, predicates, by, tolerance, **kwargs):
     overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
-    left_on, right_on = _extract_predicate_names(op.predicates)
-    left_by, right_by = _extract_predicate_names(op.by)
+    left_on, right_on = _extract_predicate_names(predicates)
+    left_by, right_by = _extract_predicate_names(by)
     _validate_columns(
         overlapping_columns, left_on, right_on, left_by, right_by
     )

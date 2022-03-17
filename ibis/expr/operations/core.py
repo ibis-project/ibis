@@ -66,7 +66,8 @@ def _maybe_get_op(value):
 
 @public
 class Node(Annotable):
-    __slots__ = '_expr_cached', '_hash'
+
+    __slots__ = ("_expr_cached",)
 
     def __repr__(self):
         return self._repr()
@@ -116,16 +117,14 @@ class Node(Annotable):
             else:
                 yield arg
 
-    def __hash__(self):
-        if not hasattr(self, '_hash'):
-            self._hash = hash(
-                (type(self), *map(_maybe_get_op, self.flat_args()))
-            )
-        return self._hash
-
     def __eq__(self, other):
         return self.equals(other)
 
+    def __hash__(self):
+        return super().__hash__()
+
+    # eventually we shouldn't need to have equals implemented manually
+    # just offload the work to Signature.__eq__
     def equals(self, other, cache=None):
         if cache is None:
             cache = {}
@@ -153,9 +152,12 @@ class Node(Annotable):
         return self.equals(other)
 
     def to_expr(self):
-        if not hasattr(self, '_expr_cached'):
-            self._expr_cached = self._make_expr()
-        return self._expr_cached
+        try:
+            result = self._expr_cached
+        except AttributeError:
+            result = self._make_expr()
+            object.__setattr__(self, "_expr_cached", result)
+        return result
 
     def _make_expr(self):
         klass = self.output_type()

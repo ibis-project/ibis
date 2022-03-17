@@ -378,11 +378,19 @@ def _literal(translator, expr):
             value = value.strftime('%Y-%m-%d')
         return f"toDate('{value!s}')"
     elif isinstance(expr, ir.ArrayValue):
-        return str(list(value))
+        return str(list(_tuple_to_list(value)))
     elif isinstance(expr, ir.SetScalar):
         return '({})'.format(', '.join(map(repr, value)))
     else:
         raise NotImplementedError(type(expr))
+
+
+def _tuple_to_list(t: tuple):
+    for element in t:
+        if util.is_iterable(element):
+            yield list(_tuple_to_list(element))
+        else:
+            yield element
 
 
 class _CaseFormatter:

@@ -59,65 +59,40 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (point_0, {'postgres': "'POINT (0 0)'"}),
-        (point_0_4326, {'postgres': "'SRID=4326;POINT (0 0)'"}),
-        (point_geom_0, {'postgres': "'SRID=4326;POINT (0 0)'::geometry"}),
-        (point_geom_1, {'postgres': "'SRID=4326;POINT (1 1)'::geometry"}),
-        (point_geom_2, {'postgres': "'SRID=4326;POINT (2 2)'::geometry"}),
-        (point_geog_0, {'postgres': "'SRID=4326;POINT (0 0)'::geography"}),
-        (point_geog_1, {'postgres': "'SRID=4326;POINT (1 1)'::geography"}),
-        (point_geog_2, {'postgres': "'SRID=4326;POINT (2 2)'::geography"}),
+        (point_0, "'POINT (0.0 0.0)'"),
+        (point_0_4326, "'SRID=4326;POINT (0.0 0.0)'"),
+        (point_geom_0, "'SRID=4326;POINT (0.0 0.0)'::geometry"),
+        (point_geom_1, "'SRID=4326;POINT (1.0 1.0)'::geometry"),
+        (point_geom_2, "'SRID=4326;POINT (2.0 2.0)'::geometry"),
+        (point_geog_0, "'SRID=4326;POINT (0.0 0.0)'::geography"),
+        (point_geog_1, "'SRID=4326;POINT (1.0 1.0)'::geography"),
+        (point_geog_2, "'SRID=4326;POINT (2.0 2.0)'::geography"),
     ],
 )
 def test_literal_geospatial_explicit(con, expr, expected):
     result = str(con.compile(expr))
-    result_expected = f"SELECT {expected['postgres']} AS tmp"
-    # use `in` op because if name is specified omniscidb doesn't compile
-    # with alias but postgresql does. but if name is not provided,
-    # omniscidb uses tmp as a default alias but postgres doesn't use alias
-    assert result in result_expected
+    assert result == f"SELECT {expected} AS tmp"
 
 
 @pytest.mark.parametrize(
     ('shp', 'expected'),
     [
-        (shp_point_0, {'postgres': "'POINT (0 0)'"}),
-        (shp_point_1, {'postgres': "'POINT (1 1)'"}),
-        (shp_point_2, {'postgres': "'POINT (2 2)'"}),
-        (shp_linestring_0, {'postgres': "'LINESTRING (0 0, 1 1, 2 2)'"}),
-        (shp_linestring_1, {'postgres': "'LINESTRING (2 2, 1 1, 0 0)'"}),
-        (shp_polygon_0, {'postgres': "'POLYGON ((0 0, 1 1, 2 2, 0 0))'"}),
-        (
-            shp_multipolygon_0,
-            {'postgres': "'MULTIPOLYGON (((0 0, 1 1, 2 2, 0 0)))'"},
-        ),
+        (shp_point_0, "(0 0)"),
+        (shp_point_1, "(1 1)"),
+        (shp_point_2, "(2 2)"),
+        (shp_linestring_0, "(0 0, 1 1, 2 2)"),
+        (shp_linestring_1, "(2 2, 1 1, 0 0)"),
+        (shp_polygon_0, "((0 0, 1 1, 2 2, 0 0))"),
+        (shp_multipolygon_0, "(((0 0, 1 1, 2 2, 0 0)))"),
+        (shp_multilinestring_0, "((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))"),
+        (shp_multipoint_0, '(0 0, 1 1, 2 2)'),
     ],
 )
 def test_literal_geospatial_inferred(con, shp, expected):
     result = str(con.compile(ibis.literal(shp)))
-    result_expected = f"SELECT {expected['postgres']} AS tmp"
-    # omniscidb uses tmp as a default alias but postgres doesn't use alias
-    assert result in result_expected
-
-
-@pytest.mark.parametrize(
-    ('shp', 'expected'),
-    [
-        (
-            shp_multilinestring_0,
-            {
-                'postgres': (
-                    "'MULTILINESTRING ((0 0, 1 1, 2 2), (2 2, 1 1, 0 0))'"
-                )
-            },
-        ),
-        (shp_multipoint_0, {'postgres': "'MULTIPOINT (0 0, 1 1, 2 2)'"}),
-    ],
-)
-def test_literal_multi_geospatial_inferred(con, shp, expected):
-    result = str(con.compile(ibis.literal(shp)))
-    result_expected = f"SELECT {expected['postgres']} AS tmp"
-    assert result in result_expected
+    name = type(shp).__name__.upper()
+    pair = f"{name} {expected}"
+    assert result == f"SELECT {pair!r} AS tmp"
 
 
 @pytest.mark.parametrize(
@@ -186,47 +161,43 @@ def test_geo_spatial_unops(geotable, expr_fn, expected):
     [
         param(
             lambda t: t['geo_linestring'].contains(point_geom_1_srid0),
-            {
-                # does not contain the border
-                'postgres': [False]
-                * 5,
-            },
+            [False] * 5,  # does not contain the border
             id='contains',
         ),
         param(
             lambda t: t['geo_linestring'].disjoint(point_geom_0_srid0),
-            {'postgres': [False, True, True, True, True]},
+            [False, True, True, True, True],
             id='disjoint',
         ),
         param(
             lambda t: t['geo_point'].d_within(point_geom_1_srid0, 2.0),
-            {'postgres': [True, True, True, False, False]},
+            [True, True, True, False, False],
             id='d_within',
         ),
         param(
             lambda t: t['geo_point'].d_fully_within(t['geo_linestring'], 2.0),
-            {'postgres': [True, True, True, True, True]},
+            [True, True, True, True, True],
             id='d_fully_within',
         ),
         param(
             lambda t: t['geo_linestring'].intersects(point_geom_0_srid0),
-            {'postgres': [True, False, False, False, False]},
+            [True, False, False, False, False],
             id='intersects',
         ),
         param(
             lambda t: t['geo_linestring'].distance(point_geom_0_srid0),
-            {'postgres': [0.0, 1.41, 2.82, 4.24, 5.66]},
+            [0.0, 1.41, 2.82, 4.24, 5.66],
             id='distance',
         ),
         param(
             lambda t: t['geo_linestring'].max_distance(point_geom_0_srid0),
-            {'postgres': [1.41, 2.82, 4.24, 5.66, 7.08]},
+            [1.41, 2.82, 4.24, 5.66, 7.08],
             id='max_distance',
             marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
             lambda t: t.geo_polygon.contains(ibis.geo_point(30, 10)),
-            {'postgres': [True, False, False, False, False]},
+            [True, False, False, False, False],
             id='point',
             marks=pytest.mark.notimpl(["postgres"]),
         ),
@@ -236,7 +207,7 @@ def test_geo_spatial_binops(geotable, expr_fn, expected):
     """Testing for geo spatial binary operations."""
     expr = expr_fn(geotable)
     result = expr.execute()
-    testing.assert_almost_equal(result, expected["postgres"], decimal=2)
+    testing.assert_almost_equal(result, expected, decimal=2)
 
 
 @pytest.mark.parametrize(
@@ -263,7 +234,7 @@ def test_geo_spatial_binops(geotable, expr_fn, expected):
 def test_get_point(geotable, expr_fn, expected):
     """Testing for geo spatial get point operations."""
     arg = expr_fn(geotable)
-    # Note: there is a difference in how OmnisciDB and PostGIS consider
+    # NB: there is a difference in how OmnisciDB and PostGIS consider
     # boundaries with the contains predicate. Work around this by adding a
     # small buffer.
     expr = geotable['geo_linestring'].buffer(0.01).contains(arg)
@@ -282,26 +253,26 @@ def test_area(geotable, arg, expected):
 @pytest.mark.parametrize(
     ('condition', 'expected'),
     [
-        (lambda t: point_geom_2.srid(), {'postgres': 4326}),
-        (lambda t: point_geom_0.srid(), {'postgres': 4326}),
-        (lambda t: t.geo_point.srid(), {'postgres': 0}),
-        (lambda t: t.geo_linestring.srid(), {'postgres': 0}),
-        (lambda t: t.geo_polygon.srid(), {'postgres': 0}),
-        (lambda t: t.geo_multipolygon.srid(), {'postgres': 0}),
+        (lambda _: point_geom_2.srid(), 4326),
+        (lambda _: point_geom_0.srid(), 4326),
+        (lambda t: t.geo_point.srid(), 0),
+        (lambda t: t.geo_linestring.srid(), 0),
+        (lambda t: t.geo_polygon.srid(), 0),
+        (lambda t: t.geo_multipolygon.srid(), 0),
     ],
 )
 def test_srid(geotable, condition, expected):
     """Testing for geo spatial srid operation."""
     expr = geotable[geotable.id, condition(geotable).name('tmp')]
     result = expr.execute()['tmp'][[0]]
-    assert np.all(result == expected["postgres"])
+    assert np.all(result == expected)
 
 
 @pytest.mark.parametrize(
     ('condition', 'expected'),
     [
-        (lambda t: point_geom_0.set_srid(4326).srid(), 4326),
-        (lambda t: point_geom_0.set_srid(4326).set_srid(0).srid(), 0),
+        (lambda _: point_geom_0.set_srid(4326).srid(), 4326),
+        (lambda _: point_geom_0.set_srid(4326).set_srid(0).srid(), 0),
         (lambda t: t.geo_point.set_srid(4326).srid(), 4326),
         (lambda t: t.geo_linestring.set_srid(4326).srid(), 4326),
         (lambda t: t.geo_polygon.set_srid(4326).srid(), 4326),
@@ -372,12 +343,12 @@ def test_cast_geography(geotable, expr_fn):
     'expr_fn',
     [
         param(lambda t: t.geo_point.set_srid(4326), id='t_geo_point'),
-        param(lambda t: point_geom_0, id='point_geom_0'),
-        param(lambda t: point_geom_1, id='point_geom_1'),
-        param(lambda t: point_geom_2, id='point_geom_2'),
-        param(lambda t: point_geog_0, id='point_geog_0'),
-        param(lambda t: point_geog_1, id='point_geog_1'),
-        param(lambda t: point_geog_2, id='point_geog_2'),
+        param(lambda _: point_geom_0, id='point_geom_0'),
+        param(lambda _: point_geom_1, id='point_geom_1'),
+        param(lambda _: point_geom_2, id='point_geom_2'),
+        param(lambda _: point_geog_0, id='point_geog_0'),
+        param(lambda _: point_geog_1, id='point_geog_1'),
+        param(lambda _: point_geog_2, id='point_geog_2'),
     ],
 )
 def test_cast_geometry(geotable, expr_fn):
@@ -397,59 +368,64 @@ def test_geo_dataframe(geotable):
 
 
 @pytest.mark.parametrize(
-    'modifier',
+    "modifier",
     [
         {},
-        {'srid': '4326'},
-        {'srid': '4326', 'geo_type': 'geometry'},
-        {'srid': '4326', 'geo_type': 'geography'},
+        {"srid": "4326"},
+        {"srid": "4326", "geo_type": "geometry"},
+        {"srid": "4326", "geo_type": "geography"},
     ],
 )
 @pytest.mark.parametrize(
-    'shape,value,expected',
+    ("shape", "value", "expected"),
     [
         # Geometry primitives (2D)
-        ('point', (30, 10), 'POINT (30 10)'),
-        (
-            'linestring',
+        param("point", (30, 10), "(30.0 10.0)", id="point"),
+        param(
+            "linestring",
             ((30, 10), (10, 30), (40, 40)),
-            'LINESTRING (30 10, 10 30, 40 40)',
+            "(30.0 10.0, 10.0 30.0, 40.0 40.0)",
+            id="linestring",
         ),
-        (
-            'polygon',
+        param(
+            "polygon",
             (
                 ((35, 10), (45, 45), (15, 40), (10, 20), (35, 10)),
                 ((20, 30), (35, 35), (30, 20), (20, 30)),
             ),
             (
-                'POLYGON ((35 10, 45 45, 15 40, 10 20, 35 10), '
-                + '(20 30, 35 35, 30 20, 20 30))'
+                "((35.0 10.0, 45.0 45.0, 15.0 40.0, 10.0 20.0, 35.0 10.0), "
+                "(20.0 30.0, 35.0 35.0, 30.0 20.0, 20.0 30.0))"
             ),
+            id="polygon",
         ),
-        (
-            'polygon',
+        param(
+            "polygon",
             (((30, 10), (40, 40), (20, 40), (10, 20), (30, 10)),),
-            'POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))',
+            "((30.0 10.0, 40.0 40.0, 20.0 40.0, 10.0 20.0, 30.0 10.0))",
+            id="polygon_single",
         ),
         # Multipart geometries (2D)
-        (
-            'multipoint',
+        param(
+            "multipoint",
             ((10, 40), (40, 30), (20, 20), (30, 10)),
-            'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))',
+            "((10.0 40.0), (40.0 30.0), (20.0 20.0), (30.0 10.0))",
+            id="multipoint",
         ),
-        (
-            'multilinestring',
+        param(
+            "multilinestring",
             (
                 ((10, 10), (20, 20), (10, 40)),
                 ((40, 40), (30, 30), (40, 20), (30, 10)),
             ),
             (
-                'MULTILINESTRING ((10 10, 20 20, 10 40), '
-                + '(40 40, 30 30, 40 20, 30 10))'
+                "((10.0 10.0, 20.0 20.0, 10.0 40.0), "
+                "(40.0 40.0, 30.0 30.0, 40.0 20.0, 30.0 10.0))"
             ),
+            id="multilinestring",
         ),
-        (
-            'multipolygon',
+        param(
+            "multipolygon",
             (
                 (((40, 40), (20, 45), (45, 30), (40, 40)),),
                 (
@@ -465,28 +441,26 @@ def test_geo_dataframe(geotable):
                 ),
             ),
             (
-                'MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)), '
-                + '((20 35, 10 30, 10 10, 30 5, 45 20, 20 35), '
-                + '(30 20, 20 15, 20 25, 30 20)))'
+                "(((40.0 40.0, 20.0 45.0, 45.0 30.0, 40.0 40.0)), "
+                "((20.0 35.0, 10.0 30.0, 10.0 10.0, 30.0 5.0, 45.0 20.0, 20.0 35.0), "  # noqa: E501
+                "(30.0 20.0, 20.0 15.0, 20.0 25.0, 30.0 20.0)))"
             ),
+            id="multipolygon",
         ),
     ],
 )
 def test_geo_literals_smoke(con, shape, value, modifier, expected):
     """Smoke tests for geo spatial literals"""
-    expr_type = '{}{}{}'.format(
-        shape,
-        ';{}'.format(modifier['srid']) if 'srid' in modifier else '',
-        ':{}'.format(modifier['geo_type']) if 'geo_type' in modifier else '',
-    )
-    expr = ibis.literal(value, type=expr_type).name('tmp')
-    result_expected = "SELECT '{}{}'{}".format(
-        'SRID={};'.format(modifier['srid']) if 'srid' in modifier else '',
-        expected,
-        '::{}'.format(modifier['geo_type']) if 'geo_type' in modifier else '',
-    )
+    srid = f";{modifier['srid']}" if "srid" in modifier else ""
+    geo_type = f":{modifier['geo_type']}" if "geo_type" in modifier else ""
+    expr_type = f"{shape.upper()} {srid}{geo_type}"
+    expr = ibis.literal(value, type=expr_type).name("tmp")
+    prefix = f"SRID={modifier['srid']};" if "srid" in modifier else ""
+    suffix = f"::{modifier['geo_type']}" if "geo_type" in modifier else ""
 
-    assert str(con.compile(expr)) == result_expected
+    result = str(con.compile(expr))
+    expected = f"SELECT '{prefix}{shape.upper()} {expected}'{suffix} AS tmp"
+    assert result == expected
 
 
 @pytest.mark.parametrize(

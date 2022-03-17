@@ -3,7 +3,6 @@ import enum
 import functools
 import operator
 
-import numpy as np
 import pandas as pd
 import pyspark
 import pyspark.sql.functions as F
@@ -18,7 +17,7 @@ import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
 from ibis.expr.timecontext import adjust_context
-from ibis.util import guid
+from ibis.util import frozendict, guid
 
 from .datatypes import (
     ibis_array_dtype_to_spark_dtype,
@@ -369,12 +368,8 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
             return set(value)
         else:
             return value
-    elif isinstance(value, list):
-        return F.array(*(F.lit(v) for v in value))
-    elif isinstance(value, np.ndarray):
-        # Unpack np.generic's using .item(), otherwise Spark
-        # will not accept
-        return F.array(*(F.lit(v.item()) for v in value))
+    elif isinstance(value, tuple):
+        return F.array(*map(F.lit, value))
     else:
         return F.lit(value)
 
@@ -1818,10 +1813,11 @@ def compile_dropna_table(t, expr, scope, timecontext, **kwargs):
 def compile_fillna_table(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     table = t.translate(op.table, scope, timecontext)
+    raw_replacements = op.replacements
     replacements = (
-        op.replacements.op().value
-        if hasattr(op.replacements, 'op')
-        else op.replacements
+        dict(raw_replacements)
+        if isinstance(raw_replacements, frozendict)
+        else raw_replacements.op().value
     )
     return table.fillna(replacements)
 

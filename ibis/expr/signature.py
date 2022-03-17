@@ -1,6 +1,6 @@
-import copy
 import inspect
-from typing import Any, Callable, Dict
+from abc import ABCMeta
+from typing import Any, Callable, Hashable
 
 from ibis import util
 
@@ -29,7 +29,7 @@ class Optional(Validator):
 
     def __init__(self, validator, default=None):
         self.validator = validator
-        self.default = copy.deepcopy(default)
+        self.default = default
 
     def __call__(self, arg, **kwargs):
         if arg is None:
@@ -72,6 +72,7 @@ class Parameter(inspect.Parameter):
         if self.validator is EMPTY:
             return arg
         else:
+            # TODO(kszucs): use self._validator
             return self.validator(arg, this=this)
 
 
@@ -131,7 +132,7 @@ def Argument(validator, default=EMPTY):
         return Optional(validator, default=default)
 
 
-class AnnotableMeta(type):
+class AnnotableMeta(ABCMeta):
     """
     Metaclass to turn class annotations into a validatable function signature.
     """
@@ -165,48 +166,58 @@ class AnnotableMeta(type):
 
         return super().__new__(metacls, clsname, bases, attribs)
 
+    def __call__(cls, *args, **kwargs):
+        bound = cls.__signature__.bind(*args, **kwargs)
+        bound.apply_defaults()
 
-class Annotable(metaclass=AnnotableMeta):
+        kwargs = {}
+        for name, value in bound.arguments.items():
+            param = cls.__signature__.parameters[name]
+            kwargs[name] = param.validate(kwargs, value)
+
+        instance = super().__call__(**kwargs)
+        instance.__post_init__()
+        return instance
+
+
+class Annotable(Hashable, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __slots__ = ("_args",)
+    __slots__ = ("args", "_hash")
 
-    def __init__(self, *args, **kwargs):
-        bound = self.__signature__.bind(*args, **kwargs)
-        bound.apply_defaults()
-        for name, value in bound.arguments.items():
-            param = self.__signature__.parameters[name]
-            setattr(self, name, param.validate(self, value))
-        self._validate()
-        self._args = None  # materialize _args lazily
+    def __init__(self, **kwargs):
+        for name, value in kwargs.items():
+            object.__setattr__(self, name, value)
 
-    def _validate(self):
-        pass
+    # TODO(kszucs): split for better __init__ composability but we can
+    # directly call it from __init__ too
+    def __post_init__(self):
+        args = tuple(getattr(self, name) for name in self.argnames)
+        object.__setattr__(self, "args", args)
+        object.__setattr__(self, "_hash", hash(args))
 
     def __eq__(self, other) -> bool:
         if self is other:
             return True
         return type(self) == type(other) and self.args == other.args
 
-    def __getstate__(self) -> Dict[str, Any]:
-        return {key: getattr(self, key) for key in self.argnames}
+    def __hash__(self):
+        return self._hash
 
-    @property
-    def args(self):
-        if (result := self._args) is None:
-            result = self._args = tuple(
-                getattr(self, key) for key in self.argnames
-            )
-        return result
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(
+            f"Attribute {name!r} cannot be assigned to immutable instance of "
+            f"type {type(self)}"
+        )
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
-        """Set state after unpickling.
+    @classmethod
+    def _reconstruct(cls, kwargs):
+        # bypass AnnotableMeta.__call__() when deserializing
+        self = cls.__new__(cls)
+        self.__init__(**kwargs)
+        self.__post_init__()
+        return self
 
-        Parameters
-        ----------
-        state
-            A dictionary storing the objects attributes.
-        """
-        self._args = None
-        for key, value in state.items():
-            setattr(self, key, value)
+    def __reduce__(self):
+        kwargs = dict(zip(self.argnames, self.args))
+        return (self._reconstruct, (kwargs,))
