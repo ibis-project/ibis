@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Hashable, Mapping
+from typing import TYPE_CHECKING, Any, Hashable, Mapping, MutableMapping
 
 from public import public
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 @public
-class Expr:
+class Expr(util.EqMixin):
     """Base expression class"""
 
     def _type_display(self) -> str:
@@ -51,7 +51,7 @@ class Expr:
             return repr(result)
 
     def __hash__(self) -> int:
-        return hash((self.__class__, self._safe_name, self._arg))
+        return hash(self._key)
 
     def __bool__(self) -> bool:
         raise ValueError(
@@ -306,9 +306,22 @@ class Expr:
         else:
             return True
 
-    def equals(self, other, cache=None):
-        if type(self) != type(other):
-            return False
+    def equals(
+        self, other: Any, cache: MutableMapping[Hashable, bool] | None = None
+    ) -> bool:
+        return super().equals(other, cache=cache)
+
+    def _type_check(self, other: Any) -> None:
+        if not isinstance(other, Expr):
+            raise TypeError(
+                f"Cannot compare non-Expr object {type(other)} with Expr"
+            )
+
+    def __component_eq__(
+        self,
+        other: ir.Expr,
+        cache: MutableMapping[Hashable, bool] | None = None,
+    ) -> bool:
         return self._arg.equals(other._arg, cache=cache)
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import ast
 import builtins
 import collections
@@ -13,10 +14,12 @@ import typing
 import uuid as _uuid
 from typing import (
     AbstractSet,
+    Hashable,
     Iterable,
     Iterator,
     Literal,
     Mapping,
+    MutableMapping,
     NamedTuple,
     Sequence,
     TypeVar,
@@ -40,7 +43,7 @@ except ImportError:
     IS_SHAPELY_AVAILABLE = False
 
 
-class DataType:
+class DataType(util.CachedEqMixin):
     """Base class for all data types."""
 
     nullable: bool
@@ -83,11 +86,17 @@ class DataType:
         }
         return self.__class__(nullable=nullable, **slots)
 
-    def __eq__(self, other) -> bool:
-        return self.equals(other)
-
-    def __ne__(self, other) -> bool:
-        return not (self == other)
+    def equals(
+        self,
+        other: typing.Any,
+        cache: MutableMapping[Hashable, bool] | None = None,
+    ) -> bool:
+        if not isinstance(other, DataType):
+            raise TypeError(
+                'Comparing datatypes to other types is not allowed. Convert '
+                f'{other!r} to the equivalent DataType instance.'
+            )
+        return super().equals(other, cache=cache)
 
     def _make_hash(self) -> int:
         custom_parts = tuple(getattr(self, slot) for slot in self._slot_list)
@@ -113,26 +122,29 @@ class DataType:
         """Return the name of the data type."""
         return self.__class__.__name__
 
-    def equals(
+    def __component_eq__(
         self,
         other: DataType,
-        cache: Mapping[typing.Any, bool] | None = None,
+        cache: MutableMapping[Hashable, bool],
     ) -> bool:
-        """Return whether this data type equals `other`."""
-        if isinstance(other, str):
-            raise TypeError(
-                'Comparing datatypes to strings is not allowed. Convert '
-                f'{other!r} to the equivalent DataType instance.'
-            )
-        return (
-            isinstance(other, self.__class__)
-            and self.nullable == other.nullable
-            and self._slot_list == other._slot_list
-            and all(
-                getattr(self, slot) == getattr(other, slot)
-                for slot in self._slot_list
-            )
+        return self.nullable == other.nullable and self.__fields_eq__(
+            other, cache=cache
         )
+
+    @abc.abstractmethod
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        """Return whether the fields of two datatypes are equal."""
+
+    def _type_check(self, other: typing.Any) -> None:
+        if not isinstance(other, DataType):
+            raise TypeError(
+                "invalid equality comparison between "
+                f"DataType and {type(other)}"
+            )
 
     def castable(self, target, **kwargs):
         """Return whether this data type is castable to `target`."""
@@ -156,11 +168,25 @@ class Any(DataType):
 
     __slots__ = ()
 
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return True
+
 
 class Primitive(DataType):
     """Values with known size."""
 
     __slots__ = ()
+
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return True
 
 
 class Null(DataType):
@@ -171,11 +197,25 @@ class Null(DataType):
 
     __slots__ = ()
 
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return True
+
 
 class Variadic(DataType):
     """Values with unknown size."""
 
     __slots__ = ()
+
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return True
 
 
 class Boolean(Primitive):
@@ -277,6 +317,13 @@ class Timestamp(DataType):
         self.timezone = timezone
         if timezone is not None:
             self._pretty += f"({timezone!r})"
+
+    def __fields_eq__(
+        self,
+        other: Timestamp,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.timezone == other.timezone
 
 
 class SignedInteger(Integer):
@@ -457,6 +504,13 @@ class Decimal(DataType):
         """Return the largest decimal type."""
         return Decimal(38, self.scale)
 
+    def __fields_eq__(
+        self,
+        other: Decimal,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.precision == other.precision and self.scale == other.scale
+
 
 class Interval(DataType):
     """Interval values."""
@@ -524,7 +578,7 @@ class Interval(DataType):
 
         self.unit = unit
         self.value_type = value_type
-        self._pretty += f"<{self.value_type.name.lower()}>(unit={self.unit!r})"
+        self._pretty += f"<{self.value_type}>(unit={self.unit!r})"
 
     @property
     def bounds(self):
@@ -534,6 +588,16 @@ class Interval(DataType):
     def resolution(self):
         """The interval unit's name."""
         return self._units[self.unit]
+
+    def __fields_eq__(
+        self,
+        other: Interval,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.unit == other.unit and self.value_type.equals(
+            other.value_type,
+            cache=cache,
+        )
 
 
 class Category(DataType):
@@ -559,6 +623,13 @@ class Category(DataType):
             return int64
         else:
             return infer(self.cardinality)
+
+    def __fields_eq__(
+        self,
+        other: Category,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.cardinality == other.cardinality
 
 
 class Struct(DataType):
@@ -602,7 +673,7 @@ class Struct(DataType):
         self.names = names
         self.types = types
         self._pretty += "<{}>".format(
-            ', '.join(map("{}: {}".format, names, types))
+            ", ".join(map("{}: {}".format, self.names, self.types))
         )
 
     @classmethod
@@ -640,6 +711,17 @@ class Struct(DataType):
             )
         )
 
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.names == other.names and util.seq_eq(
+            self.types,
+            other.types,
+            cache=cache,
+        )
+
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
             self.name, list(self.pairs.items()), self.nullable
@@ -663,6 +745,13 @@ class Array(Variadic):
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.value_type}>"
 
+    def __fields_eq__(
+        self,
+        other: Array,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.value_type.equals(other.value_type, cache=cache)
+
 
 class Set(Variadic):
     """Set values."""
@@ -680,6 +769,13 @@ class Set(Variadic):
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.value_type}>"
+
+    def __fields_eq__(
+        self,
+        other: Set,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.value_type.equals(other.value_type, cache=cache)
 
 
 class Enum(DataType):
@@ -702,6 +798,16 @@ class Enum(DataType):
         self.rep_type = dtype(rep_type)
         self.value_type = dtype(value_type)
 
+    def __fields_eq__(
+        self,
+        other: Enum,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.rep_type.equals(
+            other.rep_type,
+            cache=cache,
+        ) and self.value_type.equals(other.value_type, cache=cache)
+
 
 class Map(Variadic):
     """Associative array values."""
@@ -722,6 +828,16 @@ class Map(Variadic):
         self.key_type = dtype(key_type)
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.key_type}, {self.value_type}>"
+
+    def __fields_eq__(
+        self,
+        other: Map,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.key_type.equals(
+            other.key_type,
+            cache=cache,
+        ) and self.value_type.equals(other.value_type, cache=cache)
 
 
 class JSON(String):
@@ -786,6 +902,13 @@ class GeoSpatial(DataType):
             self._pretty += ':' + self.geotype
         if self.srid is not None:
             self._pretty += ';' + str(self.srid)
+
+    def __fields_eq__(
+        self,
+        other: GeoSpatial,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.geotype == other.geotype and self.srid == other.srid
 
 
 class Geometry(GeoSpatial):
@@ -881,6 +1004,13 @@ class UUID(DataType):
     column = ir.UUIDColumn
 
     __slots__ = ()
+
+    def __fields_eq__(
+        self,
+        other: DataType,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return True
 
 
 class MACADDR(String):

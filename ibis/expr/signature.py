@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import inspect
 from abc import ABCMeta
-from typing import Any, Callable, Hashable
+from typing import Any, Callable, Hashable, MutableMapping
 
 from ibis import util
 
@@ -180,10 +182,10 @@ class AnnotableMeta(ABCMeta):
         return instance
 
 
-class Annotable(Hashable, metaclass=AnnotableMeta):
+class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __slots__ = ("args", "_hash")
+    __slots__ = "args", "_hash"
 
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
@@ -194,12 +196,14 @@ class Annotable(Hashable, metaclass=AnnotableMeta):
     def __post_init__(self):
         args = tuple(getattr(self, name) for name in self.argnames)
         object.__setattr__(self, "args", args)
-        object.__setattr__(self, "_hash", hash(args))
+        object.__setattr__(self, "_hash", hash((type(self), args)))
 
-    def __eq__(self, other) -> bool:
-        if self is other:
-            return True
-        return type(self) == type(other) and self.args == other.args
+    def _type_check(self, other: Any) -> None:
+        if type(self) != type(other):
+            raise TypeError(
+                "invalid equality comparison between "
+                f"{type(self)} and {type(other)}"
+            )
 
     def __hash__(self):
         return self._hash
@@ -221,3 +225,33 @@ class Annotable(Hashable, metaclass=AnnotableMeta):
     def __reduce__(self):
         kwargs = dict(zip(self.argnames, self.args))
         return (self._reconstruct, (kwargs,))
+
+    def __component_eq__(
+        self,
+        other: Annotable,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.args == other.args
+
+    def __getstate__(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in self.argnames}
+
+    def flat_args(self):
+        for arg in self.args:
+            if util.is_iterable(arg):
+                yield from arg
+            else:
+                yield arg
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Set state after unpickling.
+
+        Parameters
+        ----------
+        state
+            A dictionary storing the objects attributes.
+        """
+        self._args = None
+        self._hash = None
+        for key, value in state.items():
+            setattr(self, key, value)

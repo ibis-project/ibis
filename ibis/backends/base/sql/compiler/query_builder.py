@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Hashable, MutableMapping
 
 import toolz
 
@@ -177,7 +178,7 @@ class TableSetFormatter:
         return buf.getvalue()
 
 
-class Select(DML):
+class Select(DML, util.CachedEqMixin):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -236,42 +237,26 @@ class Select(DML):
         )
         return translator.get_result()
 
-    def equals(self, other, cache=None):
-        if cache is None:
-            cache = {}
-
-        key = self, other
-
-        try:
-            return cache[key]
-        except KeyError:
-            cache[key] = result = self is other or (
-                isinstance(other, Select)
-                and self.limit == other.limit
-                and ops.all_equal(self._all_exprs(), other._all_exprs())
-            )
-            return result
+    def __component_eq__(
+        self,
+        other: Select,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.limit == other.limit and util.seq_eq(
+            self._all_exprs(),
+            other._all_exprs(),
+        )
 
     def _all_exprs(self):
-        # Gnarly, maybe we can improve this somehow
-        expr_attrs = (
-            'select_set',
-            'table_set',
-            'where',
-            'group_by',
-            'having',
-            'order_by',
-            'subqueries',
-        )
-        exprs = []
-        for attr in expr_attrs:
-            val = getattr(self, attr)
-            if isinstance(val, list):
-                exprs.extend(val)
-            else:
-                exprs.append(val)
-
-        return exprs
+        return [
+            *self.select_set,
+            self.table_set,
+            *self.where,
+            *self.group_by,
+            *self.having,
+            *self.order_by,
+            *self.subqueries,
+        ]
 
     def compile(self):
         """
@@ -328,7 +313,7 @@ class Select(DML):
 
         buf = []
 
-        for i, expr in enumerate(self.subqueries):
+        for expr in self.subqueries:
             formatted = util.indent(context.get_compiled_expr(expr), 2)
             alias = context.get_ref(expr)
             buf.append(f'{alias} AS (\n{formatted}\n)')

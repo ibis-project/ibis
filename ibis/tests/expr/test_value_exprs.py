@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import toolz
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -126,10 +127,10 @@ multipolygon1 = [polygon1, polygon2]
         (tuple(multipoint), 'multipoint'),
         (list(multipolygon1), 'multipolygon'),
         (tuple(multipolygon1), 'multipolygon'),
-        pytest.param(uuid.uuid4(), 'uuid', id='uuid'),
-        pytest.param(str(uuid.uuid4()), 'uuid', id='uuid_str'),
-        pytest.param(Decimal("234.234"), "decimal(6, 3)", id="decimal_native"),
-        pytest.param(234234, "decimal(6, 3)", id="decimal_int"),
+        param(uuid.uuid4(), 'uuid', id='uuid'),
+        param(str(uuid.uuid4()), 'uuid', id='uuid_str'),
+        param(Decimal("234.234"), "decimal(6, 3)", id="decimal_native"),
+        param(234234, "decimal(6, 3)", id="decimal_int"),
     ],
 )
 def test_literal_with_explicit_type(value, expected_type):
@@ -1033,22 +1034,24 @@ def test_scalar_parameter_set():
             ibis.param(dt.timestamp),
             False,
         ),
-        (
-            # different Python class, left side is param
-            ibis.param(dt.timestamp),
-            dt.date,
-            False,
-        ),
-        (
-            # different Python class, right side is param
-            dt.date,
-            ibis.param(dt.timestamp),
-            False,
-        ),
     ],
 )
 def test_scalar_parameter_compare(left, right, expected):
     assert left.equals(right) == expected
+
+
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        # different Python class, left side is param
+        param(ibis.param(dt.timestamp), dt.date, id="param_dtype"),
+        # different Python class, right side is param
+        param(dt.date, ibis.param(dt.timestamp), id="dtype_param"),
+    ],
+)
+def test_scalar_parameter_invalid_compare(left, right):
+    with pytest.raises(TypeError):
+        left.equals(right)
 
 
 @pytest.mark.parametrize(
@@ -1440,3 +1443,12 @@ def test_repr_html():
 )
 def test_coalesce_type_inference_with_nulls(expr, expected_type):
     assert expr.type() == expected_type
+
+
+def test_literal_hash():
+    expr = ibis.literal(1)
+    op = expr.op()
+    # hashing triggers computation and storage of the op's hash
+    result1 = hash(op)
+    assert op._hash == result1
+    assert hash(op) == result1

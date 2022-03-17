@@ -147,6 +147,8 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "--benchmark-skip",
+  "--benchmark-group-by=name",
+  "--benchmark-sort=name",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = ["site-packages", "dist-packages"]

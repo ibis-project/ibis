@@ -30,30 +30,23 @@ def test_validate_type():
         ([dt.uint8], dt.Array(dt.uint8)),
         ([dt.float32, dt.float64], dt.Array(dt.float64)),
         ({dt.string}, dt.Set(dt.string)),
-        ('point', dt.point),
-        ('point;4326', dt.point),
-        ('point;4326:geometry', dt.point),
-        ('point;4326:geography', dt.point),
-        ('linestring', dt.linestring),
-        ('linestring;4326', dt.linestring),
-        ('linestring;4326:geometry', dt.linestring),
-        ('linestring;4326:geography', dt.linestring),
-        ('polygon', dt.polygon),
-        ('polygon;4326', dt.polygon),
-        ('polygon;4326:geometry', dt.polygon),
-        ('polygon;4326:geography', dt.polygon),
-        ('multilinestring', dt.multilinestring),
-        ('multilinestring;4326', dt.multilinestring),
-        ('multilinestring;4326:geometry', dt.multilinestring),
-        ('multilinestring;4326:geography', dt.multilinestring),
-        ('multipoint', dt.multipoint),
-        ('multipoint;4326', dt.multipoint),
-        ('multipoint;4326:geometry', dt.multipoint),
-        ('multipoint;4326:geography', dt.multipoint),
-        ('multipolygon', dt.multipolygon),
-        ('multipolygon;4326', dt.multipolygon),
-        ('multipolygon;4326:geometry', dt.multipolygon),
-        ('multipolygon;4326:geography', dt.multipolygon),
+    ]
+    + [
+        (f"{cls.__name__.lower()}{suffix}", expected)
+        for cls in [
+            dt.Point,
+            dt.LineString,
+            dt.Polygon,
+            dt.MultiLineString,
+            dt.MultiPoint,
+            dt.MultiPolygon,
+        ]
+        for suffix, expected in [
+            ("", cls()),
+            (";4326", cls(srid=4326)),
+            (";4326:geometry", cls(geotype="geometry", srid=4326)),
+            (";4326:geography", cls(geotype="geography", srid=4326)),
+        ]
     ],
 )
 def test_dtype(spec, expected):

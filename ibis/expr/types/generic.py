@@ -4,6 +4,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Hashable,
     Iterable,
     MutableMapping,
     Sequence,
@@ -40,16 +41,16 @@ class ValueExpr(Expr):
         self._name = name
         self._dtype = dtype
 
-    def equals(
+    def __component_eq__(
         self,
-        other: Any,
-        cache: MutableMapping[Any, bool] | None = None,
+        other: ValueExpr,
+        cache: MutableMapping[Hashable, bool] | None = None,
     ) -> bool:
         return (
             isinstance(other, ValueExpr)
             and self._name == other._name
-            and self._dtype == other._dtype
-            and super().equals(other, cache=cache)
+            and self._dtype.equals(other._dtype, cache=cache)
+            and super().__component_eq__(other, cache=cache)
         )
 
     def has_name(self) -> bool:

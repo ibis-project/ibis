@@ -1,4 +1,7 @@
-"""Ibis util functions."""
+"""Ibis utility functions."""
+from __future__ import annotations
+
+import abc
 import collections
 import functools
 import itertools
@@ -13,13 +16,10 @@ from typing import (
     Hashable,
     Iterable,
     Iterator,
-    List,
     Mapping,
-    Optional,
+    MutableMapping,
     Sequence,
-    Type,
     TypeVar,
-    Union,
 )
 from uuid import uuid4
 
@@ -85,7 +85,7 @@ def indent(text: str, spaces: int) -> str:
     return ''.join(prefix + line for line in text.splitlines(True))
 
 
-def is_one_of(values: Sequence[T], t: Type[U]) -> Iterator[bool]:
+def is_one_of(values: Sequence[T], t: type[U]) -> Iterator[bool]:
     """Check if the type of each value is the same of the given type.
 
     Parameters
@@ -104,7 +104,7 @@ any_of = toolz.compose(any, is_one_of)
 all_of = toolz.compose(all, is_one_of)
 
 
-def promote_list(val: Union[V, Sequence[V]]) -> List[V]:
+def promote_list(val: V | Sequence[V]) -> list[V]:
     """Ensure that the value is a list.
 
     Parameters
@@ -363,7 +363,7 @@ def get_logger(
 
 
 # taken from the itertools documentation
-def consume(iterator: Iterator[T], n: Optional[int] = None) -> None:
+def consume(iterator: Iterator[T], n: int | None = None) -> None:
     """Advance the iterator n-steps ahead. If n is None, consume entirely.
 
     Parameters
@@ -439,3 +439,100 @@ def deprecated(*, instead, version=''):
         return wrapper
 
     return decorator
+
+
+class EqMixin(abc.ABC):
+    """A mixin for abstracting equality checks."""
+
+    __slots__ = ()
+
+    def __eq__(self, other: Any) -> bool | NotImplemented:
+        try:
+            return self.equals(other, cache={})
+        except TypeError:
+            return NotImplemented
+
+    def __ne__(self, other: Any) -> bool | NotImplemented:
+        return not (self == other)
+
+    def equals(
+        self,
+        other: Any,
+        cache: MutableMapping[Hashable, bool] | None = None,
+    ) -> bool:
+        if self is other:
+            return True
+
+        self._type_check(other)
+        return self.__component_eq__(other, cache=cache)
+
+    def _type_check(self, other: Any) -> None:
+        """Check whether `self` can be compared with `other`."""
+        if type(self) != type(other):
+            raise TypeError(
+                "invalid equality comparison between "
+                f"{type(self)} and {type(other)}"
+            )
+
+    @abc.abstractmethod
+    def __component_eq__(
+        self,
+        other: Any,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        """Compare the individual fields of a subclass."""
+
+
+class CachedEqMixin(EqMixin):
+    """A mixin for abstracting cached equality checks."""
+
+    __slots__ = ()
+
+    def equals(
+        self,
+        other: Hashable,
+        cache: MutableMapping[Hashable, bool] | None = None,
+    ) -> bool:
+        if cache is None:
+            cache = {}
+
+        key = self, other
+
+        if (result := cache.get(key)) is None:
+            # only type check if we're going to do the comparison
+            self._type_check(other)
+            result = cache[key] = self is other or (
+                self._hash == other._hash
+                and self.__component_eq__(other, cache=cache)
+            )
+        return result
+
+
+C = TypeVar("C", bound=CachedEqMixin)
+
+
+def seq_eq(
+    lefts: Sequence[C],
+    rights: Sequence[C],
+    *,
+    cache: MutableMapping[Hashable, bool],
+) -> bool:
+    """Compare two sequences of expressions.
+
+    Parameters
+    ----------
+    lefts
+        Iterable of expressions
+    rights
+        Iterable of expressions
+    cache
+        Mutable mapping of expression pairs to bool
+
+    Returns
+    -------
+    bool
+        Whether the expressions of `lefts` and `rights` are equal
+    """
+    return len(lefts) == len(rights) and all(
+        left.equals(right, cache=cache) for left, right in zip(lefts, rights)
+    )
