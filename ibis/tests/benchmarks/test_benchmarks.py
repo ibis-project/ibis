@@ -1,3 +1,4 @@
+import copy
 import functools
 import itertools
 import string
@@ -340,8 +341,9 @@ def test_execute(benchmark, expression_fn, pt):
     benchmark(expr.execute)
 
 
-def test_repr_tpc_h02(benchmark):
-    part = ibis.table(
+@pytest.fixture
+def part():
+    return ibis.table(
         dict(
             p_partkey="int64",
             p_size="int64",
@@ -350,7 +352,11 @@ def test_repr_tpc_h02(benchmark):
         ),
         name="part",
     )
-    supplier = ibis.table(
+
+
+@pytest.fixture
+def supplier():
+    return ibis.table(
         dict(
             s_suppkey="int64",
             s_nationkey="int64",
@@ -362,7 +368,11 @@ def test_repr_tpc_h02(benchmark):
         ),
         name="supplier",
     )
-    partsupp = ibis.table(
+
+
+@pytest.fixture
+def partsupp():
+    return ibis.table(
         dict(
             ps_partkey="int64",
             ps_suppkey="int64",
@@ -370,14 +380,25 @@ def test_repr_tpc_h02(benchmark):
         ),
         name="partsupp",
     )
-    nation = ibis.table(
+
+
+@pytest.fixture
+def nation():
+    return ibis.table(
         dict(n_nationkey="int64", n_regionkey="int64", n_name="string"),
         name="nation",
     )
-    region = ibis.table(
+
+
+@pytest.fixture
+def region():
+    return ibis.table(
         dict(r_regionkey="int64", r_name="string"), name="region"
     )
 
+
+@pytest.fixture
+def tpc_h02(part, supplier, partsupp, nation, region):
     REGION = "EUROPE"
     SIZE = 25
     TYPE = "BRASS"
@@ -420,7 +441,7 @@ def test_repr_tpc_h02(benchmark):
         ]
     )
 
-    expr = q.sort_by(
+    return q.sort_by(
         [
             ibis.desc(q.s_acctbal),
             q.n_name,
@@ -429,7 +450,9 @@ def test_repr_tpc_h02(benchmark):
         ]
     ).limit(100)
 
-    benchmark(repr, expr)
+
+def test_repr_tpc_h02(benchmark, tpc_h02):
+    benchmark(repr, tpc_h02)
 
 
 def test_repr_huge_union(benchmark):
@@ -478,3 +501,7 @@ def test_complex_datatype_builtins(benchmark, func):
         )
     )
     benchmark(func, datatype)
+
+
+def test_large_expr_equals(benchmark, tpc_h02):
+    benchmark(ir.Expr.equals, tpc_h02, copy.deepcopy(tpc_h02))
