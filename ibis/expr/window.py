@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import functools
-from typing import NamedTuple
+from typing import Hashable, MutableMapping, NamedTuple
 
 import numpy as np
 import pandas as pd
 import toolz
+from cached_property import cached_property
 
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
@@ -83,7 +84,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     return preceding_value
 
 
-class Window:
+class Window(util.CachedEqMixin):
     """A window frame.
 
     Notes
@@ -139,16 +140,29 @@ class Window:
 
         self._validate_frame()
 
-    def __hash__(self) -> int:
+    @cached_property
+    def _hash(self) -> int:
         return hash(
             (
-                tuple(gb.op() for gb in self._group_by),
-                tuple(ob.op() for ob in self._order_by),
-                self.preceding,
-                self.following,
+                *(gb.op() for gb in self._group_by),
+                *(ob.op() for ob in self._order_by),
+                (
+                    self.preceding.op()
+                    if isinstance(self.preceding, ir.Expr)
+                    else self.preceding
+                ),
+                (
+                    self.following.op()
+                    if isinstance(self.following, ir.Expr)
+                    else self.following
+                ),
                 self.how,
+                self.max_lookback,
             )
         )
+
+    def __hash__(self) -> int:
+        return self._hash
 
     def _validate_frame(self):
         preceding_tuple = has_preceding = False
@@ -248,24 +262,18 @@ class Window:
     def combine(self, window):
         if self.how != window.how:
             raise com.IbisInputError(
-                (
-                    "Window types must match. "
-                    "Expecting '{}' Window, got '{}'"
-                ).format(self.how.upper(), window.how.upper())
+                "Window types must match. "
+                f"Expecting {self.how!r} window, got {window.how!r}"
             )
 
-        kwds = {
-            'preceding': _choose_non_empty_val(
-                self.preceding, window.preceding
-            ),
-            'following': _choose_non_empty_val(
-                self.following, window.following
-            ),
-            'max_lookback': self.max_lookback or window.max_lookback,
-            'group_by': self._group_by + window._group_by,
-            'order_by': self._order_by + window._order_by,
-        }
-        return Window(**kwds)
+        return Window(
+            preceding=_choose_non_empty_val(self.preceding, window.preceding),
+            following=_choose_non_empty_val(self.following, window.following),
+            group_by=self._group_by + window._group_by,
+            order_by=self._order_by + window._order_by,
+            max_lookback=self.max_lookback or window.max_lookback,
+            how=self.how,
+        )
 
     def group_by(self, expr):
         new_groups = self._group_by + util.promote_list(expr)
@@ -286,46 +294,28 @@ class Window:
         new_sorts = self._order_by + util.promote_list(expr)
         return self._replace(order_by=new_sorts)
 
-    def equals(self, other, cache=None):
-        import ibis.expr.operations as ops
-
-        if cache is None:
-            cache = {}
-
-        if self is other:
-            cache[self, other] = True
-            return True
-
-        if not isinstance(other, Window):
-            cache[self, other] = False
-            return False
-
-        try:
-            return cache[self, other]
-        except KeyError:
-            pass
-
-        if len(self._group_by) != len(other._group_by) or not ops.all_equal(
-            self._group_by, other._group_by, cache=cache
-        ):
-            cache[self, other] = False
-            return False
-
-        if len(self._order_by) != len(other._order_by) or not ops.all_equal(
-            self._order_by, other._order_by, cache=cache
-        ):
-            cache[self, other] = False
-            return False
-
-        equal = (
-            ops.all_equal(self.preceding, other.preceding, cache=cache)
-            and ops.all_equal(self.following, other.following, cache=cache)
-            and ops.all_equal(
-                self.max_lookback, other.max_lookback, cache=cache
+    def __component_eq__(
+        self,
+        other: Window,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return (
+            len(self._group_by) == len(other._group_by)
+            and len(self._order_by) == len(other._order_by)
+            and self.max_lookback == other.max_lookback
+            and (
+                self.preceding.equals(other.preceding, cache=cache)
+                if isinstance(self.preceding, ir.Expr)
+                else self.preceding == other.preceding
             )
+            and (
+                self.following.equals(other.following, cache=cache)
+                if isinstance(self.following, ir.Expr)
+                else self.following == other.following
+            )
+            and util.seq_eq(self._group_by, other._group_by, cache=cache)
+            and util.seq_eq(self._order_by, other._order_by, cache=cache)
         )
-        cache[self, other] = equal
-        return equal
 
 
 def rows_with_max_lookback(

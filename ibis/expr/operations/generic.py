@@ -1,16 +1,19 @@
+from __future__ import annotations
+
 import datetime
 import decimal
 import enum
 import functools
 import itertools
 import uuid
+from typing import Hashable, MutableMapping
 
 import numpy as np
 import pandas as pd
 from public import public
 
 from ...common import exceptions as com
-from ...util import frozendict
+from ...util import frozendict, seq_eq
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
@@ -43,6 +46,16 @@ class TableColumn(ValueOp):
             )
 
         super().__init__(table=table, name=name)
+
+    def __component_eq__(
+        self,
+        other: TableColumn,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.name == other.name and self.table.equals(
+            other.table,
+            cache=cache,
+        )
 
     def parent(self):
         return self.table
@@ -336,6 +349,13 @@ class ValueList(ValueOp):
 
     def root_tables(self):
         return distinct_roots(*self.values)
+
+    def __component_eq__(
+        self,
+        other: ValueList,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return seq_eq(self.values, other.values, cache=cache)
 
 
 @public

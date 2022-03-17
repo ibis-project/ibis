@@ -1,6 +1,6 @@
-import collections
-import functools
-import itertools
+from __future__ import annotations
+
+from typing import Any, Hashable, MutableMapping
 
 import toolz
 from public import public
@@ -26,48 +26,27 @@ def distinct_roots(*expressions):
 
 
 @public
-def all_equal(left, right, cache=None):
-    """Check whether two objects `left` and `right` are equal.
+class Node(util.CachedEqMixin, Annotable):
+    __slots__ = ('_expr_cached',)
 
-    Parameters
-    ----------
-    left : Union[object, Expr, Node]
-    right : Union[object, Expr, Node]
-    cache : Optional[Dict[Tuple[Node, Node], bool]]
-        A dictionary indicating whether two Nodes are equal
-    """
-    if cache is None:
-        cache = {}
-
-    if util.is_iterable(left):
-        # check that left and right are equal length iterables and that all
-        # of their elements are equal
-        return (
-            util.is_iterable(right)
-            and len(left) == len(right)
-            and all(
-                itertools.starmap(
-                    functools.partial(all_equal, cache=cache), zip(left, right)
-                )
+    def _type_check(self, other: Any) -> None:
+        if not isinstance(other, Node):
+            raise TypeError(
+                f"Cannot compare non-Node object {type(other)} with Node"
             )
+
+    def __component_eq__(
+        self,
+        other: Node,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return len(self.args) == len(other.args) and all(
+            (
+                (self_arg is None and other_arg is None)
+                or self_arg.equals(other_arg, cache=cache)
+            )
+            for self_arg, other_arg in zip(self.args, other.args)
         )
-
-    if hasattr(left, 'equals'):
-        return left.equals(right, cache=cache)
-    return left == right
-
-
-def _maybe_get_op(value):
-    try:
-        return value.op()
-    except AttributeError:
-        return value
-
-
-@public
-class Node(Annotable):
-
-    __slots__ = ("_expr_cached",)
 
     def __repr__(self):
         return self._repr()
@@ -107,38 +86,6 @@ class Node(Annotable):
         # The contents of this node at referentially distinct and may not be
         # analyzed deeper
         return False
-
-    def flat_args(self):
-        for arg in self.args:
-            if not isinstance(arg, str) and isinstance(
-                arg, collections.abc.Iterable
-            ):
-                yield from arg
-            else:
-                yield arg
-
-    def __eq__(self, other):
-        return self.equals(other)
-
-    def __hash__(self):
-        return super().__hash__()
-
-    # eventually we shouldn't need to have equals implemented manually
-    # just offload the work to Signature.__eq__
-    def equals(self, other, cache=None):
-        if cache is None:
-            cache = {}
-
-        key = self, other
-
-        try:
-            return cache[key]
-        except KeyError:
-            cache[key] = result = self is other or (
-                type(self) == type(other)
-                and all_equal(self.args, other.args, cache=cache)
-            )
-            return result
 
     def compatible_with(self, other):
         return self.equals(other)

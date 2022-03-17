@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import collections
+from typing import Hashable, MutableMapping
 
 from multipledispatch import Dispatcher
 
@@ -29,7 +32,7 @@ result : pd.Series
 )
 
 
-class Schema:
+class Schema(util.CachedEqMixin):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -43,7 +46,7 @@ class Schema:
         representing type of each column.
     """
 
-    __slots__ = 'names', 'types', '_name_locs'
+    __slots__ = 'names', 'types', '_name_locs', '_hash'
 
     def __init__(self, names, types):
         if not isinstance(names, list):
@@ -61,6 +64,7 @@ class Schema:
             raise com.IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
+        self._hash = None
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
@@ -74,8 +78,13 @@ class Schema:
             )
         )
 
-    def __hash__(self):
+    def _make_hash(self) -> int:
         return hash((type(self), tuple(self.names), tuple(self.types)))
+
+    def __hash__(self) -> int:
+        if (result := self._hash) is None:
+            result = self._hash = self._make_hash()
+        return result
 
     def __len__(self):
         return len(self.names)
@@ -123,11 +132,16 @@ class Schema:
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return Schema(names, types)
 
-    def equals(self, other, cache=None):
-        return self.names == other.names and self.types == other.types
-
-    def __eq__(self, other):
-        return self.equals(other)
+    def __component_eq__(
+        self,
+        other: Schema,
+        cache: MutableMapping[Hashable, bool],
+    ) -> bool:
+        return self.names == other.names and util.seq_eq(
+            self.types,
+            other.types,
+            cache=cache,
+        )
 
     def __gt__(self, other):
         return set(self.items()) > set(other.items())
