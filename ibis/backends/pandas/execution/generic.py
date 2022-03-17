@@ -388,18 +388,34 @@ def execute_table_column_df_or_df_groupby(op, data, **kwargs):
     return data[op.name]
 
 
-@execute_node.register(ops.Aggregation, pd.DataFrame)
+@execute_node.register(
+    ops.Aggregation,
+    pd.DataFrame,
+    tuple,
+    tuple,
+    tuple,
+    tuple,
+    tuple,
+)
 def execute_aggregation_dataframe(
-    op, data, scope=None, timecontext: Optional[TimeContext] = None, **kwargs
+    op,
+    data,
+    metrics,
+    by,
+    having,
+    predicates,
+    sort_keys,
+    scope=None,
+    timecontext: Optional[TimeContext] = None,
+    **kwargs,
 ):
-    assert op.metrics, 'no metrics found during aggregation execution'
+    assert metrics, 'no metrics found during aggregation execution'
 
-    if op.sort_keys:
+    if sort_keys:
         raise NotImplementedError(
             'sorting on aggregations not yet implemented'
         )
 
-    predicates = op.predicates
     if predicates:
         predicate = functools.reduce(
             operator.and_,
@@ -414,7 +430,7 @@ def execute_aggregation_dataframe(
 
     if op.by:
         grouping_key_pairs = list(
-            zip(op.by, map(operator.methodcaller('op'), op.by))
+            zip(by, map(operator.methodcaller('op'), by))
         )
         grouping_keys = [
             by_op.name
@@ -440,21 +456,21 @@ def execute_aggregation_dataframe(
             execute(metric, scope=scope, timecontext=timecontext, **kwargs),
             metric,
         )
-        for metric in op.metrics
+        for metric in metrics
     ]
 
     result = pd.concat(pieces, axis=1)
 
     # If grouping, need a reset to get the grouping key back as a column
-    if op.by:
+    if by:
         result = result.reset_index()
 
     result.columns = [columns.get(c, c) for c in result.columns]
 
-    if op.having:
+    if having:
         # .having(...) is only accessible on groupby, so this should never
         # raise
-        if not op.by:
+        if not by:
             raise ValueError(
                 'Filtering out aggregation values is not allowed without at '
                 'least one grouping key'
@@ -464,8 +480,8 @@ def execute_aggregation_dataframe(
         predicate = functools.reduce(
             operator.and_,
             (
-                execute(having, scope=scope, timecontext=timecontext, **kwargs)
-                for having in op.having
+                execute(h, scope=scope, timecontext=timecontext, **kwargs)
+                for h in having
             ),
         )
         assert len(predicate) == len(
@@ -963,9 +979,9 @@ def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
 
 
-@execute_node.register(ops.DropNa, pd.DataFrame)
-def execute_node_dropna_dataframe(op, df, **kwargs):
-    subset = [col.get_name() for col in op.subset] if op.subset else None
+@execute_node.register(ops.DropNa, pd.DataFrame, tuple)
+def execute_node_dropna_dataframe(op, df, subset, **kwargs):
+    subset = [col.get_name() for col in subset] if subset else None
     return df.dropna(how=op.how, subset=subset)
 
 
@@ -976,7 +992,7 @@ def execute_node_fillna_dataframe_scalar(op, df, replacements, **kwargs):
 
 @execute_node.register(ops.FillNa, pd.DataFrame)
 def execute_node_fillna_dataframe_dict(op, df, **kwargs):
-    return df.fillna(op.replacements)
+    return df.fillna(dict(op.replacements))
 
 
 @execute_node.register(ops.IfNull, pd.Series, simple_types)

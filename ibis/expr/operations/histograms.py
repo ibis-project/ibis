@@ -19,21 +19,27 @@ class BucketLike(ValueOp):
 @public
 class Bucket(BucketLike):
     arg = rlz.column(rlz.any)
-    buckets = rlz.list_of(rlz.scalar(rlz.any))
+    buckets = rlz.tuple_of(rlz.scalar(rlz.any))
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
     close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
     include_under = rlz.optional(rlz.instance_of(bool), default=False)
     include_over = rlz.optional(rlz.instance_of(bool), default=False)
 
-    def _validate(self):
-        if not len(self.buckets):
+    def __init__(self, buckets, include_under, include_over, **kwargs):
+        if not len(buckets):
             raise ValueError('Must be at least one bucket edge')
-        elif len(self.buckets) == 1:
-            if not self.include_under or not self.include_over:
+        elif len(buckets) == 1:
+            if not include_under or not include_over:
                 raise ValueError(
                     'If one bucket edge provided, must have '
                     'include_under=True and include_over=True'
                 )
+        super().__init__(
+            buckets=buckets,
+            include_under=include_under,
+            include_over=include_over,
+            **kwargs,
+        )
 
     @property
     def nbuckets(self):
@@ -49,12 +55,13 @@ class Histogram(BucketLike):
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
     aux_hash = rlz.optional(rlz.instance_of(str))
 
-    def _validate(self):
-        if self.nbins is None:
-            if self.binwidth is None:
+    def __init__(self, nbins, binwidth, **kwargs):
+        if nbins is None:
+            if binwidth is None:
                 raise ValueError('Must indicate nbins or binwidth')
-        elif self.binwidth is not None:
+        elif binwidth is not None:
             raise ValueError('nbins and binwidth are mutually exclusive')
+        super().__init__(nbins=nbins, binwidth=binwidth, **kwargs)
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -64,14 +71,15 @@ class Histogram(BucketLike):
 @public
 class CategoryLabel(ValueOp):
     arg = rlz.category
-    labels = rlz.list_of(rlz.instance_of(str))
+    labels = rlz.tuple_of(rlz.instance_of(str))
     nulls = rlz.optional(rlz.instance_of(str))
     output_type = rlz.shape_like('arg', dt.string)
 
-    def _validate(self):
-        cardinality = self.arg.type().cardinality
-        if len(self.labels) != cardinality:
+    def __init__(self, arg, labels, **kwargs):
+        cardinality = arg.type().cardinality
+        if len(labels) != cardinality:
             raise ValueError(
                 'Number of labels must match number of '
                 f'categories: {cardinality}'
             )
+        super().__init__(arg=arg, labels=labels, **kwargs)

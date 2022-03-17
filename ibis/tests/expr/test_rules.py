@@ -221,7 +221,7 @@ def test_valid_value_list_of(validator, values, expected):
 
 def test_valid_list_of_extra():
     validator = rlz.list_of(identity)
-    assert validator((3, 2)) == [3, 2]
+    assert validator((3, 2)) == tuple([3, 2])
 
     validator = rlz.list_of(rlz.list_of(rlz.string))
     result = validator([[], ['a']])
@@ -302,11 +302,9 @@ def test_invalid_column_or_scalar(validator, value, expected):
     ],
 )
 def test_valid_column_from(check_table, value, expected):
-    class Test:
-        table = check_table
-
     validator = rlz.column_from("table")
-    assert validator(value, this=Test()).equals(expected)
+    this = dict(table=table)
+    assert validator(value, this=this).equals(expected)
 
 
 @pytest.mark.parametrize(
@@ -322,10 +320,7 @@ def test_valid_column_from(check_table, value, expected):
     ],
 )
 def test_invalid_column_from(check_table, validator, value):
-    class Test:
-        table = check_table
-
-    test = Test()
+    test = dict(table=check_table)
 
     with pytest.raises(IbisTypeError):
         validator(value, this=test)

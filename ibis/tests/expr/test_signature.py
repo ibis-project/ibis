@@ -242,13 +242,13 @@ def test_positional_argument_reordering():
 
 
 def test_copy_default():
-    default = []
+    default = tuple()
 
     class Op(Annotable):
-        arg = Optional(InstanceOf(list), default=default)
+        arg = Optional(InstanceOf(tuple), default=default)
 
     op = Op()
-    assert op.arg is not default
+    assert op.arg is default
 
 
 def test_slots_are_inherited_and_overridable():

@@ -20,9 +20,9 @@ class WindowOp(ValueOp):
 
     display_argnames = False
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.expr = propagate_down_window(self.expr, self.window)
+    def __init__(self, expr, window):
+        expr = propagate_down_window(expr, window)
+        super().__init__(expr=expr, window=window)
 
     def over(self, window):
         new_window = self.window.combine(window)

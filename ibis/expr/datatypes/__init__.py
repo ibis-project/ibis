@@ -12,6 +12,7 @@ import re
 import typing
 import uuid as _uuid
 from typing import (
+    AbstractSet,
     Iterable,
     Iterator,
     Literal,
@@ -21,6 +22,7 @@ from typing import (
     TypeVar,
 )
 
+import numpy as np
 import pandas as pd
 import parsy as p
 import toolz
@@ -30,13 +32,12 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import util
 
-IS_SHAPELY_AVAILABLE = False
 try:
     import shapely.geometry
 
     IS_SHAPELY_AVAILABLE = True
 except ImportError:
-    pass
+    IS_SHAPELY_AVAILABLE = False
 
 
 class DataType:
@@ -148,10 +149,6 @@ class DataType:
     def column_type(self):
         """Return a column expression with this data type."""
         return functools.partial(self.column, dtype=self)
-
-    def _literal_value_hash_key(self, value) -> tuple[DataType, typing.Any]:
-        """Return a hash for `value`."""
-        return self, value
 
 
 class Any(DataType):
@@ -648,21 +645,6 @@ class Struct(DataType):
             self.name, list(self.pairs.items()), self.nullable
         )
 
-    def _literal_value_hash_key(self, value):
-        return self, _tuplize(value.items())
-
-
-def _tuplize(values):
-    """Recursively convert `values` to a tuple of tuples."""
-
-    def tuplize_iter(values):
-        yield from (
-            tuple(tuplize_iter(value)) if util.is_iterable(value) else value
-            for value in values
-        )
-
-    return tuple(tuplize_iter(values))
-
 
 class Array(Variadic):
     """Array values."""
@@ -680,9 +662,6 @@ class Array(Variadic):
         super().__init__(nullable=nullable)
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.value_type}>"
-
-    def _literal_value_hash_key(self, value):
-        return self, _tuplize(value)
 
 
 class Set(Variadic):
@@ -743,9 +722,6 @@ class Map(Variadic):
         self.key_type = dtype(key_type)
         self.value_type = dtype(value_type)
         self._pretty += f"<{self.key_type}, {self.value_type}>"
-
-    def _literal_value_hash_key(self, value):
-        return self, _tuplize(value.items())
 
 
 class JSON(String):
@@ -810,20 +786,6 @@ class GeoSpatial(DataType):
             self._pretty += ':' + self.geotype
         if self.srid is not None:
             self._pretty += ';' + str(self.srid)
-
-    def _literal_value_hash_key(self, value):
-        if IS_SHAPELY_AVAILABLE:
-            geo_shapes = (
-                shapely.geometry.Point,
-                shapely.geometry.LineString,
-                shapely.geometry.Polygon,
-                shapely.geometry.MultiLineString,
-                shapely.geometry.MultiPoint,
-                shapely.geometry.MultiPolygon,
-            )
-            if isinstance(value, geo_shapes):
-                return self, value.wkt
-        return self, value
 
 
 class Geometry(GeoSpatial):
@@ -1705,7 +1667,12 @@ def _normalize_default(typ: DataType, value: object) -> object:
     return value
 
 
-@_normalize.register(Floating, (int, builtins.float))
+@_normalize.register(Integer, (int, builtins.float, np.integer, np.floating))
+def _int(typ: Integer, value: builtins.float) -> builtins.float:
+    return int(value)
+
+
+@_normalize.register(Floating, (int, builtins.float, np.integer, np.floating))
 def _float(typ: Floating, value: builtins.float) -> builtins.float:
     return builtins.float(value)
 
@@ -1723,3 +1690,63 @@ def _uuid_to_str(typ: String, value: _uuid.UUID) -> str:
 @_normalize.register(Decimal, int)
 def _int_to_decimal(typ: Decimal, value: int) -> decimal.Decimal:
     return decimal.Decimal(value).scaleb(-typ.scale)
+
+
+@_normalize.register(Array, (tuple, list, np.ndarray))
+def _array_to_tuple(typ: Array, values: Sequence) -> tuple:
+    return tuple(_normalize(typ.value_type, item) for item in values)
+
+
+@_normalize.register(Set, (set, frozenset))
+def _set_to_frozenset(typ: Set, values: AbstractSet) -> frozenset:
+    return frozenset(_normalize(typ.value_type, item) for item in values)
+
+
+@_normalize.register(Map, dict)
+def _map_to_frozendict(typ: Map, values: Mapping) -> decimal.Decimal:
+    values = {k: _normalize(typ.value_type, v) for k, v in values.items()}
+    return util.frozendict(values)
+
+
+@_normalize.register(Struct, dict)
+def _struct_to_frozendict(typ: Struct, values: Mapping) -> decimal.Decimal:
+    value_types = typ.pairs
+    values = {
+        k: _normalize(typ[k], v) for k, v in values.items() if k in value_types
+    }
+    return util.frozendict(values)
+
+
+@_normalize.register(Point, (tuple, list))
+def _point_to_tuple(typ: Point, values: Sequence) -> tuple:
+    return tuple(_normalize(float64, item) for item in values)
+
+
+@_normalize.register((LineString, MultiPoint), (tuple, list))
+def _linestring_to_tuple(typ: LineString, values: Sequence) -> tuple:
+    return tuple(_normalize(point, item) for item in values)
+
+
+@_normalize.register((Polygon, MultiLineString), (tuple, list))
+def _polygon_to_tuple(typ: Polygon, values: Sequence) -> tuple:
+    return tuple(_normalize(linestring, item) for item in values)
+
+
+@_normalize.register(MultiPolygon, (tuple, list))
+def _multipolygon_to_tuple(typ: MultiPolygon, values: Sequence) -> tuple:
+    return tuple(_normalize(polygon, item) for item in values)
+
+
+class _WellKnownText(NamedTuple):
+    text: str
+
+
+if IS_SHAPELY_AVAILABLE:
+    import shapely.geometry as geom
+
+    @_normalize.register(GeoSpatial, geom.base.BaseGeometry)
+    def _geom_to_wkt(
+        typ: GeoSpatial,
+        base_geom: geom.base.BaseGeometry,
+    ) -> _WellKnownText:
+        return _WellKnownText(base_geom.wkt)

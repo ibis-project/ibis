@@ -16,7 +16,7 @@ import ibis.expr.operations as ops
 )
 def test_array_literal(arg, typestr, type):
     x = ibis.literal(arg, type=typestr)
-    assert x._arg.value == arg
+    assert x._arg.value == tuple(arg)
     assert x.type() == type
 
 

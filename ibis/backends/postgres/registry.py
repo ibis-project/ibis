@@ -6,7 +6,6 @@ import re
 import string
 import warnings
 
-import numpy as np
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.compiler import compiles
@@ -30,6 +29,7 @@ from ibis.backends.base.sql.alchemy import (
     unary,
     variance_reduction,
 )
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import get_col_or_deferred_col
 
 operation_registry = sqlalchemy_operation_registry.copy()
@@ -608,9 +608,11 @@ def _literal(t, expr):
     # geo spatial data type
     elif isinstance(expr, ir.GeoSpatialScalar):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
-        return sa.text(geo.translate_literal(expr, inline_metadata=True))
-    elif isinstance(value, np.ndarray):
-        return sa.literal(value.tolist())
+        return sa.literal_column(
+            geo.translate_literal(expr, inline_metadata=True)
+        )
+    elif isinstance(value, tuple):
+        return sa.literal(value, type_=to_sqla_type(dtype))
     else:
         return sa.literal(value)
 

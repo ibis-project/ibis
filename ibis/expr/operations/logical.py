@@ -52,7 +52,8 @@ class Comparison(BinaryOp):
         :param left:
         :param right:
         """
-        super().__init__(*self._maybe_cast_args(left, right))
+        left, right = self._maybe_cast_args(left, right)
+        super().__init__(left=left, right=right)
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?

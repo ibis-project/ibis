@@ -136,7 +136,7 @@ def _clean_join_predicates(left, right, predicates):
         result.extend(preds)
 
     _validate_join_predicates(left, right, result)
-    return result
+    return tuple(result)
 
 
 def _validate_join_predicates(left, right, predicates):
@@ -157,13 +157,16 @@ def _validate_join_predicates(left, right, predicates):
 class Join(TableNode):
     left = rlz.table
     right = rlz.table
-    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
+    # TODO(kszucs): convert to proper predicate rules
+    predicates = rlz.optional(lambda x, this: x, default=())
 
-    def __init__(self, left, right, predicates):
+    def __init__(self, left, right, predicates, **kwargs):
         left, right, predicates = _make_distinct_join_predicates(
             left, right, predicates
         )
-        super().__init__(left, right, predicates)
+        super().__init__(
+            left=left, right=right, predicates=predicates, **kwargs
+        )
 
     @property
     def schema(self):
@@ -232,36 +235,19 @@ class CrossJoin(Join):
 
 @public
 class AsOfJoin(Join):
-    left = rlz.table
-    right = rlz.table
-    predicates = rlz.list_of(rlz.boolean)
-    by = rlz.optional(
-        rlz.list_of(
-            rlz.one_of(
-                (
-                    rlz.function_of("table"),
-                    rlz.column_from("table"),
-                    rlz.any,
-                )
-            )
-        ),
-        default=[],
-    )
+    # TODO(kszucs): convert to proper predicate rules
+    by = rlz.optional(lambda x, this: x, default=())
     tolerance = rlz.optional(rlz.interval)
 
     def __init__(self, left, right, predicates, by, tolerance):
-        super().__init__(left, right, predicates)
-        self.by = _clean_join_predicates(self.left, self.right, by)
-        self.tolerance = tolerance
-
-        self._validate_args(['by', 'tolerance'])
-
-    def _validate_args(self, args: list[str]):
-        # this should be removed altogether
-        for arg in args:
-            argument = self.__signature__.parameters[arg]
-            value = argument.validate(self, getattr(self, arg))
-            setattr(self, arg, value)
+        by = _clean_join_predicates(left, right, by)
+        super().__init__(
+            left=left,
+            right=right,
+            predicates=predicates,
+            by=by,
+            tolerance=tolerance,
+        )
 
 
 @public
@@ -269,13 +255,14 @@ class SetOp(TableNode, sch.HasSchema):
     left = rlz.table
     right = rlz.table
 
-    def _validate(self):
-        if not self.left.schema().equals(self.right.schema()):
+    def __init__(self, left, right, **kwargs):
+        if not left.schema().equals(right.schema()):
             raise com.RelationError(
                 'Table schemas must be equal for set operations'
             )
+        super().__init__(left=left, right=right, **kwargs)
 
-    @cached_property
+    @property
     def schema(self):
         return self.left.schema()
 
@@ -322,7 +309,7 @@ class Limit(TableNode):
 class SelfReference(TableNode, sch.HasSchema):
     table = rlz.table
 
-    @cached_property
+    @property
     def schema(self):
         return self.table.schema()
 
@@ -351,9 +338,9 @@ class Selection(TableNode, sch.HasSchema):
                 )
             )
         ),
-        default=[],
+        default=(),
     )
-    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
+    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
         rlz.list_of(
             rlz.one_of(
@@ -385,21 +372,28 @@ class Selection(TableNode, sch.HasSchema):
                 )
             )
         ),
-        default=[],
+        default=(),
     )
 
-    def _validate(self):
+    def __init__(self, table, selections, predicates, sort_keys):
         from ibis.expr.analysis import FilterValidator
 
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        dependent_exprs = self.selections + self.sort_keys
-        self.table._assert_valid(dependent_exprs)
+        dependent_exprs = selections + sort_keys
+        table._assert_valid(dependent_exprs)
 
         # Validate predicates
-        validator = FilterValidator([self.table])
-        validator.validate_all(self.predicates)
+        validator = FilterValidator([table])
+        validator.validate_all(predicates)
+
+        super().__init__(
+            table=table,
+            selections=selections,
+            predicates=predicates,
+            sort_keys=sort_keys,
+        )
 
         # Validate no overlapping columns in schema
         assert self.schema
@@ -581,7 +575,7 @@ class Aggregation(TableNode, sch.HasSchema):
             ),
             flatten=True,
         ),
-        default=[],
+        default=(),
     )
     by = rlz.optional(
         rlz.list_of(
@@ -593,7 +587,7 @@ class Aggregation(TableNode, sch.HasSchema):
                 )
             )
         ),
-        default=[],
+        default=(),
     )
     having = rlz.optional(
         rlz.list_of(
@@ -606,9 +600,9 @@ class Aggregation(TableNode, sch.HasSchema):
                 )
             ),
         ),
-        default=[],
+        default=(),
     )
-    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=[])
+    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
         rlz.list_of(
             rlz.one_of(
@@ -640,26 +634,31 @@ class Aggregation(TableNode, sch.HasSchema):
                 )
             )
         ),
-        default=[],
+        default=(),
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if not self.by:
-            self.sort_keys.clear()
-
-    def _validate(self):
+    def __init__(self, table, metrics, by, having, predicates, sort_keys):
         from ibis.expr.analysis import FilterValidator
 
         # All non-scalar refs originate from the input table
-        all_exprs = self.metrics + self.by + self.having + self.sort_keys
-        self.table._assert_valid(all_exprs)
+        all_exprs = metrics + by + having + sort_keys
+        table._assert_valid(all_exprs)
 
         # Validate predicates
-        validator = FilterValidator([self.table])
-        validator.validate_all(self.predicates)
+        validator = FilterValidator([table])
+        validator.validate_all(predicates)
 
+        if not by:
+            sort_keys = tuple()
+
+        super().__init__(
+            table=table,
+            metrics=metrics,
+            by=by,
+            having=having,
+            predicates=predicates,
+            sort_keys=sort_keys,
+        )
         # Validate schema has no overlapping columns
         assert self.schema
 
@@ -723,11 +722,12 @@ class Distinct(TableNode, sch.HasSchema):
 
     table = rlz.table
 
-    def _validate(self):
+    def __init__(self, table):
         # check whether schema has overlapping columns or not
-        assert self.schema
+        assert table.schema()
+        super().__init__(table=table)
 
-    @cached_property
+    @property
     def schema(self):
         return self.table.schema()
 
@@ -766,7 +766,18 @@ class FillNa(TableNode, sch.HasSchema):
         )
     )
 
-    @cached_property
+    def __init__(self, table, replacements, **kwargs):
+        super().__init__(
+            table=table,
+            replacements=(
+                replacements
+                if not isinstance(replacements, collections.abc.Mapping)
+                else util.frozendict(replacements)
+            ),
+            **kwargs,
+        )
+
+    @property
     def schema(self):
         return self.table.schema()
 
@@ -777,9 +788,9 @@ class DropNa(TableNode, sch.HasSchema):
 
     table = rlz.table
     how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.list_of(rlz.column_from("table")), default=[])
+    subset = rlz.optional(rlz.list_of(rlz.column_from("table")), default=())
 
-    @cached_property
+    @property
     def schema(self):
         return self.table.schema()
 

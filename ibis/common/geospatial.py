@@ -1,15 +1,8 @@
 from typing import Iterable, List, TypeVar
 
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common import exceptions as ex
-
-IS_SHAPELY_AVAILABLE = False
-try:
-    import shapely
-
-    IS_SHAPELY_AVAILABLE = True
-except ImportError:
-    ...
 
 NumberType = TypeVar('NumberType', int, float)
 # Geometry primitives (2D)
@@ -137,10 +130,8 @@ def translate_literal(expr, inline_metadata: bool = False) -> str:
     op = expr.op()
     value = op.value
 
-    if IS_SHAPELY_AVAILABLE and isinstance(
-        value, shapely.geometry.base.BaseGeometry
-    ):
-        result = value.wkt
+    if isinstance(value, dt._WellKnownText):
+        result = value.text
     elif isinstance(expr, ir.PointScalar):
         result = translate_point(value)
     elif isinstance(expr, ir.LineStringScalar):

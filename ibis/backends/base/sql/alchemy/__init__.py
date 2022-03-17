@@ -354,7 +354,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _sqla_table_to_expr(self, table: sa.Table) -> ir.TableExpr:
         schema = self._schemas.get(table.name)
-        node = self.table_class(table, self, schema)
+        node = self.table_class(
+            source=self,
+            sqla_table=table,
+            name=table.name,
+            schema=schema,
+        )
         return self.table_expr_class(node)
 
     def table(

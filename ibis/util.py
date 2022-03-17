@@ -10,9 +10,11 @@ import warnings
 from numbers import Real
 from typing import (
     Any,
+    Hashable,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     Sequence,
     Type,
@@ -28,6 +30,33 @@ from ibis.config import options
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
 V = TypeVar("V")
+
+
+class frozendict(Mapping, Hashable):
+
+    __slots__ = ("_dict", "_hash")
+
+    def __init__(self, *args, **kwargs):
+        self._dict = dict(*args, **kwargs)
+        self._hash = hash(tuple(self._dict.items()))
+
+    def __str__(self):
+        return str(self._dict)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._dict!r})"
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def __hash__(self):
+        return self._hash
 
 
 def guid() -> str:
@@ -86,9 +115,12 @@ def promote_list(val: Union[V, Sequence[V]]) -> List[V]:
     -------
     list
     """
-    if not isinstance(val, list):
-        val = [val]
-    return val
+    if isinstance(val, list):
+        return val
+    elif isinstance(val, tuple):
+        return list(val)
+    else:
+        return [val]
 
 
 def is_function(v: Any) -> bool:

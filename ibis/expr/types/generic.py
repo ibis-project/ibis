@@ -605,7 +605,7 @@ class AnyValue(ValueExpr):
         return ops.GroupConcat(self, sep=sep, where=where).to_expr()
 
     def __hash__(self) -> int:
-        return super().__hash__()
+        return hash((self._name, self._dtype, self._arg))
 
     def __eq__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops

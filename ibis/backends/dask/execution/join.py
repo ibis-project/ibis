@@ -16,12 +16,17 @@ from ..execution import constants
 
 
 @execute_node.register(
-    ops.AsOfJoin, dd.DataFrame, dd.DataFrame, (Timedelta, type(None))
+    ops.AsOfJoin,
+    dd.DataFrame,
+    dd.DataFrame,
+    tuple,
+    tuple,
+    (Timedelta, type(None)),
 )
-def execute_asof_join(op, left, right, tolerance, **kwargs):
+def execute_asof_join(op, left, right, predicates, by, tolerance, **kwargs):
     overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
-    left_on, right_on = _extract_predicate_names(op.predicates)
-    left_by, right_by = _extract_predicate_names(op.by)
+    left_on, right_on = _extract_predicate_names(predicates)
+    left_by, right_by = _extract_predicate_names(by)
     _validate_columns(
         overlapping_columns, left_on, right_on, left_by, right_by
     )
@@ -37,8 +42,8 @@ def execute_asof_join(op, left, right, tolerance, **kwargs):
     )
 
 
-@execute_node.register(ops.CrossJoin, dd.DataFrame, dd.DataFrame)
-def execute_cross_join(op, left, right, **kwargs):
+@execute_node.register(ops.CrossJoin, dd.DataFrame, dd.DataFrame, tuple)
+def execute_cross_join(op, left, right, predicates, **kwargs):
     """Execute a cross join in dask.
 
     Notes
@@ -48,6 +53,7 @@ def execute_cross_join(op, left, right, **kwargs):
     by cross join.
 
     """
+    assert not predicates, "cross join should have an empty predicate set"
     # generate a unique name for the temporary join key
     key = f"cross_join_{ibis.util.guid()}"
     join_key = {key: True}
@@ -70,8 +76,8 @@ def execute_cross_join(op, left, right, **kwargs):
 
 
 # TODO - execute_join - #2553
-@execute_node.register(ops.Join, dd.DataFrame, dd.DataFrame)
-def execute_join(op, left, right, **kwargs):
+@execute_node.register(ops.Join, dd.DataFrame, dd.DataFrame, tuple)
+def execute_join(op, left, right, predicates, **kwargs):
     op_type = type(op)
 
     try:
@@ -83,7 +89,7 @@ def execute_join(op, left, right, **kwargs):
     right_op = op.right.op()
 
     on = {left_op: [], right_op: []}
-    for predicate in map(operator.methodcaller('op'), op.predicates):
+    for predicate in map(operator.methodcaller('op'), predicates):
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with dask'

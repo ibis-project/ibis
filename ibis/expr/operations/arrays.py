@@ -10,12 +10,13 @@ from .core import UnaryOp, ValueOp
 class ArrayColumn(ValueOp):
     cols = rlz.value_list_of(rlz.column(rlz.any), min_length=1)
 
-    def _validate(self):
-        if len({col.type() for col in self.cols}) > 1:
+    def __init__(self, cols):
+        if len({col.type() for col in cols}) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
                 f'{type(self).__name__} operation.'
             )
+        super().__init__(cols=cols)
 
     def output_type(self):
         first_dtype = self.cols[0].type()
@@ -52,8 +53,8 @@ class ArrayConcat(ValueOp):
     right = rlz.array
     output_type = rlz.shape_like('left')
 
-    def _validate(self):
-        left_dtype, right_dtype = self.left.type(), self.right.type()
+    def __init__(self, left, right):
+        left_dtype, right_dtype = left.type(), right.type()
         if left_dtype != right_dtype:
             raise com.IbisTypeError(
                 'Array types must match exactly in a {} operation. '
@@ -61,6 +62,7 @@ class ArrayConcat(ValueOp):
                     type(self).__name__, left_dtype, right_dtype
                 )
             )
+        super().__init__(left=left, right=right)
 
 
 @public

@@ -56,7 +56,6 @@ def test_null():
         (1.5, 'double'),
         ('foo', 'string'),
         (b'fooblob', 'binary'),
-        ([1, 2, 3], 'array<int8>'),
     ],
 )
 def test_literal_with_implicit_type(value, expected_type):
@@ -67,6 +66,23 @@ def test_literal_with_implicit_type(value, expected_type):
 
     assert isinstance(expr.op(), ops.Literal)
     assert expr.op().value is value
+
+
+@pytest.mark.parametrize(
+    ['value', 'expected_type', 'expected_value'],
+    [
+        ([1, 2, 3], 'array<int8>', (1, 2, 3)),
+        ([[1, 2], [3, 4]], 'array<array<int8>>', ((1, 2), (3, 4))),
+    ],
+)
+def test_listeral_with_unhashable_values(value, expected_type, expected_value):
+    expr = ibis.literal(value)
+
+    assert isinstance(expr, ir.ScalarExpr)
+    assert expr.type() == dt.dtype(expected_type)
+
+    assert isinstance(expr.op(), ops.Literal)
+    assert expr.op().value == expected_value
 
 
 pointA = (1, 2)
@@ -171,7 +187,7 @@ def test_literal_complex_types(value, expected_type, expected_class):
     assert expr_type.equals(dt.validate_type(expected_type))
     assert isinstance(expr, expected_class)
     assert isinstance(expr.op(), ops.Literal)
-    assert expr.op().value is value
+    assert expr.op().value == dt._normalize(dt.dtype(expected_type), value)
 
 
 def test_simple_map_operations():

@@ -6,6 +6,7 @@ import ibis
 from ibis.expr import datatypes
 from ibis.expr.operations import Literal
 from ibis.tests.util import assert_pickle_roundtrip
+from ibis.util import frozendict
 
 
 def test_literal_equality_basic():
@@ -106,7 +107,9 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
 def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
-    assert a.op().value == value
+    assert a.op().value == frozendict(
+        field1=value['field1'], field2=value['field2']
+    )
     assert a.type() == datatypes.dtype(typestr)
 
 
