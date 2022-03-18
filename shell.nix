@@ -5,7 +5,6 @@ let
   devDeps = with pkgs; [
     cacert
     cachix
-    clickhouse-cli
     commitlint
     curl
     duckdb
