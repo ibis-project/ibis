@@ -551,6 +551,12 @@ def _string_join(translator, expr):
     )
 
 
+def _string_concat(translator, expr):
+    args = expr.op().arg
+    args_formatted = ", ".join(map(translator.translate, args))
+    return f"arrayStringConcat([{args_formatted}])"
+
+
 def _string_like(translator, expr):
     value, pattern = expr.op().args[:2]
     return '{} LIKE {}'.format(
@@ -662,6 +668,7 @@ operation_registry = {
     ops.RStrip: _unary('trimRight'),
     ops.Strip: _unary('trimBoth'),
     ops.Repeat: _fixed_arity("repeat", 2),
+    ops.StringConcat: _string_concat,
     ops.RegexSearch: _fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
