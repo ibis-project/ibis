@@ -269,7 +269,6 @@ def test_integer_to_interval_timestamp(
 # TODO - DateOffset - #2553
 @pytest.mark.notimpl(
     [
-        "clickhouse",
         "dask",
         "datafusion",
         "impala",

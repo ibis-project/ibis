@@ -289,7 +289,7 @@ def _string_join(t, expr):
     sep, elements = expr.op().args
     return functools.reduce(
         operator.add,
-        map(t.translate, toolz.interpose(sep, elements)),
+        toolz.interpose(t.translate(sep), map(t.translate, elements)),
     )
 
 

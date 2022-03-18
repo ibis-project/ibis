@@ -9,7 +9,7 @@ def is_text_type(x):
     return isinstance(x, str)
 
 
-def test_string_col_is_unicode(backend, alltypes, df):
+def test_string_col_is_unicode(alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
     assert df.string_col.map(is_text_type).all()
@@ -262,24 +262,25 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
             id='join',
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.string_col + t.date_string_col,
             lambda t: t.string_col + t.date_string_col,
             id='concat_columns',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(
             lambda t: t.string_col + 'a',
             lambda t: t.string_col + 'a',
             id='concat_column_scalar',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(
             lambda t: 'a' + t.string_col,
             lambda t: 'a' + t.string_col,
             id='concat_scalar_column',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
     ],
 )
