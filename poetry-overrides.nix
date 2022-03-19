@@ -55,4 +55,10 @@ self: super:
       self.pdm-pep517
     ];
   });
+
+  mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
+    propagatedBuildInputs = (attrs.propagatedBuildInputs or [ ]) ++ [
+      self.ipython_genutils
+    ];
+  });
 }
