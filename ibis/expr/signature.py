@@ -337,7 +337,11 @@ class Annotable(Hashable, util.CachedEqMixin, metaclass=AnnotableMeta):
         return (self._reconstruct, (kwargs,))
 
     def __equals__(self, other):
-        return type(self) == type(other) and self.args == other.args
+        return (
+            type(self) == type(other)
+            and self._hash == other._hash
+            and self.args == other.args
+        )
 
     def __getstate__(self) -> dict[str, Any]:
         return {key: getattr(self, key) for key in self.argnames}

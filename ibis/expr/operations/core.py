@@ -45,9 +45,11 @@ class Node(Annotable):
         return self._repr()
 
     def __equals__(self, other):
-        if type(self) != type(other):
-            return False
-        return _compare_tuples(self.args, other.args)
+        return (
+            type(self) == type(other)
+            and self._hash == other._hash
+            and _compare_tuples(self.args, other.args)
+        )
 
     def _repr(self, memo=None):
         if memo is None:

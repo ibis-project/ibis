@@ -108,7 +108,7 @@ def test_mutating_join(backend, con, batting, awards_players, how):
                 df.playerID_y,
             )
         )
-        .drop(['playerID_x', 'playerID_y'], axis=1)[left.columns]
+        .drop(['playerID_x', 'playerID_y'], axis=1)[list(left.columns)]
         .sort_values(result_order)
         .reset_index(drop=True)
     )
@@ -120,7 +120,7 @@ def test_mutating_join(backend, con, batting, awards_players, how):
             how=how,
             on=predicate,
             suffixes=("_x", "_y"),
-        )[left.columns]
+        )[list(left.columns)]
         .sort_values(result_order)
         .reset_index(drop=True)
     )
@@ -156,7 +156,7 @@ def test_filtering_join(backend, con, batting, awards_players, how):
     result = (
         expr.execute()
         .fillna(np.nan)
-        .sort_values(result_order)[left.columns]
+        .sort_values(result_order)[list(left.columns)]
         .reset_index(drop=True)
     )
 
