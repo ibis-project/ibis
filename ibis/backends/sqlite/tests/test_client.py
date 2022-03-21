@@ -59,9 +59,7 @@ def test_compile_toplevel():
     # it works!
     expr = t.foo.sum()
     result = ibis.sqlite.compile(expr)
-    expected = """\
-SELECT sum(t0.foo) AS sum 
-FROM t0 AS t0"""  # noqa: W291
+    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"  # noqa: W291
     assert str(result) == expected
 
 
@@ -90,15 +88,15 @@ def test_verbose_log_queries(con):
     assert query == expected
 
 
-def test_table_equality(dbpath):
-    con1 = ibis.sqlite.connect(dbpath)
-    batting1 = con1.table("batting")
+# def test_table_equality(dbpath):
+#     con1 = ibis.sqlite.connect(dbpath)
+#     batting1 = con1.table("batting")
 
-    con2 = ibis.sqlite.connect(dbpath)
-    batting2 = con2.table("batting")
+#     con2 = ibis.sqlite.connect(dbpath)
+#     batting2 = con2.table("batting")
 
-    assert batting1.op() == batting2.op()
-    assert batting1.equals(batting2)
+#     assert batting1.op() == batting2.op()
+#     assert batting1.equals(batting2)
 
 
 def test_table_inequality(dbpath):
