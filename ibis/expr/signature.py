@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import inspect
 from abc import ABCMeta
-from typing import Any, Callable, Hashable, MutableMapping
+from contextlib import suppress
+from typing import Any, Callable, Hashable
 
+from toolz import curry
+
+import ibis.common.exceptions as com
 from ibis import util
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
@@ -43,6 +47,113 @@ class Optional(Validator):
                 arg = self.default
 
         return self.validator(arg, **kwargs)
+
+
+class validator(curry, Validator):
+    """
+    Enable convenient validator definition by decorating plain functions.
+    """
+
+    def __repr__(self):
+        return '{}({}{})'.format(
+            self.func.__name__,
+            repr(self.args)[1:-1],
+            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
+        )
+
+
+optional = Optional
+
+
+@validator
+def instance_of(klasses, arg, **kwargs):
+    """Require that a value has a particular Python type."""
+    if not isinstance(arg, klasses):
+        raise com.IbisTypeError(
+            f'Given argument with type {type(arg)} '
+            f'is not an instance of {klasses}'
+        )
+    return arg
+
+
+@validator
+def noop(arg, **kwargs):
+    return arg
+
+
+@validator
+def one_of(inners, arg, **kwargs):
+    """At least one of the inner validators must pass"""
+    for inner in inners:
+        with suppress(com.IbisTypeError, ValueError):
+            return inner(arg, **kwargs)
+
+    raise com.IbisTypeError(
+        "argument passes none of the following rules: "
+        f"{', '.join(map(repr, inners))}"
+    )
+
+
+@validator
+def compose_of(inners, arg, **kwargs):
+    """All of the inner validators must pass.
+
+    The order of inner validators matters.
+
+    Parameters
+    ----------
+    inners : List[validator]
+      Functions are applied from right to left so allof([rule1, rule2], arg) is
+      the same as rule1(rule2(arg)).
+    arg : Any
+      Value to be validated.
+
+    Returns
+    -------
+    arg : Any
+      Value maybe coerced by inner validators to the appropiate types
+    """
+    for inner in inners:
+        arg = inner(arg, **kwargs)
+    return arg
+
+
+@validator
+def isin(values, arg, **kwargs):
+    if arg not in values:
+        raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
+    if isinstance(values, dict):  # TODO check for mapping instead
+        return values[arg]
+    else:
+        return arg
+
+
+@validator
+def map_to(mapping, variant, **kwargs):
+    try:
+        return mapping[variant]
+    except KeyError:
+        raise ValueError(f'Unexpected value `{variant}`')
+
+
+@validator
+def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
+    if not util.is_iterable(arg):
+        raise com.IbisTypeError('Argument must be a sequence')
+
+    if len(arg) < min_length:
+        raise com.IbisTypeError(
+            f'Arg must have at least {min_length} number of elements'
+        )
+
+    if flatten:
+        arg = util.flatten_iterable(arg)
+
+    return type(inner(item, **kwargs) for item in arg)
+
+
+# TODO(kszucs): remove list_of rule eventually
+list_of = tuple_of = container_of(type=tuple)
 
 
 class Parameter(inspect.Parameter):
@@ -139,19 +250,22 @@ class AnnotableMeta(ABCMeta):
     Metaclass to turn class annotations into a validatable function signature.
     """
 
+    # TODO(kszucs): add tests for argument order
     def __new__(metacls, clsname, bases, dct):
-        params = {}
+        inherited = {}
         for parent in bases:
             # inherit from parent signatures
             if hasattr(parent, '__signature__'):
-                params.update(parent.__signature__.parameters)
+                inherited.update(parent.__signature__.parameters)
 
         slots = list(dct.pop('__slots__', []))
+        params = {}
         attribs = {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
                 # so we can set directly
                 params[name] = Parameter(name, validator=attrib)
+                inherited.pop(name, None)
                 slots.append(name)
             else:
                 attribs[name] = attrib
@@ -159,7 +273,9 @@ class AnnotableMeta(ABCMeta):
         # mandatory fields without default values must preceed the optional
         # ones in the function signature, the partial ordering will be kept
         params = sorted(
-            params.values(), key=lambda p: p.default is EMPTY, reverse=True
+            list(params.values()) + list(inherited.values()),
+            key=lambda p: p.default is EMPTY,
+            reverse=True,
         )
 
         attribs["__slots__"] = tuple(slots)
@@ -182,7 +298,8 @@ class AnnotableMeta(ABCMeta):
         return instance
 
 
-class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
+# util.CachedEqMixin,
+class Annotable(Hashable, util.CachedEqMixin, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
     __slots__ = "args", "_hash"
@@ -197,13 +314,6 @@ class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
         args = tuple(getattr(self, name) for name in self.argnames)
         object.__setattr__(self, "args", args)
         object.__setattr__(self, "_hash", hash((type(self), args)))
-
-    def _type_check(self, other: Any) -> None:
-        if type(self) != type(other):
-            raise TypeError(
-                "invalid equality comparison between "
-                f"{type(self)} and {type(other)}"
-            )
 
     def __hash__(self):
         return self._hash
@@ -226,12 +336,8 @@ class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
         kwargs = dict(zip(self.argnames, self.args))
         return (self._reconstruct, (kwargs,))
 
-    def __component_eq__(
-        self,
-        other: Annotable,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.args == other.args
+    def __equals__(self, other):
+        return type(self) == type(other) and self.args == other.args
 
     def __getstate__(self) -> dict[str, Any]:
         return {key: getattr(self, key) for key in self.argnames}

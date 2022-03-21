@@ -237,18 +237,18 @@ class Select(DML, util.CachedEqMixin):
         )
         return translator.get_result()
 
-    def __component_eq__(
+    def __equals__(
         self,
         other: Select,
         cache: MutableMapping[Hashable, bool],
     ) -> bool:
-        return self.limit == other.limit and util.seq_eq(
-            self._all_exprs(),
-            other._all_exprs(),
+        return (
+            self.limit == other.limit
+            and self._all_exprs() == other._all_exprs()
         )
 
     def _all_exprs(self):
-        return [
+        return tuple(
             *self.select_set,
             self.table_set,
             *self.where,
@@ -256,7 +256,7 @@ class Select(DML, util.CachedEqMixin):
             *self.having,
             *self.order_by,
             *self.subqueries,
-        ]
+        )
 
     def compile(self):
         """

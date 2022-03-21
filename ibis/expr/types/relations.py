@@ -167,7 +167,7 @@ class TableExpr(Expr):
             raise AttributeError(key)
 
     def __dir__(self):
-        return sorted(frozenset(dir(type(self)) + self.columns))
+        return sorted(frozenset(dir(type(self)) + list(self.columns)))
 
     def _resolve(self, exprs):
         exprs = util.promote_list(exprs)
@@ -442,13 +442,14 @@ class TableExpr(Expr):
         TableExpr
             Sorted table
         """
-        if isinstance(sort_exprs, tuple):
-            sort_exprs = [sort_exprs]
-        elif sort_exprs is None:
-            sort_exprs = []
-        else:
-            sort_exprs = util.promote_list(sort_exprs)
-        return self.op().sort_by(self, sort_exprs).to_expr()
+        return (
+            self.op()
+            .sort_by(
+                self,
+                [] if sort_exprs is None else util.promote_list(sort_exprs),
+            )
+            .to_expr()
+        )
 
     def union(
         self,
@@ -1041,7 +1042,13 @@ class TableExpr(Expr):
         """
         from .. import operations as ops
 
-        expr = ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
+        expr = ops.AsOfJoin(
+            left=left,
+            right=right,
+            predicates=predicates,
+            by=by,
+            tolerance=tolerance,
+        ).to_expr()
         return ops.relations._dedup_join_columns(
             expr,
             left=left,

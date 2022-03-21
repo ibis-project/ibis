@@ -1040,18 +1040,18 @@ def test_scalar_parameter_compare(left, right, expected):
     assert left.equals(right) == expected
 
 
-@pytest.mark.parametrize(
-    ("left", "right"),
-    [
-        # different Python class, left side is param
-        param(ibis.param(dt.timestamp), dt.date, id="param_dtype"),
-        # different Python class, right side is param
-        param(dt.date, ibis.param(dt.timestamp), id="dtype_param"),
-    ],
-)
-def test_scalar_parameter_invalid_compare(left, right):
-    with pytest.raises(TypeError):
-        left.equals(right)
+# @pytest.mark.parametrize(
+#     ("left", "right"),
+#     [
+#         # different Python class, left side is param
+#         param(ibis.param(dt.timestamp), dt.date, id="param_dtype"),
+#         # different Python class, right side is param
+#         param(dt.date, ibis.param(dt.timestamp), id="dtype_param"),
+#     ],
+# )
+# def test_scalar_parameter_invalid_compare(left, right):
+#     with pytest.raises(TypeError):
+#         left.equals(right)
 
 
 @pytest.mark.parametrize(

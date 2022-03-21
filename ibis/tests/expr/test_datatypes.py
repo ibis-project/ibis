@@ -9,6 +9,7 @@ import pytz
 from multipledispatch.conflict import ambiguities
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
 
@@ -291,20 +292,20 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 )
 def test_interval(unit):
     definition = f"interval('{unit}')"
-    dt.Interval(unit, dt.int32) == dt.dtype(definition)
+    dt.Interval(unit, value_type=dt.int32) == dt.dtype(definition)
 
     definition = f"interval<uint16>('{unit}')"
-    dt.Interval(unit, dt.uint16) == dt.dtype(definition)
+    dt.Interval(unit, value_type=dt.uint16) == dt.dtype(definition)
 
     definition = f"interval<int64>('{unit}')"
-    dt.Interval(unit, dt.int64) == dt.dtype(definition)
+    dt.Interval(unit, value_type=dt.int64) == dt.dtype(definition)
 
 
 def test_interval_invalid_type():
-    with pytest.raises(TypeError):
-        dt.Interval('m', dt.float32)
+    with pytest.raises(com.IbisTypeError):
+        dt.Interval('m', value_type=dt.float32)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         dt.dtype("interval<float>('s')")
 
 
@@ -336,17 +337,17 @@ def test_string_argument_parsing_failure_mode(case):
 
 
 def test_timestamp_with_invalid_timezone():
-    ts = dt.Timestamp('Foo/Bar&234')
+    ts = dt.Timestamp(timezone='Foo/Bar&234')
     assert str(ts) == "timestamp('Foo/Bar&234')"
 
 
 def test_timestamp_with_timezone_repr():
-    ts = dt.Timestamp('UTC')
+    ts = dt.Timestamp(timezone='UTC')
     assert repr(ts) == "Timestamp(timezone='UTC', nullable=True)"
 
 
 def test_timestamp_with_timezone_str():
-    ts = dt.Timestamp('UTC')
+    ts = dt.Timestamp(timezone='UTC')
     assert str(ts) == "timestamp('UTC')"
 
 
@@ -456,7 +457,10 @@ def test_infer_dtype(value, expected_dtype):
         (dt.uint32, dt.Decimal(12, 2)),
         (dt.uint32, dt.float32),
         (dt.uint32, dt.float64),
-        (dt.Interval('s', dt.int16), dt.Interval('s', dt.int32)),
+        (
+            dt.Interval('s', value_type=dt.int16),
+            dt.Interval('s', value_type=dt.int32),
+        ),
     ],
 )
 def test_implicit_castable(source, target):
@@ -472,7 +476,10 @@ def test_implicit_castable(source, target):
         (dt.Decimal(12, 2), dt.int32),
         (dt.timestamp, dt.boolean),
         (dt.boolean, dt.interval),
-        (dt.Interval('s', dt.int64), dt.Interval('s', dt.int16)),
+        (
+            dt.Interval('s', value_type=dt.int64),
+            dt.Interval('s', value_type=dt.int16),
+        ),
     ],
 )
 def test_implicitly_uncastable(source, target):

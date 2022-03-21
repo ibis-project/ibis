@@ -302,10 +302,12 @@ class IntervalBinaryOp(BinaryOp):
         dtype_type = type(left_dtype)
         additional_args = {
             attr: getattr(left_dtype, attr)
-            for attr in left_dtype._fields
+            for attr in left_dtype.argnames
             if attr not in ("unit", "value_type")
         }
-        dtype = dtype_type(left_dtype.unit, expr.type(), **additional_args)
+        dtype = dtype_type(
+            unit=left_dtype.unit, value_type=expr.type(), **additional_args
+        )
         return rlz.shape_like(self.args, dtype=dtype)
 
 
@@ -347,7 +349,7 @@ class IntervalFromInteger(ValueOp):
         return dt.Interval(self.unit).resolution
 
     def output_type(self):
-        dtype = dt.Interval(self.unit, self.arg.type())
+        dtype = dt.Interval(self.unit, value_type=self.arg.type())
         return rlz.shape_like(self.arg, dtype=dtype)
 
 

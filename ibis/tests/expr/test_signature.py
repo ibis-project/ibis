@@ -190,8 +190,8 @@ def test_signature_inheritance():
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter('left', validator=IsInt),
             Parameter('right', validator=IsFloat),
+            Parameter('left', validator=IsInt),
         ]
     )
 
@@ -335,7 +335,7 @@ def test_multiple_inheritance_argument_order():
         where = Optional(IsBool, default=False)
 
     assert Sum._reduction is True
-    assert str(Sum.__signature__) == "(arg, version, where=None)"
+    assert str(Sum.__signature__) == "(version, arg, where=None)"
 
 
 def test_multiple_inheritance_optional_argument_order():
@@ -350,4 +350,4 @@ def test_multiple_inheritance_optional_argument_order():
         max = IsInt
         how = Optional(IsStr, default="strict")
 
-    assert str(Between.__signature__) == "(min, max, where=None, how=None)"
+    assert str(Between.__signature__) == "(min, max, how=None, where=None)"

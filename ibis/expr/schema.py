@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import collections
-from typing import Hashable, MutableMapping
 
 from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util as util
+from ibis.expr.signature import Annotable, instance_of, list_of
 
 convert = Dispatcher(
     'convert',
@@ -32,7 +32,8 @@ result : pd.Series
 )
 
 
-class Schema(util.CachedEqMixin):
+# TODO(kszucs): convert to annotable
+class Schema(Annotable):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -46,25 +47,21 @@ class Schema(util.CachedEqMixin):
         representing type of each column.
     """
 
-    __slots__ = 'names', 'types', '_name_locs', '_hash'
+    names = list_of(instance_of((str, util.UnnamedMarker)))
+    types = list_of(dt.datatype)
+
+    __slots__ = ('_name_locs',)
 
     def __init__(self, names, types):
-        if not isinstance(names, list):
-            names = list(names)
-
-        self.names = names
-        self.types = list(map(dt.dtype, types))
-
-        self._name_locs = {v: i for i, v in enumerate(self.names)}
-
-        if len(self._name_locs) < len(self.names):
-            duplicate_names = list(self.names)
-            for v in self._name_locs.keys():
+        _name_locs = {v: i for i, v in enumerate(names)}
+        if len(_name_locs) < len(names):
+            duplicate_names = list(names)
+            for v in _name_locs.keys():
                 duplicate_names.remove(v)
             raise com.IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
-        self._hash = None
+        super().__init__(names=names, types=types, _name_locs=_name_locs)
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
@@ -78,13 +75,8 @@ class Schema(util.CachedEqMixin):
             )
         )
 
-    def _make_hash(self) -> int:
-        return hash((type(self), tuple(self.names), tuple(self.types)))
-
-    def __hash__(self) -> int:
-        if (result := self._hash) is None:
-            result = self._hash = self._make_hash()
-        return result
+    # def __equals__(self, other):
+    #     return type(self) == type(other) and self.args == other.args
 
     def __len__(self):
         return len(self.names)
@@ -131,17 +123,6 @@ class Schema(util.CachedEqMixin):
     def from_dict(cls, dictionary):
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return Schema(names, types)
-
-    def __component_eq__(
-        self,
-        other: Schema,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.names == other.names and util.seq_eq(
-            self.types,
-            other.types,
-            cache=cache,
-        )
 
     def __gt__(self, other):
         return set(self.items()) > set(other.items())
@@ -228,11 +209,6 @@ class HasSchema:
 
     def has_schema(self):
         return True
-
-    def equals(self, other, cache=None):
-        return type(self) == type(other) and self.schema.equals(
-            other.schema, cache=cache
-        )
 
     def root_tables(self):
         return [self]

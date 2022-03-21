@@ -85,13 +85,6 @@ class SortKey(Node):
     def root_tables(self):
         return self.expr.op().root_tables()
 
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, SortKey)
-            and self.expr.equals(other.expr, cache=cache)
-            and self.ascending == other.ascending
-        )
-
     def resolve_name(self):
         return self.expr.get_name()
 

@@ -78,7 +78,7 @@ def test_array_collect_rolling_partitioned(t, df):
             'plain_int64': [1, 2, 3],
             'collected': [[4.0], [4.0, 5.0], [5.0, 6.0]],
         }
-    )[expr.columns]
+    )[list(expr.columns)]
     tm.assert_frame_equal(result, expected)
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Hashable, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
 from public import public
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 @public
-class Expr(util.EqMixin):
+class Expr:
     """Base expression class"""
 
     def _type_display(self) -> str:
@@ -49,6 +49,9 @@ class Expr(util.EqMixin):
             return output
         else:
             return repr(result)
+
+    def equals(self, other):
+        return self._arg.equals(other._arg)
 
     def __hash__(self) -> int:
         return hash(self._key)
@@ -306,30 +309,8 @@ class Expr(util.EqMixin):
         else:
             return True
 
-    def equals(
-        self, other: Any, cache: MutableMapping[Hashable, bool] | None = None
-    ) -> bool:
-        return super().equals(other, cache=cache)
 
-    def _type_check(self, other: Any) -> None:
-        if not isinstance(other, Expr):
-            raise TypeError(
-                f"Cannot compare non-Expr object {type(other)} with Expr"
-            )
-
-    def __component_eq__(
-        self,
-        other: ir.Expr,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        return self._arg.equals(other._arg, cache=cache)
-
-
-class UnnamedMarker:
-    pass
-
-
-unnamed = UnnamedMarker()
+unnamed = util.UnnamedMarker()
 
 
 def _binop(

@@ -176,12 +176,12 @@ def test_join_table_choice():
 
 def test_is_ancestor_analytic():
     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-    with_filter_col = x[x.columns + [ibis.null().name('filter')]]
+    with_filter_col = x[x.columns + (ibis.null().name('filter'),)]
     filtered = with_filter_col[with_filter_col['filter'].isnull()]
     subquery = filtered[filtered.columns]
 
     with_analytic = subquery[
-        subquery.columns + [subquery.count().name('analytic')]
+        subquery.columns + (subquery.count().name('analytic'),)
     ]
 
     assert not subquery.op().equals(with_analytic.op())

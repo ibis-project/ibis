@@ -6,14 +6,13 @@ import enum
 import functools
 import itertools
 import uuid
-from typing import Hashable, MutableMapping
 
 import numpy as np
 import pandas as pd
 from public import public
 
 from ...common import exceptions as com
-from ...util import frozendict, seq_eq
+from ...util import frozendict
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
@@ -46,16 +45,6 @@ class TableColumn(ValueOp):
             )
 
         super().__init__(table=table, name=name)
-
-    def __component_eq__(
-        self,
-        other: TableColumn,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.name == other.name and self.table.equals(
-            other.table,
-            cache=cache,
-        )
 
     def parent(self):
         return self.table
@@ -270,20 +259,12 @@ class Literal(ValueOp):
             type(self).__name__, ', '.join(map(repr, self.args))
         )
 
-    def equals(self, other, cache=None):
-        # Check types
-        if not (
-            isinstance(other, Literal)
-            and isinstance(other.value, type(self.value))
-            and self.dtype == other.dtype
-        ):
-            return False
-
-        # Check values
-        if isinstance(self.value, np.ndarray):
-            return np.array_equal(self.value, other.value)
-        else:
-            return self.value == other.value
+    # TODO(kszucs): we may nod need it since dt._normalize
+    # # Check values
+    # if isinstance(self.value, np.ndarray):
+    #     return np.array_equal(self.value, other.value)
+    # else:
+    #     return self.value == other.value
 
     def output_type(self):
         return self.dtype.scalar_type()
@@ -321,13 +302,6 @@ class ScalarParameter(ValueOp):
     def output_type(self):
         return self.dtype.scalar_type()
 
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, ScalarParameter)
-            and self.counter == other.counter
-            and self.dtype.equals(other.dtype, cache=cache)
-        )
-
     @property
     def inputs(self):
         return ()
@@ -349,13 +323,6 @@ class ValueList(ValueOp):
 
     def root_tables(self):
         return distinct_roots(*self.values)
-
-    def __component_eq__(
-        self,
-        other: ValueList,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return seq_eq(self.values, other.values, cache=cache)
 
 
 @public

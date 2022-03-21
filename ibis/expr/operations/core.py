@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Hashable, MutableMapping
-
 import toolz
 from public import public
 
-from ... import util
 from ...common import exceptions as com
 from .. import rules as rlz
 from ..signature import Annotable
@@ -25,31 +22,32 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots))
 
 
+def _compare_items(a, b):
+    if hasattr(a, "equals"):
+        return a.equals(b)
+    elif isinstance(a, tuple):
+        return _compare_tuples(a, b)
+    else:
+        return a == b
+
+
+def _compare_tuples(a, b):
+    if len(a) != len(b):
+        return False
+    return all(_compare_items(x, y) for x, y in zip(a, b))
+
+
 @public
-class Node(util.CachedEqMixin, Annotable):
+class Node(Annotable):
     __slots__ = ('_expr_cached',)
-
-    def _type_check(self, other: Any) -> None:
-        if not isinstance(other, Node):
-            raise TypeError(
-                f"Cannot compare non-Node object {type(other)} with Node"
-            )
-
-    def __component_eq__(
-        self,
-        other: Node,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return len(self.args) == len(other.args) and all(
-            (
-                (self_arg is None and other_arg is None)
-                or self_arg.equals(other_arg, cache=cache)
-            )
-            for self_arg, other_arg in zip(self.args, other.args)
-        )
 
     def __repr__(self):
         return self._repr()
+
+    def __equals__(self, other):
+        if type(self) != type(other):
+            return False
+        return _compare_tuples(self.args, other.args)
 
     def _repr(self, memo=None):
         if memo is None:

@@ -504,4 +504,5 @@ def test_complex_datatype_builtins(benchmark, func):
 
 
 def test_large_expr_equals(benchmark, tpc_h02):
+    # assert ir.Expr.equals(tpc_h02, copy.deepcopy(tpc_h02))
     benchmark(ir.Expr.equals, tpc_h02, copy.deepcopy(tpc_h02))

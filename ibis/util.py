@@ -10,6 +10,7 @@ import operator
 import os
 import types
 import warnings
+import weakref
 from numbers import Real
 from typing import (
     Any,
@@ -17,7 +18,6 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
-    MutableMapping,
     Sequence,
     TypeVar,
 )
@@ -441,98 +441,89 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
-class EqMixin(abc.ABC):
-    """A mixin for abstracting equality checks."""
+class Key(frozenset):
+    # def __new__(cls, a, b):
+    #     # if hash(a) < hash(b):
+    #     #     a, b = b, a
+    #     return super().__new__(cls, [ref(a), ref(b)])
 
-    __slots__ = ()
+    def __new__(cls, a, b):
+        return super().__new__(cls, [id(a), id(b)])
 
-    def __eq__(self, other: Any) -> bool | NotImplemented:
+    def die(self, ref):
+        # print(f"DIE {ref()}")
+        Cache._data.pop(self, None)
+
+    def __repr__(self):
+        items = ", ".join(str(item) for item in self)
+        return f"Key({items})"
+
+
+class Cache:
+
+    _data = dict()
+
+    def __new__(cls):
+        raise TypeError("Can't be instantiated")
+
+    @classmethod
+    def length(cls):
+        return len(cls._data)
+
+    @classmethod
+    def add(cls, a, b, value):
+        key = Key(a, b)
+        a_ref = weakref.ref(a, key.die)
+        b_ref = weakref.ref(b, key.die)
+        cls._data[key] = (value, a_ref, b_ref)
+
+    @classmethod
+    def get(cls, a, b):
+        key = Key(a, b)
+        value, _, _ = cls._data[key]
+        return value
+
+    @classmethod
+    def contains(cls, a, b):
         try:
-            return self.equals(other, cache={})
-        except TypeError:
-            return NotImplemented
-
-    def __ne__(self, other: Any) -> bool | NotImplemented:
-        return not (self == other)
-
-    def equals(
-        self,
-        other: Any,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        if self is other:
+            cls.get(a, b)
+        except KeyError:
+            return False
+        else:
             return True
 
-        self._type_check(other)
-        return self.__component_eq__(other, cache=cache)
 
-    def _type_check(self, other: Any) -> None:
-        """Check whether `self` can be compared with `other`."""
-        if type(self) != type(other):
-            raise TypeError(
-                "invalid equality comparison between "
-                f"{type(self)} and {type(other)}"
-            )
+# def show():
+#     pairs = list(Cache._data.items())
+#     for k, v in pairs:
+#         value, a_ref, b_ref = v
+#         print(f"{k}: ({value}, {a_ref}, {b_ref})")
+
+
+class CachedEqMixin(abc.ABC):
+
+    __slots__ = ("__weakref__",)
 
     @abc.abstractmethod
-    def __component_eq__(
-        self,
-        other: Any,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        """Compare the individual fields of a subclass."""
+    def __equals__(self, other):
+        ...
+
+    def equals(self, other):
+        if self is other:
+            return True
+        try:
+            return Cache.get(self, other)
+        except KeyError:
+            result = self.__equals__(other)
+            Cache.add(self, other, result)
+            return result
+
+    def __eq__(self, other):
+        try:
+            return self.equals(other)
+        except TypeError:
+            raise NotImplemented  # noqa: F901
 
 
-class CachedEqMixin(EqMixin):
-    """A mixin for abstracting cached equality checks."""
-
-    __slots__ = ()
-
-    def equals(
-        self,
-        other: Hashable,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        if cache is None:
-            cache = {}
-
-        key = self, other
-
-        if (result := cache.get(key)) is None:
-            # only type check if we're going to do the comparison
-            self._type_check(other)
-            result = cache[key] = self is other or (
-                self._hash == other._hash
-                and self.__component_eq__(other, cache=cache)
-            )
-        return result
-
-
-C = TypeVar("C", bound=CachedEqMixin)
-
-
-def seq_eq(
-    lefts: Sequence[C],
-    rights: Sequence[C],
-    *,
-    cache: MutableMapping[Hashable, bool],
-) -> bool:
-    """Compare two sequences of expressions.
-
-    Parameters
-    ----------
-    lefts
-        Iterable of expressions
-    rights
-        Iterable of expressions
-    cache
-        Mutable mapping of expression pairs to bool
-
-    Returns
-    -------
-    bool
-        Whether the expressions of `lefts` and `rights` are equal
-    """
-    return len(lefts) == len(rights) and all(
-        left.equals(right, cache=cache) for left, right in zip(lefts, rights)
-    )
+class UnnamedMarker:
+    pass
