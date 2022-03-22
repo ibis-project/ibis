@@ -110,9 +110,6 @@ class DataType(Annotable):
             )
         return self._factory(nullable=nullable)
 
-    # def __equals__(self, other):
-    #     return type(self) == type(other) and self.args == other.args
-
     @property
     def _pretty_piece(self) -> str:
         return ""
@@ -427,27 +424,30 @@ class Decimal(DataType):
 class Interval(DataType):
     """Interval values."""
 
-    unit = map_to(
-        {
-            'days': 'D',
-            'hours': 'h',
-            'minutes': 'm',
-            'seconds': 's',
-            'milliseconds': 'ms',
-            'microseconds': 'us',
-            'nanoseconds': 'ns',
-            'Y': 'Y',
-            'Q': 'Q',
-            'M': 'M',
-            'W': 'W',
-            'D': 'D',
-            'h': 'h',
-            'm': 'm',
-            's': 's',
-            'ms': 'ms',
-            'us': 'us',
-            'ns': 'ns',
-        }
+    unit = optional(
+        map_to(
+            {
+                'days': 'D',
+                'hours': 'h',
+                'minutes': 'm',
+                'seconds': 's',
+                'milliseconds': 'ms',
+                'microseconds': 'us',
+                'nanoseconds': 'ns',
+                'Y': 'Y',
+                'Q': 'Q',
+                'M': 'M',
+                'W': 'W',
+                'D': 'D',
+                'h': 'h',
+                'm': 'm',
+                's': 's',
+                'ms': 'ms',
+                'us': 'us',
+                'ns': 'ns',
+            }
+        ),
+        default="seconds",
     )
     """The time unit of the interval."""
 
