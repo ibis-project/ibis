@@ -87,7 +87,19 @@ def datatype(arg, **kwargs):
 class DataType(Annotable):
     """Base class for all data types."""
 
+    __slots__ = ("_str",)
+
     nullable = optional(instance_of(bool), default=True)
+
+    def __init__(self, nullable: bool = True, **fields: Any) -> None:
+        super().__init__(nullable=nullable, **fields)
+
+        prefix = "!" * (not self.nullable)
+        object.__setattr__(
+            self,
+            "_str",
+            f"{prefix}{self.name.lower()}{self._pretty_piece}",
+        )
 
     def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
@@ -109,12 +121,6 @@ class DataType(Annotable):
     def name(self) -> str:
         """Return the name of the data type."""
         return self.__class__.__name__
-
-    # @cached_property
-    @property
-    def _str(self) -> str:
-        prefix = "!" * (not self.nullable)
-        return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
     def __str__(self) -> str:
         return self._str
