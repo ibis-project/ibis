@@ -1172,14 +1172,14 @@ FROM star1
 ORDER BY `f`""",
             id="single_column",
         ),
-        #         pytest.param(
-        #             lambda t: t.sort_by(("f", 0)),
-        #             """\
-        # SELECT *
-        # FROM star1
-        # ORDER BY `f` DESC""",
-        #             id="single_column_explicit_ascending",
-        #         ),
+        pytest.param(
+            lambda t: t.sort_by(("f", 0)),
+            """\
+SELECT *
+FROM star1
+ORDER BY `f` DESC""",
+            id="single_column_explicit_ascending",
+        ),
         pytest.param(
             lambda t: t.sort_by(["c", ("f", 0)]),
             """\

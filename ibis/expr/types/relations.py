@@ -442,14 +442,13 @@ class TableExpr(Expr):
         TableExpr
             Sorted table
         """
-        return (
-            self.op()
-            .sort_by(
-                self,
-                [] if sort_exprs is None else util.promote_list(sort_exprs),
-            )
-            .to_expr()
-        )
+        if isinstance(sort_exprs, tuple):
+            sort_exprs = [sort_exprs]
+        elif sort_exprs is None:
+            sort_exprs = []
+        else:
+            sort_exprs = util.promote_list(sort_exprs)
+        return self.op().sort_by(self, sort_exprs).to_expr()
 
     def union(
         self,

@@ -428,11 +428,11 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
             lambda b: sa.select([b]).order_by(b.c.f),
             id="sort_by",
         ),
-        # pytest.param(
-        #     lambda t: t.sort_by(("f", 0)),
-        #     lambda b: sa.select([b]).order_by(b.c.f.desc()),
-        #     id="sort_by_ascending",
-        # ),
+        pytest.param(
+            lambda t: t.sort_by(("f", 0)),
+            lambda b: sa.select([b]).order_by(b.c.f.desc()),
+            id="sort_by_ascending",
+        ),
         pytest.param(
             lambda t: t.sort_by(["c", ("f", 0)]),
             lambda b: sa.select([b]).order_by(b.c.c, b.c.f.desc()),

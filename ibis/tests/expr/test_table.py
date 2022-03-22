@@ -375,16 +375,15 @@ def test_sort_by(table):
     assert_equal(result2, result3)
 
 
-# FIXME(kszucs)
-# def test_sort_by_desc_deferred_sort_key(table):
-#     result = table.group_by('g').size().sort_by(ibis.desc('count'))
+def test_sort_by_desc_deferred_sort_key(table):
+    result = table.group_by('g').size().sort_by(ibis.desc('count'))
 
-#     tmp = table.group_by('g').size()
-#     expected = tmp.sort_by((tmp['count'], False))
-#     expected2 = tmp.sort_by(ibis.desc(tmp['count']))
+    tmp = table.group_by('g').size()
+    expected = tmp.sort_by((tmp['count'], False))
+    expected2 = tmp.sort_by(ibis.desc(tmp['count']))
 
-#     assert_equal(result, expected)
-#     assert_equal(result, expected2)
+    assert_equal(result, expected)
+    assert_equal(result, expected2)
 
 
 def test_sort_by_asc_deferred_sort_key(table):
