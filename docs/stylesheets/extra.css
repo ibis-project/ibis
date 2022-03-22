@@ -49,15 +49,6 @@
   min-width: 100%;
 }
 
-.md-typeset__scrollwrap {
-  transform: rotateX(180deg);
-  overflow-x: auto;
-}
-
-.md-typeset__scrollwrap > .md-typeset__table {
-  transform: rotateX(180deg);
-}
-
 body
   > div.md-container
   > main
@@ -70,15 +61,5 @@ body
   > thead
   > tr
   > th:nth-child(1) {
-  min-width: 8.8rem;
-}
-
-.md-typeset table:not([class]) th {
-  text-align: center;
-  padding: 0.9375em 0.5em;
-}
-
-.md-typeset table:not([class]) td {
-  text-align: center;
-  padding: 0.9375em 0.5em;
+  min-width: 9.8rem;
 }
