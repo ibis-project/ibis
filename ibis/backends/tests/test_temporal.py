@@ -362,7 +362,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, be: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, be: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
-            marks=pytest.mark.notimpl(["duckdb", 'pyspark']),
+            marks=pytest.mark.notimpl(["pyspark"]),
         ),
     ],
 )
