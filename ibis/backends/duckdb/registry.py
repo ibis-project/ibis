@@ -99,7 +99,7 @@ def _literal(_, expr):
             f"`{type(value).__name__}` isn't yet supported with the duckdb "
             "backend"
         )
-    return sa.literal(value)
+    return sa.cast(sa.literal(value), sqla_type)
 
 
 def _array_column(t, expr):

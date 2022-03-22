@@ -461,3 +461,14 @@ def test_aggregate_mixed(backend, alltypes, df):
     )
 
     backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.notimpl(["datafusion", "pyspark"])
+def test_binds_are_cast(alltypes):
+    expr = alltypes.aggregate(
+        high_line_count=(
+            alltypes.string_col.case().when('1-URGENT', 1).else_(0).end().sum()
+        )
+    )
+
+    expr.execute()

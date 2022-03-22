@@ -111,7 +111,7 @@ def test_coalesce(backend, con, expr, expected):
         # False
         assert result == decimal.Decimal(str(expected))
     else:
-        assert result == expected
+        assert result == pytest.approx(expected)
 
 
 # TODO(dask) - identicalTo - #2553
