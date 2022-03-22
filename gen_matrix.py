@@ -1,4 +1,3 @@
-import io
 from pathlib import Path
 
 import pandas as pd
@@ -37,23 +36,30 @@ def main():
         "backends",
         "support_matrix.csv",
     )
-    possible_ops = set(get_leaf_classes(ops.ValueOp))
+    possible_ops = frozenset(get_leaf_classes(ops.ValueOp))
 
     support = {
         "operation": [f"`{op.__name__}`" for op in possible_ops],
     }
-    for name, backend in get_backends():
-        support[name] = list(map(backend.has_operation, possible_ops))
+    support.update(
+        (name, list(map(backend.has_operation, possible_ops)))
+        for name, backend in get_backends()
+    )
 
     df = pd.DataFrame(support).set_index("operation").sort_index()
-    counts = df.sum().sort_values(ascending=False)
-    df = df.loc[:, counts.index].replace(ICONS)
-    out = io.BytesIO()
-    df.to_csv(out)
-    ops_bytes = out.getvalue()
 
-    if not dst.exists() or ops_bytes != dst.read_bytes():
-        dst.write_bytes(ops_bytes)
+    counts = df.sum().sort_values(ascending=False)
+    num_ops = len(possible_ops)
+    coverage = (
+        counts.map(lambda n: f"_{n} ({round(100 * n / num_ops)}%)_")
+        .to_frame(name="**API Coverage**")
+        .T
+    )
+
+    ops_table = df.loc[:, counts.index].replace(ICONS)
+    table = pd.concat([coverage, ops_table])
+    ops_text = table.to_csv(index_label="Backends")
+    dst.write_text(ops_text)
 
 
 main()

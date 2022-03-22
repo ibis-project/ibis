@@ -30,6 +30,7 @@ import pandas as pd
 import parsy as p
 from cached_property import cached_property
 from multipledispatch import Dispatcher
+from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
@@ -43,8 +44,30 @@ except ImportError:
     IS_SHAPELY_AVAILABLE = False
 
 
+def _not_constructible(cls: type[DataType]) -> type[DataType]:
+    """Add a docstring indicating that the type isn't constructible."""
+    cls.__doc__ += f"""
+    !!! info "Instances of type `{cls.__name__}` should never be constructed directly."
+
+        The use of `{cls.__name__}` is limited to `isinstance` and `issubclass`:
+
+        ```python
+        >>> import ibis.expr.datatypes as dt
+        >>> isinstance(..., dt.{cls.__name__})
+        >>> issubclass(..., dt.{cls.__name__})
+        ```
+"""  # noqa: E501
+    return cls
+
+
+@public
+@_not_constructible
 class DataType(util.CachedEqMixin):
-    """Base class for all data types."""
+    """Base class for all data types.
+
+    [`DataType`][ibis.expr.datatypes.DataType] instances are
+    immutable.
+    """
 
     _fields_ = ()
 
@@ -163,6 +186,8 @@ class DataType(util.CachedEqMixin):
         return functools.partial(self.column, dtype=self)
 
 
+@public
+@_not_constructible
 class Any(DataType):
     """Values of any type."""
 
@@ -174,6 +199,8 @@ class Any(DataType):
         return True
 
 
+@public
+@_not_constructible
 class Primitive(DataType):
     """Values with known size."""
 
@@ -185,6 +212,7 @@ class Primitive(DataType):
         return True
 
 
+@public
 class Null(DataType):
     """Null values."""
 
@@ -199,6 +227,8 @@ class Null(DataType):
         return True
 
 
+@public
+@_not_constructible
 class Variadic(DataType):
     """Values with unknown size."""
 
@@ -210,18 +240,24 @@ class Variadic(DataType):
         return True
 
 
+@public
 class Boolean(Primitive):
-    """True or False values."""
+    """[`True`][True] or [`False`][False] values."""
 
     scalar = ir.BooleanScalar
     column = ir.BooleanColumn
 
 
+@public
 class Bounds(NamedTuple):
+    """The lower and upper bound of a fixed-size value."""
+
     lower: int
     upper: int
 
 
+@public
+@_not_constructible
 class Integer(Primitive):
     """Integer values."""
 
@@ -236,6 +272,7 @@ class Integer(Primitive):
         )
 
 
+@public
 class String(Variadic):
     """A type representing a string.
 
@@ -249,6 +286,7 @@ class String(Variadic):
     column = ir.StringColumn
 
 
+@public
 class Binary(Variadic):
     """A type representing a sequence of bytes.
 
@@ -265,6 +303,7 @@ class Binary(Variadic):
     column = ir.BinaryColumn
 
 
+@public
 class Date(Primitive):
     """Date values."""
 
@@ -272,6 +311,7 @@ class Date(Primitive):
     column = ir.DateColumn
 
 
+@public
 class Time(Primitive):
     """Time values."""
 
@@ -279,6 +319,7 @@ class Time(Primitive):
     column = ir.TimeColumn
 
 
+@public
 class Timestamp(DataType):
     """Timestamp values."""
 
@@ -311,6 +352,8 @@ class Timestamp(DataType):
         return self.timezone == other.timezone
 
 
+@public
+@_not_constructible
 class SignedInteger(Integer):
     """Signed integer values."""
 
@@ -326,6 +369,8 @@ class SignedInteger(Integer):
         return Bounds(lower=~upper, upper=upper)
 
 
+@public
+@_not_constructible
 class UnsignedInteger(Integer):
     """Unsigned integer values."""
 
@@ -341,6 +386,8 @@ class UnsignedInteger(Integer):
         return Bounds(lower=0, upper=upper)
 
 
+@public
+@_not_constructible
 class Floating(Primitive):
     """Floating point values."""
 
@@ -360,66 +407,77 @@ class Floating(Primitive):
         )
 
 
+@public
 class Int8(SignedInteger):
     """Signed 8-bit integers."""
 
     _nbytes = 1
 
 
+@public
 class Int16(SignedInteger):
     """Signed 16-bit integers."""
 
     _nbytes = 2
 
 
+@public
 class Int32(SignedInteger):
     """Signed 32-bit integers."""
 
     _nbytes = 4
 
 
+@public
 class Int64(SignedInteger):
     """Signed 64-bit integers."""
 
     _nbytes = 8
 
 
+@public
 class UInt8(UnsignedInteger):
     """Unsigned 8-bit integers."""
 
     _nbytes = 1
 
 
+@public
 class UInt16(UnsignedInteger):
     """Unsigned 16-bit integers."""
 
     _nbytes = 2
 
 
+@public
 class UInt32(UnsignedInteger):
     """Unsigned 32-bit integers."""
 
     _nbytes = 4
 
 
+@public
 class UInt64(UnsignedInteger):
     """Unsigned 64-bit integers."""
 
     _nbytes = 8
 
 
+@public
 class Float16(Floating):
     """16-bit floating point numbers."""
 
     _nbytes = 2
 
 
+@public
 class Float32(Floating):
     """32-bit floating point numbers."""
 
     _nbytes = 4
 
 
+@public
 class Float64(Floating):
     """64-bit floating point numbers."""
 
@@ -431,6 +489,7 @@ Float = Float32
 Double = Float64
 
 
+@public
 class Decimal(DataType):
     """Fixed-precision decimal values."""
 
@@ -487,6 +546,7 @@ class Decimal(DataType):
         return self.precision == other.precision and self.scale == other.scale
 
 
+@public
 class Interval(DataType):
     """Interval values."""
 
@@ -577,6 +637,7 @@ class Interval(DataType):
         return f"<{self.value_type}>(unit={self.unit!r})"
 
 
+@public
 class Category(DataType):
     _fields_ = ("cardinality",)
 
@@ -613,16 +674,11 @@ class Category(DataType):
         return self.cardinality == other.cardinality
 
 
+@public
 class Struct(DataType):
     """Structured values."""
 
     _fields_ = "names", "types"
-
-    names: Sequence[str]
-    """Field names of the struct."""
-
-    types: Sequence[DataType]
-    """Types of the fields of the struct."""
 
     scalar = ir.StructScalar
     column = ir.StructColumn
@@ -633,6 +689,15 @@ class Struct(DataType):
         types: Iterable[str | DataType],
         nullable: bool = True,
     ) -> None:
+        """Construct a `Struct` data type instance.
+
+        Parameters
+        ----------
+        names
+            Field names
+        types
+            Types of the fields of the struct
+        """
 
         names = tuple(names)
         if not names:
@@ -644,6 +709,7 @@ class Struct(DataType):
 
         if len(names) != len(types):
             raise ValueError("names and types must have the same length")
+
         super().__init__(nullable=nullable, names=names, types=types)
 
     @classmethod
@@ -652,6 +718,18 @@ class Struct(DataType):
         pairs: Iterable[tuple[str, str | DataType]],
         nullable: bool = True,
     ) -> Struct:
+        """Construct a `Struct` type from pairs.
+
+        Parameters
+        ----------
+        pairs
+            An iterable of pairs of field name and type
+
+        Returns
+        -------
+        Struct
+            Struct data type instance
+        """
         names, types = zip(*pairs)
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
@@ -661,25 +739,34 @@ class Struct(DataType):
         pairs: Mapping[str, str | DataType],
         nullable: bool = True,
     ) -> Struct:
+        """Construct a `Struct` type from a [`dict`][dict].
+
+        Parameters
+        ----------
+        pairs
+            A [`dict`][dict] of `field: type`
+
+        Returns
+        -------
+        Struct
+            Struct data type instance
+        """
         names, types = pairs.keys(), pairs.values()
         return cls(list(names), list(map(dtype, types)), nullable=nullable)
 
     @property
-    def pairs(self) -> Mapping:
+    def pairs(self) -> Mapping[str, DataType]:
+        """Return a mapping from names to data type instances.
+
+        Returns
+        -------
+        Mapping[str, DataType]
+            Mapping of field name to data type
+        """
         return dict(zip(self.names, self.types))
 
     def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]
-
-    def _make_hash(self) -> int:
-        return hash(
-            (
-                self.__class__,
-                tuple(self.names),
-                tuple(self.types),
-                self.nullable,
-            )
-        )
 
     def __fields_eq__(
         self,
@@ -703,13 +790,11 @@ class Struct(DataType):
         return f"<{pairs}>"
 
 
+@public
 class Array(Variadic):
     """Array values."""
 
     _fields_ = ("value_type",)
-
-    value_type: DataType
-    """The type of the elements of the array."""
 
     scalar = ir.ArrayScalar
     column = ir.ArrayColumn
@@ -717,6 +802,15 @@ class Array(Variadic):
     def __init__(
         self, value_type: str | DataType, nullable: bool = True
     ) -> None:
+        """Construct an Array data type.
+
+        Parameters
+        ----------
+        value_type
+            The array's element type
+        nullable
+            Whether the array type can hold null values
+        """
         super().__init__(nullable=nullable, value_type=dtype(value_type))
 
     def __fields_eq__(
@@ -731,18 +825,25 @@ class Array(Variadic):
         return f"<{self.value_type}>"
 
 
+@public
 class Set(Variadic):
     """Set values."""
 
     _fields_ = ("value_type",)
 
-    value_type: DataType
-    """The type of the elements of the set."""
-
     scalar = ir.SetScalar
     column = ir.SetColumn
 
     def __init__(self, value_type: DataType, nullable: bool = True) -> None:
+        """Construct a Set data type.
+
+        Parameters
+        ----------
+        value_type
+            The set's element type
+        nullable
+            Whether the set type can hold null values
+        """
         super().__init__(nullable=nullable, value_type=dtype(value_type))
 
     @property
@@ -757,16 +858,11 @@ class Set(Variadic):
         return self.value_type.equals(other.value_type, cache=cache)
 
 
+@public
 class Enum(DataType):
     """Enumeration values."""
 
     _fields_ = "rep_type", "value_type"
-
-    rep_type: DataType
-    """The type of the key of the enumeration."""
-
-    value_type: DataType
-    """The type of the elements of the enumeration."""
 
     scalar = ir.EnumScalar
     column = ir.EnumColumn
@@ -777,6 +873,17 @@ class Enum(DataType):
         value_type: str | DataType,
         nullable: bool = True,
     ) -> None:
+        """Construct an Enum data type.
+
+        Parameters
+        ----------
+        rep_type
+            The type of the key of the enumeration.
+        value_type
+            The type of the elements of the enumeration.
+        nullable
+            Whether the enum type can hold null values
+        """
         super().__init__(
             nullable=nullable,
             rep_type=dtype(rep_type),
@@ -794,16 +901,11 @@ class Enum(DataType):
         ) and self.value_type.equals(other.value_type, cache=cache)
 
 
+@public
 class Map(Variadic):
     """Associative array values."""
 
     _fields_ = "key_type", "value_type"
-
-    key_type: DataType
-    """The type of the key of the map."""
-
-    value_type: DataType
-    """The type of the values of the map."""
 
     scalar = ir.MapScalar
     column = ir.MapColumn
@@ -814,6 +916,17 @@ class Map(Variadic):
         value_type: str | DataType,
         nullable: bool = True,
     ) -> None:
+        """Construct a Map data type.
+
+        Parameters
+        ----------
+        key_type
+            The type of the key of the map.
+        value_type
+            The type of the values of the map.
+        nullable
+            Whether the map type can hold null values
+        """
         super().__init__(
             nullable=nullable,
             key_type=dtype(key_type),
@@ -835,6 +948,7 @@ class Map(Variadic):
         return f"<{self.key_type}, {self.value_type}>"
 
 
+@public
 class JSON(String):
     """JSON values."""
 
@@ -842,6 +956,7 @@ class JSON(String):
     column = ir.JSONColumn
 
 
+@public
 class JSONB(Binary):
     """JSON data stored in a binary representation.
 
@@ -853,6 +968,7 @@ class JSONB(Binary):
     column = ir.JSONBColumn
 
 
+@public
 class GeoSpatial(DataType):
     """Geospatial values."""
 
@@ -900,6 +1016,7 @@ class GeoSpatial(DataType):
         return self.geotype == other.geotype and self.srid == other.srid
 
 
+@public
 class Geometry(GeoSpatial):
     """Geometry values."""
 
@@ -910,6 +1027,7 @@ class Geometry(GeoSpatial):
         super().__init__(geotype="geometry", srid=srid, nullable=nullable)
 
 
+@public
 class Geography(GeoSpatial):
     """Geography values."""
 
@@ -920,6 +1038,7 @@ class Geography(GeoSpatial):
         super().__init__(geotype="geography", srid=srid, nullable=nullable)
 
 
+@public
 class Point(GeoSpatial):
     """A point described by two coordinates."""
 
@@ -927,6 +1046,7 @@ class Point(GeoSpatial):
     column = ir.PointColumn
 
 
+@public
 class LineString(GeoSpatial):
     """A sequence of 2 or more points."""
 
@@ -934,6 +1054,7 @@ class LineString(GeoSpatial):
     column = ir.LineStringColumn
 
 
+@public
 class Polygon(GeoSpatial):
     """A set of one or more closed line strings.
 
@@ -945,6 +1066,7 @@ class Polygon(GeoSpatial):
     column = ir.PolygonColumn
 
 
+@public
 class MultiLineString(GeoSpatial):
     """A set of one or more line strings."""
 
@@ -952,6 +1074,7 @@ class MultiLineString(GeoSpatial):
     column = ir.MultiLineStringColumn
 
 
+@public
 class MultiPoint(GeoSpatial):
     """A set of one or more points."""
 
@@ -959,6 +1082,7 @@ class MultiPoint(GeoSpatial):
     column = ir.MultiPointColumn
 
 
+@public
 class MultiPolygon(GeoSpatial):
     """A set of one or more polygons."""
 
@@ -966,11 +1090,9 @@ class MultiPolygon(GeoSpatial):
     column = ir.MultiPolygonColumn
 
 
+@public
 class UUID(DataType):
     """A 128-bit number used to identify information in computer systems."""
-
-    nullable: bool = True
-    """Whether the data type can hold `NULL` values."""
 
     scalar = ir.UUIDScalar
     column = ir.UUIDColumn
@@ -983,6 +1105,7 @@ class UUID(DataType):
         return True
 
 
+@public
 class MACADDR(String):
     """Media Access Control (MAC) address of a network interface."""
 
@@ -990,6 +1113,7 @@ class MACADDR(String):
     column = ir.MACADDRColumn
 
 
+@public
 class INET(String):
     """IP addresses."""
 
@@ -1055,6 +1179,7 @@ def spaceless_string(s: str):
     return spaceless(p.string(s, transform=str.lower))
 
 
+@public
 @functools.lru_cache(maxsize=100)
 def parse_type(text: str) -> DataType:
     """Parse a type from a [`str`][str] `text`.
@@ -1357,7 +1482,7 @@ def infer_dtype_default(value: typing.Any) -> DataType:
 
 @infer.register(collections.OrderedDict)
 def infer_struct(value: Mapping[str, typing.Any]) -> Struct:
-    """Infer the :class:`~ibis.expr.datatypes.Struct` type of `value`."""
+    """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
     return Struct(list(value.keys()), list(map(infer, value.values())))
@@ -1365,7 +1490,7 @@ def infer_struct(value: Mapping[str, typing.Any]) -> Struct:
 
 @infer.register(collections.abc.Mapping)
 def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
-    """Infer the :class:`~ibis.expr.datatypes.Map` type of `value`."""
+    """Infer the [`Map`][ibis.expr.datatypes.Map] type of `value`."""
     if not value:
         return Map(null, null)
     return Map(
@@ -1376,7 +1501,7 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
 
 @infer.register(list)
 def infer_list(values: list[typing.Any]) -> Array:
-    """Infer the :class:`~ibis.expr.datatypes.Array` type of `values`."""
+    """Infer the [`Array`][ibis.expr.datatypes.Array] type of `value`."""
     if not values:
         return Array(null)
     return Array(highest_precedence(map(infer, values)))
@@ -1384,7 +1509,7 @@ def infer_list(values: list[typing.Any]) -> Array:
 
 @infer.register((set, frozenset))
 def infer_set(values: set) -> Set:
-    """Infer the :class:`~ibis.expr.datatypes.Set` type of `values`."""
+    """Infer the [`Set`][ibis.expr.datatypes.Set] type of `value`."""
     if not values:
         return Set(null)
     return Set(highest_precedence(map(infer, values)))

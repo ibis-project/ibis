@@ -246,31 +246,26 @@ class Expr(util.EqMixin):
         self,
         limit: int | str | None = 'default',
         timecontext: TimeContext | None = None,
-        params: Mapping[str, ValueExpr] | None = None,
+        params: Mapping[ValueExpr, Any] | None = None,
         **kwargs: Any,
     ):
-        """
-        If this expression is based on physical tables in a database backend,
-        execute it against that backend.
+        """Execute an expression against its backend if one exists.
 
         Parameters
         ----------
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is whatever is in `ibis/config.py`.
-
+            "no limit". The default is in `ibis/config.py`.
         timecontext
-            Defines a time range of (begin, end). When defined, the execution
+            Defines a time range of `(begin, end)`. When defined, the execution
             will only compute result for data inside the time range. The time
             range is inclusive of both endpoints. This is conceptually same as
             a time filter.
-            The time column must be named as 'time' and should preserve
-            across the expression. e.g. If that column is dropped then
+            The time column must be named `'time'` and should preserve
+            across the expression. For example, if that column is dropped then
             execute will result in an error.
-        Returns
-        -------
-        result : expression-dependent
-          Result of compiling expression and executing in backend
+        params
+            Mapping of scalar parameter expressions to value
         """
         return self._find_backend().execute(
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
@@ -278,38 +273,47 @@ class Expr(util.EqMixin):
 
     def compile(
         self,
-        limit=None,
+        limit: int | None = None,
         timecontext: TimeContext | None = None,
-        params=None,
+        params: Mapping[ValueExpr, Any] | None = None,
     ):
-        """
-        Compile expression to whatever execution target, to verify
+        """Compile to an execution target.
 
-        Returns
-        -------
-        compiled : value or list
-           query representation or list thereof
+        Parameters
+        ----------
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        timecontext
+            Defines a time range of `(begin, end)`. When defined, the execution
+            will only compute result for data inside the time range. The time
+            range is inclusive of both endpoints. This is conceptually same as
+            a time filter.
+            The time column must be named `'time'` and should preserve
+            across the expression. For example, if that column is dropped then
+            execute will result in an error.
+        params
+            Mapping of scalar parameter expressions to value
         """
         return self._find_backend().compile(
             self, limit=limit, timecontext=timecontext, params=params
         )
 
-    @util.deprecated(version='2.0', instead='compile & catch TranslationError')
+    @util.deprecated(
+        version='2.0',
+        instead=(
+            "[`Expr.compile`][ibis.expr.types.core.Expr.compile] and "
+            "catch TranslationError"
+        ),
+    )
     def verify(self):
-        """
-        Returns True if expression can be compiled to its attached client
-        """
+        """Return True if expression can be compiled to its attached client."""
         try:
             self.compile()
         except Exception:
             return False
         else:
             return True
-
-    def equals(
-        self, other: Any, cache: MutableMapping[Hashable, bool] | None = None
-    ) -> bool:
-        return super().equals(other, cache=cache)
 
     def _type_check(self, other: Any) -> None:
         if not isinstance(other, Expr):

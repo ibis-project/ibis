@@ -17,6 +17,8 @@ class BaseModel(PydanticBaseModel):
 
 
 class ContextAdjustment(BaseModel):
+    """Options related to time context adjustment."""
+
     time_col: str = Field(
         default="time",
         description="Name of the timestamp col for execution with a timecontext See ibis.expr.timecontext for details.",  # noqa: E501
@@ -24,26 +26,45 @@ class ContextAdjustment(BaseModel):
 
 
 class SQL(BaseModel):
+    """SQL-related options."""
+
     default_limit: Optional[int] = Field(
         default=10_000,
-        description="Number of rows to be retrieved for an unlimited table expression. None means no limit.",  # noqa: E501
+        description=(
+            "Number of rows to be retrieved for a table expression without an "
+            "explicit limit. [`None`][None] means no limit."
+        ),
     )
 
 
 class Options(BaseSettings):
+    """Ibis configuration options."""
+
     interactive: bool = Field(
         default=False,
         description="Show the first few rows of computing an expression when in a repl.",  # noqa: E501
     )
-    verbose: bool = False
-    verbose_log: Optional[Callable[[str], None]] = None
+    verbose: bool = Field(
+        default=False,
+        description="Run in verbose mode if [`True`][True]",
+    )
+    verbose_log: Optional[Callable[[str], None]] = Field(
+        default=None,
+        description="A callable to use when logging.",
+    )
     graphviz_repr: bool = Field(
         default=False,
         description="Render expressions as GraphViz PNGs when running in a Jupyter notebook.",  # noqa: E501
     )
-    default_backend: Any = None
-    context_adjustment: ContextAdjustment = ContextAdjustment()
-    sql: SQL = SQL()
+    default_backend: Any = Field(
+        default=None,
+        description="The default backend to use for execution.",
+    )
+    context_adjustment: ContextAdjustment = Field(
+        default=ContextAdjustment(),
+        description=ContextAdjustment.__doc__,
+    )
+    sql: SQL = Field(default=SQL(), description=SQL.__doc__)
 
     clickhouse: Optional[BaseModel] = None
     dask: Optional[BaseModel] = None

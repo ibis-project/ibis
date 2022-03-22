@@ -30,3 +30,4 @@
         * [Geospatial](api/expressions/geospatial.md)
     * [Data Types](api/datatypes.md)
     * [Backend Interfaces](api/backends/)
+    * [Configuration](api/config.md)
