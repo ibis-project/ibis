@@ -225,7 +225,7 @@ class TableExpr(Expr):
 
     @cached_property
     def columns(self):
-        return self.schema().names
+        return list(self.schema().names)
 
     def schema(self) -> sch.Schema:
         """Return the table's schema.

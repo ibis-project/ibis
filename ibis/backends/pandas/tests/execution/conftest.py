@@ -292,7 +292,7 @@ def batting(lahman):
 def sel_cols(batting):
     cols = batting.columns
     start, end = cols.index('AB'), cols.index('H') + 1
-    return ('playerID', 'yearID', 'teamID', 'G') + cols[start:end]
+    return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
 
 
 @pytest.fixture(scope='module')
