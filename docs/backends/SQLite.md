@@ -35,7 +35,7 @@ exclude_backend_api: true
         - list_databases
         - list_tables
         - load_data
-        - raw_sqlite
+        - raw_sql
         - schema
         - table
         - verify
