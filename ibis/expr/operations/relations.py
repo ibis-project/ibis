@@ -828,7 +828,7 @@ class Aggregation(TableNode, sch.HasSchema):
                 by=self.by,
                 having=self.having,
                 predicates=self.predicates,
-                sort_keys=self.sort_keys + resolved_keys,
+                sort_keys=self.sort_keys + tuple(resolved_keys),
             )
 
         return Selection(expr, [], sort_keys=resolved_keys)
