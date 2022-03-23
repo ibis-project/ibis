@@ -57,24 +57,31 @@ def fixed_arity(sa_func, arity):
         if arity != len(expr.op().args):
             raise com.IbisError('incorrect number of args')
 
-        return _varargs_call(sa_func, t, expr)
+        return _varargs_call(sa_func, t, expr.op().args)
 
     return formatter
+
+
+def _varargs_call(sa_func, t, args):
+    trans_args = []
+    for raw_arg in args:
+        arg = t.translate(raw_arg)
+        try:
+            arg = arg.scalar_subquery()
+        except AttributeError:
+            try:
+                arg = arg.as_scalar()
+            except AttributeError:
+                pass
+        trans_args.append(arg)
+    return sa_func(*trans_args)
 
 
 def varargs(sa_func):
     def formatter(t, expr):
-        op = expr.op()
-        trans_args = [t.translate(arg) for arg in op.arg]
-        return sa_func(*trans_args)
+        return _varargs_call(sa_func, t, expr.op().arg)
 
     return formatter
-
-
-def _varargs_call(sa_func, t, expr):
-    op = expr.op()
-    trans_args = [t.translate(arg) for arg in op.args]
-    return sa_func(*trans_args)
 
 
 def get_sqla_table(ctx, table):

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.util import testing as tm
+from pandas import testing as tm
 from pytest import param
 
 from ..aggcontext import Summarize, window_agg_udf

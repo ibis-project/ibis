@@ -53,10 +53,15 @@ def _try_timestamp(x):
 
 def _try_unix_timestamp(x):
     try:
-        ts = pd.Timestamp.utcfromtimestamp(int(x))
-        return ts.to_pydatetime()
+        value = int(x)
     except (ValueError, TypeError):
         return x
+    else:
+        return (
+            pd.Timestamp.fromtimestamp(value, tz="UTC")
+            .tz_localize(None)
+            .to_pydatetime()
+        )
 
 
 def _try_boolean(x):

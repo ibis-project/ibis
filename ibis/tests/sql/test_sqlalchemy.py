@@ -787,7 +787,7 @@ def test_where_correlated_subquery_with_join():
                 sa.select([sa.func.min(t3.c.ps_supplycost).label("min")])
                 .select_from(t3)
                 .where(t3.c.ps_partkey == t0.c.p_partkey)
-                .as_scalar()
+                .scalar_subquery()
             )
         )
     )

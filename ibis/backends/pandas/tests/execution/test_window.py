@@ -3,7 +3,7 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.util import testing as tm
+from pandas import testing as tm
 
 import ibis
 import ibis.common.exceptions as com
@@ -67,7 +67,7 @@ class CustomAggContext(AggregationContext):
     def agg(self, grouped_data, function, *args, **kwargs):
         upper_indices = pd.Series(range(1, len(self.parent) + 2))
         window_sizes = (
-            grouped_data.rolling(self.preceding.value + 1)
+            grouped_data.rolling(self.preceding.value + 1, min_periods=0)
             .count()
             .reset_index(drop=True)
         )

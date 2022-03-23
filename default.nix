@@ -37,7 +37,7 @@ let
       '';
 
       buildInputs = with pkgs; [ graphviz-nox ];
-      checkInputs = with pkgs; [ sqlite graphviz-nox ];
+      checkInputs = with pkgs; [ sqlite graphviz-nox proj ];
 
       preCheck = ''
         set -euo pipefail

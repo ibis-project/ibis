@@ -151,6 +151,63 @@ addopts = [
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
 ]
+filterwarnings = [
+  # fail on any warnings that are not explicitly matched below
+  "error",
+  # poetry
+  "ignore:distutils Version classes are deprecated:DeprecationWarning",
+  # clickhouse sockets aren't closed by sqlalchemy when running tests in parallel
+  'ignore:Exception ignored in:',
+  # older importlib metadata that there's no real point in breaking with
+  "ignore:SelectableGroups:DeprecationWarning",
+  # geopandas warning
+  "ignore:The distutils package is deprecated:DeprecationWarning",
+  # dask
+  "ignore:index is deprecated and will be removed in a future release:FutureWarning",
+  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
+  'ignore:The Index\._get_attributes_dict method is deprecated:DeprecationWarning',
+  'ignore:\nYou did not provide metadata:UserWarning',
+  "ignore:`meta` is not specified:UserWarning",
+  # pandas
+  "ignore:Boolean Series key will be reindexed:UserWarning",
+  'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
+  "ignore:This pattern is interpreted as a regular expression, and has match groups:UserWarning",
+  "ignore:The default dtype for empty Series will be 'object':FutureWarning",
+  'ignore:\nA value is trying to be set on a copy of a slice from a DataFrame:',
+  "ignore:the `interpolation=` argument to percentile was renamed to `method=`:DeprecationWarning",
+  "ignore:Explicitly passing `name=None`:FutureWarning",
+  # the warning suggestion to simply remove the argument in the call isn't correct
+  "ignore:The 'check_less_precise' keyword in testing:FutureWarning",
+  # numpy
+  "ignore:Creating an ndarray from ragged nested sequences:",
+  'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
+  # sqlalchemy: most of these can be removed once we have a lower bound of sqlalchemy 1.4
+  'ignore:Dialect (postgresql\+psycopg2|sqlite\+pysqlite) does \*not\* support Decimal:',
+  'ignore:The Table\.exists\(\) method is deprecated and will be removed:',
+  'ignore:Calling URL\(\) directly is deprecated:',
+  "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
+  'ignore:Dialect postgresql.psycopg2 will not make use of SQL compilation caching:',
+  'ignore:The URL\.__to_string__ method is deprecated:',
+  "ignore:UserDefinedType .* will not produce a cache key because:",
+  # this is coming from sqlalchemy 1.4, and indicates the bug we're tracking in #3526
+  'ignore:SELECT statement has a cartesian product between FROM element\(s\):',
+  # ibis
+  "ignore:`database` is deprecated:FutureWarning",
+  "ignore:`set_database` is deprecated:FutureWarning",
+  # ibis on postgres + windows
+  "ignore:locale specific date formats:UserWarning",
+  # shapely
+  "ignore:The array interface is deprecated:",
+  "ignore:Iteration over multi-part geometries is deprecated:",
+  "ignore:__len__ for multi-part geometries is deprecated:",
+  "ignore:An exception was ignored while fetching the attribute `__array_interface__`:DeprecationWarning",
+  # thrift by way of impyla
+  "ignore: PY_SSIZE_T_CLEAN will be required for '#' formats:DeprecationWarning",
+  # spark
+  "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
+  # windows
+  "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
+]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = ["site-packages", "dist-packages"]
 markers = [

@@ -10,7 +10,7 @@ dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
 
-def test_array_length(t, df):
+def test_array_length(t):
     expr = t.projection(
         [
             t.array_of_float64.length().name('array_of_float64_length'),
@@ -132,7 +132,8 @@ def test_array_index(t, df, index):
         pd.DataFrame(
             {
                 'indexed': df.array_of_float64.apply(
-                    lambda x: x[index] if -len(x) <= index < len(x) else None
+                    lambda x: x[index] if -len(x) <= index < len(x) else None,
+                    meta=("array_of_float64", "object"),
                 )
             }
         ),

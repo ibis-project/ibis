@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 from multipledispatch import Dispatcher
 from multipledispatch.conflict import AmbiguityWarning
@@ -166,7 +168,6 @@ def test_ambiguities_no_warning():
     bar.register(A2, B1)(lambda a, b: 2)
     bar.register(A2, B2)(lambda a, b: 3)
 
-    with pytest.warns(None) as warnings:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         bar.reorder()
-
-    assert len(warnings) == 0
