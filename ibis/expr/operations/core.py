@@ -27,7 +27,7 @@ def distinct_roots(*expressions):
 
 @public
 class Node(util.CachedEqMixin, Annotable):
-    __slots__ = ('_expr_cached',)
+    __slots__ = ()
 
     def _type_check(self, other: Any) -> None:
         if not isinstance(other, Node):
@@ -99,12 +99,7 @@ class Node(util.CachedEqMixin, Annotable):
         return self.equals(other)
 
     def to_expr(self):
-        try:
-            result = self._expr_cached
-        except AttributeError:
-            result = self._make_expr()
-            object.__setattr__(self, "_expr_cached", result)
-        return result
+        return self._make_expr()
 
     def _make_expr(self):
         klass = self.output_type()
