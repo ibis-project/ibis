@@ -353,17 +353,17 @@ def _postgresql_array_search(element, compiler, **kw):
     needle, haystack = element.clauses
     i = sa.func.generate_subscripts(haystack, 1).alias('i')
     c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
-    result = (
-        sa.func.coalesce(
-            sa.select([c0])
-            .where(haystack[c0].op('IS NOT DISTINCT FROM')(needle))
-            .order_by(c0)
-            .limit(1)
-            .as_scalar(),
-            0,
-        )
-        - 1
+    res = (
+        sa.select([c0])
+        .where(haystack[c0].op('IS NOT DISTINCT FROM')(needle))
+        .order_by(c0)
+        .limit(1)
     )
+    try:
+        subq = res.scalar_subquery()
+    except AttributeError:
+        subq = res.as_scalar()
+    result = sa.func.coalesce(subq, 0) - 1
     string_result = compiler.process(result, **kw)
     return string_result
 
@@ -494,7 +494,11 @@ def _array_repeat(t, expr):
 
     # tie it all together in a scalar subquery and collapse that into an ARRAY
     selected = sa.select([array[index]]).select_from(series)
-    return sa.func.array(selected.as_scalar())
+    try:
+        subq = selected.scalar_subquery()
+    except AttributeError:
+        subq = selected.as_scalar()
+    return sa.func.array(subq)
 
 
 def _identical_to(t, expr):

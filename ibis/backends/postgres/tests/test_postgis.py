@@ -335,9 +335,7 @@ def test_geo_union(geotable, gdf):
         .union(geopandas.GeoSeries(gdf.geo_multipolygon))
         .area
     )
-    tm.assert_series_equal(
-        expr.execute(), expected, check_names=False, check_less_precise=2
-    )
+    tm.assert_series_equal(expr.execute(), expected, check_names=False)
 
 
 def test_geo_x(geotable, gdf):
