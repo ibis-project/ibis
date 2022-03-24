@@ -146,7 +146,7 @@ jobs:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
           number: ${{ steps.create_pr.outputs.pull-request-number }}
 
-      - uses: peter-evans/enable-pull-request-automerge@v1
+      - uses: peter-evans/enable-pull-request-automerge@v2
         if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
