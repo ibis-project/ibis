@@ -331,7 +331,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """The name of the current database this client is connected to."""
         return self.database_name
 
-    @util.deprecated(version='2.0', instead='`list_databases`')
+    @util.deprecated(version='2.0', instead='use `list_databases`')
     def list_schemas(self, like: str | None = None) -> list[str]:
         return self.list_databases()
 

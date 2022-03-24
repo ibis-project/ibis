@@ -413,7 +413,7 @@ def deprecated_msg(name, *, instead, version=''):
     if version:
         msg += f' as of v{version}'
 
-    msg += f'; use {instead}.'
+    msg += f'; {instead}'
     return msg
 
 

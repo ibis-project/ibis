@@ -1170,6 +1170,13 @@ class TableExpr(Expr):
     any_inner_join = _regular_join_method("any_inner_join", "any_inner")
     any_left_join = _regular_join_method("any_left_join", "any_left")
 
+    @util.deprecated(
+        version="3.0",
+        instead="remove the `.materialize()` call, it has no effect",
+    )
+    def materialize(self) -> TableExpr:
+        return self
+
 
 def _resolve_predicates(table: TableExpr, predicates) -> list[ir.BooleanValue]:
     from .. import analysis as an

@@ -224,7 +224,7 @@ class BaseBackend(abc.ABC):
     def do_connect(self, *args, **kwargs) -> None:
         """Connect to database specified by `args` and `kwargs`."""
 
-    @deprecated(instead='equivalent methods in the backend')
+    @deprecated(instead='use equivalent methods in the backend')
     def database(self, name: str | None = None) -> Database:
         """Return a `Database` object for the `name` database.
 
@@ -272,7 +272,7 @@ class BaseBackend(abc.ABC):
             the `like` pattern if provided.
         """
 
-    @deprecated(version='2.0', instead='`name in client.list_databases()`')
+    @deprecated(version='2.0', instead='use `name in client.list_databases()`')
     def exists_database(self, name: str) -> bool:
         """Return whether a database name exists in the current connection.
 
@@ -342,7 +342,7 @@ class BaseBackend(abc.ABC):
             The list of the table names that match the pattern `like`.
         """
 
-    @deprecated(version='2.0', instead='`name in client.list_tables()`')
+    @deprecated(version='2.0', instead='use `name in client.list_tables()`')
     def exists_table(self, name: str, database: str | None = None) -> bool:
         """Return whether a table name exists in the database.
 
@@ -367,7 +367,7 @@ class BaseBackend(abc.ABC):
     def table(self, name: str, database: str | None = None) -> ir.TableExpr:
         """Return a table expression from the database."""
 
-    @deprecated(version='2.0', instead='`.table(name).schema()`')
+    @deprecated(version='2.0', instead='use `.table(name).schema()`')
     def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
         """Return the schema of `table_name`."""
         return self.table(name=table_name, database=database).schema()

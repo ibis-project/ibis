@@ -297,7 +297,7 @@ class Expr:
     @util.deprecated(
         version='2.0',
         instead=(
-            "[`Expr.compile`][ibis.expr.types.core.Expr.compile] and "
+            "call [`Expr.compile`][ibis.expr.types.core.Expr.compile] and "
             "catch TranslationError"
         ),
     )
