@@ -96,7 +96,7 @@ class _InstanceOf(Validator):
         return arg
 
 
-@util.deprecated(version="3.0", instead="Validator")
+@util.deprecated(version="3.0", instead="use Validator if needed")
 def Argument(validator, default=EMPTY):
     """Argument constructor
     Parameters

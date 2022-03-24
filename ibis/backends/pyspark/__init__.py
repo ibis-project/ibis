@@ -114,7 +114,10 @@ class Backend(BaseSQLBackend):
     def version(self):
         return pyspark.__version__
 
-    @util.deprecated(version='2.0', instead='a new connection to database')
+    @util.deprecated(
+        version='2.0',
+        instead='use a new connection to the database',
+    )
     def set_database(self, name):
         self._catalog.setCurrentDatabase(name)
 

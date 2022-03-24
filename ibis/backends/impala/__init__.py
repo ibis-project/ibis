@@ -360,7 +360,10 @@ class Backend(BaseSQLBackend):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
-    @util.deprecated(version='2.0', instead='a new connection to database')
+    @util.deprecated(
+        version='2.0',
+        instead='use a new connection to the database',
+    )
     def set_database(self, name):
         # XXX The parent `Client` has a generic method that calls this same
         # method in the backend. But for whatever reason calling this code from
