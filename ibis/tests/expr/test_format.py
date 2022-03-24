@@ -270,6 +270,11 @@ def test_tables_have_format_rules(cls):
     assert cls in ibis.expr.format.fmt_table_op.registry
 
 
+@pytest.mark.parametrize("cls", [ops.PhysicalTable, ops.TableNode])
+def test_tables_have_format_value_rules(cls):
+    assert cls in ibis.expr.format.fmt_value.registry
+
+
 def test_window_no_group_by():
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = t.a.mean().over(ibis.window(preceding=0))
