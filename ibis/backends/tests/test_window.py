@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from pytest import param
@@ -517,7 +518,7 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notimpl(
     ["clickhouse", "dask", "datafusion", "impala", "pandas", "pyspark"]
 )
-def test_grouped_bounded_range_window(backend, alltypes, df, con):
+def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
     # `preceding=10, following=0, order_by='id'``:
@@ -536,17 +537,26 @@ def test_grouped_bounded_range_window(backend, alltypes, df, con):
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
     result = expr.execute().set_index('id').sort_index()
 
+    def gb_fn(df):
+        indices = np.searchsorted(
+            df.id,
+            [
+                df.id - 10,
+                # add 1 to get the upper bound without having to make two
+                # searchsorted calls
+                df.id + 1,
+            ],
+            side="left",
+        ).T
+        double_col = df.double_col.values
+        result = [double_col[start:stop].sum() for start, stop in indices]
+        return pd.Series(result, index=df.index)
+
+    res = df.sort_values("id").groupby("string_col").apply(gb_fn).droplevel(0)
     expected = (
         df.assign(
             # Mimic our range window spec using .apply()
-            val=df.apply(
-                lambda x: df.double_col[
-                    (df.string_col == x.string_col)  # Grouping by string_col
-                    & ((x.id - 10) <= df.id)  # Corresponds to `preceding=10`
-                    & (df.id <= x.id)  # Corresponds to `following=0`
-                ].sum(),
-                axis=1,
-            )
+            val=res
         )
         .set_index('id')
         .sort_index()
