@@ -1,10 +1,17 @@
 import os
 from pathlib import Path
 
+import pytest
 from pkg_resources import parse_version
 
 import ibis
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+
+MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
+MYSQL_PASS = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
+MYSQL_HOST = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
+MYSQL_PORT = os.environ.get('IBIS_TEST_MYSQL_PORT', 3306)
+IBIS_TEST_MYSQL_DB = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
 
 
 class TestConf(BackendTest, RoundHalfToEven):
@@ -42,16 +49,26 @@ class TestConf(BackendTest, RoundHalfToEven):
             self.__class__.supports_window_operations = True
 
     @staticmethod
-    def connect(data_directory: Path):
-        user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
-        password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
-        host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
-        port = os.environ.get('IBIS_TEST_MYSQL_PORT', 3306)
-        database = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
+    def connect(_: Path):
         return ibis.mysql.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            database=database,
+            host=MYSQL_HOST,
+            user=MYSQL_USER,
+            password=MYSQL_PASS,
+            database=IBIS_TEST_MYSQL_DB,
+            port=MYSQL_PORT,
         )
+
+
+def _random_identifier(suffix):
+    return f'__ibis_test_{suffix}_{ibis.util.guid()}'
+
+
+@pytest.fixture(scope='session')
+def con():
+    return ibis.mysql.connect(
+        host=MYSQL_HOST,
+        user=MYSQL_USER,
+        password=MYSQL_PASS,
+        database=IBIS_TEST_MYSQL_DB,
+        port=MYSQL_PORT,
+    )
