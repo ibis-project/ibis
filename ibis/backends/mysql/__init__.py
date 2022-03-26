@@ -10,9 +10,11 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .compiler import MySQLCompiler
+from .datatypes import _type_from_cursor_info
 
 
 class Backend(BaseAlchemyBackend):
@@ -120,6 +122,16 @@ class Backend(BaseAlchemyBackend):
             finally:
                 query = "SET @@session.time_zone = '{}'"
                 bind.execute(query.format(previous_timezone))
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Infer the schema of `query`."""
+        result = self.con.execute(f"SELECT * FROM ({query}) _ LIMIT 0")
+        cursor = result.cursor
+        fields = [
+            (field.name, _type_from_cursor_info(descr, field))
+            for descr, field in zip(cursor.description, cursor._result.fields)
+        ]
+        return sch.Schema.from_tuples(fields)
 
 
 # TODO(kszucs): unsigned integers
