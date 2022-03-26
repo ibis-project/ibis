@@ -3,13 +3,13 @@ from __future__ import annotations
 import ast
 import collections
 import datetime
-import decimal
 import enum
 import functools
 import numbers
 import re
 import typing
 import uuid as _uuid
+from decimal import Decimal as PythonDecimal
 from typing import (
     AbstractSet,
     Iterable,
@@ -409,43 +409,64 @@ class Float64(Floating):
 class Decimal(DataType):
     """Fixed-precision decimal values."""
 
-    precision = instance_of(int)
-    """The number of values after the decimal point."""
-
-    scale = instance_of(int)
+    precision = optional(instance_of(int))
     """The number of decimal places values of this type can hold."""
+
+    scale = optional(instance_of(int))
+    """The number of values after the decimal point."""
 
     scalar = ir.DecimalScalar
     column = ir.DecimalColumn
 
-    def __init__(self, precision: int, scale: int, **kwargs) -> None:
-        if not isinstance(precision, numbers.Integral):
-            raise TypeError('Decimal type precision must be an integer')
-        if not isinstance(scale, numbers.Integral):
-            raise TypeError('Decimal type scale must be an integer')
-        if precision < 0:
-            raise ValueError('Decimal type precision cannot be negative')
-        if not precision:
-            raise ValueError('Decimal type precision cannot be zero')
-        if scale < 0:
-            raise ValueError('Decimal type scale cannot be negative')
-        if precision < scale:
-            raise ValueError(
-                'Decimal type precision must be greater than or equal to '
-                'scale. Got precision={:d} and scale={:d}'.format(
-                    precision, scale
+    def __init__(
+        self,
+        precision: int | None = None,
+        scale: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        if precision is not None:
+            if not isinstance(precision, numbers.Integral):
+                raise TypeError(
+                    "Decimal type precision must be an integer; "
+                    f"got {type(precision)}"
                 )
-            )
+            if precision < 0:
+                raise ValueError('Decimal type precision cannot be negative')
+            if not precision:
+                raise ValueError('Decimal type precision cannot be zero')
+        if scale is not None:
+            if not isinstance(scale, numbers.Integral):
+                raise TypeError('Decimal type scale must be an integer')
+            if scale < 0:
+                raise ValueError('Decimal type scale cannot be negative')
+            if precision is not None and precision < scale:
+                raise ValueError(
+                    'Decimal type precision must be greater than or equal to '
+                    'scale. Got precision={:d} and scale={:d}'.format(
+                        precision, scale
+                    )
+                )
         super().__init__(precision=precision, scale=scale, **kwargs)
 
     @property
-    def largest(self) -> Decimal:
-        """Return the largest decimal type."""
-        return self.__class__(38, self.scale)
+    def largest(self):
+        """Return the largest type of decimal."""
+        return self.__class__(precision=None, scale=None)
 
     @property
     def _pretty_piece(self) -> str:
-        return f"({self.precision:d}, {self.scale:d})"
+        args = []
+
+        if (precision := self.precision) is not None:
+            args.append(f"prec={precision:d}")
+
+        if (scale := self.scale) is not None:
+            args.append(f"scale={scale:d}")
+
+        if not args:
+            return ""
+
+        return f"({', '.join(args)})"
 
 
 @public
@@ -860,8 +881,8 @@ timestamp = Timestamp()
 interval = Interval()
 category = Category()
 # geo spatial data type
-geometry = GeoSpatial()
-geography = GeoSpatial()
+geometry = Geometry()
+geography = Geography()
 point = Point()
 linestring = LineString()
 polygon = Polygon()
@@ -875,6 +896,7 @@ jsonb = JSONB()
 uuid = UUID()
 macaddr = MACADDR()
 inet = INET()
+decimal = Decimal()
 
 public(
     any=any,
@@ -915,6 +937,7 @@ public(
     uuid=uuid,
     macaddr=macaddr,
     inet=inet,
+    decimal=decimal,
 )
 
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
@@ -1055,7 +1078,7 @@ def parse_type(text: str) -> DataType:
     @p.generate
     def decimal():
         yield spaceless_string("decimal")
-        prec_scale = (
+        prec, sc = (
             yield lparen.then(
                 p.seq(precision.skip(comma), scale).combine(
                     lambda prec, scale: (prec, scale)
@@ -1063,8 +1086,8 @@ def parse_type(text: str) -> DataType:
             )
             .skip(rparen)
             .optional()
-        ) or (9, 0)
-        return Decimal(*prec_scale)
+        ) or (None, None)
+        return Decimal(precision=prec, scale=sc)
 
     @p.generate
     def parened_string():
@@ -1394,8 +1417,15 @@ def can_cast_floats(
 
 @castable.register(Decimal, Decimal)
 def can_cast_decimals(source: Decimal, target: Decimal, **kwargs) -> bool:
+    target_prec = target.precision
+    source_prec = source.precision
+    target_sc = target.scale
+    source_sc = source.scale
     return (
-        target.precision >= source.precision and target.scale >= source.scale
+        target_prec is None
+        or (source_prec is not None and target_prec >= source_prec)
+    ) and (
+        target_sc is None or (source_sc is not None and target_sc >= source_sc)
     )
 
 
@@ -1616,8 +1646,8 @@ def _uuid_to_str(typ: String, value: _uuid.UUID) -> str:
 
 
 @_normalize.register(Decimal, int)
-def _int_to_decimal(typ: Decimal, value: int) -> decimal.Decimal:
-    return decimal.Decimal(value).scaleb(-typ.scale)
+def _int_to_decimal(typ: Decimal, value: int) -> PythonDecimal:
+    return PythonDecimal(value).scaleb(-typ.scale)
 
 
 @_normalize.register(Array, (tuple, list, np.ndarray))
@@ -1631,13 +1661,13 @@ def _set_to_frozenset(typ: Set, values: AbstractSet) -> frozenset:
 
 
 @_normalize.register(Map, dict)
-def _map_to_frozendict(typ: Map, values: Mapping) -> decimal.Decimal:
+def _map_to_frozendict(typ: Map, values: Mapping) -> PythonDecimal:
     values = {k: _normalize(typ.value_type, v) for k, v in values.items()}
     return frozendict(values)
 
 
 @_normalize.register(Struct, dict)
-def _struct_to_frozendict(typ: Struct, values: Mapping) -> decimal.Decimal:
+def _struct_to_frozendict(typ: Struct, values: Mapping) -> PythonDecimal:
     value_types = typ.pairs
     values = {
         k: _normalize(typ[k], v) for k, v in values.items() if k in value_types

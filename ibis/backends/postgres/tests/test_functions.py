@@ -66,7 +66,7 @@ def guid2(con):
         ),
         param(
             lambda t: t.string_col.cast('decimal'),
-            lambda at: sa.cast(at.c.string_col, sa.NUMERIC(9, 0)),
+            lambda at: sa.cast(at.c.string_col, sa.NUMERIC()),
             id='string_to_decimal_no_params',
         ),
         param(

@@ -434,8 +434,8 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     [
         (
             {'postgres': postgresql, 'mysql': mysql},
-            {'postgres': 1000, 'mysql': 10},
-            {'postgres': 0, 'mysql': 0},
+            {'postgres': None, 'mysql': 10},
+            {'postgres': None, 'mysql': 0},
         )
     ],
 )

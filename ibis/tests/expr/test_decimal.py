@@ -27,7 +27,7 @@ def test_decimal_sum_type(lineitem):
     col = lineitem.l_extendedprice
     result = col.sum()
     assert isinstance(result, ir.DecimalScalar)
-    assert result.type() == dt.Decimal(38, col.type().scale)
+    assert result.type() == dt.decimal
 
 
 @pytest.mark.parametrize('func', ['mean', 'max', 'min'])
@@ -105,7 +105,7 @@ def test_invalid_precision_scale_type(precision, scale):
 def test_decimal_str(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    assert str(t) == f'decimal({t.precision:d}, {t.scale:d})'
+    assert str(t) == f'decimal(prec={t.precision:d}, scale={t.scale:d})'
 
 
 def test_decimal_repr(lineitem):

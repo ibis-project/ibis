@@ -46,7 +46,7 @@ def spaceless_string(*strings: str):
     )
 
 
-def parse_type(text: str) -> DataType:
+def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     precision = scale = p.digit.at_least(1).concat().map(int)
 
     lparen = spaceless_string("(")
@@ -103,9 +103,7 @@ def parse_type(text: str) -> DataType:
             )
             .skip(rparen)
             .optional()
-        )
-        if prec_scale is None:
-            prec_scale = (18, 3)
+        ) or default_decimal_parameters
         return Decimal(*prec_scale)
 
     @p.generate

@@ -117,17 +117,6 @@ def sa_mysql_numeric(_, satype, nullable=True):
     )
 
 
-@dt.dtype.register(PGDialect, postgresql.NUMERIC)
-def sa_postgres_numeric(_, satype, nullable=True):
-    # PostgreSQL allows any precision for numeric values if not specified,
-    # up to the implementation limit. Here, default to the maximum value that
-    # can be specified by the user. The scale defaults to zero.
-    # https://www.postgresql.org/docs/10/datatype-numeric.html
-    return dt.Decimal(
-        satype.precision or 1000, satype.scale or 0, nullable=nullable
-    )
-
-
 @dt.dtype.register(Dialect, sa.types.Numeric)
 @dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
 def sa_numeric(_, satype, nullable=True):
