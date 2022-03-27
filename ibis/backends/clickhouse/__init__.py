@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import OrderedDict
+import json
 from typing import Any, Literal, Mapping
 
 import pandas as pd
@@ -141,7 +141,7 @@ class Backend(BaseSQLBackend):
         for name, df in external_tables.items():
             if not isinstance(df, pd.DataFrame):
                 raise TypeError(
-                    'External table is not an instance of pandas ' 'dataframe'
+                    'External table is not an instance of pandas dataframe'
                 )
             schema = sch.infer(df)
             external_tables_list.append(
@@ -169,12 +169,13 @@ class Backend(BaseSQLBackend):
         )
 
     def fetch_from_cursor(self, cursor, schema):
-        data, columns = cursor
+        data, _ = cursor
+        names = schema.names
         if not len(data):
             # handle empty resultset
-            return pd.DataFrame([], columns=schema.names)
+            return pd.DataFrame([], columns=names)
 
-        df = pd.DataFrame.from_dict(OrderedDict(zip(schema.names, data)))
+        df = pd.DataFrame.from_dict(dict(zip(names, data)))
         return schema.apply_to(df)
 
     def close(self):
@@ -208,10 +209,11 @@ class Backend(BaseSQLBackend):
             Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = f'DESC {qualified_name}'
-        data, columns = self.raw_sql(query)
-        return sch.schema(
-            data[0], list(map(ClickhouseDataType.parse, data[1]))
+        (column_names, types, *_), *_ = self.raw_sql(
+            f"DESCRIBE {qualified_name}"
+        )
+        return sch.Schema.from_tuples(
+            zip(column_names, map(ClickhouseDataType.parse, types))
         )
 
     def set_options(self, options):
@@ -226,11 +228,16 @@ class Backend(BaseSQLBackend):
         if name not in self.list_databases():
             self.create_database(name, force=True)
 
-    def _get_schema_using_query(self, query, **kwargs):
-        data, columns = self.raw_sql(query, **kwargs)
-        colnames, typenames = zip(*columns)
-        coltypes = list(map(ClickhouseDataType.parse, typenames))
-        return sch.schema(colnames, coltypes)
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        [(raw_plans,)] = self.con.execute(
+            f"EXPLAIN json = 1, description = 0, header = 1 {query}"
+        )
+        [plan] = json.loads(raw_plans)
+        fields = [
+            (field["Name"], ClickhouseDataType.parse(field["Type"]))
+            for field in plan["Plan"]["Header"]
+        ]
+        return sch.Schema.from_tuples(fields)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
