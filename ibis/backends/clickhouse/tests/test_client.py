@@ -2,7 +2,9 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 
+import ibis
 import ibis.config as config
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 
@@ -65,7 +67,7 @@ def test_verbose_log_queries(con):
         with config.option_context('verbose_log', logger):
             con.table('functional_alltypes')
 
-    expected = 'DESC ibis_testing.`functional_alltypes`'
+    expected = 'DESCRIBE ibis_testing.`functional_alltypes`'
 
     assert len(queries) == 1
     assert queries[0] == expected
@@ -120,7 +122,7 @@ def temporary_alltypes(con):
         con.raw_sql(f"DROP TABLE temporary_alltypes_{id}")
 
 
-def test_insert(con, temporary_alltypes, alltypes, df):
+def test_insert(temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10]
 
@@ -130,7 +132,7 @@ def test_insert(con, temporary_alltypes, alltypes, df):
     tm.assert_frame_equal(temporary.execute(), records)
 
 
-def test_insert_with_less_columns(con, temporary_alltypes, alltypes, df):
+def test_insert_with_less_columns(temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df.loc[:10, ['string_col']].copy()
     records['date_col'] = None
@@ -139,10 +141,35 @@ def test_insert_with_less_columns(con, temporary_alltypes, alltypes, df):
         temporary.insert(records)
 
 
-def test_insert_with_more_columns(con, temporary_alltypes, alltypes, df):
+def test_insert_with_more_columns(temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10].copy()
     records['non_existing_column'] = 'raise on me'
 
     with pytest.raises(AssertionError):
         temporary.insert(records)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_schema"),
+    [
+        (
+            "SELECT 1 as a, 2 + dummy as b",
+            ibis.schema(
+                dict(a=dt.UInt8(nullable=False), b=dt.UInt16(nullable=False))
+            ),
+        ),
+        (
+            "SELECT string_col, sum(double_col) as b FROM functional_alltypes GROUP BY string_col",  # noqa: E501
+            ibis.schema(
+                dict(
+                    string_col=dt.String(nullable=False),
+                    b=dt.Float64(nullable=False),
+                )
+            ),
+        ),
+    ],
+)
+def test_get_schema_using_query(con, query, expected_schema):
+    result = con._get_schema_using_query(query)
+    assert result == expected_schema
