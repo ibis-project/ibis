@@ -11,6 +11,7 @@ import os
 import textwrap
 import types
 import warnings
+import weakref
 from numbers import Real
 from typing import (
     TYPE_CHECKING,
@@ -457,106 +458,90 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
-class EqMixin(abc.ABC):
-    """A mixin for abstracting equality checks."""
+class WeakCache(MutableMapping):
 
-    __slots__ = ()
+    __slots__ = ('_data',)
 
-    def __eq__(self, other: Any) -> bool | NotImplemented:
+    def __init__(self):
+        object.__setattr__(self, '_data', {})
+
+    def __setattr__(self, name, value):
+        raise TypeError(f"can't set {name}")
+
+    def __len__(self):
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __setitem__(self, key, value):
+        # construct an alternative representation of the key using the id()
+        # of the key's components, this prevents infinite recursions
+        identifiers = tuple(id(item) for item in key)
+
+        # create a function which removes the key from the cache
+        def callback(ref_):
+            return self._data.pop(identifiers, None)
+
+        # create weak references for the key's components with the callback
+        # to remove the cache entry if any of the key's components gets
+        # garbage collected
+        refs = tuple(weakref.ref(item, callback) for item in key)
+
+        self._data[identifiers] = (value, refs)
+
+    def __getitem__(self, key):
+        identifiers = tuple(id(item) for item in key)
+        value, _ = self._data[identifiers]
+        return value
+
+    def __delitem__(self, key):
+        identifiers = tuple(id(item) for item in key)
+        del self._data[identifiers]
+
+    def __repr__(self):
+        return repr(self._data)
+
+
+class Comparable(abc.ABC):
+
+    __slots__ = ("__weakref__",)
+    __cache__ = WeakCache()
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
         try:
-            return self.equals(other, cache={})
+            return self.__cached_equals__(other)
         except TypeError:
-            return NotImplemented
-
-    def __ne__(self, other: Any) -> bool | NotImplemented:
-        try:
-            return not self.equals(other, cache={})
-        except TypeError:
-            return NotImplemented
-
-    def equals(
-        self,
-        other: Hashable,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
-        if cache is None:
-            cache = {}
-
-        key = self, other
-
-        if (result := cache.get(key)) is None:
-            if self is other:
-                result = cache[key] = True
-            else:
-                # only type check if we have to do the comparison
-                self._type_check(other)
-                result = cache[
-                    key
-                ] = self._hash == other._hash and self.__component_eq__(
-                    other, cache=cache
-                )
-        return result
-
-    def _type_check(self, other: Any) -> None:
-        """Check whether `self` can be compared with `other`."""
-        if type(self) != type(other):
-            raise TypeError(
-                "invalid equality comparison between "
-                f"{type(self)} and {type(other)}"
-            )
+            raise NotImplemented  # noqa: F901
 
     @abc.abstractmethod
-    def __component_eq__(
-        self,
-        other: Any,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        """Compare the individual fields of a subclass."""
+    def __equals__(self, other):
+        ...
 
+    def __cached_equals__(self, other):
+        if self is other:
+            return True
 
-C = TypeVar("C", bound=EqMixin)
+        # type comparison should be cheap
+        if type(self) != type(other):
+            return False
 
+        # reduce space required for commutative operation
+        if hash(self) < hash(other):
+            key = (self, other)
+        else:
+            key = (other, self)
 
-def _try_eq(
-    left: Any,
-    right: Any,
-    *,
-    cache: MutableMapping[Hashable, bool],
-) -> bool:
-    try:
-        return (left is None and right is None) or left.equals(
-            right,
-            cache=cache,
-        )
-    except AttributeError:
-        return left == right
+        try:
+            result = self.__cache__[key]
+        except KeyError:
+            result = self.__equals__(other)
+            self.__cache__[key] = result
 
-
-def seq_eq(
-    lefts: Sequence[C],
-    rights: Sequence[C],
-    *,
-    cache: MutableMapping[Hashable, bool],
-) -> bool:
-    """Compare two sequences of expressions.
-
-    Parameters
-    ----------
-    lefts
-        Iterable of expressions
-    rights
-        Iterable of expressions
-    cache
-        Mutable mapping of expression pairs to bool
-
-    Returns
-    -------
-    bool
-        Whether the expressions of `lefts` and `rights` are equal
-    """
-    return len(lefts) == len(rights) and all(
-        _try_eq(left, right, cache=cache) for left, right in zip(lefts, rights)
-    )
+        return result
 
 
 def to_op_dag(expr: ir.Expr) -> Graph:

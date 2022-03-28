@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABCMeta
-from typing import Any, Callable, Hashable, MutableMapping
+from typing import Any, Callable, Hashable
 
 from ibis import util
 
@@ -182,7 +182,7 @@ class AnnotableMeta(ABCMeta):
         return instance
 
 
-class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
+class Annotable(Hashable, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
     __slots__ = "args", "_hash"
@@ -198,15 +198,11 @@ class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
         object.__setattr__(self, "args", args)
         object.__setattr__(self, "_hash", hash((type(self), args)))
 
-    def _type_check(self, other: Any) -> None:
-        if type(self) != type(other):
-            raise TypeError(
-                "invalid equality comparison between "
-                f"{type(self)} and {type(other)}"
-            )
-
     def __hash__(self):
         return self._hash
+
+    def __eq__(self, other):
+        return super().__eq__(other)
 
     def __setattr__(self, name: str, _: Any) -> None:
         raise TypeError(
@@ -225,16 +221,6 @@ class Annotable(Hashable, util.EqMixin, metaclass=AnnotableMeta):
     def __reduce__(self):
         kwargs = dict(zip(self.argnames, self.args))
         return (self._reconstruct, (kwargs,))
-
-    def __component_eq__(
-        self,
-        other: Annotable,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return util.seq_eq(self.args, other.args, cache=cache)
-
-    def __getstate__(self) -> dict[str, Any]:
-        return {key: getattr(self, key) for key in self.argnames}
 
     def flat_args(self):
         import ibis.expr.schema as sch

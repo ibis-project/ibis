@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import collections
-from typing import Hashable, MutableMapping
 
 from multipledispatch import Dispatcher
 
@@ -33,7 +32,7 @@ result : pd.Series
 )
 
 
-class Schema(util.EqMixin):
+class Schema(util.Comparable):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -133,16 +132,20 @@ class Schema(util.EqMixin):
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return Schema(names, types)
 
-    def __component_eq__(
-        self,
-        other: Schema,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.names == other.names and util.seq_eq(
-            self.types,
-            other.types,
-            cache=cache,
+    def __equals__(self, other: Schema) -> bool:
+        return (
+            self.names == other.names
+            and len(self.types) == len(other.types)
+            and all(a.equals(b) for a, b in zip(self.types, other.types))
         )
+
+    def equals(self, other):
+        if not isinstance(other, Schema):
+            raise TypeError(
+                "invalid equality comparison between Schema and "
+                f"{type(other)}"
+            )
+        return self.__cached_equals__(other)
 
     def __gt__(self, other):
         return set(self.items()) > set(other.items())

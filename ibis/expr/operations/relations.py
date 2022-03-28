@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import itertools
-from typing import Hashable, MutableMapping
 
 from cached_property import cached_property
 from public import public
@@ -72,15 +71,6 @@ class UnboundTable(PhysicalTable):
     schema = rlz.instance_of(sch.Schema)
     name = rlz.optional(rlz.instance_of(str), default=genname)
 
-    def __component_eq__(
-        self,
-        other: UnboundTable,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.name == other.name and self.schema.equals(
-            other.schema, cache=cache
-        )
-
 
 @public
 class DatabaseTable(PhysicalTable):
@@ -90,17 +80,6 @@ class DatabaseTable(PhysicalTable):
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
-
-    def __component_eq__(
-        self,
-        other: DatabaseTable,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            self.name == other.name
-            and self.source == other.source
-            and self.schema.equals(other.schema, cache=cache)
-        )
 
 
 @public
@@ -113,17 +92,6 @@ class SQLQueryResult(TableNode, sch.HasSchema):
 
     def blocks(self):
         return True
-
-    def __component_eq__(
-        self,
-        other: SQLQueryResult,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            self.query == other.query
-            and self.schema.equals(other.schema, cache=cache)
-            and self.source == other.source
-        )
 
 
 def _make_distinct_join_predicates(left, right, predicates):
@@ -215,17 +183,6 @@ class Join(TableNode):
         else:
             return distinct_roots(self.left, self.right)
 
-    def __component_eq__(
-        self,
-        other: Join,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            util.seq_eq(self.predicates, other.predicates, cache=cache)
-            and self.left.equals(other.left, cache=cache)
-            and self.right.equals(other.right, cache=cache)
-        )
-
 
 @public
 class InnerJoin(Join):
@@ -273,15 +230,7 @@ class LeftAntiJoin(Join):
 
 @public
 class CrossJoin(Join):
-    def __component_eq__(
-        self,
-        other: CrossJoin,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.left.equals(other.left, cache=cache) and self.right.equals(
-            other.right,
-            cache=cache,
-        )
+    pass
 
 
 @public
@@ -298,20 +247,6 @@ class AsOfJoin(Join):
             predicates=predicates,
             by=by,
             tolerance=tolerance,
-        )
-
-    def __component_eq__(
-        self,
-        other: AsOfJoin,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            (
-                (self.tolerance is None and other.tolerance is None)
-                or self.tolerance.equals(other.tolerance, cache=cache)
-            )
-            and util.seq_eq(self.by, other.by, cache=cache)
-            and super().__component_eq__(other, cache=cache)
         )
 
 
@@ -333,16 +268,6 @@ class SetOp(TableNode, sch.HasSchema):
 
     def blocks(self):
         return True
-
-    def __component_eq__(
-        self,
-        other: SetOp,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.left.equals(other.left, cache=cache) and self.right.equals(
-            other.right,
-            cache=cache,
-        )
 
 
 @public
@@ -379,17 +304,6 @@ class Limit(TableNode):
     def root_tables(self):
         return [self]
 
-    def __component_eq__(
-        self,
-        other: Limit,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            self.n == other.n
-            and self.offset == other.offset
-            and self.table.equals(other.table, cache=cache)
-        )
-
 
 @public
 class SelfReference(TableNode, sch.HasSchema):
@@ -407,13 +321,6 @@ class SelfReference(TableNode, sch.HasSchema):
 
     def blocks(self):
         return True
-
-    def __component_eq__(
-        self,
-        other: SelfReference,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.table.equals(other.table, cache=cache)
 
 
 @public
@@ -491,18 +398,6 @@ class Selection(TableNode, sch.HasSchema):
         # Validate no overlapping columns in schema
         assert self.schema
 
-    def __component_eq__(
-        self,
-        other: Selection,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            util.seq_eq(self.selections, other.selections, cache=cache)
-            and util.seq_eq(self.predicates, other.predicates, cache=cache)
-            and util.seq_eq(self.sort_keys, other.sort_keys, cache=cache)
-            and self.table.equals(other.table, cache=cache)
-        )
-
     @cached_property
     def schema(self):
         # Resolve schema and initialize
@@ -542,34 +437,30 @@ class Selection(TableNode, sch.HasSchema):
     def can_add_filters(self, wrapped_expr, predicates):
         pass
 
-    def empty_or_equal(self, other, cache) -> bool:
+    def empty_or_equal(self, other) -> bool:
         for field in "selections", "sort_keys", "predicates":
             selfs = getattr(self, field)
             others = getattr(other, field)
             valid = (
                 not selfs
                 or not others
-                or util.seq_eq(selfs, others, cache=cache)
+                or (a.equals(b) for a, b in zip(selfs, others))
             )
             if not valid:
                 return False
         return True
 
-    def compatible_with(self, other, cache=None):
-        if cache is None:
-            cache = {}
+    def compatible_with(self, other):
         # self and other are equivalent except for predicates, selections, or
         # sort keys any of which is allowed to be empty. If both are not empty
         # then they must be equal
-        if self.equals(other, cache=cache):
+        if self.equals(other):
             return True
 
         if not isinstance(other, type(self)):
             return False
 
-        return self.table.equals(other.table, cache=cache) and (
-            self.empty_or_equal(other, cache=cache)
-        )
+        return self.table.equals(other.table) and self.empty_or_equal(other)
 
     # Operator combination / fusion logic
 
@@ -776,20 +667,6 @@ class Aggregation(TableNode, sch.HasSchema):
         # Validate schema has no overlapping columns
         assert self.schema
 
-    def __component_eq__(
-        self,
-        other: Aggregation,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            util.seq_eq(self.metrics, other.metrics, cache=cache)
-            and util.seq_eq(self.by, other.by, cache=cache)
-            and util.seq_eq(self.having, other.having, cache=cache)
-            and util.seq_eq(self.predicates, other.predicates, cache=cache)
-            and util.seq_eq(self.sort_keys, other.sort_keys, cache=cache)
-            and self.table.equals(other.table, cache=cache)
-        )
-
     def blocks(self):
         return True
 
@@ -862,13 +739,6 @@ class Distinct(TableNode, sch.HasSchema):
     def blocks(self):
         return True
 
-    def __component_eq__(
-        self,
-        other: Distinct,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.table.equals(other.table, cache=cache)
-
 
 @public
 class ExistsSubquery(Node):
@@ -878,17 +748,6 @@ class ExistsSubquery(Node):
     def output_type(self):
         return ir.ExistsExpr
 
-    def __component_eq__(
-        self,
-        other: ExistsSubquery,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return util.seq_eq(
-            self.predicates,
-            other.predicates,
-            cache=cache,
-        ) and self.foreign_table.equals(other.foreign_table, cache=cache)
-
 
 @public
 class NotExistsSubquery(Node):
@@ -897,17 +756,6 @@ class NotExistsSubquery(Node):
 
     def output_type(self):
         return ir.ExistsExpr
-
-    def __component_eq__(
-        self,
-        other: NotExistsSubquery,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return util.seq_eq(
-            self.predicates,
-            other.predicates,
-            cache=cache,
-        ) and self.foreign_table.equals(other.foreign_table, cache=cache)
 
 
 @public
@@ -938,24 +786,6 @@ class FillNa(TableNode, sch.HasSchema):
     def schema(self):
         return self.table.schema()
 
-    def __component_eq__(
-        self,
-        other: FillNa,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        self_repl = self.replacements
-        other_repl = other.replacements
-        if isinstance(self_repl, util.frozendict):
-            return self_repl == other_repl and self.table.equals(
-                other.table,
-                cache=cache,
-            )
-        return util.seq_eq(
-            self_repl,
-            other_repl,
-            cache=cache,
-        ) and self.table.equals(other.table, cache=cache)
-
 
 @public
 class DropNa(TableNode, sch.HasSchema):
@@ -968,17 +798,6 @@ class DropNa(TableNode, sch.HasSchema):
     @property
     def schema(self):
         return self.table.schema()
-
-    def __component_eq__(
-        self,
-        other: DropNa,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return (
-            self.how == other.how
-            and util.seq_eq(self.replacements, other.replacements, cache=cache)
-            and self.table.equals(other.table, cache=cache)
-        )
 
 
 def _dedup_join_columns(

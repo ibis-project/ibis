@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Hashable, MutableMapping, NamedTuple
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -84,7 +84,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     return preceding_value
 
 
-class Window(util.EqMixin):
+class Window(util.Comparable):
     """A window frame.
 
     Notes
@@ -294,28 +294,36 @@ class Window(util.EqMixin):
         new_sorts = self._order_by + tuple(util.promote_list(expr))
         return self._replace(order_by=new_sorts)
 
-    def __component_eq__(
-        self,
-        other: Window,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
+    def __equals__(self, other):
         return (
             len(self._group_by) == len(other._group_by)
             and len(self._order_by) == len(other._order_by)
             and self.max_lookback == other.max_lookback
             and (
-                self.preceding.equals(other.preceding, cache=cache)
+                self.preceding.equals(other.preceding)
                 if isinstance(self.preceding, ir.Expr)
                 else self.preceding == other.preceding
             )
             and (
-                self.following.equals(other.following, cache=cache)
+                self.following.equals(other.following)
                 if isinstance(self.following, ir.Expr)
                 else self.following == other.following
             )
-            and util.seq_eq(self._group_by, other._group_by, cache=cache)
-            and util.seq_eq(self._order_by, other._order_by, cache=cache)
+            and all(
+                a.equals(b) for a, b in zip(self._group_by, other._group_by)
+            )
+            and all(
+                a.equals(b) for a, b in zip(self._order_by, other._order_by)
+            )
         )
+
+    def equals(self, other):
+        if not isinstance(other, Window):
+            raise TypeError(
+                "invalid equality comparison between Window and "
+                f"{type(other)}"
+            )
+        return self.__cached_equals__(other)
 
 
 def rows_with_max_lookback(

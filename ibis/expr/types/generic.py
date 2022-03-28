@@ -1,14 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Hashable,
-    Iterable,
-    MutableMapping,
-    Sequence,
-)
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -41,16 +33,16 @@ class ValueExpr(Expr):
         self._name = name
         self._dtype = dtype
 
-    def __component_eq__(
-        self,
-        other: ValueExpr,
-        cache: MutableMapping[Hashable, bool] | None = None,
-    ) -> bool:
+    def equals(self, other):
+        if not isinstance(other, Expr):
+            raise TypeError(
+                "invalid equality comparison between Expr and "
+                f"{type(other)}"
+            )
         return (
-            isinstance(other, ValueExpr)
-            and self._name == other._name
-            and self._dtype.equals(other._dtype, cache=cache)
-            and super().__component_eq__(other, cache=cache)
+            self._safe_name == other._safe_name
+            and self._dtype.equals(other._dtype)
+            and super().equals(other)
         )
 
     def has_name(self) -> bool:
