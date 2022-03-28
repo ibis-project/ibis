@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 import toolz
 from public import public
 
 from ...common import exceptions as com
+from ...util import Comparable
 from .. import rules as rlz
 from ..signature import Annotable
 
@@ -17,8 +16,24 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots))
 
 
+def _compare_items(a, b):
+    try:
+        return a.equals(b)
+    except AttributeError:
+        if isinstance(a, tuple):
+            return _compare_tuples(a, b)
+        else:
+            return a == b
+
+
+def _compare_tuples(a, b):
+    if len(a) != len(b):
+        return False
+    return all(map(_compare_items, a, b))
+
+
 @public
-class Node(Annotable):
+class Node(Annotable, Comparable):
     __slots__ = ("_flat_ops",)
 
     def __post_init__(self):
@@ -35,11 +50,16 @@ class Node(Annotable):
             ),
         )
 
-    def _type_check(self, other: Any) -> None:
+    def __equals__(self, other):
+        return _compare_tuples(self.args, other.args)
+
+    def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(
-                f"Cannot compare non-Node object {type(other)} with Node"
+                "invalid equality comparison between Node and "
+                f"{type(other)}"
             )
+        return self.__cached_equals__(other)
 
     @property
     def inputs(self):

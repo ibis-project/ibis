@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Hashable, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
 from cached_property import cached_property
 from public import public
@@ -49,6 +49,14 @@ class Expr:
         from ibis.expr.format import fmt
 
         return fmt(self)
+
+    def equals(self, other):
+        if not isinstance(other, Expr):
+            raise TypeError(
+                "invalid equality comparison between Expr and "
+                f"{type(other)}"
+            )
+        return self._arg.equals(other._arg)
 
     def __hash__(self) -> int:
         return hash(self._key)
@@ -309,26 +317,6 @@ class Expr:
             return False
         else:
             return True
-
-    def equals(
-        self, other: Any, cache: MutableMapping[Hashable, bool] | None = None
-    ) -> bool:
-        if self is other:
-            return True
-
-        if cache is None:
-            cache = {}
-
-        self._type_check(other)
-        return self._safe_name == other._safe_name and self._arg.equals(
-            other._arg, cache=cache
-        )
-
-    def _type_check(self, other: Any) -> None:
-        if not isinstance(other, Expr):
-            raise TypeError(
-                f"Cannot compare non-Expr object {type(other)} with Expr"
-            )
 
 
 class UnnamedMarker:

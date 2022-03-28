@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Hashable, MutableMapping
 
 import toolz
 
@@ -178,7 +177,7 @@ class TableSetFormatter:
         return buf.getvalue()
 
 
-class Select(DML, util.EqMixin):
+class Select(DML, util.Comparable):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -237,18 +236,14 @@ class Select(DML, util.EqMixin):
         )
         return translator.get_result()
 
-    def __component_eq__(
-        self,
-        other: Select,
-        cache: MutableMapping[Hashable, bool],
-    ) -> bool:
-        return self.limit == other.limit and util.seq_eq(
-            self._all_exprs(),
-            other._all_exprs(),
+    def __equals__(self, other: Select) -> bool:
+        return (
+            self.limit == other.limit
+            and self._all_exprs() == other._all_exprs()
         )
 
     def _all_exprs(self):
-        return [
+        return tuple(
             *self.select_set,
             self.table_set,
             *self.where,
@@ -256,7 +251,7 @@ class Select(DML, util.EqMixin):
             *self.having,
             *self.order_by,
             *self.subqueries,
-        ]
+        )
 
     def compile(self):
         """

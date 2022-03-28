@@ -350,9 +350,6 @@ def test_where_use_if(con, alltypes, translate):
     con.execute(expr)
 
 
-@pytest.mark.xfail(
-    raises=com.RelationError, reason='Expression equality is broken'
-)
 def test_filter_predicates(diamonds):
     predicates = [
         lambda x: x.color.lower().like('%de%'),

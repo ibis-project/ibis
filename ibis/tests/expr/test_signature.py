@@ -11,6 +11,7 @@ from ibis.expr.signature import (
     Validator,
 )
 from ibis.tests.util import assert_pickle_roundtrip
+from ibis.util import Comparable
 
 
 class ValidatorFunction(Validator):
@@ -39,7 +40,7 @@ IsStr = InstanceOf(str)
 
 
 class Op(Annotable):
-    __slots__ = ('_cache', '_hash')
+    pass
 
 
 class ValueOp(Op):
@@ -59,6 +60,9 @@ with pytest.warns(FutureWarning, match=ARGUMENT_USAGE_MSG):
         foo = Argument(str)
         bar = Argument(bool)
         baz = Argument(int)
+
+        def __eq__(self, other):
+            return self.args == other.args
 
 
 def test_argument_is_deprecated():
@@ -163,6 +167,29 @@ def test_annotable():
     assert not hasattr(obj, "__dict__")
 
 
+def test_composition_of_annotable_and_comparable():
+    class Between(Comparable, Annotable):
+        value = IsInt
+        lower = Optional(IsInt, default=0)
+        upper = Optional(IsInt, default=None)
+
+        def __equals__(self, other):
+            return self.args == other.args
+
+    a = Between(3, lower=0, upper=4)
+    b = Between(3, lower=0, upper=4)
+    c = Between(2, lower=0, upper=4)
+
+    assert a == b
+    assert b == a
+    assert a != c
+    assert c != a
+    assert a.__equals__(b)
+    assert a.__cached_equals__(b)
+    assert not a.__equals__(c)
+    assert not a.__cached_equals__(c)
+
+
 def test_maintain_definition_order():
     class Between(Annotable):
         value = IsInt
@@ -229,6 +256,9 @@ def test_positional_argument_reordering():
         horses = IsInt
         goats = IsInt
         chickens = IsInt
+
+        def __eq__(self, other):
+            return self.args == other.args
 
     class NoHooves(Farm):
         horses = Optional(IsInt, default=0)
