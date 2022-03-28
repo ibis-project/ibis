@@ -1,10 +1,9 @@
 import argparse
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-import black
-import tomli
 from poetry.core.factory import Factory
 from poetry.core.masonry.builders.sdist import SdistBuilder
 
@@ -23,16 +22,16 @@ def main(args: argparse.Namespace) -> None:
     code = sdist_builder.build_setup().decode("UTF-8")
 
     # pull out black config
-    config = tomli.loads(input_dir.joinpath("pyproject.toml").read_text())
-    black_config = config["tool"]["black"]
-    black_config["string_normalization"] = black_config.pop(
-        "skip_string_normalization", False
+    out = subprocess.run(
+        ["black", "--quiet", "-"],
+        input=code.encode("UTF-8"),
+        stdout=subprocess.PIPE,
     )
-    black_config.pop("exclude", None)
-    out = black.format_file_contents(
-        code, fast=False, mode=black.Mode(**black_config)
+    print(
+        DOUBLE_PIPE_REGEX.sub("|", out.stdout.decode("UTF-8")),
+        file=args.output_file,
+        end="",
     )
-    print(DOUBLE_PIPE_REGEX.sub("|", out), file=args.output_file, end="")
 
 
 if __name__ == "__main__":
