@@ -138,10 +138,10 @@ def execute_join(op, left, right, predicates, **kwargs):
     pd.DataFrame,
     pd.DataFrame,
     tuple,
-    tuple,
     (pd.Timedelta, type(None)),
+    tuple,
 )
-def execute_asof_join(op, left, right, predicates, by, tolerance, **kwargs):
+def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
     overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)

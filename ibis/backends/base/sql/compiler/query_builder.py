@@ -9,6 +9,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import quote_identifier
+from ibis.common.grounds import Comparable
 from ibis.config import options
 
 from .base import DML, QueryAST, SetOp
@@ -177,7 +178,7 @@ class TableSetFormatter:
         return buf.getvalue()
 
 
-class Select(DML, util.Comparable):
+class Select(DML, Comparable):
 
     """
     A SELECT statement which, after execution, might yield back to the user a

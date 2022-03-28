@@ -306,7 +306,7 @@ def test_interval_invalid_type():
 
 
 @pytest.mark.parametrize('unit', ['H', 'unsupported'])
-def test_interval_unvalid_unit(unit):
+def test_interval_invalid_unit(unit):
     definition = f"interval('{unit}')"
 
     with pytest.raises(ValueError):

@@ -567,7 +567,7 @@ def interval(
         unit, value = defined_units[0]
 
     value_type = literal(value).type()
-    type = dt.Interval(unit, value_type)
+    type = dt.Interval(unit, value_type=value_type)
 
     return literal(value, type=type).op().to_expr()
 

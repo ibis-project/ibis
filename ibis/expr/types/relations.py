@@ -1038,9 +1038,15 @@ class TableExpr(Expr):
         """
         from .. import operations as ops
 
-        expr = ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
+        op = ops.AsOfJoin(
+            left=left,
+            right=right,
+            predicates=predicates,
+            by=by,
+            tolerance=tolerance,
+        )
         return ops.relations._dedup_join_columns(
-            expr,
+            op.to_expr(),
             left=left,
             right=right,
             suffixes=suffixes,

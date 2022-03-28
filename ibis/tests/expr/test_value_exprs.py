@@ -234,29 +234,24 @@ def test_literal_with_non_coercible_type(value, expected_type):
         ibis.literal(value, type=expected_type)
 
 
-def test_non_inferrable_literal():
-    expected_msg = (
-        'The datatype of value .* cannot be inferred, try '
-        'passing it explicitly with the `type` keyword.'
-    )
-
-    value = tuple(pointA)
-
-    with pytest.raises(TypeError, match=expected_msg):
-        ibis.literal(value)
-
-    point = ibis.literal(value, type='point')
-    assert point.type() == dt.point
-
-
-def test_literal_list():
+def test_list_and_tuple_literals():
     what = [1, 2, 1000]
     expr = api.literal(what)
-
     assert isinstance(expr, ir.ArrayScalar)
-
     # it works!
     repr(expr)
+
+    what = (1, 2, 1000)
+    expr = api.literal(what)
+    assert isinstance(expr, ir.ArrayScalar)
+    # it works!
+    repr(expr)
+
+    # test using explicit type
+    point = ibis.literal((1, 2, 1000), type='point')
+    assert point.type() == dt.point
+    point = ibis.literal([1, 2, 1000], type='point')
+    assert point.type() == dt.point
 
 
 def test_literal_array():

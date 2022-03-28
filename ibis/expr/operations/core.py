@@ -3,9 +3,11 @@ from __future__ import annotations
 import toolz
 from public import public
 
-from ...common import exceptions as com
-from ...util import Comparable
+from ...common.exceptions import ExpressionError
+from ...common.grounds import Comparable
+from ...util import is_iterable
 from .. import rules as rlz
+from ..schema import Schema
 from ..signature import Annotable
 
 
@@ -51,7 +53,9 @@ class Node(Annotable, Comparable):
         )
 
     def __equals__(self, other):
-        return _compare_tuples(self.args, other.args)
+        return self._hash == other._hash and _compare_tuples(
+            self.args, other.args
+        )
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -100,6 +104,13 @@ class Node(Annotable, Comparable):
             f"output_type not implemented for {type(self)}"
         )
 
+    def flat_args(self):
+        for arg in self.args:
+            if not isinstance(arg, Schema) and is_iterable(arg):
+                yield from arg
+            else:
+                yield arg
+
 
 @public
 class ValueOp(Node):
@@ -107,7 +118,7 @@ class ValueOp(Node):
         return distinct_roots(*self.exprs)
 
     def resolve_name(self):
-        raise com.ExpressionError(f'Expression is not named: {type(self)}')
+        raise ExpressionError(f'Expression is not named: {type(self)}')
 
     def has_resolved_name(self):
         return False

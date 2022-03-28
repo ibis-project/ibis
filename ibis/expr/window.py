@@ -10,13 +10,14 @@ import pandas as pd
 import toolz
 from cached_property import cached_property
 
-import ibis.common.exceptions as com
-import ibis.expr.types as ir
-import ibis.util as util
+from ..common.exceptions import IbisInputError
+from ..common.grounds import Comparable
+from ..expr import types as ir
+from ..util import is_iterable, promote_list
 
 
 def _sequence_to_tuple(x):
-    return tuple(x) if util.is_iterable(x) else x
+    return tuple(x) if is_iterable(x) else x
 
 
 class RowsWithMaxLookback(NamedTuple):
@@ -84,7 +85,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     return preceding_value
 
 
-class Window(util.Comparable):
+class Window(Comparable):
     """A window frame.
 
     Notes
@@ -109,13 +110,13 @@ class Window(util.Comparable):
 
         self._group_by = tuple(
             toolz.unique(
-                util.promote_list([] if group_by is None else group_by),
+                promote_list([] if group_by is None else group_by),
                 key=lambda value: getattr(value, "_key", value),
             )
         )
 
         _order_by = []
-        for expr in util.promote_list([] if order_by is None else order_by):
+        for expr in promote_list([] if order_by is None else order_by):
             if isinstance(expr, ir.Expr) and not isinstance(expr, ir.SortExpr):
                 expr = ops.SortKey(expr).to_expr()
             _order_by.append(expr)
@@ -178,50 +179,48 @@ class Window(util.Comparable):
         if (preceding_tuple and has_following) or (
             following_tuple and has_preceding
         ):
-            raise com.IbisInputError(
+            raise IbisInputError(
                 'Can only specify one window side when you want an '
                 'off-center window'
             )
         elif preceding_tuple:
             start, end = self.preceding
             if end is None:
-                raise com.IbisInputError("preceding end point cannot be None")
+                raise IbisInputError("preceding end point cannot be None")
             if end < 0:
-                raise com.IbisInputError(
+                raise IbisInputError(
                     "preceding end point must be non-negative"
                 )
             if start is not None:
                 if start < 0:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "preceding start point must be non-negative"
                     )
                 if start <= end:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "preceding start must be greater than preceding end"
                     )
         elif following_tuple:
             start, end = self.following
             if start is None:
-                raise com.IbisInputError(
-                    "following start point cannot be None"
-                )
+                raise IbisInputError("following start point cannot be None")
             if start < 0:
-                raise com.IbisInputError(
+                raise IbisInputError(
                     "following start point must be non-negative"
                 )
             if end is not None:
                 if end < 0:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "following end point must be non-negative"
                     )
                 if start >= end:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "following start must be less than following end"
                     )
         else:
             if not isinstance(self.preceding, ir.Expr):
                 if has_preceding and self.preceding < 0:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "'preceding' must be positive, got {}".format(
                             self.preceding
                         )
@@ -229,13 +228,13 @@ class Window(util.Comparable):
 
             if not isinstance(self.following, ir.Expr):
                 if has_following and self.following < 0:
-                    raise com.IbisInputError(
+                    raise IbisInputError(
                         "'following' must be positive, got {}".format(
                             self.following
                         )
                     )
         if self.how not in {'rows', 'range'}:
-            raise com.IbisInputError(
+            raise IbisInputError(
                 f"'how' must be 'rows' or 'range', got {self.how}"
             )
 
@@ -243,7 +242,7 @@ class Window(util.Comparable):
             if not isinstance(
                 self.preceding, (ir.IntervalValue, pd.Timedelta)
             ):
-                raise com.IbisInputError(
+                raise IbisInputError(
                     "'max_lookback' must be specified as an interval "
                     "or pandas.Timedelta object"
                 )
@@ -261,7 +260,7 @@ class Window(util.Comparable):
 
     def combine(self, window):
         if self.how != window.how:
-            raise com.IbisInputError(
+            raise IbisInputError(
                 "Window types must match. "
                 f"Expecting {self.how!r} window, got {window.how!r}"
             )
@@ -276,7 +275,7 @@ class Window(util.Comparable):
         )
 
     def group_by(self, expr):
-        new_groups = self._group_by + tuple(util.promote_list(expr))
+        new_groups = self._group_by + tuple(promote_list(expr))
         return self._replace(group_by=new_groups)
 
     def _replace(self, **kwds):
@@ -291,7 +290,7 @@ class Window(util.Comparable):
         return Window(**new_kwds)
 
     def order_by(self, expr):
-        new_sorts = self._order_by + tuple(util.promote_list(expr))
+        new_sorts = self._order_by + tuple(promote_list(expr))
         return self._replace(order_by=new_sorts)
 
     def __equals__(self, other):

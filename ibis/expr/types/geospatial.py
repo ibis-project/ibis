@@ -651,7 +651,7 @@ class GeoSpatialValue(NumericValue):
         """
         from .. import operations as ops
 
-        op = ops.GeoSetSRID(self, srid)
+        op = ops.GeoSetSRID(self, srid=srid)
         return op.to_expr()
 
     def buffer(self, radius: float | ir.FloatingValue) -> GeoSpatialValue:
@@ -671,7 +671,7 @@ class GeoSpatialValue(NumericValue):
         """
         from .. import operations as ops
 
-        op = ops.GeoBuffer(self, radius)
+        op = ops.GeoBuffer(self, radius=radius)
         return op.to_expr()
 
     def centroid(self) -> PointValue:

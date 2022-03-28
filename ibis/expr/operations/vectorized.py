@@ -10,8 +10,8 @@ from .reductions import Reduction
 
 class VectorizedUDF(ValueOp):
     func = rlz.instance_of((FunctionType, LambdaType))
-    func_args = rlz.list_of(rlz.column(rlz.any))
-    input_type = rlz.list_of(rlz.datatype)
+    func_args = rlz.tuple_of(rlz.column(rlz.any))
+    input_type = rlz.tuple_of(rlz.datatype)
     return_type = rlz.datatype
 
     @property
