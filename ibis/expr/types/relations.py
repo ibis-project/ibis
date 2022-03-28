@@ -287,11 +287,11 @@ class TableExpr(Expr):
 
         Examples
         --------
-        >>> my_table[my_table.rowid(), my_table.name].execute()
+        >>> my_table[my_table.rowid(), my_table.name].execute()  # doctest: +SKIP
         1|Ibis
         2|pandas
         3|Dask
-        """
+        """  # noqa: E501
         from .. import operations as ops
 
         return ops.RowID().to_expr()
@@ -542,28 +542,15 @@ class TableExpr(Expr):
         ...     name='t'
         ... )
         >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
-        >>> expr  # doctest: +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            foo : float64
-            bar : float64
-        <BLANKLINE>
-        Selection[table]
-          table:
-            Table: ref_0
+        >>> expr
+        r0 := UnboundTable[t]
+          foo float64
+          bar float64
+        Selection[r0]
           selections:
-            Table: ref_0
-            baz = Literal[int8]
-              5
-            qux = Add[float64*]
-              left:
-                foo = Column[float64*] 'foo' from table
-                  ref_0
-              right:
-                bar = Column[float64*] 'bar' from table
-                  ref_0
+            r0
+            baz: 5
+            qux: r0.foo + r0.bar
 
         Use the [`ValueExpr.name`][ibis.expr.types.generic.ValueExpr.name]
         method to name the new columns.
@@ -621,27 +608,14 @@ class TableExpr(Expr):
         >>> fields = [('a', 'int64'), ('b', 'double')]
         >>> t = ibis.table(fields, name='t')
         >>> proj = t.projection([t.a, (t.b + 1).name('b_plus_1')])
-        >>> proj  # doctest: +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            a : int64
-            b : float64
-        <BLANKLINE>
-        Selection[table]
-          table:
-            Table: ref_0
+        >>> proj
+        r0 := UnboundTable[t]
+          a int64
+          b float64
+        Selection[r0]
           selections:
-            a = Column[int64*] 'a' from table
-              ref_0
-            b_plus_1 = Add[float64*]
-              left:
-                b = Column[float64*] 'b' from table
-                  ref_0
-              right:
-                Literal[int8]
-                  1
+            a:        r0.a
+            b_plus_1: r0.b + 1
         >>> proj2 = t[t.a, (t.b + 1).name('b_plus_1')]
         >>> proj.equals(proj2)
         True
@@ -649,32 +623,14 @@ class TableExpr(Expr):
         Aggregate projection
 
         >>> agg_proj = t[t.a.sum().name('sum_a'), t.b.mean().name('mean_b')]
-        >>> agg_proj  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            a : int64
-            b : float64
-        <BLANKLINE>
-        Selection[table]
-          table:
-            Table: ref_0
+        >>> agg_proj
+        r0 := UnboundTable[t]
+          a int64
+          b float64
+        Selection[r0]
           selections:
-            sum_a = WindowOp[int64*]
-              sum_a = Sum[int64]
-                a = Column[int64*] 'a' from table
-                  ref_0
-                where:
-                  None
-              <ibis.expr.window.Window object at 0x...>
-            mean_b = WindowOp[float64*]
-              mean_b = Mean[float64]
-                b = Column[float64*] 'b' from table
-                  ref_0
-                where:
-                  None
-              <ibis.expr.window.Window object at 0x...>
+            sum_a:  WindowOp(Sum(r0.a), window=Window(how='rows'))
+            mean_b: WindowOp(Mean(r0.b), window=Window(how='rows'))
 
         Note the `Window` objects here.
 
@@ -684,6 +640,12 @@ class TableExpr(Expr):
         column/scalar-aggregate operations like
 
         >>> t[(t.a - t.a.mean()).name('demeaned_a')]
+        r0 := UnboundTable[t]
+          a int64
+          b float64
+        Selection[r0]
+          selections:
+            demeaned_a: r0.a - WindowOp(Mean(r0.a), window=Window(how='rows'))
         """
         import ibis.expr.analysis as an
 
@@ -845,15 +807,25 @@ class TableExpr(Expr):
         Examples
         --------
         >>> import ibis
+        >>> import ibis.expr.datatypes as dt
         >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
         >>> t = t.fillna(0.0)  # Replace nulls in all columns with 0.0
-        >>> t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})  # Replace all na values in all columns of a given type with the same value  # noqa: E501
+        >>> t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})
+        r0 := UnboundTable[unbound_table_...]
+          a int64
+          b string
+        r1 := FillNa[r0]
+          replacements:
+            0.0
+        FillNa[r1]
+          replacements:
+            frozendict({})
 
         Returns
         -------
         TableExpr
             Table expression
-        """
+        """  # noqa: E501
         from .. import operations as ops
 
         if isinstance(replacements, collections.abc.Mapping):
@@ -1082,49 +1054,21 @@ class TableExpr(Expr):
         ...     ibis.table([(name, type)], name=name) for name, type in schemas
         ... ]
         >>> joined1 = ibis.cross_join(a, b, c, d, e)
-        >>> joined1  # doctest: +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: a
-          schema:
-            a : int64
-        ref_1
-        UnboundTable[table]
-          name: b
-          schema:
-            b : int64
-        ref_2
-        UnboundTable[table]
-          name: c
-          schema:
-            c : int64
-        ref_3
-        UnboundTable[table]
-          name: d
-          schema:
-            d : int64
-        ref_4
-        UnboundTable[table]
-          name: e
-          schema:
-            e : int64
-        CrossJoin[table]
-          left:
-            Table: ref_0
-          right:
-            CrossJoin[table]
-              left:
-                CrossJoin[table]
-                  left:
-                    CrossJoin[table]
-                      left:
-                        Table: ref_1
-                      right:
-                        Table: ref_2
-                  right:
-                    Table: ref_3
-              right:
-                Table: ref_4
+        >>> joined1
+        r0 := UnboundTable[e]
+          e int64
+        r1 := UnboundTable[d]
+          d int64
+        r2 := UnboundTable[c]
+          c int64
+        r3 := UnboundTable[b]
+          b int64
+        r4 := UnboundTable[a]
+          a int64
+        r5 := CrossJoin[r3, r2]
+        r6 := CrossJoin[r5, r1]
+        r7 := CrossJoin[r6, r0]
+        CrossJoin[r4, r7]
         """
         from .. import operations as ops
 

@@ -71,11 +71,8 @@ class StructValue(AnyValue):
         --------
         >>> import ibis
         >>> s = ibis.struct(dict(fruit="pear", weight=0))
-        >>> s['fruit']  # doctest: +NORMALIZE_WHITESPACE
-        fruit: string = StructField
-          value: struct<fruit: string, weight: int8> = OrderedDict([('fruit', 'pear'), ('weight', 0)])
-          field:
-            fruit
+        >>> s['fruit']
+        fruit: StructField(frozendict({'fruit': 'pear', 'weight': 0}), field='fruit')
         """  # noqa: E501
         import ibis.expr.operations as ops
 

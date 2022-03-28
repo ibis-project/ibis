@@ -38,26 +38,11 @@ class MapValue(AnyValue):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.get("a")
-        int8 = MapValueOrDefaultForKey
-          value: map<string, int8> = {'a': 1, 'b': 2}
-          key:
-            value: string = 'a'
-          default:
-            value: null = None
+        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='a', default=None)
         >>> m.get("c", 3)
-        int8 = MapValueOrDefaultForKey
-          value: map<string, int8> = {'a': 1, 'b': 2}
-          key:
-            value: string = 'c'
-          default:
-            value: int8 = 3
+        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='c', default=3)
         >>> m.get("d")
-        int8 = MapValueOrDefaultForKey
-          value: map<string, int8> = {'a': 1, 'b': 2}
-          key:
-            value: string = 'd'
-          default:
-            value: null = None
+        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='d', default=None)
         """  # noqa: E501
         import ibis.expr.operations as ops
 
@@ -76,8 +61,7 @@ class MapValue(AnyValue):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.length()
-        int64 = MapLength
-          value: map<string, int8> = {'a': 1, 'b': 2}
+        MapLength(frozendict({'a': 1, 'b': 2}))
         """
         import ibis.expr.operations as ops
 
@@ -106,15 +90,9 @@ class MapValue(AnyValue):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m["a"]
-        int8 = MapValueForKey
-          value: map<string, int8> = {'a': 1, 'b': 2}
-          key:
-            value: string = 'a'
+        MapValueForKey(frozendict({'a': 1, 'b': 2}), key='a')
         >>> m["c"]  # note that this does not fail on construction
-        int8 = MapValueForKey
-          value: map<string, int8> = {'a': 1, 'b': 2}
-          key:
-            value: string = 'c'
+        MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
         """  # noqa: E501
         import ibis.expr.operations as ops
 
@@ -133,8 +111,7 @@ class MapValue(AnyValue):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.keys()
-        array<string> = MapKeys
-          value: map<string, int8> = {'a': 1, 'b': 2}
+        MapKeys(frozendict({'a': 1, 'b': 2}))
         """
         import ibis.expr.operations as ops
 
@@ -153,8 +130,7 @@ class MapValue(AnyValue):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.keys()
-        array<int8> = MapValues
-          value: map<string, int8> = {'a': 1, 'b': 2}
+        MapKeys(frozendict({'a': 1, 'b': 2}))
         """
         import ibis.expr.operations as ops
 
@@ -179,12 +155,8 @@ class MapValue(AnyValue):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        map<string, int8> = MapConcat
-          left:
-            value: map<string, int8> = {'a': 1, 'b': 2}
-          right:
-            value: map<string, int8> = {'c': 3, 'd': 4}
-        """
+        MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.MapConcat(self, other).to_expr()
@@ -208,12 +180,8 @@ class MapValue(AnyValue):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        map<string, int8> = MapConcat
-          left:
-            value: map<string, int8> = {'a': 1, 'b': 2}
-          right:
-            value: map<string, int8> = {'c': 3, 'd': 4}
-        """
+        MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.MapConcat(self, other).to_expr()

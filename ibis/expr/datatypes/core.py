@@ -974,7 +974,7 @@ def parse_type(text: str) -> DataType:
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
     >>> dt.parse_type("array<int64>")
-    Array(value_type=int64, nullable=True)
+    Array(value_type=Int64(nullable=True), nullable=True)
 
     You can avoid parsing altogether by constructing objects directly
 

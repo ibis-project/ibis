@@ -202,24 +202,13 @@ def find_immediate_parent_tables(expr):
     >>> result = list(find_immediate_parent_tables(expr))
     >>> len(result)
     1
-    >>> result[0]  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : int64
-    Selection[table]
-      table:
-        Table: ref_0
+    >>> result[0]
+    r0 := UnboundTable[t]
+      a int64
+    Selection[r0]
       selections:
-        Table: ref_0
-        foo = Add[int64*]
-          left:
-            a = Column[int64*] 'a' from table
-              ref_0
-          right:
-            Literal[int8]
-              1
+        r0
+        foo: r0.a + 1
     """
 
     def finder(expr):
@@ -1062,31 +1051,18 @@ def find_source_table(expr):
     >>> import ibis
     >>> t = ibis.table([('a', 'double'), ('b', 'string')], name='t')
     >>> expr = t.mutate(c=t.a + 42.0)
-    >>> expr  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : float64
-        b : string
-    Selection[table]
-      table:
-        Table: ref_0
+    >>> expr
+    r0 := UnboundTable[t]
+      a float64
+      b string
+    Selection[r0]
       selections:
-        Table: ref_0
-        c = Add[float64*]
-          left:
-            a = Column[float64*] 'a' from table
-              ref_0
-          right:
-            Literal[float64]
-              42.0
+        r0
+        c: r0.a + 42.0
     >>> find_source_table(expr)
-    UnboundTable[table]
-      name: t
-      schema:
-        a : float64
-        b : string
+    UnboundTable[t]
+      a float64
+      b string
     >>> left = ibis.table([('a', 'int64'), ('b', 'string')])
     >>> right = ibis.table([('c', 'int64'), ('d', 'string')])
     >>> result = left.inner_join(right, left.a == right.c)
@@ -1130,34 +1106,16 @@ def flatten_predicate(expr):
     >>> predicates = flatten_predicate(filt)
     >>> len(predicates)
     2
-    >>> predicates[0]  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : int64
-        b : string
-    Equals[boolean*]
-      left:
-        a = Column[int64*] 'a' from table
-          ref_0
-      right:
-        Literal[int64]
-          1
-    >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
-    ref_0
-    UnboundTable[table]
-      name: t
-      schema:
-        a : int64
-        b : string
-    Equals[boolean*]
-      left:
-        b = Column[string*] 'b' from table
-          ref_0
-      right:
-        Literal[string]
-          foo
+    >>> predicates[0]
+    r0 := UnboundTable[t]
+      a int64
+      b string
+    r0.a == 1
+    >>> predicates[1]
+    r0 := UnboundTable[t]
+      a int64
+      b string
+    r0.b == 'foo'
     """
 
     def predicate(expr):
