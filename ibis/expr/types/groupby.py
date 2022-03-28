@@ -222,11 +222,10 @@ class GroupedTableExpr:
         else:
             exprs = util.promote_list(exprs)
 
-        kwd_names = list(kwds.keys())
-        kwd_values = list(kwds.values())
-        kwd_values = self.table._resolve(kwd_values)
+        kwd_keys = list(kwds.keys())
+        kwd_values = self.table._resolve(list(kwds.values()))
 
-        for k, v in sorted(zip(kwd_names, kwd_values)):
+        for k, v in zip(kwd_keys, kwd_values):
             exprs.append(v.name(k))
 
         return self.projection([self.table] + exprs)

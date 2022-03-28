@@ -499,7 +499,7 @@ def test_aggregate_keywords(table):
     expr = t.aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean(), by='g')
     expr2 = t.group_by('g').aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean())
     expected = t.aggregate(
-        [t.f.mean().name('bar'), t.f.sum().name('foo')], by='g'
+        [t.f.sum().name('foo'), t.f.mean().name('bar')], by='g'
     )
 
     assert_equal(expr, expected)

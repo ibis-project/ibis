@@ -356,10 +356,7 @@ class TableExpr(Expr):
         """
         metrics = [] if metrics is None else util.promote_list(metrics)
         metrics.extend(
-            self._ensure_expr(expr).name(name)
-            for name, expr in sorted(
-                kwargs.items(), key=operator.itemgetter(0)
-            )
+            self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
         )
 
         op = self.op().aggregate(
