@@ -444,6 +444,7 @@ _BIN_OP_CHARS = {
     ops.GreaterEqual: ">=",
     # binary operations
     ops.Add: "+",
+    ops.TimeAdd: "+",
     ops.Subtract: "-",
     ops.Multiply: "*",
     ops.Divide: "/",
