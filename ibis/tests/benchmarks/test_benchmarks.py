@@ -1,5 +1,6 @@
 import copy
 import functools
+import inspect
 import itertools
 import string
 
@@ -505,3 +506,36 @@ def test_complex_datatype_builtins(benchmark, func):
 
 def test_large_expr_equals(benchmark, tpc_h02):
     benchmark(ir.Expr.equals, tpc_h02, copy.deepcopy(tpc_h02))
+
+
+@pytest.mark.parametrize(
+    "dtypes",
+    [
+        pytest.param(
+            [
+                obj
+                for _, obj in inspect.getmembers(
+                    dt,
+                    lambda obj: isinstance(obj, dt.DataType),
+                )
+            ],
+            id="singletons",
+        ),
+        pytest.param(
+            dt.Array(
+                dt.Struct.from_dict(
+                    dict(
+                        a=dt.Array(dt.string),
+                        b=dt.Map(dt.string, dt.Array(dt.int64)),
+                    )
+                )
+            ),
+            id="complex",
+        ),
+    ],
+)
+def test_eq_datatypes(benchmark, dtypes):
+    def eq(a, b):
+        assert a == b
+
+    benchmark(eq, dtypes, copy.deepcopy(dtypes))
