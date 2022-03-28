@@ -225,14 +225,14 @@ def _string_find(translator, expr):
 
 def _regex_extract(translator, expr):
     op = expr.op()
-    arg, pattern, index = op.args
-    arg_, pattern_ = translator.translate(arg), translator.translate(pattern)
+    arg_ = translator.translate(op.arg)
+    pattern_ = translator.translate(op.pattern)
+    index = op.index
 
+    base = f"extractAll(CAST({arg_} AS String), {pattern_})"
     if index is not None:
-        index_ = translator.translate(index)
-        return f'extractAll({arg_}, {pattern_})[{index_} + 1]'
-
-    return f'extractAll({arg_}, {pattern_})'
+        return f"{base}[{translator.translate(index)} + 1]"
+    return base
 
 
 def _parse_url(translator, expr):
@@ -542,10 +542,10 @@ def _table_column(translator, expr):
 
 
 def _string_split(translator, expr):
-    value, sep = expr.op().args
-    return 'splitByString({}, {})'.format(
-        translator.translate(sep), translator.translate(value)
-    )
+    op = expr.op()
+    delim = translator.translate(op.delimiter)
+    val = translator.translate(op.arg)
+    return f"splitByString({delim}, CAST({val} AS String))"
 
 
 def _string_join(translator, expr):
@@ -678,7 +678,6 @@ operation_registry = {
     ops.Repeat: _fixed_arity("repeat", 2),
     ops.StringConcat: _string_concat,
     ops.RegexSearch: _fixed_arity('match', 2),
-    # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: _fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
