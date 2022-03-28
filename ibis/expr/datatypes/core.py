@@ -94,6 +94,9 @@ class DataType(Annotable, Comparable):
     """
 
     nullable = optional(instance_of(bool), default=True)
+    # Cache the object's string representation on construction. This speeds up
+    # repring when lots of data types are involved
+    _str = optional(instance_of(str), default=None)
 
     def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
@@ -103,6 +106,15 @@ class DataType(Annotable, Comparable):
                 "values of the attributes."
             )
         return self._factory(nullable=nullable)
+
+    def __post_init__(self):
+        super().__post_init__()
+        prefix = "!" * (not self.nullable)
+        object.__setattr__(
+            self,
+            "_str",
+            f"{prefix}{self.name.lower()}{self._pretty_piece}",
+        )
 
     @property
     def _pretty_piece(self) -> str:
@@ -114,8 +126,7 @@ class DataType(Annotable, Comparable):
         return self.__class__.__name__
 
     def __str__(self) -> str:
-        prefix = "!" * (not self.nullable)
-        return f"{prefix}{self.name.lower()}{self._pretty_piece}"
+        return self._str
 
     def __equals__(
         self,

@@ -164,6 +164,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
         args = ", ".join(
             f"{name}={value!r}"
             for name, value in zip(self.argnames, self.args)
+            if not name.startswith("_")
         )
         return f"{self.__class__.__name__}({args})"
 
