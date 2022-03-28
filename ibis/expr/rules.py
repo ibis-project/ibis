@@ -1,31 +1,24 @@
 import enum
 import functools
-from contextlib import suppress
 from itertools import product, starmap
 
-from toolz import compose, curry, identity
+from toolz import identity
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-import ibis.expr.signature as sig
 import ibis.expr.types as ir
 import ibis.util as util
-
-optional = sig.Optional
-
-
-class validator(curry, sig.Validator):
-    """
-    Enable convenient validator definition by decorating plain functions.
-    """
-
-    def __repr__(self):
-        return '{}({}{})'.format(
-            self.func.__name__,
-            repr(self.args)[1:-1],
-            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
-        )
+from ibis.common.validators import (  # noqa: F401
+    instance_of,
+    isin,
+    list_of,
+    map_to,
+    one_of,
+    optional,
+    tuple_of,
+    validator,
+)
 
 
 def highest_precedence_dtype(exprs):
@@ -87,61 +80,6 @@ def cast(source, target):
 
 
 @validator
-def noop(arg, **kwargs):
-    return arg
-
-
-@validator
-def one_of(inners, arg, **kwargs):
-    """At least one of the inner validators must pass"""
-    for inner in inners:
-        with suppress(com.IbisTypeError, ValueError):
-            return inner(arg, **kwargs)
-
-    raise com.IbisTypeError(
-        "argument passes none of the following rules: "
-        f"{', '.join(map(repr, inners))}"
-    )
-
-
-@validator
-def all_of(inners, arg, *, this):
-    """All of the inner validators must pass.
-
-    The order of inner validators matters.
-
-    Parameters
-    ----------
-    inners : List[validator]
-      Functions are applied from right to left so allof([rule1, rule2], arg) is
-      the same as rule1(rule2(arg)).
-    arg : Any
-      Value to be validated.
-
-    Returns
-    -------
-    arg : Any
-      Value maybe coerced by inner validators to the appropiate types
-    """
-    return compose(*inners)(arg, this=this)
-
-
-@validator
-def isin(values, arg, **kwargs):
-    if arg not in values:
-        raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
-    if isinstance(values, dict):  # TODO check for mapping instead
-        return values[arg]
-    else:
-        return arg
-
-
-@validator
-def map_to(mapping, variant, **kwargs):
-    return mapping[variant]
-
-
-@validator
 def member_of(obj, arg, **kwargs):
     if isinstance(arg, ir.EnumValue):
         arg = arg.op().value
@@ -157,26 +95,6 @@ def member_of(obj, arg, **kwargs):
 
 
 @validator
-def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
-    if not util.is_iterable(arg):
-        raise com.IbisTypeError('Argument must be a sequence')
-
-    if len(arg) < min_length:
-        raise com.IbisTypeError(
-            f'Arg must have at least {min_length} number of elements'
-        )
-
-    if flatten:
-        arg = util.flatten_iterable(arg)
-
-    return type(inner(item, **kwargs) for item in arg)
-
-
-# TODO(kszucs): remove list_of rule eventually
-list_of = tuple_of = container_of(type=tuple)
-
-
-@validator
 def value_list_of(inner, arg, **kwargs):
     # TODO(kszucs): would be nice to remove ops.ValueList
     # the main blocker is that some of the backends execution
@@ -184,7 +102,7 @@ def value_list_of(inner, arg, **kwargs):
     # the dispatcher in pandas requires operation objects
     import ibis.expr.operations as ops
 
-    values = list_of(inner, arg, **kwargs)
+    values = tuple_of(inner, arg, **kwargs)
     return ops.ValueList(values).to_expr()
 
 
@@ -199,17 +117,6 @@ def sort_key(key, *, from_=None, this):
 @validator
 def datatype(arg, **kwargs):
     return dt.dtype(arg)
-
-
-@validator
-def instance_of(klasses, arg, **kwargs):
-    """Require that a value has a particular Python type."""
-    if not isinstance(arg, klasses):
-        raise com.IbisTypeError(
-            f'Given argument with type {type(arg)} '
-            f'is not an instance of {klasses}'
-        )
-    return arg
 
 
 @validator

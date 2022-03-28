@@ -1,81 +1,6 @@
-from __future__ import annotations
-
-import inspect
-from abc import ABCMeta
-from typing import Any, Callable, Hashable
-
-from ibis import util
-
-EMPTY = inspect.Parameter.empty  # marker for missing argument
-
-
-class Validator(Callable):
-    """
-    Abstract base class for defining argument validators.
-    """
-
-
-class Optional(Validator):
-    """
-    Validator to allow missing arguments.
-
-    Parameters
-    ----------
-    validator : Validator
-        Used to do the actual validation if the argument gets passed.
-    default : Any, default None
-        Value to return with in case of a missing argument.
-    """
-
-    __slots__ = ('validator', 'default')
-
-    def __init__(self, validator, default=None):
-        self.validator = validator
-        self.default = default
-
-    def __call__(self, arg, **kwargs):
-        if arg is None:
-            if self.default is None:
-                return None
-            elif util.is_function(self.default):
-                arg = self.default()
-            else:
-                arg = self.default
-
-        return self.validator(arg, **kwargs)
-
-
-class Parameter(inspect.Parameter):
-    """
-    Augmented Parameter class to additionally hold a validator object.
-    """
-
-    __slots__ = ('_validator',)
-
-    def __init__(
-        self,
-        name,
-        kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        *,
-        validator=EMPTY,
-    ):
-        super().__init__(
-            name,
-            kind,
-            default=None if isinstance(validator, Optional) else EMPTY,
-        )
-        self._validator = validator
-
-    @property
-    def validator(self):
-        return self._validator
-
-    def validate(self, this, arg):
-        if self.validator is EMPTY:
-            return arg
-        else:
-            # TODO(kszucs): use self._validator
-            return self.validator(arg, this=this)
+from ..common.grounds import Annotable, AnnotableMeta, Parameter  # noqa: F401
+from ..common.validators import EMPTY, Optional, Validator  # noqa: F401
+from ..util import all_of, deprecated
 
 
 class _ValidatorFunction(Validator):
@@ -96,7 +21,7 @@ class _InstanceOf(Validator):
         return arg
 
 
-@util.deprecated(version="3.0", instead="use Validator if needed")
+@deprecated(version="3.0", instead="use Validator if needed")
 def Argument(validator, default=EMPTY):
     """Argument constructor
     Parameters
@@ -116,7 +41,7 @@ def Argument(validator, default=EMPTY):
     elif isinstance(validator, type):
         validator = _InstanceOf(validator)
     elif isinstance(validator, tuple):
-        assert util.all_of(validator, type)
+        assert all_of(validator, type)
         validator = _InstanceOf(validator)
     elif isinstance(validator, Validator):
         validator = validator
@@ -132,101 +57,3 @@ def Argument(validator, default=EMPTY):
         return validator
     else:
         return Optional(validator, default=default)
-
-
-class AnnotableMeta(ABCMeta):
-    """
-    Metaclass to turn class annotations into a validatable function signature.
-    """
-
-    def __new__(metacls, clsname, bases, dct):
-        params = {}
-        for parent in bases:
-            # inherit from parent signatures
-            if hasattr(parent, '__signature__'):
-                params.update(parent.__signature__.parameters)
-
-        slots = list(dct.pop('__slots__', []))
-        attribs = {}
-        for name, attrib in dct.items():
-            if isinstance(attrib, Validator):
-                # so we can set directly
-                params[name] = Parameter(name, validator=attrib)
-                slots.append(name)
-            else:
-                attribs[name] = attrib
-
-        # mandatory fields without default values must preceed the optional
-        # ones in the function signature, the partial ordering will be kept
-        params = sorted(
-            params.values(), key=lambda p: p.default is EMPTY, reverse=True
-        )
-
-        attribs["__slots__"] = tuple(slots)
-        attribs["__signature__"] = inspect.Signature(params)
-        attribs["argnames"] = tuple(attribs["__signature__"].parameters.keys())
-
-        return super().__new__(metacls, clsname, bases, attribs)
-
-    def __call__(cls, *args, **kwargs):
-        bound = cls.__signature__.bind(*args, **kwargs)
-        bound.apply_defaults()
-
-        kwargs = {}
-        for name, value in bound.arguments.items():
-            param = cls.__signature__.parameters[name]
-            kwargs[name] = param.validate(kwargs, value)
-
-        instance = super().__call__(**kwargs)
-        instance.__post_init__()
-        return instance
-
-
-class Annotable(Hashable, metaclass=AnnotableMeta):
-    """Base class for objects with custom validation rules."""
-
-    __slots__ = "args", "_hash"
-
-    def __init__(self, **kwargs):
-        for name, value in kwargs.items():
-            object.__setattr__(self, name, value)
-
-    # TODO(kszucs): split for better __init__ composability but we can
-    # directly call it from __init__ too
-    def __post_init__(self):
-        args = tuple(getattr(self, name) for name in self.argnames)
-        object.__setattr__(self, "args", args)
-        object.__setattr__(self, "_hash", hash((type(self), args)))
-
-    def __hash__(self):
-        return self._hash
-
-    def __eq__(self, other):
-        return super().__eq__(other)
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(
-            f"Attribute {name!r} cannot be assigned to immutable instance of "
-            f"type {type(self)}"
-        )
-
-    @classmethod
-    def _reconstruct(cls, kwargs):
-        # bypass AnnotableMeta.__call__() when deserializing
-        self = cls.__new__(cls)
-        self.__init__(**kwargs)
-        self.__post_init__()
-        return self
-
-    def __reduce__(self):
-        kwargs = dict(zip(self.argnames, self.args))
-        return (self._reconstruct, (kwargs,))
-
-    def flat_args(self):
-        import ibis.expr.schema as sch
-
-        for arg in self.args:
-            if not isinstance(arg, sch.Schema) and util.is_iterable(arg):
-                yield from arg
-            else:
-                yield arg

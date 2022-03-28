@@ -330,7 +330,7 @@ class IntervalBinaryOp(BinaryOp):
         dtype_type = type(left_dtype)
         additional_args = {
             attr: getattr(left_dtype, attr)
-            for attr in left_dtype._fields
+            for attr in left_dtype.argnames
             if attr not in ("unit", "value_type")
         }
         dtype = dtype_type(left_dtype.unit, expr.type(), **additional_args)

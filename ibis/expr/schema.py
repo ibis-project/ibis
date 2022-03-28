@@ -5,9 +5,10 @@ import collections
 
 from multipledispatch import Dispatcher
 
-import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
-import ibis.util as util
+from ..common.exceptions import IntegrityError
+from ..common.grounds import Comparable
+from ..expr import datatypes as dt
+from ..util import indent
 
 convert = Dispatcher(
     'convert',
@@ -32,7 +33,7 @@ result : pd.Series
 )
 
 
-class Schema(util.Comparable):
+class Schema(Comparable):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -61,7 +62,7 @@ class Schema(util.Comparable):
             duplicate_names = list(self.names)
             for v in self._name_locs.keys():
                 duplicate_names.remove(v)
-            raise com.IntegrityError(
+            raise IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
         self._hash = None
@@ -69,7 +70,7 @@ class Schema(util.Comparable):
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
-            util.indent(
+            indent(
                 ''.join(
                     f'\n{name.ljust(space)}{str(type)}'
                     for name, type in zip(self.names, self.types)

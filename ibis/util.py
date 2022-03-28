@@ -1,7 +1,6 @@
 """Ibis utility functions."""
 from __future__ import annotations
 
-import abc
 import collections
 import functools
 import itertools
@@ -11,7 +10,6 @@ import os
 import textwrap
 import types
 import warnings
-import weakref
 from numbers import Real
 from typing import (
     TYPE_CHECKING,
@@ -20,7 +18,6 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
-    MutableMapping,
     Sequence,
     TypeVar,
 )
@@ -456,92 +453,6 @@ def deprecated(*, instead, version=''):
         return wrapper
 
     return decorator
-
-
-class WeakCache(MutableMapping):
-
-    __slots__ = ('_data',)
-
-    def __init__(self):
-        object.__setattr__(self, '_data', {})
-
-    def __setattr__(self, name, value):
-        raise TypeError(f"can't set {name}")
-
-    def __len__(self):
-        return len(self._data)
-
-    def __iter__(self):
-        return iter(self._data)
-
-    def __setitem__(self, key, value):
-        # construct an alternative representation of the key using the id()
-        # of the key's components, this prevents infinite recursions
-        identifiers = tuple(id(item) for item in key)
-
-        # create a function which removes the key from the cache
-        def callback(ref_):
-            return self._data.pop(identifiers, None)
-
-        # create weak references for the key's components with the callback
-        # to remove the cache entry if any of the key's components gets
-        # garbage collected
-        refs = tuple(weakref.ref(item, callback) for item in key)
-
-        self._data[identifiers] = (value, refs)
-
-    def __getitem__(self, key):
-        identifiers = tuple(id(item) for item in key)
-        value, _ = self._data[identifiers]
-        return value
-
-    def __delitem__(self, key):
-        identifiers = tuple(id(item) for item in key)
-        del self._data[identifiers]
-
-    def __repr__(self):
-        return repr(self._data)
-
-
-class Comparable(abc.ABC):
-
-    __slots__ = ("__weakref__",)
-    __cache__ = WeakCache()
-
-    def __hash__(self):
-        return super().__hash__()
-
-    def __eq__(self, other):
-        try:
-            return self.__cached_equals__(other)
-        except TypeError:
-            raise NotImplemented  # noqa: F901
-
-    @abc.abstractmethod
-    def __equals__(self, other):
-        ...
-
-    def __cached_equals__(self, other):
-        if self is other:
-            return True
-
-        # type comparison should be cheap
-        if type(self) != type(other):
-            return False
-
-        # reduce space required for commutative operation
-        if hash(self) < hash(other):
-            key = (self, other)
-        else:
-            key = (other, self)
-
-        try:
-            result = self.__cache__[key]
-        except KeyError:
-            result = self.__equals__(other)
-            self.__cache__[key] = result
-
-        return result
 
 
 def to_op_dag(expr: ir.Expr) -> Graph:

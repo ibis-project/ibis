@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import ast
 import collections
 import datetime
@@ -15,7 +14,6 @@ from typing import (
     AbstractSet,
     Iterable,
     Iterator,
-    Literal,
     Mapping,
     NamedTuple,
     Sequence,
@@ -25,13 +23,22 @@ from typing import (
 import numpy as np
 import pandas as pd
 import parsy as p
-from cached_property import cached_property
 from multipledispatch import Dispatcher
 from public import public
 
-import ibis.common.exceptions as com
-import ibis.expr.types as ir
-from ibis.util import Comparable, frozendict
+from ...common.exceptions import IbisTypeError, InputTypeError
+from ...common.grounds import Annotable, Comparable, Singleton
+from ...common.validators import (
+    compose_of,
+    instance_of,
+    isin,
+    map_to,
+    optional,
+    tuple_of,
+    validator,
+)
+from ...util import frozendict
+from .. import types as ir
 
 try:
     import shapely.geometry
@@ -41,46 +48,52 @@ except ImportError:
     IS_SHAPELY_AVAILABLE = False
 
 
-def _not_constructible(cls: type[DataType]) -> type[DataType]:
-    """Add a docstring indicating that the type isn't constructible."""
-    cls.__doc__ += f"""
-    !!! info "Instances of type `{cls.__name__}` should never be constructed directly."
+dtype = Dispatcher('dtype')
 
-        The use of `{cls.__name__}` is limited to `isinstance` and `issubclass`:
+validate_type = dtype
 
-        ```python
-        >>> import ibis.expr.datatypes as dt
-        >>> isinstance(..., dt.{cls.__name__})
-        >>> issubclass(..., dt.{cls.__name__})
-        ```
-"""  # noqa: E501
-    return cls
+
+@dtype.register(object)
+def default(value, **kwargs) -> DataType:
+    raise IbisTypeError(f'Value {value!r} is not a valid datatype')
+
+
+@dtype.register(str)
+def from_string(value: str) -> DataType:
+    try:
+        return parse_type(value)
+    except SyntaxError:
+        raise IbisTypeError(f'{value!r} cannot be parsed as a datatype')
+
+
+@dtype.register(list)
+def from_list(values: list[typing.Any]) -> Array:
+    if not values:
+        return Array(null)
+    return Array(highest_precedence(map(dtype, values)))
+
+
+@dtype.register(collections.abc.Set)
+def from_set(values: set) -> Set:
+    if not values:
+        return Set(null)
+    return Set(highest_precedence(map(dtype, values)))
+
+
+@validator
+def datatype(arg, **kwargs):
+    return dtype(arg)
 
 
 @public
-@_not_constructible
-class DataType(Comparable):
+class DataType(Annotable, Comparable):
     """Base class for all data types.
 
     [`DataType`][ibis.expr.datatypes.DataType] instances are
     immutable.
     """
 
-    _fields_ = ()
-
-    def __init__(self, nullable: bool = True, **fields: typing.Any) -> None:
-        object.__setattr__(self, "nullable", nullable)
-        for name, value in fields.items():
-            if name not in self._fields_:
-                raise ValueError(
-                    f"field `{name}` is not defined in `_fields_`"
-                )
-            object.__setattr__(self, name, value)
-
-    def __setattr__(self, key: str, _: typing.Any) -> None:
-        raise TypeError(
-            f"cannot set {key!r} attribute of immutable instance {self.name!r}"
-        )
+    nullable = optional(instance_of(bool), default=True)
 
     def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
@@ -95,40 +108,20 @@ class DataType(Comparable):
     def _pretty_piece(self) -> str:
         return ""
 
-    @cached_property
-    def _fields(self) -> tuple[str, ...]:
-        return (*self._fields_, "nullable")
-
     @property
     def name(self) -> str:
         """Return the name of the data type."""
         return self.__class__.__name__
 
-    @cached_property
-    def _str(self) -> str:
+    def __str__(self) -> str:
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
-    def __str__(self) -> str:
-        return self._str
-
-    def __repr__(self) -> str:
-        args = ", ".join(
-            f"{slot}={getattr(self, slot)!r}" for slot in self._fields
-        )
-        return f"{self.name}({args})"
-
-    @cached_property
-    def _hash(self) -> int:
-        return hash(
-            (
-                self.__class__,
-                *(getattr(self, slot) for slot in self._fields),
-            )
-        )
-
-    def __equals__(self, other: typing.Any) -> bool:
-        return self.nullable == other.nullable and self.__fields_eq__(other)
+    def __equals__(
+        self,
+        other: typing.Any,
+    ) -> bool:
+        return self.args == other.args
 
     def equals(self, other):
         if not isinstance(other, DataType):
@@ -138,13 +131,10 @@ class DataType(Comparable):
             )
         return super().__cached_equals__(other)
 
-    @abc.abstractmethod
-    def __fields_eq__(self, other: DataType) -> bool:
-        """Return whether the fields of two datatypes are equal."""
-
     def _factory(self, nullable: bool = True) -> DataType:
-        slots = {slot: getattr(self, slot) for slot in self._fields_}
-        return self.__class__(nullable=nullable, **slots)
+        kwargs = dict(zip(self.argnames, self.args))
+        kwargs["nullable"] = nullable
+        return self.__class__(**kwargs)
 
     def castable(self, target, **kwargs):
         """Return whether this data type is castable to `target`."""
@@ -163,42 +153,32 @@ class DataType(Comparable):
         return functools.partial(self.column, dtype=self)
 
 
+@dtype.register(DataType)
+def from_ibis_dtype(value: DataType) -> DataType:
+    return value
+
+
 @public
-@_not_constructible
 class Any(DataType):
-    """Values of any type.  Actual values must be of a concrete type."""
-
-    def __fields_eq__(self, other: DataType) -> bool:
-        return True
+    """Values of any type."""
 
 
 @public
-@_not_constructible
-class Primitive(DataType):
+class Primitive(Singleton, DataType):
     """Values with known size."""
 
-    def __fields_eq__(self, other: DataType) -> bool:
-        return True
-
 
 @public
-class Null(DataType):
+class Null(Singleton, DataType):
     """Null values."""
 
     scalar = ir.NullScalar
     column = ir.NullColumn
 
-    def __fields_eq__(self, other: DataType) -> bool:
-        return True
-
 
 @public
-@_not_constructible
 class Variadic(DataType):
     """Values with unknown size."""
-
-    def __fields_eq__(self, other: DataType) -> bool:
-        return True
 
 
 @public
@@ -218,7 +198,6 @@ class Bounds(NamedTuple):
 
 
 @public
-@_not_constructible
 class Integer(Primitive):
     """Integer values."""
 
@@ -234,7 +213,7 @@ class Integer(Primitive):
 
 
 @public
-class String(Variadic):
+class String(Singleton, Variadic):
     """A type representing a string.
 
     Notes
@@ -248,7 +227,7 @@ class String(Variadic):
 
 
 @public
-class Binary(Variadic):
+class Binary(Singleton, Variadic):
     """A type representing a sequence of bytes.
 
     Notes
@@ -284,20 +263,11 @@ class Time(Primitive):
 class Timestamp(DataType):
     """Timestamp values."""
 
-    _fields_ = ("timezone",)
-
-    timezone: str | None
+    timezone = optional(instance_of(str))
     """The timezone of values of this type."""
 
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
-
-    def __init__(
-        self,
-        timezone: str | None = None,
-        nullable: bool = True,
-    ) -> None:
-        super().__init__(nullable=nullable, timezone=timezone)
 
     @property
     def _pretty_piece(self) -> str:
@@ -305,12 +275,8 @@ class Timestamp(DataType):
             return f"({timezone!r})"
         return ""
 
-    def __fields_eq__(self, other: Timestamp) -> bool:
-        return self.timezone == other.timezone
-
 
 @public
-@_not_constructible
 class SignedInteger(Integer):
     """Signed integer values."""
 
@@ -327,7 +293,6 @@ class SignedInteger(Integer):
 
 
 @public
-@_not_constructible
 class UnsignedInteger(Integer):
     """Unsigned integer values."""
 
@@ -344,7 +309,6 @@ class UnsignedInteger(Integer):
 
 
 @public
-@_not_constructible
 class Floating(Primitive):
     """Floating point values."""
 
@@ -445,23 +409,16 @@ class Float64(Floating):
 class Decimal(DataType):
     """Fixed-precision decimal values."""
 
-    _fields_ = "precision", "scale"
-
-    precision: int
+    precision = instance_of(int)
     """The number of values after the decimal point."""
 
-    scale: int
+    scale = instance_of(int)
     """The number of decimal places values of this type can hold."""
 
     scalar = ir.DecimalScalar
     column = ir.DecimalColumn
 
-    def __init__(
-        self,
-        precision: int,
-        scale: int,
-        nullable: bool = True,
-    ) -> None:
+    def __init__(self, precision: int, scale: int, **kwargs) -> None:
         if not isinstance(precision, numbers.Integral):
             raise TypeError('Decimal type precision must be an integer')
         if not isinstance(scale, numbers.Integral):
@@ -479,7 +436,7 @@ class Decimal(DataType):
                     precision, scale
                 )
             )
-        super().__init__(nullable=nullable, precision=precision, scale=scale)
+        super().__init__(precision=precision, scale=scale, **kwargs)
 
     @property
     def largest(self) -> Decimal:
@@ -490,20 +447,41 @@ class Decimal(DataType):
     def _pretty_piece(self) -> str:
         return f"({self.precision:d}, {self.scale:d})"
 
-    def __fields_eq__(self, other: Decimal) -> bool:
-        return self.precision == other.precision and self.scale == other.scale
-
 
 @public
 class Interval(DataType):
     """Interval values."""
 
-    _fields_ = "unit", "value_type"
-
-    unit: str
+    unit = optional(
+        map_to(
+            {
+                'days': 'D',
+                'hours': 'h',
+                'minutes': 'm',
+                'seconds': 's',
+                'milliseconds': 'ms',
+                'microseconds': 'us',
+                'nanoseconds': 'ns',
+                'Y': 'Y',
+                'Q': 'Q',
+                'M': 'M',
+                'W': 'W',
+                'D': 'D',
+                'h': 'h',
+                'm': 'm',
+                's': 's',
+                'ms': 'ms',
+                'us': 'us',
+                'ns': 'ns',
+            }
+        ),
+        default="s",
+    )
     """The time unit of the interval."""
 
-    value_type: DataType
+    value_type = optional(
+        compose_of([datatype, instance_of(Integer)]), default=Int32()
+    )
     """The underlying type of the stored values."""
 
     scalar = ir.IntervalScalar
@@ -524,42 +502,8 @@ class Interval(DataType):
         'ns': 'nanosecond',
     }
 
-    _timedelta_to_interval_units = {
-        'days': 'D',
-        'hours': 'h',
-        'minutes': 'm',
-        'seconds': 's',
-        'milliseconds': 'ms',
-        'microseconds': 'us',
-        'nanoseconds': 'ns',
-    }
-
-    def _convert_timedelta_unit_to_interval_unit(self, unit: str):
-        if unit not in self._timedelta_to_interval_units:
-            raise ValueError
-        return self._timedelta_to_interval_units[unit]
-
-    def __init__(
-        self,
-        unit: str = "s",
-        value_type: DataType | None = None,
-        nullable: bool = True,
-    ) -> None:
-        if unit not in self._units:
-            try:
-                unit = self._convert_timedelta_unit_to_interval_unit(unit)
-            except ValueError:
-                raise ValueError(f'Unsupported interval unit `{unit}`')
-
-        if value_type is None:
-            value_type = int32
-        else:
-            value_type = dtype(value_type)
-
-        if not isinstance(value_type, Integer):
-            raise TypeError("Interval inner type must be an Integer subtype")
-
-        super().__init__(nullable=nullable, unit=unit, value_type=value_type)
+    # TODO(kszucs): assert that the nullability if the value_type is equal
+    # to the interval's nullability
 
     @property
     def bounds(self):
@@ -570,11 +514,6 @@ class Interval(DataType):
         """The interval unit's name."""
         return self._units[self.unit]
 
-    def __fields_eq__(self, other: Interval) -> bool:
-        return self.unit == other.unit and self.value_type.equals(
-            other.value_type
-        )
-
     @property
     def _pretty_piece(self) -> str:
         return f"<{self.value_type}>(unit={self.unit!r})"
@@ -582,19 +521,10 @@ class Interval(DataType):
 
 @public
 class Category(DataType):
-    _fields_ = ("cardinality",)
-
-    cardinality: int | None
+    cardinality = optional(instance_of(int))
 
     scalar = ir.CategoryScalar
     column = ir.CategoryColumn
-
-    def __init__(
-        self,
-        cardinality: int | None = None,
-        nullable: bool = True,
-    ) -> None:
-        super().__init__(nullable=nullable, cardinality=cardinality)
 
     def __repr__(self):
         if self.cardinality is not None:
@@ -609,46 +539,16 @@ class Category(DataType):
         else:
             return infer(self.cardinality)
 
-    def __fields_eq__(self, other: Category) -> bool:
-        return self.cardinality == other.cardinality
-
 
 @public
 class Struct(DataType):
     """Structured values."""
 
-    _fields_ = "names", "types"
+    names = tuple_of(instance_of(str))
+    types = tuple_of(datatype)
 
     scalar = ir.StructScalar
     column = ir.StructColumn
-
-    def __init__(
-        self,
-        names: Iterable[str],
-        types: Iterable[str | DataType],
-        nullable: bool = True,
-    ) -> None:
-        """Construct a `Struct` data type instance.
-
-        Parameters
-        ----------
-        names
-            Field names
-        types
-            Types of the fields of the struct
-        """
-        names = tuple(names)
-        if not names:
-            raise ValueError("names must not be empty")
-
-        types = tuple(map(dtype, types))
-        if not types:
-            raise ValueError("types must not be empty")
-
-        if len(names) != len(types):
-            raise ValueError("names and types must have the same length")
-
-        super().__init__(nullable=nullable, names=names, types=types)
 
     @classmethod
     def from_tuples(
@@ -706,13 +606,6 @@ class Struct(DataType):
     def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]
 
-    def __fields_eq__(self, other: DataType) -> bool:
-        return (
-            self.names == other.names
-            and len(self.types) == len(other.types)
-            and all(a.equals(b) for a, b in zip(self.types, other.types))
-        )
-
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
             self.name, list(self.pairs.items()), self.nullable
@@ -728,27 +621,10 @@ class Struct(DataType):
 class Array(Variadic):
     """Array values."""
 
-    _fields_ = ("value_type",)
+    value_type = datatype
 
     scalar = ir.ArrayScalar
     column = ir.ArrayColumn
-
-    def __init__(
-        self, value_type: str | DataType, nullable: bool = True
-    ) -> None:
-        """Construct an Array data type.
-
-        Parameters
-        ----------
-        value_type
-            The array's element type
-        nullable
-            Whether the array type can hold null values
-        """
-        super().__init__(nullable=nullable, value_type=dtype(value_type))
-
-    def __fields_eq__(self, other: Array) -> bool:
-        return self.value_type.equals(other.value_type)
 
     @property
     def _pretty_piece(self) -> str:
@@ -759,105 +635,36 @@ class Array(Variadic):
 class Set(Variadic):
     """Set values."""
 
-    _fields_ = ("value_type",)
+    value_type = datatype
 
     scalar = ir.SetScalar
     column = ir.SetColumn
 
-    def __init__(self, value_type: DataType, nullable: bool = True) -> None:
-        """Construct a Set data type.
-
-        Parameters
-        ----------
-        value_type
-            The set's element type
-        nullable
-            Whether the set type can hold null values
-        """
-        super().__init__(nullable=nullable, value_type=dtype(value_type))
-
     @property
     def _pretty_piece(self) -> str:
         return f"<{self.value_type}>"
-
-    def __fields_eq__(self, other: Set) -> bool:
-        return self.value_type.equals(other.value_type)
 
 
 @public
 class Enum(DataType):
     """Enumeration values."""
 
-    _fields_ = "rep_type", "value_type"
+    rep_type = datatype
+    value_type = datatype
 
     scalar = ir.EnumScalar
     column = ir.EnumColumn
-
-    def __init__(
-        self,
-        rep_type: str | DataType,
-        value_type: str | DataType,
-        nullable: bool = True,
-    ) -> None:
-        """Construct an Enum data type.
-
-        Parameters
-        ----------
-        rep_type
-            The type of the key of the enumeration.
-        value_type
-            The type of the elements of the enumeration.
-        nullable
-            Whether the enum type can hold null values
-        """
-        super().__init__(
-            nullable=nullable,
-            rep_type=dtype(rep_type),
-            value_type=dtype(value_type),
-        )
-
-    def __fields_eq__(self, other: Enum) -> bool:
-        return self.rep_type.equals(other.rep_type) and self.value_type.equals(
-            other.value_type
-        )
 
 
 @public
 class Map(Variadic):
     """Associative array values."""
 
-    _fields_ = "key_type", "value_type"
+    key_type = datatype
+    value_type = datatype
 
     scalar = ir.MapScalar
     column = ir.MapColumn
-
-    def __init__(
-        self,
-        key_type: str | DataType,
-        value_type: str | DataType,
-        nullable: bool = True,
-    ) -> None:
-        """Construct a Map data type.
-
-        Parameters
-        ----------
-        key_type
-            The type of the key of the map.
-        value_type
-            The type of the values of the map.
-        nullable
-            Whether the map type can hold null values
-        """
-        super().__init__(
-            nullable=nullable,
-            key_type=dtype(key_type),
-            value_type=dtype(value_type),
-        )
-
-    def __fields_eq__(self, other: Map) -> bool:
-        return self.key_type.equals(other.key_type) and self.value_type.equals(
-            other.value_type
-        )
 
     @property
     def _pretty_piece(self) -> str:
@@ -888,32 +695,14 @@ class JSONB(Binary):
 class GeoSpatial(DataType):
     """Geospatial values."""
 
-    _fields_ = "geotype", "srid"
-
-    geotype: Literal["geography", "geometry"] | None
+    geotype = optional(isin({"geography", "geometry"}))
     """The specific geospatial type"""
 
-    srid: int | None
+    srid = optional(instance_of(int))
     """The spatial reference identifier."""
 
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
-
-    def __init__(
-        self,
-        geotype: Literal["geography", "geometry"] | None = None,
-        srid: int | None = None,
-        nullable: bool = True,
-    ) -> None:
-        if geotype is not None and geotype not in (
-            "geometry",
-            "geography",
-        ):
-            raise ValueError(
-                "The `geotype` parameter should be "
-                "`None` or `'geometry'` or `'geography'`"
-            )
-        super().__init__(nullable=nullable, geotype=geotype, srid=srid)
 
     @property
     def _pretty_piece(self) -> str:
@@ -924,9 +713,6 @@ class GeoSpatial(DataType):
             piece += f";{self.srid}"
         return piece
 
-    def __fields_eq__(self, other: GeoSpatial) -> bool:
-        return self.geotype == other.geotype and self.srid == other.srid
-
 
 @public
 class Geometry(GeoSpatial):
@@ -935,8 +721,8 @@ class Geometry(GeoSpatial):
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
-    def __init__(self, srid: int | None = None, nullable: bool = True) -> None:
-        super().__init__(geotype="geometry", srid=srid, nullable=nullable)
+    def __init__(self, geotype, **kwargs):
+        super().__init__(geotype="geometry", **kwargs)
 
 
 @public
@@ -946,8 +732,8 @@ class Geography(GeoSpatial):
     column = ir.GeoSpatialColumn
     scalar = ir.GeoSpatialScalar
 
-    def __init__(self, srid: int | None = None, nullable: bool = True) -> None:
-        super().__init__(geotype="geography", srid=srid, nullable=nullable)
+    def __init__(self, geotype, **kwargs):
+        super().__init__(geotype="geography", **kwargs)
 
 
 @public
@@ -1009,9 +795,6 @@ class UUID(DataType):
     scalar = ir.UUIDScalar
     column = ir.UUIDColumn
 
-    def __fields_eq__(self, other: DataType) -> bool:
-        return True
-
 
 @public
 class MACADDR(String):
@@ -1048,6 +831,10 @@ bool
 """,
 )
 
+# ---------------------------------------------------------------------
+
+infer = Dispatcher('infer')
+castable = Dispatcher('castable')
 
 # ---------------------------------------------------------------------
 
@@ -1070,9 +857,6 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
-dtype = Dispatcher('dtype')
-infer = Dispatcher('infer')
-castable = Dispatcher('castable')
 interval = Interval()
 category = Category()
 # geo spatial data type
@@ -1386,45 +1170,13 @@ def _get_timedelta_units(
     return [field for field in unit_fields if getattr(base_object, field) > 0]
 
 
-@dtype.register(object)
-def default(value, **kwargs) -> DataType:
-    raise com.IbisTypeError(f'Value {value!r} is not a valid datatype')
-
-
-@dtype.register(DataType)
-def from_ibis_dtype(value: DataType) -> DataType:
-    return value
-
-
-@dtype.register(str)
-def from_string(value: str) -> DataType:
-    try:
-        return parse_type(value)
-    except SyntaxError:
-        raise com.IbisTypeError(f'{value!r} cannot be parsed as a datatype')
-
-
-@dtype.register(list)
-def from_list(values: list[typing.Any]) -> Array:
-    if not values:
-        return Array(null)
-    return Array(highest_precedence(map(dtype, values)))
-
-
-@dtype.register(collections.abc.Set)
-def from_set(values: set) -> Set:
-    if not values:
-        return Set(null)
-    return Set(highest_precedence(map(dtype, values)))
-
-
 def higher_precedence(left: DataType, right: DataType) -> DataType:
     if castable(left, right, upcast=True):
         return right
     elif castable(right, left, upcast=True):
         return left
 
-    raise com.IbisTypeError(
+    raise IbisTypeError(
         f'Cannot compute precedence for {left} and {right} types'
     )
 
@@ -1438,7 +1190,7 @@ def highest_precedence(dtypes: Iterator[DataType]) -> DataType:
 @infer.register(object)
 def infer_dtype_default(value: typing.Any) -> DataType:
     """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
-    raise com.InputTypeError(value)
+    raise InputTypeError(value)
 
 
 @infer.register(collections.OrderedDict)
@@ -1460,8 +1212,8 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
     )
 
 
-@infer.register(list)
-def infer_list(values: list[typing.Any]) -> Array:
+@infer.register((list, tuple))
+def infer_list(values: typing.Sequence[typing.Any]) -> Array:
     """Infer the [`Array`][ibis.expr.datatypes.Array] type of `value`."""
     if not values:
         return Array(null)
@@ -1757,11 +1509,31 @@ def cast(source: str | DataType, target: str | DataType, **kwargs) -> DataType:
     source, result_target = dtype(source), dtype(target)
 
     if not castable(source, result_target, **kwargs):
-        raise com.IbisTypeError(
+        raise IbisTypeError(
             'Datatype {} cannot be implicitly '
             'casted to {}'.format(source, result_target)
         )
     return result_target
+
+
+same_kind = Dispatcher(
+    'same_kind',
+    doc="""\
+Compute whether two :class:`~ibis.expr.datatypes.DataType` instances are the
+same kind.
+
+Parameters
+----------
+a : DataType
+b : DataType
+
+Returns
+-------
+bool
+    Whether two :class:`~ibis.expr.datatypes.DataType` instances are the same
+    kind.
+""",
+)
 
 
 @same_kind.register(DataType, DataType)

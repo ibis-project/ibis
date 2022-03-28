@@ -224,7 +224,7 @@ def test_valid_value_list_of(validator, values, expected):
 
 
 def test_valid_list_of_extra():
-    validator = rlz.list_of(identity)
+    validator = rlz.tuple_of(identity)
     assert validator((3, 2)) == tuple([3, 2])
 
     validator = rlz.list_of(rlz.list_of(rlz.string))

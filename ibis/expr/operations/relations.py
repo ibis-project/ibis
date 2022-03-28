@@ -327,7 +327,7 @@ class SelfReference(TableNode, sch.HasSchema):
 class Selection(TableNode, sch.HasSchema):
     table = rlz.table
     selections = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.table,
@@ -340,9 +340,9 @@ class Selection(TableNode, sch.HasSchema):
         ),
         default=(),
     )
-    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=())
+    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.column_from("table"),
@@ -563,7 +563,7 @@ class Aggregation(TableNode, sch.HasSchema):
 
     table = rlz.table
     metrics = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.function_of(
@@ -574,7 +574,7 @@ class Aggregation(TableNode, sch.HasSchema):
                     ),
                     rlz.reduction,
                     rlz.scalar(rlz.any),
-                    rlz.list_of(rlz.scalar(rlz.any)),
+                    rlz.tuple_of(rlz.scalar(rlz.any)),
                     rlz.named_literal,
                 )
             ),
@@ -583,7 +583,7 @@ class Aggregation(TableNode, sch.HasSchema):
         default=(),
     )
     by = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.function_of("table"),
@@ -595,7 +595,7 @@ class Aggregation(TableNode, sch.HasSchema):
         default=(),
     )
     having = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.function_of(
@@ -607,9 +607,9 @@ class Aggregation(TableNode, sch.HasSchema):
         ),
         default=(),
     )
-    predicates = rlz.optional(rlz.list_of(rlz.boolean), default=())
+    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.list_of(
+        rlz.tuple_of(
             rlz.one_of(
                 (
                     rlz.column_from("table"),
@@ -743,7 +743,7 @@ class Distinct(TableNode, sch.HasSchema):
 @public
 class ExistsSubquery(Node):
     foreign_table = rlz.table
-    predicates = rlz.list_of(rlz.boolean)
+    predicates = rlz.tuple_of(rlz.boolean)
 
     def output_type(self):
         return ir.ExistsExpr
@@ -752,7 +752,7 @@ class ExistsSubquery(Node):
 @public
 class NotExistsSubquery(Node):
     foreign_table = rlz.table
-    predicates = rlz.list_of(rlz.boolean)
+    predicates = rlz.tuple_of(rlz.boolean)
 
     def output_type(self):
         return ir.ExistsExpr
@@ -793,7 +793,7 @@ class DropNa(TableNode, sch.HasSchema):
 
     table = rlz.table
     how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.list_of(rlz.column_from("table")), default=())
+    subset = rlz.optional(rlz.tuple_of(rlz.column_from("table")), default=())
 
     @property
     def schema(self):
