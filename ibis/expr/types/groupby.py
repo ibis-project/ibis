@@ -170,53 +170,30 @@ class GroupedTableExpr:
         ...     ('baz', 'double'),
         ... ], name='t')
         >>> t
-        UnboundTable[table]
-          name: t
-          schema:
-            foo : string
-            bar : string
-            baz : float64
+        UnboundTable[t]
+          foo string
+          bar string
+          baz float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
         ...          .mutate(qux=lambda x: x.baz.lag(),
         ...                  qux2=t.baz.lead()))
-        >>> print(expr)  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            foo : string
-            bar : string
-            baz : float64
-        Selection[table]
-          table:
-            Table: ref_0
+        >>> print(expr)
+        r0 := UnboundTable[t]
+          foo string
+          bar string
+          baz float64
+        Selection[r0]
           selections:
-            Table: ref_0
-            qux = WindowOp[float64*]
-              qux = Lag[float64*]
-                baz = Column[float64*] 'baz' from table
-                  ref_0
-                offset:
-                  None
-                default:
-                  None
-              <ibis.expr.window.Window object at 0x...>
-            qux2 = WindowOp[float64*]
-              qux2 = Lead[float64*]
-                baz = Column[float64*] 'baz' from table
-                  ref_0
-                offset:
-                  None
-                default:
-                  None
-              <ibis.expr.window.Window object at 0x...>
+            r0
+            qux:  WindowOp(Lag(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
+            qux2: WindowOp(Lead(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
 
         Returns
         -------
         TableExpr
             A table expression with window functions applied
-        """
+        """  # noqa: E501
         if exprs is None:
             exprs = []
         else:

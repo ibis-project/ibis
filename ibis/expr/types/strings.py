@@ -465,6 +465,7 @@ class StringValue(AnyValue):
         >>> import ibis
         >>> text = ibis.literal('Ibis project')
         >>> text.startswith('Ibis')
+        StartsWith('Ibis project', start='Ibis')
 
         Returns
         -------
@@ -488,6 +489,7 @@ class StringValue(AnyValue):
         >>> import ibis
         >>> text = ibis.literal('Ibis project')
         >>> text.endswith('project')
+        EndsWith('Ibis project', end='project')
 
         Returns
         -------

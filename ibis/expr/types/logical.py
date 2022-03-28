@@ -38,8 +38,8 @@ class BooleanValue(NumericValue):
         >>> t = ibis.table([("is_person", "boolean")], name="t")
         >>> expr = t.is_person.ifelse("yes", "no")
         >>> print(ibis.impala.compile(expr))
-        SELECT CASE WHEN t0.is_person THEN :param_1 ELSE :param_2 END AS tmp
-        FROM t AS t0
+        SELECT CASE WHEN `is_person` THEN 'yes' ELSE 'no' END AS `tmp`
+        FROM t
         """
         import ibis
 

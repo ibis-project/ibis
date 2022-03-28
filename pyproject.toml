@@ -141,6 +141,11 @@ spark = "ibis.backends.pyspark"
 sqlite = "ibis.backends.sqlite"
 
 [tool.pytest.ini_options]
+doctest_optionflags = [
+  "NORMALIZE_WHITESPACE",
+  "IGNORE_EXCEPTION_DETAIL",
+  "ELLIPSIS"
+]
 xfail_strict = true
 addopts = [
   "--ignore=site-packages",
@@ -154,6 +159,8 @@ addopts = [
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
   "error",
+  # Future warning from analytics.py
+  "ignore:ibis.expr.analytics will be removed in ibis 3.0",
   # poetry
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
   # clickhouse sockets aren't closed by sqlalchemy when running tests in parallel

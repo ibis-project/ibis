@@ -154,25 +154,12 @@ class Expr:
         >>> f = lambda a: (a + 1).name('a')
         >>> g = lambda a: (a * 2).name('a')
         >>> result1 = t.a.pipe(f).pipe(g)
-        >>> result1  # doctest: +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            a : int64
-            b : string
-        a = Multiply[int64*]
-          left:
-            a = Add[int64*]
-              left:
-                a = Column[int64*] 'a' from table
-                  ref_0
-              right:
-                Literal[int8]
-                  1
-          right:
-            Literal[int8]
-              2
+        >>> result1
+        r0 := UnboundTable[t]
+          a int64
+          b string
+        a: r0.a + 1 * 2
+
         >>> result2 = g(f(t.a))  # equivalent to the above
         >>> result1.equals(result2)
         True
@@ -353,11 +340,7 @@ def _binop(
     >>> import ibis.expr.operations as ops
     >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
     >>> expr
-    time = TimeAdd
-      left:
-        value: time = datetime.time(1, 0)
-      right:
-        value: interval<int8>(unit='h') = 1
+    datetime.time(1, 0) + 1
     >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
     NotImplemented
     """

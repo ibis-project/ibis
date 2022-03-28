@@ -29,8 +29,7 @@ class ArrayValue(AnyValue):
         >>> import ibis
         >>> a = ibis.array([1, 2, 3])
         >>> a.length()
-        int64 = ArrayLength
-          value: array<int8> = [1, 2, 3]
+        ArrayLength((1, 2, 3))
         """
         import ibis.expr.operations as ops
 
@@ -63,22 +62,14 @@ class ArrayValue(AnyValue):
         >>> import ibis
         >>> x = ibis.array([1, 2, 3, 4])
         >>> x[2]
-        int8 = ArrayIndex
-          value: array<int8> = [1, 2, 3, 4]
-          index:
-            value: int8 = 2
+        ArrayIndex((1, 2, 3, 4), index=2)
 
         Extract a range of elements
 
         >>> import ibis
         >>> x = ibis.array([1, 2, 3, 4])
         >>> x[1:3]
-        array<int8> = ArraySlice
-          value: array<int8> = [1, 2, 3, 4]
-          start:
-            value: int8 = 1
-          stop:
-            value: int8 = 3
+        ArraySlice((1, 2, 3, 4), start=1, stop=3)
         """
         import ibis.expr.operations as ops
 
@@ -114,11 +105,7 @@ class ArrayValue(AnyValue):
         >>> a = ibis.array([1, 2])
         >>> b = ibis.array([3, 4, 5])
         >>> a + b
-        array<int8> = ArrayConcat
-          left:
-            value: array<int8> = [1, 2]
-          right:
-            value: array<int8> = [3, 4, 5]
+        ArrayConcat(left=(1, 2), right=(3, 4, 5))
         """
         import ibis.expr.operations as ops
 
@@ -143,11 +130,7 @@ class ArrayValue(AnyValue):
         >>> a = ibis.array([1, 2])
         >>> b = ibis.array([3, 4, 5])
         >>> b + a
-        array<int8> = ArrayConcat
-          left:
-            value: array<int8> = [3, 4, 5]
-          right:
-            value: array<int8> = [1, 2]
+        ArrayConcat(left=(3, 4, 5), right=(1, 2))
         """
         import ibis.expr.operations as ops
 
@@ -171,10 +154,7 @@ class ArrayValue(AnyValue):
         >>> import ibis
         >>> x = ibis.array([1, 2])
         >>> x * 2
-        array<int8> = ArrayRepeat
-          value: array<int8> = [1, 2]
-          times:
-            value: int8 = 2
+        ArrayRepeat((1, 2), times=2)
         """
         import ibis.expr.operations as ops
 
@@ -198,10 +178,7 @@ class ArrayValue(AnyValue):
         >>> import ibis
         >>> x = ibis.array([1, 2])
         >>> 2 * x
-        array<int8> = ArrayRepeat
-          value: array<int8> = [1, 2]
-          times:
-            value: int8 = 2
+        ArrayRepeat((1, 2), times=2)
         """
         import ibis.expr.operations as ops
 

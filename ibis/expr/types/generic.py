@@ -77,10 +77,9 @@ class ValueExpr(Expr):
         >>> import ibis
         >>> t = ibis.table(dict(a="int64"))
         >>> t.a.name("b")
-        UnboundTable[r0, name=unbound_table_0]
+        r0 := UnboundTable[unbound_table_...]
           a int64
-
-        b: int64 = r0.a
+        b: r0.a
         """
         return self._factory(self._arg, name=name)
 
@@ -486,31 +485,11 @@ class AnyValue(ValueExpr):
         ...              .when('b', 'a b')
         ...              .else_('null or (not a and not b)')
         ...              .end())
-        >>> case_expr  # doctest: +NORMALIZE_WHITESPACE
-        ref_0
-        UnboundTable[table]
-          name: t
-          schema:
-            string_col : string
-        <BLANKLINE>
-        SimpleCase[string*]
-          base:
-            string_col = Column[string*] 'string_col' from table
-              ref_0
-          cases:
-            Literal[string]
-              a
-            Literal[string]
-              b
-          results:
-            Literal[string]
-              an a
-            Literal[string]
-              a b
-          default:
-            Literal[string]
-              null or (not a and not b)
-        """
+        >>> case_expr
+        r0 := UnboundTable[t]
+          string_col string
+        SimpleCase(base=r0.string_col, cases=[ValueList(values=['a', 'b'])], results=[ValueList(values=['an a', 'a b'])], default='null or (not a and not b)')
+        """  # noqa: E501
         import ibis.expr.builders as bl
 
         return bl.SimpleCaseBuilder(self)
@@ -990,13 +969,13 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> ScalarExpr:
     >>> import ibis
     >>> x = ibis.literal(42)
     >>> x.type()
-    int8
+    Int8(nullable=True)
 
     Construct a `float64` literal from an `int`
 
     >>> y = ibis.literal(42, type='double')
     >>> y.type()
-    float64
+    Float64(nullable=True)
 
     Ibis checks for invalid types
 
