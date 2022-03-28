@@ -252,7 +252,9 @@ line_length = 79
 multi_line_output = 3
 include_trailing_comma = true
 profile = "black"
-skip_glob = ["result*", ".direnv/*"]
+extend_skip = [".direnv"]
+extend_skip_glob = ["result*"]
+skip_gitignore = true
 
 [tool.pydocstyle]
 inherit = false
