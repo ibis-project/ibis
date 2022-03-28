@@ -19,12 +19,16 @@ pytest.importorskip("clickhouse_driver")
 @pytest.mark.parametrize(
     ('to_type', 'expected'),
     [
-        ('int8', 'CAST(`double_col` AS Int8)'),
-        ('int16', 'CAST(`double_col` AS Int16)'),
-        ('float32', 'CAST(`double_col` AS Float32)'),
-        ('float', 'CAST(`double_col` AS Float64)'),
+        param('int8', 'CAST(`double_col` AS Int8)', id="int8"),
+        param('int16', 'CAST(`double_col` AS Int16)', id="int16"),
+        param('float32', 'CAST(`double_col` AS Float32)', id="float32"),
+        param('float', '`double_col`', id="float"),
         # alltypes.double_col is non-nullable
-        (dt.Float64(nullable=False), '`double_col`'),
+        param(
+            dt.Float64(nullable=False),
+            'CAST(`double_col` AS Float64)',
+            id="float64",
+        ),
     ],
 )
 def test_cast_double_col(alltypes, translate, to_type, expected):
@@ -37,7 +41,7 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
     [
         ('int8', 'CAST(`string_col` AS Int8)'),
         ('int16', 'CAST(`string_col` AS Int16)'),
-        (dt.String(nullable=False), '`string_col`'),
+        (dt.String(nullable=False), 'CAST(`string_col` AS String)'),
         ('timestamp', 'CAST(`string_col` AS DateTime)'),
         ('date', 'CAST(`string_col` AS Date)'),
     ],
@@ -74,7 +78,7 @@ def test_noop_cast(alltypes, translate, column):
     assert translate(result) == f'`{column}`'
 
 
-def test_timestamp_cast_noop(alltypes, translate):
+def test_timestamp_cast(alltypes, translate):
     target = dt.Timestamp(nullable=False)
     result1 = alltypes.timestamp_col.cast(target)
     result2 = alltypes.int_col.cast(target)
@@ -82,7 +86,7 @@ def test_timestamp_cast_noop(alltypes, translate):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    assert translate(result1) == '`timestamp_col`'
+    assert translate(result1) == 'CAST(`timestamp_col` AS DateTime)'
     assert translate(result2) == 'CAST(`int_col` AS DateTime)'
 
 
@@ -478,7 +482,7 @@ def test_regexp_extract(con, expr, expected, translate):
 
 
 def test_column_regexp_extract(con, alltypes, translate):
-    expected = r"extractAll(`string_col`, '[\d]+')[3 + 1]"
+    expected = r"extractAll(CAST(`string_col` AS String), '[\d]+')[3 + 1]"
 
     expr = alltypes.string_col.re_extract(r'[\d]+', 3)
     assert translate(expr) == expected
@@ -567,13 +571,6 @@ def test_count_distinct_with_filter(alltypes):
                 "arrayStringConcat(groupArray("
                 "CASE WHEN `bool_col` = 0 THEN "
                 "`string_col` ELSE Null END), ',')"
-            ),
-            marks=pytest.mark.xfail(
-                reason=(
-                    '`where` param needs `Nullable` column '
-                    'but the all in testing data is not.'
-                    'See also issue #2891'
-                )
             ),
         ),
     ],

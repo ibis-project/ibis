@@ -292,7 +292,6 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["clickhouse"], reason="non nullable types #2891")
 @pytest.mark.notimpl(["datafusion"])
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(

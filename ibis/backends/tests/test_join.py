@@ -73,17 +73,13 @@ def check_eq(left, right, how, **kwargs):
     [
         param("inner", marks=pytest.mark.notimpl(["datafusion"])),
         param("left", marks=pytest.mark.notimpl(["datafusion"])),
-        param(
-            "right", marks=pytest.mark.notimpl(["clickhouse", "datafusion"])
-        ),
+        param("right", marks=pytest.mark.notimpl(["datafusion"])),
         param(
             "outer",
             # TODO: mysql and sqlite will likely never support full outer join
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "datafusion", "mysql", "sqlite"]
-            ),
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
         ),
     ],
 )
