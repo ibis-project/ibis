@@ -35,6 +35,7 @@ packages = [
     "ibis.backends.sqlite.tests",
     "ibis.backends.tests",
     "ibis.common",
+    "ibis.common.tests",
     "ibis.expr",
     "ibis.expr.datatypes",
     "ibis.expr.operations",
