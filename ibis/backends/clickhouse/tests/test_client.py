@@ -163,8 +163,8 @@ def test_insert_with_more_columns(temporary_alltypes, df):
             "SELECT string_col, sum(double_col) as b FROM functional_alltypes GROUP BY string_col",  # noqa: E501
             ibis.schema(
                 dict(
-                    string_col=dt.String(nullable=False),
-                    b=dt.Float64(nullable=False),
+                    string_col=dt.String(nullable=True),
+                    b=dt.Float64(nullable=True),
                 )
             ),
         ),
