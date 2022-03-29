@@ -11,8 +11,8 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
 
+from ..base import BaseBackend
 from .client import PandasDatabase, PandasTable, ibis_schema_to_pandas
 
 

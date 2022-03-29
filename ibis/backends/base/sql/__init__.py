@@ -7,9 +7,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base import BaseBackend
-from ibis.expr.typing import TimeContext
 
+from ....expr.typing import TimeContext
+from .. import BaseBackend
 from .compiler import Compiler
 
 __all__ = [

@@ -7,14 +7,11 @@ import toolz
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis import util
-from ibis.common.exceptions import (
-    ExpressionError,
-    IbisTypeError,
-    RelationError,
-)
-from ibis.expr.schema import HasSchema
-from ibis.expr.window import window
+
+from .. import util
+from ..common.exceptions import ExpressionError, IbisTypeError, RelationError
+from .schema import HasSchema
+from .window import window
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support

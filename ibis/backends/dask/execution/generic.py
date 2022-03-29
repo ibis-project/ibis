@@ -17,14 +17,15 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.pandas.core import (
+
+from ...pandas.core import (
     integer_types,
     numeric_types,
     simple_types,
     timestamp_types,
 )
-from ibis.backends.pandas.execution import constants
-from ibis.backends.pandas.execution.generic import (
+from ...pandas.execution import constants
+from ...pandas.execution.generic import (
     execute_between,
     execute_cast_series_array,
     execute_cast_series_generic,
@@ -53,7 +54,6 @@ from ibis.backends.pandas.execution.generic import (
     execute_sort_key_series_bool,
     execute_table_column_df_or_df_groupby,
 )
-
 from .. import Backend as DaskBackend
 from ..client import DaskTable
 from ..core import execute

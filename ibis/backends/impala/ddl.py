@@ -14,7 +14,7 @@
 
 import json
 
-from ibis.backends.base.sql.ddl import (
+from ..base.sql.ddl import (
     AlterTable,
     BaseDDL,
     CreateTable,
@@ -24,7 +24,7 @@ from ibis.backends.base.sql.ddl import (
     format_schema,
     format_tblproperties,
 )
-from ibis.backends.base.sql.registry import type_to_sql_string
+from ..base.sql.registry import type_to_sql_string
 
 
 class CreateTableParquet(CreateTable):

@@ -10,9 +10,9 @@ from pydantic import Field
 import ibis
 import ibis.config
 import ibis.expr.schema as sch
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.config import options
 
+from ...config import options
+from ..base.sql import BaseSQLBackend
 from .client import ClickhouseDataType, ClickhouseTable, fully_qualified_re
 from .compiler import ClickhouseCompiler
 

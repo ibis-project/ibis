@@ -14,11 +14,11 @@ import ibis.expr.datatypes as dtypes
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.types as types
-from ibis import interval
-from ibis.backends.pandas.execution import execute
-from ibis.expr.timecontext import adjust_context
-from ibis.util import frozendict, guid
 
+from ... import interval
+from ...expr.timecontext import adjust_context
+from ...util import frozendict, guid
+from ..pandas.execution import execute
 from .datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,

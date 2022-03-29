@@ -7,11 +7,11 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.util
-from ibis.expr import operations as ops
-from ibis.expr import types as ir
-from ibis.expr.scope import Scope
-from ibis.udf.vectorized import _coerce_to_dataframe
 
+from ....expr import operations as ops
+from ....expr import types as ir
+from ....expr.scope import Scope
+from ....udf.vectorized import _coerce_to_dataframe
 from ..core import execute
 from ..execution import constants
 

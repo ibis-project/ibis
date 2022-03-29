@@ -13,7 +13,8 @@ import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
-from ibis.expr.operations import (
+
+from ..expr.operations import (
     AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,
     ReductionVectorizedUDF,

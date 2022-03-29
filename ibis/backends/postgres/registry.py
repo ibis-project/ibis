@@ -20,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 # used for literal translate
-from ibis.backends.base.sql.alchemy import (
+from ..base.sql.alchemy import (
     fixed_arity,
     get_sqla_table,
     infix_op,
@@ -29,8 +29,8 @@ from ibis.backends.base.sql.alchemy import (
     unary,
     variance_reduction,
 )
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
-from ibis.backends.base.sql.alchemy.registry import get_col_or_deferred_col
+from ..base.sql.alchemy.datatypes import to_sqla_type
+from ..base.sql.alchemy.registry import get_col_or_deferred_col
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)

@@ -9,7 +9,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.common.validators import (  # noqa: F401
+
+from ..common.validators import (  # noqa: F401
     instance_of,
     isin,
     list_of,
@@ -229,7 +230,7 @@ def interval(arg, units=None, **kwargs):
 
 @validator
 def client(arg, **kwargs):
-    from ibis.backends.base import BaseBackend
+    from ..backends.base import BaseBackend
 
     return instance_of(BaseBackend, arg)
 
@@ -379,7 +380,7 @@ def function_of(
 
 @validator
 def reduction(argument, **kwargs):
-    from ibis.expr.analysis import is_reduction
+    from .analysis import is_reduction
 
     if not is_reduction(argument):
         raise com.IbisTypeError("`argument` must be a reduction")
@@ -414,7 +415,7 @@ def python_literal(value, arg, **kwargs):
 
 @validator
 def is_computable_input(value, **kwargs):
-    from ibis.backends.pandas.core import (
+    from ..backends.pandas.core import (
         is_computable_input as _is_computable_input,
     )
 
@@ -457,7 +458,7 @@ def pair(inner_left, inner_right, a, b, **kwargs):
 
 @validator
 def analytic(arg, **kwargs):
-    from ibis.expr.analysis import is_analytic
+    from .analysis import is_analytic
 
     if not is_analytic(arg):
         raise com.IbisInputError(
@@ -468,7 +469,7 @@ def analytic(arg, **kwargs):
 
 @validator
 def window(win, *, from_base_table_of, this):
-    from ibis.expr.window import Window
+    from .window import Window
 
     if not isinstance(win, Window):
         raise com.IbisTypeError(

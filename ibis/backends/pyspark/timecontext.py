@@ -4,8 +4,9 @@ import pyspark.sql.functions as F
 from pyspark.sql.dataframe import DataFrame
 
 import ibis.common.exceptions as com
-from ibis.expr.timecontext import get_time_col
-from ibis.expr.typing import TimeContext
+
+from ...expr.timecontext import get_time_col
+from ...expr.typing import TimeContext
 
 
 def filter_by_time_context(

@@ -6,8 +6,8 @@ import sqlalchemy as sa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 
+from ..base.sql.alchemy import to_sqla_type, unary
 from ..base.sql.alchemy.registry import _geospatial_functions, _table_column
 from ..postgres.registry import fixed_arity, operation_registry
 

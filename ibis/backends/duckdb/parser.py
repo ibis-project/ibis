@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 import parsy as p
 
 if TYPE_CHECKING:
-    from ibis.expr.datatypes import DataType
+    from ...expr.datatypes import DataType
 
-from ibis.expr.datatypes import (
+from ...expr.datatypes import (
     Array,
     Decimal,
     Interval,

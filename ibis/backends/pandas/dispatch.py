@@ -4,9 +4,9 @@ from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base import BaseBackend
-from ibis.expr.scope import Scope
 
+from ...expr.scope import Scope
+from ..base import BaseBackend
 from .trace import TraceTwoLevelDispatcher
 
 # Individual operation execution

@@ -1,4 +1,4 @@
-from ibis.backends.base.sql.ddl import (
+from ..base.sql.ddl import (
     CTAS,
     AlterTable,
     CreateTable,
@@ -7,8 +7,7 @@ from ibis.backends.base.sql.ddl import (
     InsertSelect,
     RenameTable,
 )
-from ibis.backends.base.sql.registry import quote_identifier
-
+from ..base.sql.registry import quote_identifier
 from .datatypes import type_to_sql_string
 
 _format_aliases = {'TEXTFILE': 'TEXT'}

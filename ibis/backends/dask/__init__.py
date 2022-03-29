@@ -13,8 +13,8 @@ import ibis.backends.pandas.execution  # noqa: F401
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.pandas import BasePandasBackend
 
+from ..pandas import BasePandasBackend
 from .client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from .core import execute_and_reset
 

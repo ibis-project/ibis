@@ -10,8 +10,8 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
-from ibis.backends.base import BaseBackend
 
+from ..base import BaseBackend
 from .aggcontext import Transform
 from .dispatch import execute_node, pre_execute
 

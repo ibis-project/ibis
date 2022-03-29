@@ -6,9 +6,9 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base import BaseBackend
-from ibis.expr.scope import Scope
 
+from ....expr.scope import Scope
+from ...base import BaseBackend
 from ..core import (
     date_types,
     integer_types,

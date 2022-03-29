@@ -12,8 +12,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql import BaseSQLBackend
 
+from .. import BaseSQLBackend
 from .database import AlchemyDatabase, AlchemyTable
 from .datatypes import schema_from_table, table_from_schema, to_sqla_type
 from .geospatial import geospatial_supported

@@ -2,7 +2,8 @@ from typing import Iterable, List, TypeVar
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.common import exceptions as ex
+
+from . import exceptions as ex
 
 NumberType = TypeVar('NumberType', int, float)
 # Geometry primitives (2D)

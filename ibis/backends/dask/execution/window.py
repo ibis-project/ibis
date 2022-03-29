@@ -7,9 +7,9 @@ import dask.dataframe as dd
 
 import ibis.expr.operations as ops
 import ibis.expr.window as win
-from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
 
+from ....expr.scope import Scope
+from ....expr.typing import TimeContext
 from ..core import execute, execute_with_scope
 from ..dispatch import execute_node
 from .util import (

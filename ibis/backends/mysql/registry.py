@@ -6,7 +6,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql.alchemy import (
+
+from ..base.sql.alchemy import (
     fixed_arity,
     infix_op,
     reduction,

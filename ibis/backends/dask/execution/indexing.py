@@ -4,12 +4,12 @@ import dask.dataframe as dd
 import numpy as np
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.core import boolean_types, scalar_types
-from ibis.backends.pandas.execution.generic import (
+
+from ...pandas.core import boolean_types, scalar_types
+from ...pandas.execution.generic import (
     execute_node_where_scalar_scalar_scalar,
     execute_node_where_series_series_series,
 )
-
 from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 

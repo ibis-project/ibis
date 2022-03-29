@@ -11,8 +11,8 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
 
+from ..base import BaseBackend
 from .compiler import translate
 
 

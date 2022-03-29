@@ -5,7 +5,8 @@ import numpy as np
 import pandas
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.maps import (
+
+from ...pandas.execution.maps import (
     execute_map_keys_series,
     execute_map_value_default_dict_scalar_series,
     execute_map_value_default_dict_series_scalar,
@@ -19,7 +20,6 @@ from ibis.backends.pandas.execution.maps import (
     map_value_default_series_series_scalar,
     safe_merge,
 )
-
 from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 

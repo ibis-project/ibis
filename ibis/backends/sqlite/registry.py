@@ -10,7 +10,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql.alchemy import (
+
+from ..base.sql.alchemy import (
     AlchemyExprTranslator,
     fixed_arity,
     sqlalchemy_operation_registry,

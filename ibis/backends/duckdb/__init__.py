@@ -8,8 +8,8 @@ import duckdb
 import sqlalchemy as sa
 
 import ibis.expr.schema as sch
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
+from ..base.sql.alchemy import BaseAlchemyBackend
 from .compiler import DuckDBSQLCompiler
 
 

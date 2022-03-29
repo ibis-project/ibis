@@ -49,7 +49,7 @@ class Expr:
         return repr(result)
 
     def _repr(self) -> str:
-        from ibis.expr.format import fmt
+        from ..format import fmt
 
         return fmt(self)
 
@@ -195,7 +195,7 @@ class Expr:
         list[BaseBackend]
             A list of the backends found.
         """
-        from ibis.backends.base import BaseBackend
+        from ...backends.base import BaseBackend
 
         seen_backends: dict[
             str, BaseBackend

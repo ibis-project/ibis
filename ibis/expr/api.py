@@ -15,9 +15,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.expr.random import random  # noqa
-from ibis.expr.schema import Schema
-from ibis.expr.types import (  # noqa
+
+from .random import random  # noqa
+from .schema import Schema
+from .types import (  # noqa
     ArrayColumn,
     ArrayScalar,
     ArrayValue,
@@ -97,7 +98,7 @@ from ibis.expr.types import (  # noqa
     null,
     struct,
 )
-from ibis.expr.window import (
+from .window import (
     cumulative_window,
     range_window,
     rows_with_max_lookback,

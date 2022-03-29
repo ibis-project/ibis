@@ -9,10 +9,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql.registry import (
-    operation_registry,
-    quote_identifier,
-)
+
+from ..registry import operation_registry, quote_identifier
 
 
 class QueryContext:
@@ -163,7 +161,7 @@ class QueryContext:
         self.query = query
 
     def is_foreign_expr(self, expr):
-        from ibis.expr.analysis import ExprValidator
+        from .....expr.analysis import ExprValidator
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery

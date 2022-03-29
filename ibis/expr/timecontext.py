@@ -40,10 +40,11 @@ import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.expr.typing import TimeContext
+
+from .typing import TimeContext
 
 if TYPE_CHECKING:
-    from ibis.expr.scope import Scope
+    from .scope import Scope
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in TableExpr. This TIME_COL constant will be
@@ -288,7 +289,7 @@ def adjust_context_asof_join(
     begin, end = timecontext
 
     if op.tolerance is not None:
-        from ibis.backends.pandas.execution import execute
+        from ..backends.pandas.execution import execute
 
         timedelta = execute(op.tolerance)
         return (begin - timedelta, end)
@@ -306,7 +307,7 @@ def adjust_context_window(
     preceding = op.window.preceding
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
-            from ibis.backends.pandas.execution import execute
+            from ..backends.pandas.execution import execute
 
             preceding = execute(preceding)
         if preceding and not isinstance(preceding, (int, np.integer)):
@@ -315,7 +316,7 @@ def adjust_context_window(
     following = op.window.following
     if following is not None:
         if isinstance(following, ir.IntervalScalar):
-            from ibis.backends.pandas.execution import execute
+            from ..backends.pandas.execution import execute
 
             following = execute(following)
         if following and not isinstance(following, (int, np.integer)):

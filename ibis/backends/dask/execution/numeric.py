@@ -8,8 +8,8 @@ import dask.dataframe.groupby as ddgb
 import numpy as np
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.core import numeric_types
 
+from ...pandas.core import numeric_types
 from ..dispatch import execute_node
 from .util import make_selected_obj
 

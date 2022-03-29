@@ -1,9 +1,6 @@
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-)
 
+from ..base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from .registry import operation_registry
 
 

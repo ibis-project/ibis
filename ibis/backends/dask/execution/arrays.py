@@ -5,11 +5,11 @@ import dask.dataframe.groupby as ddgb
 import numpy as np
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.arrays import (
+
+from ...pandas.execution.arrays import (
     execute_array_index,
     execute_array_length,
 )
-
 from ..dispatch import execute_node
 from .util import TypeRegistrationDict, register_types_to_dispatcher
 

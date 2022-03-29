@@ -5,14 +5,14 @@ import sqlalchemy.sql as sql
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base.sql.compiler import (
+
+from ..compiler import (
     Compiler,
     Select,
     SelectBuilder,
     TableSetFormatter,
     Union,
 )
-
 from .database import AlchemyTable
 from .datatypes import to_sqla_type
 from .translator import AlchemyContext, AlchemyExprTranslator

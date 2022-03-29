@@ -10,8 +10,8 @@ import pandas
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
 
+from ..base import BaseBackend
 from .dispatch import execute_node, pre_execute
 from .execution.util import (
     assert_identical_grouping_keys,

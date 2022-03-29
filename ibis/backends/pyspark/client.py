@@ -9,8 +9,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.sql.ddl import fully_qualified_re
 
+from ..base.sql.ddl import fully_qualified_re
 from . import ddl
 
 

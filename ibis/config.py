@@ -151,7 +151,7 @@ def option_context(key: str, new_value: Any) -> Iterator[None]:
 
 
 def get_option(key: str) -> Any:
-    from ibis import util
+    from . import util
 
     util.warn_deprecated(
         "get_option",
@@ -163,7 +163,7 @@ def get_option(key: str) -> Any:
 
 
 def set_option(key: str, value: Any) -> None:
-    from ibis import util
+    from . import util
 
     util.warn_deprecated(
         "set_option",

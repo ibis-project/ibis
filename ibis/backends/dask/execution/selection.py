@@ -12,17 +12,17 @@ from toolz import concatv
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.pandas.execution.selection import (
+
+from ....expr.scope import Scope
+from ....expr.typing import TimeContext
+from ...pandas.execution.selection import (
     build_df_from_selection,
     compute_projection,
     compute_projection_table_expr,
     map_new_column_names_to_data,
     remap_overlapping_column_names,
 )
-from ibis.backends.pandas.execution.util import get_join_suffix_for_op
-from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
-
+from ...pandas.execution.util import get_join_suffix_for_op
 from ..core import execute
 from ..dispatch import execute_node
 from ..execution.util import (

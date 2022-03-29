@@ -3,9 +3,8 @@ import logging
 import traceback
 from datetime import datetime
 
-from ibis.config import options
-from ibis.expr import types as ir
-
+from ...config import options
+from ...expr import types as ir
 from .dispatcher import TwoLevelDispatcher
 
 """Module that adds tracing to pandas execution.

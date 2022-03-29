@@ -5,12 +5,12 @@ from pandas import Timedelta
 
 import ibis.expr.operations as ops
 import ibis.util
-from ibis.backends.pandas.execution.join import (
+
+from ...pandas.execution.join import (
     _compute_join_column,
     _extract_predicate_names,
     _validate_columns,
 )
-
 from ..dispatch import execute_node
 from ..execution import constants
 

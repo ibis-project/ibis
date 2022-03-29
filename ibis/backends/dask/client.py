@@ -8,8 +8,9 @@ from pandas.api.types import DatetimeTZDtype
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Database
-from ibis.backends.pandas.client import (
+
+from ..base import Database
+from ..pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
     _inferable_pandas_dtypes,

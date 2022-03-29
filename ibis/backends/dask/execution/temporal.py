@@ -8,14 +8,15 @@ from pandas import Timedelta
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.core import (
+
+from ...pandas.core import (
     date_types,
     integer_types,
     numeric_types,
     timedelta_types,
     timestamp_types,
 )
-from ibis.backends.pandas.execution.temporal import (
+from ...pandas.execution.temporal import (
     day_name,
     execute_cast_integer_to_interval_series,
     execute_date_add,
@@ -39,7 +40,6 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_interval_add_series_series,
     execute_timestamp_sub_series_timedelta,
 )
-
 from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,

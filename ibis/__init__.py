@@ -5,12 +5,13 @@
 import ibis.backends.pandas
 import ibis.config
 import ibis.expr.types as ir
-from ibis import util
-from ibis.backends.base import BaseBackend
-from ibis.common.exceptions import IbisError
-from ibis.config import options
-from ibis.expr import api
-from ibis.expr.api import *  # noqa: F401,F403
+
+from . import util
+from .backends.base import BaseBackend
+from .common.exceptions import IbisError
+from .config import options
+from .expr import api
+from .expr.api import *  # noqa: F401,F403
 
 try:
     import importlib.metadata as importlib_metadata

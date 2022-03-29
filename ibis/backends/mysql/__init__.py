@@ -10,8 +10,8 @@ import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
+from ..base.sql.alchemy import BaseAlchemyBackend
 from .compiler import MySQLCompiler
 
 

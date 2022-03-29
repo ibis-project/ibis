@@ -8,10 +8,10 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.registry import quote_identifier
-from ibis.common.grounds import Comparable
-from ibis.config import options
 
+from .....common.grounds import Comparable
+from .....config import options
+from ..registry import quote_identifier
 from .base import DML, QueryAST, SetOp
 from .select_builder import SelectBuilder
 from .translator import ExprTranslator, QueryContext

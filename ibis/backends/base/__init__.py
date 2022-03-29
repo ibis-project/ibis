@@ -15,8 +15,9 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.common.exceptions import TranslationError
-from ibis.util import deprecated
+
+from ...common.exceptions import TranslationError
+from ...util import deprecated
 
 __all__ = ('BaseBackend', 'Database')
 

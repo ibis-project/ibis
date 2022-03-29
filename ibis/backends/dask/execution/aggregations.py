@@ -16,10 +16,10 @@ import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution.generic import agg_ctx
-from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
 
+from ....expr.scope import Scope
+from ....expr.typing import TimeContext
+from ...pandas.execution.generic import agg_ctx
 from ..core import execute
 from ..dispatch import execute_node
 from .util import coerce_to_output, safe_concat

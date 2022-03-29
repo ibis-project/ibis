@@ -15,16 +15,16 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as types
 import ibis.util as util
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.ddl import (
+
+from ...expr.scope import Scope
+from ...expr.timecontext import canonicalize_context, localize_context
+from ..base.sql import BaseSQLBackend
+from ..base.sql.ddl import (
     CreateDatabase,
     DropTable,
     TruncateTable,
     is_fully_qualified,
 )
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import canonicalize_context, localize_context
-
 from . import ddl
 from .client import PySparkTable, spark_dataframe_schema
 from .compiler import PySparkDatabaseTable, PySparkExprTranslator

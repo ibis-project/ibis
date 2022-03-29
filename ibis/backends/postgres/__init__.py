@@ -7,9 +7,8 @@ from typing import Literal
 
 import sqlalchemy as sa
 
-from ibis import util
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
+from ... import util
+from ..base.sql.alchemy import BaseAlchemyBackend
 from .compiler import PostgreSQLCompiler
 from .udf import udf
 

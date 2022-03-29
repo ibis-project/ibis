@@ -3,7 +3,8 @@ from __future__ import annotations
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
-from ibis.backends.base import Database
+
+from ... import Database
 
 
 class AlchemyDatabase(Database):

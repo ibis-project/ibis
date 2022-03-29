@@ -5,9 +5,8 @@ from abc import ABC, ABCMeta, abstractmethod
 from typing import Any, Hashable
 from weakref import WeakValueDictionary
 
-from ibis.util import frozendict
-
 from .. import util
+from ..util import frozendict
 from .caching import WeakCache
 from .validators import Optional, Validator
 

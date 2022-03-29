@@ -13,12 +13,10 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
-from ibis import IbisError
-from ibis.backends.base.sql.alchemy import to_sqla_type
-from ibis.backends.postgres.compiler import (
-    PostgreSQLExprTranslator,
-    PostgresUDFNode,
-)
+
+from ... import IbisError
+from ..base.sql.alchemy import to_sqla_type
+from .compiler import PostgreSQLExprTranslator, PostgresUDFNode
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(
     itertools.count

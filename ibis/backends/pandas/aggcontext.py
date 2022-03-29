@@ -228,7 +228,8 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
-from ibis.expr.timecontext import (
+
+from ...expr.timecontext import (
     construct_time_context_aware_series,
     get_time_col,
 )

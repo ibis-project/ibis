@@ -9,7 +9,8 @@ from inspect import Parameter, Signature, signature
 from typing import Any, Callable, List
 
 import ibis.common.exceptions as com
-from ibis.expr.datatypes import DataType
+
+from ..expr.datatypes import DataType
 
 
 def _parameter_count(funcsig: Signature) -> int:

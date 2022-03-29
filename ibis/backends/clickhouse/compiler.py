@@ -1,14 +1,14 @@
 from io import StringIO
 
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.compiler import (
+
+from ..base.sql.compiler import (
     Compiler,
     ExprTranslator,
     Select,
     SelectBuilder,
     TableSetFormatter,
 )
-
 from ..base.sql.compiler.query_builder import Union
 from .registry import operation_registry
 

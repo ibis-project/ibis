@@ -22,9 +22,8 @@ import sqlalchemy as sa
 if TYPE_CHECKING:
     import ibis.expr.types as ir
 
-from ibis.backends.base import Database
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
+from ..base import Database
+from ..base.sql.alchemy import BaseAlchemyBackend
 from . import udf
 from .compiler import SQLiteCompiler
 

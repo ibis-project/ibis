@@ -25,7 +25,7 @@ from uuid import uuid4
 
 import toolz
 
-from ibis.config import options
+from .config import options
 
 if TYPE_CHECKING:
     from .expr import operations as ops

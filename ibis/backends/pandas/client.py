@@ -8,7 +8,8 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Database
+
+from ..base import Database
 
 infer_pandas_dtype = pd.api.types.infer_dtype
 

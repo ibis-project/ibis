@@ -10,15 +10,15 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base import Database
-from ibis.backends.base.sql.compiler import DDL, DML
-from ibis.backends.base.sql.ddl import (
+
+from ..base import Database
+from ..base.sql.compiler import DDL, DML
+from ..base.sql.ddl import (
     AlterTable,
     InsertSelect,
     RenameTable,
     fully_qualified_re,
 )
-
 from . import ddl
 from .compat import HS2Error, impyla
 

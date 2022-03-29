@@ -140,7 +140,7 @@ def _clean_join_predicates(left, right, predicates):
 
 
 def _validate_join_predicates(left, right, predicates):
-    from ibis.expr.analysis import fully_originate_from
+    from ..analysis import fully_originate_from
 
     # Validate join predicates. Each predicate must be valid jointly when
     # considering the roots of each input table
@@ -376,7 +376,7 @@ class Selection(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, selections, predicates, sort_keys):
-        from ibis.expr.analysis import FilterValidator
+        from ..analysis import FilterValidator
 
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
@@ -643,7 +643,7 @@ class Aggregation(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
-        from ibis.expr.analysis import FilterValidator
+        from ..analysis import FilterValidator
 
         # All non-scalar refs originate from the input table
         all_exprs = metrics + by + having + sort_keys

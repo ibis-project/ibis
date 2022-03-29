@@ -37,9 +37,9 @@
 from collections import namedtuple
 from typing import Any, Dict, Iterable, Optional
 
-from ibis.expr.operations import Node
-from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
-from ibis.expr.typing import TimeContext
+from .operations import Node
+from .timecontext import TimeContextRelation, compare_timecontext
+from .typing import TimeContext
 
 ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
 

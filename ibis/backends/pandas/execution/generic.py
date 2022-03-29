@@ -20,10 +20,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import get_time_col
-from ibis.expr.typing import TimeContext
 
+from ....expr.scope import Scope
+from ....expr.timecontext import get_time_col
+from ....expr.typing import TimeContext
 from .. import Backend as PandasBackend
 from .. import aggcontext as agg_ctx
 from ..client import PandasTable

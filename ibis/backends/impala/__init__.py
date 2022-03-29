@@ -23,8 +23,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.util as util
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.ddl import (
+
+from ...config import options
+from ..base.sql import BaseSQLBackend
+from ..base.sql.ddl import (
     CTAS,
     CreateDatabase,
     CreateTableWithSchema,
@@ -36,8 +38,6 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.config import options
-
 from . import ddl, udf
 from .client import ImpalaConnection, ImpalaDatabase, ImpalaTable
 from .compat import HS2Error, ImpylaError

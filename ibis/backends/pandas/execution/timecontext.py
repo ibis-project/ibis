@@ -32,11 +32,11 @@ time context.
 from typing import List, Optional
 
 import ibis.expr.operations as ops
-from ibis.backends.base import BaseBackend
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import adjust_context
-from ibis.expr.typing import TimeContext
 
+from ....expr.scope import Scope
+from ....expr.timecontext import adjust_context
+from ....expr.typing import TimeContext
+from ...base import BaseBackend
 from ..core import compute_time_context, is_computable_input
 
 

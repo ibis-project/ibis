@@ -87,7 +87,7 @@ class TableExpr(Expr):
             return True
 
     def _assert_valid(self, exprs):
-        from ibis.expr.analysis import ExprValidator
+        from ..analysis import ExprValidator
 
         ExprValidator([self]).validate_all(exprs)
 

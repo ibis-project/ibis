@@ -9,8 +9,9 @@ from pandas import isnull
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.backends.pandas.core import integer_types, scalar_types
-from ibis.backends.pandas.execution.strings import (
+
+from ...pandas.core import integer_types, scalar_types
+from ...pandas.execution.strings import (
     execute_series_join_scalar_sep,
     execute_series_regex_extract,
     execute_series_regex_replace,
@@ -36,7 +37,6 @@ from ibis.backends.pandas.execution.strings import (
     execute_substring_int_int,
     haystack_to_series_of_lists,
 )
-
 from ..dispatch import execute_node
 from .util import (
     TypeRegistrationDict,
