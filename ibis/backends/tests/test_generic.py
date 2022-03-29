@@ -397,3 +397,8 @@ def test_dropna_table(backend, alltypes, how, subset):
     # is type object in Pyspark, and type bool in Pandas. This diff does
     # not exist in Java 11.
     backend.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_select_sort_sort(alltypes):
+    query = alltypes[alltypes.year, alltypes.bool_col]
+    query = query.sort_by(query.year).sort_by(query.bool_col)

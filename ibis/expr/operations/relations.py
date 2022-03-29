@@ -481,7 +481,7 @@ class Selection(TableNode, sch.HasSchema):
                     self.table,
                     self.selections,
                     predicates=self.predicates,
-                    sort_keys=self.sort_keys + resolved_keys,
+                    sort_keys=self.sort_keys + tuple(resolved_keys),
                 )
 
         return Selection(expr, [], sort_keys=resolved_keys)
