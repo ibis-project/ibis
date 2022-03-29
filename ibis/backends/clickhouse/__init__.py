@@ -161,12 +161,13 @@ class Backend(BaseSQLBackend):
             )
 
         ibis.util.log(query)
-        return self.con.execute(
-            query,
-            columnar=True,
-            with_column_types=True,
-            external_tables=external_tables_list,
-        )
+        with self.con as con:
+            return con.execute(
+                query,
+                columnar=True,
+                with_column_types=True,
+                external_tables=external_tables_list,
+            )
 
     def fetch_from_cursor(self, cursor, schema):
         data, _ = cursor
