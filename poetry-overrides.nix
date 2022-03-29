@@ -65,4 +65,11 @@ self: super:
   pytest-profiling = super.pytest-profiling.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.setuptools-git ];
   });
+
+  nbconvert = super.nbconvert.overridePythonAttrs (attrs: {
+    patches = (attrs.patches or [ ]) ++ [ ./patches/templates.patch ];
+    postPatch = ''
+      substituteAllInPlace ./nbconvert/exporters/templateexporter.py
+    '';
+  });
 }

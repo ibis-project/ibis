@@ -52,6 +52,21 @@ let
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
   pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+  mic = pkgs.writeShellApplication {
+    name = "mic";
+    runtimeInputs = [ pythonEnv ];
+    text = ''
+      # The immediate reason this is necessary is to allow the subprocess
+      # invocations of `mkdocs` by `mike` to see Python dependencies.
+      #
+      # This shouldn't be necessary, but I think the nix wrappers may be
+      # indavertently preventing this.
+      export PYTHONPATH
+      PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
+
+      mike "$@"
+    '';
+  };
 in
 pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
@@ -69,6 +84,7 @@ pkgs.mkShell {
   buildInputs = devDeps ++ libraryDevDeps ++ [
     pythonEnv
     (pythonEnv.python.pkgs.toPythonApplication pkgs.pre-commit)
+    mic
   ];
 
   PYTHONPATH = builtins.toPath ./.;

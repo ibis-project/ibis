@@ -31,6 +31,7 @@ theme:
   custom_dir: docs/overrides
 plugins:
   - search
+  - mike
   - autorefs
   - exclude:
       glob:
@@ -111,6 +112,8 @@ markdown_extensions:
       permalink: true
       permalink_title: "Anchor link to this section for reference"
 extra:
+  version:
+    provider: mike
   project_name: "ibis"
   team:
     - name: "Active maintainers"
