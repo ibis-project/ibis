@@ -298,7 +298,8 @@ def read_tables(
 ) -> Iterator[tuple[str, pa.Table]]:
     import pyarrow.csv as pac
 
-    import ibis.expr.datatypes.pyarrow as pa_dt
+    #import ibis.expr.datatypes.pyarrow as pa_dt
+    import ibis.backends.pyarrow.datatypes as pa_dt
 
     for name in names:
         schema = TEST_TABLES[name]
