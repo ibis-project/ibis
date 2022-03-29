@@ -7,12 +7,15 @@ from typing import TYPE_CHECKING, Any, Hashable, Mapping
 from cached_property import cached_property
 from public import public
 
-import ibis
-import ibis.common.exceptions as com
-import ibis.config as config
-import ibis.util as util
-from ibis.config import options
-from ibis.expr.typing import TimeContext
+from ... import config
+from ...common.exceptions import (
+    ExpressionError,
+    IbisError,
+    IbisTypeError,
+    TranslationError,
+)
+from ...expr.typing import TimeContext
+from ...util import UnnamedMarker, deprecated
 
 if TYPE_CHECKING:
     from ...backends.base import BaseBackend
@@ -35,7 +38,7 @@ class Expr:
 
         try:
             result = self.execute()
-        except com.TranslationError as e:
+        except TranslationError as e:
             lines = [
                 "Translation to backend failed",
                 f"Error message: {e.args[0]}",
@@ -79,7 +82,7 @@ class Expr:
         """
         try:
             return self.get_name()
-        except (com.ExpressionError, AttributeError):
+        except (ExpressionError, AttributeError):
             return None
 
     @property
@@ -94,7 +97,7 @@ class Expr:
         return type(self), self._safe_name, self.op()
 
     def _repr_png_(self) -> bytes | None:
-        if config.options.interactive or not ibis.options.graphviz_repr:
+        if config.options.interactive or not config.options.graphviz_repr:
             return None
         try:
             import ibis.expr.visualize as viz
@@ -233,9 +236,9 @@ class Expr:
         backends = self._find_backends()
 
         if not backends:
-            default = options.default_backend
+            default = config.options.default_backend
             if default is None:
-                raise com.IbisError(
+                raise IbisError(
                     'Expression depends on no backends, and found no default'
                 )
             return default
@@ -302,7 +305,7 @@ class Expr:
             self, limit=limit, timecontext=timecontext, params=params
         )
 
-    @util.deprecated(
+    @deprecated(
         version='2.0',
         instead=(
             "call [`Expr.compile`][ibis.expr.types.core.Expr.compile] and "
@@ -317,10 +320,6 @@ class Expr:
             return False
         else:
             return True
-
-
-class UnnamedMarker:
-    pass
 
 
 unnamed = UnnamedMarker()
@@ -363,7 +362,7 @@ def _binop(
     """
     try:
         node = op_class(left, right)
-    except (com.IbisTypeError, NotImplementedError):
+    except (IbisTypeError, NotImplementedError):
         return NotImplemented
     else:
         return node.to_expr()

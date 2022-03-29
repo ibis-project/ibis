@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import abc
 import collections
+from typing import Sequence
 
 from multipledispatch import Dispatcher
 
 from ..common.exceptions import IntegrityError
-from ..common.grounds import Comparable
+from ..common.grounds import Annotable, Comparable
+from ..common.validators import instance_of, tuple_of, validator
 from ..expr import datatypes as dt
-from ..util import indent
+from ..util import UnnamedMarker, indent
 
 convert = Dispatcher(
     'convert',
@@ -33,7 +35,12 @@ result : pd.Series
 )
 
 
-class Schema(Comparable):
+@validator
+def datatype(arg, **kwargs):
+    return dt.dtype(arg)
+
+
+class Schema(Annotable, Comparable):
 
     """An object for holding table schema information, i.e., column names and
     types.
@@ -47,25 +54,26 @@ class Schema(Comparable):
         representing type of each column.
     """
 
-    __slots__ = 'names', 'types', '_name_locs', '_hash'
+    __slots__ = ('_name_locs',)
 
-    def __init__(self, names, types):
-        if not isinstance(names, list):
-            names = list(names)
+    names: Sequence[str] = tuple_of(instance_of((str, UnnamedMarker)))
+    types: Sequence[dt.DataType] = tuple_of(datatype)
 
-        self.names = names
-        self.types = list(map(dt.dtype, types))
+    def __post_init__(self):
+        super().__post_init__()
 
-        self._name_locs = {v: i for i, v in enumerate(self.names)}
-
-        if len(self._name_locs) < len(self.names):
+        # validate unique field names
+        name_locs = {v: i for i, v in enumerate(self.names)}
+        if len(name_locs) < len(self.names):
             duplicate_names = list(self.names)
-            for v in self._name_locs.keys():
+            for v in name_locs.keys():
                 duplicate_names.remove(v)
             raise IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
-        self._hash = None
+
+        # store field positions
+        object.__setattr__(self, '_name_locs', name_locs)
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)
@@ -79,14 +87,6 @@ class Schema(Comparable):
             )
         )
 
-    def _make_hash(self) -> int:
-        return hash((type(self), tuple(self.names), tuple(self.types)))
-
-    def __hash__(self) -> int:
-        if (result := self._hash) is None:
-            result = self._hash = self._make_hash()
-        return result
-
     def __len__(self):
         return len(self.names)
 
@@ -99,12 +99,20 @@ class Schema(Comparable):
     def __getitem__(self, name):
         return self.types[self._name_locs[name]]
 
-    def __getstate__(self):
-        return {slot: getattr(self, slot) for slot in self.__class__.__slots__}
+    def __equals__(self, other):
+        return (
+            self._hash == other._hash
+            and self.names == other.names
+            and self.types == other.types
+        )
 
-    def __setstate__(self, instance_dict):
-        for key, value in instance_dict.items():
-            setattr(self, key, value)
+    def equals(self, other):
+        if not isinstance(other, Schema):
+            raise TypeError(
+                "invalid equality comparison between Schema and "
+                f"{type(other)}"
+            )
+        return self.__cached_equals__(other)
 
     def delete(self, names_to_delete):
         for name in names_to_delete:
@@ -132,21 +140,6 @@ class Schema(Comparable):
     def from_dict(cls, dictionary):
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return Schema(names, types)
-
-    def __equals__(self, other: Schema) -> bool:
-        return (
-            self.names == other.names
-            and len(self.types) == len(other.types)
-            and all(a.equals(b) for a, b in zip(self.types, other.types))
-        )
-
-    def equals(self, other):
-        if not isinstance(other, Schema):
-            raise TypeError(
-                "invalid equality comparison between Schema and "
-                f"{type(other)}"
-            )
-        return self.__cached_equals__(other)
 
     def __gt__(self, other):
         return set(self.items()) > set(other.items())

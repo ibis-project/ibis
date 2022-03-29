@@ -70,6 +70,10 @@ class frozendict(Mapping, Hashable):
         return self._hash
 
 
+class UnnamedMarker:
+    pass
+
+
 def guid() -> str:
     """Return a uuid4 hexadecimal value.
 

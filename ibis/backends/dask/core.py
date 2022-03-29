@@ -460,7 +460,7 @@ def execute_and_reset(
     if isinstance(result, dd.DataFrame):
         schema = expr.schema()
         df = result.reset_index()
-        return df[schema.names]
+        return df[list(schema.names)]
     elif isinstance(result, dd.Series):
         return result.reset_index(drop=True)
     return result

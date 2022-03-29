@@ -112,7 +112,7 @@ def test_projection(table):
     assert isinstance(proj, TableExpr)
     assert isinstance(proj.op(), ops.Selection)
 
-    assert proj.schema().names == cols
+    assert proj.schema().names == tuple(cols)
     for c in cols:
         expr = proj[c]
         assert isinstance(expr, type(table[c]))
@@ -133,8 +133,8 @@ def test_projection_with_exprs(table):
 
     proj = table[col_exprs + ['g']]
     schema = proj.schema()
-    assert schema.names == ['log_b', 'mean_diff', 'g']
-    assert schema.types == [dt.double, dt.double, dt.string]
+    assert schema.names == ('log_b', 'mean_diff', 'g')
+    assert schema.types == (dt.double, dt.double, dt.string)
 
     # Test with unnamed expr
     with pytest.raises(ExpressionError):
@@ -178,7 +178,7 @@ def test_projection_with_star_expr(table):
     proj = t[t, new_expr]
     repr(proj)
 
-    ex_names = table.schema().names + ['bigger_a']
+    ex_names = table.schema().names + ('bigger_a',)
     assert proj.schema().names == ex_names
 
     # cannot pass an invalid table expression
@@ -918,10 +918,10 @@ def test_join_project_after(table):
 
     joined = table1.left_join(table2, [pred])
     projected = joined.projection([table1, table2['stuff']])
-    assert projected.schema().names == ['key1', 'value1', 'stuff']
+    assert projected.schema().names == ('key1', 'value1', 'stuff')
 
     projected = joined.projection([table2, table1['key1']])
-    assert projected.schema().names == ['key2', 'stuff', 'key1']
+    assert projected.schema().names == ('key2', 'stuff', 'key1')
 
 
 def test_semi_join_schema(table):
