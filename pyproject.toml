@@ -55,6 +55,7 @@ Shapely = { version = ">=1.6,<1.8.1", optional = true }
 sqlalchemy = { version = ">=1.3,<1.5", optional = true }
 
 [tool.poetry.dev-dependencies]
+absolufy-imports = "^0.3.1"
 black = ">=22.1.0,<23"
 click = ">=8.0.1,<9"
 commitizen = ">=2.20.3,<3"

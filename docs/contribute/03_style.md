@@ -4,16 +4,17 @@
 
 The following tools are run in both CI and `pre-commit` checks to ensure codebase hygiene:
 
-|                                                          Tool | Purpose                                             |
-| ------------------------------------------------------------: | :-------------------------------------------------- |
-|                       [`black`](https://github.com/psf/black) | Formatting Python code                              |
-|                     [`isort`](https://github.com/PyCQA/isort) | Formatting and sorting `import` statements          |
-|               [`flake8`](https://flake8.pycqa.org/en/latest/) | Linting Python code                                 |
-|     [`nix-linter`](https://github.com/Synthetica9/nix-linter) | Linting nix files                                   |
-| [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) | Formatting nix files                                |
-|        [`shellcheck`](https://github.com/koalaman/shellcheck) | Linting shell scripts                               |
-|                        [`shfmt`](https://github.com/mvdan/sh) | Formatting shell scripts                            |
-|          [`pyupgrade`](https://github.com/asottile/pyupgrade) | Ensuring the latest available Python syntax is used |
+|                                                                   Tool | Purpose                                             |
+| ---------------------------------------------------------------------: | :-------------------------------------------------- |
+|                                [`black`](https://github.com/psf/black) | Formatting Python code                              |
+|                              [`isort`](https://github.com/PyCQA/isort) | Formatting and sorting `import` statements          |
+| [`absolufy-imports`](https://github.com/MarcoGorelli/absolufy-imports) | Automatically convert relative imports to absolute. |
+|                        [`flake8`](https://flake8.pycqa.org/en/latest/) | Linting Python code                                 |
+|              [`nix-linter`](https://github.com/Synthetica9/nix-linter) | Linting nix files                                   |
+|          [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt) | Formatting nix files                                |
+|                 [`shellcheck`](https://github.com/koalaman/shellcheck) | Linting shell scripts                               |
+|                                 [`shfmt`](https://github.com/mvdan/sh) | Formatting shell scripts                            |
+|                   [`pyupgrade`](https://github.com/asottile/pyupgrade) | Ensuring the latest available Python syntax is used |
 
 !!! tip
 

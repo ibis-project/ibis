@@ -13,6 +13,7 @@ clean:
 
 # format code
 fmt:
+    absolufy-imports --never $(find ibis -name "*.py" ! -path "*tests*" | xargs echo)
     black .
     isort .
     pyupgrade --py38-plus ibis/**/*.py
