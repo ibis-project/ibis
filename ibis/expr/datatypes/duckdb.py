@@ -52,6 +52,9 @@ def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     lparen = spaceless_string("(")
     rparen = spaceless_string(")")
 
+    lbracket = spaceless_string("[")
+    rbracket = spaceless_string("]")
+
     langle = spaceless_string("<")
     rangle = spaceless_string(">")
 
@@ -114,9 +117,16 @@ def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         return value_type
 
     @p.generate
-    def array():
+    def list_array():
         yield spaceless_string("list")
         value_type = yield angle_type
+        return Array(value_type)
+
+    @p.generate
+    def pg_array():
+        value_type = yield non_pg_array_type
+        yield lbracket
+        yield rbracket
         return Array(value_type)
 
     @p.generate
@@ -143,5 +153,6 @@ def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         yield rangle
         return Struct.from_tuples(field_names_types)
 
-    ty = primitive | decimal | array | map | struct
+    non_pg_array_type = primitive | decimal | list_array | map | struct
+    ty = pg_array | non_pg_array_type
     return ty.parse(text)

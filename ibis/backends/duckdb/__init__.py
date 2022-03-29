@@ -61,3 +61,9 @@ class Backend(BaseAlchemyBackend):
     ):
         df = cursor.cursor.fetch_df()
         return schema.apply_to(df)
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a SQL string."""
+        with self.con.connect() as con:
+            rel = con.connection.c.query(query)
+        return sch.infer(rel)
