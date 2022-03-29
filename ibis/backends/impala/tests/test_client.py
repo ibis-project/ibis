@@ -94,7 +94,7 @@ def test_get_schema(con, test_data_db):
 def test_result_as_dataframe(con, alltypes):
     expr = alltypes.limit(10)
 
-    ex_names = expr.schema().names
+    ex_names = list(expr.schema().names)
     result = con.execute(expr)
 
     assert isinstance(result, pd.DataFrame)
