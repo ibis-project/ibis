@@ -7,6 +7,7 @@ import string
 import numpy as np
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -293,6 +294,13 @@ def high_card_grouped_rolling_udf_wm(t):
     return my_wm(t.value, t.value).over(low_card_rolling_window(t))
 
 
+broken_pandas_grouped_rolling = pytest.mark.xfail(
+    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
+    raises=ValueError,
+    reason="https://github.com/pandas-dev/pandas/pull/44068",
+)
+
+
 @pytest.mark.benchmark(group="execution")
 @pytest.mark.parametrize(
     "expression_fn",
@@ -309,17 +317,25 @@ def high_card_grouped_rolling_udf_wm(t):
         pytest.param(simple_sort_projection, id="simple_sort_projection"),
         pytest.param(multikey_sort, id="multikey_sort"),
         pytest.param(multikey_sort_projection, id="multikey_sort_projection"),
-        pytest.param(low_card_grouped_rolling, id="low_card_grouped_rolling"),
         pytest.param(
-            high_card_grouped_rolling, id="high_card_grouped_rolling"
+            low_card_grouped_rolling,
+            id="low_card_grouped_rolling",
+            marks=[broken_pandas_grouped_rolling],
+        ),
+        pytest.param(
+            high_card_grouped_rolling,
+            id="high_card_grouped_rolling",
+            marks=[broken_pandas_grouped_rolling],
         ),
         pytest.param(
             low_card_grouped_rolling_udf_mean,
             id="low_card_grouped_rolling_udf_mean",
+            marks=[broken_pandas_grouped_rolling],
         ),
         pytest.param(
             high_card_grouped_rolling_udf_mean,
             id="high_card_grouped_rolling_udf_mean",
+            marks=[broken_pandas_grouped_rolling],
         ),
         pytest.param(
             low_card_window_analytics_udf, id="low_card_window_analytics_udf"
@@ -330,10 +346,12 @@ def high_card_grouped_rolling_udf_wm(t):
         pytest.param(
             low_card_grouped_rolling_udf_wm,
             id="low_card_grouped_rolling_udf_wm",
+            marks=[broken_pandas_grouped_rolling],
         ),
         pytest.param(
             high_card_grouped_rolling_udf_wm,
             id="high_card_grouped_rolling_udf_wm",
+            marks=[broken_pandas_grouped_rolling],
         ),
     ],
 )

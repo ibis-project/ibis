@@ -596,9 +596,7 @@ class Window(AggregationContext):
         indexed_by_ordering = frame[columns].copy()
         # placeholder column to compute window_sizes below
         indexed_by_ordering['_placeholder'] = 0
-        indexed_by_ordering = indexed_by_ordering.set_index(
-            order_by
-        ).sort_index(kind="stable")
+        indexed_by_ordering = indexed_by_ordering.set_index(order_by)
 
         # regroup if needed
         if group_by:

@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 from ibis.config import option_context
@@ -42,11 +43,23 @@ def filter_by_time_context(df, context):
 @pytest.mark.parametrize(
     'window',
     [
-        ibis.trailing_window(ibis.interval(days=3), order_by=ORDERBY_COL),
-        ibis.trailing_window(
-            ibis.interval(days=3),
-            order_by=ORDERBY_COL,
-            group_by=GROUPBY_COL,
+        param(
+            ibis.trailing_window(ibis.interval(days=3), order_by=ORDERBY_COL),
+            id="order_by",
+        ),
+        param(
+            ibis.trailing_window(
+                ibis.interval(days=3),
+                order_by=ORDERBY_COL,
+                group_by=GROUPBY_COL,
+            ),
+            id="order_by_group_by",
+            marks=[
+                pytest.mark.broken(
+                    ["pandas"],
+                    reason="https://github.com/pandas-dev/pandas/pull/44068",
+                )
+            ],
         ),
     ],
 )

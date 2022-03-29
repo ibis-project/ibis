@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.common.exceptions as com
@@ -242,6 +243,11 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     tm.assert_series_equal(result["v2"], expected_win_2)
 
 
+@pytest.mark.xfail(
+    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
+    raises=ValueError,
+    reason="https://github.com/pandas-dev/pandas/pull/44068",
+)
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
     """This test case is meant to test trim_window_result method
     in pandas/execution/window.py to see if it could trim Series
