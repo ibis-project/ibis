@@ -2,7 +2,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.expr.datatypes.duckdb import parse_type
+from ibis.backends.duckdb.datatypes import parse_type
 
 EXPECTED_SCHEMA = dict(
     a=dt.int64,
