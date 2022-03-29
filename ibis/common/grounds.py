@@ -7,7 +7,6 @@ from weakref import WeakValueDictionary
 
 from ibis.util import frozendict
 
-from .. import util
 from .caching import WeakCache
 from .validators import Optional, Validator
 
@@ -178,15 +177,6 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
     def __reduce__(self):
         kwargs = dict(zip(self.argnames, self.args))
         return (self._reconstruct, (kwargs,))
-
-    def flat_args(self):
-        import ibis.expr.schema as sch
-
-        for arg in self.args:
-            if not isinstance(arg, sch.Schema) and util.is_iterable(arg):
-                yield from arg
-            else:
-                yield arg
 
 
 class Singleton(Base):
