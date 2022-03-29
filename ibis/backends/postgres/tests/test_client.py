@@ -18,6 +18,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -213,3 +214,52 @@ def test_create_and_drop_table(con, temp_table, params):
 
     with pytest.raises(sa.exc.NoSuchTableError):
         con.table(temp_table, **params)
+
+
+@pytest.mark.parametrize(
+    ("pg_type", "expected_type"),
+    [
+        param(pg_type, ibis_type, id=pg_type.lower())
+        for (pg_type, ibis_type) in [
+            ("boolean", dt.boolean),
+            ("bytea", dt.binary),
+            ("char", dt.string),
+            ("bigint", dt.int64),
+            ("smallint", dt.int16),
+            ("integer", dt.int32),
+            ("text", dt.string),
+            ("json", dt.json),
+            ("point", dt.point),
+            ("polygon", dt.polygon),
+            ("line", dt.linestring),
+            ("real", dt.float32),
+            ("double precision", dt.float64),
+            ("macaddr", dt.macaddr),
+            ("macaddr8", dt.macaddr),
+            ("inet", dt.inet),
+            ("character", dt.string),
+            ("character varying", dt.string),
+            ("date", dt.date),
+            ("time", dt.time),
+            ("time without time zone", dt.time),
+            ("timestamp without time zone", dt.timestamp),
+            ("timestamp with time zone", dt.Timestamp("UTC")),
+            ("interval", dt.interval),
+            ("numeric", dt.decimal),
+            ("numeric(3, 2)", dt.Decimal(3, 2)),
+            ("uuid", dt.uuid),
+            ("jsonb", dt.jsonb),
+            ("geometry", dt.geometry),
+            ("geography", dt.geography),
+        ]
+    ],
+)
+def test_get_schema_from_query(con, pg_type, expected_type):
+    raw_name = ibis.util.guid()
+    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {pg_type}, y {pg_type}[])")
+    expected_schema = ibis.schema(
+        dict(x=expected_type, y=dt.Array(expected_type))
+    )
+    result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
+    assert result_schema == expected_schema
