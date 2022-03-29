@@ -1,8 +1,11 @@
+import io
+from datetime import date
 from operator import methodcaller
 
 import numpy as np
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 from pandas import testing as tm
 
 import ibis
@@ -546,6 +549,11 @@ def test_window_with_preceding_expr(index):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
+    raises=ValueError,
+    reason="https://github.com/pandas-dev/pandas/pull/44068",
+)
 def test_window_with_mlb():
     index = pd.date_range('20170501', '20170507')
     data = np.random.randn(len(index), 3)
@@ -769,3 +777,66 @@ def test_rolling_window_udf_nan_and_non_numeric(t, group_by, order_by):
     tm.assert_series_equal(result_nan, expected, check_names=False)
     tm.assert_series_equal(result_non_numeric, expected, check_names=False)
     tm.assert_series_equal(result_nan_non_numeric, expected, check_names=False)
+
+
+@pytest.fixture
+def events():
+    df = pd.DataFrame(
+        {
+            "event_id": [1] * 4 + [2] * 6 + [3] * 2,
+            "measured_on": map(
+                pd.Timestamp,
+                map(
+                    date,
+                    [2021] * 12,
+                    [6] * 4 + [5] * 6 + [7] * 2,
+                    range(1, 13),
+                ),
+            ),
+            "measurement": np.nan,
+        }
+    )
+    df.at[1, "measurement"] = 5.0
+    df.at[4, "measurement"] = 42.0
+    df.at[5, "measurement"] = 42.0
+    df.at[7, "measurement"] = 11.0
+    return df
+
+
+def test_bfill(events):
+    con = ibis.pandas.connect({"t": events})
+    t = con.table("t")
+
+    win = ibis.window(
+        group_by=t.event_id, order_by=ibis.desc(t.measured_on), following=0
+    )
+    grouped = t.mutate(grouper=t.measurement.count().over(win))
+
+    expr = (
+        grouped.group_by([grouped.event_id, grouped.grouper])
+        .mutate(bfill=grouped.measurement.max())
+        .sort_by("measured_on")
+    )
+    result = expr.execute().reset_index(drop=True)
+
+    expected_raw = """\
+event_id measured_on  measurement  grouper  bfill
+       2  2021-05-05         42.0        3   42.0
+       2  2021-05-06         42.0        2   42.0
+       2  2021-05-07          NaN        1   11.0
+       2  2021-05-08         11.0        1   11.0
+       2  2021-05-09          NaN        0    NaN
+       2  2021-05-10          NaN        0    NaN
+       1  2021-06-01          NaN        1    5.0
+       1  2021-06-02          5.0        1    5.0
+       1  2021-06-03          NaN        0    NaN
+       1  2021-06-04          NaN        0    NaN
+       3  2021-07-11          NaN        0    NaN
+       3  2021-07-12          NaN        0    NaN"""
+    expected = pd.read_csv(
+        io.StringIO(expected_raw),
+        sep=r"\s+",
+        header=0,
+        parse_dates=["measured_on"],
+    )
+    tm.assert_frame_equal(result, expected)

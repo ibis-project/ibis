@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pandas._testing as tm
 import pytest
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -256,6 +257,11 @@ def test_udaf_window(t2, df2):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
+    raises=ValueError,
+    reason="https://github.com/pandas-dev/pandas/pull/44068",
+)
 def test_udaf_window_interval():
     df = pd.DataFrame(
         collections.OrderedDict(
