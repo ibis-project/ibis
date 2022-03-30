@@ -8,7 +8,7 @@ from weakref import WeakValueDictionary
 from ibis.util import frozendict
 
 from .caching import WeakCache
-from .validators import Optional, Validator
+from .validators import ImmutableProperty, Optional, Validator
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 
@@ -73,13 +73,17 @@ class AnnotableMeta(BaseMeta):
     def __new__(metacls, clsname, bases, dct):
         # inherit from parent signatures
         params = {}
+        properties = {}
         for parent in bases:
             try:
-                signature = parent.__signature__
+                params.update(parent.__signature__.parameters)
             except AttributeError:
                 pass
-            else:
-                params.update(signature.parameters)
+            try:
+                properties.update(parent.__properties__)
+            except AttributeError:
+                pass
+
         # store the originally inherited keys so we can reorder later
         inherited = set(params.keys())
 
@@ -90,6 +94,9 @@ class AnnotableMeta(BaseMeta):
             if isinstance(attrib, Validator):
                 # so we can set directly
                 params[name] = Parameter(name, validator=attrib)
+                slots.append(name)
+            elif isinstance(attrib, ImmutableProperty):
+                properties[name] = attrib
                 slots.append(name)
             else:
                 attribs[name] = attrib
@@ -112,6 +119,7 @@ class AnnotableMeta(BaseMeta):
 
         attribs["__slots__"] = tuple(slots)
         attribs["__signature__"] = signature
+        attribs["__properties__"] = properties
         attribs["argnames"] = tuple(signature.parameters.keys())
         return super().__new__(metacls, clsname, bases, attribs)
 
@@ -126,26 +134,39 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
         bound = cls.__signature__.bind(*args, **kwargs)
         bound.apply_defaults()
 
+        # bound the signature to the passed arguments and apply the validators
+        # before passing the arguments, so self.__init__() receives already
+        # validated arguments as keywords
         kwargs = {}
         for name, value in bound.arguments.items():
             param = cls.__signature__.parameters[name]
             # TODO(kszucs): provide more error context on failure
             kwargs[name] = param.validate(kwargs, value)
 
-        instance = super().__create__(**kwargs)
-        instance.__post_init__()
-        return instance
+        # construct the instance by passing the validated keyword arguments
+        return super().__create__(**kwargs)
 
     def __init__(self, **kwargs):
+        # set the already validated fields using object.__setattr__ since we
+        # treat the annotable instances as immutable objects
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
 
-    # TODO(kszucs): split for better __init__ composability but we can
-    # directly call it from __init__ too
-    def __post_init__(self):
-        args = tuple(getattr(self, name) for name in self.argnames)
+        # optimizations to store frequently accessed generic properties
+        args = tuple(kwargs[name] for name in self.argnames)
         object.__setattr__(self, "args", args)
-        object.__setattr__(self, "_hash", hash((type(self), args)))
+        object.__setattr__(self, "_hash", hash((self.__class__, args)))
+
+        # calculate special property-like objects only once due to the
+        # immutable nature of annotable instances
+        for name, prop in self.__properties__.items():
+            object.__setattr__(self, name, prop(self))
+
+        # any supplemental custom code provided by descendant classes
+        self.__post_init__()
+
+    def __post_init__(self):
+        pass
 
     def __hash__(self):
         return self._hash
@@ -168,10 +189,9 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
 
     @classmethod
     def _reconstruct(cls, kwargs):
-        # bypass AnnotableMeta.__call__() when deserializing
+        # bypass Annotable.__construct__() when deserializing
         self = cls.__new__(cls)
         self.__init__(**kwargs)
-        self.__post_init__()
         return self
 
     def __reduce__(self):

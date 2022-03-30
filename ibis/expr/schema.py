@@ -8,7 +8,12 @@ from multipledispatch import Dispatcher
 
 from ..common.exceptions import IntegrityError
 from ..common.grounds import Annotable, Comparable
-from ..common.validators import instance_of, tuple_of, validator
+from ..common.validators import (
+    immutable_property,
+    instance_of,
+    tuple_of,
+    validator,
+)
 from ..expr import datatypes as dt
 from ..util import UnnamedMarker, indent
 
@@ -59,9 +64,8 @@ class Schema(Annotable, Comparable):
     names: Sequence[str] = tuple_of(instance_of((str, UnnamedMarker)))
     types: Sequence[dt.DataType] = tuple_of(datatype)
 
-    def __post_init__(self):
-        super().__post_init__()
-
+    @immutable_property
+    def _name_locs(self):
         # validate unique field names
         name_locs = {v: i for i, v in enumerate(self.names)}
         if len(name_locs) < len(self.names):
@@ -71,9 +75,7 @@ class Schema(Annotable, Comparable):
             raise IntegrityError(
                 f'Duplicate column name(s): {duplicate_names}'
             )
-
-        # store field positions
-        object.__setattr__(self, '_name_locs', name_locs)
+        return name_locs
 
     def __repr__(self):
         space = 2 + max(map(len, self.names), default=0)

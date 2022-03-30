@@ -5,6 +5,7 @@ from public import public
 
 from ...common.exceptions import ExpressionError
 from ...common.grounds import Comparable
+from ...common.validators import immutable_property
 from ...util import is_iterable
 from .. import rules as rlz
 from ..schema import Schema
@@ -36,20 +37,12 @@ def _compare_tuples(a, b):
 
 @public
 class Node(Annotable, Comparable):
-    __slots__ = ("_flat_ops",)
-
-    def __post_init__(self):
+    @immutable_property
+    def _flat_ops(self):
         import ibis.expr.types as ir
 
-        super().__post_init__()
-        object.__setattr__(
-            self,
-            "_flat_ops",
-            tuple(
-                arg.op()
-                for arg in self.flat_args()
-                if isinstance(arg, ir.Expr)
-            ),
+        return tuple(
+            arg.op() for arg in self.flat_args() if isinstance(arg, ir.Expr)
         )
 
     def __equals__(self, other):
