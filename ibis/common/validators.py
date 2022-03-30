@@ -10,7 +10,7 @@ EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
 class Validator:
-    __slots__ = tuple()
+    __slots__ = ()
 
     def validate(self, arg, **kwargs):
         raise NotImplementedError()
@@ -38,7 +38,7 @@ class Optional(Validator):
         self.default = default
 
     def __repr__(self):
-        return f"Optional({self.validator!r}, {self.default!r})"
+        return f"{self.__class__.__name__}({self.validator!r}, {self.default!r})"
 
     def validate(self, arg, **kwargs):
         if arg is None:
@@ -59,7 +59,7 @@ class CurriedValidator(Validator):
     def __init__(self, func, args=None, kwargs=None):
         # TODO(kszucs): validate that func is callable
         self.func = func
-        self.args = args or tuple()
+        self.args = args or ()
         self.kwargs = kwargs or {}
 
     def __call__(self, *args, **kwargs):
@@ -69,7 +69,7 @@ class CurriedValidator(Validator):
 
     def __repr__(self):
         return (
-            f"CurriedValidator({self.func!r}, {self.args!r}, {self.kwargs!r})"
+            f"{self.__class__.__name__}({self.func!r}, {self.args!r}, {self.kwargs!r})"
         )
 
     def validate(self, arg, **kwargs):
