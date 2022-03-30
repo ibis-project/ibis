@@ -29,6 +29,7 @@ packages = [
     'ibis.backends.pandas.tests.execution',
     'ibis.backends.postgres',
     'ibis.backends.postgres.tests',
+    'ibis.backends.pyarrow',
     'ibis.backends.pyspark',
     'ibis.backends.pyspark.tests',
     'ibis.backends.sqlite',
