@@ -127,7 +127,6 @@ def _clean_join_predicates(left, right, predicates):
         elif isinstance(pred, str):
             pred = left[pred] == right[pred]
         elif not isinstance(pred, ir.Expr):
-            print(type(pred))
             raise NotImplementedError
 
         if not isinstance(pred, ir.BooleanColumn):
