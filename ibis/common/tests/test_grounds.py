@@ -20,7 +20,7 @@ class ValidatorFunction(Validator):
     def __init__(self, fn):
         self.fn = fn
 
-    def __call__(self, *args, **kwargs):
+    def validate(self, *args, **kwargs):
         return self.fn(*args, **kwargs)
 
 
@@ -28,7 +28,7 @@ class InstanceOf(Validator):
     def __init__(self, typ):
         self.typ = typ
 
-    def __call__(self, arg, **kwargs):
+    def validate(self, arg, **kwargs):
         if not isinstance(arg, self.typ):
             raise TypeError(self.typ)
         return arg

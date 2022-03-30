@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import inspect
 from contextlib import suppress
-from typing import Callable
-
-import toolz
 
 from ..common.exceptions import IbisTypeError
 from ..util import flatten_iterable, is_function, is_iterable
@@ -12,10 +9,11 @@ from ..util import flatten_iterable, is_function, is_iterable
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
-class Validator(Callable):
-    """
-    Abstract base class for defining argument validators.
-    """
+class Validator:
+    __slots__ = tuple()
+
+    def validate(self, arg, **kwargs):
+        raise NotImplementedError()
 
 
 class Optional(Validator):
@@ -30,13 +28,19 @@ class Optional(Validator):
         Value to return with in case of a missing argument.
     """
 
-    __slots__ = ('validator', 'default')
+    __slots__ = (
+        'validator',
+        'default',
+    )
 
     def __init__(self, validator, default=None):
         self.validator = validator
         self.default = default
 
-    def __call__(self, arg, **kwargs):
+    def __repr__(self):
+        return f"Optional({self.validator!r}, {self.default!r})"
+
+    def validate(self, arg, **kwargs):
         if arg is None:
             if self.default is None:
                 return None
@@ -45,23 +49,35 @@ class Optional(Validator):
             else:
                 arg = self.default
 
-        return self.validator(arg, **kwargs)
+        return self.validator.validate(arg, **kwargs)
 
 
-class validator(toolz.curry, Validator):
-    """
-    Enable convenient validator definition by decorating plain functions.
-    """
+class CurriedValidator(Validator):
+
+    __slots__ = ("func", "args", "kwargs")
+
+    def __init__(self, func, args=None, kwargs=None):
+        # TODO(kszucs): validate that func is callable
+        self.func = func
+        self.args = args or tuple()
+        self.kwargs = kwargs or {}
+
+    def __call__(self, *args, **kwargs):
+        new_args = self.args + args
+        new_kwargs = {**self.kwargs, **kwargs}
+        return self.__class__(self.func, new_args, new_kwargs)
 
     def __repr__(self):
-        return '{}({}{})'.format(
-            self.func.__name__,
-            repr(self.args)[1:-1],
-            ', '.join(f'{k}={v!r}' for k, v in self.keywords.items()),
+        return (
+            f"CurriedValidator({self.func!r}, {self.args!r}, {self.kwargs!r})"
         )
+
+    def validate(self, arg, **kwargs):
+        return self.func(*self.args, arg, **self.kwargs, **kwargs)
 
 
 optional = Optional
+validator = CurriedValidator
 
 
 @validator
@@ -85,7 +101,7 @@ def one_of(inners, arg, **kwargs):
     """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(IbisTypeError, ValueError):
-            return inner(arg, **kwargs)
+            return inner.validate(arg, **kwargs)
 
     raise IbisTypeError(
         "argument passes none of the following rules: "
@@ -113,7 +129,7 @@ def compose_of(inners, arg, *, this):
       Value maybe coerced by inner validators to the appropiate types
     """
     for inner in reversed(inners):
-        arg = inner(arg, this=this)
+        arg = inner.validate(arg, this=this)
     return arg
 
 
@@ -150,7 +166,7 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
     if flatten:
         arg = flatten_iterable(arg)
 
-    return type(inner(item, **kwargs) for item in arg)
+    return type(inner.validate(item, **kwargs) for item in arg)
 
 
 list_of = container_of(type=list)

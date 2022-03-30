@@ -57,11 +57,10 @@ class Parameter(inspect.Parameter):
         return self._validator
 
     def validate(self, this, arg):
-        if self.validator is EMPTY:
+        if self._validator is EMPTY:
             return arg
         else:
-            # TODO(kszucs): use self._validator
-            return self.validator(arg, this=this)
+            return self._validator.validate(arg, this=this)
 
 
 class AnnotableMeta(BaseMeta):

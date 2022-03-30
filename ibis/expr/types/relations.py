@@ -572,7 +572,7 @@ class TableExpr(Expr):
             if util.is_function(expr):
                 value = expr(self)
             else:
-                value = rlz.any(expr)
+                value = rlz.any.validate(expr)
             exprs.append(value.name(name))
 
         mutation_exprs = an.get_mutation_exprs(exprs, self)

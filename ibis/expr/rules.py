@@ -14,6 +14,7 @@ from ibis.common.validators import (  # noqa: F401
     isin,
     list_of,
     map_to,
+    noop,
     one_of,
     optional,
     tuple_of,
@@ -102,7 +103,7 @@ def value_list_of(inner, arg, **kwargs):
     # the dispatcher in pandas requires operation objects
     import ibis.expr.operations as ops
 
-    values = tuple_of(inner, arg, **kwargs)
+    values = tuple_of(inner).validate(arg, **kwargs)
     return ops.ValueList(values).to_expr()
 
 
@@ -162,14 +163,18 @@ def value(dtype, arg, **kwargs):
         )
 
 
+_is_scalar = instance_of(ir.ScalarExpr)
+_is_column = instance_of(ir.ColumnExpr)
+
+
 @validator
 def scalar(inner, arg, **kwargs):
-    return instance_of(ir.ScalarExpr, inner(arg, **kwargs))
+    return _is_scalar.validate(inner.validate(arg, **kwargs))
 
 
 @validator
 def column(inner, arg, **kwargs):
-    return instance_of(ir.ColumnExpr, inner(arg, **kwargs))
+    return _is_column.validate(inner.validate(arg, **kwargs))
 
 
 @validator
@@ -181,9 +186,9 @@ def array_of(inner, arg, **kwargs):
             'Argument must be an array, '
             f'got expression which is of type {val.type()}'
         )
-    value_dtype = inner(val[0], **kwargs).type()
+    value_dtype = inner.validate(val[0], **kwargs).type()
     array_dtype = dt.Array(value_dtype)
-    return value(array_dtype, val, **kwargs)
+    return value(array_dtype).validate(val, **kwargs)
 
 
 any = value(dt.any)
@@ -216,10 +221,12 @@ multilinestring = value(dt.MultiLineString)
 multipoint = value(dt.MultiPoint)
 multipolygon = value(dt.MultiPolygon)
 
+_interval = value(dt.Interval)
+
 
 @validator
 def interval(arg, units=None, **kwargs):
-    arg = value(dt.Interval, arg)
+    arg = _interval.validate(arg, **kwargs)
     unit = arg.type().unit
     if units is not None and unit not in units:
         msg = 'Interval unit `{}` is not among the allowed ones {}'
@@ -231,7 +238,8 @@ def interval(arg, units=None, **kwargs):
 def client(arg, **kwargs):
     from ibis.backends.base import BaseBackend
 
-    return instance_of(BaseBackend, arg)
+    inner = instance_of(BaseBackend)
+    return inner.validate(arg, **kwargs)
 
 
 # ---------------------------------------------------------------------
@@ -374,7 +382,9 @@ def function_of(
     if not util.is_function(fn):
         raise com.IbisTypeError('argument `fn` must be a function or lambda')
 
-    return output_rule(fn(preprocess(this[argument])), this=this)
+    arg = this[argument]
+    arg = fn(preprocess(arg))
+    return output_rule.validate(arg, this=this)
 
 
 @validator
@@ -452,7 +462,7 @@ def named_literal(value, **kwargs):
 
 @validator
 def pair(inner_left, inner_right, a, b, **kwargs):
-    return inner_left(a, **kwargs), inner_right(b, **kwargs)
+    return inner_left.validate(a, **kwargs), inner_right.validate(b, **kwargs)
 
 
 @validator

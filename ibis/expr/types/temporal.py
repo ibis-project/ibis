@@ -249,7 +249,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        other = rlz.any(other)
+        other = rlz.any.validate(other)
 
         if isinstance(other, TimeValue):
             op = ops.TimeDiff
@@ -268,7 +268,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        other = rlz.any(other)
+        other = rlz.any.validate(other)
 
         if isinstance(other, TimeValue):
             op = ops.TimeDiff
@@ -332,7 +332,8 @@ class DateValue(TemporalValue, _DateComponentMixin):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        other = rlz.one_of([rlz.date, rlz.interval], other)
+        rule = rlz.one_of([rlz.date, rlz.interval])
+        other = rule.validate(other)
 
         if isinstance(other, DateValue):
             op = ops.DateDiff
@@ -355,7 +356,8 @@ class DateValue(TemporalValue, _DateComponentMixin):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        other = rlz.one_of([rlz.date, rlz.interval], other)
+        rule = rlz.one_of([rlz.date, rlz.interval])
+        other = rule.validate(other)
 
         if isinstance(other, DateValue):
             op = ops.DateDiff
@@ -437,7 +439,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        right = rlz.any(other)
+        right = rlz.any.validate(other)
 
         if isinstance(right, TimestampValue):
             op = ops.TimestampDiff
@@ -461,7 +463,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        right = rlz.any(other)
+        right = rlz.any.validate(other)
 
         if isinstance(right, TimestampValue):
             op = ops.TimestampDiff

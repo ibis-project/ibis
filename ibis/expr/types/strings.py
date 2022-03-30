@@ -803,7 +803,7 @@ class StringValue(AnyValue):
         """
         import ibis.expr.rules as rlz
 
-        return rlz.string(other).concat(self)
+        return rlz.string.validate(other).concat(self)
 
     def convert_base(
         self,

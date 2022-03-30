@@ -23,7 +23,7 @@ class TypedCaseBuilder:
             if slot != 'default'
         }
 
-        result_expr = rlz.any(result_expr)
+        result_expr = rlz.any.validate(result_expr)
         kwargs['default'] = result_expr
         # Maintain immutability
         return type(self)(**kwargs)
@@ -68,8 +68,8 @@ class SimpleCaseBuilder(TypedCaseBuilder):
         -------
         builder : CaseBuilder
         """
-        case_expr = rlz.any(case_expr)
-        result_expr = rlz.any(result_expr)
+        case_expr = rlz.any.validate(case_expr)
+        result_expr = rlz.any.validate(result_expr)
 
         if not rlz.comparable(self.base, case_expr):
             raise TypeError(
@@ -112,8 +112,8 @@ class SearchedCaseBuilder(TypedCaseBuilder):
         -------
         builder : CaseBuilder
         """
-        case_expr = rlz.any(case_expr)
-        result_expr = rlz.any(result_expr)
+        case_expr = rlz.any.validate(case_expr)
+        result_expr = rlz.any.validate(result_expr)
 
         if not isinstance(case_expr, ir.BooleanValue):
             raise TypeError(case_expr)

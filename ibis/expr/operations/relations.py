@@ -158,7 +158,7 @@ class Join(TableNode):
     left = rlz.table
     right = rlz.table
     # TODO(kszucs): convert to proper predicate rules
-    predicates = rlz.optional(lambda x, this: x, default=())
+    predicates = rlz.optional(rlz.noop, default=())
 
     def __init__(self, left, right, predicates, **kwargs):
         left, right, predicates = _make_distinct_join_predicates(
@@ -236,7 +236,7 @@ class CrossJoin(Join):
 @public
 class AsOfJoin(Join):
     # TODO(kszucs): convert to proper predicate rules
-    by = rlz.optional(lambda x, this: x, default=())
+    by = rlz.optional(rlz.noop, default=())
     tolerance = rlz.optional(rlz.interval)
 
     def __init__(self, left, right, predicates, by, tolerance):

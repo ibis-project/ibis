@@ -1,5 +1,6 @@
 import pytest
 
+from ibis.common.validators import instance_of
 from ibis.expr.signature import Annotable, Argument
 from ibis.tests.util import assert_pickle_roundtrip
 
@@ -8,9 +9,9 @@ ARGUMENT_USAGE_MSG = r".*Argument.* is deprecated .* v3\.0; use Validator"
 with pytest.warns(FutureWarning, match=ARGUMENT_USAGE_MSG):
 
     class MagicString(Annotable):
-        foo = Argument(str)
-        bar = Argument(bool)
-        baz = Argument(int)
+        foo = Argument(instance_of(str))
+        bar = Argument(instance_of(bool))
+        baz = Argument(instance_of(int))
 
         def __eq__(self, other):
             return self.args == other.args

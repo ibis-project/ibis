@@ -10,6 +10,8 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
 
+pytestmark = pytest.mark.skip
+
 table = ibis.table(
     [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]
 )

@@ -52,7 +52,7 @@ class BooleanValue(NumericValue):
         from .. import operations as ops
         from .. import rules as rlz
 
-        return _binop(ops.And, self, rlz.any(other))
+        return _binop(ops.And, self, rlz.any.validate(other))
 
     __rand__ = __and__
 
@@ -60,7 +60,7 @@ class BooleanValue(NumericValue):
         from .. import operations as ops
         from .. import rules as rlz
 
-        return _binop(ops.Or, self, rlz.any(other))
+        return _binop(ops.Or, self, rlz.any.validate(other))
 
     __ror__ = __or__
 
@@ -68,7 +68,7 @@ class BooleanValue(NumericValue):
         from .. import operations as ops
         from .. import rules as rlz
 
-        return _binop(ops.Xor, self, rlz.any(other))
+        return _binop(ops.Xor, self, rlz.any.validate(other))
 
     __rxor__ = __xor__
 

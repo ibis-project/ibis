@@ -342,7 +342,9 @@ class AnyValue(ValueExpr):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return ops.Between(self, rlz.any(lower), rlz.any(upper)).to_expr()
+        return ops.Between(
+            self, rlz.any.validate(lower), rlz.any.validate(upper)
+        ).to_expr()
 
     def isin(
         self,
@@ -543,7 +545,7 @@ class AnyValue(ValueExpr):
         import ibis.expr.rules as rlz
 
         try:
-            return ops.IdenticalTo(self, rlz.any(other)).to_expr()
+            return ops.IdenticalTo(self, rlz.any.validate(other)).to_expr()
         except (com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
@@ -577,37 +579,37 @@ class AnyValue(ValueExpr):
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.Equals, self, rlz.any(other))
+        return _binop(ops.Equals, self, rlz.any.validate(other))
 
     def __ne__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.NotEquals, self, rlz.any(other))
+        return _binop(ops.NotEquals, self, rlz.any.validate(other))
 
     def __ge__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.GreaterEqual, self, rlz.any(other))
+        return _binop(ops.GreaterEqual, self, rlz.any.validate(other))
 
     def __gt__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.Greater, self, rlz.any(other))
+        return _binop(ops.Greater, self, rlz.any.validate(other))
 
     def __le__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.LessEqual, self, rlz.any(other))
+        return _binop(ops.LessEqual, self, rlz.any.validate(other))
 
     def __lt__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
-        return _binop(ops.Less, self, rlz.any(other))
+        return _binop(ops.Less, self, rlz.any.validate(other))
 
 
 @public
