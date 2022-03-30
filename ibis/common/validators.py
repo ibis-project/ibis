@@ -48,7 +48,7 @@ class Optional(Validator):
         return self.validator(arg, **kwargs)
 
 
-class validator(toolz.curry, Validator):
+class Curried(toolz.curry, Validator):
     """
     Enable convenient validator definition by decorating plain functions.
     """
@@ -61,7 +61,24 @@ class validator(toolz.curry, Validator):
         )
 
 
+class ImmutableProperty(Callable):
+    """
+    Abstract base class for defining stored properties.
+    """
+
+    __slots__ = ("fn",)
+
+    def __init__(self, fn):
+        self.fn = fn
+
+    def __call__(self, instance):
+        return self.fn(instance)
+
+
+# aliases for convenience
 optional = Optional
+validator = Curried
+immutable_property = ImmutableProperty
 
 
 @validator

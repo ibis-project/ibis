@@ -4,14 +4,8 @@ from inspect import Signature
 import pytest
 
 from ibis.common.caching import WeakCache
-from ibis.common.grounds import (
-    Annotable,
-    Comparable,
-    Optional,
-    Parameter,
-    Singleton,
-    Validator,
-)
+from ibis.common.grounds import Annotable, Comparable, Parameter, Singleton
+from ibis.common.validators import Optional, Validator, immutable_property
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
@@ -317,6 +311,52 @@ def test_immutability():
     op = ValueOp(1)
     with pytest.raises(TypeError):
         op.a = 3
+
+
+def test_immutable_property_basics():
+    class ValueOp(Annotable):
+        a = IsInt
+
+        @immutable_property
+        def double_a(self):
+            return 2 * self.a
+
+    op = ValueOp(1)
+    assert op.a == 1
+    assert op.double_a == 2
+    assert len(ValueOp.__properties__) == 1
+    assert "double_a" in ValueOp.__slots__
+
+
+def test_immutable_property_mixed_with_classvar():
+    class ValueOp(Annotable):
+        arg = IsInt
+
+        output_shape = "like-arg"
+        output_dtype = "like-arg"
+
+    class Reduction(ValueOp):
+        output_shape = "scalar"
+
+    class Variadic(ValueOp):
+        @immutable_property
+        def output_shape(self):
+            if self.arg > 10:
+                return "columnar"
+            else:
+                return "scalar"
+
+    r = Reduction(1)
+    assert r.output_shape == "scalar"
+    assert "output_shape" not in r.__slots__
+
+    v = Variadic(1)
+    assert v.output_shape == "scalar"
+    assert "output_shape" in v.__slots__
+
+    v = Variadic(100)
+    assert v.output_shape == "columnar"
+    assert "output_shape" in v.__slots__
 
 
 class Node(Comparable):

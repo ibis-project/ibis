@@ -127,6 +127,7 @@ def _clean_join_predicates(left, right, predicates):
         elif isinstance(pred, str):
             pred = left[pred] == right[pred]
         elif not isinstance(pred, ir.Expr):
+            print(type(pred))
             raise NotImplementedError
 
         if not isinstance(pred, ir.BooleanColumn):
@@ -168,6 +169,7 @@ class Join(TableNode):
             left=left, right=right, predicates=predicates, **kwargs
         )
 
+    # could use @promoter here
     @property
     def schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -239,14 +241,10 @@ class AsOfJoin(Join):
     by = rlz.optional(lambda x, this: x, default=())
     tolerance = rlz.optional(rlz.interval)
 
-    def __init__(self, left, right, predicates, by, tolerance):
+    def __init__(self, left, right, by, predicates, **kwargs):
         by = _clean_join_predicates(left, right, by)
         super().__init__(
-            left=left,
-            right=right,
-            predicates=predicates,
-            by=by,
-            tolerance=tolerance,
+            left=left, right=right, by=by, predicates=predicates, **kwargs
         )
 
 
