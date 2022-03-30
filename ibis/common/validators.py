@@ -10,10 +10,17 @@ EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
 class Validator:
-    __slots__ = ()
+    __slots__ = ('fn',)
+
+    def __init__(self, fn):
+        # asser that fn is callable
+        self.fn = fn
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.fn!r})"
 
     def validate(self, arg, **kwargs):
-        raise NotImplementedError()
+        return self.fn(arg, **kwargs)
 
 
 class Optional(Validator):
@@ -28,17 +35,16 @@ class Optional(Validator):
         Value to return with in case of a missing argument.
     """
 
-    __slots__ = (
-        'validator',
-        'default',
-    )
+    __slots__ = ('default',)
 
-    def __init__(self, validator, default=None):
-        self.validator = validator
+    def __init__(self, fn, default=None):
         self.default = default
+        if not isinstance(fn, Validator):
+            fn = Validator(fn)
+        super().__init__(fn)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.validator!r}, {self.default!r})"
+        return f"{self.__class__.__name__}({self.fn!r}, {self.default!r})"
 
     def validate(self, arg, **kwargs):
         if arg is None:
@@ -49,35 +55,35 @@ class Optional(Validator):
             else:
                 arg = self.default
 
-        return self.validator.validate(arg, **kwargs)
+        return self.fn.validate(arg, **kwargs)
 
 
-class CurriedValidator(Validator):
+class Curried(Validator):
 
-    __slots__ = ("func", "args", "kwargs")
+    __slots__ = ("args", "kwargs")
 
-    def __init__(self, func, args=None, kwargs=None):
-        # TODO(kszucs): validate that func is callable
-        self.func = func
+    def __init__(self, fn, args=None, kwargs=None):
         self.args = args or ()
         self.kwargs = kwargs or {}
+        super().__init__(fn)
 
     def __call__(self, *args, **kwargs):
         new_args = self.args + args
         new_kwargs = {**self.kwargs, **kwargs}
-        return self.__class__(self.func, new_args, new_kwargs)
+        return self.__class__(self.fn, new_args, new_kwargs)
 
     def __repr__(self):
         return (
-            f"{self.__class__.__name__}({self.func!r}, {self.args!r}, {self.kwargs!r})"
+            f"{self.__class__.__name__}"
+            f"({self.fn!r}, {self.args!r}, {self.kwargs!r})"
         )
 
     def validate(self, arg, **kwargs):
-        return self.func(*self.args, arg, **self.kwargs, **kwargs)
+        return self.fn(*self.args, arg, **self.kwargs, **kwargs)
 
 
 optional = Optional
-validator = CurriedValidator
+validator = Curried
 
 
 @validator

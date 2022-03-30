@@ -1,7 +1,8 @@
 import pytest
 from toolz import identity
 
-from ibis.common.validators import Optional, Validator
+from ibis.common.exceptions import IbisTypeError
+from ibis.common.validators import Optional, Validator, instance_of, isin
 
 
 class InstanceOf(Validator):
@@ -23,7 +24,7 @@ IsInt = InstanceOf(int)
 )
 def test_optional_argument(default, expected):
     validator = Optional(lambda x: x, default=default)
-    assert validator(None) == expected
+    assert validator.validate(None) == expected
 
 
 @pytest.mark.parametrize(
@@ -41,7 +42,7 @@ def test_optional_argument(default, expected):
     ],
 )
 def test_valid_optional(validator, value, expected):
-    assert validator(value) == expected
+    assert validator.validate(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -54,3 +55,51 @@ def test_valid_optional(validator, value, expected):
 def test_invalid_optional(arg, value, expected):
     with pytest.raises(expected):
         arg(value)
+
+
+@pytest.mark.parametrize(
+    ('klass', 'value', 'expected'),
+    [(int, 32, 32), (str, 'foo', 'foo'), (bool, True, True)],
+)
+def test_valid_instance_of(klass, value, expected):
+    assert instance_of(klass).validate(value) == expected
+
+
+@pytest.mark.parametrize(
+    ('klass', 'value', 'expected'),
+    [
+        (Validator, object, IbisTypeError),
+        (str, 4, IbisTypeError),
+    ],
+)
+def test_invalid_instance_of(klass, value, expected):
+    with pytest.raises(expected):
+        assert instance_of(klass).validate(value)
+
+
+@pytest.mark.parametrize(
+    ('values', 'value', 'expected'),
+    [
+        (['a', 'b'], 'a', 'a'),
+        (('a', 'b'), 'b', 'b'),
+        ({'a', 'b', 'c'}, 'c', 'c'),
+        ([1, 2, 'f'], 'f', 'f'),
+        ({'a': 1, 'b': 2}, 'a', 1),
+        ({'a': 1, 'b': 2}, 'b', 2),
+    ],
+)
+def test_valid_isin(values, value, expected):
+    assert isin(values).validate(value) == expected
+
+
+@pytest.mark.parametrize(
+    ('values', 'value', 'expected'),
+    [
+        (['a', 'b'], 'c', ValueError),
+        ({'a', 'b', 'c'}, 'd', ValueError),
+        ({'a': 1, 'b': 2}, 'c', ValueError),
+    ],
+)
+def test_invalid_isin(values, value, expected):
+    with pytest.raises(expected):
+        isin(values).validate(value)

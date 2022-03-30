@@ -2,15 +2,12 @@ import enum
 
 import parsy
 import pytest
-from toolz import identity
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
-
-pytestmark = pytest.mark.skip
 
 table = ibis.table(
     [('int_col', 'int64'), ('string_col', 'string'), ('double_col', 'double')]
@@ -30,7 +27,7 @@ similar_table = ibis.table(
     ],
 )
 def test_valid_datatype(value, expected):
-    assert rlz.datatype(value) == expected
+    assert rlz.datatype.validate(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -44,27 +41,7 @@ def test_valid_datatype(value, expected):
 )
 def test_invalid_datatype(value, expected):
     with pytest.raises(expected):
-        assert rlz.datatype(value)
-
-
-@pytest.mark.parametrize(
-    ('klass', 'value', 'expected'),
-    [(int, 32, 32), (str, 'foo', 'foo'), (dt.Integer, dt.int8, dt.int8)],
-)
-def test_valid_instance_of(klass, value, expected):
-    assert rlz.instance_of(klass, value) == expected
-
-
-@pytest.mark.parametrize(
-    ('klass', 'value', 'expected'),
-    [
-        (ir.TableExpr, object, IbisTypeError),
-        (ir.IntegerValue, 4, IbisTypeError),
-    ],
-)
-def test_invalid_instance_of(klass, value, expected):
-    with pytest.raises(expected):
-        assert rlz.instance_of(klass, value)
+        assert rlz.datatype.validate(value)
 
 
 @pytest.mark.parametrize(
@@ -96,7 +73,7 @@ def test_invalid_instance_of(klass, value, expected):
     ],
 )
 def test_valid_value(dtype, value, expected):
-    result = rlz.value(dtype, value)
+    result = rlz.value(dtype).validate(value)
     assert result.equals(expected)
 
 
@@ -116,35 +93,7 @@ def test_valid_value(dtype, value, expected):
 )
 def test_invalid_value(dtype, value, expected):
     with pytest.raises(expected):
-        rlz.value(dtype, value)
-
-
-@pytest.mark.parametrize(
-    ('values', 'value', 'expected'),
-    [
-        (['a', 'b'], 'a', 'a'),
-        (('a', 'b'), 'b', 'b'),
-        ({'a', 'b', 'c'}, 'c', 'c'),
-        ([1, 2, 'f'], 'f', 'f'),
-        ({'a': 1, 'b': 2}, 'a', 1),
-        ({'a': 1, 'b': 2}, 'b', 2),
-    ],
-)
-def test_valid_isin(values, value, expected):
-    assert rlz.isin(values, value) == expected
-
-
-@pytest.mark.parametrize(
-    ('values', 'value', 'expected'),
-    [
-        (['a', 'b'], 'c', ValueError),
-        ({'a', 'b', 'c'}, 'd', ValueError),
-        ({'a': 1, 'b': 2}, 'c', ValueError),
-    ],
-)
-def test_invalid_isin(values, value, expected):
-    with pytest.raises(expected):
-        rlz.isin(values, value)
+        rlz.value(dtype).validate(value)
 
 
 class Foo(enum.Enum):
@@ -174,7 +123,7 @@ class Baz:
     ],
 )
 def test_valid_member_of(obj, value, expected):
-    assert rlz.member_of(obj, value) == expected
+    assert rlz.member_of(obj).validate(value) == expected
 
 
 @pytest.mark.parametrize(
@@ -187,13 +136,13 @@ def test_valid_member_of(obj, value, expected):
 )
 def test_invalid_member_of(obj, value, expected):
     with pytest.raises(expected):
-        rlz.member_of(obj, value)
+        rlz.member_of(obj).validate(value)
 
 
 @pytest.mark.parametrize(
     ('validator', 'values', 'expected'),
     [
-        (rlz.value_list_of(identity), (3, 2), ibis.sequence([3, 2])),
+        (rlz.value_list_of(rlz.noop), (3, 2), ibis.sequence([3, 2])),
         (rlz.value_list_of(rlz.integer), (3, 2), ibis.sequence([3, 2])),
         (
             rlz.value_list_of(rlz.integer),
@@ -218,19 +167,18 @@ def test_invalid_member_of(obj, value, expected):
     ],
 )
 def test_valid_value_list_of(validator, values, expected):
-    result = validator(values)
+    result = validator.validate(values)
     assert isinstance(result, ir.ListExpr)
     assert len(result) == len(values)
     for a, b in zip(result, expected):
         assert a.equals(b)
 
 
-def test_valid_list_of_extra():
-    validator = rlz.tuple_of(identity)
-    assert validator((3, 2)) == tuple([3, 2])
-
+def test_valid_value_list_of_extra():
+    validator = rlz.tuple_of(rlz.noop)
+    assert validator.validate((3, 2)) == tuple([3, 2])
     validator = rlz.list_of(rlz.list_of(rlz.string))
-    result = validator([[], ['a']])
+    result = validator.validate([[], ['a']])
     assert result[1][0].equals(ibis.literal('a'))
 
 
@@ -240,12 +188,12 @@ def test_valid_list_of_extra():
         (rlz.value_list_of(rlz.double, min_length=2), [1]),
         (rlz.value_list_of(rlz.integer), 1.1),
         (rlz.value_list_of(rlz.string), 'asd'),
-        (rlz.value_list_of(identity), 3),
+        (rlz.value_list_of(rlz.noop), 3),
     ],
 )
-def test_invalid_list_of(validator, values):
+def test_invalid_value_list_of(validator, values):
     with pytest.raises(IbisTypeError):
-        validator(values)
+        validator.validate(values)
 
 
 @pytest.mark.parametrize(
@@ -256,7 +204,7 @@ def test_invalid_list_of(validator, values):
     ],
 )
 def test_valid_interval(units, value, expected):
-    result = rlz.interval(value, units=units)
+    result = rlz.interval(units=units).validate(value)
     assert result.equals(expected)
 
 
@@ -270,7 +218,7 @@ def test_valid_interval(units, value, expected):
 )
 def test_invalid_interval(units, value, expected):
     with pytest.raises(expected):
-        rlz.interval(value, units=units)
+        rlz.interval(units=units).validate(value)
 
 
 @pytest.mark.parametrize(
@@ -283,7 +231,7 @@ def test_invalid_interval(units, value, expected):
     ],
 )
 def test_valid_column_or_scalar(validator, value, expected):
-    result = validator(value)
+    result = validator.validate(value)
     assert result.equals(expected)
 
 
@@ -297,7 +245,7 @@ def test_valid_column_or_scalar(validator, value, expected):
 )
 def test_invalid_column_or_scalar(validator, value, expected):
     with pytest.raises(expected):
-        validator(value)
+        validator.validate(value)
 
 
 @pytest.mark.parametrize(
@@ -310,7 +258,7 @@ def test_invalid_column_or_scalar(validator, value, expected):
 def test_valid_column_from(check_table, value, expected):
     validator = rlz.column_from("table")
     this = dict(table=table)
-    assert validator(value, this=this).equals(expected)
+    assert validator.validate(value, this=this).equals(expected)
 
 
 @pytest.mark.parametrize(
@@ -329,7 +277,7 @@ def test_invalid_column_from(check_table, validator, value):
     test = dict(table=check_table)
 
     with pytest.raises(IbisTypeError):
-        validator(value, this=test)
+        validator.validate(value, this=test)
 
 
 @pytest.mark.parametrize(
@@ -343,7 +291,7 @@ def test_invalid_column_from(check_table, validator, value):
 )
 def test_table_with_schema(table):
     validator = rlz.table(schema=[('group', dt.int64), ('value', dt.double)])
-    assert validator(table) == table
+    assert validator.validate(table) == table
 
 
 @pytest.mark.parametrize(
@@ -354,7 +302,7 @@ def test_table_with_schema_invalid(table):
         schema=[('group', dt.double), ('value', dt.timestamp)]
     )
     with pytest.raises(IbisTypeError):
-        validator(table)
+        validator.validate(table)
 
 
 def test_shape_like_with_no_arguments():
@@ -374,7 +322,7 @@ def test_shape_like_with_no_arguments():
     ],
 )
 def test_array_of(rule, input):
-    assert isinstance(rule(input).type(), dt.Array)
+    assert isinstance(rule.validate(input).type(), dt.Array)
 
 
 @pytest.mark.parametrize(
@@ -387,7 +335,7 @@ def test_array_of(rule, input):
 )
 def test_array_of_invalid_input(rule, input):
     with pytest.raises(IbisTypeError):
-        rule(input)
+        rule.validate(input)
 
 
 @pytest.mark.parametrize(
@@ -399,9 +347,10 @@ def test_array_of_invalid_input(rule, input):
     ],
 )
 def test_optional(validator, input):
-    expected = validator(input)
+    expected = validator.validate(input)
+    result = rlz.optional(validator).validate(input)
     if isinstance(expected, ibis.Expr):
-        assert rlz.optional(validator)(input).equals(expected)
+        assert result.equals(expected)
     else:
-        assert rlz.optional(validator)(input) == expected
-    assert rlz.optional(validator)(None) is None
+        assert result == expected
+    assert rlz.optional(validator).validate(None) is None
