@@ -31,9 +31,17 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
         overlapping_columns, left_on, right_on, left_by, right_by
     )
 
+    assert 0 <= len(left_on) <= 1, f"len(left_on) == {len(left_on)}"
+    assert 0 <= len(right_on) <= 1, f"len(right_on) == {len(right_on)}"
+
     return dd.merge_asof(
         left=left,
         right=right,
+        # NB: dask 2022.4.1 contains a bug from
+        # https://github.com/dask/dask/pull/8857 that keeps a column if `on` is
+        # non-empty without checking whether `left_on` is non-empty, this
+        # check works around that
+        on=left_on if left_on == right_on else None,
         left_on=left_on,
         right_on=right_on,
         left_by=left_by or None,
