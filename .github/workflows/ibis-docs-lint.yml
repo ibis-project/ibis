@@ -102,6 +102,7 @@ jobs:
           tool: pytest
           github-token: ${{ steps.generate-token.outputs.token }}
           output-file-path: .benchmarks/output.json
+          benchmark-data-dir-path: bench
           auto-push: true
 
   docs:
