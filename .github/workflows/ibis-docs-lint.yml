@@ -159,12 +159,19 @@ jobs:
           git config user.name 'ibis-docs-bot[bot]'
           git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
 
+      - name: Pull gh-pages changes
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin gh-pages
+          git update-ref refs/heads/gh-pages $(git rev-parse origin/gh-pages)
+
       - name: build and push dev docs
         if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/') }}
         run: |
-          git remote -v
-          git fetch origin gh-pages
-          git update-ref refs/heads/gh-pages $(git rev-parse origin/gh-pages)
+          set -euo pipefail
+
           # TODO: move "latest" alias to release step once 3.0 is out
           nix develop -f shell.nix --keep-going -c \
             mic deploy \
@@ -177,6 +184,8 @@ jobs:
       - name: build and push docs on tag
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
         run: |
+          set -euo pipefail
+
           nix develop -f shell.nix --keep-going -c \
             mic deploy \
               --push \
