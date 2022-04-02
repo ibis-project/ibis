@@ -68,11 +68,14 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: checkout
         if: ${{ github.event_name != 'push' }}
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: install nix
         uses: cachix/install-nix-action@v16
