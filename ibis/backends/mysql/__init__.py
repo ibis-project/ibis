@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import contextlib
 import warnings
 from typing import Literal
@@ -132,6 +133,22 @@ class Backend(BaseAlchemyBackend):
             for descr, field in zip(cursor.description, cursor._result.fields)
         ]
         return sch.Schema.from_tuples(fields)
+
+    def _get_temp_view_definition(
+        self,
+        name: str,
+        definition: sa.sql.compiler.Compiled,
+    ) -> str:
+        return f"CREATE OR REPLACE VIEW {name} AS {definition}"
+
+    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
+        query = f"DROP VIEW IF EXISTS {name}"
+
+        def drop(self, raw_name: str, query: str):
+            self.con.execute(query)
+            self._temp_views.discard(raw_name)
+
+        atexit.register(drop, self, raw_name, query)
 
 
 # TODO(kszucs): unsigned integers

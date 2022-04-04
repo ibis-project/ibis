@@ -797,6 +797,32 @@ class DropNa(TableNode, sch.HasSchema):
         return self.table.schema()
 
 
+@public
+class View(PhysicalTable):
+    """A view created from an expression."""
+
+    child = rlz.table
+    name = rlz.instance_of(str)
+
+    @property
+    def schema(self):
+        return self.child.schema()
+
+
+@public
+class SQLStringView(PhysicalTable):
+    """A view created from a SQL string."""
+
+    child = rlz.table
+    name = rlz.instance_of(str)
+    query = rlz.instance_of(str)
+
+    @cached_property
+    def schema(self):
+        backend = self.child._find_backend()
+        return backend._get_schema_using_query(self.query)
+
+
 def _dedup_join_columns(
     expr: ir.TableExpr,
     *,

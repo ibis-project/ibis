@@ -109,15 +109,19 @@ class ExtractSubqueries:
         self.visit(op.right)
         self.observe(expr)
 
-    def visit_MaterializedJoin(self, expr):
-        self.visit(expr.op().join)
-        self.observe(expr)
-
     def visit_Selection(self, expr):
         self.visit(expr.op().table)
         self.observe(expr)
 
     def visit_SQLQueryResult(self, expr):
+        self.observe(expr)
+
+    def visit_View(self, expr):
+        self.visit(expr.op().child)
+        self.observe(expr)
+
+    def visit_SQLStringView(self, expr):
+        self.visit(expr.op().child)
         self.observe(expr)
 
     def visit_TableColumn(self, expr):

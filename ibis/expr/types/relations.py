@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import functools
+import itertools
 import operator
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
@@ -20,6 +21,9 @@ if TYPE_CHECKING:
     from .. import types as ir
     from .generic import ColumnExpr
     from .groupby import GroupedTableExpr
+
+
+_ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
 
 def _regular_join_method(
@@ -1123,6 +1127,26 @@ class TableExpr(Expr):
     )
     def materialize(self) -> TableExpr:
         return self
+
+    def alias(self, alias: str) -> ir.TableExpr:
+        import ibis.expr.operations as ops
+
+        expr = ops.View(child=self, name=alias).to_expr()
+
+        # NB: calling compile is necessary so that any temporary views are
+        # created so that we can infer the schema without executing the entire
+        # query
+        expr.compile()
+        return expr
+
+    def sql(self, query: str) -> ir.TableExpr:
+        import ibis.expr.operations as ops
+
+        return ops.SQLStringView(
+            child=self,
+            name=next(_ALIASES),
+            query=query,
+        ).to_expr()
 
 
 def _resolve_predicates(table: TableExpr, predicates) -> list[ir.BooleanValue]:

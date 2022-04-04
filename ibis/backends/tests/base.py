@@ -150,3 +150,6 @@ class BackendTest(abc.ABC):
         self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
     ):
         return self.api.compiler.make_context(params=params)
+
+    def cleanup(self):
+        pass

@@ -1873,3 +1873,28 @@ def compile_searched_case(t, expr, scope, timecontext, **kwargs):
     return existing_when.otherwise(
         t.translate(op.default, scope, timecontext, **kwargs)
     )
+
+
+@compiles(ops.View)
+def compile_view(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    name = op.name
+    child = op.child
+    backend = child._find_backend()
+    tables = backend._session.catalog.listTables()
+    if any(name == table.name and not table.isTemporary for table in tables):
+        raise ValueError(
+            f"table or non-temporary view `{name}` already exists"
+        )
+    result = t.translate(child, scope, timecontext, **kwargs)
+    result.createOrReplaceTempView(name)
+    return result
+
+
+@compiles(ops.SQLStringView)
+def compile_sql_view(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    backend = op.child._find_backend()
+    result = backend._session.sql(op.query)
+    result.createOrReplaceTempView(op.name)
+    return result
