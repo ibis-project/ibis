@@ -2224,7 +2224,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "e067d72a1b8d2779b580ceac6197ad17820251388b570ee275a2081e64a5741c"
+content-hash = "68dc98a417a61ddca9c314f3bffbc058eb9f43ad9363a253ad30368772118461"
 
 [metadata.files]
 appnope = [
