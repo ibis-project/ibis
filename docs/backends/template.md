@@ -33,7 +33,7 @@ Install ibis and dependencies for the {{ backend_name }} backend:
 {% else %}
 !!! info "The {{ backend_name }} backend isn't released yet!"
 
-    [Set up a development environment](/contribute/01_environment) to use this backend.
+    [Set up a development environment](../contribute/01_environment.md) to use this backend.
 
 {% endif %}
 
