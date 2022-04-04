@@ -188,7 +188,6 @@ filterwarnings = [
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
   "ignore:This pattern is interpreted as a regular expression, and has match groups:UserWarning",
   "ignore:The default dtype for empty Series will be 'object':FutureWarning",
-  'ignore:\nA value is trying to be set on a copy of a slice from a DataFrame:',
   "ignore:the `interpolation=` argument to percentile was renamed to `method=`:DeprecationWarning",
   "ignore:Explicitly passing `name=None`:FutureWarning",
   # the warning suggestion to simply remove the argument in the call isn't correct

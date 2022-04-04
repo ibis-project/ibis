@@ -333,7 +333,8 @@ def build_df_from_selection(
             renamed_cols[from_col] = to_cols[0]
         else:
             for new_col in to_cols:
-                result[new_col] = result.loc[:, from_col]
+                if from_col != new_col:
+                    result[new_col] = result[from_col]
 
     if renamed_cols:
         result = result.rename(columns=renamed_cols)
