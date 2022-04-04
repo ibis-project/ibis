@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 def get_backends():
     pyproject = tomli.loads(Path("pyproject.toml").read_text())
     backends = pyproject["tool"]["poetry"]["plugins"]["ibis.backends"]
+    del backends["spark"]
     return [
         (backend, getattr(ibis, backend))
         for backend in sorted(backends.keys())
@@ -31,11 +32,6 @@ ICONS = {
 
 
 def main():
-    dst = Path(__file__).parent.joinpath(
-        "docs",
-        "backends",
-        "support_matrix.csv",
-    )
     possible_ops = frozenset(get_leaf_classes(ops.ValueOp))
 
     support = {
@@ -58,8 +54,12 @@ def main():
 
     ops_table = df.loc[:, counts.index].replace(ICONS)
     table = pd.concat([coverage, ops_table])
-    ops_text = table.to_csv(index_label="Backends")
-    dst.write_text(ops_text)
+    dst = Path(__file__).parent.joinpath(
+        "docs",
+        "backends",
+        "support_matrix.csv",
+    )
+    table.to_csv(dst, index_label="Backends")
 
 
 main()
