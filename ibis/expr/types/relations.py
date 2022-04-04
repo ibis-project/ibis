@@ -1129,6 +1129,49 @@ class TableExpr(Expr):
         return self
 
     def alias(self, alias: str) -> ir.TableExpr:
+        """Create a table expression with a specific name `alias`.
+
+        This method is useful for exposing an ibis expression to the underlying
+        backend for use in the
+        [`TableExpr.sql`][ibis.expr.types.relations.TableExpr.sql] method.
+
+        !!! note "`.alias` will create a temporary view"
+
+            `.alias` creates a temporary view in the database.
+
+            This side effect will be removed in a future version of ibis and
+            **is not part of the public API**.
+
+        Parameters
+        ----------
+        alias
+            Name of the child expression
+
+        Returns
+        -------
+        TableExpr
+            An table expression
+
+        Examples
+        --------
+        >>> con = ibis.duckdb.connect("ci/ibis-testing-data/ibis_testing.ddb")
+        >>> t = con.table("functional_alltypes")
+        >>> expr = t.alias("my_t").sql("SELECT sum(double_col) FROM my_t")
+        >>> expr
+        r0 := AlchemyTable: functional_alltypes
+          index           int64
+            ⋮
+          month           int32
+        r1 := View[r0]: my_t
+          schema:
+            index           int64
+              ⋮
+            month           int32
+        SQLStringView[r1]: _ibis_view_0
+          query: 'SELECT sum(double_col) FROM my_t'
+          schema:
+            sum(double_col) float64
+        """
         import ibis.expr.operations as ops
 
         expr = ops.View(child=self, name=alias).to_expr()
@@ -1140,6 +1183,41 @@ class TableExpr(Expr):
         return expr
 
     def sql(self, query: str) -> ir.TableExpr:
+        """Run a SQL query against a table expression.
+
+        !!! note "The SQL string is backend specific"
+
+            `query` must be valid SQL for the execution backend the expression
+            will run against
+
+        See [`TableExpr.alias`][ibis.expr.types.relations.TableExpr.alias] for
+        details on using named table expressions in a SQL string.
+
+        Parameters
+        ----------
+        query
+            Query string
+
+        Returns
+        -------
+        TableExpr
+            An opaque table expression
+
+        Examples
+        --------
+        >>> con = ibis.duckdb.connect("ci/ibis-testing-data/ibis_testing.ddb")
+        >>> t = con.table("functional_alltypes")
+        >>> expr = t.sql("SELECT sum(double_col) FROM functional_alltypes")
+        >>> expr
+        r0 := AlchemyTable: functional_alltypes
+          index           int64
+            ⋮
+          month           int32
+        SQLStringView[r0]: _ibis_view_1
+          query: 'SELECT sum(double_col) FROM functional_alltypes'
+          schema:
+            sum(double_col) float64
+        """
         import ibis.expr.operations as ops
 
         return ops.SQLStringView(
