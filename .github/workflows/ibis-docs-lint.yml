@@ -123,14 +123,6 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - name: Configure git info
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          set -euo pipefail
-
-          git config user.name 'ibis-docs-bot[bot]'
-          git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
-
       - name: Generate a GitHub token
         if: ${{ github.event_name == 'push' }}
         uses: tibdex/github-app-token@v1
@@ -149,6 +141,14 @@ jobs:
       - name: checkout
         if: ${{ github.event_name != 'push' }}
         uses: actions/checkout@v3
+
+      - name: Configure git info
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+
+          git config user.name 'ibis-docs-bot[bot]'
+          git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
 
       - name: build docs
         if: ${{ github.event_name != 'push' }}
