@@ -97,7 +97,7 @@ python -c 'import ibis; print(ibis.__version__)'
 
 !!! tip "Coming from SQL?"
 
-    Check out [Ibis for SQL Programmers](/ibis-for-sql-programmers/)
+    Check out [Ibis for SQL Programmers](ibis-for-sql-programmers)
 
 ### Abstract Over SQL Dialects
 
@@ -151,7 +151,7 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
 !!! tip "Learn more!"
 
-    Learn more about Ibis in [our tutorial](/tutorial/01-Introduction-to-Ibis).
+    Learn more about Ibis in [our tutorial](tutorial/01-Introduction-to-Ibis).
 
 ## Comparison to other tools
 
@@ -159,7 +159,7 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
     !!! tip "Coming from SQL?"
 
-        Check out [Ibis for SQL Programmers](/ibis-for-sql-programmers)!
+        Check out [Ibis for SQL Programmers](ibis-for-sql-programmers)!
 
     Ibis gives you the benefit of a programming language. You don't need to
     sacrifice maintainability to get to those insights!
@@ -185,8 +185,8 @@ Let's compute the number of citizens per squared kilometer in Asia:
     !!! success "Ibis :heart:'s SQLAlchemy"
 
         Ibis generates SQLAlchemy expressions for some of our backends
-        including the [PostgreSQL](/backends/PostgreSQL) and
-        [SQLite](/backends/SQLite) backends!
+        including the [PostgreSQL](./backends/PostgreSQL.md) and
+        [SQLite](./backends/SQLite.md) backends!
 
     === "Ibis"
 
@@ -208,8 +208,8 @@ Let's compute the number of citizens per squared kilometer in Asia:
 
 !!! question "Need a specific backend?"
 
-    Take a look at the [backends](/backends) documentation!
+    Take a look at the [backends](./backends/index.md) documentation!
 
 !!! tip "Interested in contributing?"
 
-    Get started by [setting up a development environment](/contribute/01_environment)!
+    Get started by [setting up a development environment](./contribute/01_environment.md)!
