@@ -75,7 +75,7 @@ class QueryContext:
             pass
 
         op = expr.op()
-        if isinstance(op, ops.SQLQueryResult):
+        if isinstance(op, (ops.SQLQueryResult, ops.SQLStringView)):
             result = op.query
         else:
             result = self._compile_subquery(expr)

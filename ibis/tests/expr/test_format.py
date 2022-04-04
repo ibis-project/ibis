@@ -35,7 +35,7 @@ def test_table_type_output():
     result = repr(expr)
 
     assert 'SelfReference[r0]' in result
-    assert 'UnboundTable[foo]' in result
+    assert 'UnboundTable: foo' in result
 
 
 def test_aggregate_arg_names(table):
@@ -193,7 +193,7 @@ def test_same_column_multiple_aliases():
     expr = table[table.col.name('fakealias1'), table.col.name('fakealias2')]
     result = repr(expr)
 
-    assert "UnboundTable[t]" in result
+    assert "UnboundTable: t" in result
     assert "col int64" in result
     assert "fakealias1: r0.col" in result
     assert "fakealias2: r0.col" in result
@@ -217,7 +217,7 @@ def test_repr_exact():
     ).mutate(col4=lambda t: t.col2.length())
     result = repr(table)
     expected = """\
-r0 := UnboundTable[t]
+r0 := UnboundTable: t
   col  int64
   col2 string
   col3 float64

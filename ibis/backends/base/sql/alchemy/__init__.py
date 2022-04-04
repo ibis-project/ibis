@@ -86,6 +86,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self._inspector = sa.inspect(self.con)
         self.meta = sa.MetaData(bind=self.con)
         self._schemas: dict[str, sch.Schema] = {}
+        self._temp_views: set[str] = set()
 
     @property
     def version(self):
@@ -478,3 +479,33 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 "is not a pandas DataFrame or is not a ibis TableExpr."
                 f"The given obj is of type {type(obj).__name__} ."
             )
+
+    def _get_temp_view_definition(
+        self,
+        name: str,
+        definition: sa.sql.compiler.Compiled,
+    ) -> str:
+        raise NotImplementedError(
+            f"The {self.name} backend does not implement temporary view "
+            "creation"
+        )
+
+    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
+        pass
+
+    def _create_temp_view(
+        self,
+        view: sa.Table,
+        definition: sa.sql.Selectable,
+    ) -> None:
+        raw_name = view.name
+        if raw_name not in self._temp_views and raw_name in self.list_tables():
+            raise ValueError(f"{raw_name} already exists as a table or view")
+
+        name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
+        compiled = definition.compile()
+        defn = self._get_temp_view_definition(name, definition=compiled)
+        query = sa.text(defn).bindparams(**compiled.params)
+        self.con.execute(query, definition)
+        self._temp_views.add(raw_name)
+        self._register_temp_view_cleanup(name, raw_name)

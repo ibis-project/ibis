@@ -14,6 +14,7 @@ import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 
 from .compiler import DuckDBSQLCompiler
+from .datatypes import parse_type
 
 
 class Backend(BaseAlchemyBackend):
@@ -69,4 +70,16 @@ class Backend(BaseAlchemyBackend):
         """Return an ibis Schema from a SQL string."""
         with self.con.connect() as con:
             rel = con.connection.c.query(query)
-        return sch.infer(rel)
+        return sch.Schema.from_dict(
+            {
+                name: parse_type(type)
+                for name, type in zip(rel.columns, rel.types)
+            }
+        )
+
+    def _get_temp_view_definition(
+        self,
+        name: str,
+        definition: sa.sql.compiler.Compiled,
+    ) -> str:
+        return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"

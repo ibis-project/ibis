@@ -263,3 +263,9 @@ class BaseSQLBackend(BaseBackend):
         translator = cls.compiler.translator_class
         op_classes = translator._registry.keys() | translator._rewrites.keys()
         return operation in op_classes
+
+    def _create_temp_view(self, view, definition):
+        raise NotImplementedError(
+            f"The {self.name} backend does not implement temporary view "
+            "creation"
+        )

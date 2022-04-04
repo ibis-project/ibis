@@ -1,5 +1,7 @@
 import os
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -115,7 +117,7 @@ def get_common_spark_testing_client(data_directory, connect):
         .repartition(num_partitions)
         .sort('playerID')
     )
-    df_batting.createOrReplaceTempView('batting')
+    df_batting.write.saveAsTable("batting", format="parquet", mode="overwrite")
 
     df_awards_players = (
         s.read.csv(
@@ -216,6 +218,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory):
         return get_pyspark_testing_client(data_directory)
+
+    def cleanup(self):
+        (path,) = map(Path, ibis.__path__)
+        path = path.parent / "spark-warehouse"
+        shutil.rmtree(path, ignore_errors=True)
 
 
 @pytest.fixture(scope='session')

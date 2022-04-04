@@ -138,7 +138,7 @@ def fmt_table_op(op: ops.TableNode, **_: Any) -> str:
 
 @fmt_table_op.register
 def _fmt_table_op_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
-    top = f"{op.__class__.__name__}[{op.name}]"
+    top = f"{op.__class__.__name__}: {op.name}"
     formatted_schema = fmt_schema(op.schema)
     return f"{top}\n{formatted_schema}"
 
@@ -186,6 +186,38 @@ def _fmt_table_op_sql_query_result(op: ops.SQLQueryResult, **_: Any) -> str:
     formatted_schema = fmt_schema(op.schema)
     schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
     return f"{top}\n{util.indent(query, spaces=2)}\n{schema_field}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_view(op: ops.View, *, aliases: Aliases, **_: Any) -> str:
+    top = op.__class__.__name__
+    formatted_schema = fmt_schema(op.schema)
+    schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
+    return f"{top}[{aliases[op.child.op()]}]: {op.name}\n{schema_field}"
+
+
+@fmt_table_op.register
+def _fmt_table_op_sql_view(
+    op: ops.SQLStringView,
+    *,
+    aliases: Aliases,
+    **_: Any,
+) -> str:
+    short_query = textwrap.shorten(
+        op.query,
+        ibis.options.repr.query_text_length,
+        placeholder=f" {util.HORIZONTAL_ELLIPSIS}",
+    )
+    query = f"query: {short_query!r}"
+    top = op.__class__.__name__
+    formatted_schema = fmt_schema(op.schema)
+    schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
+    components = [
+        f"{top}[{aliases[op.child.op()]}]: {op.name}",
+        util.indent(query, spaces=2),
+        schema_field,
+    ]
+    return "\n".join(components)
 
 
 @functools.singledispatch

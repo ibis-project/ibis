@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import functools
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.compiler import (
     Compiler,
@@ -16,6 +19,10 @@ from ibis.backends.base.sql.compiler import (
 from .database import AlchemyTable
 from .datatypes import to_sqla_type
 from .translator import AlchemyContext, AlchemyExprTranslator
+
+
+def _schema_to_sqlalchemy_columns(schema: sch.Schema) -> list[sa.Column]:
+    return [sa.column(n, to_sqla_type(t)) for n, t in schema.items()]
 
 
 class _AlchemyTableSetFormatter(TableSetFormatter):
@@ -85,8 +92,19 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             schema = ref_op.schema
             result = sa.table(
                 ref_op.name,
-                *(sa.column(n, to_sqla_type(t)) for n, t in schema.items()),
+                *_schema_to_sqlalchemy_columns(schema),
             )
+        elif isinstance(ref_op, ops.SQLStringView):
+            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
+        elif isinstance(ref_op, ops.View):
+            definition = ref_op.child.compile()
+            result = sa.table(
+                ref_op.name,
+                *_schema_to_sqlalchemy_columns(ref_op.schema),
+            )
+            backend = ref_op.child._find_backend()
+            backend._create_temp_view(view=result, definition=definition)
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
