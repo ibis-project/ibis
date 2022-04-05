@@ -515,9 +515,7 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(
-    ["clickhouse", "dask", "datafusion", "impala", "pandas", "pyspark"]
-)
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "impala", "pandas"])
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
