@@ -32,7 +32,7 @@ let
 
   backendTestDeps = [ pkgs.docker-compose_2 ];
   vizDeps = [ pkgs.graphviz-nox ];
-  pysparkDeps = [ pkgs.openjdk11 ];
+  pysparkDeps = [ pkgs.openjdk11_headless ];
   docDeps = [ pkgs.pandoc ];
 
   # postgresql is the client, not the server
