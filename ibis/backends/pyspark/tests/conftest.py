@@ -1,7 +1,5 @@
 import os
-import shutil
 from datetime import datetime, timezone
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -117,7 +115,9 @@ def get_common_spark_testing_client(data_directory, connect):
         .repartition(num_partitions)
         .sort('playerID')
     )
-    df_batting.write.saveAsTable("batting", format="parquet", mode="overwrite")
+    df_batting.write.saveAsTable(
+        "batting", format="parquet", mode="overwrite", database="default"
+    )
 
     df_awards_players = (
         s.read.csv(
@@ -220,9 +220,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return get_pyspark_testing_client(data_directory)
 
     def cleanup(self):
-        (path,) = map(Path, ibis.__path__)
-        path = path.parent / "spark-warehouse"
-        shutil.rmtree(path, ignore_errors=True)
+        self.connection._session.sql("DROP TABLE IF EXISTS batting")
 
 
 @pytest.fixture(scope='session')
@@ -276,7 +274,10 @@ def client(data_directory):
 
     df_time_indexed.createTempView('time_indexed_table')
 
-    return client
+    try:
+        yield client
+    finally:
+        client._session.sql("DROP TABLE IF EXISTS batting")
 
 
 class IbisWindow:
