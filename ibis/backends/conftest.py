@@ -262,11 +262,7 @@ def pytest_runtest_call(item):
 def backend(request, data_directory):
     """Return an instance of BackendTest."""
     cls = _get_backend_conf(request.param)
-    result = cls(data_directory)
-    try:
-        yield result
-    finally:
-        result.cleanup()
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -290,11 +286,7 @@ def ddl_backend(request, data_directory):
     (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
     """
     cls = _get_backend_conf(request.param)
-    result = cls(data_directory)
-    try:
-        yield result
-    finally:
-        result.cleanup()
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -323,11 +315,7 @@ def alchemy_backend(request, data_directory):
         )
     else:
         cls = _get_backend_conf(request.param)
-        result = cls(data_directory)
-        try:
-            yield result
-        finally:
-            result.cleanup()
+        return cls(data_directory)
 
 
 @pytest.fixture(scope='session')
@@ -347,11 +335,7 @@ def udf_backend(request, data_directory):
     Runs the UDF-supporting backends
     """
     cls = _get_backend_conf(request.param)
-    result = cls(data_directory)
-    try:
-        yield result
-    finally:
-        result.cleanup()
+    return cls(data_directory)
 
 
 @pytest.fixture(scope='session')

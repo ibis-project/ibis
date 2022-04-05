@@ -1,6 +1,9 @@
 import pandas as pd
 import pytest
 
+import ibis
+from ibis import util
+
 dot_sql_notimpl = pytest.mark.notimpl(
     ["clickhouse", "datafusion", "impala", "sqlite"]
 )
@@ -116,8 +119,12 @@ def test_dot_sql_repr(con):
 @dot_sql_notimpl
 @dot_sql_never
 def test_dot_sql_does_not_clobber_existing_tables(con):
-    expr = con.table("functional_alltypes").sql(
-        "SELECT 1 as x FROM functional_alltypes"
-    )
-    with pytest.raises(ValueError):
-        expr.alias("batting")
+    name = f"ibis_{util.guid()}"
+    con.create_table(name, schema=ibis.schema(dict(a="string")))
+    try:
+        expr = con.table(name).sql("SELECT 1 as x FROM functional_alltypes")
+        with pytest.raises(ValueError):
+            expr.alias(name)
+    finally:
+        con.drop_table(name, force=True)
+        assert name not in con.list_tables()
