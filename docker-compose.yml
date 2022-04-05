@@ -48,7 +48,7 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: postgres:13.3-alpine
+    image: postgres:13.6-alpine
     networks:
       - impala
   kudu:
