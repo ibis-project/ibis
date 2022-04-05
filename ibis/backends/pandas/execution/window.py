@@ -10,6 +10,7 @@ from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.expr.scope import Scope
@@ -264,6 +265,14 @@ def execute_window_op(
     clients=None,
     **kwargs,
 ):
+    if window.how == "range" and any(
+        not isinstance(ob.type(), (dt.Time, dt.Date, dt.Timestamp))
+        for ob in window._order_by
+    ):
+        raise NotImplementedError(
+            "The pandas backend only implements range windows with temporal "
+            "ordering keys"
+        )
     operand = op.expr
     # pre execute "manually" here because otherwise we wouldn't pickup
     # relevant scope changes from the child operand since we're managing
