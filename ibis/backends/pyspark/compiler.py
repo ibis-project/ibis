@@ -1246,8 +1246,10 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
                 t, window.following, scope, timecontext, **kwargs
             )
 
-        if isinstance(window.preceding, ir.IntervalScalar) or isinstance(
-            window.following, ir.IntervalScalar
+        if (
+            isinstance(window.preceding, ir.IntervalScalar)
+            or isinstance(window.following, ir.IntervalScalar)
+            or window.how == "range"
         ):
             pyspark_window = pyspark_window.rangeBetween(start, end)
         else:
