@@ -93,10 +93,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return '.'.join(map(str, self.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None):
-        tables = self._inspector.get_table_names(
-            schema=database
-        ) + self._inspector.get_view_names(schema=database)
-        return self._filter_with_like(tables, like)
+        tables = self.inspector.get_table_names(schema=database)
+        views = self.inspector.get_view_names(schema=database)
+        return self._filter_with_like(tables + views, like)
 
     def list_databases(self, like=None):
         """List databases in the current server."""

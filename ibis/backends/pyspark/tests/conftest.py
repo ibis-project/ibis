@@ -15,8 +15,6 @@ import pyspark.sql.functions as F  # noqa: E402
 import pyspark.sql.types as pt  # noqa: E402
 from pyspark.sql import SparkSession  # noqa: E402
 
-_pyspark_testing_client = None
-
 
 def get_common_spark_testing_client(data_directory, connect):
     spark = (
@@ -115,9 +113,7 @@ def get_common_spark_testing_client(data_directory, connect):
         .repartition(num_partitions)
         .sort('playerID')
     )
-    df_batting.write.saveAsTable(
-        "batting", format="parquet", mode="overwrite", database="default"
-    )
+    df_batting.createOrReplaceTempView("batting")
 
     df_awards_players = (
         s.read.csv(
@@ -203,13 +199,10 @@ def get_common_spark_testing_client(data_directory, connect):
 
 
 def get_pyspark_testing_client(data_directory):
-    global _pyspark_testing_client
-    if _pyspark_testing_client is None:
-        _pyspark_testing_client = get_common_spark_testing_client(
-            data_directory,
-            lambda session: ibis.backends.pyspark.Backend().connect(session),
-        )
-    return _pyspark_testing_client
+    return get_common_spark_testing_client(
+        data_directory,
+        lambda session: ibis.backends.pyspark.Backend().connect(session),
+    )
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -218,9 +211,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory):
         return get_pyspark_testing_client(data_directory)
-
-    def cleanup(self):
-        self.connection._session.sql("DROP TABLE IF EXISTS batting")
 
 
 @pytest.fixture(scope='session')
@@ -274,10 +264,7 @@ def client(data_directory):
 
     df_time_indexed.createTempView('time_indexed_table')
 
-    try:
-        yield client
-    finally:
-        client._session.sql("DROP TABLE IF EXISTS batting")
+    return client
 
 
 class IbisWindow:
