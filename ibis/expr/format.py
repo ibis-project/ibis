@@ -534,6 +534,8 @@ def _fmt_value_negate(op: ops.Negate, *, aliases: Aliases) -> str:
 
 @fmt_value.register
 def _fmt_value_literal(op: ops.Literal, **_: Any) -> str:
+    if isinstance(op.dtype, dt.Interval):
+        return f"{op.value} {op.dtype.unit}"
     return repr(op.value)
 
 
