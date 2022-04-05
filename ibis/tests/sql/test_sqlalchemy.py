@@ -841,3 +841,63 @@ def test_filter_group_by_agg_with_same_name():
     )
     ex = sa.select([t0]).where(t0.c.bigint_col == 60)
     _check(expr, ex)
+
+
+@pytest.fixture
+def person():
+    return ibis.table(
+        dict(id="string", personal="string", family="string"),
+        name="person",
+    )
+
+
+@pytest.fixture
+def visited():
+    return ibis.table(
+        dict(id="int32", site="string", dated="string"),
+        name="visited",
+    )
+
+
+@pytest.fixture
+def survey():
+    return ibis.table(
+        dict(
+            taken="int32",
+            person="string",
+            quant="string",
+            reading="float32",
+        ),
+        name="survey",
+    )
+
+
+def test_no_cross_join(person, visited, survey):
+    expr = person.join(survey, person.id == survey.person).join(
+        visited,
+        visited.id == survey.taken,
+    )
+
+    context = AlchemyContext(compiler=AlchemyCompiler)
+    _ = AlchemyCompiler.to_sql(expr, context)
+
+    t0 = context.get_ref(person)
+    t1 = context.get_ref(survey)
+    t2 = context.get_ref(visited)
+
+    from_ = t0.join(t1, t0.c.id == t1.c.person).join(t2, t2.c.id == t1.c.taken)
+    ex = sa.select(
+        [
+            t0.c.id.label("id_x"),
+            t0.c.personal,
+            t0.c.family,
+            t1.c.taken,
+            t1.c.person,
+            t1.c.quant,
+            t1.c.reading,
+            t2.c.id.label("id_y"),
+            t2.c.site,
+            t2.c.dated,
+        ]
+    ).select_from(from_)
+    _check(expr, ex)
