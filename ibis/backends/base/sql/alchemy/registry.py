@@ -117,9 +117,11 @@ def get_col_or_deferred_col(sa_table, colname):
     where `table_set` is `sa_table` above.
     """
     try:
-        out_expr = sa_table.c[colname]
+        col = sa_table.c[colname]
     except KeyError:
         out_expr = sa.column(colname)
+    else:
+        out_expr = sa_table.corresponding_column(col)
 
     return out_expr
 
