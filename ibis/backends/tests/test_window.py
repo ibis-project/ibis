@@ -525,9 +525,9 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     # `group_by='string_col'`:
     #     The window at a particular row will only contain other rows that
     #     have the same 'string_col' value.
-    #
+    preceding = 10
     window = ibis.range_window(
-        preceding=10,
+        preceding=preceding,
         following=0,
         order_by='id',
         group_by='string_col',
@@ -536,21 +536,22 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     result = expr.execute().set_index('id').sort_index()
 
     def gb_fn(df):
-        indices = np.searchsorted(
-            df.id,
-            [
-                df.id - 10,
-                # add 1 to get the upper bound without having to make two
-                # searchsorted calls
-                df.id + 1,
-            ],
-            side="left",
-        ).T
+        indices = np.searchsorted(df.id, [df["prec"], df["foll"]], side="left")
         double_col = df.double_col.values
-        result = [double_col[start:stop].sum() for start, stop in indices]
-        return pd.Series(result, index=df.index)
+        return pd.Series(
+            [double_col[start:stop].sum() for start, stop in indices.T],
+            index=df.index,
+        )
 
-    res = df.sort_values("id").groupby("string_col").apply(gb_fn).droplevel(0)
+    res = (
+        # add 1 to get the upper bound without having to make two
+        # searchsorted calls
+        df.assign(prec=lambda t: t.id - preceding, foll=lambda t: t.id + 1)
+        .sort_values("id")
+        .groupby("string_col")
+        .apply(gb_fn)
+        .droplevel(0)
+    )
     expected = (
         df.assign(
             # Mimic our range window spec using .apply()
@@ -560,9 +561,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
         .sort_index()
     )
 
-    left, right = result.val, expected.val
-
-    backend.assert_series_equal(left, right)
+    backend.assert_series_equal(result.val, expected.val)
 
 
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark"])
@@ -573,6 +572,4 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     column = df.id.rank(method="min").sub(1).div(len(df) - 1)
     expected = df.assign(val=column).set_index('id').sort_index()
 
-    left, right = result.val, expected.val
-
-    backend.assert_series_equal(left, right)
+    backend.assert_series_equal(result.val, expected.val)
