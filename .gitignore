@@ -48,6 +48,7 @@ Icon?
 # documentation files
 docs/source/generated
 docs/source/generated-notebooks
+*.org
 
 # Ibis testing data
 ci/ibis-testing-data*
