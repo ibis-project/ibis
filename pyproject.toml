@@ -65,7 +65,7 @@ ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
 # jinja2 is necessary because of
 # https://github.com/mkdocstrings/mkdocstrings/issues/414
-Jinja2 = "<3"
+Jinja2 = "<4"
 # necessary because of breakage in 2.1.0:
 # https://markupsafe.palletsprojects.com/en/2.1.x/changes/#version-2-1-0
 MarkupSafe = "<2.1"
