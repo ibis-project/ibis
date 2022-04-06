@@ -83,7 +83,7 @@ extras_require = {
         'pyspark>=3,<4',
         'requests>=2,<3',
         'Shapely>=1.6,<1.8.1',
-        'sqlalchemy>=1.3,<1.5',
+        'sqlalchemy>=1.4,<2.0',
     ],
     'clickhouse': [
         'clickhouse-cityhash>=1.0.2,<2',
@@ -95,7 +95,7 @@ extras_require = {
     'duckdb': [
         'duckdb>=0.3.2,<0.4.0',
         'duckdb-engine>=0.1.8,<0.2.0',
-        'sqlalchemy>=1.3,<1.5',
+        'sqlalchemy>=1.4,<2.0',
     ],
     'geospatial': [
         'GeoAlchemy2>=0.6.3,<0.12',
@@ -107,10 +107,10 @@ extras_require = {
         'impyla[kerberos]>=0.17,<0.19',
         'requests>=2,<3',
     ],
-    'mysql': ['pymysql>=1,<2', 'sqlalchemy>=1.3,<1.5'],
-    'postgres': ['psycopg2>=2.8.4,<3', 'sqlalchemy>=1.3,<1.5'],
+    'mysql': ['pymysql>=1,<2', 'sqlalchemy>=1.4,<2.0'],
+    'postgres': ['psycopg2>=2.8.4,<3', 'sqlalchemy>=1.4,<2.0'],
     'pyspark': ['pyarrow>=1,<8', 'pyspark>=3,<4'],
-    'sqlite': ['sqlalchemy>=1.3,<1.5'],
+    'sqlite': ['sqlalchemy>=1.4,<2.0'],
     'visualization': ['graphviz>=0.16,<0.20'],
 }
 
