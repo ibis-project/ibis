@@ -359,10 +359,7 @@ def _postgresql_array_search(element, compiler, **kw):
         .order_by(c0)
         .limit(1)
     )
-    try:
-        subq = res.scalar_subquery()
-    except AttributeError:
-        subq = res.as_scalar()
+    subq = res.scalar_subquery()
     result = sa.func.coalesce(subq, 0) - 1
     string_result = compiler.process(result, **kw)
     return string_result
@@ -494,10 +491,7 @@ def _array_repeat(t, expr):
 
     # tie it all together in a scalar subquery and collapse that into an ARRAY
     selected = sa.select([array[index]]).select_from(series)
-    try:
-        subq = selected.scalar_subquery()
-    except AttributeError:
-        subq = selected.as_scalar()
+    subq = selected.scalar_subquery()
     return sa.func.array(subq)
 
 

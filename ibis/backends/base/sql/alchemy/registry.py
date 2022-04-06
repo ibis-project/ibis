@@ -69,10 +69,7 @@ def _varargs_call(sa_func, t, args):
         try:
             arg = arg.scalar_subquery()
         except AttributeError:
-            try:
-                arg = arg.as_scalar()
-            except AttributeError:
-                pass
+            pass
         trans_args.append(arg)
     return sa_func(*trans_args)
 

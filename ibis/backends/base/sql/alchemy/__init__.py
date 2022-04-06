@@ -68,7 +68,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             return sa.engine.url.make_url(url)
 
         user = user or getpass.getuser()
-        return sa.engine.url.URL(
+        return sa.engine.url.URL.create(
             driver,
             host=host,
             port=port,
@@ -246,9 +246,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         t = self._get_sqla_table(table_name, schema=database, autoload=False)
         t.drop(checkfirst=force)
 
-        assert (
-            not t.exists()
-        ), f'Something went wrong during DROP of table {t.name!r}'
+        assert not self.inspector.has_table(
+            table_name
+        ), f"Something went wrong during DROP of table {table_name!r}"
 
         self.meta.remove(t)
 
