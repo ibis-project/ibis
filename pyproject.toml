@@ -68,7 +68,7 @@ isort = ">=5.9.3,<6"
 Jinja2 = "<3"
 # necessary because of breakage in 2.1.0:
 # https://markupsafe.palletsprojects.com/en/2.1.x/changes/#version-2-1-0
-MarkupSafe = "<2.1"
+MarkupSafe = "<2.2"
 mike = ">=1.1.2,<2"
 mkdocs = ">=1.2.3,<2"
 mkdocs-exclude = ">=1.0.2,<2"
