@@ -26,7 +26,7 @@ self: super:
     cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
       inherit (attrs) src;
       sourceRoot = "${attrs.pname}-${attrs.version}";
-      sha256 = "sha256-ITABYhcTZZd21Eg7YI/vbO2WiBnanidZ/08K3sD8GnQ=";
+      sha256 = "sha256-SHVJWbQROQVQ9qZDTSvHz/O9irCyEPgcmDowerMPYeI=";
     };
   });
 
