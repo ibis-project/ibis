@@ -19,6 +19,12 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 
+[tool.poetry-dynamic-versioning]
+enable = true
+dirty = true
+style = "semver"
+pattern = "^(?P<base>\\d+(\\.\\d+)*)"
+
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 atpublic = ">=2.3,<3"
@@ -53,6 +59,7 @@ pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8.1", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
+poetry-dynamic-versioning = "^0.14.0"
 
 [tool.poetry.dev-dependencies]
 black = ">=22.1.0,<23"
@@ -221,6 +228,8 @@ filterwarnings = [
   "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
+  # findspec
+  "ignore: _SixMetaPathImporter.find_spec()",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = ["site-packages", "dist-packages"]
@@ -278,5 +287,10 @@ channels = ["conda-forge"]
 dask = ">=2021.10.0"
 
 [build-system]
-requires = ["poetry-core>=1", "setuptools", "wheel"]
+requires = [
+  "poetry-core>=1",
+  "poetry-dynamic-versioning",
+  "setuptools",
+  "wheel"
+]
 build-backend = "poetry.core.masonry.api"

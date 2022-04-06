@@ -20,6 +20,27 @@
       }
     ],
     [
+      "@google/semantic-release-replace-plugin",
+      {
+        "replacements": [
+          {
+            "file": ["ibis/__init__.py"],
+            "from": "__version__ = \".*\"",
+            "to": "__version__ = \"${nextRelease.version}\"",
+            "results": [
+              {
+                "file": "ibis/__init__.py",
+                "hasChanged": true,
+                "numMatches": 1,
+                "numReplacements": 1
+              }
+            ],
+            "countMatches": true
+          }
+        ]
+      }
+    ],
+    [
       "@semantic-release/github",
       {
         "successComment": false,
@@ -29,7 +50,12 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["pyproject.toml", "docs/release_notes.md", "setup.py"],
+        "assets": [
+          "pyproject.toml",
+          "docs/release_notes.md",
+          "setup.py",
+          "ibis/__init__.py"
+        ],
         "message": "chore(release): ${nextRelease.version}"
       }
     ]

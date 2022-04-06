@@ -72,4 +72,10 @@ self: super:
       substituteAllInPlace ./nbconvert/exporters/templateexporter.py
     '';
   });
+
+  poetry-dynamic-versioning = super.poetry-dynamic-versioning.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.poetry-core
+    ];
+  });
 }

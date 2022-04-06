@@ -21,10 +21,7 @@ except ImportError:
 __all__ = ['api', 'ir', 'util', 'IbisError', 'options']
 __all__ += api.__all__
 
-try:
-    __version__ = importlib_metadata.version(__name__)
-except Exception:
-    __version__ = importlib_metadata.version("ibis-framework")
+__version__ = "2.1.1"
 
 
 def __getattr__(name: str) -> BaseBackend:

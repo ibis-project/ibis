@@ -405,6 +405,17 @@ duckdb = ">=0.2.8"
 sqlalchemy = ">=1.3.19,<2.0.0"
 
 [[package]]
+name = "dunamai"
+version = "1.11.1"
+description = "Dynamic version generation"
+category = "main"
+optional = false
+python-versions = ">=3.5,<4.0"
+
+[package.dependencies]
+packaging = ">=20.9"
+
+[[package]]
 name = "entrypoints"
 version = "0.4"
 description = "Discover and load entry points from installed packages."
@@ -750,7 +761,7 @@ testing = ["Django (<3.1)", "colorama", "docopt", "pytest (<7.0.0)"]
 name = "jinja2"
 version = "2.11.3"
 description = "A very fast and expressive template engine."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -908,7 +919,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "markupsafe"
 version = "2.0.1"
 description = "Safely add untrusted strings to HTML/XML markup."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -1404,6 +1415,19 @@ python-versions = ">=3.6"
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
+
+[[package]]
+name = "poetry-dynamic-versioning"
+version = "0.14.0"
+description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
+category = "main"
+optional = false
+python-versions = ">=3.5,<4.0"
+
+[package.dependencies]
+dunamai = ">=1.10,<2.0"
+jinja2 = {version = ">=2.11.1,<4", markers = "python_version >= \"3.6\" and python_version < \"4.0\""}
+tomlkit = ">=0.4"
 
 [[package]]
 name = "prompt-toolkit"
@@ -2084,7 +2108,7 @@ python-versions = ">=3.7"
 name = "tomlkit"
 version = "0.10.1"
 description = "Style preserving TOML library"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6,<4.0"
 
@@ -2248,7 +2272,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "216014163ff25359d5b77f2cae329cf3d67573c569dade80aacf486e1cfe50e3"
+content-hash = "333bf6264e6a915b59894a03a5ca4c34766c6c98cee5846c52f3c8938a0c454b"
 
 [metadata.files]
 appnope = [
@@ -2802,6 +2826,10 @@ duckdb-engine = [
     {file = "duckdb_engine-0.1.8-py3-none-any.whl", hash = "sha256:308c1318b1b526a5d89be2c7b3da748a4189aae4916151fd3ade65611377fbec"},
     {file = "duckdb_engine-0.1.8.tar.gz", hash = "sha256:08688e92e0c872e498f4f7bddec252fc0368bbc5b67028fab608ffdcd3d9197a"},
 ]
+dunamai = [
+    {file = "dunamai-1.11.1-py3-none-any.whl", hash = "sha256:2a7230203f8e995b35013c213e01c72f0966992096ec9e27e8a73890e7b59c27"},
+    {file = "dunamai-1.11.1.tar.gz", hash = "sha256:2c56f2befc9c0bd69ed20635170afba441bf526a9db7e002ec6c088a926288a3"},
+]
 entrypoints = [
     {file = "entrypoints-0.4-py3-none-any.whl", hash = "sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f"},
     {file = "entrypoints-0.4.tar.gz", hash = "sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4"},
@@ -3298,6 +3326,10 @@ platformdirs = [
 pluggy = [
     {file = "pluggy-1.0.0-py2.py3-none-any.whl", hash = "sha256:74134bbf457f031a36d68416e1509f34bd5ccc019f0bcc952c7b909d06b37bd3"},
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
+]
+poetry-dynamic-versioning = [
+    {file = "poetry-dynamic-versioning-0.14.0.tar.gz", hash = "sha256:be5f66a866becb1d5e642ba51e01587a825fae0983022d9304927b709abd9cae"},
+    {file = "poetry_dynamic_versioning-0.14.0-py3-none-any.whl", hash = "sha256:5138810f15aec0a72219119e28ea829a889a1e173d8bb7c59309b24c3ac79724"},
 ]
 prompt-toolkit = [
     {file = "prompt_toolkit-3.0.29-py3-none-any.whl", hash = "sha256:62291dad495e665fca0bda814e342c69952086afb0f4094d0893d357e5c78752"},
