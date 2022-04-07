@@ -200,7 +200,6 @@ filterwarnings = [
   "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
   'ignore:Dialect postgresql.psycopg2 will not make use of SQL compilation caching:',
   "ignore:UserDefinedType .* will not produce a cache key because:",
-  'ignore:The Selectable.replace_selectable\(\) method is deprecated:',
   # duckdb-engine
   'ignore:The URL\.__to_string__ method is deprecated:',
   # ibis
