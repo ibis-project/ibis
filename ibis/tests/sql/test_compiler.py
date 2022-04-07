@@ -71,7 +71,7 @@ FROM functional_alltypes"""
 
 def test_column_distinct(con):
     t = con.table('functional_alltypes')
-    expr = t[["string_col"]].distinct()
+    expr = t[t.string_col].distinct()
 
     result = Compiler.to_sql(expr)
     expected = """SELECT DISTINCT `string_col`
