@@ -194,9 +194,7 @@ class AlchemySelect(Select):
         if self.table_set is not None:
             helper = _AlchemyTableSetFormatter(self, self.table_set)
             result = helper.get_result()
-            if isinstance(result, sql.selectable.Select) and hasattr(
-                result, 'subquery'
-            ):
+            if isinstance(result, sql.selectable.Select):
                 return result.subquery()
             return result
         else:
@@ -242,7 +240,14 @@ class AlchemySelect(Select):
 
         if not has_select_star:
             if table_set is not None:
-                return result.select_from(table_set)
+                if isinstance(table_set, sa.sql.roles.DMLTableRole):
+                    return result.select_from(table_set)
+                final_froms = result.get_final_froms()
+                num_froms = len(final_froms)
+                if not num_froms:
+                    return result.select_from(table_set)
+                assert num_froms == 1, f"num_froms == {num_froms:d}"
+                return result.replace_selectable(*final_froms, table_set)
             else:
                 return result
         else:

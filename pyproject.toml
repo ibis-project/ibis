@@ -200,10 +200,9 @@ filterwarnings = [
   "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
   'ignore:Dialect postgresql.psycopg2 will not make use of SQL compilation caching:',
   "ignore:UserDefinedType .* will not produce a cache key because:",
+  'ignore:The Selectable.replace_selectable\(\) method is deprecated:',
   # duckdb-engine
   'ignore:The URL\.__to_string__ method is deprecated:',
-  # this is coming from sqlalchemy 1.4, and indicates the bug we're tracking in #3526
-  'ignore:SELECT statement has a cartesian product between FROM element\(s\):',
   # ibis
   "ignore:`database` is deprecated:FutureWarning",
   "ignore:`set_database` is deprecated:FutureWarning",
