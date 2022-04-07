@@ -58,12 +58,12 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause, full=True)
             elif jtype is ops.LeftSemiJoin:
-                result = sa.select([result]).where(
-                    sa.exists(sa.select([1]).where(onclause))
+                result = result.select().where(
+                    sa.exists(sa.select(1).where(onclause))
                 )
             elif jtype is ops.LeftAntiJoin:
-                result = sa.select([result]).where(
-                    ~(sa.exists(sa.select([1]).where(onclause)))
+                result = result.select().where(
+                    ~sa.exists(sa.select(1).where(onclause))
                 )
             else:
                 raise NotImplementedError(jtype)
