@@ -12,6 +12,7 @@ import types
 import warnings
 from numbers import Real
 from typing import (
+    IO,
     TYPE_CHECKING,
     Any,
     Hashable,
@@ -28,6 +29,8 @@ import toolz
 from ibis.config import options
 
 if TYPE_CHECKING:
+    import sqlalchemy as sa
+
     from .expr import operations as ops
     from .expr import types as ir
 
