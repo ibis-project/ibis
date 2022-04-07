@@ -192,6 +192,28 @@ def test_positional_argument_reordering():
     assert g1.goats == 0
 
 
+def test_keyword_argument_reordering():
+    class Alpha(Annotable):
+        a = IsInt
+        b = IsInt
+
+    class Beta(Alpha):
+        c = IsInt
+        d = Optional(IsInt, default=0)
+        e = IsInt
+
+    obj = Beta(1, 2, 3, 4)
+    assert obj.a == 1
+    assert obj.b == 2
+    assert obj.c == 3
+    assert obj.e == 4
+    assert obj.d == 0
+
+    obj = Beta(1, 2, 3, 4, 5)
+    assert obj.d == 5
+    assert obj.e == 4
+
+
 def test_not_copy_default():
     default = tuple()
 

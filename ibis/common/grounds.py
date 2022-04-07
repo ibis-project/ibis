@@ -103,18 +103,23 @@ class AnnotableMeta(BaseMeta):
 
         # mandatory fields without default values must preceed the optional
         # ones in the function signature, the partial ordering will be kept
-        new_params, inherited_params, optional_inherited_params = [], [], []
+        new_args, new_kwargs = [], []
+        inherited_args, inherited_kwargs = [], []
+
         for name, param in params.items():
             if name in inherited:
                 if param.default is EMPTY:
-                    inherited_params.append(param)
+                    inherited_args.append(param)
                 else:
-                    optional_inherited_params.append(param)
+                    inherited_kwargs.append(param)
             else:
-                new_params.append(param)
+                if param.default is EMPTY:
+                    new_args.append(param)
+                else:
+                    new_kwargs.append(param)
 
         signature = inspect.Signature(
-            inherited_params + new_params + optional_inherited_params
+            inherited_args + new_args + new_kwargs + inherited_kwargs
         )
 
         attribs["__slots__"] = tuple(slots)
