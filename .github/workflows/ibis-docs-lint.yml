@@ -94,8 +94,7 @@ jobs:
           app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
-      - name: store benchmark results in gh-pages
-        uses: benchmark-action/github-action-benchmark@v1
+      - uses: benchmark-action/github-action-benchmark@v1
         if: ${{ github.event_name != 'pull_request' }}
         with:
           tool: pytest
@@ -103,6 +102,7 @@ jobs:
           output-file-path: .benchmarks/output.json
           benchmark-data-dir-path: bench
           auto-push: true
+          comment-on-alert: true
 
   docs:
     runs-on: ubuntu-latest
