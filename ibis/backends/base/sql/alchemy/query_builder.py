@@ -238,20 +238,37 @@ class AlchemySelect(Select):
         if self.distinct:
             result = result.distinct()
 
-        if not has_select_star:
-            if table_set is not None:
-                if isinstance(table_set, sa.sql.roles.DMLTableRole):
-                    return result.select_from(table_set)
-                final_froms = result.get_final_froms()
-                num_froms = len(final_froms)
-                if not num_froms:
-                    return result.select_from(table_set)
-                assert num_froms == 1, f"num_froms == {num_froms:d}"
-                return result.replace_selectable(*final_froms, table_set)
-            else:
-                return result
-        else:
+        # if we're SELECT *-ing or there's no table_set (e.g., SELECT 1) then
+        # we can return early
+        if has_select_star or table_set is None:
             return result
+
+        # if we're selecting from something that isn't a subquery e.g., Select,
+        # Alias, Table
+        if not isinstance(table_set, sa.sql.Subquery):
+            return result.select_from(table_set)
+
+        final_froms = result.get_final_froms()
+        num_froms = len(final_froms)
+
+        # if the result subquery has no FROMs then we can select from the
+        # table_set since there's only a single possibility for FROM
+        if not num_froms:
+            return result.select_from(table_set)
+
+        # otherwise we expect a single FROM in `result`
+        assert num_froms == 1, f"num_froms == {num_froms:d}"
+
+        # and then we need to replace every occurrence of `result`'s `FROM`
+        # with `table_set` to handle correlated EXISTs coming from
+        # semi/anti-join
+        #
+        # previously this was `replace_selectable`, but that's deprecated so we
+        # inline its implementation here
+        #
+        # sqlalchemy suggests using the functionality in sa.sql.visitors, but
+        # that would effectively require reimplementing ClauseAdapter
+        return sa.sql.util.ClauseAdapter(table_set).traverse(result)
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING
