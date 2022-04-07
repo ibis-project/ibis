@@ -365,11 +365,8 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@pytest.mark.notyet(['sqlite'], reason='Issue #2128')
-@pytest.mark.notyet(["mysql"], reason="Issue #2131")
-@pytest.mark.notyet(["postgres"], reason="Issue #2132")
-@mark.notimpl(["datafusion", "duckdb", "pandas", "dask", "pyspark"])
-def test_topk_filter_op(backend, alltypes, df, result_fn, expected_fn):
+@mark.notimpl(["datafusion", "pandas", "dask", "pyspark"])
+def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
