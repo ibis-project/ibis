@@ -538,3 +538,32 @@ def toposort(graph: Graph) -> Iterator[ops.Node]:
 
     if any(in_degree.values()):
         raise ValueError("cycle in expression graph")
+
+
+def psql(
+    expr: ir.Expr | sa.sql.ClauseElement,
+    reindent: bool = True,
+    file: IO[str] = None,
+    **kwargs: Any,
+) -> None:
+    """Pretty-print the compiled SQL string of an expression.
+
+    Accepts both ibis and SQLAlchemy expressions.
+
+    Parameters
+    ----------
+    expr
+        Expression whose SQL will be printed
+    reindent
+        Tell `sqlparse` to reindent the SQL string
+    file
+        File to write output to
+    kwargs
+        `sqlparse.format` options
+    """
+    import sqlparse as sp
+
+    print(
+        sp.format(str(expr.compile()), reindent=reindent, **kwargs),
+        file=file,
+    )
