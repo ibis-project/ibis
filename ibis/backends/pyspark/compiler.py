@@ -1176,6 +1176,12 @@ def compile_join(t, expr, scope, timecontext, *, how):
     return left_df.join(right_df, pred_columns, how)
 
 
+@compiles(ops.Distinct)
+def compile_distinct(t, expr, scope, timecontext):
+    op = expr.op()
+    return t.translate(op.table, scope, timecontext).distinct()
+
+
 def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
     """Convert interval to integer timestamp of second
 
