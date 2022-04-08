@@ -95,14 +95,25 @@ class SQLQueryResult(TableNode, sch.HasSchema):
 
 
 def _make_distinct_join_predicates(left, right, predicates):
-    # see GH #667
-
-    # If left and right table have a common parent expression (e.g. they
-    # have different filters), must add a self-reference and make the
-    # appropriate substitution in the join predicates
+    import ibis.expr.analysis as L
 
     if left.equals(right):
+        # GH #667: If left and right table have a common parent expression,
+        # e.g. they have different filters, we need to add a self-reference and
+        # make the appropriate substitution in the join predicates
         right = right.view()
+    elif isinstance(right.op(), Join):
+        # for joins with joins on the right side we turn the right side into a
+        # view, otherwise the join tree is incorrectly flattened and tables on
+        # the right are incorrectly scoped
+        old = right
+        new = right = right.view()
+        predicates = [
+            L.sub_for(pred, [(old, new)])
+            if isinstance(pred, ir.Expr)
+            else pred
+            for pred in predicates
+        ]
 
     predicates = _clean_join_predicates(left, right, predicates)
     return left, right, predicates
@@ -112,9 +123,6 @@ def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
 
     result = []
-
-    if not isinstance(predicates, (list, tuple)):
-        predicates = [predicates]
 
     for pred in predicates:
         if isinstance(pred, tuple):
@@ -162,7 +170,7 @@ class Join(TableNode):
 
     def __init__(self, left, right, predicates, **kwargs):
         left, right, predicates = _make_distinct_join_predicates(
-            left, right, predicates
+            left, right, util.promote_list(predicates)
         )
         super().__init__(
             left=left, right=right, predicates=predicates, **kwargs
@@ -241,7 +249,7 @@ class AsOfJoin(Join):
     tolerance = rlz.optional(rlz.interval)
 
     def __init__(self, left, right, by, predicates, **kwargs):
-        by = _clean_join_predicates(left, right, by)
+        by = _clean_join_predicates(left, right, util.promote_list(by))
         super().__init__(
             left=left, right=right, by=by, predicates=predicates, **kwargs
         )
