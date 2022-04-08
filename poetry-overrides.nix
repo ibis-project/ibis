@@ -78,4 +78,8 @@ self: super:
       self.poetry-core
     ];
   });
+
+  tabulate = super.tabulate.overridePythonAttrs (_: {
+    TABULATE_INSTALL = "lib-only";
+  });
 }

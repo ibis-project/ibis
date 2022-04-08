@@ -1,5 +1,4 @@
 from decimal import Decimal
-from io import StringIO
 
 import pandas as pd
 import pandas.testing as tm
@@ -18,13 +17,6 @@ def test_embedded_identifier_quoting(alltypes):
 
     expr = t[[(t.double_col * 2).name('double(fun)')]]['double(fun)'].sum()
     expr.execute()
-
-
-def test_table_info(alltypes):
-    buf = StringIO()
-    alltypes.info(buf=buf)
-
-    assert buf.getvalue() is not None
 
 
 def test_summary_execute(alltypes):

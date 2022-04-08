@@ -16,7 +16,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Hashable,
-    Iterable,
     Iterator,
     Mapping,
     Sequence,
@@ -157,33 +156,6 @@ def is_function(v: Any) -> bool:
         Whether `v` is a function
     """
     return isinstance(v, (types.FunctionType, types.LambdaType))
-
-
-def adjoin(space: int, *lists: Iterable[str]) -> str:
-    """Glue together two sets of strings using `space`.
-
-    Parameters
-    ----------
-    space : int
-    lists : list or tuple
-
-    Returns
-    -------
-    str
-    """
-    lengths = [max(map(len, x)) + space for x in lists[:-1]]
-
-    # not the last one
-    lengths.append(max(map(len, lists[-1])))
-    max_len = max(map(len, lists))
-    chains = (
-        itertools.chain(
-            (x.ljust(length) for x in lst),
-            itertools.repeat(' ' * length, max_len - len(lst)),
-        )
-        for lst, length in zip(lists, lengths)
-    )
-    return '\n'.join(map(''.join, zip(*chains)))
 
 
 def log(msg: str) -> None:
