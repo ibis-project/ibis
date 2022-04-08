@@ -61,21 +61,16 @@ class TableSetFormatter:
         if isinstance(left, ops.Join):
             self._walk_join_tree(left)
             self.join_tables.append(self._format_table(op.right))
-            self.join_types.append(jname)
-            self.join_predicates.append(op.predicates)
         elif isinstance(right, ops.Join):
-            # When rewrites are possible at the expression IR stage, we should
-            # do them. Otherwise subqueries might be necessary in some cases
-            # here
-            raise NotImplementedError(
-                'not allowing joins on right ' 'side yet'
-            )
+            self.join_tables.append(self._format_table(op.left))
+            self._walk_join_tree(right)
         else:
             # Both tables
             self.join_tables.append(self._format_table(op.left))
             self.join_tables.append(self._format_table(op.right))
-            self.join_types.append(jname)
-            self.join_predicates.append(op.predicates)
+
+        self.join_types.append(jname)
+        self.join_predicates.append(op.predicates)
 
     # Placeholder; revisit when supporting other databases
     _non_equijoin_supported = True
