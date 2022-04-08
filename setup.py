@@ -57,9 +57,10 @@ install_requires = [
     'numpy>=1,<2',
     'pandas>=1.2.5,<2',
     'parsy>=1.3.0,<2',
-    'poetry-dynamic-versioning>=0.14.0,<0.15.0',
+    'poetry-dynamic-versioning>=0.14.0,<1',
     'pydantic>=1.9.0,<2',
     'regex>=2021.7.6',
+    'tabulate>=0.8.9,<1',
     'toolz>=0.11,<0.12',
 ]
 

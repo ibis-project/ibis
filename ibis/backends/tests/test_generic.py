@@ -1,4 +1,5 @@
 import decimal
+import io
 
 import numpy as np
 import pandas as pd
@@ -402,3 +403,13 @@ def test_dropna_table(backend, alltypes, how, subset):
 def test_select_sort_sort(alltypes):
     query = alltypes[alltypes.year, alltypes.bool_col]
     query = query.sort_by(query.year).sort_by(query.bool_col)
+
+
+def test_table_info(alltypes):
+    buf = io.StringIO()
+    alltypes.info(buf=buf)
+
+    info_str = buf.getvalue()
+    assert info_str is not None
+    assert "Nulls" in info_str
+    assert all(str(type) in info_str for type in alltypes.schema().types)

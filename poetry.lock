@@ -2024,7 +2024,7 @@ tests = ["pytest", "typeguard", "pygments", "littleutils", "cython"]
 name = "tabulate"
 version = "0.8.9"
 description = "Pretty-print tabular data"
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -2272,7 +2272,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "333bf6264e6a915b59894a03a5ca4c34766c6c98cee5846c52f3c8938a0c454b"
+content-hash = "b417719ecea1d514b253788de0a27f3634542d9d70b2891115fc10be7aac823a"
 
 [metadata.files]
 appnope = [

@@ -7,6 +7,7 @@ import operator
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
+import tabulate
 from cached_property import cached_property
 from public import public
 
@@ -850,19 +851,29 @@ class TableExpr(Expr):
         buf
             A writable buffer, defaults to stdout
         """
-        metrics = [self.count().name("nrows")]
-        for col in self.columns:
-            metrics.append(self[col].count().name(col))
+        metrics = [self[col].count().name(col) for col in self.columns]
+        metrics.append(self.count().name("nrows"))
 
-        metrics = self.aggregate(metrics).execute().loc[0]
+        schema = self.schema()
 
-        names = ["Column", "------"] + self.columns
-        types = ["Type", "----"] + [repr(x) for x in self.schema().types]
-        counts = ["Non-null #", "----------"] + [str(x) for x in metrics[1:]]
-        col_metrics = util.adjoin(2, names, types, counts)
-        result = f"Table rows: {metrics[0]}\n\n{col_metrics}"
+        *items, (_, n) = self.aggregate(metrics).execute().squeeze().items()
 
-        print(result, file=buf)
+        tabulated = tabulate.tabulate(
+            [
+                (
+                    column,
+                    schema[column],
+                    f"{n - non_nulls} ({100 * (1.0 - non_nulls / n):>3.3g}%)",
+                )
+                for column, non_nulls in items
+            ],
+            headers=["Column", "Type", "Nulls (%)"],
+            colalign=("left", "left", "right"),
+        )
+        width = tabulated[tabulated.index("\n") + 1 :].index("\n")
+        row_count = f"Rows: {n}".center(width)
+        footer_line = "-" * width
+        print("\n".join([tabulated, footer_line, row_count]), file=buf)
 
     def set_column(self, name: str, expr: ir.ValueExpr) -> TableExpr:
         """Replace an existing column with a new expression.
