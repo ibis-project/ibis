@@ -28,6 +28,15 @@ repos:
         types:
           - python
         types_or: []
+      - entry: absolufy-imports
+        name: absolufy
+        id: absolufy
+        language: python
+        files: ""
+        stages:
+          - commit
+        types:
+          - python
       - entry: isort --check
         exclude: ^$
         files: ""

@@ -13,6 +13,7 @@ clean:
 
 # format code
 fmt:
+    absolufy-imports ibis/**/*.py
     black .
     isort .
     pyupgrade --py38-plus ibis/**/*.py
