@@ -109,7 +109,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -160,7 +160,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: backend,dask,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -211,7 +211,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: backend,postgres,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -285,7 +285,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: backend,impala,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
@@ -372,7 +372,7 @@ jobs:
 
       - name: upload code coverage
         if: success()
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
