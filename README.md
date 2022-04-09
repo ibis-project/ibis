@@ -1,4 +1,4 @@
-# Ibis: Python data analysis framework for Hadoop and SQL engines
+# Ibis: Expressive analytics in Python at any scale
 
 |        Service | Status                                                                                                                                                                                                |
 | -------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -9,10 +9,9 @@
 |     Backend CI | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amaster) |
 |       Coverage | [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis)                                                                    |
 
-Ibis is a toolbox to bridge the gap between local Python environments, remote
-storage, execution systems like Hadoop components (HDFS, Impala, Hive, Spark)
-and SQL databases. Its goal is to simplify analytical workflows and make you
-more productive.
+Ibis is a Python library to help you write expressive analytics at any scale,
+small to large. Its goal is to simplify analytical workflows and make you more
+productive.
 
 Install Ibis from PyPI with:
 
@@ -26,19 +25,17 @@ or from conda-forge with
 conda install ibis-framework -c conda-forge
 ```
 
-Ibis currently provides tools for interacting with the following systems:
+Ibis provides tools for interacting with the following systems:
 
-- [Apache Impala](https://impala.apache.org/)
-- [Apache Kudu](https://kudu.apache.org/)
-- [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [MySQL](https://www.mysql.com/)
-- [SQLite](https://www.sqlite.org/)
-- [Pandas](https://pandas.pydata.org/) [DataFrames](http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe)
-- [Clickhouse](https://clickhouse.yandex)
-- [BigQuery](https://cloud.google.com/bigquery)
-- [OmniSciDB](https://www.omnisci.com)
-- [PySpark](https://spark.apache.org)
-- [Dask](https://dask.org/) (Experimental)
+- [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
+- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
+- [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
+- [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
+- [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)
+- [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
+- [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
+- [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
+- [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
+- [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
 
 Learn more about using the library at http://ibis-project.org.
