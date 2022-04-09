@@ -410,6 +410,8 @@ def test_table_info(alltypes):
     alltypes.info(buf=buf)
 
     info_str = buf.getvalue()
-    assert info_str is not None
+    schema = alltypes.schema()
+
     assert "Nulls" in info_str
-    assert all(str(type) in info_str for type in alltypes.schema().types)
+    assert all(str(type) in info_str for type in schema.types)
+    assert all(name in info_str for name in schema.names)

@@ -471,7 +471,6 @@ def test_binds_are_cast(alltypes):
     expr.execute()
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_agg_sort(alltypes):
     query = alltypes.aggregate(count=alltypes.count())
     query = query.sort_by(alltypes.year)

@@ -331,6 +331,16 @@ def mod(op, expr):
     return translate(op.left) % translate(op.right)
 
 
+@translate.register(ops.Count)
+def count(op, expr):
+    op_arg = op.arg
+    if isinstance(op_arg, ir.TableExpr):
+        arg = df.literal(1)
+    else:
+        arg = translate(op_arg)
+    return df.functions.count(arg)
+
+
 @translate.register(ops.Sum)
 def sum(op, expr):
     arg = translate(op.arg)
