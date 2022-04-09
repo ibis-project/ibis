@@ -80,7 +80,7 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - name: install ibis
-        run: poetry install --extras impala
+        run: poetry install --extras all
 
       - run: mkdir .benchmarks
 
