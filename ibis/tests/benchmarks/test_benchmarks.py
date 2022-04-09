@@ -3,10 +3,12 @@ import functools
 import inspect
 import itertools
 import string
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
+import tomli
 from packaging.version import parse as vparse
 
 import ibis
@@ -34,7 +36,7 @@ def make_t():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def t():
     return make_t()
 
@@ -67,7 +69,7 @@ def make_base(t):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def base(t):
     return make_base(t)
 
@@ -111,7 +113,7 @@ def make_large_expr(t, base):
     ]
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def large_expr(t, base):
     return make_large_expr(t, base)
 
@@ -144,8 +146,31 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
     benchmark(builtin, expr)
 
 
+_backends = tomli.loads(
+    Path(ibis.__file__).parent.parent.joinpath("pyproject.toml").read_text()
+)["tool"]["poetry"]["plugins"]["ibis.backends"]
+
+# spark is a duplicate of pyspark and pandas compilation is a no-op
+del _backends["spark"], _backends["pandas"]
+
+
+_XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark"}
+
+
 @pytest.mark.benchmark(group="compilation")
-@pytest.mark.parametrize("module", ["impala", "sqlite"])
+@pytest.mark.parametrize(
+    "module",
+    [
+        pytest.param(
+            mod,
+            marks=pytest.mark.xfail(
+                condition=mod in _XFAIL_COMPILE_BACKENDS,
+                reason=f"{mod} backend doesn't support compiling UnboundTable",
+            ),
+        )
+        for mod in _backends.keys()
+    ],
+)
 @pytest.mark.parametrize(
     "expr_fn",
     [
@@ -164,7 +189,7 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
         benchmark(mod.compile, expr)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def pt():
     n = 60_000
     data = pd.DataFrame(
@@ -360,7 +385,7 @@ def test_execute(benchmark, expression_fn, pt):
     benchmark(expr.execute)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def part():
     return ibis.table(
         dict(
@@ -373,7 +398,7 @@ def part():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def supplier():
     return ibis.table(
         dict(
@@ -389,7 +414,7 @@ def supplier():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def partsupp():
     return ibis.table(
         dict(
@@ -401,7 +426,7 @@ def partsupp():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def nation():
     return ibis.table(
         dict(n_nationkey="int64", n_regionkey="int64", n_name="string"),
@@ -409,14 +434,14 @@ def nation():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def region():
     return ibis.table(
         dict(r_regionkey="int64", r_name="string"), name="region"
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def tpc_h02(part, supplier, partsupp, nation, region):
     REGION = "EUROPE"
     SIZE = 25
@@ -470,10 +495,12 @@ def tpc_h02(part, supplier, partsupp, nation, region):
     ).limit(100)
 
 
+@pytest.mark.benchmark(group="repr")
 def test_repr_tpc_h02(benchmark, tpc_h02):
     benchmark(repr, tpc_h02)
 
 
+@pytest.mark.benchmark(group="repr")
 def test_repr_huge_union(benchmark):
     n = 10
     raw_types = [
@@ -493,23 +520,35 @@ def test_repr_huge_union(benchmark):
     benchmark(repr, expr)
 
 
+@pytest.mark.benchmark(group="node_args")
 def test_op_argnames(benchmark):
     t = ibis.table([("a", "int64")])
     expr = t[["a"]]
     benchmark(lambda op: op.argnames, expr.op())
 
 
+@pytest.mark.benchmark(group="node_args")
 def test_op_args(benchmark):
     t = ibis.table([("a", "int64")])
     expr = t[["a"]]
     benchmark(lambda op: op.args, expr.op())
 
 
+@pytest.mark.benchmark(group="datatype")
 def test_complex_datatype_parse(benchmark):
     type_str = "array<struct<a: array<string>, b: map<string, array<int64>>>>"
+    expected = dt.Array(
+        dt.Struct.from_dict(
+            dict(
+                a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))
+            )
+        )
+    )
+    assert dt.parse_type(type_str) == expected
     benchmark(dt.parse_type, type_str)
 
 
+@pytest.mark.benchmark(group="datatype")
 @pytest.mark.parametrize("func", [str, hash])
 def test_complex_datatype_builtins(benchmark, func):
     datatype = dt.Array(
@@ -522,10 +561,12 @@ def test_complex_datatype_builtins(benchmark, func):
     benchmark(func, datatype)
 
 
+@pytest.mark.benchmark(group="equality")
 def test_large_expr_equals(benchmark, tpc_h02):
     benchmark(ir.Expr.equals, tpc_h02, copy.deepcopy(tpc_h02))
 
 
+@pytest.mark.benchmark(group="datatype")
 @pytest.mark.parametrize(
     "dtypes",
     [
