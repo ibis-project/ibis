@@ -91,7 +91,13 @@ jobs:
         run: pip install -e .
 
       - name: run tests
-        run: pytest -m core
+        run: pytest -m core --cov-report=xml:coverage.xml --cov=ibis
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
   check_poetry_lock:
     runs-on: ubuntu-latest

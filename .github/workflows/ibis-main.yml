@@ -84,7 +84,13 @@ jobs:
       - uses: extractions/setup-just@v1
 
       - name: run tests
-        run: just check --junitxml=junit.xml
+        run: just ci-check -m core
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
