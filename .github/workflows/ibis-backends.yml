@@ -107,6 +107,12 @@ jobs:
         if: ${{ matrix.backend.name == 'pyspark' }}
         run: just ci-check -m ${{ matrix.backend.name }}
 
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
       - name: publish test report
         uses: actions/upload-artifact@v3
         if: success() || failure()
@@ -152,6 +158,12 @@ jobs:
       - name: run tests
         run: just ci-check -m dask --numprocesses auto
 
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: backend,dask,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
       - name: publish test report
         uses: actions/upload-artifact@v3
         if: success() || failure()
@@ -196,6 +208,12 @@ jobs:
 
       - name: run tests
         run: just ci-check -m postgres --numprocesses auto
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: backend,postgres,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
@@ -264,6 +282,12 @@ jobs:
 
       - name: run tests
         run: just ci-check -m impala
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: backend,impala,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
@@ -345,6 +369,12 @@ jobs:
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
