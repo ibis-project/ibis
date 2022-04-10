@@ -4,8 +4,7 @@ from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
-
-from .core import Expr
+from ibis.expr.types.core import Expr
 
 
 @public

@@ -7,10 +7,10 @@ from public import public
 
 if TYPE_CHECKING:
     import pandas as pd
-    from .. import types as ir
+    from ibis.expr import types as ir
 
-from .core import Expr, _binop
-from .generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
 
 
 @public

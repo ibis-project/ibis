@@ -7,8 +7,7 @@ import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
-from ..dispatch import execute_node
+from ibis.backends.pandas.dispatch import execute_node
 
 
 @execute_node.register(ops.Ln, decimal.Decimal)

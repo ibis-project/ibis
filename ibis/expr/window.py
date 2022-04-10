@@ -10,10 +10,10 @@ import pandas as pd
 import toolz
 from cached_property import cached_property
 
-from ..common.exceptions import IbisInputError
-from ..common.grounds import Comparable
-from ..expr import types as ir
-from ..util import is_iterable, promote_list
+from ibis.common.exceptions import IbisInputError
+from ibis.common.grounds import Comparable
+from ibis.expr import types as ir
+from ibis.util import is_iterable, promote_list
 
 
 def _sequence_to_tuple(x):

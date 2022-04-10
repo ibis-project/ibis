@@ -16,15 +16,17 @@ import ibis.expr.types as ir
 import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.execution import execute
-from ibis.expr.timecontext import adjust_context
-from ibis.util import frozendict, guid
-
-from .datatypes import (
+from ibis.backends.pyspark.datatypes import (
     ibis_array_dtype_to_spark_dtype,
     ibis_dtype_to_spark_dtype,
     spark_dtype,
 )
-from .timecontext import combine_time_context, filter_by_time_context
+from ibis.backends.pyspark.timecontext import (
+    combine_time_context,
+    filter_by_time_context,
+)
+from ibis.expr.timecontext import adjust_context
+from ibis.util import frozendict, guid
 
 
 class PySparkDatabaseTable(ops.DatabaseTable):

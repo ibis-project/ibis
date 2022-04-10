@@ -1,9 +1,9 @@
 from public import public
 
-from .. import datatypes as dt
-from .. import rules as rlz
-from .core import BinaryOp, UnaryOp
-from .reductions import Reduction
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr.operations.core import BinaryOp, UnaryOp
+from ibis.expr.operations.reductions import Reduction
 
 
 @public

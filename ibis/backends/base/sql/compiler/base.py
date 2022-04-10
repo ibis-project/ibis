@@ -4,8 +4,9 @@ from itertools import chain
 import toolz
 
 import ibis.util as util
-
-from .extract_subqueries import ExtractSubqueries
+from ibis.backends.base.sql.compiler.extract_subqueries import (
+    ExtractSubqueries,
+)
 
 
 class DML(abc.ABC):

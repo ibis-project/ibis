@@ -120,13 +120,17 @@ import ibis.expr.types as ir
 import ibis.expr.window as win
 import ibis.util
 from ibis.backends.base import BaseBackend
+from ibis.backends.pandas import aggcontext as agg_ctx
+from ibis.backends.pandas.dispatch import (
+    execute_literal,
+    execute_node,
+    post_execute,
+    pre_execute,
+)
+from ibis.backends.pandas.trace import trace
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
-
-from . import aggcontext as agg_ctx
-from .dispatch import execute_literal, execute_node, post_execute, pre_execute
-from .trace import trace
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)

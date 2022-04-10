@@ -1,6 +1,10 @@
-from ..common.grounds import Annotable, AnnotableMeta, Parameter  # noqa: F401
-from ..common.validators import EMPTY, Optional, Validator  # noqa: F401
-from ..util import all_of, deprecated
+from ibis.common.grounds import (  # noqa: F401
+    Annotable,
+    AnnotableMeta,
+    Parameter,
+)
+from ibis.common.validators import EMPTY, Optional, Validator  # noqa: F401
+from ibis.util import all_of, deprecated
 
 
 class _ValidatorFunction(Validator):

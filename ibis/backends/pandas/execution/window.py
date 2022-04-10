@@ -13,16 +13,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as win
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import (
-    construct_time_context_aware_series,
-    get_time_col,
-)
-from ibis.expr.typing import TimeContext
-
-from .. import aggcontext as agg_ctx
-from ..aggcontext import AggregationContext
-from ..core import (
+from ibis.backends.pandas import aggcontext as agg_ctx
+from ibis.backends.pandas.aggcontext import AggregationContext
+from ibis.backends.pandas.core import (
     compute_time_context,
     date_types,
     execute,
@@ -31,8 +24,14 @@ from ..core import (
     timedelta_types,
     timestamp_types,
 )
-from ..dispatch import execute_node, pre_execute
-from ..execution import util
+from ibis.backends.pandas.dispatch import execute_node, pre_execute
+from ibis.backends.pandas.execution import util
+from ibis.expr.scope import Scope
+from ibis.expr.timecontext import (
+    construct_time_context_aware_series,
+    get_time_col,
+)
+from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(

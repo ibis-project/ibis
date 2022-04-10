@@ -30,8 +30,8 @@ from ibis.config import options
 if TYPE_CHECKING:
     import sqlalchemy as sa
 
-    from .expr import operations as ops
-    from .expr import types as ir
+    from ibis.expr import operations as ops
+    from ibis.expr import types as ir
 
     Graph = Mapping[ops.Node, Sequence[ops.Node]]
 

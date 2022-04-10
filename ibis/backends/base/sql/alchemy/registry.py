@@ -12,9 +12,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
-
-from .database import AlchemyTable
-from .geospatial import geospatial_supported
+from ibis.backends.base.sql.alchemy.database import AlchemyTable
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 
 def variance_reduction(func_name):
@@ -147,7 +146,7 @@ def _table_array_view(t, expr):
 
 
 def _exists_subquery(t, expr):
-    from .query_builder import AlchemyCompiler
+    from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 
     op = expr.op()
     ctx = t.context

@@ -13,10 +13,13 @@ import ibis.backends.pandas.execution  # noqa: F401
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.dask.client import (
+    DaskDatabase,
+    DaskTable,
+    ibis_schema_to_dask,
+)
+from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
-
-from .client import DaskDatabase, DaskTable, ibis_schema_to_dask
-from .core import execute_and_reset
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas
@@ -46,7 +49,7 @@ class Backend(BasePandasBackend):
         >>> ibis.dask.connect(data)
         """
         # register dispatchers
-        from . import udf  # noqa: F401
+        from ibis.backends.dask import udf  # noqa: F401
 
         super().do_connect(dictionary)
 

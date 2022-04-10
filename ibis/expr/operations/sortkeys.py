@@ -1,10 +1,10 @@
 from public import public
 
-from ... import util
-from ...common import exceptions as com
-from .. import rules as rlz
-from .. import types as ir
-from .core import Node
+from ibis import util
+from ibis.common import exceptions as com
+from ibis.expr import rules as rlz
+from ibis.expr import types as ir
+from ibis.expr.operations.core import Node
 
 
 def _to_sort_key(key, *, table=None):

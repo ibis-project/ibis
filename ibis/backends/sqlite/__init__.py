@@ -24,9 +24,8 @@ if TYPE_CHECKING:
 
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
-from . import udf
-from .compiler import SQLiteCompiler
+from ibis.backends.sqlite import udf
+from ibis.backends.sqlite.compiler import SQLiteCompiler
 
 
 class Backend(BaseAlchemyBackend):

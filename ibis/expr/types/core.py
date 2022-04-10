@@ -7,21 +7,21 @@ from typing import TYPE_CHECKING, Any, Hashable, Mapping
 from cached_property import cached_property
 from public import public
 
-from ... import config
-from ...common.exceptions import (
+from ibis import config
+from ibis.common.exceptions import (
     ExpressionError,
     IbisError,
     IbisTypeError,
     TranslationError,
 )
-from ...expr.typing import TimeContext
-from ...util import UnnamedMarker, deprecated
+from ibis.expr.typing import TimeContext
+from ibis.util import UnnamedMarker, deprecated
 
 if TYPE_CHECKING:
-    from ...backends.base import BaseBackend
-    from .. import operations as ops
-    from .. import types as ir
-    from .generic import ValueExpr
+    from ibis.backends.base import BaseBackend
+    from ibis.expr import operations as ops
+    from ibis.expr import types as ir
+    from ibis.expr.types.generic import ValueExpr
 
 
 @public

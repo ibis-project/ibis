@@ -5,13 +5,15 @@ import dask.dataframe.groupby as ddgb
 import numpy as np
 
 import ibis.expr.operations as ops
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
+    TypeRegistrationDict,
+    register_types_to_dispatcher,
+)
 from ibis.backends.pandas.execution.arrays import (
     execute_array_index,
     execute_array_length,
 )
-
-from ..dispatch import execute_node
-from .util import TypeRegistrationDict, register_types_to_dispatcher
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.ArrayLength: [((dd.Series,), execute_array_length)],

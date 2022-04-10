@@ -4,7 +4,7 @@ import pytest
 from pandas import testing as tm
 from pytest import param
 
-from ..aggcontext import Summarize, window_agg_udf
+from ibis.backends.pandas.aggcontext import Summarize, window_agg_udf
 
 df = pd.DataFrame(
     {

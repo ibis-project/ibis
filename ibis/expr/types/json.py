@@ -1,7 +1,7 @@
 from public import public
 
-from .binary import BinaryColumn, BinaryScalar, BinaryValue
-from .strings import StringColumn, StringScalar, StringValue
+from ibis.expr.types.binary import BinaryColumn, BinaryScalar, BinaryValue
+from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
 
 
 @public

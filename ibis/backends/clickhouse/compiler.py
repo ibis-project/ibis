@@ -8,9 +8,8 @@ from ibis.backends.base.sql.compiler import (
     SelectBuilder,
     TableSetFormatter,
 )
-
-from ..base.sql.compiler.query_builder import Union
-from .registry import operation_registry
+from ibis.backends.base.sql.compiler.query_builder import Union
+from ibis.backends.clickhouse.registry import operation_registry
 
 
 class ClickhouseUnion(Union):

@@ -20,7 +20,7 @@ from typing import Any
 
 import fsspec
 
-from ... import util
+from ibis import util
 
 
 @util.deprecated(

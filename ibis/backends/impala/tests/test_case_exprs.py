@@ -3,8 +3,7 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.impala.compiler import ImpalaCompiler
-
-from .conftest import translate
+from ibis.backends.impala.tests.conftest import translate
 
 
 @pytest.fixture(scope="module")

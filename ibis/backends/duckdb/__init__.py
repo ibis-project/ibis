@@ -15,9 +15,8 @@ if TYPE_CHECKING:
 
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
-from .compiler import DuckDBSQLCompiler
-from .datatypes import parse_type
+from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
+from ibis.backends.duckdb.datatypes import parse_type
 
 
 class Backend(BaseAlchemyBackend):

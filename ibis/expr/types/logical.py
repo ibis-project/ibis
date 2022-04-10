@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .. import types as ir
+    from ibis.expr import types as ir
 
 from public import public
 
-from .core import _binop
-from .numeric import NumericColumn, NumericScalar, NumericValue
+from ibis.expr.types.core import _binop
+from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
 
 @public
@@ -49,31 +49,31 @@ class BooleanValue(NumericValue):
         return ibis.case().when(self, true_expr).else_(false_expr).end()
 
     def __and__(self, other: BooleanValue) -> BooleanValue:
-        from .. import operations as ops
-        from .. import rules as rlz
+        from ibis.expr import operations as ops
+        from ibis.expr import rules as rlz
 
         return _binop(ops.And, self, rlz.any(other))
 
     __rand__ = __and__
 
     def __or__(self, other: BooleanValue) -> BooleanValue:
-        from .. import operations as ops
-        from .. import rules as rlz
+        from ibis.expr import operations as ops
+        from ibis.expr import rules as rlz
 
         return _binop(ops.Or, self, rlz.any(other))
 
     __ror__ = __or__
 
     def __xor__(self, other: BooleanValue) -> BooleanValue:
-        from .. import operations as ops
-        from .. import rules as rlz
+        from ibis.expr import operations as ops
+        from ibis.expr import rules as rlz
 
         return _binop(ops.Xor, self, rlz.any(other))
 
     __rxor__ = __xor__
 
     def __invert__(self) -> BooleanValue:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Not(self).to_expr()
 
@@ -86,31 +86,31 @@ class BooleanScalar(NumericScalar, BooleanValue):
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
     def any(self) -> BooleanValue:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Any(self).to_expr()
 
     def notany(self) -> BooleanValue:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.NotAny(self).to_expr()
 
     def all(self) -> BooleanScalar:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.All(self).to_expr()
 
     def notall(self) -> BooleanScalar:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.NotAll(self).to_expr()
 
     def cumany(self) -> BooleanColumn:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.CumulativeAny(self).to_expr()
 
     def cumall(self) -> BooleanColumn:
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.CumulativeAll(self).to_expr()

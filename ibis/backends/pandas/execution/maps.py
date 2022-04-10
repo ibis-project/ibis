@@ -6,8 +6,7 @@ import pandas as pd
 import toolz
 
 import ibis.expr.operations as ops
-
-from ..dispatch import execute_node
+from ibis.backends.pandas.dispatch import execute_node
 
 
 @execute_node.register(ops.MapLength, pd.Series)

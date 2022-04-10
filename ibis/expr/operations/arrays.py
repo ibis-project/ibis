@@ -1,10 +1,10 @@
 from public import public
 
-from ...common import exceptions as com
-from ...common.validators import immutable_property
-from .. import datatypes as dt
-from .. import rules as rlz
-from .core import UnaryOp, ValueOp
+from ibis.common import exceptions as com
+from ibis.common.validators import immutable_property
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr.operations.core import UnaryOp, ValueOp
 
 
 @public

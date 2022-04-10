@@ -10,9 +10,8 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
 import ibis.util
-
-from ..core import integer_types, scalar_types
-from ..dispatch import execute_node
+from ibis.backends.pandas.core import integer_types, scalar_types
+from ibis.backends.pandas.dispatch import execute_node
 
 
 @execute_node.register(ops.StringLength, pd.Series)

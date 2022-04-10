@@ -115,6 +115,13 @@ from multipledispatch import Dispatcher
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.dask.dispatch import (
+    execute_literal,
+    execute_node,
+    post_execute,
+    pre_execute,
+)
+from ibis.backends.dask.trace import trace
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.core import (
     compute_time_context,
@@ -124,9 +131,6 @@ from ibis.backends.pandas.core import (
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
 from ibis.expr.typing import TimeContext
-
-from .dispatch import execute_literal, execute_node, post_execute, pre_execute
-from .trace import trace
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 

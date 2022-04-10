@@ -1,6 +1,6 @@
 import pytest
 
-from .conftest import BackendTest
+from ibis.backends.datafusion.tests.conftest import BackendTest
 
 pytest.importorskip("datafusion")
 

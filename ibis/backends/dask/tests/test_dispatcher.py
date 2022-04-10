@@ -4,7 +4,7 @@ import pytest
 from multipledispatch import Dispatcher
 from multipledispatch.conflict import AmbiguityWarning
 
-from ..trace import TwoLevelDispatcher
+from ibis.backends.dask.trace import TwoLevelDispatcher
 
 
 class A1:

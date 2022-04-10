@@ -12,8 +12,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-
-from .client import PandasDatabase, PandasTable, ibis_schema_to_pandas
+from ibis.backends.pandas.client import (
+    PandasDatabase,
+    PandasTable,
+    ibis_schema_to_pandas,
+)
 
 
 class BasePandasBackend(BaseBackend):
@@ -47,8 +50,8 @@ class BasePandasBackend(BaseBackend):
         >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
         """
         # register dispatchers
-        from . import execution  # noqa F401
-        from . import udf  # noqa F401
+        from ibis.backends.pandas import execution  # noqa F401
+        from ibis.backends.pandas import udf  # noqa F401
 
         self.dictionary = dictionary
         self.schemas: MutableMapping[str, sch.Schema] = {}
@@ -180,7 +183,7 @@ class Backend(BasePandasBackend):
     table_class = PandasTable
 
     def execute(self, query, params=None, limit='default', **kwargs):
-        from .core import execute_and_reset
+        from ibis.backends.pandas.core import execute_and_reset
 
         if limit != 'default':
             raise ValueError(

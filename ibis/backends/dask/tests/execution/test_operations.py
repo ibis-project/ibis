@@ -14,7 +14,7 @@ dd = pytest.importorskip("dask.dataframe")
 
 from dask.dataframe.utils import tm  # noqa: E402
 
-from ...execution import execute  # noqa: E402
+from ibis.backends.dask.execution import execute  # noqa: E402
 
 
 def test_table_column(t, df):

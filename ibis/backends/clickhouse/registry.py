@@ -6,8 +6,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-
-from .identifiers import quote_identifier
+from ibis.backends.clickhouse.identifiers import quote_identifier
 
 # TODO(kszucs): should inherit operation registry from the base compiler
 
@@ -20,7 +19,7 @@ def _alias(translator, expr):
 
 
 def _cast(translator, expr):
-    from .client import ClickhouseDataType
+    from ibis.backends.clickhouse.client import ClickhouseDataType
 
     op = expr.op()
     arg, target = op.args

@@ -2,10 +2,10 @@ from types import FunctionType, LambdaType
 
 from public import public
 
-from .. import rules as rlz
-from .analytic import AnalyticOp
-from .core import ValueOp, distinct_roots
-from .reductions import Reduction
+from ibis.expr import rules as rlz
+from ibis.expr.operations.analytic import AnalyticOp
+from ibis.expr.operations.core import ValueOp, distinct_roots
+from ibis.expr.operations.reductions import Reduction
 
 
 class VectorizedUDF(ValueOp):

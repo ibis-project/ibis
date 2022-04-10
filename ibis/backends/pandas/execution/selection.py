@@ -14,13 +14,12 @@ from toolz import compose, concat, concatv, first, unique
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.pandas.core import execute
+from ibis.backends.pandas.dispatch import execute_node
+from ibis.backends.pandas.execution import constants, util
+from ibis.backends.pandas.execution.util import coerce_to_output
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
-
-from ..core import execute
-from ..dispatch import execute_node
-from ..execution import constants, util
-from ..execution.util import coerce_to_output
 
 compute_projection = Dispatcher(
     'compute_projection',

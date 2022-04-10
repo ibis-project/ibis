@@ -5,15 +5,15 @@ from abc import abstractmethod
 import toolz
 from public import public
 
-from ...common.exceptions import ExpressionError
-from ...common.grounds import Comparable
-from ...common.validators import immutable_property
-from ...util import UnnamedMarker, is_iterable
-from .. import rules as rlz
-from .. import types as ir
-from ..rules import Shape
-from ..schema import Schema
-from ..signature import Annotable
+from ibis.common.exceptions import ExpressionError
+from ibis.common.grounds import Comparable
+from ibis.common.validators import immutable_property
+from ibis.expr import rules as rlz
+from ibis.expr import types as ir
+from ibis.expr.rules import Shape
+from ibis.expr.schema import Schema
+from ibis.expr.signature import Annotable
+from ibis.util import UnnamedMarker, is_iterable
 
 
 @public

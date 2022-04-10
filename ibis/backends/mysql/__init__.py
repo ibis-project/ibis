@@ -13,9 +13,8 @@ import sqlalchemy.dialects.mysql as mysql
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
-from .compiler import MySQLCompiler
-from .datatypes import _type_from_cursor_info
+from ibis.backends.mysql.compiler import MySQLCompiler
+from ibis.backends.mysql.datatypes import _type_from_cursor_info
 
 
 class Backend(BaseAlchemyBackend):

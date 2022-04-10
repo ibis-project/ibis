@@ -12,6 +12,14 @@ from toolz import concatv
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.dask.core import execute
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
+    add_partitioned_sorted_column,
+    coerce_to_output,
+    compute_sorted_frame,
+    is_row_order_preserving,
+)
 from ibis.backends.pandas.execution.selection import (
     build_df_from_selection,
     compute_projection,
@@ -22,15 +30,6 @@ from ibis.backends.pandas.execution.selection import (
 from ibis.backends.pandas.execution.util import get_join_suffix_for_op
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
-
-from ..core import execute
-from ..dispatch import execute_node
-from ..execution.util import (
-    add_partitioned_sorted_column,
-    coerce_to_output,
-    compute_sorted_frame,
-    is_row_order_preserving,
-)
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, dd.DataFrame)

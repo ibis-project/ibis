@@ -11,10 +11,13 @@ import ibis
 import ibis.config
 import ibis.expr.schema as sch
 from ibis.backends.base.sql import BaseSQLBackend
+from ibis.backends.clickhouse.client import (
+    ClickhouseDataType,
+    ClickhouseTable,
+    fully_qualified_re,
+)
+from ibis.backends.clickhouse.compiler import ClickhouseCompiler
 from ibis.config import options
-
-from .client import ClickhouseDataType, ClickhouseTable, fully_qualified_re
-from .compiler import ClickhouseCompiler
 
 _default_compression: str | bool
 

@@ -9,8 +9,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
 )
 from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
-
-from .registry import operation_registry
+from ibis.backends.postgres.registry import operation_registry
 
 
 class PostgresUDFNode(ops.ValueOp):

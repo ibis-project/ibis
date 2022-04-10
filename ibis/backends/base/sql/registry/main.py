@@ -3,9 +3,16 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-
-from . import aggregate, binary_infix, case, helpers, string, timestamp, window
-from .literal import literal, null_literal
+from ibis.backends.base.sql.registry import (
+    aggregate,
+    binary_infix,
+    case,
+    helpers,
+    string,
+    timestamp,
+    window,
+)
+from ibis.backends.base.sql.registry.literal import literal, null_literal
 
 
 def alias(translator, expr):

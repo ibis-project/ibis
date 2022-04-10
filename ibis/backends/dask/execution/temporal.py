@@ -8,6 +8,12 @@ from pandas import Timedelta
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 from ibis.backends.pandas.core import (
     date_types,
     integer_types,
@@ -38,13 +44,6 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_interval_add_series_delta,
     execute_timestamp_interval_add_series_series,
     execute_timestamp_sub_series_timedelta,
-)
-
-from ..dispatch import execute_node
-from .util import (
-    TypeRegistrationDict,
-    make_selected_obj,
-    register_types_to_dispatcher,
 )
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {

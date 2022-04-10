@@ -1,8 +1,7 @@
 import pytest
 
 import ibis
-
-from .conftest import translate
+from ibis.backends.impala.tests.conftest import translate
 
 
 @pytest.fixture(scope="module")

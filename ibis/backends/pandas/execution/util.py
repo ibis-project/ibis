@@ -7,13 +7,12 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.util
+from ibis.backends.pandas.core import execute
+from ibis.backends.pandas.execution import constants
 from ibis.expr import operations as ops
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 from ibis.udf.vectorized import _coerce_to_dataframe
-
-from ..core import execute
-from ..execution import constants
 
 
 def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):

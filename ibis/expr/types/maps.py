@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
-from .generic import AnyColumn, AnyScalar, AnyValue, literal
-from .typing import K, V
+from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue, literal
+from ibis.expr.types.typing import K, V
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt

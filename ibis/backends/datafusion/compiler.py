@@ -8,8 +8,7 @@ import pyarrow as pa
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-
-from .datatypes import to_pyarrow_type
+from ibis.backends.datafusion.datatypes import to_pyarrow_type
 
 
 @functools.singledispatch

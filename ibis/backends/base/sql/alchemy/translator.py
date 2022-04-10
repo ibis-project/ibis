@@ -2,10 +2,15 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base.sql.alchemy.datatypes import (
+    ibis_type_to_sqla,
+    to_sqla_type,
+)
+from ibis.backends.base.sql.alchemy.registry import (
+    fixed_arity,
+    sqlalchemy_operation_registry,
+)
 from ibis.backends.base.sql.compiler import ExprTranslator, QueryContext
-
-from .datatypes import ibis_type_to_sqla, to_sqla_type
-from .registry import fixed_arity, sqlalchemy_operation_registry
 
 
 class AlchemyContext(QueryContext):

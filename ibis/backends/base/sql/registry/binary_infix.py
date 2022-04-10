@@ -1,4 +1,4 @@
-from . import helpers
+from ibis.backends.base.sql.registry import helpers
 
 
 def binary_infix_op(infix_sym):

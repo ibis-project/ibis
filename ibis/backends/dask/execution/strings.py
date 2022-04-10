@@ -9,6 +9,12 @@ from pandas import isnull
 
 import ibis
 import ibis.expr.operations as ops
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 from ibis.backends.pandas.core import integer_types, scalar_types
 from ibis.backends.pandas.execution.strings import (
     execute_series_join_scalar_sep,
@@ -35,13 +41,6 @@ from ibis.backends.pandas.execution.strings import (
     execute_string_upper,
     execute_substring_int_int,
     haystack_to_series_of_lists,
-)
-
-from ..dispatch import execute_node
-from .util import (
-    TypeRegistrationDict,
-    make_selected_obj,
-    register_types_to_dispatcher,
 )
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {

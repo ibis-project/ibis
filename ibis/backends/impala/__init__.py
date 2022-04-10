@@ -36,20 +36,23 @@ from ibis.backends.base.sql.ddl import (
     fully_qualified_re,
     is_fully_qualified,
 )
-from ibis.config import options
-
-from . import ddl, udf
-from .client import ImpalaConnection, ImpalaDatabase, ImpalaTable
-from .compat import HS2Error, ImpylaError
-from .compiler import ImpalaCompiler
-from .hdfs import hdfs_connect  # noqa: F401
-from .pandas_interop import DataFrameWriter
-from .udf import (  # noqa F408
+from ibis.backends.impala import ddl, udf
+from ibis.backends.impala.client import (
+    ImpalaConnection,
+    ImpalaDatabase,
+    ImpalaTable,
+)
+from ibis.backends.impala.compat import HS2Error, ImpylaError
+from ibis.backends.impala.compiler import ImpalaCompiler
+from ibis.backends.impala.hdfs import hdfs_connect  # noqa: F401
+from ibis.backends.impala.pandas_interop import DataFrameWriter
+from ibis.backends.impala.udf import (  # noqa F408
     aggregate_function,
     scalar_function,
     wrap_uda,
     wrap_udf,
 )
+from ibis.config import options
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
@@ -1260,7 +1263,7 @@ class Backend(BaseSQLBackend):
         database
             Database name
         """
-        from .metadata import parse_metadata
+        from ibis.backends.impala.metadata import parse_metadata
 
         stmt = self._table_command(
             'DESCRIBE FORMATTED', name, database=database

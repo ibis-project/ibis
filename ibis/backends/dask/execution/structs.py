@@ -6,9 +6,8 @@ import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
-
-from ..dispatch import execute_node
-from .util import make_selected_obj
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import make_selected_obj
 
 
 @execute_node.register(ops.StructField, dd.Series)

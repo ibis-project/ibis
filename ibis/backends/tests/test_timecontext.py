@@ -5,9 +5,11 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+from ibis.backends.tests.test_vectorized_udf import (
+    calc_mean,
+    create_demean_struct_udf,
+)
 from ibis.config import option_context
-
-from .test_vectorized_udf import calc_mean, create_demean_struct_udf
 
 pytestmark = pytest.mark.notimpl(
     [

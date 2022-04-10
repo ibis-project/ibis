@@ -5,19 +5,19 @@ import operator
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 if TYPE_CHECKING:
-    from .. import types as ir
+    from ibis.expr import types as ir
 
 from public import public
 
-from ... import util
-from .core import _binop
-from .generic import AnyColumn, AnyScalar, AnyValue
+from ibis import util
+from ibis.expr.types.core import _binop
+from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
 
 
 @public
 class StringValue(AnyValue):
     def __getitem__(self, key: slice | int | ir.IntegerValue) -> StringValue:
-        from .. import types as ir
+        from ibis.expr import types as ir
 
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step

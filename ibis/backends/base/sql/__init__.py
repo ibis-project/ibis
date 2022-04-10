@@ -8,9 +8,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base import BaseBackend
+from ibis.backends.base.sql.compiler import Compiler
 from ibis.expr.typing import TimeContext
-
-from .compiler import Compiler
 
 __all__ = [
     'BaseSQLBackend',
