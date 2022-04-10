@@ -9,6 +9,15 @@ import ibis.util as util
 
 from .identifiers import quote_identifier
 
+# TODO(kszucs): should inherit operation registry from the base compiler
+
+
+def _alias(translator, expr):
+    # just compile the underlying argument because the naming is handled
+    # by the translator for the top level expression
+    op = expr.op()
+    return translator.translate(op.arg)
+
 
 def _cast(translator, expr):
     from .client import ClickhouseDataType
@@ -624,6 +633,7 @@ _unary_ops = {ops.Negate: _negate, ops.Not: _not}
 
 
 operation_registry = {
+    ops.Alias: _alias,
     # Unary operations
     ops.TypeOf: _unary('toTypeName'),
     ops.IsNan: _unary('isNaN'),

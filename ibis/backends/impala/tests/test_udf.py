@@ -143,13 +143,10 @@ def test_udf_primitive_output_types(ty, value, column, table):
     ibis_type = dt.validate_type(ty)
 
     expr = func(value)
-    assert type(expr) == type(  # noqa: E501, E721
-        ibis_type.scalar_type()(expr.op())
-    )
+    assert type(expr) == ibis_type.scalar
+
     expr = func(table[column])
-    assert type(expr) == type(  # noqa: E501, E721
-        ibis_type.column_type()(expr.op())
-    )
+    assert type(expr) == ibis_type.column
 
 
 @pytest.mark.parametrize(
@@ -170,17 +167,16 @@ def test_udf_primitive_output_types(ty, value, column, table):
         ),
     ],
 )
-def test_uda_primitive_output_types(ty, value, table):
+def test_uda_primitive_output_types(ty, value):
     func = _register_uda([ty], ty, 'test')
 
     ibis_type = dt.validate_type(ty)
 
     expr1 = func(value)
+    assert isinstance(expr1, ibis_type.scalar)
+
     expr2 = func(value)
-    expected_type1 = type(ibis_type.scalar_type()(expr1.op()))
-    expected_type2 = type(ibis_type.scalar_type()(expr2.op()))
-    assert isinstance(expr1, expected_type1)
-    assert isinstance(expr2, expected_type2)
+    assert isinstance(expr2, ibis_type.scalar)
 
 
 def test_decimal(dec):

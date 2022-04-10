@@ -95,7 +95,9 @@ def cumulative_to_window(translator, expr, window):
 
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
-    new_expr = expr._factory(new_op, name=expr._name)
+    new_expr = new_op.to_expr()
+    if expr.has_name():
+        new_expr = new_expr.name(expr.get_name())
 
     if type(new_op) in translator._rewrites:
         new_expr = translator._rewrites[type(new_op)](new_expr)

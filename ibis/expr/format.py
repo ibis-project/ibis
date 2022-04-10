@@ -577,6 +577,11 @@ def _fmt_value_value_op(op: ops.ValueOp, *, aliases: Aliases) -> str:
 
 
 @fmt_value.register
+def _fmt_value_alias(op: ops.Alias, *, aliases: Aliases) -> str:
+    return fmt_value(op.arg, aliases=aliases)
+
+
+@fmt_value.register
 def _fmt_value_table_column(op: ops.TableColumn, *, aliases: Aliases) -> str:
     return f"{aliases[op.table.op()]}.{op.name}"
 
@@ -591,6 +596,13 @@ def _fmt_value_sort_key(op: ops.SortKey, *, aliases: Aliases) -> str:
     expr = fmt_value(op.expr, aliases=aliases)
     sort_direction = " asc" if op.ascending else "desc"
     return f"{sort_direction}|{expr}"
+
+
+@fmt_value.register
+def _fmt_topk(op: ops.TopK, *, aliases: Aliases) -> str:
+    arg = fmt_value(op.arg, aliases=aliases)
+    by = fmt_value(op.by, aliases=aliases)
+    return f"TopK({arg}, {op.k}, {by})"
 
 
 @fmt_value.register

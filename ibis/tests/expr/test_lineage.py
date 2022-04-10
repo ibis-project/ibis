@@ -104,9 +104,11 @@ def test_lineage(companies):
         mutated.bucket,
         mutated,
         bucket.name('bucket'),
+        bucket,
         companies.funding_total_usd,
         companies,
     ]
+    assert len(results) == len(expected)
     for r, e in zip(results, expected):
         assert_equal(r, e)
 
@@ -115,9 +117,11 @@ def test_lineage(companies):
         filtered.bucket,
         filtered,
         bucket.name('bucket'),
+        bucket,
         companies.funding_total_usd,
         companies,
     ]
+    assert len(results) == len(expected)
     for r, e in zip(results, expected):
         assert_equal(r, e)
 
@@ -128,9 +132,11 @@ def test_lineage(companies):
         filtered.bucket,
         filtered,
         bucket.name('bucket'),
+        bucket,
         companies.funding_total_usd,
         companies,
     ]
+    assert len(results) == len(expected)
     for r, e in zip(results, expected):
         assert_equal(r, e)
 
@@ -171,9 +177,7 @@ def test_lineage_join(companies, rounds):
         rounds.company_city,
         rounds.raised_amount_usd,
     ]
-    perc_raised = (expr.raised_amount_usd / expr.funding_total_usd).name(
-        'perc_raised'
-    )
+    perc_raised = expr.raised_amount_usd / expr.funding_total_usd
     results = list(lin.lineage(perc_raised))
 
     expected = [
@@ -183,7 +187,6 @@ def test_lineage_join(companies, rounds):
         rounds.raised_amount_usd,
         rounds,
         expr.funding_total_usd,
-        # expr,  # *could* appear here as well, but we've already traversed it
         companies.funding_total_usd,
         companies,
     ]

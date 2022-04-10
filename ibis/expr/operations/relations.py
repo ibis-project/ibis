@@ -8,10 +8,11 @@ from public import public
 
 from ... import util
 from ...common import exceptions as com
+from .. import datatypes as dt
 from .. import rules as rlz
 from .. import schema as sch
 from .. import types as ir
-from .core import Node, distinct_roots
+from .core import Node, ValueOp, distinct_roots
 from .sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
@@ -24,11 +25,10 @@ def genname():
 
 @public
 class TableNode(Node):
+    output_type = ir.TableExpr
+
     def get_type(self, name):
         return self.schema[name]
-
-    def output_type(self):
-        return ir.TableExpr
 
     def aggregate(self, this, metrics, by=None, having=None):
         return Aggregation(this, metrics, by=by, having=having)
@@ -70,6 +70,12 @@ class PhysicalTable(TableNode, sch.HasSchema):
 class UnboundTable(PhysicalTable):
     schema = rlz.instance_of(sch.Schema)
     name = rlz.optional(rlz.instance_of(str), default=genname)
+
+    def has_resolved_name(self):
+        return True
+
+    def resolve_name(self):
+        return self.name
 
 
 @public
@@ -746,12 +752,13 @@ class Distinct(TableNode, sch.HasSchema):
 
 
 @public
-class ExistsSubquery(Node):
+class ExistsSubquery(ValueOp):
     foreign_table = rlz.table
     predicates = rlz.tuple_of(rlz.boolean)
 
-    def output_type(self):
-        return ir.ExistsExpr
+    output_dtype = dt.boolean
+    output_shape = rlz.Shape.COLUMNAR
+    output_type = ir.ExistsExpr
 
 
 @public
@@ -759,8 +766,7 @@ class NotExistsSubquery(Node):
     foreign_table = rlz.table
     predicates = rlz.tuple_of(rlz.boolean)
 
-    def output_type(self):
-        return ir.ExistsExpr
+    output_type = ir.ExistsExpr
 
 
 @public

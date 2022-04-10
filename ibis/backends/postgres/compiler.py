@@ -3,6 +3,7 @@ from sqlalchemy.dialects import postgresql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
@@ -13,7 +14,7 @@ from .registry import operation_registry
 
 
 class PostgresUDFNode(ops.ValueOp):
-    pass
+    output_shape = rlz.shape_like("args")
 
 
 class PostgreSQLExprTranslator(AlchemyExprTranslator):

@@ -21,7 +21,6 @@ def test_operation():
 
 def test_ops_smoke():
     expr = ir.literal(3)
-    ops.UnaryOp(expr)
     ops.Cast(expr, to='int64')
     ops.TypeOf(arg=2)
     ops.Negate(4)
@@ -90,7 +89,8 @@ def test_instance_of_operation():
 def test_array_input():
     class MyOp(ops.ValueOp):
         value = rlz.value(dt.Array(dt.double))
-        output_type = rlz.typeof('value')
+        output_dtype = rlz.dtype_like('value')
+        output_shape = rlz.shape_like('value')
 
     raw_value = [1.0, 2.0, 3.0]
     op = MyOp(raw_value)
@@ -104,6 +104,7 @@ def test_custom_table_expr():
         pass
 
     class SpecialTable(ops.DatabaseTable):
+        @property
         def output_type(self):
             return MyTableExpr
 

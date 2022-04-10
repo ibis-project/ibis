@@ -157,6 +157,13 @@ def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
+@execute_node.register(ops.Alias, object)
+def execute_alias_series(op, _, **kwargs):
+    # just compile the underlying argument because the naming is handled
+    # by the translator for the top level expression
+    return execute(op.arg, **kwargs)
+
+
 @execute_node.register(ops.Arbitrary, dd.Series, (dd.Series, type(None)))
 def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     """

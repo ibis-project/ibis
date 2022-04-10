@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
-
 import pytest
 
 import ibis
@@ -36,11 +34,6 @@ def schema():
         ('j', 'date'),
         ('k', 'time'),
     ]
-
-
-@pytest.fixture
-def schema_dict(schema):
-    return collections.OrderedDict(schema)
 
 
 @pytest.fixture

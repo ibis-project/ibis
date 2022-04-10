@@ -89,11 +89,11 @@ class Substitutor:
             except IbisTypeError:
                 return expr
 
-            try:
-                name = expr.get_name()
-            except ExpressionError:
-                name = None
-            return expr._factory(new_node, name=name)
+            new_expr = type(expr)(new_node)
+            if expr.has_name():
+                new_expr = new_expr.name(expr.get_name())
+
+            return new_expr
 
 
 class ScalarAggregate:
@@ -144,13 +144,12 @@ class ScalarAggregate:
                 subbed_arg = self._visit(arg)
             subbed_args.append(subbed_arg)
 
-        subbed_node = type(node)(*subbed_args)
-        if isinstance(expr, ir.ValueExpr):
-            result = expr._factory(subbed_node, name=expr._name)
-        else:
-            result = expr._factory(subbed_node)
+        new_op = type(node)(*subbed_args)
+        new_expr = new_op.to_expr()
+        if expr.has_name():
+            new_expr = new_expr.name(name=expr.get_name())
 
-        return result
+        return new_expr
 
     def _key(self, expr):
         return repr(expr.op())
@@ -278,10 +277,10 @@ class ExprSimplifier:
             return expr
 
         lifted_node = type(node)(*lifted_args)
-        if isinstance(expr, ir.ValueExpr):
-            result = expr._factory(lifted_node, name=expr._name)
-        else:
-            result = expr._factory(lifted_node)
+
+        result = type(expr)(lifted_node)
+        if isinstance(expr, ir.ValueExpr) and expr.has_name():
+            result = result.name(expr.get_name())
 
         return result
 
@@ -351,7 +350,7 @@ class ExprSimplifier:
 
             if can_lift and not block:
                 lifted_node = ops.TableColumn(lifted_root, node.name)
-                result = expr._factory(lifted_node, name=expr._name)
+                result = type(expr)(lifted_node)
 
         return result
 
@@ -532,7 +531,7 @@ def get_mutation_exprs(
         is_first_overwrite = True
         expr_contains_overwrite = False
         if isinstance(expr, ir.DestructColumn):
-            if expr.get_name():
+            if expr.has_name():
                 raise ExpressionError(
                     f"Cannot name a destruct column: {expr.get_name()}"
                 )
@@ -762,9 +761,8 @@ def windowize_function(expr, w=None):
             walked_child = _walk(window_arg, w)
 
             if walked_child is not window_arg:
-                walked = x._factory(
-                    ops.WindowOp(walked_child, window_w), name=x._name
-                )
+                op = ops.WindowOp(walked_child, window_w)
+                walked = op.to_expr().name(x.get_name())
             else:
                 walked = x
 
@@ -797,7 +795,10 @@ def windowize_function(expr, w=None):
 
         if not unchanged:
             new_op = type(op)(*windowed_args)
-            return x._factory(new_op, name=x._name)
+            expr = new_op.to_expr()
+            if x.has_name():
+                expr = expr.name(x.get_name())
+            return expr
         else:
             return x
 

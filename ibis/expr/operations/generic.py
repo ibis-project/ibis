@@ -3,20 +3,21 @@ from __future__ import annotations
 import datetime
 import decimal
 import enum
-import functools
 import itertools
 import uuid
+from operator import attrgetter
 
 import numpy as np
 import pandas as pd
 from public import public
 
 from ...common import exceptions as com
+from ...common.validators import immutable_property
 from ...util import frozendict
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from .core import UnaryOp, ValueOp, distinct_roots
+from .core import Node, UnaryOp, ValueOp, distinct_roots
 
 try:
     import shapely
@@ -32,6 +33,8 @@ class TableColumn(ValueOp):
 
     table = rlz.table
     name = rlz.instance_of((str, int))
+
+    output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, table, name):
         schema = table.schema()
@@ -58,18 +61,17 @@ class TableColumn(ValueOp):
     def root_tables(self):
         return self.table.op().root_tables()
 
-    def _make_expr(self):
-        dtype = self.table._get_type(self.name)
-        klass = dtype.column_type()
-        return klass(self, name=self.name)
+    @property
+    def output_dtype(self):
+        return self.table._get_type(self.name)
 
 
 @public
 class RowID(ValueOp):
     """The row number (an autonumeric) of the returned result."""
 
-    def output_type(self):
-        return dt.int64.column_type()
+    output_shape = rlz.Shape.COLUMNAR
+    output_dtype = dt.int64
 
     def resolve_name(self):
         return 'rowid'
@@ -107,30 +109,33 @@ class TableArrayView(ValueOp):
 
     table = rlz.table
 
+    output_shape = rlz.Shape.COLUMNAR
+
+    @property
+    def output_dtype(self):
+        return self.table._get_type(self.name)
+
     @property
     def name(self):
         return self.table.schema().names[0]
 
-    def _make_expr(self):
-        ctype = self.table._get_type(self.name)
-        klass = ctype.column_type()
-        return klass(self, name=self.name)
-
 
 @public
 class Cast(ValueOp):
+    """Explicitly cast value to a specific data type."""
+
     arg = rlz.any
     to = rlz.datatype
 
-    # see #396 for the issue preventing an implementation of resolve_name
+    output_shape = rlz.shape_like("arg")
+    output_dtype = property(attrgetter("to"))
 
-    def output_type(self):
-        return rlz.shape_like(self.arg, dtype=self.to)
+    # see #396 for the issue preventing an implementation of resolve_name
 
 
 @public
 class TypeOf(UnaryOp):
-    output_type = rlz.shape_like('arg', dt.string)
+    output_dtype = dt.string
 
 
 @public
@@ -143,7 +148,7 @@ class IsNull(UnaryOp):
         Value expression indicating whether values are null
     """
 
-    output_type = rlz.shape_like('arg', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -156,17 +161,18 @@ class NotNull(UnaryOp):
         Value expression indicating whether values are not null
     """
 
-    output_type = rlz.shape_like('arg', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class ZeroIfNull(UnaryOp):
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class IfNull(ValueOp):
-    """Equivalent to (but perhaps implemented differently):
+    """
+    Equivalent to (but perhaps implemented differently):
 
     case().when(expr.notnull(), expr)
           .else_(null_substitute_expr)
@@ -174,7 +180,9 @@ class IfNull(ValueOp):
 
     arg = rlz.any
     ifnull_expr = rlz.any
-    output_type = rlz.shape_like('args')
+
+    output_dtype = rlz.dtype_like("args")
+    output_shape = rlz.shape_like("args")
 
 
 @public
@@ -183,7 +191,8 @@ class NullIf(ValueOp):
 
     arg = rlz.any
     null_if_expr = rlz.any
-    output_type = rlz.shape_like('args')
+    output_dtype = rlz.dtype_like("args")
+    output_shape = rlz.shape_like("args")
 
 
 @public
@@ -195,14 +204,16 @@ class CoalesceLike(ValueOp):
     # DOUBLE; use CAST() when inserting into a smaller numeric column
     arg = rlz.value_list_of(rlz.any)
 
-    def output_type(self):
+    output_shape = rlz.shape_like('arg')
+
+    @immutable_property
+    def output_dtype(self):
         # filter out null types
         non_null_exprs = [arg for arg in self.arg if arg.type() != dt.null]
-        if not non_null_exprs:
-            dtype = dt.null
+        if non_null_exprs:
+            return rlz.highest_precedence_dtype(non_null_exprs)
         else:
-            dtype = rlz.highest_precedence_dtype(non_null_exprs)
-        return rlz.shape_like(self.arg, dtype)
+            return dt.null
 
 
 @public
@@ -254,8 +265,8 @@ class Literal(ValueOp):
     )
     dtype = rlz.datatype
 
-    def output_type(self):
-        return self.dtype.scalar_type()
+    output_shape = rlz.Shape.SCALAR
+    output_dtype = property(attrgetter("dtype"))
 
     def root_tables(self):
         return []
@@ -278,14 +289,14 @@ class ScalarParameter(ValueOp):
         rlz.instance_of(int), default=lambda: next(ScalarParameter._counter)
     )
 
+    output_shape = rlz.Shape.SCALAR
+    output_dtype = property(attrgetter("dtype"))
+
     def resolve_name(self):
         return f'param_{self.counter:d}'
 
     def __hash__(self):
         return hash((self.dtype, self.counter))
-
-    def output_type(self):
-        return self.dtype.scalar_type()
 
     @property
     def inputs(self):
@@ -299,12 +310,13 @@ class ScalarParameter(ValueOp):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = rlz.tuple_of(rlz.any)
-    display_argnames = False  # disable showing argnames in repr
+    # NOTE: this proxies the ValueOp behaviour to the underlying values
 
-    def output_type(self):
-        dtype = rlz.highest_precedence_dtype(self.values)
-        return functools.partial(ir.ListExpr, dtype=dtype)
+    values = rlz.tuple_of(rlz.any)
+
+    output_type = ir.ListExpr
+    output_dtype = rlz.dtype_like("values")
+    output_shape = rlz.shape_like("values")
 
     def root_tables(self):
         return distinct_roots(*self.values)
@@ -312,34 +324,27 @@ class ValueList(ValueOp):
 
 @public
 class Constant(ValueOp):
-    pass
+    output_shape = rlz.Shape.SCALAR
 
 
 @public
 class TimestampNow(Constant):
-    def output_type(self):
-        return dt.timestamp.scalar_type()
+    output_dtype = dt.timestamp
 
 
 @public
-class FloatConstant(Constant):
-    def output_type(self):
-        return dt.float64.scalar_type()
+class RandomScalar(Constant):
+    output_dtype = dt.float64
 
 
 @public
-class RandomScalar(FloatConstant):
-    pass
+class E(Constant):
+    output_dtype = dt.float64
 
 
 @public
-class E(FloatConstant):
-    pass
-
-
-@public
-class Pi(FloatConstant):
-    pass
+class Pi(Constant):
+    output_dtype = dt.float64
 
 
 @public
@@ -347,51 +352,63 @@ class StructField(ValueOp):
     arg = rlz.struct
     field = rlz.instance_of(str)
 
-    def output_type(self):
+    output_shape = rlz.shape_like("arg")
+
+    @immutable_property
+    def output_dtype(self):
         struct_dtype = self.arg.type()
         value_dtype = struct_dtype[self.field]
-        return rlz.shape_like(self.arg, value_dtype)
+        return value_dtype
 
+    def resolve_name(self):
+        return self.field
 
-@public
-class DecimalUnaryOp(UnaryOp):
-    arg = rlz.decimal
+    def has_resolved_name(self):
+        return True
 
 
 @public
 class DecimalPrecision(UnaryOp):
-    output_type = rlz.shape_like('arg', dt.int32)
+    arg = rlz.decimal
+    output_dtype = dt.int32
 
 
 @public
-class DecimalScale(DecimalUnaryOp):
-    output_type = rlz.shape_like('arg', dt.int32)
+class DecimalScale(UnaryOp):
+    arg = rlz.decimal
+    output_dtype = dt.int32
 
 
 @public
 class Hash(ValueOp):
     arg = rlz.any
     how = rlz.isin({'fnv', 'farm_fingerprint'})
-    output_type = rlz.shape_like('arg', dt.int64)
+
+    output_dtype = dt.int64
+    output_shape = rlz.shape_like("arg")
 
 
 @public
 class HashBytes(ValueOp):
     arg = rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)})
     how = rlz.isin({'md5', 'sha1', 'sha256', 'sha512'})
-    output_type = rlz.shape_like('arg', dt.binary)
+
+    output_dtype = dt.binary
+    output_shape = rlz.shape_like("arg")
 
 
 @public
 class SummaryFilter(ValueOp):
     expr = rlz.instance_of(ir.TopKExpr)
 
-    def output_type(self):
-        return dt.boolean.column_type()
+    output_dtype = dt.boolean
+    output_shape = rlz.Shape.COLUMNAR
 
 
+# TODO(kszucs): shouldn't we move this operation to either
+# analytic.py or reductions.py?
 @public
-class TopK(ValueOp):
+class TopK(Node):
     arg = rlz.column(rlz.any)
     k = rlz.non_negative_integer
     by = rlz.one_of(
@@ -401,19 +418,27 @@ class TopK(ValueOp):
         )
     )
 
-    def output_type(self):
-        return ir.TopKExpr
+    output_type = ir.TopKExpr
 
     def blocks(self):
         return True
 
+    def root_tables(self):
+        args = (arg for arg in self.flat_args() if isinstance(arg, ir.Expr))
+        return distinct_roots(*args)
 
+
+# TODO(kszucs): we should merge the case operations by making the
+# cases, results and default optional arguments like they are in
+# api.py
 @public
 class SimpleCase(ValueOp):
     base = rlz.any
     cases = rlz.value_list_of(rlz.any)
     results = rlz.value_list_of(rlz.any)
     default = rlz.any
+
+    output_shape = rlz.shape_like("base")
 
     def __init__(self, cases, results, **kwargs):
         assert len(cases) == len(results)
@@ -422,10 +447,13 @@ class SimpleCase(ValueOp):
     def root_tables(self):
         return distinct_roots(*self.flat_args())
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
+        # TODO(kszucs): we could extend the functionality of
+        # rlz.shape_like to support varargs with .flat_args()
+        # to define a subset of input arguments
         values = self.results + [self.default]
-        dtype = rlz.highest_precedence_dtype(values)
-        return rlz.shape_like(self.base, dtype=dtype)
+        return rlz.highest_precedence_dtype(values)
 
 
 @public
@@ -434,6 +462,8 @@ class SearchedCase(ValueOp):
     results = rlz.value_list_of(rlz.any)
     default = rlz.any
 
+    output_shape = rlz.shape_like("cases")
+
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)
@@ -441,7 +471,7 @@ class SearchedCase(ValueOp):
     def root_tables(self):
         return distinct_roots(*self.flat_args())
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         exprs = self.results + [self.default]
-        dtype = rlz.highest_precedence_dtype(exprs)
-        return rlz.shape_like(self.cases, dtype)
+        return rlz.highest_precedence_dtype(exprs)

@@ -57,7 +57,7 @@ def compute_projection_scalar_expr(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    name = expr._name
+    name = expr.get_name()
     assert name is not None, 'Scalar selection name is None'
 
     op = expr.op()
@@ -97,7 +97,7 @@ def compute_projection_column_expr(
     timecontext: Optional[TimeContext],
     **kwargs,
 ):
-    result_name = getattr(expr, '_name', None)
+    result_name = expr._safe_name
     op = expr.op()
     parent_table_op = parent.table.op()
 
@@ -137,7 +137,6 @@ def compute_projection_column_expr(
         expr,
         data.index,
     )
-    assert result_name is not None, 'Column selection name is None'
     return result
 
 
@@ -323,7 +322,9 @@ def build_df_from_selection(
             if selection + join_suffix not in data:
                 raise KeyError(selection)
             selection += join_suffix
-        cols[selection].append(getattr(expr, "_name", selection))
+        cols[selection].append(
+            expr.get_name() if expr.has_name() else selection
+        )
 
     result = data[list(cols.keys())]
 

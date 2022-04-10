@@ -8,6 +8,13 @@ from . import aggregate, binary_infix, case, helpers, string, timestamp, window
 from .literal import literal, null_literal
 
 
+def alias(translator, expr):
+    # just compile the underlying argument because the naming is handled
+    # by the translator for the top level expression
+    op = expr.op()
+    return translator.translate(op.arg)
+
+
 def fixed_arity(func_name, arity):
     def formatter(translator, expr):
         op = expr.op()
@@ -237,6 +244,7 @@ binary_infix_ops = {
 
 
 operation_registry = {
+    ops.Alias: alias,
     # Unary operations
     ops.NotNull: not_null,
     ops.IsNull: is_null,

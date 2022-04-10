@@ -49,9 +49,7 @@ def test_custom_expr():
     class MyExprNode(ops.Node):
         foo = rlz.string
         bar = rlz.numeric
-
-        def output_type(self):
-            return MyExpr
+        output_type = MyExpr
 
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
@@ -71,6 +69,7 @@ def test_custom_expr_with_not_implemented_type():
         foo = rlz.string
         bar = rlz.numeric
 
+        @property
         def output_type(self):
             return MyExpr
 

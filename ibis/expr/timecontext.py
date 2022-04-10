@@ -281,6 +281,14 @@ def adjust_context_node(
     return timecontext
 
 
+@adjust_context.register(ops.Alias)
+def adjust_context_alias(
+    op: ops.Node, scope: 'Scope', timecontext: TimeContext
+) -> TimeContext:
+    # For any node, by default, do not adjust time context
+    return adjust_context(op.arg.op(), scope, timecontext)
+
+
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
     op: ops.AsOfJoin, scope: 'Scope', timecontext: TimeContext

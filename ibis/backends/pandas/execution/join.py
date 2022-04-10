@@ -168,8 +168,8 @@ def _extract_predicate_names(predicates):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
             )
-        left_name = predicate.left._name
-        right_name = predicate.right._name
+        left_name = predicate.left.get_name()
+        right_name = predicate.right.get_name()
         lefts.append(left_name)
         rights.append(right_name)
     return lefts, rights

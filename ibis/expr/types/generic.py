@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
-    import ibis.expr.operations as ops
     import ibis.expr.window as win
 
 from public import public
@@ -18,48 +17,13 @@ from .core import Expr, _binop
 
 @public
 class ValueExpr(Expr):
-    """Base class for an expression having a known type."""
 
-    _name: str | None
-    _dtype: dt.DataType
+    """
+    Base class for a data generating expression having a fixed and known type,
+    either a single value (scalar)
+    """
 
-    def __init__(
-        self,
-        arg: ops.ValueOp,
-        dtype: dt.DataType,
-        name: str | None = None,
-    ) -> None:
-        super().__init__(arg)
-        self._name = name
-        self._dtype = dtype
-
-    def equals(self, other):
-        if not isinstance(other, Expr):
-            raise TypeError(
-                "invalid equality comparison between Expr and "
-                f"{type(other)}"
-            )
-        return (
-            self._safe_name == other._safe_name
-            and self._dtype.equals(other._dtype)
-            and super().equals(other)
-        )
-
-    def has_name(self) -> bool:
-        if self._name is not None:
-            return True
-        return self.op().has_resolved_name()
-
-    def get_name(self) -> str:
-        if self._name is not None:
-            # This value has been explicitly named
-            return self._name
-
-        # In some but not all cases we can get a name from the node that
-        # produces the value
-        return self.op().resolve_name()
-
-    def name(self, name: str) -> ValueExpr:
+    def name(self, name):
         """Rename an expression to `name`.
 
         Parameters
@@ -81,24 +45,25 @@ class ValueExpr(Expr):
           a int64
         b: r0.a
         """
-        return self._factory(self._arg, name=name)
+        import ibis.expr.operations as ops
 
-    def type(self) -> dt.DataType:
-        """Return the data type of an expression.
+        # TODO(kszucs): shouldn't do simplification here, but rather later
+        # when simplifying the whole operation tree
+        # the expression's name is idendical to the new one
+        if self.has_name() and self.get_name() == name:
+            return self
 
-        Returns
-        -------
-        DataType
-            Type of the expression
-        """
-        return self._dtype
+        if isinstance(self.op(), ops.Alias):
+            # only keep a single alias operation
+            op = ops.Alias(arg=self.op().arg, name=name)
+        else:
+            op = ops.Alias(arg=self, name=name)
 
-    @property
-    def _factory(self) -> Callable[[ops.ValueOp, str | None], ValueExpr]:
-        def factory(arg: ops.ValueOp, name: str | None = None) -> ValueExpr:
-            return type(self)(arg, dtype=self.type(), name=name)
+        return op.to_expr()
 
-        return factory
+    # TODO(kszucs): should rename to dtype
+    def type(self):
+        return self.op().output_dtype
 
 
 @public
@@ -151,6 +116,11 @@ class ColumnExpr(ValueExpr):
             return None
 
         return self.execute().to_frame()._repr_html_()
+
+
+# TODO(kszucs): keep either ValueExpr or AnyValue
+# TODO(kszucs): keep either ColumnExpr or AnyColumn
+# TODO(kszucs): keep either ScalarExpr or ScalarColumn
 
 
 @public
@@ -441,6 +411,10 @@ class AnyValue(ValueExpr):
 
         prior_op = self.op()
 
+        # TODO(kszucs): fix this ugly hack
+        if isinstance(prior_op, ops.Alias):
+            return prior_op.arg.over(window).name(prior_op.name)
+
         if isinstance(prior_op, ops.WindowOp):
             op = prior_op.over(window)
         else:
@@ -571,7 +545,7 @@ class AnyValue(ValueExpr):
         return ops.GroupConcat(self, sep=sep, where=where).to_expr()
 
     def __hash__(self) -> int:
-        return hash((self._name, self._dtype, self._arg))
+        return super().__hash__()
 
     def __eq__(self, other: AnyValue) -> ir.BooleanValue:
         import ibis.expr.operations as ops
@@ -866,6 +840,7 @@ class NullColumn(AnyColumn, NullValue):
     pass  # noqa: E701,E302
 
 
+# TODO(kszucs): should remove the ColumnExpr base class?
 @public
 class ListExpr(ColumnExpr, AnyValue):
     @property

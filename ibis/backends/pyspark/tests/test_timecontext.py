@@ -110,7 +110,9 @@ def test_adjust_context_scope(client):
         order_by='time',
         group_by='key',
     )
-    value_count_over_win = CustomWindowOp(value_count, win).to_expr()
+    # the argument needs to be pull out from the alias
+    # any extensions must do the same
+    value_count_over_win = CustomWindowOp(value_count.op().arg, win).to_expr()
 
     expr = table.mutate(value_count_over_win.name('value_count_over_win'))
 

@@ -20,7 +20,7 @@ def get_type(expr):
     except (AttributeError, NotImplementedError):
         try:
             # As a last resort try get the name of the output_type class
-            return expr.op().output_type().__name__
+            return expr.op().output_type.__name__
         except (AttributeError, NotImplementedError):
             return '\u2205'  # empty set character
     except com.IbisError:

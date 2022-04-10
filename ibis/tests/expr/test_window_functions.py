@@ -18,6 +18,8 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis.expr.window import _determine_how, rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
@@ -337,4 +339,20 @@ def test_combine_preserves_existing_window():
     )
     w = ibis.cumulative_window(order_by=t.one)
     mut = t.group_by(t.three).mutate(four=t.two.sum().over(w))
-    assert mut.op().selections[1].op().window.following == 0
+
+    assert mut.op().selections[1].op().arg.op().window.following == 0
+
+
+def test_quantile_shape():
+    t = ibis.table([("a", "float64")])
+
+    b1 = t.a.quantile(0.25).name("br2")
+    assert isinstance(b1, ir.ScalarExpr)
+
+    projs = [b1]
+    expr = t.projection(projs)
+    (b1,) = expr.op().selections
+
+    assert b1.op().output_shape == rlz.Shape.COLUMNAR
+
+    assert isinstance(b1, ir.ColumnExpr)

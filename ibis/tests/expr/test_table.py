@@ -75,13 +75,13 @@ def test_view_new_relation(table):
     assert roots[0] is tview.op()
 
 
-def test_get_type(table, schema_dict):
-    for k, v in schema_dict.items():
+def test_get_type(table, schema):
+    for k, v in schema:
         assert table._get_type(k) == dt.dtype(v)
 
 
-def test_getitem_column_select(table, schema_dict):
-    for k, v in schema_dict.items():
+def test_getitem_column_select(table):
+    for k in table.columns:
         col = table[k]
 
         # Make sure it's the right type
@@ -424,7 +424,8 @@ def test_slice_convenience(table):
 def test_table_count(table):
     result = table.count()
     assert isinstance(result, ir.IntegerScalar)
-    assert isinstance(result.op(), ops.Count)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), ops.Count)
     assert result.get_name() == 'count'
 
 
@@ -435,24 +436,28 @@ def test_len_raises_expression_error(table):
 
 def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
-    ex_class = ir.IntegerScalar
     result = table[int_col].sum()
-    assert isinstance(result, ex_class)
-    assert isinstance(result.op(), ops.Sum)
+    assert isinstance(result, ir.IntegerScalar)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), ops.Sum)
+    assert result.get_name() == "sum"
 
 
 def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
-    ex_class = ir.FloatingScalar
     result = table[float_col].sum()
-    assert isinstance(result, ex_class)
-    assert isinstance(result.op(), ops.Sum)
+    assert isinstance(result, ir.FloatingScalar)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), ops.Sum)
+    assert result.get_name() == "sum"
 
 
 def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
     assert isinstance(result, ir.FloatingScalar)
-    assert isinstance(result.op(), ops.Mean)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), ops.Mean)
+    assert result.get_name() == "mean"
 
 
 def test_aggregate_no_keys(table):
@@ -1357,9 +1362,13 @@ def test_mutate_chain():
     a, b = three.op().selections
 
     # we can't fuse these correctly yet
-    assert isinstance(a.op(), ops.IfNull)
+    assert isinstance(a.op(), ops.Alias)
+    assert isinstance(a.op().arg.op(), ops.IfNull)
     assert isinstance(b.op(), ops.TableColumn)
-    assert isinstance(b.op().table.op().selections[1].op(), ops.IfNull)
+
+    expr = b.op().table.op().selections[1]
+    assert isinstance(expr.op(), ops.Alias)
+    assert isinstance(expr.op().arg.op(), ops.IfNull)
 
 
 def test_multiple_dbcon():

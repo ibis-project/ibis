@@ -71,6 +71,12 @@ class Expr:
 
     __nonzero__ = __bool__
 
+    def has_name(self):
+        return self.op().has_resolved_name()
+
+    def get_name(self):
+        return self.op().resolve_name()
+
     @cached_property
     def _safe_name(self) -> str | None:
         """Get the name of an expression `expr` if one exists
@@ -182,10 +188,6 @@ class Expr:
 
     def op(self) -> ops.Node:
         return self._arg
-
-    @property
-    def _factory(self) -> type[Expr]:
-        return type(self)
 
     def _find_backends(self) -> list[BaseBackend]:
         """Return the possible backends for an expression.

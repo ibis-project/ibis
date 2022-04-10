@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+from abc import abstractmethod
+
 import toolz
 from public import public
 
 from ...common.exceptions import ExpressionError
 from ...common.grounds import Comparable
 from ...common.validators import immutable_property
-from ...util import is_iterable
+from ...util import UnnamedMarker, is_iterable
 from .. import rules as rlz
+from .. import types as ir
+from ..rules import Shape
 from ..schema import Schema
 from ..signature import Annotable
 
@@ -64,8 +68,6 @@ class Node(Annotable, Comparable):
 
     @property
     def exprs(self):
-        from .. import types as ir
-
         return [arg for arg in self.args if isinstance(arg, ir.Expr)]
 
     def blocks(self):
@@ -85,12 +87,15 @@ class Node(Annotable, Comparable):
         return self.equals(other)
 
     def to_expr(self):
-        return self._make_expr()
+        return self.output_type(self)
 
-    def _make_expr(self):
-        klass = self.output_type()
-        return klass(self)
+    def resolve_name(self):
+        raise ExpressionError(f'Expression is not named: {type(self)}')
 
+    def has_resolved_name(self):
+        return False
+
+    @property
     def output_type(self):
         """Resolve the output type of the expression."""
         raise NotImplementedError(
@@ -110,11 +115,51 @@ class ValueOp(Node):
     def root_tables(self):
         return distinct_roots(*self.exprs)
 
-    def resolve_name(self):
-        raise ExpressionError(f'Expression is not named: {type(self)}')
+    @property
+    @abstractmethod
+    def output_dtype(self):
+        """
+        Ibis datatype of the produced value expression.
+
+        Returns
+        -------
+        dt.DataType
+        """
+
+    @property
+    @abstractmethod
+    def output_shape(self):
+        """
+        Shape of the produced value expression.
+
+        Possible values are: "scalar" and "columnar"
+
+        Returns
+        -------
+        rlz.Shape
+        """
+
+    @property
+    def output_type(self):
+        if self.output_shape is Shape.COLUMNAR:
+            return self.output_dtype.column
+        else:
+            return self.output_dtype.scalar
+
+
+@public
+class Alias(ValueOp):
+    arg = rlz.any
+    name = rlz.instance_of((str, UnnamedMarker))
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = rlz.dtype_like("arg")
 
     def has_resolved_name(self):
-        return False
+        return True
+
+    def resolve_name(self):
+        return self.name
 
 
 @public
@@ -123,6 +168,10 @@ class UnaryOp(ValueOp):
 
     arg = rlz.any
 
+    @property
+    def output_shape(self):
+        return self.arg.op().output_shape
+
 
 @public
 class BinaryOp(ValueOp):
@@ -130,3 +179,7 @@ class BinaryOp(ValueOp):
 
     left = rlz.any
     right = rlz.any
+
+    @property
+    def output_shape(self):
+        return max(self.left.op().output_shape, self.right.op().output_shape)

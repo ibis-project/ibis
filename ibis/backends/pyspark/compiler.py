@@ -113,6 +113,13 @@ def _can_be_replaced_by_column_name(column_expr, table):
     )
 
 
+@compiles(ops.Alias)
+def compile_alias(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext, **kwargs)
+    return arg.alias(op.name)
+
+
 @compiles(ops.Selection)
 def compile_selection(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
