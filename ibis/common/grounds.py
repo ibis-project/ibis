@@ -5,10 +5,9 @@ from abc import ABC, ABCMeta, abstractmethod
 from typing import Any, Hashable
 from weakref import WeakValueDictionary
 
+from ibis.common.caching import WeakCache
+from ibis.common.validators import ImmutableProperty, Optional, Validator
 from ibis.util import frozendict
-
-from .caching import WeakCache
-from .validators import ImmutableProperty, Optional, Validator
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 

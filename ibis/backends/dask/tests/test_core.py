@@ -15,9 +15,12 @@ dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
 from ibis.backends.dask import Backend  # noqa: E402
-
-from ..core import execute, is_computable_input  # noqa: E402
-from ..dispatch import execute_node, post_execute, pre_execute  # noqa: E402
+from ibis.backends.dask.core import execute, is_computable_input  # noqa: E402
+from ibis.backends.dask.dispatch import (  # noqa: E402
+    execute_node,
+    post_execute,
+    pre_execute,
+)
 
 
 @pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])

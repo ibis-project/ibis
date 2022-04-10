@@ -5,8 +5,7 @@ import pandas as pd
 import pytest
 
 import ibis.expr.datatypes as dt
-
-from ... import Backend
+from ibis.backends.pandas import Backend
 
 
 @pytest.fixture(scope='module')

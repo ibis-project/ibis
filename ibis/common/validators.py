@@ -6,8 +6,8 @@ from typing import Callable
 
 import toolz
 
-from ..common.exceptions import IbisTypeError
-from ..util import flatten_iterable, is_function, is_iterable
+from ibis.common.exceptions import IbisTypeError
+from ibis.util import flatten_iterable, is_function, is_iterable
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 

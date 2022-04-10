@@ -7,7 +7,7 @@ from public import public
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
 
-from .generic import Expr
+from ibis.expr.types.generic import Expr
 
 
 @public

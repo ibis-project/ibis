@@ -18,9 +18,8 @@ from ibis.backends.base.sql.ddl import (
     RenameTable,
     fully_qualified_re,
 )
-
-from . import ddl
-from .compat import HS2Error, impyla
+from ibis.backends.impala import ddl
+from ibis.backends.impala.compat import HS2Error, impyla
 
 
 class ImpalaDatabase(Database):

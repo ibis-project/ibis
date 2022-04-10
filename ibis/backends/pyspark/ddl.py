@@ -8,8 +8,7 @@ from ibis.backends.base.sql.ddl import (
     RenameTable,
 )
 from ibis.backends.base.sql.registry import quote_identifier
-
-from .datatypes import type_to_sql_string
+from ibis.backends.pyspark.datatypes import type_to_sql_string
 
 _format_aliases = {'TEXTFILE': 'TEXT'}
 

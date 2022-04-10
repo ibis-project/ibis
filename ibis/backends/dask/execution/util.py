@@ -9,6 +9,7 @@ import ibis.backends.pandas.execution.util as pd_util
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.util
+from ibis.backends.dask.core import execute
 from ibis.backends.pandas.client import ibis_dtype_to_pandas
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
 from ibis.expr import datatypes as dt
@@ -16,8 +17,6 @@ from ibis.expr import lineage as lin
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
-
-from ..core import execute
 
 DispatchRule = Tuple[Tuple[Union[Type, Tuple], ...], Callable]
 

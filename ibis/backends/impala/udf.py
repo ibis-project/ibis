@@ -21,8 +21,7 @@ import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 import ibis.util as util
 from ibis.backends.base.sql.registry import fixed_arity, sql_type_names
-
-from .compiler import ImpalaExprTranslator
+from ibis.backends.impala.compiler import ImpalaExprTranslator
 
 __all__ = [
     'add_operation',

@@ -11,9 +11,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-
-from .dispatch import execute_node, pre_execute
-from .execution.util import (
+from ibis.backends.dask.dispatch import execute_node, pre_execute
+from ibis.backends.dask.execution.util import (
     assert_identical_grouping_keys,
     make_meta_series,
     make_selected_obj,

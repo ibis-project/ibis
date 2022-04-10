@@ -7,16 +7,15 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base import BaseBackend
-from ibis.expr.scope import Scope
-
-from ..core import (
+from ibis.backends.pandas.core import (
     date_types,
     integer_types,
     numeric_types,
     timedelta_types,
     timestamp_types,
 )
-from ..dispatch import execute_node, pre_execute
+from ibis.backends.pandas.dispatch import execute_node, pre_execute
+from ibis.expr.scope import Scope
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, str)

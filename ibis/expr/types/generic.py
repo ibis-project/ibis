@@ -10,9 +10,8 @@ from public import public
 
 import ibis
 import ibis.common.exceptions as com
-
-from .. import datatypes as dt
-from .core import Expr, _binop
+from ibis.expr import datatypes as dt
+from ibis.expr.types.core import Expr, _binop
 
 
 @public
@@ -72,7 +71,7 @@ class ScalarExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        from .relations import TableExpr
+        from ibis.expr.types.relations import TableExpr
 
         roots = self.op().root_tables()
         if len(roots) > 1:
@@ -98,7 +97,7 @@ class ColumnExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        from .relations import TableExpr
+        from ibis.expr.types.relations import TableExpr
 
         roots = self.op().root_tables()
         if len(roots) > 1:
@@ -737,7 +736,7 @@ class AnyColumn(ColumnExpr, AnyValue):
         TableExpr
             Frequency table expression
         """
-        from .relations import find_base_table
+        from ibis.expr.types.relations import find_base_table
 
         base = find_base_table(self)
         metric = base.count().name(metric_name)

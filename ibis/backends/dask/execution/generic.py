@@ -17,6 +17,15 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.dask import Backend as DaskBackend
+from ibis.backends.dask.client import DaskTable
+from ibis.backends.dask.core import execute
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
+    TypeRegistrationDict,
+    make_selected_obj,
+    register_types_to_dispatcher,
+)
 from ibis.backends.pandas.core import (
     integer_types,
     numeric_types,
@@ -52,16 +61,6 @@ from ibis.backends.pandas.execution.generic import (
     execute_series_notnnull,
     execute_sort_key_series_bool,
     execute_table_column_df_or_df_groupby,
-)
-
-from .. import Backend as DaskBackend
-from ..client import DaskTable
-from ..core import execute
-from ..dispatch import execute_node
-from .util import (
-    TypeRegistrationDict,
-    make_selected_obj,
-    register_types_to_dispatcher,
 )
 
 # Many dask and pandas functions are functionally equivalent, so we just add

@@ -3,10 +3,9 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 from ibis import window
+from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
-
-from ..compiler import ImpalaCompiler
 
 pytest.importorskip("impala")
 

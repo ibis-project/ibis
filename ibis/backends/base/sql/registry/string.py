@@ -1,6 +1,5 @@
 import ibis.expr.operations as ops
-
-from . import helpers
+from ibis.backends.base.sql.registry import helpers
 
 
 def substring(translator, expr):

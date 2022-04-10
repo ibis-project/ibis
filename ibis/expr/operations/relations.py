@@ -6,14 +6,14 @@ import itertools
 from cached_property import cached_property
 from public import public
 
-from ... import util
-from ...common import exceptions as com
-from .. import datatypes as dt
-from .. import rules as rlz
-from .. import schema as sch
-from .. import types as ir
-from .core import Node, ValueOp, distinct_roots
-from .sortkeys import _maybe_convert_sort_keys
+from ibis import util
+from ibis.common import exceptions as com
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr import schema as sch
+from ibis.expr import types as ir
+from ibis.expr.operations.core import Node, ValueOp, distinct_roots
+from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 

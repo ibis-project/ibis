@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
-from ...execution import execute  # noqa: E402
+from ibis.backends.dask.execution import execute  # noqa: E402
 
 TIMESTAMP = "2022-03-13 06:59:10.467417"
 

@@ -8,6 +8,12 @@ import sqlalchemy.sql as sql
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base.sql.alchemy.database import AlchemyTable
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
+from ibis.backends.base.sql.alchemy.translator import (
+    AlchemyContext,
+    AlchemyExprTranslator,
+)
 from ibis.backends.base.sql.compiler import (
     Compiler,
     Select,
@@ -15,10 +21,6 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
     Union,
 )
-
-from .database import AlchemyTable
-from .datatypes import to_sqla_type
-from .translator import AlchemyContext, AlchemyExprTranslator
 
 
 def _schema_to_sqlalchemy_columns(schema: sch.Schema) -> list[sa.Column]:

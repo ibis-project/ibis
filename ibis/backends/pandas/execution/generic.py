@@ -20,14 +20,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import get_time_col
-from ibis.expr.typing import TimeContext
-
-from .. import Backend as PandasBackend
-from .. import aggcontext as agg_ctx
-from ..client import PandasTable
-from ..core import (
+from ibis.backends.pandas import Backend as PandasBackend
+from ibis.backends.pandas import aggcontext as agg_ctx
+from ibis.backends.pandas.client import PandasTable
+from ibis.backends.pandas.core import (
     boolean_types,
     execute,
     fixed_width_types,
@@ -39,9 +35,12 @@ from ..core import (
     timedelta_types,
     timestamp_types,
 )
-from ..dispatch import execute_literal, execute_node
-from ..execution import constants
-from ..execution.util import coerce_to_output
+from ibis.backends.pandas.dispatch import execute_literal, execute_node
+from ibis.backends.pandas.execution import constants
+from ibis.backends.pandas.execution.util import coerce_to_output
+from ibis.expr.scope import Scope
+from ibis.expr.timecontext import get_time_col
+from ibis.expr.typing import TimeContext
 
 
 # By default return the literal value

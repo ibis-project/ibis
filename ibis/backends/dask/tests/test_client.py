@@ -8,7 +8,7 @@ import ibis
 dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
-from ..client import DaskTable  # noqa: E402
+from ibis.backends.dask.client import DaskTable  # noqa: E402
 
 
 def make_dask_data_frame(npartitions):

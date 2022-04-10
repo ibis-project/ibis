@@ -6,16 +6,16 @@ from typing import Sequence
 
 from multipledispatch import Dispatcher
 
-from ..common.exceptions import IntegrityError
-from ..common.grounds import Annotable, Comparable
-from ..common.validators import (
+from ibis.common.exceptions import IntegrityError
+from ibis.common.grounds import Annotable, Comparable
+from ibis.common.validators import (
     immutable_property,
     instance_of,
     tuple_of,
     validator,
 )
-from ..expr import datatypes as dt
-from ..util import UnnamedMarker, indent
+from ibis.expr import datatypes as dt
+from ibis.util import UnnamedMarker, indent
 
 convert = Dispatcher(
     'convert',

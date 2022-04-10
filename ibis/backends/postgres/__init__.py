@@ -10,10 +10,9 @@ import sqlalchemy as sa
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-
-from .compiler import PostgreSQLCompiler
-from .datatypes import _get_type
-from .udf import udf
+from ibis.backends.postgres.compiler import PostgreSQLCompiler
+from ibis.backends.postgres.datatypes import _get_type
+from ibis.backends.postgres.udf import udf
 
 
 class Backend(BaseAlchemyBackend):

@@ -1,6 +1,6 @@
 from public import public
 
-from .generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
 
 
 @public

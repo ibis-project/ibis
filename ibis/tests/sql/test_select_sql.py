@@ -2,8 +2,7 @@ import pytest
 
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
-
-from .conftest import get_query
+from ibis.tests.sql.conftest import get_query
 
 
 def test_nameless_table():

@@ -12,8 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-
-from .compiler import translate
+from ibis.backends.datafusion.compiler import translate
 
 
 def _to_pyarrow_table(frame):
@@ -199,7 +198,7 @@ class Backend(BaseBackend):
 
     @classmethod
     def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
-        from .compiler import translate
+        from ibis.backends.datafusion.compiler import translate
 
         op_classes = translate.registry
         return operation in op_classes or any(

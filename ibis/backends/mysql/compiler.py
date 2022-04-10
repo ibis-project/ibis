@@ -7,8 +7,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
 )
 from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
-
-from .registry import operation_registry
+from ibis.backends.mysql.registry import operation_registry
 
 
 class MySQLExprTranslator(AlchemyExprTranslator):

@@ -21,8 +21,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
 )
-
-from .registry import operation_registry
+from ibis.backends.sqlite.registry import operation_registry
 
 
 class SQLiteExprTranslator(AlchemyExprTranslator):

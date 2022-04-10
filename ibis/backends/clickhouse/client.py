@@ -161,7 +161,7 @@ class ClickhouseTable(ir.TableExpr):
         return self.op().name
 
     def insert(self, obj, **kwargs):
-        from .identifiers import quote_identifier
+        from ibis.backends.clickhouse.identifiers import quote_identifier
 
         schema = self.schema()
 

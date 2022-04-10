@@ -1,5 +1,5 @@
-from .core import *  # noqa: F403
-from .core import _normalize, _WellKnownText  # noqa: F401
+from ibis.expr.datatypes.core import *  # noqa: F403
+from ibis.expr.datatypes.core import _normalize, _WellKnownText  # noqa: F401
 
 halffloat = float16  # noqa: F405
 float = float64  # noqa: F405

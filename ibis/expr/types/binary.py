@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    from .. import types as ir
+    from ibis.expr import types as ir
 
 from public import public
 
-from .generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
 
 
 @public
@@ -28,7 +28,7 @@ class BinaryValue(AnyValue):
         BinaryValue
             Binary expression
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.HashBytes(self, how).to_expr()
 

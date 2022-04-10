@@ -26,9 +26,9 @@ import parsy as p
 from multipledispatch import Dispatcher
 from public import public
 
-from ...common.exceptions import IbisTypeError, InputTypeError
-from ...common.grounds import Annotable, Comparable, Singleton
-from ...common.validators import (
+from ibis.common.exceptions import IbisTypeError, InputTypeError
+from ibis.common.grounds import Annotable, Comparable, Singleton
+from ibis.common.validators import (
     compose_of,
     instance_of,
     isin,
@@ -37,8 +37,8 @@ from ...common.validators import (
     tuple_of,
     validator,
 )
-from ...util import frozendict
-from .. import types as ir
+from ibis.expr import types as ir
+from ibis.util import frozendict
 
 try:
     import shapely.geometry

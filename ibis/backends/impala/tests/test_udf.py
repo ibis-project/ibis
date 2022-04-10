@@ -12,9 +12,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.impala import ddl
 from ibis.common.exceptions import IbisTypeError
-
-from .. import ddl
 
 pytest.importorskip("impala")
 

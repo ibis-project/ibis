@@ -22,13 +22,15 @@ from ibis.backends.base.sql.ddl import (
     TruncateTable,
     is_fully_qualified,
 )
+from ibis.backends.pyspark import ddl
+from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
+from ibis.backends.pyspark.compiler import (
+    PySparkDatabaseTable,
+    PySparkExprTranslator,
+)
+from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
-
-from . import ddl
-from .client import PySparkTable, spark_dataframe_schema
-from .compiler import PySparkDatabaseTable, PySparkExprTranslator
-from .datatypes import spark_dtype
 
 _read_csv_defaults = {
     'header': True,

@@ -1,8 +1,8 @@
 from public import public
 
-from .. import datatypes as dt
-from .. import rules as rlz
-from .core import ValueOp
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr.operations.core import ValueOp
 
 
 @public

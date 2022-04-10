@@ -11,9 +11,8 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.operations as ops
 import ibis.udf.vectorized
 from ibis.backends.base import BaseBackend
-
-from .aggcontext import Transform
-from .dispatch import execute_node, pre_execute
+from ibis.backends.pandas.aggcontext import Transform
+from ibis.backends.pandas.dispatch import execute_node, pre_execute
 
 
 def create_gens_from_args_groupby(args: Tuple[SeriesGroupBy]):

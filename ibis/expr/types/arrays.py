@@ -4,8 +4,14 @@ from typing import TYPE_CHECKING, Iterable
 
 from public import public
 
-from .generic import AnyColumn, AnyScalar, AnyValue, ColumnExpr, literal
-from .typing import V
+from ibis.expr.types.generic import (
+    AnyColumn,
+    AnyScalar,
+    AnyValue,
+    ColumnExpr,
+    literal,
+)
+from ibis.expr.types.typing import V
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt

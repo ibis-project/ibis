@@ -2,8 +2,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-
-from . import identifiers
+from ibis.backends.base.sql.registry import identifiers
 
 
 def format_call(translator, func, *args):

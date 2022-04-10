@@ -4,10 +4,9 @@ import operator
 import pandas as pd
 
 import ibis.expr.operations as ops
-
-from ..core import execute
-from ..dispatch import execute_node
-from ..execution import constants
+from ibis.backends.pandas.core import execute
+from ibis.backends.pandas.dispatch import execute_node
+from ibis.backends.pandas.execution import constants
 
 
 def _compute_join_column(column_expr, **kwargs):

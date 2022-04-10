@@ -2,12 +2,12 @@ import operator
 
 from public import public
 
-from ... import util
-from ...common.validators import immutable_property
-from .. import datatypes as dt
-from .. import rules as rlz
-from .. import types as ir
-from .core import BinaryOp, UnaryOp, ValueOp
+from ibis import util
+from ibis.common.validators import immutable_property
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr import types as ir
+from ibis.expr.operations.core import BinaryOp, UnaryOp, ValueOp
 
 
 @public

@@ -10,8 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.ddl import fully_qualified_re
-
-from . import ddl
+from ibis.backends.pyspark import ddl
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)

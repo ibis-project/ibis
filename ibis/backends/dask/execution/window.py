@@ -7,17 +7,16 @@ import dask.dataframe as dd
 
 import ibis.expr.operations as ops
 import ibis.expr.window as win
-from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
-
-from ..core import execute, execute_with_scope
-from ..dispatch import execute_node
-from .util import (
+from ibis.backends.dask.core import execute, execute_with_scope
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import (
     _pandas_dtype_from_dd_scalar,
     _wrap_dd_scalar,
     add_partitioned_sorted_column,
     make_meta_series,
 )
+from ibis.expr.scope import Scope
+from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(

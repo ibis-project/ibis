@@ -2,8 +2,7 @@ import pytest
 
 from ibis import literal as L
 from ibis.backends.impala.compiler import ImpalaCompiler
-
-from .conftest import translate
+from ibis.backends.impala.tests.conftest import translate
 
 
 @pytest.fixture(scope="module")

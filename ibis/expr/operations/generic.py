@@ -11,13 +11,13 @@ import numpy as np
 import pandas as pd
 from public import public
 
-from ...common import exceptions as com
-from ...common.validators import immutable_property
-from ...util import frozendict
-from .. import datatypes as dt
-from .. import rules as rlz
-from .. import types as ir
-from .core import Node, UnaryOp, ValueOp, distinct_roots
+from ibis.common import exceptions as com
+from ibis.common.validators import immutable_property
+from ibis.expr import datatypes as dt
+from ibis.expr import rules as rlz
+from ibis.expr import types as ir
+from ibis.expr.operations.core import Node, UnaryOp, ValueOp, distinct_roots
+from ibis.util import frozendict
 
 try:
     import shapely

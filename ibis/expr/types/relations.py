@@ -12,16 +12,15 @@ from cached_property import cached_property
 from public import public
 
 import ibis
-
-from ... import util
-from ...common import exceptions as com
-from .core import Expr
+from ibis import util
+from ibis.common import exceptions as com
+from ibis.expr.types.core import Expr
 
 if TYPE_CHECKING:
-    from .. import schema as sch
-    from .. import types as ir
-    from .generic import ColumnExpr
-    from .groupby import GroupedTableExpr
+    from ibis.expr import schema as sch
+    from ibis.expr import types as ir
+    from ibis.expr.types.generic import ColumnExpr
+    from ibis.expr.types.groupby import GroupedTableExpr
 
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
@@ -99,9 +98,9 @@ class TableExpr(Expr):
         return self.execute()._repr_html_()
 
     def __getitem__(self, what):
-        from .analytic import AnalyticExpr
-        from .generic import ColumnExpr
-        from .logical import BooleanColumn
+        from ibis.expr.types.analytic import AnalyticExpr
+        from ibis.expr.types.generic import ColumnExpr
+        from ibis.expr.types.logical import BooleanColumn
 
         if isinstance(what, (str, int)):
             return self.get_column(what)
@@ -266,7 +265,7 @@ class TableExpr(Expr):
         GroupedTableExpr
             A grouped table expression
         """
-        from .groupby import GroupedTableExpr
+        from ibis.expr.types.groupby import GroupedTableExpr
 
         return GroupedTableExpr(self, by, **additional_grouping_expressions)
 
@@ -297,7 +296,7 @@ class TableExpr(Expr):
         2|pandas
         3|Dask
         """  # noqa: E501
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.RowID().to_expr()
 
@@ -311,7 +310,7 @@ class TableExpr(Expr):
         TableExpr
             Table expression
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.SelfReference(self).to_expr()
 
@@ -330,7 +329,7 @@ class TableExpr(Expr):
         TableExpr
             The rows present in `left` that are not present in `right`.
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Difference(self, right).to_expr()
 
@@ -374,7 +373,7 @@ class TableExpr(Expr):
 
     def distinct(self) -> TableExpr:
         """Compute the set of unique rows in the table."""
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Distinct(self).to_expr()
 
@@ -393,7 +392,7 @@ class TableExpr(Expr):
         TableExpr
             The first `n` rows of `table` starting at `offset`
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         op = ops.Limit(self, n, offset=offset)
         return op.to_expr()
@@ -471,7 +470,7 @@ class TableExpr(Expr):
         TableExpr
             Union of table and `right`
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Union(self, right, distinct=distinct).to_expr()
 
@@ -490,7 +489,7 @@ class TableExpr(Expr):
         TableExpr
             The rows common amongst `left` and `right`.
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Intersection(self, right).to_expr()
 
@@ -502,7 +501,7 @@ class TableExpr(Expr):
         ValueExpr
             A single column view of a table
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         schema = self.schema()
         if len(schema) != 1:
@@ -567,8 +566,8 @@ class TableExpr(Expr):
         True
 
         """
-        from .. import analysis as an
-        from .. import rules as rlz
+        from ibis.expr import analysis as an
+        from ibis.expr import rules as rlz
 
         exprs = [] if exprs is None else util.promote_list(exprs)
         for name, expr in sorted(
@@ -736,7 +735,7 @@ class TableExpr(Expr):
         TableExpr
             Filtered table expression
         """
-        from .. import analysis as an
+        from ibis.expr import analysis as an
 
         resolved_predicates = _resolve_predicates(self, predicates)
         return an.apply_filter(self, resolved_predicates)
@@ -749,7 +748,7 @@ class TableExpr(Expr):
         IntegerScalar
             Number of rows in the table
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         return ops.Count(self, None).to_expr().name("count")
 
@@ -783,7 +782,7 @@ class TableExpr(Expr):
         TableExpr
             Table expression
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         if subset is None:
             subset = []
@@ -831,7 +830,7 @@ class TableExpr(Expr):
         TableExpr
             Table expression
         """  # noqa: E501
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         if isinstance(replacements, collections.abc.Mapping):
             columns = replacements.keys()
@@ -946,9 +945,9 @@ class TableExpr(Expr):
             Left and right suffixes that will be used to rename overlapping
             columns.
         """
-        from .. import analysis as an
-        from .. import operations as ops
-        from .. import types as ir
+        from ibis.expr import analysis as an
+        from ibis.expr import operations as ops
+        from ibis.expr import types as ir
 
         _join_classes = {
             'inner': ops.InnerJoin,
@@ -1020,7 +1019,7 @@ class TableExpr(Expr):
         TableExpr
             Table expression
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         op = ops.AsOfJoin(
             left=left,
@@ -1085,7 +1084,7 @@ class TableExpr(Expr):
         r7 := CrossJoin[r6, r0]
         CrossJoin[r4, r7]
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         expr = ops.CrossJoin(
             left,
@@ -1116,7 +1115,7 @@ class TableExpr(Expr):
         TableExpr
             An opaque SQL query
         """
-        from .. import operations as ops
+        from ibis.expr import operations as ops
 
         if client is None:
             client = self._find_backend()
@@ -1239,8 +1238,8 @@ class TableExpr(Expr):
 
 
 def _resolve_predicates(table: TableExpr, predicates) -> list[ir.BooleanValue]:
-    from .. import analysis as an
-    from .. import types as ir
+    from ibis.expr import analysis as an
+    from ibis.expr import types as ir
 
     if isinstance(predicates, Expr):
         predicates = an.flatten_predicate(predicates)

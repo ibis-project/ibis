@@ -22,13 +22,12 @@ import numpy as np
 import toolz
 
 import ibis.expr.operations as ops
+from ibis.backends.dask.dispatch import execute_node
+from ibis.backends.dask.execution.util import make_selected_obj
 from ibis.backends.pandas.execution.generic import (
     execute_node_greatest_list,
     execute_node_least_list,
 )
-
-from ..dispatch import execute_node
-from .util import make_selected_obj
 
 
 @toolz.curry

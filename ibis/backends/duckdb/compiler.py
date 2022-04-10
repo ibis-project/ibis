@@ -3,8 +3,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
 )
-
-from .registry import operation_registry
+from ibis.backends.duckdb.registry import operation_registry
 
 
 class DuckDBSQLExprTranslator(AlchemyExprTranslator):

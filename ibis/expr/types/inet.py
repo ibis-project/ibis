@@ -1,6 +1,6 @@
 from public import public
 
-from .strings import StringColumn, StringScalar, StringValue
+from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
 
 
 @public

@@ -33,11 +33,10 @@ from typing import List, Optional
 
 import ibis.expr.operations as ops
 from ibis.backends.base import BaseBackend
+from ibis.backends.pandas.core import compute_time_context, is_computable_input
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
-
-from ..core import compute_time_context, is_computable_input
 
 
 @compute_time_context.register(ops.AsOfJoin)

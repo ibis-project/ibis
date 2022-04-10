@@ -1,8 +1,7 @@
 import pytest
 
 import ibis.expr.operations as ops
-
-from .conftest import get_query
+from ibis.tests.sql.conftest import get_query
 
 pytest.importorskip('sqlalchemy')
 

@@ -10,8 +10,7 @@ from sqlalchemy.engine.interfaces import Dialect
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-
-from .geospatial import geospatial_supported
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 if geospatial_supported:
     import geoalchemy2 as ga
