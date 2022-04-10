@@ -34,7 +34,7 @@ class _AnyToExistsTransform:
         else:
             op = ops.NotExistsSubquery(self.foreign_table, self.predicates)
 
-        expr_type = dt.boolean.column_type()
+        expr_type = dt.boolean.column
         return expr_type(op)
 
     def _visit(self, expr):
@@ -467,7 +467,8 @@ class SelectBuilder:
                     new_args.append(arg)
 
             if not unchanged:
-                return expr._factory(type(op)(*new_args))
+                new_op = type(op)(*new_args)
+                return new_op.to_expr()
             else:
                 return expr
         else:
@@ -500,8 +501,11 @@ class SelectBuilder:
             binwidth = op.binwidth
             base = op.base
 
-        bucket = (op.arg - base) / binwidth
-        return bucket.floor().name(expr._name)
+        bucket = ((op.arg - base) / binwidth).floor()
+        if expr.has_name():
+            bucket = bucket.name(expr.get_name())
+
+        return bucket
 
     def _analyze_filter_exprs(self):
         # What's semantically contained in the filter predicates may need to be
@@ -543,10 +547,11 @@ class SelectBuilder:
             left = self._visit_filter(op.left)
             right = self._visit_filter(op.right)
             unchanged = left is op.left and right is op.right
-            if not unchanged:
-                return expr._factory(type(op)(left, right))
-            else:
+            if unchanged:
                 return expr
+            else:
+                new_op = type(op)(left, right)
+                return new_op.to_expr()
         elif isinstance(op, (ops.Any, ops.TableColumn, ops.Literal)):
             return expr
         elif isinstance(op, ops.ValueOp):
@@ -559,7 +564,8 @@ class SelectBuilder:
                 if new is not old:
                     unchanged = False
             if not unchanged:
-                return expr._factory(type(op)(*visited))
+                new_op = type(op)(*visited)
+                return new_op.to_expr()
             else:
                 return expr
         else:

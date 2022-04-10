@@ -25,14 +25,14 @@ class GeoSpatialUnOp(UnaryOp):
 class GeoDistance(GeoSpatialBinOp):
     """Returns minimum distance between two geo spatial data"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoContains(GeoSpatialBinOp):
     """Check if the first geo spatial data contains the second one"""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -40,14 +40,14 @@ class GeoContainsProperly(GeoSpatialBinOp):
     """Check if the first geo spatial data contains the second one,
     and no boundary points are shared."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class GeoCovers(GeoSpatialBinOp):
     """Returns True if no point in Geometry B is outside Geometry A"""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -55,7 +55,7 @@ class GeoCoveredBy(GeoSpatialBinOp):
     """Returns True if no point in Geometry/Geography A is
     outside Geometry/Geography B"""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -63,7 +63,7 @@ class GeoCrosses(GeoSpatialBinOp):
     """Returns True if the supplied geometries have some, but not all,
     interior points in common."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -71,14 +71,14 @@ class GeoDisjoint(GeoSpatialBinOp):
     """Returns True if the Geometries do not “spatially intersect” -
     if they do not share any space together."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class GeoEquals(GeoSpatialBinOp):
     """Returns True if the given geometries represent the same geometry."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -86,15 +86,14 @@ class GeoGeometryN(GeoSpatialUnOp):
     """Returns the Nth Geometry of a Multi geometry."""
 
     n = rlz.integer
-
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
 class GeoGeometryType(GeoSpatialUnOp):
     """Returns the type of the geometry."""
 
-    output_type = rlz.shape_like('args', dt.string)
+    output_dtype = dt.string
 
 
 @public
@@ -103,14 +102,14 @@ class GeoIntersects(GeoSpatialBinOp):
     - (share any portion of space) and False if they don’t (they are Disjoint).
     """
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class GeoIsValid(GeoSpatialUnOp):
     """Returns true if the geometry is well-formed."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -126,7 +125,7 @@ class GeoLineLocatePoint(GeoSpatialBinOp):
     left = rlz.linestring
     right = rlz.point
 
-    output_type = rlz.shape_like('args', dt.halffloat)
+    output_dtype = dt.halffloat
 
 
 @public
@@ -140,7 +139,7 @@ class GeoLineMerge(GeoSpatialUnOp):
     geometry collection.
     """
 
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
@@ -158,7 +157,7 @@ class GeoLineSubstring(GeoSpatialUnOp):
     start = rlz.floating
     end = rlz.floating
 
-    output_type = rlz.shape_like('args', dt.linestring)
+    output_dtype = dt.linestring
 
 
 @public
@@ -170,7 +169,7 @@ class GeoOrderingEquals(GeoSpatialBinOp):
     are in the same order.
     """
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -178,7 +177,7 @@ class GeoOverlaps(GeoSpatialBinOp):
     """Returns True if the Geometries share space, are of the same dimension,
     but are not completely contained by each other."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -186,45 +185,42 @@ class GeoTouches(GeoSpatialBinOp):
     """Returns True if the geometries have at least one point in common,
     but their interiors do not intersect."""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
-class GeoUnaryUnion(Reduction):
+class GeoUnaryUnion(Reduction, GeoSpatialUnOp):
     """Returns the pointwise union of the geometries in the column."""
 
-    arg = rlz.column(rlz.geospatial)
-
-    def output_type(self):
-        return dt.geometry.scalar_type()
+    output_dtype = dt.geometry
 
 
 @public
 class GeoUnion(GeoSpatialBinOp):
     """Returns the pointwise union of the two geometries."""
 
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
 class GeoArea(GeoSpatialUnOp):
     """Area of the geo spatial data"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoPerimeter(GeoSpatialUnOp):
     """Perimeter of the geo spatial data"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoLength(GeoSpatialUnOp):
     """Length of geo spatial data"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
@@ -235,7 +231,7 @@ class GeoMaxDistance(GeoSpatialBinOp):
     in that geometry
     """
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
@@ -244,7 +240,7 @@ class GeoX(GeoSpatialUnOp):
     Input must be a point
     """
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
@@ -253,35 +249,35 @@ class GeoY(GeoSpatialUnOp):
     Input must be a point
     """
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoXMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoXMax(GeoSpatialUnOp):
     """Returns X maxima of a bounding box 2d or 3d or a geometry"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoYMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoYMax(GeoSpatialUnOp):
     """Returns Y maxima of a bounding box 2d or 3d or a geometry"""
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
@@ -290,7 +286,7 @@ class GeoStartPoint(GeoSpatialUnOp):
     NULL if the input parameter is not a LINESTRING
     """
 
-    output_type = rlz.shape_like('arg', dt.point)
+    output_dtype = dt.point
 
 
 @public
@@ -299,7 +295,7 @@ class GeoEndPoint(GeoSpatialUnOp):
     NULL if the input parameter is not a LINESTRING
     """
 
-    output_type = rlz.shape_like('arg', dt.point)
+    output_dtype = dt.point
 
 
 @public
@@ -311,7 +307,8 @@ class GeoPoint(GeoSpatialBinOp):
 
     left = rlz.numeric
     right = rlz.numeric
-    output_type = rlz.shape_like('args', dt.point)
+
+    output_dtype = dt.point
 
 
 @public
@@ -323,14 +320,14 @@ class GeoPointN(GeoSpatialUnOp):
     """
 
     n = rlz.integer
-    output_type = rlz.shape_like('args', dt.point)
+    output_dtype = dt.point
 
 
 @public
 class GeoNPoints(GeoSpatialUnOp):
     """Return the number of points in a geometry. Works for all geometries"""
 
-    output_type = rlz.shape_like('args', dt.int64)
+    output_dtype = dt.int64
 
 
 @public
@@ -339,14 +336,14 @@ class GeoNRings(GeoSpatialUnOp):
     rings. It counts the outer rings as well
     """
 
-    output_type = rlz.shape_like('args', dt.int64)
+    output_dtype = dt.int64
 
 
 @public
 class GeoSRID(GeoSpatialUnOp):
     """Returns the spatial reference identifier for the ST_Geometry."""
 
-    output_type = rlz.shape_like('args', dt.int64)
+    output_dtype = dt.int64
 
 
 @public
@@ -354,7 +351,8 @@ class GeoSetSRID(GeoSpatialUnOp):
     """Set the spatial reference identifier for the ST_Geometry."""
 
     srid = rlz.integer
-    output_type = rlz.shape_like('args', dt.geometry)
+
+    output_dtype = dt.geometry
 
 
 @public
@@ -365,15 +363,14 @@ class GeoBuffer(GeoSpatialUnOp):
     """
 
     radius = rlz.floating
-
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
 class GeoCentroid(GeoSpatialUnOp):
     """Returns the geometric center of a geometry."""
 
-    output_type = rlz.shape_like('arg', dt.point)
+    output_dtype = dt.point
 
 
 @public
@@ -384,7 +381,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
 
     distance = rlz.floating
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -395,14 +392,14 @@ class GeoDWithin(GeoSpatialBinOp):
 
     distance = rlz.floating
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class GeoEnvelope(GeoSpatialUnOp):
     """Represents the bounding box of the supplied geometry."""
 
-    output_type = rlz.shape_like('arg', dt.polygon)
+    output_dtype = dt.polygon
 
 
 @public
@@ -415,14 +412,14 @@ class GeoAzimuth(GeoSpatialBinOp):
     left = rlz.point
     right = rlz.point
 
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class GeoWithin(GeoSpatialBinOp):
     """Returns True if the geometry A is completely inside geometry B"""
 
-    output_type = rlz.shape_like('args', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
@@ -431,7 +428,7 @@ class GeoIntersection(GeoSpatialBinOp):
     of the Geometries.
     """
 
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
@@ -440,7 +437,7 @@ class GeoDifference(GeoSpatialBinOp):
     that does not intersect with geometry B
     """
 
-    output_type = rlz.shape_like('args', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
@@ -450,7 +447,7 @@ class GeoSimplify(GeoSpatialUnOp):
     tolerance = rlz.floating
     preserve_collapsed = rlz.boolean
 
-    output_type = rlz.shape_like('arg', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
@@ -459,7 +456,7 @@ class GeoTransform(GeoSpatialUnOp):
 
     srid = rlz.integer
 
-    output_type = rlz.shape_like('arg', dt.geometry)
+    output_dtype = dt.geometry
 
 
 @public
@@ -468,7 +465,7 @@ class GeoAsBinary(GeoSpatialUnOp):
     geometry/geography without SRID meta data.
     """
 
-    output_type = rlz.shape_like('arg', dt.binary)
+    output_dtype = dt.binary
 
 
 @public
@@ -477,7 +474,7 @@ class GeoAsEWKB(GeoSpatialUnOp):
     geometry/geography with SRID meta data.
     """
 
-    output_type = rlz.shape_like('arg', dt.binary)
+    output_dtype = dt.binary
 
 
 @public
@@ -486,7 +483,7 @@ class GeoAsEWKT(GeoSpatialUnOp):
     geometry/geography with SRID meta data.
     """
 
-    output_type = rlz.shape_like('arg', dt.string)
+    output_dtype = dt.string
 
 
 @public
@@ -495,4 +492,4 @@ class GeoAsText(GeoSpatialUnOp):
     geometry/geography without SRID metadata.
     """
 
-    output_type = rlz.shape_like('arg', dt.string)
+    output_dtype = dt.string

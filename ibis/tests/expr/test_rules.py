@@ -355,12 +355,6 @@ def test_table_with_schema_invalid(table):
         validator(table)
 
 
-def test_shape_like_with_no_arguments():
-    with pytest.raises(ValueError) as e:
-        rlz.shape_like([])
-    assert str(e.value) == 'Must pass at least one expression'
-
-
 @pytest.mark.parametrize(
     ('rule', 'input'),
     [

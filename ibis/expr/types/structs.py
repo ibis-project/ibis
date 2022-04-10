@@ -89,7 +89,7 @@ class StructValue(AnyValue):
         DestructValue
             A destruct value expression.
         """
-        return DestructValue(self._arg, self._dtype).name("")
+        return DestructValue(self._arg)
 
 
 @public
@@ -105,7 +105,7 @@ class StructScalar(AnyScalar, StructValue):
         DestructScalar
             A destruct scalar expression.
         """
-        return DestructScalar(self._arg, self._dtype).name("")
+        return DestructScalar(self._arg)
 
 
 @public
@@ -121,7 +121,7 @@ class StructColumn(AnyColumn, StructValue):
         DestructColumn
             A destruct column expression.
         """
-        return DestructColumn(self._arg, self._dtype).name("")
+        return DestructColumn(self._arg)
 
 
 @public
@@ -131,6 +131,10 @@ class DestructValue(AnyValue):
     When assigning a destruct column, the field inside this destruct column
     will be destructured and assigned to multiple columnns.
     """
+
+    def name(self, name):
+        res = super().name(name)
+        return self.__class__(res.op())
 
 
 @public

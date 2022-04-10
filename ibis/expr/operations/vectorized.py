@@ -11,12 +11,18 @@ from .reductions import Reduction
 class VectorizedUDF(ValueOp):
     func = rlz.instance_of((FunctionType, LambdaType))
     func_args = rlz.tuple_of(rlz.column(rlz.any))
+    # TODO(kszucs): should rename these arguments to
+    # input_dtypes and return_dtype
     input_type = rlz.tuple_of(rlz.datatype)
     return_type = rlz.datatype
 
     @property
     def inputs(self):
         return self.func_args
+
+    @property
+    def output_dtype(self):
+        return self.return_type
 
     def root_tables(self):
         return distinct_roots(*self.func_args)
@@ -26,21 +32,19 @@ class VectorizedUDF(ValueOp):
 class ElementWiseVectorizedUDF(VectorizedUDF):
     """Node for element wise UDF."""
 
-    def output_type(self):
-        return self.return_type.column_type()
+    output_shape = rlz.Shape.COLUMNAR
 
 
 @public
 class ReductionVectorizedUDF(VectorizedUDF, Reduction):
     """Node for reduction UDF."""
 
-    def output_type(self):
-        return self.return_type.scalar_type()
+    output_shape = rlz.Shape.SCALAR
 
 
+# TODO(kszucs): revisit
 @public
 class AnalyticVectorizedUDF(VectorizedUDF, AnalyticOp):
     """Node for analytics UDF."""
 
-    def output_type(self):
-        return self.return_type.column_type()
+    output_shape = rlz.Shape.COLUMNAR

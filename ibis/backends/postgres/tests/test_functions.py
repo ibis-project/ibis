@@ -1241,11 +1241,11 @@ def test_anti_join(t, s):
 def test_create_table_from_expr(con, trunc, guid2):
     con.create_table(guid2, expr=trunc)
     t = con.table(guid2)
-    assert list(t.name.execute()) == list('abc')
+    assert list(t['name'].execute()) == list('abc')
 
 
 def test_truncate_table(con, trunc):
-    assert list(trunc.name.execute()) == list('abc')
+    assert list(trunc['name'].execute()) == list('abc')
     con.truncate_table(trunc.op().name)
     assert not len(trunc.execute())
 

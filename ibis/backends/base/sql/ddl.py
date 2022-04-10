@@ -220,7 +220,8 @@ class CTAS(CreateTable):
         if self.partition is not None:
             return 'PARTITIONED BY ({})'.format(
                 ', '.join(
-                    quote_identifier(expr._name) for expr in self.partition
+                    quote_identifier(expr.get_name())
+                    for expr in self.partition
                 )
             )
         return None

@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     import pandas as pd
     from .. import types as ir
 
-from ... import util
 from .core import Expr, _binop
 from .generic import AnyColumn, AnyScalar, AnyValue
 
@@ -487,12 +486,11 @@ class TimestampColumn(TemporalColumn, TimestampValue):
 class IntervalValue(AnyValue):
     def to_unit(self, target_unit: str) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
-        if self._dtype.unit == target_unit:
-            return self
+        import ibis.expr.operations as ops
 
-        result = util.convert_unit(self, self._dtype.unit, target_unit)
-        object.__setattr__(result.type(), "unit", target_unit)
-        return result
+        # TODO(kszucs): should use a separate operation for unit conversion
+        # which we can rewrite/simplify to integer multiplication/division
+        return ops.ToIntervalUnit(self, unit=target_unit).to_expr()
 
     @property
     def years(self) -> ir.IntegerValue:

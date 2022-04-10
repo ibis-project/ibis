@@ -70,8 +70,7 @@ class SortKey(Node):
         default=True,
     )
 
-    def output_type(self):
-        return ir.SortExpr
+    output_type = ir.SortExpr
 
     def root_tables(self):
         return self.expr.op().root_tables()

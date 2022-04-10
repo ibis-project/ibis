@@ -1,5 +1,6 @@
 from public import public
 
+from ...common.validators import immutable_property
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
@@ -8,17 +9,12 @@ from .core import ValueOp, distinct_roots
 
 
 @public
-class AnalyticOp(ValueOp):
-    pass
-
-
-@public
 class WindowOp(ValueOp):
     expr = rlz.analytic
     window = rlz.window(from_base_table_of="expr")
-    output_type = rlz.array_like('expr')
 
-    display_argnames = False
+    output_dtype = rlz.dtype_like("expr")
+    output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, expr, window):
         expr = propagate_down_window(expr, window)
@@ -39,11 +35,18 @@ class WindowOp(ValueOp):
 
 
 @public
+class AnalyticOp(ValueOp):
+    output_shape = rlz.Shape.COLUMNAR
+
+
+@public
 class ShiftBase(AnalyticOp):
     arg = rlz.column(rlz.any)
+
     offset = rlz.optional(rlz.one_of((rlz.integer, rlz.interval)))
     default = rlz.optional(rlz.any)
-    output_type = rlz.typeof('arg')
+
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -58,14 +61,14 @@ class Lead(ShiftBase):
 
 @public
 class RankBase(AnalyticOp):
-    def output_type(self):
-        return dt.int64.column_type()
+    output_dtype = dt.int64
 
 
 @public
 class MinRank(RankBase):
-    """Compute position of first element within each equal-value group in sorted
-    order.
+    """
+    Compute position of first element within each equal-value group in sorted
+    order. Equivalent to SQL RANK().
 
     Examples
     --------
@@ -83,14 +86,14 @@ class MinRank(RankBase):
         The min rank
     """
 
-    # Equivalent to SQL RANK()
     arg = rlz.column(rlz.any)
 
 
 @public
 class DenseRank(RankBase):
-    """Compute the position of first element within each equal-value group in
-    sorted order, ignoring duplicate values.
+    """
+    Compute position of first element within each equal-value group in sorted
+    order, ignoring duplicate values. Equivalent to SQL DENSE_RANK().
 
     Examples
     --------
@@ -108,13 +111,14 @@ class DenseRank(RankBase):
         The rank
     """
 
-    # Equivalent to SQL DENSE_RANK()
     arg = rlz.column(rlz.any)
 
 
 @public
 class RowNumber(RankBase):
-    """Compute the row number starting from 0.
+    """
+    Compute row number starting from 0 after sorting by column expression.
+    Equivalent to SQL ROW_NUMBER().
 
     Examples
     --------
@@ -142,12 +146,12 @@ class CumulativeSum(CumulativeOp):
 
     arg = rlz.column(rlz.numeric)
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         if isinstance(self.arg, ir.BooleanValue):
-            dtype = dt.int64
+            return dt.int64
         else:
-            dtype = self.arg.type().largest
-        return dtype.column_type()
+            return self.arg.type().largest
 
 
 @public
@@ -156,12 +160,12 @@ class CumulativeMean(CumulativeOp):
 
     arg = rlz.column(rlz.numeric)
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest
+            return self.arg.type().largest
         else:
-            dtype = dt.float64
-        return dtype.column_type()
+            return dt.float64
 
 
 @public
@@ -169,7 +173,7 @@ class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
 
     arg = rlz.column(rlz.any)
-    output_type = rlz.array_like('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -177,39 +181,57 @@ class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
 
     arg = rlz.column(rlz.any)
-    output_type = rlz.array_like('arg')
+    output_dtype = rlz.dtype_like("arg")
+
+
+@public
+class CumulativeAny(CumulativeOp):
+    arg = rlz.column(rlz.boolean)
+    output_dtype = rlz.dtype_like("arg")
+
+
+@public
+class CumulativeAll(CumulativeOp):
+    arg = rlz.column(rlz.boolean)
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class PercentRank(AnalyticOp):
     arg = rlz.column(rlz.any)
-    output_type = rlz.shape_like('arg', dt.double)
+    output_dtype = dt.double
 
 
 @public
 class NTile(AnalyticOp):
     arg = rlz.column(rlz.any)
-    buckets = rlz.integer
-    output_type = rlz.shape_like('arg', dt.int64)
+    buckets = rlz.scalar(rlz.integer)
+    output_dtype = dt.int64
 
 
 @public
 class FirstValue(AnalyticOp):
+    """Retrieve the first element."""
+
     arg = rlz.column(rlz.any)
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class LastValue(AnalyticOp):
+    """Retrieve the last element."""
+
     arg = rlz.column(rlz.any)
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class NthValue(AnalyticOp):
+    """Retrieve the Nth element."""
+
     arg = rlz.column(rlz.any)
     nth = rlz.integer
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -219,16 +241,19 @@ class Any(ValueOp):
     # array-like (an existence-type predicate) or scalar (a reduction)
     arg = rlz.column(rlz.boolean)
 
+    output_dtype = dt.boolean
+
     @property
     def _reduction(self):
         roots = self.arg.op().root_tables()
         return len(roots) < 2
 
-    def output_type(self):
+    @immutable_property
+    def output_shape(self):
         if self._reduction:
-            return dt.boolean.scalar_type()
+            return rlz.Shape.SCALAR
         else:
-            return dt.boolean.column_type()
+            return rlz.Shape.COLUMNAR
 
     def negate(self):
         return NotAny(self.arg)
@@ -238,15 +263,3 @@ class Any(ValueOp):
 class NotAny(Any):
     def negate(self):
         return Any(self.arg)
-
-
-@public
-class CumulativeAny(CumulativeOp):
-    arg = rlz.column(rlz.boolean)
-    output_type = rlz.typeof('arg')
-
-
-@public
-class CumulativeAll(CumulativeOp):
-    arg = rlz.column(rlz.boolean)
-    output_type = rlz.typeof('arg')

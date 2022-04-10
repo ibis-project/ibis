@@ -7,13 +7,15 @@ from .core import ValueOp
 
 @public
 class BucketLike(ValueOp):
+    output_shape = rlz.Shape.COLUMNAR
+
     @property
     def nbuckets(self):
         return None
 
-    def output_type(self):
-        dtype = dt.Category(self.nbuckets)
-        return dtype.column_type()
+    @property
+    def output_dtype(self):
+        return dt.Category(self.nbuckets)
 
 
 @public
@@ -63,9 +65,10 @@ class Histogram(BucketLike):
             raise ValueError('nbins and binwidth are mutually exclusive')
         super().__init__(nbins=nbins, binwidth=binwidth, **kwargs)
 
-    def output_type(self):
+    @property
+    def output_dtype(self):
         # always undefined cardinality (for now)
-        return dt.category.column_type()
+        return dt.category
 
 
 @public
@@ -73,7 +76,9 @@ class CategoryLabel(ValueOp):
     arg = rlz.category
     labels = rlz.tuple_of(rlz.instance_of(str))
     nulls = rlz.optional(rlz.instance_of(str))
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_dtype = dt.string
+    output_shape = rlz.shape_like("arg")
 
     def __init__(self, arg, labels, **kwargs):
         cardinality = arg.type().cardinality

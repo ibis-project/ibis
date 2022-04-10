@@ -203,9 +203,6 @@ def test_scalar_parameter_repr():
     value = ibis.param(dt.timestamp).name('value')
     assert repr(value) == "value: $(timestamp)"
 
-    value_op = value.op()
-    assert "ScalarParameter" in repr(value_op)
-
 
 def test_repr_exact():
     # NB: This is the only exact repr test. Do

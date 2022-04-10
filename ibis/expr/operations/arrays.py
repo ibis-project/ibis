@@ -1,6 +1,7 @@
 from public import public
 
 from ...common import exceptions as com
+from ...common.validators import immutable_property
 from .. import datatypes as dt
 from .. import rules as rlz
 from .core import UnaryOp, ValueOp
@@ -10,6 +11,8 @@ from .core import UnaryOp, ValueOp
 class ArrayColumn(ValueOp):
     cols = rlz.value_list_of(rlz.column(rlz.any), min_length=1)
 
+    output_shape = rlz.Shape.COLUMNAR
+
     def __init__(self, cols):
         if len({col.type() for col in cols}) > 1:
             raise com.IbisTypeError(
@@ -18,15 +21,18 @@ class ArrayColumn(ValueOp):
             )
         super().__init__(cols=cols)
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         first_dtype = self.cols[0].type()
-        return dt.Array(first_dtype).column_type()
+        return dt.Array(first_dtype)
 
 
 @public
 class ArrayLength(UnaryOp):
     arg = rlz.array
-    output_type = rlz.shape_like('arg', dt.int64)
+
+    output_dtype = dt.int64
+    output_shape = rlz.shape_like("args")
 
 
 @public
@@ -34,7 +40,9 @@ class ArraySlice(ValueOp):
     arg = rlz.array
     start = rlz.integer
     stop = rlz.optional(rlz.integer)
-    output_type = rlz.typeof('arg')
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("arg")
 
 
 @public
@@ -42,16 +50,20 @@ class ArrayIndex(ValueOp):
     arg = rlz.array
     index = rlz.integer
 
-    def output_type(self):
-        value_dtype = self.arg.type().value_type
-        return rlz.shape_like(self.arg, value_dtype)
+    output_shape = rlz.shape_like("args")
+
+    @immutable_property
+    def output_dtype(self):
+        return self.arg.type().value_type
 
 
 @public
 class ArrayConcat(ValueOp):
     left = rlz.array
     right = rlz.array
-    output_type = rlz.shape_like('left')
+
+    output_dtype = rlz.dtype_like("left")
+    output_shape = rlz.shape_like("args")
 
     def __init__(self, left, right):
         left_dtype, right_dtype = left.type(), right.type()
@@ -69,4 +81,6 @@ class ArrayConcat(ValueOp):
 class ArrayRepeat(ValueOp):
     arg = rlz.array
     times = rlz.integer
-    output_type = rlz.typeof('arg')
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("args")

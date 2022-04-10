@@ -92,9 +92,8 @@ def coerce_to_output(
 
     Examples
     --------
-    For dataframe outputs, see ``_coerce_to_dataframe``. Examples below use
-    pandas objects for legibility, but functionality is the same on dask
-    objects.
+    Examples below use pandas objects for legibility, but functionality is the
+    same on dask objects.
 
     >>> coerce_to_output(pd.Series(1), expr)
     0    1
@@ -111,7 +110,7 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = expr.get_name()
+    result_name = expr._safe_name
     dataframe_exprs = (
         ir.DestructColumn,
         ir.StructColumn,
@@ -125,7 +124,7 @@ def coerce_to_output(
     elif isinstance(result, (pd.Series, dd.Series)):
         # Series from https://github.com/ibis-project/ibis/issues/2711
         return result.rename(result_name)
-    elif isinstance(expr.op(), ops.Reduction):
+    elif isinstance(expr, ir.ScalarExpr):
         if isinstance(result, dd.core.Scalar):
             # wrap the scalar in a series
             out_dtype = _pandas_dtype_from_dd_scalar(result)

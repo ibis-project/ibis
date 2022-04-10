@@ -75,13 +75,13 @@ def _get_args(op, name):
 
         # if Selection.selections is always columnar, could use an
         # OrderedDict to prevent scanning the whole thing
-        return [col for col in result if col._name == name]
+        return [col for col in result if col.get_name() == name]
     elif isinstance(op, ops.Aggregation):
         assert name is not None, 'name is None'
         return [
             col
             for col in itertools.chain(op.by, op.metrics)
-            if col._name == name
+            if col.get_name() == name
         ]
     else:
         return op.args
@@ -111,7 +111,7 @@ def lineage(expr, container=Stack):
     if not isinstance(expr, ir.ColumnExpr):
         raise TypeError('Input expression must be an instance of ColumnExpr')
 
-    c = container([(expr, expr._name)])
+    c = container([(expr, expr.get_name() if expr.has_name() else None)])
 
     seen = set()
 
@@ -126,7 +126,7 @@ def lineage(expr, container=Stack):
         # add our dependencies to the container if they match our name
         # and are ibis expressions
         c.extend(
-            (arg, getattr(arg, '_name', name))
+            (arg, arg.get_name() if arg.has_name() else name)
             for arg in c.visitor(_get_args(node.op(), name))
             if isinstance(arg, ir.Expr)
         )
@@ -149,9 +149,10 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
     expr: ir.Expr
         The traversable expression or a list of expressions.
     type: Type
-        Only the instances if this type are traversed.
+        Only the instances if this expression type gets traversed.
     container: Union[Stack, Queue], default Stack
-        Defines the traversing order.
+        Defines the traversing order. Use Stack for depth-first and
+        Queue for breadth-first search.
     """
     args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
     todo = container(arg for arg in args if isinstance(arg, type))

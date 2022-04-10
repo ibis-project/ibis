@@ -207,6 +207,13 @@ def _group_concat(t, expr):
     return sa.func.group_concat(arg, sep)
 
 
+def _alias(t, expr):
+    # just compile the underlying argument because the naming is handled
+    # by the translator for the top level expression
+    op = expr.op()
+    return t.translate(op.arg)
+
+
 def _literal(t, expr):
     dtype = expr.type()
     value = expr.op().value
@@ -327,7 +334,9 @@ def _cumulative_to_window(translator, expr, window):
 
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
-    new_expr = expr._factory(new_op, name=expr._name)
+    new_expr = new_op.to_expr()
+    if expr.has_name():
+        new_expr = new_expr.name(expr.get_name())
 
     if type(new_op) in translator._rewrites:
         new_expr = translator._rewrites[type(new_op)](new_expr)
@@ -442,6 +451,7 @@ def _string_join(t, expr):
 
 
 sqlalchemy_operation_registry: Dict[Any, Any] = {
+    ops.Alias: _alias,
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
     ops.Not: unary(sa.not_),

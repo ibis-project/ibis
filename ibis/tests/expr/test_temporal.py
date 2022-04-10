@@ -624,7 +624,7 @@ def test_complex_date_comparisons(
 def test_interval_column_name(table):
     c = table.i
     expr = (c - c).name('foo')
-    assert expr._name == 'foo'
+    assert expr.get_name() == 'foo'
 
 
 @pytest.mark.parametrize(

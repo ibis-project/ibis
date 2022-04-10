@@ -1,16 +1,17 @@
-import functools
-
 from public import public
 
+from ...common.validators import immutable_property
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
-from .core import ValueOp
+from .core import ValueOp, distinct_roots
 
 
 @public
 class Reduction(ValueOp):
     _reduction = True
+
+    output_shape = rlz.Shape.SCALAR
 
 
 class Filterable(ValueOp):
@@ -20,16 +21,14 @@ class Filterable(ValueOp):
 @public
 class Count(Filterable, Reduction):
     arg = rlz.one_of((rlz.column(rlz.any), rlz.table))
-
-    def output_type(self):
-        return functools.partial(ir.IntegerScalar, dtype=dt.int64)
+    output_dtype = dt.int64
 
 
 @public
 class Arbitrary(Filterable, Reduction):
     arg = rlz.column(rlz.any)
     how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}))
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -47,7 +46,7 @@ class BitAnd(Filterable, Reduction):
     """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -64,7 +63,7 @@ class BitOr(Filterable, Reduction):
     """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -81,31 +80,34 @@ class BitXor(Filterable, Reduction):
     """  # noqa: E501
 
     arg = rlz.column(rlz.integer)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class Sum(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         if isinstance(self.arg, ir.BooleanValue):
-            dtype = dt.int64
+            return dt.int64
         else:
-            dtype = self.arg.type().largest
-        return dtype.scalar_type()
+            return self.arg.type().largest
 
 
 @public
 class Mean(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type()
+            return self.arg.type()
         else:
-            dtype = dt.float64
-        return dtype.scalar_type()
+            return dt.float64
+
+    def root_tables(self):
+        return distinct_roots(self.arg)
 
 
 @public
@@ -116,8 +118,7 @@ class Quantile(Reduction):
         {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
     )
 
-    def output_type(self):
-        return dt.float64.scalar_type()
+    output_dtype = dt.float64
 
 
 @public
@@ -128,8 +129,7 @@ class MultiQuantile(Quantile):
         {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
     )
 
-    def output_type(self):
-        return dt.Array(dt.float64).scalar_type()
+    output_dtype = dt.Array(dt.float64)
 
 
 @public
@@ -137,12 +137,12 @@ class VarianceBase(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
     how = rlz.isin({'sample', 'pop'})
 
-    def output_type(self):
+    @immutable_property
+    def output_dtype(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest
+            return self.arg.type().largest
         else:
-            dtype = dt.float64
-        return dtype.scalar_type()
+            return dt.float64
 
 
 @public
@@ -163,8 +163,7 @@ class Correlation(Filterable, Reduction):
     right = rlz.column(rlz.numeric)
     how = rlz.isin({'sample', 'pop'})
 
-    def output_type(self):
-        return dt.float64.scalar_type()
+    output_dtype = dt.float64
 
 
 @public
@@ -175,20 +174,19 @@ class Covariance(Filterable, Reduction):
     right = rlz.column(rlz.numeric)
     how = rlz.isin({'sample', 'pop'})
 
-    def output_type(self):
-        return dt.float64.scalar_type()
+    output_dtype = dt.float64
 
 
 @public
 class Max(Filterable, Reduction):
     arg = rlz.column(rlz.any)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class Min(Filterable, Reduction):
     arg = rlz.column(rlz.any)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -200,10 +198,8 @@ class HLLCardinality(Filterable, Reduction):
 
     arg = rlz.column(rlz.any)
 
-    def output_type(self):
-        # Impala 2.0 and higher returns a DOUBLE
-        # return ir.DoubleScalar
-        return functools.partial(ir.IntegerScalar, dtype=dt.int64)
+    # Impala 2.0 and higher returns a DOUBLE return ir.DoubleScalar
+    output_dtype = dt.int64
 
 
 @public
@@ -211,8 +207,7 @@ class GroupConcat(Filterable, Reduction):
     arg = rlz.column(rlz.any)
     sep = rlz.string
 
-    def output_type(self):
-        return dt.string.scalar_type()
+    output_dtype = dt.string
 
 
 @public
@@ -223,13 +218,13 @@ class CMSMedian(Filterable, Reduction):
     """
 
     arg = rlz.column(rlz.any)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class All(Reduction):
     arg = rlz.column(rlz.boolean)
-    output_type = rlz.scalar_like('arg')
+    output_dtype = dt.boolean
 
     def negate(self):
         return NotAll(self.arg)
@@ -245,14 +240,13 @@ class NotAll(All):
 class CountDistinct(Filterable, Reduction):
     arg = rlz.column(rlz.any)
 
-    def output_type(self):
-        return dt.int64.scalar_type()
+    output_dtype = dt.int64
 
 
 @public
 class ArrayCollect(Reduction):
     arg = rlz.column(rlz.any)
 
-    def output_type(self):
-        dtype = dt.Array(self.arg.type())
-        return dtype.scalar_type()
+    @immutable_property
+    def output_dtype(self):
+        return dt.Array(self.arg.type())

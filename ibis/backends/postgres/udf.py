@@ -100,20 +100,10 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
     v.validate_output_type(output_type)
 
-    udf_node_fields = collections.OrderedDict(
-        [
-            (name, rlz.value(type_))
-            for name, type_ in zip(parameters, input_types)
-        ]
-        + [
-            (
-                'output_type',
-                lambda self, output_type=output_type: rlz.shape_like(
-                    self.args, dtype=output_type
-                ),
-            )
-        ]
-    )
+    udf_node_fields = {
+        name: rlz.value(type_) for name, type_ in zip(parameters, input_types)
+    }
+    udf_node_fields['output_dtype'] = output_type
     udf_node_fields['resolve_name'] = lambda self: name
 
     udf_node = _create_udf_node(name, udf_node_fields)

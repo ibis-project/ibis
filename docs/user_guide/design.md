@@ -77,9 +77,14 @@ import ibis.expr.rules as rlz
 from ibis.expr.operations import ValueOp
 
 class Log(ValueOp):
-   arg = rlz.double  # A double scalar or column
-   base = rlz.optional(rlz.double)  # Optional argument, defaults to None
-   output_type = rlz.typeof('arg')
+   # A double scalar or column
+   arg = rlz.double
+   # Optional argument, defaults to None
+   base = rlz.optional(rlz.double)
+   # Output expression's datatype will correspond to arg's datatype
+   output_dtype = rlz.dtype_like('arg')
+   # Output expression will be scalar if arg is scalar, column otherwise
+   output_shape = rlz.shape_like('arg')
 ```
 
 This class describes an operation called `Log` that takes one required

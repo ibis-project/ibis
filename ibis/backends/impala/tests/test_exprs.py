@@ -53,7 +53,7 @@ def test_decimal_metadata(con):
     # TODO: what if user impyla version does not have decimal Metadata?
 
 
-def test_builtins_1(con, alltypes):
+def test_builtins(con, alltypes):
     table = alltypes
 
     i1 = table.tinyint_col

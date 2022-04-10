@@ -525,8 +525,15 @@ class Compiler:
     @classmethod
     def make_context(cls, params=None):
         params = params or {}
-        params = {expr.op(): value for expr, value in params.items()}
-        return cls.context_class(compiler=cls, params=params)
+
+        unaliased_params = {}
+        for expr, value in params.items():
+            op = expr.op()
+            if isinstance(op, ops.Alias):
+                op = op.arg.op()
+            unaliased_params[op] = value
+
+        return cls.context_class(compiler=cls, params=unaliased_params)
 
     @classmethod
     def to_ast(cls, expr, context=None):

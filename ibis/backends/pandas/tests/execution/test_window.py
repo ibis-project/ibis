@@ -500,7 +500,7 @@ def test_project_scalar_after_join():
             'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
         }
     )
-    con = Backend().connect({'left': left_df, 'right': right_df})
+    con = ibis.pandas.connect({'left': left_df, 'right': right_df})
     left, right = map(con.table, ('left', 'right'))
 
     joined = left.outer_join(right, left.ints == right.group)
@@ -513,12 +513,13 @@ def test_project_scalar_after_join():
 
 def test_project_list_scalar():
     df = pd.DataFrame({'ints': range(3)})
-    con = Backend().connect({'df': df})
-    expr = con.table('df')
-    result = expr.mutate(res=expr.ints.quantile([0.5, 0.95])).execute()
-    tm.assert_series_equal(
-        result.res, pd.Series([[1.0, 1.9] for _ in range(0, 3)], name='res')
-    )
+    con = ibis.pandas.connect({'df': df})
+    table = con.table('df')
+    expr = table.mutate(res=table.ints.quantile([0.5, 0.95]))
+    result = expr.execute()
+
+    expected = pd.Series([[1.0, 1.9] for _ in range(0, 3)], name='res')
+    tm.assert_series_equal(result.res, expected)
 
 
 @pytest.mark.parametrize(
@@ -533,7 +534,7 @@ def test_window_with_preceding_expr(index):
     start = 2
     data = np.arange(start, start + len(time))
     df = pd.DataFrame({'value': data, 'time': time}, index=index(time))
-    client = Backend().connect({'df': df})
+    client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     expected = (
         df.set_index('time')
@@ -562,7 +563,7 @@ def test_window_with_mlb():
         .rename_axis('time')
         .reset_index(drop=False)
     )
-    client = Backend().connect({'df': df})
+    client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
     expr = t.mutate(
@@ -592,17 +593,16 @@ def test_window_with_mlb():
 
 
 def test_window_has_pre_execute_scope():
-    signature = ops.Lag, Backend
     called = [0]
 
-    @pre_execute.register(*signature)
+    @pre_execute.register(ops.Lag, Backend)
     def test_pre_execute(op, client, **kwargs):
         called[0] += 1
         return Scope()
 
     data = {'key': list('abc'), 'value': [1, 2, 3], 'dup': list('ggh')}
     df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
-    client = Backend().connect({'df': df})
+    client = ibis.pandas.connect({'df': df})
     t = client.table('df')
     window = ibis.window(order_by='value')
     expr = t.key.lag(1).over(window).name('foo')
@@ -612,7 +612,10 @@ def test_window_has_pre_execute_scope():
     # once in window op at the top to pickup any scope changes before computing
     # twice in window op when calling execute on the ops.Lag node at the
     # beginning of execute and once before the actual computation
-    assert called[0] == 3
+    #
+    # this process happens twice because of the pre_execute call on the Alias
+    # operation
+    assert called[0] == 3 + 3
 
 
 def test_window_grouping_key_has_scope(t, df):

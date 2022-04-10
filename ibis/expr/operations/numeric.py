@@ -3,6 +3,7 @@ import operator
 from public import public
 
 from ... import util
+from ...common.validators import immutable_property
 from .. import datatypes as dt
 from .. import rules as rlz
 from .. import types as ir
@@ -17,51 +18,53 @@ class NumericBinaryOp(BinaryOp):
 
 @public
 class Add(NumericBinaryOp):
-    output_type = rlz.numeric_like('args', operator.add)
+    output_dtype = rlz.numeric_like("args", operator.add)
 
 
 @public
 class Multiply(NumericBinaryOp):
-    output_type = rlz.numeric_like('args', operator.mul)
+    output_dtype = rlz.numeric_like("args", operator.mul)
 
 
 @public
 class Power(NumericBinaryOp):
-    def output_type(self):
+    @property
+    def output_dtype(self):
         if util.all_of(self.args, ir.IntegerValue):
-            return rlz.shape_like(self.args, dt.float64)
+            return dt.float64
         else:
-            return rlz.shape_like(self.args)
+            return rlz.highest_precedence_dtype(self.args)
 
 
 @public
 class Subtract(NumericBinaryOp):
-    output_type = rlz.numeric_like('args', operator.sub)
+    output_dtype = rlz.numeric_like("args", operator.sub)
 
 
 @public
 class Divide(NumericBinaryOp):
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public
 class FloorDivide(Divide):
-    output_type = rlz.shape_like('args', dt.int64)
+    output_dtype = dt.int64
 
 
 @public
 class Modulus(NumericBinaryOp):
-    output_type = rlz.numeric_like('args', operator.mod)
+    output_dtype = rlz.numeric_like("args", operator.mod)
 
 
 @public
 class Negate(UnaryOp):
     arg = rlz.one_of((rlz.numeric, rlz.interval))
-    output_type = rlz.typeof('arg')
+
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
-class NullIfZero(ValueOp):
+class NullIfZero(UnaryOp):
     """Set values to NULL if they are equal to zero.
 
     Commonly used in cases where divide-by-zero would produce an overflow or
@@ -80,31 +83,31 @@ class NullIfZero(ValueOp):
     """
 
     arg = rlz.numeric
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
-class IsNan(ValueOp):
+class IsNan(UnaryOp):
     arg = rlz.floating
-    output_type = rlz.shape_like('arg', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
-class IsInf(ValueOp):
+class IsInf(UnaryOp):
     arg = rlz.floating
-    output_type = rlz.shape_like('arg', dt.boolean)
+    output_dtype = dt.boolean
 
 
 @public
 class Abs(UnaryOp):
     """Absolute value"""
 
-    output_type = rlz.typeof('arg')
+    arg = rlz.numeric
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class Ceil(UnaryOp):
-
     """
     Round up to the nearest integer value greater than or equal to this value
 
@@ -117,15 +120,16 @@ class Ceil(UnaryOp):
 
     arg = rlz.numeric
 
-    def output_type(self):
+    @property
+    def output_dtype(self):
         if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg._factory
-        return rlz.shape_like(self.arg, dt.int64)
+            return self.arg.type()
+        else:
+            return dt.int64
 
 
 @public
 class Floor(UnaryOp):
-
     """
     Round down to the nearest integer value less than or equal to this value
 
@@ -138,10 +142,12 @@ class Floor(UnaryOp):
 
     arg = rlz.numeric
 
-    def output_type(self):
+    @property
+    def output_dtype(self):
         if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg._factory
-        return rlz.shape_like(self.arg, dt.int64)
+            return self.arg.type()
+        else:
+            return dt.int64
 
 
 @public
@@ -149,13 +155,16 @@ class Round(ValueOp):
     arg = rlz.numeric
     digits = rlz.optional(rlz.numeric)
 
-    def output_type(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg._factory
+    output_shape = rlz.shape_like("arg")
+
+    @property
+    def output_dtype(self):
+        if isinstance(self.arg.type(), dt.Decimal):
+            return self.arg.type()
         elif self.digits is None:
-            return rlz.shape_like(self.arg, dt.int64)
+            return dt.int64
         else:
-            return rlz.shape_like(self.arg, dt.double)
+            return dt.double
 
 
 @public
@@ -163,7 +172,9 @@ class Clip(ValueOp):
     arg = rlz.strict_numeric
     lower = rlz.optional(rlz.strict_numeric)
     upper = rlz.optional(rlz.strict_numeric)
-    output_type = rlz.typeof('arg')
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("args")
 
 
 @public
@@ -172,41 +183,41 @@ class BaseConvert(ValueOp):
     from_base = rlz.integer
     to_base = rlz.integer
 
-    def output_type(self):
-        return rlz.shape_like(tuple(self.flat_args()), dt.string)
+    output_dtype = dt.string
+    output_shape = rlz.shape_like("args")
 
 
 @public
 class MathUnaryOp(UnaryOp):
     arg = rlz.numeric
 
-    def output_type(self):
-        arg = self.arg
-        if isinstance(self.arg, ir.DecimalValue):
-            dtype = arg.type()
+    @immutable_property
+    def output_dtype(self):
+        if isinstance(self.arg.type(), dt.Decimal):
+            return self.arg.type()
         else:
-            dtype = dt.double
-        return rlz.shape_like(arg, dtype)
+            return dt.double
 
 
 @public
-class ExpandingTypeMathUnaryOp(MathUnaryOp):
-    def output_type(self):
-        if not isinstance(self.arg, ir.DecimalValue):
-            return super().output_type()
-        arg = self.arg
-        return rlz.shape_like(arg, arg.type().largest)
+class ExpandingMathUnaryOp(MathUnaryOp):
+    @immutable_property
+    def output_dtype(self):
+        if isinstance(self.arg.type(), dt.Decimal):
+            return self.arg.type().largest
+        else:
+            return dt.double
 
 
 @public
-class Exp(ExpandingTypeMathUnaryOp):
+class Exp(ExpandingMathUnaryOp):
     pass
 
 
 @public
 class Sign(UnaryOp):
     arg = rlz.numeric
-    output_type = rlz.typeof('arg')
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -241,17 +252,13 @@ class Log10(Logarithm):
 
 
 @public
-class Degrees(ExpandingTypeMathUnaryOp):
+class Degrees(ExpandingMathUnaryOp):
     """Converts radians to degrees"""
-
-    arg = rlz.numeric
 
 
 @public
 class Radians(MathUnaryOp):
     """Converts degrees to radians"""
-
-    arg = rlz.numeric
 
 
 # TRIGONOMETRIC OPERATIONS
@@ -261,8 +268,6 @@ class Radians(MathUnaryOp):
 class TrigonometricUnary(MathUnaryOp):
     """Trigonometric base unary"""
 
-    arg = rlz.numeric
-
 
 @public
 class TrigonometricBinary(BinaryOp):
@@ -270,7 +275,7 @@ class TrigonometricBinary(BinaryOp):
 
     left = rlz.numeric
     right = rlz.numeric
-    output_type = rlz.shape_like('args', dt.float64)
+    output_dtype = dt.float64
 
 
 @public

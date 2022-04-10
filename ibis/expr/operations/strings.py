@@ -8,7 +8,7 @@ from .core import UnaryOp, ValueOp
 @public
 class StringUnaryOp(UnaryOp):
     arg = rlz.string
-    output_type = rlz.shape_like('arg', dt.string)
+    output_dtype = dt.string
 
 
 @public
@@ -51,21 +51,25 @@ class Substring(ValueOp):
     arg = rlz.string
     start = rlz.integer
     length = rlz.optional(rlz.integer)
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_dtype = dt.string
+    output_shape = rlz.shape_like('arg')
 
 
 @public
 class StrRight(ValueOp):
     arg = rlz.string
     nchars = rlz.integer
-    output_type = rlz.shape_like('arg', dt.string)
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
 class Repeat(ValueOp):
     arg = rlz.string
     times = rlz.integer
-    output_type = rlz.shape_like('arg', dt.string)
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -74,7 +78,9 @@ class StringFind(ValueOp):
     substr = rlz.string
     start = rlz.optional(rlz.integer)
     end = rlz.optional(rlz.integer)
-    output_type = rlz.shape_like('arg', dt.int64)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.int64
 
 
 @public
@@ -82,7 +88,9 @@ class Translate(ValueOp):
     arg = rlz.string
     from_str = rlz.string
     to_str = rlz.string
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -90,7 +98,9 @@ class LPad(ValueOp):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -98,14 +108,18 @@ class RPad(ValueOp):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
 class FindInSet(ValueOp):
     needle = rlz.string
     values = rlz.value_list_of(rlz.string, min_length=1)
-    output_type = rlz.shape_like('needle', dt.int64)
+
+    output_shape = rlz.shape_like("needle")
+    output_dtype = dt.int64
 
 
 @public
@@ -113,29 +127,32 @@ class StringJoin(ValueOp):
     sep = rlz.string
     arg = rlz.value_list_of(rlz.string, min_length=1)
 
-    def output_type(self):
-        return rlz.shape_like(tuple(self.flat_args()), dt.string)
+    output_dtype = dt.string
+    output_shape = rlz.shape_like("arg")
 
 
 @public
 class StartsWith(ValueOp):
     arg = rlz.string
-    start = rlz.string
-    output_type = rlz.shape_like("arg", dt.boolean)
+    start = rlz.scalar(rlz.string)
+    output_dtype = dt.boolean
+    output_shape = rlz.shape_like("arg")
 
 
 @public
 class EndsWith(ValueOp):
     arg = rlz.string
-    end = rlz.string
-    output_type = rlz.shape_like("arg", dt.boolean)
+    end = rlz.scalar(rlz.string)
+    output_dtype = dt.boolean
+    output_shape = rlz.shape_like("arg")
 
 
 @public
 class FuzzySearch(ValueOp):
     arg = rlz.string
     pattern = rlz.string
-    output_type = rlz.shape_like('arg', dt.boolean)
+    output_dtype = dt.boolean
+    output_shape = rlz.shape_like('arg')
 
 
 @public
@@ -160,7 +177,9 @@ class RegexExtract(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     index = rlz.integer
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -168,7 +187,9 @@ class RegexReplace(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -176,20 +197,26 @@ class StringReplace(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
 class StringSplit(ValueOp):
     arg = rlz.string
     delimiter = rlz.string
-    output_type = rlz.shape_like('arg', dt.Array(dt.string))
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.Array(dt.string)
 
 
 @public
 class StringConcat(ValueOp):
     arg = rlz.value_list_of(rlz.string)
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
@@ -208,14 +235,16 @@ class ParseURL(ValueOp):
         }
     )
     key = rlz.optional(rlz.string)
-    output_type = rlz.shape_like('arg', dt.string)
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
 
 
 @public
 class StringLength(UnaryOp):
-    output_type = rlz.shape_like('arg', dt.int32)
+    output_dtype = dt.int32
 
 
 @public
 class StringAscii(UnaryOp):
-    output_type = rlz.shape_like('arg', dt.int32)
+    output_dtype = dt.int32

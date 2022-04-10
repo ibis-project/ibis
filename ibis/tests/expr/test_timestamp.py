@@ -42,7 +42,8 @@ def test_extract_fields(field, expected_operation, expected_type, alltypes):
     result = getattr(alltypes.i, field)()
     assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), expected_operation)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), expected_operation)
 
 
 def test_now():
@@ -77,12 +78,12 @@ def test_comparisons_string(alltypes):
     val = '2015-01-01 00:00:00'
     expr = alltypes.i > val
     op = expr.op()
-    assert isinstance(op.right, ir.TimestampScalar)
+    assert isinstance(op.right, ir.StringScalar)
 
     expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
-    assert isinstance(op.right, ir.TimestampScalar)
+    assert isinstance(op.right, ir.StringScalar)
 
 
 def test_comparisons_pandas_timestamp(alltypes):
@@ -119,8 +120,10 @@ def test_timestamp_field_access_on_date(
 ):
     date_col = alltypes.i.date()
     result = getattr(date_col, field)()
+    assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), expected_operation)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), expected_operation)
 
 
 @pytest.mark.parametrize(
@@ -154,8 +157,10 @@ def test_timestamp_field_access_on_time(
 ):
     time_col = alltypes.i.time()
     result = getattr(time_col, field)()
+    assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), expected_operation)
+    assert isinstance(result.op(), ops.Alias)
+    assert isinstance(result.op().arg.op(), expected_operation)
 
 
 @pytest.mark.parametrize(

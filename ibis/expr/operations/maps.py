@@ -1,15 +1,16 @@
 from public import public
 
 from ...common import exceptions as com
+from ...common.validators import immutable_property
 from .. import datatypes as dt
 from .. import rules as rlz
-from .core import ValueOp
+from .core import UnaryOp, ValueOp
 
 
 @public
-class MapLength(ValueOp):
+class MapLength(UnaryOp):
     arg = rlz.mapping
-    output_type = rlz.shape_like('arg', dt.int64)
+    output_dtype = dt.int64
 
 
 @public
@@ -17,8 +18,11 @@ class MapValueForKey(ValueOp):
     arg = rlz.mapping
     key = rlz.one_of([rlz.string, rlz.integer])
 
-    def output_type(self):
-        return rlz.shape_like(tuple(self.args), self.arg.type().value_type)
+    output_shape = rlz.shape_like("args")
+
+    @immutable_property
+    def output_dtype(self):
+        return self.arg.type().value_type
 
 
 @public
@@ -27,43 +31,44 @@ class MapValueOrDefaultForKey(ValueOp):
     key = rlz.one_of([rlz.string, rlz.integer])
     default = rlz.any
 
-    def output_type(self):
-        arg = self.arg
-        default = self.default
-        map_type = arg.type()
-        value_type = map_type.value_type
-        default_type = default.type()
+    output_shape = rlz.shape_like("args")
 
-        if default is not None and not dt.same_kind(default_type, value_type):
+    @property
+    def output_dtype(self):
+        value_type = self.arg.type().value_type
+        default_type = self.default.type()
+
+        if not dt.same_kind(default_type, value_type):
             raise com.IbisTypeError(
                 "Default value\n{}\nof type {} cannot be cast to map's value "
-                "type {}".format(default, default_type, value_type)
+                "type {}".format(self.default, default_type, value_type)
             )
 
-        result_type = dt.highest_precedence((default_type, value_type))
-        return rlz.shape_like(tuple(self.args), result_type)
+        return dt.highest_precedence((default_type, value_type))
 
 
 @public
-class MapKeys(ValueOp):
+class MapKeys(UnaryOp):
     arg = rlz.mapping
 
-    def output_type(self):
-        arg = self.arg
-        return rlz.shape_like(arg, dt.Array(arg.type().key_type))
+    @immutable_property
+    def output_dtype(self):
+        return dt.Array(self.arg.type().key_type)
 
 
 @public
-class MapValues(ValueOp):
+class MapValues(UnaryOp):
     arg = rlz.mapping
 
-    def output_type(self):
-        arg = self.arg
-        return rlz.shape_like(arg, dt.Array(arg.type().value_type))
+    @immutable_property
+    def output_dtype(self):
+        return dt.Array(self.arg.type().value_type)
 
 
 @public
 class MapConcat(ValueOp):
     left = rlz.mapping
     right = rlz.mapping
-    output_type = rlz.typeof('left')
+
+    output_shape = rlz.shape_like("args")
+    output_dtype = rlz.dtype_like("args")

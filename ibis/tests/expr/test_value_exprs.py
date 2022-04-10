@@ -1,4 +1,3 @@
-import functools
 import operator
 import uuid
 from collections import OrderedDict
@@ -323,7 +322,8 @@ def test_distinct_table(functional_alltypes):
 
 def test_nunique(functional_alltypes):
     expr = functional_alltypes.string_col.nunique()
-    assert isinstance(expr.op(), ops.CountDistinct)
+    assert isinstance(expr.op(), ops.Alias)
+    assert isinstance(expr.op().arg.op(), ops.CountDistinct)
 
 
 def test_isnull(table):
@@ -1019,11 +1019,12 @@ def test_custom_type_binary_operations():
 
         __radd__ = __add__
 
-    class FooNode(ops.ValueOp):
+    class FooNode(ops.Node):
         value = rlz.integer
 
+        @property
         def output_type(self):
-            return functools.partial(Foo, dtype=dt.int64)
+            return Foo
 
     left = ibis.literal(2)
     right = FooNode(3).to_expr()
@@ -1042,7 +1043,7 @@ def test_empty_array_as_argument():
     class Foo(ir.Expr):
         pass
 
-    class FooNode(ops.ValueOp):
+    class FooNode(ops.Node):
         value = rlz.value(dt.Array(dt.int64))
 
         def output_type(self):

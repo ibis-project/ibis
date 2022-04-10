@@ -33,6 +33,12 @@ def table(op, expr):
     return client._context.table(name)
 
 
+@translate.register(ops.Alias)
+def alias(op, expr):
+    arg = translate(op.arg)
+    return arg.alias(op.name)
+
+
 @translate.register(ops.Literal)
 def literal(op, expr):
     if isinstance(op.value, (set, frozenset)):
@@ -84,13 +90,9 @@ def selection(op, expr):
             for name in expr.columns:
                 column = expr.get_column(name)
                 field = translate(column)
-                if column.has_name():
-                    field = field.alias(column.get_name())
                 selections.append(field)
         elif isinstance(expr, ir.ValueExpr):
             field = translate(expr)
-            if expr.has_name():
-                field = field.alias(expr.get_name())
             selections.append(field)
         else:
             raise com.TranslationError(
@@ -120,8 +122,6 @@ def aggregation(op, expr):
     metrics = []
     for expr in op.metrics:
         agg = translate(expr)
-        if expr.has_name():
-            agg = agg.alias(expr.get_name())
         metrics.append(agg)
 
     return table.aggregate(group_by, metrics)

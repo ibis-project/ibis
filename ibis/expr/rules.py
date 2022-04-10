@@ -10,6 +10,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.validators import (  # noqa: F401
+    immutable_property,
     instance_of,
     isin,
     list_of,
@@ -19,6 +20,12 @@ from ibis.common.validators import (  # noqa: F401
     tuple_of,
     validator,
 )
+
+
+class Shape(enum.IntEnum):
+    SCALAR = 0
+    COLUMNAR = 1
+    # TABULAR = 2
 
 
 def highest_precedence_dtype(exprs):
@@ -56,23 +63,6 @@ def castable(source, target):
 
 def comparable(left, right):
     return castable(left, right) or castable(right, left)
-
-
-def cast(source, target):
-    """Currently Literal to *Scalar implicit casts are allowed"""
-    import ibis.expr.operations as ops  # TODO: don't use ops here
-
-    if not castable(source, target):
-        raise com.IbisTypeError('Source is not castable to target type!')
-
-    # currently it prevents column -> scalar implicit castings
-    # however the datatypes are matching
-    op = source.op()
-    if not isinstance(op, ops.Literal):
-        raise com.IbisTypeError('Only able to implicitly cast literals!')
-
-    out_type = target.type().scalar_type()
-    return out_type(op)
 
 
 # ---------------------------------------------------------------------
@@ -251,41 +241,71 @@ def promoter(fn):
     return wrapper
 
 
-@promoter
-def shape_like(arg, dtype=None):
-    if util.is_iterable(arg):
-        datatype = dtype or highest_precedence_dtype(arg)
-        columnar = util.any_of(arg, ir.AnyColumn)
-    else:
-        datatype = dtype or arg.type()
-        columnar = isinstance(arg, ir.AnyColumn)
+def dtype_like(name):
+    @immutable_property
+    def output_dtype(self):
+        arg = getattr(self, name)
+        if util.is_iterable(arg):
+            return highest_precedence_dtype(arg)
+        else:
+            return arg.type()
 
-    dtype = dt.dtype(datatype)
-
-    if columnar:
-        return dtype.column_type()
-    else:
-        return dtype.scalar_type()
+    return output_dtype
 
 
-@promoter
-def scalar_like(arg):
-    output_dtype = arg.type()
-    return output_dtype.scalar_type()
+def shape_like(name):
+    @immutable_property
+    def output_shape(self):
+        arg = getattr(self, name)
+        if util.is_iterable(arg):
+            for expr in arg:
+                try:
+                    op = expr.op()
+                except AttributeError:
+                    continue
+                if op.output_shape is Shape.COLUMNAR:
+                    return Shape.COLUMNAR
+            return Shape.SCALAR
+        else:
+            return arg.op().output_shape
+
+    return output_shape
 
 
-@promoter
-def array_like(arg):
-    output_dtype = arg.type()
-    return output_dtype.column_type()
+# TODO(kszucs): might just use bounds instead of actual literal values
+# that could simplify interval binop output_type methods
+# TODO(kszucs): pre-generate mapping?
+def _promote_numeric_binop(exprs, op):
+    bounds, dtypes = [], []
+    for arg in exprs:
+        dtypes.append(arg.type())
+        if hasattr(arg.op(), 'value'):
+            # arg.op() is a literal
+            bounds.append([arg.op().value])
+        else:
+            bounds.append(arg.type().bounds)
+
+    # In some cases, the bounding type might be int8, even though neither
+    # of the types are that small. We want to ensure the containing type is
+    # _at least_ as large as the smallest type in the expression.
+    values = starmap(op, product(*bounds))
+    dtypes += [dt.infer(value) for value in values]
+
+    return dt.highest_precedence(dtypes)
 
 
-column_like = array_like
+def numeric_like(name, op):
+    @immutable_property
+    def output_dtype(self):
+        args = getattr(self, name)
+        if util.all_of(args, ir.IntegerValue):
+            result = _promote_numeric_binop(args, op)
+        else:
+            result = highest_precedence_dtype(args)
 
+        return result
 
-@promoter
-def typeof(arg):
-    return arg._factory
+    return output_dtype
 
 
 @validator
@@ -489,36 +509,6 @@ def window(win, *, from_base_table_of, this):
         if not isinstance(order_var.type(), dt.Timestamp):
             raise com.IbisInputError(error_msg)
     return win
-
-
-# TODO: might just use bounds instead of actual literal values
-# that could simplify interval binop output_type methods
-def _promote_numeric_binop(exprs, op):
-    bounds, dtypes = [], []
-    for arg in exprs:
-        dtypes.append(arg.type())
-        if hasattr(arg.op(), 'value'):
-            # arg.op() is a literal
-            bounds.append([arg.op().value])
-        else:
-            bounds.append(arg.type().bounds)
-
-    # In some cases, the bounding type might be int8, even though neither
-    # of the types are that small. We want to ensure the containing type is
-    # _at least_ as large as the smallest type in the expression.
-    values = starmap(op, product(*bounds))
-    dtypes += [dt.infer(value, allow_overflow=True) for value in values]
-
-    return dt.highest_precedence(dtypes)
-
-
-@promoter
-def numeric_like(args, op):
-    if util.all_of(args, ir.IntegerValue):
-        dtype = _promote_numeric_binop(args, op)
-        return shape_like(args, dtype=dtype)
-    else:
-        return shape_like(args)
 
 
 # TODO: create varargs marker for impala udfs

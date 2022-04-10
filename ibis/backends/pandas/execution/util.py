@@ -115,7 +115,7 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = getattr(expr, '_name', None)
+    result_name = expr._safe_name
 
     if isinstance(expr, (ir.DestructColumn, ir.StructColumn)):
         return _coerce_to_dataframe(result, expr.type())
@@ -126,7 +126,7 @@ def coerce_to_output(
         return _coerce_to_dataframe(result, expr.type())
     elif isinstance(result, pd.Series):
         return result.rename(result_name)
-    elif isinstance(expr.op(), ops.Reduction):
+    elif isinstance(expr, ir.ScalarExpr):
         if index is None:
             # Wrap `result` into a single-element Series.
             return pd.Series([result], name=result_name)
