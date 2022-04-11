@@ -363,3 +363,31 @@ FROM (
   GROUP BY 1
 ) t0"""
     assert result == expected
+
+
+def test_column_expr_retains_name():
+    t = ibis.table(
+        [
+            ('int_col', 'int32'),
+        ],
+        'int_col_table',
+    )
+    named_derived_expr = (t.int_col + 4).name('foo')
+    result = Compiler.to_sql(named_derived_expr)
+    expected = 'SELECT `int_col` + 4 AS `foo`\nFROM int_col_table'
+
+    assert result == expected
+
+
+def test_column_expr_default_name():
+    t = ibis.table(
+        [
+            ('int_col', 'int32'),
+        ],
+        'int_col_table',
+    )
+    named_derived_expr = t.int_col + 4
+    result = Compiler.to_sql(named_derived_expr)
+    expected = 'SELECT `int_col` + 4 AS `tmp`\nFROM int_col_table'
+
+    assert result == expected

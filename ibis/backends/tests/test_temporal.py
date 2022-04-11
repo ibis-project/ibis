@@ -29,10 +29,9 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
-    result = expr.execute()
-    expected = backend.default_series_rename(expected)
+    result = expr.name(attr).execute()
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.rename(attr))
 
 
 @pytest.mark.parametrize(
@@ -51,11 +50,11 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract(backend, alltypes, df, attr):
     method = getattr(alltypes.timestamp_col, attr)
-    expr = method()
+    expr = method().name(attr)
     result = expr.execute()
     expected = backend.default_series_rename(
         getattr(df.timestamp_col.dt, attr.replace('_', '')).astype('int32')
-    )
+    ).rename(attr)
     backend.assert_series_equal(result, expected)
 
 
@@ -66,7 +65,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     result = expr.execute()
     expected = backend.default_series_rename(
         (df.timestamp_col.dt.microsecond // 1_000).astype('int32')
-    )
+    ).rename("millisecond")
     backend.assert_series_equal(result, expected)
 
 

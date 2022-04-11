@@ -177,10 +177,11 @@ class Backend(BaseSQLBackend):
             return self.compile(expr, timecontext, params, **kwargs).toPandas()
         elif isinstance(expr, types.ColumnExpr):
             # expression must be named for the projection
-            expr = expr.name('tmp')
+            if not expr.has_name():
+                expr = expr.name("tmp")
             return self.compile(
                 expr.to_projection(), timecontext, params, **kwargs
-            ).toPandas()['tmp']
+            ).toPandas()[expr.get_name()]
         elif isinstance(expr, types.ScalarExpr):
             compiled = self.compile(expr, timecontext, params, **kwargs)
             if isinstance(compiled, Column):

@@ -192,13 +192,14 @@ def test_complex_array_expr_projection(db, alltypes):
     expr2 = expr.string_col.cast('double')
 
     query = ibis.clickhouse.compile(expr2)
-    expected = """SELECT CAST(`string_col` AS Float64) AS `tmp`
+    name = expr2.get_name()
+    expected = f"""SELECT CAST(`string_col` AS Float64) AS `{name}`
 FROM (
   SELECT `string_col`, count(*) AS `count`
-  FROM {0}.`functional_alltypes`
+  FROM {db.name}.`functional_alltypes`
   GROUP BY `string_col`
 ) t0"""
-    assert query == expected.format(db.name)
+    assert query == expected
 
 
 @pytest.mark.parametrize(
