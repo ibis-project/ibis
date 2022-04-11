@@ -317,8 +317,11 @@ class SelectBuilder:
                 # Something more complicated.
                 base_table = L.find_source_table(expr)
 
-                table_expr = base_table.projection([expr.name('tmp')])
-                result_handler = _get_column('tmp')
+                if not expr.has_name():
+                    expr = expr.name('tmp')
+
+                table_expr = base_table.projection([expr])
+                result_handler = _get_column(expr.get_name())
 
             return table_expr, result_handler
         else:

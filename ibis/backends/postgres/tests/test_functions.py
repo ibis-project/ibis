@@ -1546,12 +1546,13 @@ def test_string_to_binary_cast(con):
     t = con.table('functional_alltypes').limit(10)
     expr = t.string_col.cast('binary')
     result = expr.execute()
+    name = expr.get_name()
     sql_string = (
-        "SELECT decode(string_col, 'escape') AS tmp "
+        f"SELECT decode(string_col, 'escape') AS \"{name}\" "
         "FROM functional_alltypes LIMIT 10"
     )
     raw_data = [row[0][0] for row in con.raw_sql(sql_string).fetchall()]
-    expected = pd.Series(raw_data, name='tmp')
+    expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
 
 
@@ -1559,11 +1560,14 @@ def test_string_to_binary_round_trip(con):
     t = con.table('functional_alltypes').limit(10)
     expr = t.string_col.cast('binary').cast('string')
     result = expr.execute()
+    name = expr.get_name()
     sql_string = (
-        "SELECT encode(decode(string_col, 'escape'), 'escape') AS tmp "
+        "SELECT encode(decode(string_col, 'escape'), 'escape') AS "
+        f"\"{name}\""
         "FROM functional_alltypes LIMIT 10"
     )
     expected = pd.Series(
-        [row[0][0] for row in con.raw_sql(sql_string).fetchall()], name='tmp'
+        [row[0][0] for row in con.raw_sql(sql_string).fetchall()],
+        name=name,
     )
     tm.assert_series_equal(result, expected)

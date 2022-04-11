@@ -106,7 +106,7 @@ def test_complex_array_expr_projection(alltypes):
 
     query = Compiler.to_sql(expr2)
     expected = """\
-SELECT CAST(`g` AS double) AS `tmp`
+SELECT CAST(`g` AS double) AS `cast(g, float64)`
 FROM (
   SELECT `g`, count(*) AS `count`
   FROM alltypes
