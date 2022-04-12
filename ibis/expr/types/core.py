@@ -32,6 +32,9 @@ class Expr:
         # TODO: all inputs must inherit from a common table API
         self._arg = arg
 
+    def _erase_exprs(self):
+        return self._arg._erase_exprs()
+
     def __repr__(self) -> str:
         if not config.options.interactive:
             return self._repr()

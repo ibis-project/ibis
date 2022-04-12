@@ -69,7 +69,7 @@ class AnnotableMeta(BaseMeta):
 
     __slots__ = ()
 
-    def __new__(metacls, clsname, bases, dct):
+    def __new__(metacls, clsname, bases, dct, **kwargs):
         # inherit from parent signatures
         params = {}
         properties = {}
@@ -125,7 +125,7 @@ class AnnotableMeta(BaseMeta):
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
         attribs["argnames"] = tuple(signature.parameters.keys())
-        return super().__new__(metacls, clsname, bases, attribs)
+        return super().__new__(metacls, clsname, bases, attribs, **kwargs)
 
 
 class Annotable(Base, Hashable, metaclass=AnnotableMeta):
@@ -195,6 +195,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
     def _reconstruct(cls, kwargs):
         # bypass Annotable.__construct__() when deserializing
         self = cls.__new__(cls)
+        # TODO(kszucs): set attributes directly instead using object.__setattr__
         self.__init__(**kwargs)
         return self
 
