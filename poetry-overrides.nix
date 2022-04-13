@@ -36,34 +36,10 @@ self: super:
     '';
   });
 
-  lz4 = super.lz4.overridePythonAttrs (
-    attrs: lib.optionalAttrs (lib.versionOlder super.lz4.version "4.0.0") {
-      nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-        self.pkgconfig
-      ];
-    }
-  );
-
-  mkdocs-gen-files = super.mkdocs-gen-files.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.poetry
-    ];
-  });
-
-  mkdocs-autorefs = super.mkdocs-autorefs.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.pdm-pep517
-    ];
-  });
-
   mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
     propagatedBuildInputs = (attrs.propagatedBuildInputs or [ ]) ++ [
       self.ipython_genutils
     ];
-  });
-
-  pytest-profiling = super.pytest-profiling.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.setuptools-git ];
   });
 
   nbconvert = super.nbconvert.overridePythonAttrs (attrs: {
@@ -81,5 +57,31 @@ self: super:
 
   tabulate = super.tabulate.overridePythonAttrs (_: {
     TABULATE_INSTALL = "lib-only";
+  });
+
+  pyparsing = super.pyparsing.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.flit-core
+    ];
+  });
+
+  jupyterlab-pygments = super.jupyterlab-pygments.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.jupyter-packaging
+    ];
+  });
+
+  pandas = super.pandas.overridePythonAttrs (_: {
+    buildPhase = ''
+      runHook preBuild
+      python setup.py build_ext --parallel $NIX_BUILD_CORES bdist_wheel
+      runHook postBuild
+    '';
+  });
+
+  soupsieve = super.soupsieve.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.hatchling
+    ];
   });
 }
