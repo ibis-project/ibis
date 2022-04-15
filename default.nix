@@ -13,6 +13,7 @@ let
       backends = [
         "dask"
         "datafusion"
+        "duckdb"
         "pandas"
         "sqlite"
       ];

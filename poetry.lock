@@ -306,7 +306,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "dask"
-version = "2022.4.0"
+version = "2022.4.1"
 description = "Parallel PyData with Task Scheduling"
 category = "main"
 optional = true
@@ -324,10 +324,10 @@ toolz = ">=0.8.2"
 
 [package.extras]
 array = ["numpy (>=1.18)"]
-complete = ["bokeh (>=2.4.2)", "distributed (==2022.04.0)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
+complete = ["bokeh (>=2.4.2)", "distributed (==2022.04.1)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
 dataframe = ["numpy (>=1.18)", "pandas (>=1.0)"]
 diagnostics = ["bokeh (>=2.4.2)", "jinja2"]
-distributed = ["distributed (==2022.04.0)"]
+distributed = ["distributed (==2022.04.1)"]
 test = ["pytest", "pytest-rerunfailures", "pytest-xdist", "pre-commit"]
 
 [[package]]
@@ -386,7 +386,7 @@ test = ["pytest", "black"]
 
 [[package]]
 name = "duckdb"
-version = "0.3.2"
+version = "0.3.3"
 description = "DuckDB embedded database"
 category = "main"
 optional = true
@@ -621,7 +621,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 
 [[package]]
 name = "importlib-resources"
-version = "5.6.0"
+version = "5.7.0"
 description = "Read resources from Python packages"
 category = "dev"
 optional = false
@@ -675,7 +675,7 @@ toml = {version = ">=0.10.2", markers = "python_version > \"3.6\""}
 
 [[package]]
 name = "ipykernel"
-version = "6.12.1"
+version = "6.13.0"
 description = "IPython Kernel for Jupyter"
 category = "dev"
 optional = false
@@ -826,7 +826,7 @@ traitlets = "*"
 
 [[package]]
 name = "jupyterlab-pygments"
-version = "0.2.0"
+version = "0.2.2"
 description = "Pygments theme using JupyterLab CSS variables"
 category = "dev"
 optional = false
@@ -960,11 +960,11 @@ testing = ["coverage", "pytest (>=3.6,<4)", "pytest-cov", "pytest-regressions"]
 
 [[package]]
 name = "mdurl"
-version = "0.1.0"
+version = "0.1.1"
 description = "Markdown URL utilities"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [[package]]
 name = "mergedeep"
@@ -1418,14 +1418,14 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "0.14.0"
+version = "0.14.1"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 category = "main"
 optional = false
 python-versions = ">=3.5,<4.0"
 
 [package.dependencies]
-dunamai = ">=1.10,<2.0"
+dunamai = ">=1.11.1,<2.0.0"
 jinja2 = {version = ">=2.11.1,<4", markers = "python_version >= \"3.6\" and python_version < \"4.0\""}
 tomlkit = ">=0.4"
 
@@ -1958,7 +1958,7 @@ python-versions = "*"
 
 [[package]]
 name = "soupsieve"
-version = "2.3.2"
+version = "2.3.2.post1"
 description = "A modern CSS selector implementation for Beautiful Soup."
 category = "dev"
 optional = false
@@ -2253,7 +2253,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "997b084e885bd91b7cdf4d23a5a043997b9e7f298c91882d7d67a3a22a5530ff"
+content-hash = "8797009a396ad857a84d1c8e85d679850c2d6da4bd6e804e01ef53b5c9f24d8f"
 
 [metadata.files]
 appnope = [
@@ -2718,8 +2718,8 @@ coverage = [
     {file = "coverage-6.3.2.tar.gz", hash = "sha256:03e2a7826086b91ef345ff18742ee9fc47a6839ccd517061ef8fa1976e652ce9"},
 ]
 dask = [
-    {file = "dask-2022.4.0-py3-none-any.whl", hash = "sha256:b689cb0ab40c042c5445b886c2136f42966aa57bf6c86561916ab6449b5bad1a"},
-    {file = "dask-2022.4.0.tar.gz", hash = "sha256:e8d0f5840c9df56c60a48b1b3ca326a7a9597a19175b7cd55e12709ccf13ac78"},
+    {file = "dask-2022.4.1-py3-none-any.whl", hash = "sha256:df4231680fb9ba2274b4eafc4a42d87372e32b9de3e72811120afdaf4e3a4edf"},
+    {file = "dask-2022.4.1.tar.gz", hash = "sha256:f3f4344edb8169f5040225f6a41dbc3042db886ed7546f11bab1270a5cd38454"},
 ]
 datafusion = [
     {file = "datafusion-0.5.2-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:7bc19fbc01d42690b4698f1a8207b110a0e51bd8de2a5725fc86431b7c4ed8cd"},
@@ -2764,44 +2764,19 @@ docstring-parser = [
     {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
 ]
 duckdb = [
-    {file = "duckdb-0.3.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d9e70bd12bc00fe1276a534375a84226bcca0bbef5be431f5cc15a1c342a72dd"},
-    {file = "duckdb-0.3.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f98893e06eb9b5bbceb73fed925469e3c9b055cd260516ed08fd306af18fb975"},
-    {file = "duckdb-0.3.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:c8b2c2f254e881c58e2b4affef58dd175a8df4e8fda8bd85eaf1be6b19764a47"},
-    {file = "duckdb-0.3.2-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:df896228c7bce6998998942a43e92dbb5089d7bc98d3865c20da541bfc548f97"},
-    {file = "duckdb-0.3.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f39eb35cf52a9ef6f818db3d9fa6fdafea6b9e7ad5cb505a86df395e227f9b4d"},
-    {file = "duckdb-0.3.2-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:4221685f1f0cb6ec6527aaa3b49fe00d7d000fd870f5a5108defdc493a3c157e"},
-    {file = "duckdb-0.3.2-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:227dde69ae3816261c23aed783ef239163dc59b44c5cac14ce39c1c192f42f83"},
-    {file = "duckdb-0.3.2-cp310-cp310-win32.whl", hash = "sha256:bee99a59c97fd89b4e76701ed14549a9390cb5823ace6294cad2fb67964fe943"},
-    {file = "duckdb-0.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:0a7d25bac9a902f7d6af28ec4ab68c27318d16e69237d8d8cc80e2a35c0e49f7"},
-    {file = "duckdb-0.3.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:9261a9bc7f2877b385887af2b70b26dc5a78c61b68bc4a688b2f175edfaad9d4"},
-    {file = "duckdb-0.3.2-cp36-cp36m-win32.whl", hash = "sha256:2c827e63bcbe71210b0633d4a14e769d2d61033d78326c7167ead545c83a598a"},
-    {file = "duckdb-0.3.2-cp36-cp36m-win_amd64.whl", hash = "sha256:fb7a232437f5ef079960103fb9d69047a700e9cf24aff30ec21b6a44544f284e"},
-    {file = "duckdb-0.3.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:e7c0731359c2e9f9de872f91dac23c5dedbb1576a2b0dba2786be09e1858c4bc"},
-    {file = "duckdb-0.3.2-cp37-cp37m-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c1d53fce07b1086fc4f6a516d7a577bd451e599d4a56dab79639a70d5c6b9c13"},
-    {file = "duckdb-0.3.2-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:619b0f20b327eaa8c8bd42d17ab421b4870af79c8c0b096c0438ad08e34cd54f"},
-    {file = "duckdb-0.3.2-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:990930411cd9f70bc5bfde6d157d3c89ea11952792ade34d5db62828f6e0ff94"},
-    {file = "duckdb-0.3.2-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:069452ced0e0a02ccae7f4f2649700b00ae99d4c4ea1c6c1239a20cf44900aac"},
-    {file = "duckdb-0.3.2-cp37-cp37m-win32.whl", hash = "sha256:5c076ba341e76c585ef4272f8dd2f8b98a9f5810935cc83552d1977aaae378d6"},
-    {file = "duckdb-0.3.2-cp37-cp37m-win_amd64.whl", hash = "sha256:d879d55a609ad37f05bff51d451a720e7a0023c1c79945ec3eb68fdd4e09af88"},
-    {file = "duckdb-0.3.2-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:9c45bbedcace15d3aae0a9ba6e3026a4ca401c9267b903e950b0ef55b7871536"},
-    {file = "duckdb-0.3.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:7e54cb97311031a102b93a2ba291c06f012d3fdf46342d5da7ae7266c95e4f86"},
-    {file = "duckdb-0.3.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:f0e08dac08e198263fd1d38d9dcd3897f7350d92fa6a8c3ddcb34e2f5fa89f42"},
-    {file = "duckdb-0.3.2-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c2628a356f82e842410f4d74e8c7f2fec11211dece7aa7ae0d368c3b61838921"},
-    {file = "duckdb-0.3.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:bd739e50ccc9e64433bbb62eb48c8722c20e0a4d6377c800da59cdb7afea6a83"},
-    {file = "duckdb-0.3.2-cp38-cp38-musllinux_1_1_i686.whl", hash = "sha256:92a7dda2b99939eb213b8c793563df2d46cf5f7a065484b6cf2a1e5e5c3dbfbb"},
-    {file = "duckdb-0.3.2-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:2460c54ddb1bc3e15f4d644a02519a0942585c1e7ec52f2892664dd4ab9ecb7a"},
-    {file = "duckdb-0.3.2-cp38-cp38-win32.whl", hash = "sha256:c7595c3d30f75817811fb67640f60625e242ebaf0337cf6adfe2fa4ae31320e1"},
-    {file = "duckdb-0.3.2-cp38-cp38-win_amd64.whl", hash = "sha256:d3a46b5a365380481a83f2d48390ce9f23ac085f056d81111d619d673fcf030a"},
-    {file = "duckdb-0.3.2-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:a52ddcd7458f37ad71342875cf7e9014732e27da4c70e673a3fd753f4e8e8fe2"},
-    {file = "duckdb-0.3.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:17a5a8c17735c7d39eeb0f66743746b47aa8e6ee5b671341e263e0346fd2b232"},
-    {file = "duckdb-0.3.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:dbd6f4787f94416d3bbc79a72066a42e5d9897fb7216118277a49364321f0a0f"},
-    {file = "duckdb-0.3.2-cp39-cp39-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:493de839a070234d460e94e496233844e41c2cedeb34953f6c8864596d7db007"},
-    {file = "duckdb-0.3.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:486cd1b0a1bd658477ead04d1b7bc7a339ccaefe760e673302ee82042b4a713e"},
-    {file = "duckdb-0.3.2-cp39-cp39-musllinux_1_1_i686.whl", hash = "sha256:6f2c4afff78cb4b97ebf81bd2a3909523776904b654f0bdd28191f2f8018252b"},
-    {file = "duckdb-0.3.2-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:faa02d7677f31ab5b8da550e0436b8a3db508b6dd8d8b393e7ed01e7245975dd"},
-    {file = "duckdb-0.3.2-cp39-cp39-win32.whl", hash = "sha256:f83be01f7ee6c72852b74097659e294ea1f3729207e387a6e102e3e5cd7a05d9"},
-    {file = "duckdb-0.3.2-cp39-cp39-win_amd64.whl", hash = "sha256:b976ae36d2ea8b8c64b4297bb295176b356a8fe1bb4d0614e9dc34217e4642af"},
-    {file = "duckdb-0.3.2.tar.gz", hash = "sha256:ca0473b2e19119ad4862452a7554050356ef18c25c26650c4e6b7f22d112143f"},
+    {file = "duckdb-0.3.3-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d75b7e54dd3ee8ffc19112b3cb5f6bc7024f80474d7ccdd2832183ed626d7860"},
+    {file = "duckdb-0.3.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5b60cf015a84055954be20e38889f85ebeb9e503f550be96f9f2e9b681a05def"},
+    {file = "duckdb-0.3.3-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:b1d7f2eb3f2d71b5c0ef6e7564ef49a07840d2cd28ea42f9a0877434cba08a85"},
+    {file = "duckdb-0.3.3-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:ac1bb736be38dca83be6e3af327b8a44ea6b2cc78bd2dec9ea81f4d5e2d3e031"},
+    {file = "duckdb-0.3.3-cp310-cp310-win32.whl", hash = "sha256:03e9a28b94db53c68af66912a7a19ce71ac67daef6beec4877c8c5e6436765de"},
+    {file = "duckdb-0.3.3-cp310-cp310-win_amd64.whl", hash = "sha256:7d12a37cf064710329f1d5e7090e51428f64ead93a5f788201434d19f87b98cb"},
+    {file = "duckdb-0.3.3-cp36-cp36m-win32.whl", hash = "sha256:d5f67f25ec034467e2b01d90dd6e37ba573f80ea71ea31a91c803f570b9815e4"},
+    {file = "duckdb-0.3.3-cp36-cp36m-win_amd64.whl", hash = "sha256:85b196b555dacc1340d10eac45ddcb855106b56c3c3926588365f38b1620877f"},
+    {file = "duckdb-0.3.3-cp37-cp37m-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:cc500b36858da1b6834f39d9057fc4ea2c48729b2c65a2d4311846452d786ab5"},
+    {file = "duckdb-0.3.3-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b7563e7f227d7b5a7a14f73a25c915d360926e7df0533e70deba881a04627761"},
+    {file = "duckdb-0.3.3-cp37-cp37m-musllinux_1_1_i686.whl", hash = "sha256:2cc7c89aa37894430d05270766525ac21b24081809c2b061176887d2c3863a26"},
+    {file = "duckdb-0.3.3-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:e972b2439eb8362dddf83006737b3b3a8dbe765a3934796ec036a97afae19cef"},
+    {file = "duckdb-0.3.3.tar.gz", hash = "sha256:4129d85af6e09789b3325205fdfec1673bdcc35f524159e638c39ef83c48c1ef"},
 ]
 duckdb-engine = [
     {file = "duckdb_engine-0.1.8-py3-none-any.whl", hash = "sha256:308c1318b1b526a5d89be2c7b3da748a4189aae4916151fd3ade65611377fbec"},
@@ -2933,8 +2908,8 @@ importlib-metadata = [
     {file = "importlib_metadata-4.11.3.tar.gz", hash = "sha256:ea4c597ebf37142f827b8f39299579e31685c31d3a438b59f469406afd0f2539"},
 ]
 importlib-resources = [
-    {file = "importlib_resources-5.6.0-py3-none-any.whl", hash = "sha256:a9dd72f6cc106aeb50f6e66b86b69b454766dd6e39b69ac68450253058706bcc"},
-    {file = "importlib_resources-5.6.0.tar.gz", hash = "sha256:1b93238cbf23b4cde34240dd8321d99e9bf2eb4bc91c0c99b2886283e7baad85"},
+    {file = "importlib_resources-5.7.0-py3-none-any.whl", hash = "sha256:9c4c12f9ef4329a00c1f72f30bddb4f10e582766b8705980bb76356b3ba8bc91"},
+    {file = "importlib_resources-5.7.0.tar.gz", hash = "sha256:f6a4a9949f36ae289facec8dac1a899a54cbaf6a135cc8552d2c8b69209c06a3"},
 ]
 impyla = [
     {file = "impyla-0.17.0-py2.py3-none-any.whl", hash = "sha256:3bf1a9aec0ce141a784962c5fc0db670df51ca08db59cb0eae01b74708377d9b"},
@@ -2948,8 +2923,8 @@ ipdb = [
     {file = "ipdb-0.13.9.tar.gz", hash = "sha256:951bd9a64731c444fd907a5ce268543020086a697f6be08f7cc2c9a752a278c5"},
 ]
 ipykernel = [
-    {file = "ipykernel-6.12.1-py3-none-any.whl", hash = "sha256:d840e3bf1c4b23bf6939f78dcdae639c9f6962e41d17e1c084a18c3c7f972d3a"},
-    {file = "ipykernel-6.12.1.tar.gz", hash = "sha256:0868f5561729ade444011f8ca7d3502dc9f27f7f44e20f1d5fee7e1f2b7183a1"},
+    {file = "ipykernel-6.13.0-py3-none-any.whl", hash = "sha256:2b0987af43c0d4b62cecb13c592755f599f96f29aafe36c01731aaa96df30d39"},
+    {file = "ipykernel-6.13.0.tar.gz", hash = "sha256:0e28273e290858393e86e152b104e5506a79c13d25b951ac6eca220051b4be60"},
 ]
 ipython = [
     {file = "ipython-8.2.0-py3-none-any.whl", hash = "sha256:1b672bfd7a48d87ab203d9af8727a3b0174a4566b4091e9447c22fb63ea32857"},
@@ -2980,8 +2955,8 @@ jupyter-core = [
     {file = "jupyter_core-4.9.2.tar.gz", hash = "sha256:d69baeb9ffb128b8cd2657fcf2703f89c769d1673c851812119e3a2a0e93ad9a"},
 ]
 jupyterlab-pygments = [
-    {file = "jupyterlab_pygments-0.2.0-py2.py3-none-any.whl", hash = "sha256:8feffeec1799aaaea5b889add289e0c6dd648ea049be800fde814de46bf99f83"},
-    {file = "jupyterlab_pygments-0.2.0.tar.gz", hash = "sha256:2d48bcdd666043afc086af56adaf6bb79bbeffb1d73ed00ec4a2113f6cc22581"},
+    {file = "jupyterlab_pygments-0.2.2-py2.py3-none-any.whl", hash = "sha256:2405800db07c9f770863bcf8049a529c3dd4d3e28536638bd7c1c01d2748309f"},
+    {file = "jupyterlab_pygments-0.2.2.tar.gz", hash = "sha256:7405d7fde60819d905a9fa8ce89e4cd830e318cdad22a0030f7a901da705585d"},
 ]
 jupytext = [
     {file = "jupytext-1.13.8-py3-none-any.whl", hash = "sha256:625d2d2012763cc87d3f0dd60383516cec442c11894f53ad0c5ee5aa2a52caa2"},
@@ -3112,8 +3087,8 @@ mdit-py-plugins = [
     {file = "mdit_py_plugins-0.3.0-py3-none-any.whl", hash = "sha256:b1279701cee2dbf50e188d3da5f51fee8d78d038cdf99be57c6b9d1aa93b4073"},
 ]
 mdurl = [
-    {file = "mdurl-0.1.0-py3-none-any.whl", hash = "sha256:40654d6dcb8d21501ed13c21cc0bd6fc42ff07ceb8be30029e5ae63ebc2ecfda"},
-    {file = "mdurl-0.1.0.tar.gz", hash = "sha256:94873a969008ee48880fb21bad7de0349fef529f3be178969af5817239e9b990"},
+    {file = "mdurl-0.1.1-py3-none-any.whl", hash = "sha256:6a8f6804087b7128040b2fb2ebe242bdc2affaeaa034d5fc9feeed30b443651b"},
+    {file = "mdurl-0.1.1.tar.gz", hash = "sha256:f79c9709944df218a4cdb0fcc0b0c7ead2f44594e3e84dc566606f04ad749c20"},
 ]
 mergedeep = [
     {file = "mergedeep-1.3.4-py3-none-any.whl", hash = "sha256:70775750742b25c0d8f36c55aed03d24c3384d17c951b3175d898bd778ef0307"},
@@ -3309,8 +3284,8 @@ pluggy = [
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 poetry-dynamic-versioning = [
-    {file = "poetry-dynamic-versioning-0.14.0.tar.gz", hash = "sha256:be5f66a866becb1d5e642ba51e01587a825fae0983022d9304927b709abd9cae"},
-    {file = "poetry_dynamic_versioning-0.14.0-py3-none-any.whl", hash = "sha256:5138810f15aec0a72219119e28ea829a889a1e173d8bb7c59309b24c3ac79724"},
+    {file = "poetry-dynamic-versioning-0.14.1.tar.gz", hash = "sha256:01cc73a4bc4861bb91b138c235d49851d5563d373643b3f3c5cf8664d1115b5b"},
+    {file = "poetry_dynamic_versioning-0.14.1-py3-none-any.whl", hash = "sha256:29284bc6ae8c2ddde299801f174908ac864bfd8bae201a5f6e627c35d3df38c4"},
 ]
 prompt-toolkit = [
     {file = "prompt_toolkit-3.0.29-py3-none-any.whl", hash = "sha256:62291dad495e665fca0bda814e342c69952086afb0f4094d0893d357e5c78752"},
@@ -3811,8 +3786,8 @@ snowballstemmer = [
     {file = "snowballstemmer-2.2.0.tar.gz", hash = "sha256:09b16deb8547d3412ad7b590689584cd0fe25ec8db3be37788be3810cbf19cb1"},
 ]
 soupsieve = [
-    {file = "soupsieve-2.3.2-py3-none-any.whl", hash = "sha256:a714129d3021ec17ce5be346b1007300558b378332c289a1a20e7d4de6ff18a5"},
-    {file = "soupsieve-2.3.2.tar.gz", hash = "sha256:0bcc6d7432153063e3df09c3ac9442af3eba488715bfcad6a4c38ccb2a523124"},
+    {file = "soupsieve-2.3.2.post1-py3-none-any.whl", hash = "sha256:3b2503d3c7084a42b1ebd08116e5f81aadfaea95863628c80a3b774a11b7c759"},
+    {file = "soupsieve-2.3.2.post1.tar.gz", hash = "sha256:fc53893b3da2c33de295667a0e19f078c14bf86544af307354de5fcf12a3f30d"},
 ]
 sqlalchemy = [
     {file = "SQLAlchemy-1.4.35-cp27-cp27m-macosx_10_14_x86_64.whl", hash = "sha256:093b3109c2747d5dc0fa4314b1caf4c7ca336d5c8c831e3cfbec06a7e861e1e6"},
