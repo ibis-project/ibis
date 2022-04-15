@@ -55,6 +55,7 @@ install_requires = [
     'cached_property>=1,<2',
     'multipledispatch>=0.6,<0.7',
     'numpy>=1,<2',
+    'packaging>=21.3,<22',
     'pandas>=1.2.5,<2',
     'parsy>=1.3.0,<2',
     'poetry-dynamic-versioning>=0.14.0,<1',
