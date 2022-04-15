@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -19,6 +20,12 @@ except ImportError:
     sa = postgresql = mysql = None
 else:
     from sqlalchemy.dialects import mysql, postgresql
+
+
+try:
+    import duckdb
+except ImportError:
+    duckdb = None
 
 
 @pytest.mark.parametrize(
@@ -54,7 +61,10 @@ else:
     ],
 )
 @pytest.mark.notimpl(["mysql", "sqlite", "datafusion"])
-@pytest.mark.notyet(["duckdb"], reason="no support for non-finite values")
+@pytest.mark.xfail(
+    duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
+    reason="<0.3.3 does not support isnan/isinf properly",
+)
 def test_isnan_isinf(
     backend,
     con,

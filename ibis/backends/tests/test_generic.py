@@ -4,12 +4,18 @@ import io
 import numpy as np
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
 from ibis import literal as L
+
+try:
+    import duckdb
+except ImportError:
+    duckdb = None
 
 
 @pytest.mark.parametrize(
@@ -259,7 +265,10 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
-@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
+@pytest.mark.xfail(
+    duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
+    reason="<0.3.3 does not support isnan/isinf properly",
+)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
