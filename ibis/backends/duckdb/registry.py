@@ -147,7 +147,6 @@ operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
         ops.ArrayConcat: fixed_arity('array_concat', 2),
-        ops.ArrayIndex: fixed_arity('list_element', 2),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -166,3 +165,20 @@ operation_registry.update(
         ops.RegexReplace: fixed_arity("regexp_replace", 3),
     }
 )
+
+try:
+    import duckdb
+except ImportError:  # pragma: no cover
+    pass
+else:
+    from packaging.version import parse as vparse
+
+    # 0.3.2 has zero-based array indexing, 0.3.3 has one-based array indexing
+    #
+    # 0.3.2: we pass in the user's arguments unchanged
+    # 0.3.3: use the postgres implementation which is also one-based
+    if vparse(duckdb.__version__) < vparse("0.3.3"):  # pragma: no cover
+        operation_registry[ops.ArrayIndex] = fixed_arity("list_element", 2)
+
+    # don't export these
+    del duckdb, vparse  # pragma: no cover
