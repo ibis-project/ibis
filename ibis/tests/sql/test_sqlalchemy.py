@@ -1022,3 +1022,112 @@ def test_multi_join():
         )
     )
     _check(expr, ex)
+
+
+@pytest.fixture
+def h11():
+    NATION = "GERMANY"
+    FRACTION = 0.0001
+
+    partsupp = ibis.table(
+        dict(
+            ps_partkey="int32",
+            ps_suppkey="int32",
+            ps_availqty="int32",
+            ps_supplycost="decimal(15, 2)",
+        ),
+        name="partsupp",
+    )
+    supplier = ibis.table(
+        dict(s_suppkey="int32", s_nationkey="int32"),
+        name="supplier",
+    )
+    nation = ibis.table(
+        dict(n_nationkey="int32", n_name="string"),
+        name="nation",
+    )
+
+    q = partsupp
+    q = q.join(supplier, partsupp.ps_suppkey == supplier.s_suppkey)
+    q = q.join(nation, nation.n_nationkey == supplier.s_nationkey)
+
+    q = q.filter([q.n_name == NATION])
+
+    innerq = partsupp
+    innerq = innerq.join(supplier, partsupp.ps_suppkey == supplier.s_suppkey)
+    innerq = innerq.join(nation, nation.n_nationkey == supplier.s_nationkey)
+    innerq = innerq.filter([innerq.n_name == NATION])
+    innerq = innerq.aggregate(
+        total=(innerq.ps_supplycost * innerq.ps_availqty).sum()
+    )
+
+    gq = q.group_by([q.ps_partkey])
+    q = gq.aggregate(value=(q.ps_supplycost * q.ps_availqty).sum())
+    q = q.filter([q.value > innerq.total * FRACTION])
+    q = q.sort_by(ibis.desc(q.value))
+    return q
+
+
+def test_tpc_h11(h11):
+    NATION = "GERMANY"
+    FRACTION = 0.0001
+
+    partsupp = sa.table(
+        "partsupp",
+        sa.column("ps_partkey"),
+        sa.column("ps_supplycost"),
+        sa.column("ps_availqty"),
+        sa.column("ps_suppkey"),
+    )
+    supplier = sa.table(
+        "supplier",
+        sa.column("s_suppkey"),
+        sa.column("s_nationkey"),
+    )
+    nation = sa.table("nation", sa.column("n_name"), sa.column("n_nationkey"))
+
+    t2 = nation.alias("t2")
+    t3 = partsupp.alias("t3")
+    t4 = supplier.alias("t4")
+    t1 = (
+        sa.select(
+            sa.column("ps_partkey"),
+            sa.func.sum(
+                sa.column("ps_supplycost") * sa.column("ps_availqty")
+            ).label("value"),
+        )
+        .select_from(
+            t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
+                t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
+            )
+        )
+        .where(sa.column("n_name") == NATION)
+        .group_by(sa.column("ps_partkey"))
+    ).alias("t1")
+
+    anon_1 = (
+        sa.select(
+            sa.func.sum(
+                sa.column("ps_supplycost") * sa.column("ps_availqty")
+            ).label("total")
+        )
+        .select_from(
+            t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
+                t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
+            )
+        )
+        .where(sa.column("n_name") == NATION)
+        .alias("anon_1")
+    )
+
+    t0 = (
+        sa.select(
+            t1.c.ps_partkey.label("ps_partkey"),
+            t1.c.value.label("value"),
+        ).where(
+            t1.c.value > sa.select(anon_1.c.total).scalar_subquery() * FRACTION
+        )
+    ).alias("t0")
+
+    ex = sa.select(t0.c.ps_partkey, t0.c.value).order_by(t0.c.value.desc())
+    _check(h11, ex)
