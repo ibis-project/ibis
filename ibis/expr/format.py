@@ -469,20 +469,35 @@ def _fmt_selection_column_table_expr(
 _BIN_OP_CHARS = {
     # comparison operations
     ops.Equals: "==",
+    ops.IdenticalTo: "===",
     ops.NotEquals: "!=",
     ops.Less: "<",
     ops.LessEqual: "<=",
     ops.Greater: ">",
     ops.GreaterEqual: ">=",
-    # binary operations
+    # arithmetic
     ops.Add: "+",
-    ops.TimeAdd: "+",
     ops.Subtract: "-",
     ops.Multiply: "*",
     ops.Divide: "/",
     ops.FloorDivide: "//",
     ops.Modulus: "%",
     ops.Power: "**",
+    # temporal operations
+    ops.DateAdd: "+",
+    ops.DateSub: "-",
+    ops.DateDiff: "-",
+    ops.TimeAdd: "+",
+    ops.TimeSub: "-",
+    ops.TimeDiff: "-",
+    ops.TimestampAdd: "+",
+    ops.TimestampSub: "-",
+    ops.TimestampDiff: "-",
+    ops.IntervalAdd: "+",
+    ops.IntervalSubtract: "-",
+    ops.IntervalMultiply: "*",
+    ops.IntervalFloorDivide: "//",
+    # boolean operators
     ops.And: "&",
     ops.Or: "|",
     ops.Xor: "^",
@@ -521,8 +536,12 @@ def _fmt_value_node(op: ops.Node, **_: Any) -> str:
 def _fmt_value_binary_op(op: ops.BinaryOp, *, aliases: Aliases) -> str:
     left = fmt_value(op.left, aliases=aliases)
     right = fmt_value(op.right, aliases=aliases)
-    op_char = _BIN_OP_CHARS[type(op)]
-    return f"{left} {op_char} {right}"
+    try:
+        op_char = _BIN_OP_CHARS[type(op)]
+    except KeyError:
+        return f"{type(op).__name__}({left}, {right})"
+    else:
+        return f"{left} {op_char} {right}"
 
 
 @fmt_value.register
