@@ -34,6 +34,7 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
     assert 0 <= len(left_on) <= 1, f"len(left_on) == {len(left_on)}"
     assert 0 <= len(right_on) <= 1, f"len(right_on) == {len(right_on)}"
 
+    on = left_on if left_on == right_on else None
     return dd.merge_asof(
         left=left,
         right=right,
@@ -41,9 +42,9 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
         # https://github.com/dask/dask/pull/8857 that keeps a column if `on` is
         # non-empty without checking whether `left_on` is non-empty, this
         # check works around that
-        on=left_on if left_on == right_on else None,
-        left_on=left_on,
-        right_on=right_on,
+        on=on,
+        left_on=left_on if on is None else None,
+        right_on=right_on if on is None else None,
         left_by=left_by or None,
         right_by=right_by or None,
         tolerance=tolerance,
