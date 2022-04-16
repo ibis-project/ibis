@@ -77,7 +77,7 @@ extras_require = {
         'fsspec>=2022.1.0',
         'GeoAlchemy2>=0.6.3,<0.12',
         'geopandas>=0.6,<0.11',
-        'graphviz>=0.16,<0.20',
+        'graphviz>=0.16,<0.21',
         'impyla[kerberos]>=0.17,<0.19',
         'lz4>=3.1.10,<5',
         'psycopg2>=2.8.4,<3',
@@ -114,7 +114,7 @@ extras_require = {
     'postgres': ['psycopg2>=2.8.4,<3', 'sqlalchemy>=1.4,<2.0'],
     'pyspark': ['pyarrow>=1,<8', 'pyspark>=3,<4'],
     'sqlite': ['sqlalchemy>=1.4,<2.0'],
-    'visualization': ['graphviz>=0.16,<0.20'],
+    'visualization': ['graphviz>=0.16,<0.21'],
 }
 
 entry_points = {
