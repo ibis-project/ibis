@@ -172,14 +172,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          # TODO: move "latest" alias to release step once 3.0 is out
           nix develop -f shell.nix --keep-going -c \
             mic deploy \
               --push \
               --rebase \
               --prefix docs \
               --message 'docs(dev): ibis@${{ github.sha }}' \
-                dev latest
+                dev
 
       - name: build and push docs on tag
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
@@ -192,7 +191,7 @@ jobs:
               --rebase \
               --prefix docs \
               --message "docs(release): ibis@${GITHUB_REF_NAME}" \
-              "${GITHUB_REF_NAME}"
+              "${GITHUB_REF_NAME}" latest
 
   simulate_release:
     runs-on: ubuntu-latest
