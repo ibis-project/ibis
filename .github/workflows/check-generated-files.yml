@@ -1,4 +1,4 @@
-name: Check setup.py
+name: Check Generated Files
 
 on:
   push:
