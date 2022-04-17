@@ -9,6 +9,7 @@ let
     curl
     duckdb
     git
+    glow
     jq
     just
     lychee
@@ -52,6 +53,13 @@ let
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
   pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+  changelog = pkgs.writeShellApplication {
+    name = "changelog";
+    runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
+    text = ''
+      conventional-changelog --preset conventionalcommits
+    '';
+  };
   mic = pkgs.writeShellApplication {
     name = "mic";
     runtimeInputs = [ pythonEnv ];
@@ -82,9 +90,10 @@ pkgs.mkShell {
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [
+    changelog
+    mic
     pythonEnv
     (pythonEnv.python.pkgs.toPythonApplication pkgs.pre-commit)
-    mic
   ];
 
   PYTHONPATH = builtins.toPath ./.;
