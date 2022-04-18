@@ -38,4 +38,4 @@ Ibis provides tools for interacting with the following systems:
 - [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
 - [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
 
-Learn more about using the library at http://ibis-project.org.
+Learn more about using the library at https://ibis-project.org.
