@@ -131,7 +131,11 @@ def _table_column(t, expr):
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
     if t.permit_subquery and ctx.is_foreign_expr(table):
-        return sa.select([out_expr])
+        try:
+            subq = sa_table.subquery()
+        except AttributeError:
+            subq = sa_table
+        return sa.select(subq.c[out_expr.name])
 
     return out_expr
 
