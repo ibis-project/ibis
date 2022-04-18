@@ -84,4 +84,10 @@ self: super:
       self.hatchling
     ];
   });
+
+  markdown-it-py = super.markdown-it-py.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
+      self.flit-core
+    ];
+  });
 }
