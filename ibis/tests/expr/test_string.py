@@ -89,8 +89,7 @@ def test_join(table):
 
 def test_contains(table):
     expr = table.g.contains('foo')
-    expected = table.g.find('foo') >= 0
-    assert_equal(expr, expected)
+    assert isinstance(expr.op(), ops.StringContains)
 
     with pytest.raises(TypeError):
         'foo' in table.g

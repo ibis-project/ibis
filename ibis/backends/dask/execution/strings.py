@@ -28,6 +28,7 @@ from ibis.backends.pandas.execution.strings import (
     execute_series_translate_series_series,
     execute_string_capitalize,
     execute_string_contains,
+    execute_string_find,
     execute_string_length_series,
     execute_string_like_series_string,
     execute_string_lower,
@@ -92,6 +93,15 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
                 (dd.Series, str),
                 (dd.Series, type(None)) + integer_types,
                 (dd.Series, type(None)) + integer_types,
+            ),
+            execute_string_find,
+        )
+    ],
+    ops.StringContains: [
+        (
+            (
+                dd.Series,
+                (dd.Series, str),
             ),
             execute_string_contains,
         )
