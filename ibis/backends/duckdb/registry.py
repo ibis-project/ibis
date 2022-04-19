@@ -148,7 +148,7 @@ def _regex_extract(t, expr):
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
-        ops.ArrayConcat: fixed_arity('array_concat', 2),
+        ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -159,12 +159,13 @@ operation_registry.update(
         ops.Round: _round,
         ops.StructField: _struct_field,
         ops.TableColumn: _table_column,
-        ops.TimestampDiff: fixed_arity('age', 2),
+        ops.TimestampDiff: fixed_arity(sa.func.age, 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.Translate: fixed_arity('replace', 3),
-        ops.TimestampNow: fixed_arity('now', 0),
+        ops.Translate: fixed_arity(sa.func.replace, 3),
+        ops.TimestampNow: fixed_arity(sa.func.now, 0),
         ops.RegexExtract: _regex_extract,
-        ops.RegexReplace: fixed_arity("regexp_replace", 3),
+        ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.StringContains: fixed_arity(sa.func.contains, 2),
     }
 )
 

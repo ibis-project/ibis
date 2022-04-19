@@ -180,7 +180,9 @@ class StringValue(AnyValue):
         BooleanValue
             Boolean indicating the presence of `substr` in the expression
         """
-        return self.find(substr) >= 0
+        import ibis.expr.operations as ops
+
+        return ops.StringContains(self, substr).to_expr()
 
     def hashbytes(
         self,

@@ -382,3 +382,9 @@ def _rewrite_cast(expr):
     if isinstance(to, dt.Interval) and isinstance(arg.type(), dt.Integer):
         return arg.to_interval(unit=to.unit)
     return expr
+
+
+@rewrites(ops.StringContains)
+def _rewrite_string_contains(expr):
+    op = expr.op()
+    return op.haystack.find(op.needle) >= 0

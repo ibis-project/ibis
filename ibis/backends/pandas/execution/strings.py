@@ -118,6 +118,11 @@ def execute_string_repeat(op, data, times, **kwargs):
     return data.str.repeat(times)
 
 
+@execute_node.register(ops.StringContains, pd.Series, (pd.Series, str))
+def execute_string_contains(_, data, needle, **kwargs):
+    return data.str.contains(needle)
+
+
 @execute_node.register(
     ops.StringFind,
     pd.Series,
@@ -125,7 +130,7 @@ def execute_string_repeat(op, data, times, **kwargs):
     (pd.Series, type(None)) + integer_types,
     (pd.Series, type(None)) + integer_types,
 )
-def execute_string_contains(op, data, needle, start, end, **kwargs):
+def execute_string_find(op, data, needle, start, end, **kwargs):
     return data.str.find(needle, start, end)
 
 

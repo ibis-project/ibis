@@ -248,3 +248,12 @@ class StringLength(UnaryOp):
 @public
 class StringAscii(UnaryOp):
     output_dtype = dt.int32
+
+
+@public
+class StringContains(ValueOp):
+    haystack = rlz.string
+    needle = rlz.string
+
+    output_shape = rlz.shape_like("args")
+    output_dtype = dt.bool

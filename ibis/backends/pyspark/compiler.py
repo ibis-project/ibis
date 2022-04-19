@@ -1906,3 +1906,11 @@ def compile_sql_view(t, expr, scope, timecontext, **kwargs):
     result = backend._session.sql(op.query)
     result.createOrReplaceTempView(op.name)
     return result
+
+
+@compiles(ops.StringContains)
+def compile_string_contains(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    haystack = t.translate(op.haystack, scope, timecontext, **kwargs)
+    needle = t.translate(op.needle, scope, timecontext, **kwargs)
+    return haystack.contains(needle)

@@ -22,7 +22,8 @@ rewrites = DuckDBSQLExprTranslator.rewrites
 @rewrites(ops.All)
 @rewrites(ops.NotAny)
 @rewrites(ops.NotAll)
-def _any_all_no_op(expr):
+@rewrites(ops.StringContains)
+def _no_op(expr):
     return expr
 
 
