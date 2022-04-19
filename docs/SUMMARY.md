@@ -13,6 +13,7 @@
 * [Execution Backends](backends/)
 * [Contribute](contribute/)
 * Community
+    * [Blog](blog/)
     * [About](about/)
     * [Ask a question (StackOverflow)](https://stackoverflow.com/questions/tagged/ibis)
     * [Chat (Gitter)](https://gitter.im/ibis-dev/Lobby)
