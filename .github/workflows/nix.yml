@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  nix1:
+  nix:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
