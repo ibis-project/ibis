@@ -30,12 +30,6 @@ self: super:
     };
   });
 
-  pybind11 = super.pybind11.overridePythonAttrs (_: {
-    postBuild = ''
-      make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
-    '';
-  });
-
   mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
     propagatedBuildInputs = (attrs.propagatedBuildInputs or [ ]) ++ [
       self.ipython_genutils
@@ -49,20 +43,8 @@ self: super:
     '';
   });
 
-  poetry-dynamic-versioning = super.poetry-dynamic-versioning.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.poetry-core
-    ];
-  });
-
   tabulate = super.tabulate.overridePythonAttrs (_: {
     TABULATE_INSTALL = "lib-only";
-  });
-
-  pyparsing = super.pyparsing.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.flit-core
-    ];
   });
 
   jupyterlab-pygments = super.jupyterlab-pygments.overridePythonAttrs (attrs: {
