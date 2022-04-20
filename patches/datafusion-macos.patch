@@ -1,0 +1,170 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index d73083f..489f301 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -277,9 +277,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "datafusion"
+-version = "7.0.0"
++version = "7.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "30cf8e6735817bb021748d72cecc33e468d8775bf749470c52aa7f55ee5cdf9e"
++checksum = "79a0ea0a500cbfb6b683ad8cc6f403faa7c897432cc8ad0da40c09a9a705255f"
+ dependencies = [
+  "ahash",
+  "arrow",
+@@ -384,9 +384,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "flate2"
+-version = "1.0.22"
++version = "1.0.23"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "1e6988e897c1c9c485f43b47a529cef42fde0547f9d8d41a7062518f1d8fc53f"
++checksum = "b39522e96686d38f4bc984b9198e3a0613264abaebaff2c5c918bfa6b6da09af"
+ dependencies = [
+  "cfg-if",
+  "crc32fast",
+@@ -701,9 +701,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "libc"
+-version = "0.2.121"
++version = "0.2.124"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "efaa7b300f3b5fe8eb6bf21ce3895e1751d9665086af2d64b42f19701015ff4f"
++checksum = "21a41fed9d98f27ab1c6d161da622a4fa35e8a54a8adc24bbf3ddd0ef70b0e50"
+ 
+ [[package]]
+ name = "libmimalloc-sys"
+@@ -779,12 +779,11 @@ dependencies = [
+ 
+ [[package]]
+ name = "miniz_oxide"
+-version = "0.4.4"
++version = "0.5.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a92518e98c078586bc6c934028adcca4c92a53d6a958196de835170a01d84e4b"
++checksum = "d2b29bd4bc3f33391105ebee3589c19197c4271e3e5a9ec9bfe8127eeff8f082"
+ dependencies = [
+  "adler",
+- "autocfg",
+ ]
+ 
+ [[package]]
+@@ -1047,18 +1046,18 @@ checksum = "dbf0c48bc1d91375ae5c3cd81e3722dff1abcf81a30960240640d223f59fe0e5"
+ 
+ [[package]]
+ name = "proc-macro2"
+-version = "1.0.36"
++version = "1.0.37"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c7342d5883fbccae1cc37a2353b09c87c9b0f3afd73f5fb9bba687a1f733b029"
++checksum = "ec757218438d5fda206afc041538b2f6d889286160d649a86a24d37e1235afd1"
+ dependencies = [
+  "unicode-xid",
+ ]
+ 
+ [[package]]
+ name = "pyo3"
+-version = "0.15.1"
++version = "0.15.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7cf01dbf1c05af0a14c7779ed6f3aa9deac9c3419606ac9de537a2d649005720"
++checksum = "d41d50a7271e08c7c8a54cd24af5d62f73ee3a6f6a314215281ebdec421d5752"
+ dependencies = [
+  "cfg-if",
+  "indoc",
+@@ -1072,18 +1071,18 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.15.1"
++version = "0.15.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dbf9e4d128bfbddc898ad3409900080d8d5095c379632fbbfbb9c8cfb1fb852b"
++checksum = "779239fc40b8e18bc8416d3a37d280ca9b9fb04bda54b98037bb6748595c2410"
+ dependencies = [
+  "once_cell",
+ ]
+ 
+ [[package]]
+ name = "pyo3-macros"
+-version = "0.15.1"
++version = "0.15.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "67701eb32b1f9a9722b4bc54b548ff9d7ebfded011c12daece7b9063be1fd755"
++checksum = "00b247e8c664be87998d8628e86f282c25066165f1f8dda66100c48202fdb93a"
+ dependencies = [
+  "pyo3-macros-backend",
+  "quote",
+@@ -1092,9 +1091,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "pyo3-macros-backend"
+-version = "0.15.1"
++version = "0.15.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f44f09e825ee49a105f2c7b23ebee50886a9aee0746f4dd5a704138a64b0218a"
++checksum = "5a8c2812c412e00e641d99eeb79dd478317d981d938aa60325dfa7157b607095"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-build-config",
+@@ -1104,9 +1103,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "quote"
+-version = "1.0.17"
++version = "1.0.18"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "632d02bff7f874a36f33ea8bb416cd484b90cc66c1194b1a1110d067a7013f58"
++checksum = "a1feb54ed693b93a84e14094943b84b7c4eae204c512b7ccb95ab0c66d278ad1"
+ dependencies = [
+  "proc-macro2",
+ ]
+@@ -1341,9 +1340,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
+ 
+ [[package]]
+ name = "syn"
+-version = "1.0.90"
++version = "1.0.91"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "704df27628939572cd88d33f171cd6f896f4eaca85252c6e0a72d8d8287ee86f"
++checksum = "b683b2b825c8eef438b77c36a06dc262294da3d5a5813fac20da149241dcd44d"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff --git a/Cargo.toml b/Cargo.toml
+index ba2f337..40cba00 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -35,7 +35,7 @@ datafusion = { version = "^7.0.0", features = ["pyarrow"] }
+ datafusion-expr = { version = "^7.0.0" }
+ datafusion-common = { version = "^7.0.0", features = ["pyarrow"] }
+ uuid = { version = "0.8", features = ["v4"] }
+-mimalloc = { version = "*", default-features = false }
++mimalloc = { version = "*", optional = true, default-features = false }
+ 
+ [lib]
+ name = "datafusion_python"
+diff --git a/src/lib.rs b/src/lib.rs
+index 977d9e8..ca1cd17 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -15,6 +15,7 @@
+ // specific language governing permissions and limitations
+ // under the License.
+ 
++#[cfg(feature = "mimalloc")]
+ use mimalloc::MiMalloc;
+ use pyo3::prelude::*;
+ 
+@@ -28,6 +29,7 @@ mod udaf;
+ mod udf;
+ pub mod utils;
+ 
++#[cfg(feature = "mimalloc")]
+ #[global_allocator]
+ static GLOBAL: MiMalloc = MiMalloc;
+ 
