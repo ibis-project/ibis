@@ -16,7 +16,18 @@ self: super:
       });
   });
 
-  datafusion = super.datafusion.overridePythonAttrs (attrs: {
+  datafusion = super.datafusion.overridePythonAttrs (attrs: rec {
+    inherit (attrs) version;
+    src = pkgs.fetchFromGitHub {
+      owner = "datafusion-contrib";
+      repo = "datafusion-python";
+      rev = attrs.version;
+      sha256 = "sha256-IWqlY4Cfil3cyQqXm+X9ViRYLzmNaiM3+i/7EyV5CK4=";
+    };
+
+    patches = (attrs.patches or [ ])
+      ++ lib.optionals stdenv.isDarwin [ ./patches/datafusion-macos.patch ];
+
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ])
       ++ (with pkgs.rustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
@@ -24,9 +35,11 @@ self: super:
       ++ lib.optionals stdenv.isDarwin [ pkgs.libiconv ];
 
     cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
-      inherit (attrs) src;
-      sourceRoot = "${attrs.pname}-${attrs.version}";
-      sha256 = "sha256-SHVJWbQROQVQ9qZDTSvHz/O9irCyEPgcmDowerMPYeI=";
+      inherit src patches;
+      sha256 =
+        if stdenv.isDarwin
+        then "sha256-qDXfSisgQ4qr8Sky0aNns8LldiHYs/N1cNatNlwEE18="
+        else "sha256-bDuCbQYNai/mNrS2BqoW4qe7eLZcBhb7GhsFKn08G/U=";
     };
   });
 
@@ -54,4 +67,10 @@ self: super:
   atpublic = super.atpublic.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
   });
+
+  watchdog = super.watchdog.overrideAttrs (attrs: lib.optionalAttrs
+    (stdenv.isDarwin && lib.versionAtLeast attrs.version "2")
+    {
+      patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
+    });
 }

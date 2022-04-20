@@ -25,11 +25,13 @@ concurrency:
 
 jobs:
   nix:
-    # TODO: we can't use macos-latest here until watchdog is fixed
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
         python-version:
           - "3.8"
           - "3.9"

@@ -24,7 +24,7 @@ hide:
     | -----------------------------------------: | :----------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
     | **Operating System** :material-arrow-down: |                                                        |                                                    |                                                    |
     |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}[^1]  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                                  **macOS** |     {{ config.extra.support_levels.bug.icon }}[^2]     |     {{ config.extra.support_levels.bug.icon }}     |     {{ config.extra.support_levels.bug.icon }}     |
+    |                         **macOS (x86_64)** |    {{ config.extra.support_levels.supported.icon }}    |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
     |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }}[^3] | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
 
     1. [Install `nix`](https://nixos.org/download.html)
