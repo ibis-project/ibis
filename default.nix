@@ -19,6 +19,8 @@ let
       ];
 
       backendsString = lib.concatStringsSep " " backends;
+      buildInputs = with pkgs; [ gdal_2 graphviz-nox proj sqlite ];
+      checkInputs = buildInputs;
     in
     poetry2nix.mkPoetryApplication {
       inherit python;
@@ -37,8 +39,7 @@ let
         rm setup.py
       '';
 
-      buildInputs = with pkgs; [ graphviz-nox ];
-      checkInputs = with pkgs; [ sqlite graphviz-nox proj ];
+      inherit buildInputs checkInputs;
 
       preCheck = ''
         set -euo pipefail
