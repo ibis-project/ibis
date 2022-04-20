@@ -79,6 +79,11 @@ self: super:
     '';
   });
 
+  watchdog = super.watchdog.overridePythonAttrs (_: lib.optionalAttrs super.stdenv.isDarwin {
+    patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
+    FORCE_KQUEUE = "1";
+  });
+
   soupsieve = super.soupsieve.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
       self.hatchling
