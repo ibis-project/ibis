@@ -60,7 +60,7 @@ pyarrow = { version = ">=1,<8", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
-Shapely = { version = ">=1.6,<1.8.1", optional = true }
+Shapely = { version = ">=1.6,<1.8.2", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
 
 [tool.poetry.dev-dependencies]
@@ -89,6 +89,7 @@ mkdocs-material = ">=8.2.1,<9"
 mkdocs-table-reader-plugin = ">=1.0.0,<2"
 mkdocstrings = ">=0.17.0,<0.18.0"
 mypy = "0.942"
+platformdirs = ">=2,<2.5.2"
 pyarrow = ">=1,<8"
 pydocstyle = ">=6.1.1,<7"
 pymdown-extensions = ">=9.1,<10"
@@ -283,6 +284,7 @@ channels = ["conda-forge"]
 # conda-lock doesn't map dependencies' extras to conda-forge packages and we
 # use the array and dataframe extras from dask
 dask = ">=2021.10.0"
+gdal = ">=2,<3"
 
 [build-system]
 requires = [

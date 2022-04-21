@@ -1,0 +1,25 @@
+diff --git a/aws-cpp-sdk-cognitoidentity-integration-tests/IdentityPoolOperationTest.cpp b/aws-cpp-sdk-cognitoidentity-integration-tests/IdentityPoolOperationTest.cpp
+index a7cb7d8413..8f9969ff54 100644
+--- a/aws-cpp-sdk-cognitoidentity-integration-tests/IdentityPoolOperationTest.cpp
++++ b/aws-cpp-sdk-cognitoidentity-integration-tests/IdentityPoolOperationTest.cpp
+@@ -6,6 +6,7 @@
+ #include <aws/external/gtest.h>
+ #include <aws/testing/MemoryTesting.h>
+ #include <algorithm>
++#include <thread>
+ 
+ #include <aws/cognito-identity/CognitoIdentityClient.h>
+ #include <aws/cognito-identity/CognitoIdentityErrors.h>
+diff --git a/aws-cpp-sdk-identity-management-tests/auth/STSAssumeRoleCredentialsProviderTest.cpp b/aws-cpp-sdk-identity-management-tests/auth/STSAssumeRoleCredentialsProviderTest.cpp
+index 957aec321d..1e76fc4954 100644
+--- a/aws-cpp-sdk-identity-management-tests/auth/STSAssumeRoleCredentialsProviderTest.cpp
++++ b/aws-cpp-sdk-identity-management-tests/auth/STSAssumeRoleCredentialsProviderTest.cpp
+@@ -3,6 +3,8 @@
+  * SPDX-License-Identifier: Apache-2.0.
+  */
+ 
++#include <thread>
++
+ #include <aws/identity-management/auth/STSAssumeRoleCredentialsProvider.h>
+ #include <aws/sts/model/AssumeRoleRequest.h>
+ #include <aws/sts/STSClient.h>

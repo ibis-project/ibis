@@ -8,12 +8,8 @@ import sources.nixpkgs {
         inherit (pkgs) lib;
       }) gitignoreSource;
     })
+    (import "${sources.poetry2nix}/overlay.nix")
     (pkgs: super: {
-      poetry2nix = import sources.poetry2nix {
-        inherit pkgs;
-        inherit (pkgs) poetry;
-      };
-
       ibisTestingData = pkgs.fetchFromGitHub {
         owner = "ibis-project";
         repo = "testing-data";
@@ -45,6 +41,24 @@ import sources.nixpkgs {
       ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;
       ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;
       ibisDevEnv = pkgs.ibisDevEnv310;
+
+      gdal_2 = super.gdal_2.overrideAttrs (attrs: {
+        patches = (attrs.patches or [ ]) ++ [ ../patches/gdal_2-limits.patch ];
+      });
+
+      aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
+        patches = (attrs.patches or [ ]) ++ [ ../patches/aws-sdk-cpp-thread.patch ];
+      })).override {
+        apis = [
+          "cognito-identity"
+          "config"
+          "core"
+          "identity-management"
+          "s3"
+          "sts"
+          "transfer"
+        ];
+      };
     } // super.lib.optionalAttrs super.stdenv.isDarwin {
       arrow-cpp = super.arrow-cpp.override {
         enableS3 = false;
