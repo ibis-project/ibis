@@ -41,11 +41,13 @@ self: super:
     TABULATE_INSTALL = "lib-only";
   });
 
-  pandas = super.pandas.overridePythonAttrs (_: {
-    buildPhase = ''
-      runHook preBuild
-      python setup.py build_ext --parallel $NIX_BUILD_CORES bdist_wheel
-      runHook postBuild
-    '';
+  pandas = super.pandas.overridePythonAttrs (attrs: {
+    setupPyBuildFlags = (attrs.setupPyBuildFlags or [ ])
+      ++ [ "--parallel" "$NIX_BUILD_CORES" ];
+  });
+
+  pydantic = super.pydantic.overridePythonAttrs (attrs: {
+    setupPyBuildFlags = (attrs.setupPyBuildFlags or [ ])
+      ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
 }

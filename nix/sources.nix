@@ -31,8 +31,10 @@ let
           if spec ? branch then "refs/heads/${spec.branch}" else
             if spec ? tag then "refs/tags/${spec.tag}" else
               abort "In git source '${name}': Please specify `ref`, `tag` or `branch`!";
+      submodules = if spec ? submodules then spec.submodules else false;
     in
-      builtins.fetchGit { url = spec.repo; inherit (spec) rev; inherit ref; };
+      builtins.fetchGit { url = spec.repo; inherit (spec) rev; inherit ref; }
+      // (if builtins.compareVersions builtins.nixVersion "2.4" >= 0 then { inherit submodules; } else {});
 
   fetch_local = spec: spec.path;
 

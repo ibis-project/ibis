@@ -85,7 +85,7 @@ extras_require = {
         'pymysql>=1,<2',
         'pyspark>=3,<4',
         'requests>=2,<3',
-        'Shapely>=1.6,<1.8.1',
+        'Shapely>=1.6,<1.8.2',
         'sqlalchemy>=1.4,<2.0',
     ],
     'clickhouse': [
@@ -103,7 +103,7 @@ extras_require = {
     'geospatial': [
         'GeoAlchemy2>=0.6.3,<0.12',
         'geopandas>=0.6,<0.11',
-        'Shapely>=1.6,<1.8.1',
+        'Shapely>=1.6,<1.8.2',
     ],
     'impala': [
         'fsspec>=2022.1.0',
