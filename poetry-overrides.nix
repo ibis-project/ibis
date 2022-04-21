@@ -30,12 +30,6 @@ self: super:
     };
   });
 
-  mkdocs-jupyter = super.mkdocs-jupyter.overridePythonAttrs (attrs: {
-    propagatedBuildInputs = (attrs.propagatedBuildInputs or [ ]) ++ [
-      self.ipython_genutils
-    ];
-  });
-
   nbconvert = super.nbconvert.overridePythonAttrs (attrs: {
     patches = (attrs.patches or [ ]) ++ [ ./patches/templates.patch ];
     postPatch = ''
@@ -47,29 +41,11 @@ self: super:
     TABULATE_INSTALL = "lib-only";
   });
 
-  jupyterlab-pygments = super.jupyterlab-pygments.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.jupyter-packaging
-    ];
-  });
-
   pandas = super.pandas.overridePythonAttrs (_: {
     buildPhase = ''
       runHook preBuild
       python setup.py build_ext --parallel $NIX_BUILD_CORES bdist_wheel
       runHook postBuild
     '';
-  });
-
-  soupsieve = super.soupsieve.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.hatchling
-    ];
-  });
-
-  markdown-it-py = super.markdown-it-py.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [
-      self.flit-core
-    ];
   });
 }
