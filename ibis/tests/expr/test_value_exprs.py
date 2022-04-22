@@ -3,7 +3,7 @@ import uuid
 from collections import OrderedDict
 from datetime import date, datetime, time
 from decimal import Decimal
-from operator import methodcaller
+from operator import attrgetter, methodcaller
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis import literal
+from ibis import _, literal
 from ibis.common.exceptions import IbisTypeError
 from ibis.tests.util import assert_equal
 
@@ -1392,3 +1392,107 @@ def test_literal_hash():
     result1 = hash(op)
     assert op._hash == result1
     assert hash(op) == result1
+
+
+@pytest.mark.parametrize(
+    "op_name",
+    [
+        "add",
+        "sub",
+        "mul",
+        "truediv",
+        "floordiv",
+        "pow",
+        "mod",
+        "eq",
+        "ne",
+        "lt",
+        "le",
+        "gt",
+        "ge",
+    ],
+)
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        param(_.a, 2, id="a_int"),
+        param(2, _.a, id="int_a"),
+        param(_.a, _.b, id="a_b"),
+    ],
+)
+def test_deferred(op_name, left, right):
+    t = ibis.table(dict(a="int64"), name="t")
+
+    op = getattr(operator, op_name)
+    expr = (
+        t.mutate(b=_.a)
+        .mutate(expr=op(left, right))
+        .group_by(key=_.b.cast("string"))
+        .aggregate(avg=_.b.mean(where=_.a < 1), neg_sum=-_.b.sum())
+        .mutate(c=_.avg <= 1.0, d=~(_["neg_sum"] > 2))
+        .filter(_.c)
+    )
+
+    assert expr.schema() == ibis.schema(
+        dict(
+            key="string",
+            avg="float64",
+            neg_sum="int64",
+            c="bool",
+            d="bool",
+        )
+    )
+
+
+@pytest.mark.parametrize("bool_op_name", ["or_", "and_", "xor"])
+@pytest.mark.parametrize(
+    ("bool_left", "bool_right"),
+    [
+        param(_.a < 1, True, id="a_true"),
+        param(False, _.a > 1, id="false_a"),
+        param(_.a == 2, _.b == 1, id="expr_expr"),
+    ],
+)
+def test_deferred_bool(bool_op_name, bool_left, bool_right):
+    t = ibis.table(dict(a="int64"), name="t")
+
+    bool_op = getattr(operator, bool_op_name)
+    expr = t.mutate(b=_.a).mutate(c=bool_op(bool_left, bool_right)).filter(_.c)
+
+    assert expr.schema() == ibis.schema(dict(a="int64", b="int64", c="bool"))
+
+
+@pytest.mark.parametrize(
+    ("op_name", "expected_left", "expected_right"),
+    [
+        param("add", attrgetter("a"), lambda _: ibis.literal(2), id="add"),
+        param("sub", lambda _: ibis.literal(2), attrgetter("a"), id="sub"),
+        param("mul", attrgetter("a"), lambda _: ibis.literal(2), id="mul"),
+        param(
+            "truediv",
+            lambda _: ibis.literal(2),
+            attrgetter("a"),
+            id="truediv",
+        ),
+        param(
+            "floordiv",
+            lambda _: ibis.literal(2),
+            attrgetter("a"),
+            id="floordiv",
+        ),
+        param("pow", lambda _: ibis.literal(2), attrgetter("a"), id="pow"),
+        param("mod", lambda _: ibis.literal(2), attrgetter("a"), id="mod"),
+    ],
+)
+def test_deferred_r_ops(op_name, expected_left, expected_right):
+    t = ibis.table(dict(a="int64"), name="t")
+
+    left = 2
+    right = _.a
+
+    op = getattr(operator, op_name)
+    expr = t[op(left, right).name("b")]
+
+    op = expr.op().selections[0].op().arg.op()
+    assert op.left.equals(expected_left(t))
+    assert op.right.equals(expected_right(t))

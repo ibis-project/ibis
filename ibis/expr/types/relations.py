@@ -14,6 +14,7 @@ from public import public
 import ibis
 from ibis import util
 from ibis.common import exceptions as com
+from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
 
 if TYPE_CHECKING:
@@ -173,6 +174,8 @@ class TableExpr(Expr):
             return self[expr]
         elif isinstance(expr, (int, np.integer)):
             return self[self.schema().name_at_position(expr)]
+        elif isinstance(expr, Deferred):
+            return expr.resolve(self)
         elif not isinstance(expr, Expr):
             return expr(self)
         else:
@@ -574,6 +577,8 @@ class TableExpr(Expr):
         ):
             if util.is_function(expr):
                 value = expr(self)
+            elif isinstance(expr, Deferred):
+                value = expr.resolve(self)
             else:
                 value = rlz.any(expr)
             exprs.append(value.name(name))

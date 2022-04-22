@@ -26,6 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
+from ibis.expr.deferred import Deferred
 
 
 def _resolve_exprs(table, exprs):
@@ -51,9 +52,12 @@ _function_types = tuple(
 def _get_group_by_key(table, value):
     if isinstance(value, str):
         return table[value]
-    if isinstance(value, _function_types):
+    elif isinstance(value, _function_types):
         return value(table)
-    return value
+    elif isinstance(value, Deferred):
+        return value.resolve(table)
+    else:
+        return value
 
 
 class GroupedTableExpr:
@@ -106,12 +110,10 @@ class GroupedTableExpr:
         GroupedTableExpr
             A grouped table expression
         """
-        exprs = util.promote_list(expr)
-        new_having = self._having + exprs
-        return GroupedTableExpr(
+        return self.__class__(
             self.table,
             self.by,
-            having=new_having,
+            having=self._having + util.promote_list(expr),
             order_by=self._order_by,
             window=self._window,
         )
@@ -135,13 +137,11 @@ class GroupedTableExpr:
         GroupedTableExpr
             A sorted grouped GroupedTableExpr
         """
-        exprs = util.promote_list(expr)
-        new_order = self._order_by + exprs
-        return GroupedTableExpr(
+        return self.__class__(
             self.table,
             self.by,
             having=self._having,
-            order_by=new_order,
+            order_by=self._order_by + util.promote_list(expr),
             window=self._window,
         )
 
@@ -257,7 +257,7 @@ class GroupedTableExpr:
         GroupedTableExpr
             A new grouped table expression
         """
-        return GroupedTableExpr(
+        return self.__class__(
             self.table,
             self.by,
             having=self._having,
