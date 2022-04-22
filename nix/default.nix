@@ -43,7 +43,15 @@ import sources.nixpkgs {
       ibisDevEnv = pkgs.ibisDevEnv310;
 
       gdal_2 = super.gdal_2.overrideAttrs (attrs: {
-        patches = (attrs.patches or [ ]) ++ [ ../patches/gdal_2-limits.patch ];
+        patches = (attrs.patches or [ ]) ++ [
+          (pkgs.fetchpatch {
+            url = "https://github.com/OSGeo/gdal/commit/7a18e2669a733ebe3544e4f5c735fd4d2ded5fa3.patch";
+            sha256 = "sha256-rBgIxJcgRzZR1gyzDWK/Sh7MdPWeczxEYVELbYEV8JY=";
+            relative = "gdal";
+            # this doesn't apply correctly because of line endings
+            excludes = [ "third_party/LercLib/Lerc2.h" ];
+          })
+        ];
       });
 
       aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
