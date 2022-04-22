@@ -1,4 +1,5 @@
 import numpy as np
+import pandas.testing as tm
 import pytest
 import toolz
 
@@ -94,6 +95,11 @@ builtin_array = toolz.compose(
     ),
 )
 
+unnest = toolz.compose(
+    builtin_array,
+    pytest.mark.notimpl(["pandas"]),
+)
+
 
 @builtin_array
 def test_array_discovery(con):
@@ -107,6 +113,86 @@ def test_array_discovery(con):
             scalar_column=dt.float64,
         )
     )
-    assert t.columns == list(expected.names)
-    for ty, expected_ty in zip(t.schema().types, expected.types):
-        assert isinstance(ty, type(expected_ty))
+    assert t.schema() == expected
+
+
+@unnest
+def test_unnest_simple(con):
+    array_types = con.table("array_types")
+    expected = (
+        array_types.execute()
+        .x.explode()
+        .reset_index(drop=True)
+        .astype("float64")
+        .rename("tmp")
+    )
+    expr = array_types.x.unnest()
+    result = expr.execute().rename("tmp")
+    tm.assert_series_equal(result, expected)
+
+
+@unnest
+def test_unnest_complex(con):
+    array_types = con.table("array_types")
+    df = array_types.execute()
+    expr = (
+        array_types.select(["grouper", "x"])
+        .mutate(x=lambda t: t.x.unnest())
+        .groupby("grouper")
+        .aggregate(count_flat=lambda t: t.x.count())
+        .sort_by("grouper")
+    )
+    expected = (
+        df[["grouper", "x"]]
+        .explode("x")
+        .groupby("grouper")
+        .x.count()
+        .rename("count_flat")
+        .reset_index()
+        .sort_values("grouper")
+        .reset_index(drop=True)
+    )
+    result = expr.execute()
+    tm.assert_frame_equal(result, expected)
+
+
+@unnest
+@pytest.mark.never(
+    "pyspark",
+    reason="pyspark throws away nulls in collect_list",
+)
+def test_unnest_idempotent(con):
+    array_types = con.table("array_types")
+    df = array_types.execute()
+    expr = (
+        array_types.select(["scalar_column", array_types.x.unnest().name("x")])
+        .group_by("scalar_column")
+        .aggregate(x=lambda t: t.x.collect())
+        .sort_by("scalar_column")
+    )
+    result = expr.execute()
+    expected = df[["scalar_column", "x"]]
+    tm.assert_frame_equal(result, expected)
+
+
+@unnest
+def test_unnest_no_nulls(con):
+    array_types = con.table("array_types")
+    df = array_types.execute()
+    expr = (
+        array_types.select(["scalar_column", array_types.x.unnest().name("x")])
+        .filter(lambda t: t.x.notnull())
+        .group_by("scalar_column")
+        .aggregate(x=lambda t: t.x.collect())
+        .sort_by("scalar_column")
+    )
+    result = expr.execute()
+    expected = (
+        df[["scalar_column", "x"]]
+        .explode("x")
+        .dropna(subset=["x"])
+        .groupby("scalar_column")
+        .x.apply(lambda xs: [x for x in xs if x is not None])
+        .reset_index()
+    )
+    tm.assert_frame_equal(result, expected)

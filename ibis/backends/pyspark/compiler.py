@@ -1914,3 +1914,10 @@ def compile_string_contains(t, expr, scope, timecontext, **kwargs):
     haystack = t.translate(op.haystack, scope, timecontext, **kwargs)
     needle = t.translate(op.needle, scope, timecontext, **kwargs)
     return haystack.contains(needle)
+
+
+@compiles(ops.Unnest)
+def compile_unnest(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    column = t.translate(op.arg, scope, timecontext, **kwargs)
+    return F.explode(column)

@@ -84,3 +84,14 @@ class ArrayRepeat(ValueOp):
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("args")
+
+
+@public
+class Unnest(ValueOp):
+    arg = rlz.array
+
+    @immutable_property
+    def output_dtype(self):
+        return self.arg.type().value_type
+
+    output_shape = rlz.Shape.COLUMNAR

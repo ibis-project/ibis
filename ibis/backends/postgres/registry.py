@@ -721,5 +721,6 @@ operation_registry.update(
         ops.ArrayRepeat: _array_repeat,
         ops.IdenticalTo: _identical_to,
         ops.HLLCardinality: _hll_cardinality,
+        ops.Unnest: unary(sa.func.unnest),
     }
 )
