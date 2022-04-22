@@ -15,6 +15,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.expr.deferred import Deferred
 from ibis.expr.random import random
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa: F401
@@ -200,6 +201,7 @@ __all__ = (
     'trailing_window',
     'where',
     'window',
+    '_',
 )
 
 
@@ -399,7 +401,9 @@ def timestamp(
 @timestamp.register(np.floating)
 @timestamp.register(int)
 @timestamp.register(float)
-def _(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
+def _timestamp_from_ymdhms(
+    value, *args, timezone: str | None = None
+) -> ir.TimestampScalar:
     if timezone:
         raise NotImplementedError('timestamp timezone not implemented')
 
@@ -411,17 +415,23 @@ def _(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
 
 
 @timestamp.register(pd.Timestamp)
-def _(value, timezone: str | None = None) -> ir.TimestampScalar:
+def _timestamp_from_timestamp(
+    value, timezone: str | None = None
+) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 @timestamp.register(datetime.datetime)
-def _(value, timezone: str | None = None) -> ir.TimestampScalar:
+def _timestamp_from_datetime(
+    value, timezone: str | None = None
+) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 @timestamp.register(str)
-def _(value: str, timezone: str | None = None) -> ir.TimestampScalar:
+def _timestamp_from_str(
+    value: str, timezone: str | None = None
+) -> ir.TimestampScalar:
     try:
         value = pd.Timestamp(value, tz=timezone)
     except pd.errors.OutOfBoundsDatetime:
@@ -447,23 +457,23 @@ def date(value) -> DateValue:
 
 
 @date.register(str)
-def _(value: str) -> ir.DateScalar:
+def _date_from_str(value: str) -> ir.DateScalar:
     return literal(pd.to_datetime(value).date(), type=dt.date)
 
 
 @date.register(pd.Timestamp)
-def _(value) -> ir.DateScalar:
+def _date_from_timestamp(value) -> ir.DateScalar:
     return literal(value, type=dt.date)
 
 
 @date.register(IntegerColumn)
 @date.register(int)
-def _(year, month, day) -> ir.DateScalar:
+def _date_from_int(year, month, day) -> ir.DateScalar:
     return ops.DateFromYMD(year, month, day).to_expr()
 
 
 @date.register(StringValue)
-def _(value: StringValue) -> DateValue:
+def _date_from_string(value: StringValue) -> DateValue:
     return value.cast(dt.date)
 
 
@@ -473,18 +483,18 @@ def time(value) -> TimeValue:
 
 
 @time.register(str)
-def _(value: str) -> ir.TimeScalar:
+def _time_from_str(value: str) -> ir.TimeScalar:
     return literal(pd.to_datetime(value).time(), type=dt.time)
 
 
 @time.register(IntegerColumn)
 @time.register(int)
-def _(hours, mins, secs) -> ir.TimeScalar:
+def _time_from_int(hours, mins, secs) -> ir.TimeScalar:
     return ops.TimeFromHMS(hours, mins, secs).to_expr()
 
 
 @time.register(StringValue)
-def _(value: StringValue) -> TimeValue:
+def _time_from_string(value: StringValue) -> TimeValue:
     return value.cast(dt.time)
 
 
@@ -755,3 +765,5 @@ aggregate = ir.TableExpr.aggregate
 cross_join = ir.TableExpr.cross_join
 join = ir.TableExpr.join
 asof_join = ir.TableExpr.asof_join
+
+_ = Deferred()

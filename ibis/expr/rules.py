@@ -392,7 +392,9 @@ def function_of(
     this,
 ):
     if not util.is_function(fn):
-        raise com.IbisTypeError('argument `fn` must be a function or lambda')
+        raise com.IbisTypeError(
+            'argument `fn` must be a function, lambda or deferred operation'
+        )
 
     return output_rule(fn(preprocess(this[argument])), this=this)
 
@@ -509,6 +511,3 @@ def window(win, *, from_base_table_of, this):
         if not isinstance(order_var.type(), dt.Timestamp):
             raise com.IbisInputError(error_msg)
     return win
-
-
-# TODO: create varargs marker for impala udfs
