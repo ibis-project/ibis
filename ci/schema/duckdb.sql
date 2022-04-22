@@ -70,3 +70,21 @@ CREATE TABLE functional_alltypes (
     year INTEGER,
     month INTEGER
 );
+
+DROP TABLE IF EXISTS array_types CASCADE;
+
+CREATE TABLE IF NOT EXISTS array_types (
+    x BIGINT[],
+    y TEXT[],
+    z DOUBLE PRECISION[],
+    grouper TEXT,
+    scalar_column DOUBLE PRECISION
+);
+
+INSERT INTO array_types VALUES
+    ([1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0),
+    ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0),
+    ([6, NULL], ['f', NULL], [6.0, NULL], 'a', 3.0),
+    ([NULL, 1, NULL], [NULL, 'a', NULL], [], 'b', 4.0),
+    ([2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0),
+    ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0);

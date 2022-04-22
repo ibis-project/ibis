@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
+
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
@@ -76,6 +79,48 @@ class Backend(BaseAlchemyBackend):
                 for name, type in zip(rel.columns, rel.types)
             }
         )
+
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> sa.Table:
+
+        with warnings.catch_warnings():
+            # don't fail or warn if duckdb-engine fails to discover types
+            warnings.filterwarnings(
+                "ignore",
+                message="Did not recognize type",
+                category=sa.exc.SAWarning,
+            )
+
+            t = super()._get_sqla_table(name, schema, **kwargs)
+
+        nulltype_cols = frozenset(
+            col.name
+            for col in t.c.values()
+            if isinstance(col.type, sa.types.NullType)
+        )
+
+        if nulltype_cols:
+            query = (
+                f"DESCRIBE {self.con.dialect.identifier_preparer.quote(name)}"
+            )
+            with self.con.connect() as con:
+                metadata = con.connection.c.execute(query).fetchall()
+
+            for colname, type, null, *_ in metadata:
+                if colname in nulltype_cols:
+                    column = sa.Column(
+                        colname,
+                        to_sqla_type(parse_type(type)),
+                        nullable=null == "YES",
+                    )
+                    # replace null types discovered by sqlite with non null
+                    # types
+                    t.append_column(column, replace_existing=True)
+        return t
 
     def _get_temp_view_definition(
         self,

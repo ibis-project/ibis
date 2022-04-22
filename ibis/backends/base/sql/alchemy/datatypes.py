@@ -275,7 +275,7 @@ def sa_array(dialect, satype, nullable=True):
     return dt.Array(value_dtype, nullable=nullable)
 
 
-@sch.infer.register(sa.Table)
+@sch.infer.register((sa.Table, sa.sql.TableClause))
 def schema_from_table(table, schema=None):
     """Retrieve an ibis schema from a SQLAlchemy ``Table``.
 
