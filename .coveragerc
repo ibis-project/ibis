@@ -8,6 +8,7 @@ exclude_lines =
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:
+    if TYPE_CHECKING:
 ignore_errors = True
 omit =
     *_version.py
