@@ -952,11 +952,6 @@ class ExprValidator:
         total = sum(self.roots_shared(root) for root in expr_roots)
         return total == 1
 
-    def shares_multiple_roots(self, expr):
-        expr_roots = expr.op().root_tables()
-        total = sum(self.roots_shared(expr_roots) for root in expr_roots)
-        return total > 1
-
     def validate_all(self, exprs):
         for expr in exprs:
             self.assert_valid(expr)

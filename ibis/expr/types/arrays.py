@@ -190,6 +190,22 @@ class ArrayValue(AnyValue):
 
         return ops.ArrayRepeat(self, n).to_expr()
 
+    def unnest(self) -> ir.ValueExpr:
+        """Unnest an array.
+
+        Returns
+        -------
+        ir.ValueExpr
+            Unnested array
+        """
+        import ibis.expr.operations as ops
+
+        expr = ops.Unnest(self).to_expr()
+        try:
+            return expr.name(self.get_name())
+        except com.ExpressionError:
+            return expr
+
 
 @public
 class ArrayScalar(AnyScalar, ArrayValue):

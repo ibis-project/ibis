@@ -739,6 +739,7 @@ operation_registry = {
     ops.ArrayConcat: _fixed_arity('arrayConcat', 2),
     ops.ArrayRepeat: _array_repeat_op,
     ops.ArraySlice: _array_slice_op,
+    ops.Unnest: _unary("arrayJoin"),
 }
 
 
