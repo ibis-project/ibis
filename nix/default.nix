@@ -47,7 +47,13 @@ import sources.nixpkgs {
       });
 
       aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
-        patches = (attrs.patches or [ ]) ++ [ ../patches/aws-sdk-cpp-thread.patch ];
+        patches = (attrs.patches or [ ]) ++ [
+          # https://github.com/aws/aws-sdk-cpp/pull/1912
+          (pkgs.fetchpatch {
+            url = "https://github.com/aws/aws-sdk-cpp/commit/1884876d331f97e75e60a2f210b4ecd8401ecc8f.patch";
+            sha256 = "sha256-nea8TF6iJcHjwv0nsbrbw15ALQfLeB/DvRRpk35AWAU=";
+          })
+        ];
       })).override {
         apis = [
           "cognito-identity"
