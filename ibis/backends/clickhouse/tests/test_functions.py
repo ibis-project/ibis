@@ -18,9 +18,11 @@ pytest.importorskip("clickhouse_driver")
 @pytest.mark.parametrize(
     ('to_type', 'expected'),
     [
-        param('int8', 'CAST(`double_col` AS Int8)', id="int8"),
-        param('int16', 'CAST(`double_col` AS Int16)', id="int16"),
-        param('float32', 'CAST(`double_col` AS Float32)', id="float32"),
+        param('int8', 'CAST(`double_col` AS Nullable(Int8))', id="int8"),
+        param('int16', 'CAST(`double_col` AS Nullable(Int16))', id="int16"),
+        param(
+            'float32', 'CAST(`double_col` AS Nullable(Float32))', id="float32"
+        ),
         param('float', '`double_col`', id="float"),
         # alltypes.double_col is non-nullable
         param(
@@ -38,11 +40,22 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
 @pytest.mark.parametrize(
     ('to_type', 'expected'),
     [
-        ('int8', 'CAST(`string_col` AS Int8)'),
-        ('int16', 'CAST(`string_col` AS Int16)'),
+        ('int8', 'CAST(`string_col` AS Nullable(Int8))'),
+        ('int16', 'CAST(`string_col` AS Nullable(Int16))'),
         (dt.String(nullable=False), 'CAST(`string_col` AS String)'),
-        ('timestamp', 'CAST(`string_col` AS DateTime)'),
-        ('date', 'CAST(`string_col` AS Date)'),
+        ('timestamp', 'CAST(`string_col` AS Nullable(DateTime64(6)))'),
+        ('date', 'CAST(`string_col` AS Nullable(Date))'),
+        (
+            '!map<string, int64>',
+            'CAST(`string_col` AS Map(Nullable(String), Nullable(Int64)))',
+        ),
+        (
+            '!struct<a: string, b: int64>',
+            (
+                'CAST(`string_col` AS '
+                'Tuple(a Nullable(String), b Nullable(Int64)))'
+            ),
+        ),
     ],
 )
 def test_cast_string_col(alltypes, translate, to_type, expected):
@@ -85,15 +98,13 @@ def test_timestamp_cast(alltypes, translate):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    assert translate(result1) == 'CAST(`timestamp_col` AS DateTime)'
-    assert translate(result2) == 'CAST(`int_col` AS DateTime)'
+    assert translate(result1) == 'CAST(`timestamp_col` AS DateTime64(6))'
+    assert translate(result2) == 'CAST(`int_col` AS DateTime64(6))'
 
 
-def test_timestamp_now(con, translate):
+def test_timestamp_now(translate):
     expr = ibis.now()
-    # now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     assert translate(expr) == 'now()'
-    # assert con.execute(expr) == now
 
 
 @pytest.mark.parametrize(
@@ -107,7 +118,7 @@ def test_timestamp_now(con, translate):
         ('minute', '2009-05-17 12:34:00'),
     ],
 )
-def test_timestamp_truncate(con, translate, unit, expected):
+def test_timestamp_truncate(con, unit, expected):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
     assert con.execute(expr) == pd.Timestamp(expected)
@@ -268,7 +279,7 @@ def test_string_contains(con, op, value, expected):
 
 
 # TODO: clickhouse-driver escaping bug
-def test_re_replace(con, translate):
+def test_re_replace(con):
     expr1 = L('Hello, World!').re_replace('.', '\\\\0\\\\0')
     expr2 = L('Hello, World!').re_replace('^', 'here: ')
 
@@ -280,7 +291,7 @@ def test_re_replace(con, translate):
     ('value', 'expected'),
     [(L('a'), 0), (L('b'), 1), (L('d'), -1)],  # TODO: what's the expected?
 )
-def test_find_in_set(con, value, expected, translate):
+def test_find_in_set(con, value, expected):
     vals = list('abc')
     expr = value.find_in_set(vals)
     assert con.execute(expr) == expected
@@ -312,12 +323,12 @@ def test_string_column_find_in_set(con, alltypes, translate):
         ),
     ],
 )
-def test_parse_url(con, translate, url, extract, expected):
+def test_parse_url(con, url, extract, expected):
     expr = url.parse_url(extract)
     assert con.execute(expr) == expected
 
 
-def test_parse_url_query_parameter(con, translate):
+def test_parse_url_query_parameter(con):
     url = L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
     expr = url.parse_url('QUERY', 't')
     assert con.execute(expr) == '10'
@@ -427,7 +438,7 @@ def test_translate_math_functions(con, alltypes, translate, call, expected):
         ),
     ],
 )
-def test_math_functions(con, expr, expected, translate):
+def test_math_functions(con, expr, expected):
     assert con.execute(expr) == expected
 
 
@@ -476,7 +487,7 @@ def test_regexp(con, expr, expected):
         # (L('abcd').re_extract('abcd', 3), None),
     ],
 )
-def test_regexp_extract(con, expr, expected, translate):
+def test_regexp_extract(con, expr, expected):
     assert con.execute(expr) == expected
 
 
@@ -496,14 +507,14 @@ def test_column_regexp_replace(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-def test_numeric_builtins_work(con, alltypes, df, translate):
+def test_numeric_builtins_work(alltypes, df):
     expr = alltypes.double_col
     result = expr.execute()
     expected = df.double_col.fillna(0)
     tm.assert_series_equal(result, expected)
 
 
-def test_null_column(alltypes, translate):
+def test_null_column(alltypes):
     t = alltypes
     nrows = t.count().execute()
     expr = t.mutate(na_column=ibis.NA).na_column

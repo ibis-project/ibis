@@ -312,10 +312,10 @@ def test_array_index(con, arr, ids):
     ],
 )
 def test_array_concat(con, arrays):
-    expr = L([]).cast(dt.Array(dt.int8))
+    expr = L([]).cast("!array<int8>")
     expected = sum(arrays, [])
     for arr in arrays:
-        expr += L(arr)
+        expr += L(arr, type="!array<int8>")
 
     assert con.execute(expr) == expected
 

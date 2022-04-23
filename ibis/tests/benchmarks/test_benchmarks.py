@@ -544,8 +544,8 @@ def test_complex_datatype_parse(benchmark):
             )
         )
     )
-    assert dt.parse_type(type_str) == expected
-    benchmark(dt.parse_type, type_str)
+    assert dt.parse(type_str) == expected
+    benchmark(dt.parse, type_str)
 
 
 @pytest.mark.benchmark(group="datatype")

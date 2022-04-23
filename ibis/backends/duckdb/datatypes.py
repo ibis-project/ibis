@@ -1,14 +1,26 @@
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
 import parsy as p
+
+from ibis import util
 
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
 from ibis.expr.datatypes import (
+    COLON,
+    COMMA,
+    FIELD,
+    LANGLE,
+    LBRACKET,
+    LPAREN,
+    PRECISION,
+    RANGLE,
+    RBRACKET,
+    RPAREN,
+    SCALE,
     Array,
     Decimal,
     Interval,
@@ -24,6 +36,8 @@ from ibis.expr.datatypes import (
     int16,
     int32,
     int64,
+    spaceless,
+    spaceless_string,
     string,
     time,
     uint8,
@@ -33,34 +47,9 @@ from ibis.expr.datatypes import (
     uuid,
 )
 
-_SPACES = p.regex(r'\s*', re.MULTILINE)
 
-
-def spaceless(parser):
-    return _SPACES.then(parser).skip(_SPACES)
-
-
-def spaceless_string(*strings: str):
-    return spaceless(
-        p.alt(*[p.string(s, transform=str.lower) for s in strings])
-    )
-
-
-def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
-    precision = scale = p.digit.at_least(1).concat().map(int)
-
-    lparen = spaceless_string("(")
-    rparen = spaceless_string(")")
-
-    lbracket = spaceless_string("[")
-    rbracket = spaceless_string("]")
-
-    langle = spaceless_string("<")
-    rangle = spaceless_string(">")
-
-    comma = spaceless_string(",")
-    colon = spaceless_string(":")
-
+def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
+    """Parse a DuckDB type into an ibis data type."""
     primitive = (
         spaceless_string("interval").result(Interval())
         | spaceless_string("bigint", "int8", "long").result(int64)
@@ -99,21 +88,21 @@ def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     def decimal():
         yield spaceless_string("decimal", "numeric")
         prec_scale = (
-            yield lparen.then(
-                p.seq(precision.skip(comma), scale).combine(
+            yield LPAREN.then(
+                p.seq(PRECISION.skip(COMMA), SCALE).combine(
                     lambda prec, scale: (prec, scale)
                 )
             )
-            .skip(rparen)
+            .skip(RPAREN)
             .optional()
         ) or default_decimal_parameters
         return Decimal(*prec_scale)
 
     @p.generate
     def angle_type():
-        yield langle
+        yield LANGLE
         value_type = yield ty
-        yield rangle
+        yield RANGLE
         return value_type
 
     @p.generate
@@ -125,34 +114,42 @@ def parse_type(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def pg_array():
         value_type = yield non_pg_array_type
-        yield lbracket
-        yield rbracket
+        yield LBRACKET
+        yield RBRACKET
         return Array(value_type)
 
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield langle
+        yield LANGLE
         key_type = yield primitive
-        yield comma
+        yield COMMA
         value_type = yield ty
-        yield rangle
+        yield RANGLE
         return Map(key_type, value_type)
 
-    field = spaceless(p.regex("[a-zA-Z_][a-zA-Z_0-9]*"))
+    field = spaceless(FIELD)
 
     @p.generate
     def struct():
         yield spaceless_string("struct")
-        yield langle
+        yield LANGLE
         field_names_types = yield (
-            p.seq(field.skip(colon), ty)
+            p.seq(field.skip(COLON), ty)
             .combine(lambda field, ty: (field, ty))
-            .sep_by(comma)
+            .sep_by(COMMA)
         )
-        yield rangle
+        yield RANGLE
         return Struct.from_tuples(field_names_types)
 
     non_pg_array_type = primitive | decimal | list_array | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
+
+
+@util.deprecated(
+    instead=f"use {parse.__module__}.{parse.__name__}",
+    version="4.0",
+)
+def parse_type(*args, **kwargs):
+    return parse(*args, **kwargs)
