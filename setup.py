@@ -68,7 +68,7 @@ extras_require = {
     ':python_version < "3.10"': ['importlib-metadata>=4,<5'],
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',
-        'clickhouse-driver>=0.1,<0.3',
+        'clickhouse-driver[numpy]>=0.1,<0.3',
         'dask[array,dataframe]>=2021.10.0',
         'datafusion>=0.4,<0.6',
         'duckdb>=0.3.2,<0.4.0',
@@ -89,7 +89,7 @@ extras_require = {
     ],
     'clickhouse': [
         'clickhouse-cityhash>=1.0.2,<2',
-        'clickhouse-driver>=0.1,<0.3',
+        'clickhouse-driver[numpy]>=0.1,<0.3',
         'lz4>=3.1.10,<5',
     ],
     'dask': ['dask[array,dataframe]>=2021.10.0', 'pyarrow>=1,<8'],

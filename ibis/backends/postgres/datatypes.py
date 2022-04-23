@@ -8,7 +8,7 @@ def _get_type(typestr: str) -> dt.DataType:
     try:
         return _type_mapping[typestr]
     except KeyError:
-        return ddb.parse_type(typestr)
+        return ddb.parse(typestr)
 
 
 _type_mapping = {

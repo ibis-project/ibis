@@ -251,6 +251,8 @@ optional = true
 python-versions = ">=3.4.*, <4"
 
 [package.dependencies]
+numpy = {version = ">=1.12.0", optional = true, markers = "extra == \"numpy\""}
+pandas = {version = ">=0.24.0", optional = true, markers = "extra == \"numpy\""}
 pytz = "*"
 tzlocal = "*"
 
@@ -2323,7 +2325,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "141e837de174d1ddbbc1a7f8d519c0b0320323e4bb38f08de5f80740372ec4e3"
+content-hash = "6cdfde1ce4daee23a5c5e195b89ba5a3ef5d436e700899573dbe184344fc17cb"
 
 [metadata.files]
 absolufy-imports = [

@@ -6,6 +6,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.clickhouse.datatypes import serialize
 from ibis.backends.clickhouse.identifiers import quote_identifier
 
 # TODO(kszucs): should inherit operation registry from the base compiler
@@ -19,12 +20,11 @@ def _alias(translator, expr):
 
 
 def _cast(translator, expr):
-    from ibis.backends.clickhouse.client import ClickhouseDataType
-
     op = expr.op()
-    arg, target = op.args
+    arg = op.arg
+    target = op.to
     arg_ = translator.translate(arg)
-    type_ = str(ClickhouseDataType.from_ibis(target, nullable=False))
+    type_ = serialize(target)
 
     return f'CAST({arg_!s} AS {type_!s})'
 

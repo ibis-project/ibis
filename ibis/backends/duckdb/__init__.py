@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import parse_type
+from ibis.backends.duckdb.datatypes import parse
 
 
 class Backend(BaseAlchemyBackend):
@@ -73,10 +73,7 @@ class Backend(BaseAlchemyBackend):
         with self.con.connect() as con:
             rel = con.connection.c.query(query)
         return sch.Schema.from_dict(
-            {
-                name: parse_type(type)
-                for name, type in zip(rel.columns, rel.types)
-            }
+            {name: parse(type) for name, type in zip(rel.columns, rel.types)}
         )
 
     def _get_sqla_table(
@@ -113,7 +110,7 @@ class Backend(BaseAlchemyBackend):
                 if colname in nulltype_cols:
                     column = sa.Column(
                         colname,
-                        to_sqla_type(parse_type(type)),
+                        to_sqla_type(parse(type)),
                         nullable=null == "YES",
                     )
                     # replace null types discovered by sqlite with non null

@@ -80,11 +80,6 @@ def test_np_array_literal(con):
 
 
 builtin_array = toolz.compose(
-    # the type parser needs additional work for this to work
-    pytest.mark.broken(
-        "clickhouse",
-        reason="nullable types can't yet be parsed",
-    ),
     # these will almost certainly never be supported
     pytest.mark.never(
         ["mysql", "sqlite"],
@@ -112,4 +107,6 @@ def test_array_discovery(con):
             scalar_column=dt.float64,
         )
     )
-    assert t.schema() == expected
+    assert t.columns == list(expected.names)
+    for ty, expected_ty in zip(t.schema().types, expected.types):
+        assert isinstance(ty, type(expected_ty))

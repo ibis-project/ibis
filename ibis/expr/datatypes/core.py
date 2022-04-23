@@ -26,6 +26,7 @@ import parsy as p
 from multipledispatch import Dispatcher
 from public import public
 
+from ibis import util
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.common.grounds import Annotable, Comparable, Singleton
 from ibis.common.validators import (
@@ -61,7 +62,7 @@ def default(value, **kwargs) -> DataType:
 @dtype.register(str)
 def from_string(value: str) -> DataType:
     try:
-        return parse_type(value)
+        return parse(value)
     except SyntaxError:
         raise IbisTypeError(f'{value!r} cannot be parsed as a datatype')
 
@@ -936,20 +937,62 @@ public(
 
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
 
-_SPACES = p.regex(r'\s*', re.MULTILINE)
+SPACES = p.regex(r'\s*', re.MULTILINE)
 
 
+@public
 def spaceless(parser):
-    return _SPACES.then(parser).skip(_SPACES)
+    return SPACES.then(parser).skip(SPACES)
 
 
-def spaceless_string(s: str):
-    return spaceless(p.string(s, transform=str.lower))
+@public
+def spaceless_string(*strings: str):
+    return spaceless(
+        p.alt(*(p.string(string, transform=str.lower) for string in strings))
+    )
+
+
+RAW_NUMBER = p.digit.at_least(1).concat()
+PRECISION = SCALE = NUMBER = RAW_NUMBER.map(int)
+
+LPAREN = spaceless_string("(")
+RPAREN = spaceless_string(")")
+
+LBRACKET = spaceless_string("[")
+RBRACKET = spaceless_string("]")
+
+LANGLE = spaceless_string("<")
+RANGLE = spaceless_string(">")
+
+COMMA = spaceless_string(",")
+COLON = spaceless_string(":")
+SEMICOLON = spaceless_string(";")
+
+RAW_STRING = p.regex(_STRING_REGEX).map(ast.literal_eval)
+FIELD = p.regex("[a-zA-Z_][a-zA-Z_0-9]*")
+
+public(
+    COLON=COLON,
+    COMMA=COMMA,
+    FIELD=FIELD,
+    LANGLE=LANGLE,
+    LBRACKET=LBRACKET,
+    RBRACKET=RBRACKET,
+    LPAREN=LPAREN,
+    NUMBER=NUMBER,
+    PRECISION=PRECISION,
+    RANGLE=RANGLE,
+    RAW_STRING=RAW_STRING,
+    RPAREN=RPAREN,
+    SCALE=SCALE,
+    SEMICOLON=SEMICOLON,
+    SPACES=SPACES,
+)
 
 
 @public
 @functools.lru_cache(maxsize=100)
-def parse_type(text: str) -> DataType:
+def parse(text: str) -> DataType:
     """Parse a type from a [`str`][str] `text`.
 
     The default `maxsize` parameter for caching is chosen to cache the most
@@ -967,50 +1010,38 @@ def parse_type(text: str) -> DataType:
 
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
-    >>> dt.parse_type("array<int64>")
+    >>> dt.parse("array<int64>")
     Array(value_type=Int64(nullable=True), nullable=True)
 
     You can avoid parsing altogether by constructing objects directly
 
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
-    >>> ty = dt.parse_type("array<int64>")
+    >>> ty = dt.parse("array<int64>")
     >>> ty == dt.Array(dt.int64)
     True
     """
-    precision = scale = srid = p.digit.at_least(1).concat().map(int)
 
-    lparen = spaceless_string("(")
-    rparen = spaceless_string(")")
-
-    langle = spaceless_string("<")
-    rangle = spaceless_string(">")
-
-    comma = spaceless_string(",")
-    colon = spaceless_string(":")
-    semicolon = spaceless_string(";")
-
-    raw_string = p.regex(_STRING_REGEX).map(ast.literal_eval)
-
+    srid = NUMBER
     geotype = spaceless_string("geography") | spaceless_string("geometry")
 
     @p.generate
     def srid_geotype():
-        yield semicolon
+        yield SEMICOLON
         sr = yield srid
-        yield colon
+        yield COLON
         gt = yield geotype
         return (gt, sr)
 
     @p.generate
     def geotype_part():
-        yield colon
+        yield COLON
         gt = yield geotype
         return (gt, None)
 
     @p.generate
     def srid_part():
-        yield semicolon
+        yield SEMICOLON
         sr = yield srid
         return (None, sr)
 
@@ -1062,32 +1093,28 @@ def parse_type(text: str) -> DataType:
 
     @p.generate
     def varchar_or_char():
-        yield p.alt(
-            spaceless_string("varchar"), spaceless_string("char")
-        ).then(
-            lparen.then(p.digit.at_least(1).concat()).skip(rparen).optional()
+        yield spaceless_string("varchar", "char").then(
+            LPAREN.then(RAW_NUMBER).skip(RPAREN).optional()
         )
         return String()
 
     @p.generate
     def decimal():
         yield spaceless_string("decimal")
-        prec, sc = (
-            yield lparen.then(
-                p.seq(precision.skip(comma), scale).combine(
-                    lambda prec, scale: (prec, scale)
-                )
+        precision, scale = (
+            yield LPAREN.then(
+                p.seq(spaceless(PRECISION).skip(COMMA), spaceless(SCALE))
             )
-            .skip(rparen)
+            .skip(RPAREN)
             .optional()
         ) or (None, None)
-        return Decimal(precision=prec, scale=sc)
+        return Decimal(precision=precision, scale=scale)
 
     @p.generate
     def parened_string():
-        yield lparen
-        s = yield raw_string
-        yield rparen
+        yield LPAREN
+        s = yield RAW_STRING
+        yield RPAREN
         return s
 
     @p.generate
@@ -1098,18 +1125,19 @@ def parse_type(text: str) -> DataType:
 
     @p.generate
     def angle_type():
-        yield langle
+        yield LANGLE
         value_type = yield ty
-        yield rangle
+        yield RANGLE
         return value_type
 
     @p.generate
     def interval():
         yield spaceless_string("interval")
         value_type = yield angle_type.optional()
-        un = yield parened_string.optional()
+        unit = yield parened_string.optional()
         return Interval(
-            value_type=value_type, unit=un if un is not None else 's'
+            value_type=value_type,
+            unit=unit if unit is not None else "s",
         )
 
     @p.generate
@@ -1127,29 +1155,36 @@ def parse_type(text: str) -> DataType:
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield langle
+        yield LANGLE
         key_type = yield primitive
-        yield comma
+        yield COMMA
         value_type = yield ty
-        yield rangle
+        yield RANGLE
         return Map(key_type, value_type)
 
-    field = spaceless(p.regex("[a-zA-Z_][a-zA-Z_0-9]*"))
+    spaceless_field = spaceless(FIELD)
 
     @p.generate
     def struct():
         yield spaceless_string("struct")
-        yield langle
+        yield LANGLE
         field_names_types = yield (
-            p.seq(field.skip(colon), ty)
+            p.seq(spaceless_field.skip(COLON), ty)
             .combine(lambda field, ty: (field, ty))
-            .sep_by(comma)
+            .sep_by(COMMA)
         )
-        yield rangle
+        yield RANGLE
         return Struct.from_tuples(field_names_types)
 
+    @p.generate
+    def nullable():
+        yield spaceless_string("!")
+        parsed_ty = yield ty
+        return parsed_ty(nullable=False)
+
     ty = (
-        timestamp
+        nullable
+        | timestamp
         | primitive
         | decimal
         | varchar_or_char
@@ -1170,6 +1205,15 @@ def parse_type(text: str) -> DataType:
     )
 
     return ty.parse(text)
+
+
+@util.deprecated(
+    instead=f"use {parse.__module__}.{parse.__name__}",
+    version="4.0",
+)
+@public
+def parse_type(*args, **kwargs):
+    return parse(*args, **kwargs)
 
 
 def _get_timedelta_units(
