@@ -50,4 +50,8 @@ self: super:
     setupPyBuildFlags = (attrs.setupPyBuildFlags or [ ])
       ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
+
+  atpublic = super.atpublic.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
+  });
 }
