@@ -1,6 +1,195 @@
 Release Notes
 ---
 
+## [3.0.0](https://github.com/ibis-project/ibis/compare/2.1.1...3.0.0) (2022-04-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ir:** The following are breaking changes due to simplifying expression internals
+  - `ibis.expr.datatypes.DataType.scalar_type` and `DataType.column_type` factory
+    methods have been removed, `DataType.scalar` and `DataType.column` class
+    fields can be used to directly construct a corresponding expression instance
+    (though prefer to use `operation.to_expr()`)
+  - `ibis.expr.types.ValueExpr._name` and `ValueExpr._dtype`` fields are not
+    accassible anymore. While these were not supposed to used directly now
+    `ValueExpr.has_name()`, `ValueExpr.get_name()` and `ValueExpr.type()` methods
+    are the only way to retrieve the expression's name and datatype.
+  - `ibis.expr.operations.Node.output_type` is a property now not a method,
+    decorate those methods with `@property`
+  - `ibis.expr.operations.ValueOp` subclasses must define `output_shape` and
+    `output_dtype` properties from now on (note the datatype abbreviation `dtype`
+    in the property name)
+  - `ibis.expr.rules.cast()`, `scalar_like()` and `array_like()` rules have been
+    removed
+* **api:** Replace `t["a"].distinct()` with `t[["a"]].distinct()`.
+* **deps:** The sqlalchemy lower bound is now 1.4
+* **ir:** Schema.names and Schema.types attributes now have tuple type rather than list
+* **expr:** Columns that were added or used in an aggregation or
+mutation would be alphabetically sorted in compiled SQL outputs.  This
+was a vestige from when Python dicts didn't preserve insertion order.
+Now columns will appear in the order in which they were passed to
+`aggregate` or `mutate`
+* **api:** `dt.float` is now `dt.float64`; use `dt.float32` for the previous behavior.
+* **ir:** Relation-based `execute_node` dispatch rules must now accept tuples of expressions.
+* **ir:** removed ibis.expr.lineage.{roots,find_nodes} functions
+* **config:** Use `ibis.options.graphviz_repr = True` to enable
+* **hdfs:** Use `fsspec` instead of HDFS from ibis
+* **udf:** Vectorized UDF coercion functions are no longer a public API.
+* The minimum supported Python version is now Python 3.8
+* **config:** `register_option` is no longer supported, please submit option requests upstream
+* **backends:** Read tables with pandas.read_hdf and use the pandas backend
+* The CSV backend is removed. Use Datafusion for CSV execution.
+* **backends:** Use the datafusion backend to read parquet files
+* `Expr() -> Expr.pipe()`
+* coercion functions previously in expr/schema.py are now in udf/vectorized.py
+* **api:** `materialize` is removed. Joins with overlapping columns now have suffixes.
+* **kudu:** use impala instead: https://kudu.apache.org/docs/kudu_impala_integration.html
+* Any code that was relying implicitly on string-y
+behavior from UUID datatypes will need to add an explicit cast first.
+
+### Features
+
+* add _repr_html_ for expressions to print as tables in ipython ([cd6fa4e](https://github.com/ibis-project/ibis/commit/cd6fa4e245cbf6e7ce8df41634c307689f1fd60a))
+* add duckdb backend ([667f2d5](https://github.com/ibis-project/ibis/commit/667f2d5ae5e0ffcf3ffb56d68e4f02f37a4a2b4b))
+* allow construction of decimal literals ([3d9e865](https://github.com/ibis-project/ibis/commit/3d9e865ab3badd092d8155302641a3e91c72c028))
+* **api:** add `ibis.asc` expression ([efe177e](https://github.com/ibis-project/ibis/commit/efe177eea0e2cd676d2db104e8611c1c47b7f1a1)), closes [#1454](https://github.com/ibis-project/ibis/issues/1454)
+* **api:** add has_operation API to the backend ([4fab014](https://github.com/ibis-project/ibis/commit/4fab0143741a1baf016dd6f880103093c3418685))
+* **api:** implement type for SortExpr ([ab19bd6](https://github.com/ibis-project/ibis/commit/ab19bd64f82dd49f967118e22f3ae5042fbf9e0b))
+* **clickhouse:** implement string concat for clickhouse ([1767205](https://github.com/ibis-project/ibis/commit/1767205eca7e017b752f8f25629aad6870077777))
+* **clickhouse:** implement StrRight operation ([67749a0](https://github.com/ibis-project/ibis/commit/67749a0363666af272b00d2945527d07b6436951))
+* **clickhouse:** implement table union ([e0008d7](https://github.com/ibis-project/ibis/commit/e0008d7954cda050d6d39f8f2262ff9d3fcadca9))
+* **clickhouse:** implement trim, pad and string predicates ([a5b7293](https://github.com/ibis-project/ibis/commit/a5b72934c38d3a6422274737d5b766d7b4dd9766))
+* **datafusion:** implement Count operation ([4797a86](https://github.com/ibis-project/ibis/commit/4797a8680b6e084ca59da3307c48378846643486))
+* **datatypes:** unbounded decimal type ([f7e6f65](https://github.com/ibis-project/ibis/commit/f7e6f651c4ea4ed7fe394cf3322e43bebae5e26c))
+* **date:** add ibis.date(y,m,d) functionality ([26892b6](https://github.com/ibis-project/ibis/commit/26892b6a11a8b0fd8f31d5b692daf8e20a723ac1)), closes [#386](https://github.com/ibis-project/ibis/issues/386)
+* **duckdb/postgres/mysql/pyspark:** implement `.sql` on tables for mixing sql and expressions ([00e8087](https://github.com/ibis-project/ibis/commit/00e80871bfc80fb060dbf54efa477cb5c894a6ad))
+* **duckdb:** add functionality needed to pass integer to interval test ([e2119e8](https://github.com/ibis-project/ibis/commit/e2119e81c2e9f2f6c641ee14a69ddba887b97b61))
+* **duckdb:** implement _get_schema_using_query ([93cd730](https://github.com/ibis-project/ibis/commit/93cd73021e92c6d7b4bed90babec3a2a237324fc))
+* **duckdb:** implement now() function ([6924f50](https://github.com/ibis-project/ibis/commit/6924f50204973e2f0d093cbf7c9e717d0501adb4))
+* **duckdb:** implement regexp replace and extract ([18d16a7](https://github.com/ibis-project/ibis/commit/18d16a74ed96d427fa31a67e3786b75d66629081))
+* implement `force` argument in sqlalchemy backend base class ([9df7f1b](https://github.com/ibis-project/ibis/commit/9df7f1b1625879278954035e0521861fded5e07d))
+* implement coalesce for the pyspark backend ([8183efe](https://github.com/ibis-project/ibis/commit/8183efeff8591a5b1a846d5e31906a44b8ba73dc))
+* implement semi/anti join for the pandas backend ([cb36fc5](https://github.com/ibis-project/ibis/commit/cb36fc531d9826b4e5a8e794d7a2b43415540129))
+* implement semi/anti join for the pyspark backend ([3e1ba9c](https://github.com/ibis-project/ibis/commit/3e1ba9c1e29673982e69bf50200ec3ded6777740))
+* implement the remaining clickhouse joins ([b3aa1f0](https://github.com/ibis-project/ibis/commit/b3aa1f0d77820fcc5644adc659df568301036746))
+* **ir:** rewrite and speed up expression repr ([45ce9b2](https://github.com/ibis-project/ibis/commit/45ce9b2c2aa5fb3919a59ede95f60a6b813be730))
+* **mysql:** implement _get_schema_from_query ([456cd44](https://github.com/ibis-project/ibis/commit/456cd44879c32bac7f8a798cb8e7e5851e94b4ec))
+* **mysql:** move string join impl up to alchemy for mysql ([77a8eb9](https://github.com/ibis-project/ibis/commit/77a8eb9baa2a9061d3b91c10a176648610e53b29))
+* **postgres:** implement _get_schema_using_query ([f2459eb](https://github.com/ibis-project/ibis/commit/f2459ebf3995c968c59cd16a7a684297d08ce4f2))
+* **pyspark:** implement Distinct for pyspark ([4306ad9](https://github.com/ibis-project/ibis/commit/4306ad9c2537f23a3f24e7424751fcef5b50bd52))
+* **pyspark:** implement log base b for pyspark ([527af3c](https://github.com/ibis-project/ibis/commit/527af3c5869a70a16cfcfa4ab197e1b64ef4f5ce))
+* **pyspark:** implement percent_rank and enable testing ([c051617](https://github.com/ibis-project/ibis/commit/c051617875a2d9fcdc612ff5ceeddabd73aeb3e9))
+* **repr:** add interval info to interval repr ([df26231](https://github.com/ibis-project/ibis/commit/df2623133e66eea7e3ac7a924992ae3e089668b3))
+* **sqlalchemy:** implement ilike ([43996c0](https://github.com/ibis-project/ibis/commit/43996c080b8e2c9c53e838b90743878be9764ae7))
+* **sqlite:** implement date_truncate ([3ce4f2a](https://github.com/ibis-project/ibis/commit/3ce4f2a87d2eab244fd1550042bc17c3fe3de3e2))
+* **sqlite:** implement ISO week of year ([714ff7b](https://github.com/ibis-project/ibis/commit/714ff7be469e705c39dab79f571333bfe9fcea00))
+* **sqlite:** implement string join and concat ([6f5f353](https://github.com/ibis-project/ibis/commit/6f5f3538bcddaf51fd8e689a3abcb23fc33f4ecd))
+* support of arrays and tuples for clickhouse ([db512a8](https://github.com/ibis-project/ibis/commit/db512a89c14edc7e216558f2c051c4a0e905b543))
+* **ver:** dynamic version identifiers ([408f862](https://github.com/ibis-project/ibis/commit/408f862e158868a57fa769b24e6312f3d7fa3e6f))
+
+
+### Bug Fixes
+
+* added wheel to pyproject toml for venv users ([b0b8e5c](https://github.com/ibis-project/ibis/commit/b0b8e5c612a38c4cde9543a83620a0979e3907cf))
+* allow major version changes in CalVer dependencies ([9c3fbe5](https://github.com/ibis-project/ibis/commit/9c3fbe5ee8d26d01a7bc8ccac2bed2a988bc909c))
+* **annotable:** allow optional arguments at any position ([778995f](https://github.com/ibis-project/ibis/commit/778995f35951751d475827770e13d591690b3821)), closes [#3730](https://github.com/ibis-project/ibis/issues/3730)
+* **api:** add ibis.map and .struct ([327b342](https://github.com/ibis-project/ibis/commit/327b34254918eecca28f3066152d9e53445997d0)), closes [#3118](https://github.com/ibis-project/ibis/issues/3118)
+* **api:** map string multiplication with integer to repeat method ([b205922](https://github.com/ibis-project/ibis/commit/b2059227234824fdd42cecddff259d695eef5c1c))
+* **api:** thread suffixes parameter to individual join methods ([31a9aff](https://github.com/ibis-project/ibis/commit/31a9aff63711b28192adb35eadf07ef93c0a7313))
+* change TimestampType to Timestamp ([e0750be](https://github.com/ibis-project/ibis/commit/e0750be5ee37bb13221ae2a25f4d45edee2106f5))
+* **clickhouse:** disconnect from clickhouse when computing version ([11cbf08](https://github.com/ibis-project/ibis/commit/11cbf08adbbea9464ea569ccabda3758ca17c23f))
+* **clickhouse:** use a context manager for execution ([a471225](https://github.com/ibis-project/ibis/commit/a471225001964d51e5526f1b625ee7fb3b89cead))
+* combine windows during windowization ([7fdd851](https://github.com/ibis-project/ibis/commit/7fdd851c19414a5e9f5625989dcf11e07104b7c4))
+* conform epoch_seconds impls to expression return type ([18a70f1](https://github.com/ibis-project/ibis/commit/18a70f111f21d712df880259a4c3a48e70844ac2))
+* **context-adjustment:** pass scope when calling adjust_context in pyspark backend ([33aad7b](https://github.com/ibis-project/ibis/commit/33aad7b8b419d3b2cf4edac11317c4610b7a16d3)), closes [#3108](https://github.com/ibis-project/ibis/issues/3108)
+* **dask:** fix asof joins for newer version of dask ([50711cc](https://github.com/ibis-project/ibis/commit/50711cc8baba499250934e1d12fd24e65534f31e))
+* **dask:** workaround dask bug ([a0f3bd9](https://github.com/ibis-project/ibis/commit/a0f3bd96b2112454ba5431df4f5073de4a7954b0))
+* **deps:** update dependency atpublic to v3 ([3fe8f0d](https://github.com/ibis-project/ibis/commit/3fe8f0d5c726cef20650008a4e2140d12652aae9))
+* **deps:** update dependency datafusion to >=0.4,<0.6 ([3fb2194](https://github.com/ibis-project/ibis/commit/3fb2194a9594d790d2f25080078e56d99ce72ece))
+* **deps:** update dependency geoalchemy2 to >=0.6.3,<0.12 ([dc3c361](https://github.com/ibis-project/ibis/commit/dc3c3610d7a0c7e5f5d3f872d7e3ee06bfce7ef6))
+* **deps:** update dependency graphviz to >=0.16,<0.21 ([3014445](https://github.com/ibis-project/ibis/commit/301444553b617cf02fdf46cefb8e594f75a0dc27))
+* **duckdb:** add casts to literals to fix binding errors ([1977a55](https://github.com/ibis-project/ibis/commit/1977a559b4345a1ab3414aad93b3bb6fa3d0b007)), closes [#3629](https://github.com/ibis-project/ibis/issues/3629)
+* **duckdb:** fix array column type discovery on leaf tables and add tests ([15e5412](https://github.com/ibis-project/ibis/commit/15e5412f9526036f13fa2152b39d52d8a0d69eec))
+* **duckdb:** fix log with base b impl ([4920097](https://github.com/ibis-project/ibis/commit/492009792f88f05cf8e173d04d3c9a49ca4b8cc5))
+* **duckdb:** support both 0.3.2 and 0.3.3 ([a73ccce](https://github.com/ibis-project/ibis/commit/a73ccce127c50aef502b0ba9ac6fb45d1eef4700))
+* enforce the schema's column names in `apply_to` ([b0f334d](https://github.com/ibis-project/ibis/commit/b0f334d8fca2ce41e274ef12903620097b38524e))
+* expose ops.IfNull for mysql backend ([156c2bd](https://github.com/ibis-project/ibis/commit/156c2bd325ce2a2049e45aa57f9a2ca929024577))
+* **expr:** add more binary operators to char list and implement fallback ([b88184c](https://github.com/ibis-project/ibis/commit/b88184c4ccdba857df85ba21b43c1ae3fa517b82))
+* **expr:** fix formatting of table info using tabulate ([b110636](https://github.com/ibis-project/ibis/commit/b110636f09b11df108cf91ac8d20fd8db7ee28d3))
+* fix float vs real data type detection in sqlalchemy ([24e6774](https://github.com/ibis-project/ibis/commit/24e677480f830caf367283c6815c6f759ac33d7a))
+* fix list_schemas argument ([69c1abf](https://github.com/ibis-project/ibis/commit/69c1abf21fff25d877a71c791f78b0e3ece552f0))
+* fix postgres udfs and reenable ci tests ([7d480d2](https://github.com/ibis-project/ibis/commit/7d480d225d713274f8068af07cb7fcffac438691))
+* fix tablecolumn execution for filter following join ([064595b](https://github.com/ibis-project/ibis/commit/064595b9c2a85f6532b93b7b8b5343fabe2dbe29))
+* **format:** remove some newlines from formatted expr repr ([ed4fa78](https://github.com/ibis-project/ibis/commit/ed4fa78a484f1b6a08531fa406558c471dd5762f))
+* **histogram:** cross_join needs onclause=True ([5d36a58](https://github.com/ibis-project/ibis/commit/5d36a58d2df83b045487e9701e309978c3dd777d)), closes [#622](https://github.com/ibis-project/ibis/issues/622)
+* ibis.expr.signature.Parameter is not pickleable ([828fd54](https://github.com/ibis-project/ibis/commit/828fd545de3e33c364a9eec86f4d07b391ea028b))
+* implement coalesce properly in the pandas backend ([aca5312](https://github.com/ibis-project/ibis/commit/aca53124fa8044a4a5cfa577ed9ece5cba4c05c8))
+* implement count on tables for pyspark ([7fe5573](https://github.com/ibis-project/ibis/commit/7fe557333b49551b86c0ad121386687763420723)), closes [#2879](https://github.com/ibis-project/ibis/issues/2879)
+* infer coalesce types when a non-null expression occurs after the first argument ([c5f2906](https://github.com/ibis-project/ibis/commit/c5f2906cb3dd623e9717a73574a67c193db5f246))
+* **mutate:** do not lift table column that results from mutate ([ba4e5e5](https://github.com/ibis-project/ibis/commit/ba4e5e56f7e0ccd367a270d6d5090f340d610dae))
+* **pandas:** disable range windows with order by ([e016664](https://github.com/ibis-project/ibis/commit/e0166644a9df84a783d04c96e27710999598a897))
+* **pandas:** don't reassign the same column to silence SettingWithCopyWarning warning ([75dc616](https://github.com/ibis-project/ibis/commit/75dc6165ff9c5e39823e734367fb395a8013c6f0))
+* **pandas:** implement percent_rank correctly ([d8b83e7](https://github.com/ibis-project/ibis/commit/d8b83e7129e0b26128933d26d90169a6750c3de2))
+* prevent unintentional cross joins in mutate + filter ([83eef99](https://github.com/ibis-project/ibis/commit/83eef9904fb48c6a9e333572590109b8717c7acd))
+* **pyspark:** fix range windows ([a6f2aa8](https://github.com/ibis-project/ibis/commit/a6f2aa896e978310a9e5ca3d87829597dd548566))
+* regression in Selection.sort_by with resolved_keys ([c7a69cd](https://github.com/ibis-project/ibis/commit/c7a69cd352af975d6cda587fb2d1282da37718e1))
+* regression in sort_by with resolved_keys ([63f1382](https://github.com/ibis-project/ibis/commit/63f138267cf8b4fce80345ffbe137a6c1b3c8fc3)), closes [#3619](https://github.com/ibis-project/ibis/issues/3619)
+* remove broken csv pre_execute ([93b662a](https://github.com/ibis-project/ibis/commit/93b662a93203801b9cca343871ee6c274051628d))
+* remove importorskip call for backend tests ([2f0bcd8](https://github.com/ibis-project/ibis/commit/2f0bcd8e0d87d210f2ab303cc03e21f0b8fb6abe))
+* remove incorrect fix for pandas regression ([339f544](https://github.com/ibis-project/ibis/commit/339f5447d4b84f4e5e5344b49de713f8c027445b))
+* remove passing schema into register_parquet ([bdcbb08](https://github.com/ibis-project/ibis/commit/bdcbb083a112d3cc81bb98ee63a26674b5397563))
+* **repr:** add ops.TimeAdd to repr binop lookup table ([fd94275](https://github.com/ibis-project/ibis/commit/fd94275e945137be3b95b4aa4c0b1cdb16b7a41d))
+* **repr:** allow ops.TableNode in fmt_value ([6f57003](https://github.com/ibis-project/ibis/commit/6f57003620d21e07d31ca5d2013302ba2899fdb0))
+* reverse the predicate pushdown subsitution ([f3cd358](https://github.com/ibis-project/ibis/commit/f3cd3581b078a7f297f303866aeb30c8f826b19d))
+* sort_index to satisfy pandas 1.4.x ([6bac0fc](https://github.com/ibis-project/ibis/commit/6bac0fc2bec2434f5d2eb8b1c2b0328a0e5a80a3))
+* **sqlalchemy:** ensure correlated subqueries FROM clauses are rendered ([3175321](https://github.com/ibis-project/ibis/commit/3175321844897ad4fa88547c9474724736685209))
+* **sqlalchemy:** use corresponding_column to prevent spurious cross joins ([fdada21](https://github.com/ibis-project/ibis/commit/fdada217afbf0e8b07d421fd2da0092a20c578c7))
+* **sqlalchemy:** use replace selectables to prevent semi/anti join cross join ([e8a1a71](https://github.com/ibis-project/ibis/commit/e8a1a715801a48811297ff941b0ee67b8aabc088))
+* **sql:** retain column names for named ColumnExprs ([f1b4b6e](https://github.com/ibis-project/ibis/commit/f1b4b6e86b89322c36e5d0eeeb8e356929229843)), closes [#3754](https://github.com/ibis-project/ibis/issues/3754)
+* **sql:** walk right join trees and substitute joins with right-side joins with views ([0231592](https://github.com/ibis-project/ibis/commit/02315927b93762ab045a11629d3144fbff8545c1))
+* store schema on the pandas backend to allow correct inference ([35070be](https://github.com/ibis-project/ibis/commit/35070be3b5a6311afb20525324030a0634f588fe))
+
+
+### Performance Improvements
+
+* **datatypes:** speed up __str__ and __hash__ ([262d3d7](https://github.com/ibis-project/ibis/commit/262d3d78642fadd7572033a6c82dcbe1fc472f61))
+* fast path for simple column selection ([d178498](https://github.com/ibis-project/ibis/commit/d1784988fdae4e3146b20fcee9811bb1e1316cc8))
+* **ir:** global equality cache ([13c2bb2](https://github.com/ibis-project/ibis/commit/13c2bb260c6229e9b5ebfd15ef991846587b8ca5))
+* **ir:** introduce CachedEqMixin to speed up equality checks ([b633925](https://github.com/ibis-project/ibis/commit/b633925cc221caede0194091685d0589795297a4))
+* **repr:** remove full tree repr from rule validator error message ([65885ab](https://github.com/ibis-project/ibis/commit/65885ab559518908601d943ce1ea188503354a29))
+* speed up attribute access ([89d1c05](https://github.com/ibis-project/ibis/commit/89d1c05ac45c5905867391ffb685e8e34c7c2535))
+* use assign instead of concat in projections when possible ([985c242](https://github.com/ibis-project/ibis/commit/985c2423708d9855a227f0eaf5ade1d326064eab))
+
+
+### Miscellaneous Chores
+
+* **deps:** increase sqlalchemy lower bound to 1.4 ([560854a](https://github.com/ibis-project/ibis/commit/560854a1a4c326ee76b96c6fc7793a05a475fa43))
+* drop support for Python 3.7 ([0afd138](https://github.com/ibis-project/ibis/commit/0afd138122f73da3addbb73635d67ce77f4d2960))
+
+
+### Code Refactoring
+
+* **api:** make primitive types more cohesive ([71da8f7](https://github.com/ibis-project/ibis/commit/71da8f756ec9ca5c547c8f9209599c005c0f5c66))
+* **api:** remove distinct ColumnExpr API ([3f48cb8](https://github.com/ibis-project/ibis/commit/3f48cb8b71ee30e8e8cdc3b13a50939dc51bfaa0))
+* **api:** remove materialize ([24285c1](https://github.com/ibis-project/ibis/commit/24285c178a5d3c1bb875f4eca75736dacebb4ec9))
+* **backends:** remove the hdf5 backend ([ff34f3e](https://github.com/ibis-project/ibis/commit/ff34f3e05930da463eae5b98c6ae42b78985415c))
+* **backends:** remove the parquet backend ([b510473](https://github.com/ibis-project/ibis/commit/b5104735df7a4329a01a79e8d7f74282caf8aebd))
+* **config:** disable graphviz-repr-in-notebook by default ([214ad4e](https://github.com/ibis-project/ibis/commit/214ad4ed4d54d4786477e0b4719ecbc728c3fe51))
+* **config:** remove old config code and port to pydantic ([4bb96d1](https://github.com/ibis-project/ibis/commit/4bb96d1cc97bae855b6662e3c7e349bd5baab554))
+* dt.UUID inherits from DataType, not String ([2ba540d](https://github.com/ibis-project/ibis/commit/2ba540d2ad237dbba8386f7c6efe1bf159bf29ad))
+* **expr:** preserve column ordering in aggregations/mutations ([668be0f](https://github.com/ibis-project/ibis/commit/668be0ff1b120f1217b33e33e8ef8a35d9f00c47))
+* **hdfs:** replace HDFS with `fsspec` ([cc6eddb](https://github.com/ibis-project/ibis/commit/cc6eddba1ffe8cdc9e0005381aa3bc1f77bb3fd9))
+* **ir:** make Annotable immutable ([1f2b3fa](https://github.com/ibis-project/ibis/commit/1f2b3fae8f8259da64004e1efc3849c59939081a))
+* **ir:** make schema annotable ([b980903](https://github.com/ibis-project/ibis/commit/b9809036a39f02e44dea688b7ed06d6374502c7d))
+* **ir:** remove unused lineage `roots` and `find_nodes` functions ([d630a77](https://github.com/ibis-project/ibis/commit/d630a77602204ec81faf970d5050e1e77ce26405))
+* **ir:** simplify expressions by not storing dtype and name ([e929f85](https://github.com/ibis-project/ibis/commit/e929f85b4ffadad432e6d8ee7267c58aea062454))
+* **kudu:** remove support for use of kudu through kudu-python ([36bd97f](https://github.com/ibis-project/ibis/commit/36bd97f03909a8f43eb90fe9506a87e93c5d31a7))
+* move coercion functions from schema.py to udf ([58eea56](https://github.com/ibis-project/ibis/commit/58eea56a8476438c3857f5da7a7088bf2020d38c)), closes [#3033](https://github.com/ibis-project/ibis/issues/3033)
+* remove blanket __call__ for Expr ([3a71116](https://github.com/ibis-project/ibis/commit/3a711169fbfff7c3a1b94a0daecf69802e78f8b4)), closes [#2258](https://github.com/ibis-project/ibis/issues/2258)
+* remove the csv backend ([0e3e02e](https://github.com/ibis-project/ibis/commit/0e3e02e00000ff85d3450af721c3cf1dfd54d5f7))
+* **udf:** make coerce functions in ibis.udf.vectorized private ([9ba4392](https://github.com/ibis-project/ibis/commit/9ba439220ea82ed82f84f3bd799943bd75f54518))
+
 ## [2.1.1](https://github.com/ibis-project/ibis/compare/2.1.0...2.1.1) (2022-01-12)
 
 
