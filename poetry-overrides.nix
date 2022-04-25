@@ -54,4 +54,8 @@ self: super:
   atpublic = super.atpublic.overridePythonAttrs (attrs: {
     nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
   });
+
+  pymdown-extensions = super.pymdown-extensions.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.hatchling ];
+  });
 }
