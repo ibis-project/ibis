@@ -10,7 +10,7 @@ database through a driver API for execution.
 - [Apache Impala](Impala.md)
 - [ClickHouse](ClickHouse.md)
 - [Google BigQuery](https://github.com/ibis-project/ibis-bigquery/)
-- [OmniSciDB](https://github.com/omnisci/ibis-omniscidb)
+- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 
 ## Expression Generating Backends
 
