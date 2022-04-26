@@ -62,15 +62,16 @@ let
   };
   mic = pkgs.writeShellApplication {
     name = "mic";
-    runtimeInputs = [ pythonEnv ];
+    runtimeInputs = [ pythonEnv pkgs.coreutils ];
     text = ''
       # The immediate reason this is necessary is to allow the subprocess
       # invocations of `mkdocs` by `mike` to see Python dependencies.
       #
       # This shouldn't be necessary, but I think the nix wrappers may be
       # indavertently preventing this.
-      export PYTHONPATH
+      export PYTHONPATH TEMPDIR
       PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
+      TEMPDIR="$(mktemp -d)"
 
       mike "$@"
     '';
