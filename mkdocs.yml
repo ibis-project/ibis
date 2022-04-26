@@ -33,6 +33,7 @@ plugins:
   - search
   - mike
   - autorefs
+  - git-revision-date-localized
   - exclude:
       glob:
         - backends/template.md
