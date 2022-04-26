@@ -69,12 +69,12 @@ For users that use jupyter notebooks, `repr_html` has been added for expressions
 
 ![pretty print repr](repr.png)
 
-## Breaking Changes
+## Other Changes
 
-3.0.0 is a major release and according to the project's use of semantic versioning, breaking changes are on the table. The full list of these changes can be found [here](https://ibis-project.org/docs/dev/release_notes/).
+3.0.0 is a major release and according to the project's use of semantic versioning, breaking changes are on the table. The full list of these changes can be found [here](https://ibis-project.org/docs/dev/release_notes/). Some of the important changes include:
 
 1. Python 3.8 is now the minimum supported version
-2. Removal of `.materialize()`
+2. Deprecation of `.materialize()`
 
 Refer to the sections below for more detail on these changes.
 
@@ -82,11 +82,9 @@ Refer to the sections below for more detail on these changes.
 
 Ibis currently follows [NEP 29](https://numpy.org/neps/nep-0029-deprecation_policy.html), a community policy standard that recommends Python and Numpy versions to support. NEP 29 suggests that all projects across the Scientific Python ecosystem adopt a common “time window-based” policy for support of Python and NumPy versions. Standardizing a recommendation for project support of minimum Python and NumPy versions will improve downstream project planning. As part of the 3.0.0 release, support for Python 3.7 has been dropped and the project has now adopted support for version 3.8 and higher.
 
-### Removal of .materialize()
+### Deprecation of .materialize()
 
-This release sees the removal of the `.materialize()` method from TableExpr. In the past, the materialize method has caused a lot of confusion. Doing simple things like `t.join(s, t.foo == s.foo).select(["unambiguous_column"])` raised an exception because of it. It turns out that .materialize() isn't necessary and therefore has been removed. This is a breaking change for some code that uses materialize. The materialize method still exists, but is now a pass-through and triggers a warning.
-
-There are also some breaking changes introduced here in the case of overlapping column names. If there are any overlapping column names, a suffix will be attached to both the left and right tables. So, in the case of `s.asof_join(t, "time")` the resulting schema will have both a `time_x` and a `time_y` column.
+This release sees the deprecation of the `.materialize()` method from TableExpr. In the past, the materialize method has caused a lot of confusion. Doing simple things like `t.join(s, t.foo == s.foo).select(["unambiguous_column"])` raised an exception because of it. It turns out that .materialize() isn't necessary. The materialize method still exists, but is now a no-op and doesn't need to be used.
 
 ## Performance Improvements
 
