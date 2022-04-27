@@ -297,12 +297,16 @@ def test_adjust_context_complete_shift(
     trimmed_df2 = time_keyed_df2[
         time_keyed_df2['time'] >= context[0] - Timedelta(days=4)
     ][time_keyed_df2['time'] < context[1] - Timedelta(days=4)]
-    expected = dd.merge_asof(
-        trimmed_df1,
-        trimmed_df2,
-        on='time',
-        by='key',
-        tolerance=Timedelta('4D'),
-    ).compute()
+    expected = (
+        dd.merge_asof(
+            trimmed_df1,
+            trimmed_df2,
+            on='time',
+            by='key',
+            tolerance=Timedelta('4D'),
+        )
+        .compute()
+        .reset_index(drop=True)
+    )
 
     tm.assert_frame_equal(result, expected)

@@ -390,7 +390,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 t.timestamp_col.sub(timestamp_value).values.astype(
                     f'timedelta64[{be.returned_timestamp_unit}]'
                 )
-            ),
+            ).dt.floor("s"),
             id='timestamp-subtract-timestamp',
             marks=pytest.mark.notimpl(["bigquery", "duckdb", "pyspark", "snowflake"]),
         ),
@@ -813,7 +813,7 @@ def test_date_scalar_from_iso(con):
     assert result.strftime('%Y-%m-%d') == '2022-02-24'
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "pyspark", "mssql"])
+@pytest.mark.notimpl(["datafusion", "impala", "mssql"])
 def test_date_column_from_iso(con, alltypes, df):
     expr = (
         alltypes.year.cast('string')
@@ -846,7 +846,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "pyspark"])
+@pytest.mark.notimpl(["bigquery", "datafusion"])
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()

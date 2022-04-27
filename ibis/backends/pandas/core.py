@@ -479,9 +479,8 @@ def execute_and_reset(
 
     Returns
     -------
-    result : Union[
-        pandas.Series, pandas.DataFrame, ibis.backends.pandas.core.simple_types
-    ]
+    pandas.Series | pandas.DataFrame | ibis.backends.pandas.core.simple_types
+        Result of execution
 
     Raises
     ------
@@ -496,11 +495,18 @@ def execute_and_reset(
         aggcontext=aggcontext,
         **kwargs,
     )
+    return _apply_schema(node, result)
+
+
+def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
+    assert isinstance(op, ops.Node), type(op)
     if isinstance(result, pd.DataFrame):
         df = result.reset_index()
-        return df.loc[:, node.schema.names]
+        schema = op.schema
+        return schema.apply_to(df.loc[:, list(schema.names)])
     elif isinstance(result, pd.Series):
-        return result.reset_index(drop=True)
+        schema = op.to_expr().to_projection().schema()
+        return schema.apply_to(result.to_frame()).iloc[:, 0].reset_index(drop=True)
     return result
 
 

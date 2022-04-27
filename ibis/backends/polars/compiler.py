@@ -717,13 +717,21 @@ def timestamp_add(op):
 
 
 @translate.register(ops.TimestampSub)
-@translate.register(ops.TimestampDiff)
 @translate.register(ops.DateDiff)
 @translate.register(ops.IntervalSubtract)
 def timestamp_sub(op):
     left = translate(op.left)
     right = translate(op.right)
     return left - right
+
+
+@translate.register(ops.TimestampDiff)
+def timestamp_diff(op):
+    left = translate(op.left)
+    right = translate(op.right)
+    # TODO: truncating both to seconds is necessary to conform to the output
+    # type of the operation
+    return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
 @translate.register(ops.ArrayLength)

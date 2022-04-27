@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 
@@ -12,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import trim_window_result
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import (
     TimeContextRelation,

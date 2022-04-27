@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import pyspark
 import sqlalchemy as sa
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -193,13 +192,13 @@ class Backend(BaseSQLBackend):
             )
 
         # Insert params in scope
-        if params is None:
-            scope = Scope()
-        else:
-            scope = Scope(
-                {param.op(): raw_value for param, raw_value in params.items()},
-                timecontext,
-            )
+        scope = Scope(
+            {
+                param.op(): raw_value
+                for param, raw_value in ({} if params is None else params).items()
+            },
+            timecontext,
+        )
         return PySparkExprTranslator().translate(
             expr.op(),
             scope=scope,
@@ -207,31 +206,17 @@ class Backend(BaseSQLBackend):
             session=self._session,
         )
 
-    def execute(
-        self,
-        expr: ir.Expr,
-        timecontext: Mapping | None = None,
-        params: Mapping[ir.Scalar, Any] | None = None,
-        limit: str = 'default',
-        **kwargs: Any,
-    ) -> Any:
+    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
+        table_expr = expr.as_table()
+        df = self.compile(table_expr, **kwargs).toPandas()
+        result = table_expr.schema().apply_to(df)
         if isinstance(expr, ir.Table):
-            return self.compile(expr, timecontext, params, **kwargs).toPandas()
+            return result
         elif isinstance(expr, ir.Column):
-            # expression must be named for the projection
-            if not expr.has_name():
-                expr = expr.name("tmp")
-            return self.compile(
-                expr.to_projection(), timecontext, params, **kwargs
-            ).toPandas()[expr.get_name()]
+            return result.iloc[:, 0]
         elif isinstance(expr, ir.Scalar):
-            compiled = self.compile(expr, timecontext, params, **kwargs)
-            if isinstance(compiled, Column):
-                # attach result column to a fake DataFrame and
-                # select the result
-                compiled = self._session.range(0, 1).select(compiled)
-            return compiled.toPandas().iloc[0, 0]
+            return result.iloc[0, 0]
         else:
             raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 

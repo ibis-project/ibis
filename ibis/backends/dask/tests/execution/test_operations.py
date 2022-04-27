@@ -5,6 +5,7 @@ import numpy as np
 import numpy.testing as npt
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -359,35 +360,35 @@ def test_null_if_zero(t, df, column):
 @pytest.mark.parametrize(
     ('left', 'right', 'expected', 'compare'),
     [
-        pytest.param(
+        param(
             lambda t: ibis.literal(1),
             lambda t: ibis.literal(1),
             lambda df: np.nan,
             np.testing.assert_array_equal,  # treats NaNs as equal
             id='literal_literal_equal',
         ),
-        pytest.param(
+        param(
             lambda t: ibis.literal(1),
             lambda t: ibis.literal(2),
             lambda df: 1,
             np.testing.assert_equal,
             id='literal_literal_not_equal',
         ),
-        pytest.param(
+        param(
             lambda t: t.dup_strings,
             lambda t: ibis.literal('a'),
             lambda df: df.dup_strings.where(df.dup_strings != 'a'),
             tm.assert_series_equal,
             id='series_literal',
         ),
-        pytest.param(
+        param(
             lambda t: t.dup_strings,
             lambda t: t.dup_strings,
             lambda df: df.dup_strings.where(df.dup_strings != df.dup_strings),
             tm.assert_series_equal,
             id='series_series',
         ),
-        pytest.param(
+        param(
             lambda _: ibis.literal('a'),
             lambda t: t.dup_strings,
             lambda _: dd.from_array(
@@ -480,13 +481,13 @@ def test_series_limit(t, df, offset):
     ('key', 'dask_by', 'dask_ascending'),
     [
         (lambda t, col: [t[col]], lambda col: [col], True),
-        pytest.param(
+        param(
             lambda t, col: [ibis.desc(t[col])],
             lambda col: [col],
             False,
             marks=pytest.mark.xfail(reason="TODO -sorting - #2553"),
         ),
-        pytest.param(
+        param(
             lambda t, col: [t[col], t.plain_int64],
             lambda col: [col, 'plain_int64'],
             [True, False],
@@ -752,8 +753,22 @@ def test_left_binary_op_gb(t, df, op, argfunc):
     )
 
 
-@pytest.mark.parametrize("left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None])
-@pytest.mark.parametrize("right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None])
+@pytest.mark.parametrize(
+    "left_f",
+    [
+        param(lambda e: e - 1, id="sub_one"),
+        param(lambda _: 0.0, id="zero"),
+        param(lambda _: None, id="none"),
+    ],
+)
+@pytest.mark.parametrize(
+    "right_f",
+    [
+        param(lambda e: e + 1, id="add_one"),
+        param(lambda _: 1.0, id="one"),
+        param(lambda _: None, id="none"),
+    ],
+)
 def test_where_series(t, df, left_f, right_f):
     col_expr = t['plain_int64']
     result = ibis.where(
@@ -765,9 +780,9 @@ def test_where_series(t, df, left_f, right_f):
     left = left_f(ser)
     if not isinstance(left, pd.Series):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
-    expected = left.where(cond, right_f(ser))
+    expected = left.where(cond, right_f(ser)).astype(result.dtype)
 
-    tm.assert_series_equal(result, expected, check_index=False)
+    tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
 
 @pytest.mark.parametrize(
@@ -1015,7 +1030,7 @@ def test_difference(client, df1, intersect_df2):
 @pytest.mark.parametrize(
     "distinct",
     [
-        pytest.param(
+        param(
             True,
             marks=pytest.mark.xfail(
                 raises=TypeError,
