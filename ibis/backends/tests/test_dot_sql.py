@@ -12,8 +12,6 @@ dot_sql_never = pytest.mark.never(
     reason="dask and pandas do not accept SQL",
 )
 
-pytestmark = pytest.mark.xdist_group("dot_sql")
-
 
 @dot_sql_notimpl
 @dot_sql_never
@@ -51,7 +49,14 @@ def test_dot_sql(backend, con):
 
 @dot_sql_notimpl
 @dot_sql_never
-def test_dot_sql_with_join(backend, con):
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        pytest.param(dialect, id=f"{dialect}_dialect")
+        for dialect in ("mysql", "duckdb", "pyspark", "postgres")
+    ],
+)
+def test_dot_sql_with_join(backend, con, dialect):
     alltypes = con.table("functional_alltypes")
     t = (
         alltypes.sql(
@@ -74,7 +79,8 @@ def test_dot_sql_with_join(backend, con):
             FROM awesome_t AS l
             LEFT JOIN ft AS r
             ON l.s = r.s
-            """
+            """,
+            dialect=dialect,
         )
         .sort_by(["s", "yas"])
     )

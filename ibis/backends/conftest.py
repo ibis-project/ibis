@@ -132,6 +132,16 @@ def pytest_collection_modifyitems(session, config, items):
         if "duckdb" in item.nodeid:
             item.add_marker(pytest.mark.xdist_group(name="duckdb"))
 
+        try:
+            callspec = item.callspec
+        except AttributeError:
+            pass
+        else:
+            if (
+                backend := callspec.params.get("backend", "")
+            ) == "mysql" and "dot_sql" in item.nodeid:
+                item.add_marker(pytest.mark.xdist_group(name=backend))
+
 
 @lru_cache(maxsize=None)
 def _get_backends_to_test(

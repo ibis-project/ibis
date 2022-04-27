@@ -87,6 +87,10 @@ class Backend(BaseSQLBackend):
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
 
+    @property
+    def _sql_dialect(self) -> str:
+        return "spark"
+
     def do_connect(self, session: pyspark.sql.SparkSession) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 

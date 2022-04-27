@@ -23,6 +23,10 @@ class BaseSQLBackend(BaseBackend):
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
+    @property
+    def _sql_dialect(self) -> str:
+        return self.name
+
     def table(self, name: str, database: str | None = None) -> ir.TableExpr:
         """Construct a table expression.
 

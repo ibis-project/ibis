@@ -4,6 +4,7 @@ import collections
 import functools
 import itertools
 import operator
+import warnings
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
@@ -1199,13 +1200,8 @@ class TableExpr(Expr):
         expr.compile()
         return expr
 
-    def sql(self, query: str) -> ir.TableExpr:
+    def sql(self, query: str, dialect: str | None = None) -> ir.TableExpr:
         """Run a SQL query against a table expression.
-
-        !!! note "The SQL string is backend specific"
-
-            `query` must be valid SQL for the execution backend the expression
-            will run against
 
         See [`TableExpr.alias`][ibis.expr.types.relations.TableExpr.alias] for
         details on using named table expressions in a SQL string.
@@ -1214,6 +1210,11 @@ class TableExpr(Expr):
         ----------
         query
             Query string
+        dialect
+            Input dialect of SQL. If `None` then the SQL string is assumed to
+            be written in the backend's SQL dialect.
+
+            If not `None` then `sqlglot` must be installed.
 
         Returns
         -------
@@ -1237,6 +1238,24 @@ class TableExpr(Expr):
         """
         import ibis.expr.operations as ops
 
+        if dialect is not None:
+            try:
+                import sqlglot
+            except ImportError:
+                warnings.warn(
+                    "`dialect` parameter passed, but sqlglot is not installed;"
+                    " query string will not be transpiled"
+                )
+            else:
+                backend = self._find_backend()
+                (query,) = sqlglot.transpile(
+                    query,
+                    # read means "the string that's read"
+                    read=backend._sql_dialect,
+                    # write means "the string the user writes"
+                    write=dialect.replace("pyspark", "spark"),
+                    pretty=True,
+                )
         return ops.SQLStringView(
             child=self,
             name=next(_ALIASES),
