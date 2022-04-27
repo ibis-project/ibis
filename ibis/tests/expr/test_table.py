@@ -1518,3 +1518,11 @@ def test_materialize_no_op():
     expr = left.inner_join(right, "id")
     with pytest.warns(FutureWarning):
         expr.materialize()
+
+
+def test_exprs_to_select():
+    t = ibis.table(dict(a="string"))
+    exprs = [t.a.length().name("len")]
+    with pytest.warns(FutureWarning, match="Passing `exprs`"):
+        result = t.select(exprs=exprs)
+    assert result.equals(t.select(len=t.a.length()))
