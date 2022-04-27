@@ -465,8 +465,7 @@ def test_floating_mod(backend, alltypes, df):
                     "polars",
                     strict=False,
                     reason="output types is float64 instead of the expected float32",
-                ),
-                pytest.mark.notimpl(["trino"]),
+                )
             ],
         ),
         'double_col',
@@ -490,7 +489,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     result = expr.name('tmp').execute()
 
     expected = df[column].div(denominator)
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected).astype("float64")
 
     backend.assert_series_equal(result, expected)
 

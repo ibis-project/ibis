@@ -204,7 +204,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     # Row ordering may differ depending on backend, so sort on the
     # grouping key
     result1 = result1.sort_values(by=grouping_key_cols).reset_index(drop=True)
-    expected = expected.sort_values(by=grouping_key_cols).reset_index(drop=True)
+    expected = (
+        expected.sort_values(by=grouping_key_cols)
+        .reset_index(drop=True)
+        .assign(int_col=lambda df: df.int_col.astype("int32"))
+    )
 
     backend.assert_frame_equal(result1, expected)
 

@@ -5,7 +5,7 @@ import pytest
 from pytest import param
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "pyspark", "mssql"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "mssql"])
 @pytest.mark.notyet(["clickhouse"], reason="upstream is broken")
 @pytest.mark.never(["impala"], reason="doesn't support JSON and never will")
 @pytest.mark.parametrize(

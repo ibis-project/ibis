@@ -17,7 +17,6 @@ pytestmark = [
 
 
 @pytest.mark.notimpl(["dask", "snowflake"])
-@pytest.mark.broken(["pyspark"], reason="fixed in #5097")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
@@ -89,7 +88,6 @@ def test_null_literal(con, field):
 
 
 @pytest.mark.notimpl(["bigquery", "dask", "pandas", "postgres", "snowflake"])
-@pytest.mark.broken(["pyspark"], reason="fixed in #5097")
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")

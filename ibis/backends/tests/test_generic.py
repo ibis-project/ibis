@@ -11,6 +11,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
 
@@ -812,3 +813,21 @@ def test_interactive(alltypes):
 def test_correlated_subquery(alltypes):
     expr = alltypes[_.double_col > _.view().double_col]
     assert expr.compile() is not None
+
+
+def test_int_column(alltypes):
+    expr = alltypes.mutate(x=1).x
+    result = expr.execute()
+    assert expr.type() == dt.int8
+    assert result.dtype == np.int8
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.never(
+    ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
+)
+def test_int_scalar(alltypes):
+    expr = alltypes.smallint_col.min()
+    result = expr.execute()
+    assert expr.type() == dt.int16
+    assert result.dtype == np.int16

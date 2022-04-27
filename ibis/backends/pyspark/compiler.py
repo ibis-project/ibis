@@ -73,11 +73,13 @@ class PySparkExprTranslator:
         pyspark.sql.DataFrame
             translated PySpark DataFrame or Column object
         """
-        result = scope.get_value(op, timecontext)
-        if result is not None:
+
+        if (
+            not isinstance(op, ops.ScalarParameter)
+            and (result := scope.get_value(op, timecontext)) is not None
+        ):
             return result
-        elif type(op) in self._registry:
-            formatter = self._registry[type(op)]
+        elif (formatter := self._registry.get(type(op))) is not None:
             result = formatter(self, op, scope=scope, timecontext=timecontext, **kwargs)
             scope.set_value(op, timecontext, result)
             return result
@@ -1869,3 +1871,17 @@ def compile_json_getitem(t, op, **kwargs):
     else:
         path = f"$.{index}"
     return F.get_json_object(arg, path)
+
+
+@compiles(ops.DummyTable)
+def compile_dummy_table(t, op, session=None, **kwargs):
+    return session.range(0, 1).select(
+        *(t.translate(value, **kwargs) for value in op.values)
+    )
+
+
+@compiles(ops.ScalarParameter)
+def compile_scalar_parameter(t, op, timecontext=None, scope=None, **kwargs):
+    assert scope is not None, "scope is None"
+    raw_value = scope.get_value(op, timecontext)
+    return F.lit(raw_value).cast(spark_dtype(op.output_dtype))

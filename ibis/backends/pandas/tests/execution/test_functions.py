@@ -6,12 +6,13 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas._testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
 
 
@@ -56,53 +57,61 @@ def operate(func):
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (methodcaller('round'), lambda x: np.int64(round(x))),
-        (
+        param(methodcaller('round'), round, id="round"),
+        param(
             methodcaller('round', 2),
             lambda x: x.quantize(decimal.Decimal('.00')),
+            id="round_2",
         ),
-        (
+        param(
             methodcaller('round', 0),
             lambda x: x.quantize(decimal.Decimal('0.')),
+            id="round_0",
         ),
-        (methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x))),
-        (methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x))),
-        (methodcaller('exp'), methodcaller('exp')),
-        (
+        param(methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
+        param(
+            methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x)), id="floor"
+        ),
+        param(methodcaller('exp'), methodcaller('exp'), id="exp"),
+        param(
             methodcaller('sign'),
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
+            id="sign",
         ),
-        (methodcaller('sqrt'), operate(lambda x: x.sqrt())),
-        (
+        param(methodcaller('sqrt'), operate(lambda x: x.sqrt()), id="sqrt"),
+        param(
             methodcaller('log', 2),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            id="log_2",
         ),
-        (methodcaller('ln'), operate(lambda x: x.ln())),
-        (
+        param(methodcaller('ln'), operate(lambda x: x.ln()), id="ln"),
+        param(
             methodcaller('log2'),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            id="log2",
         ),
-        (methodcaller('log10'), operate(lambda x: x.log10())),
+        param(methodcaller('log10'), operate(lambda x: x.log10()), id="log10"),
     ],
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
     dtype = dt.Decimal(12, 3)
-    result = ibis_func(t.float64_as_strings.cast(dtype)).execute()
+    expr = ibis_func(t.float64_as_strings.cast(dtype))
+    result = expr.execute()
     context = decimal.Context(prec=dtype.precision)
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
-                '{}.{}'.format('0' * (dtype.precision - dtype.scale), '0' * dtype.scale)
+                f"{'0' * (dtype.precision - dtype.scale)}.{'0' * dtype.scale}"
             )
         )
     ).apply(pandas_func)
 
     result[result.apply(math.isnan)] = -99999
     expected[expected.apply(math.isnan)] = -99999
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected.astype(expr.type().to_pandas()))
 
 
-def test_round_decimal_with_negative_places(t, df):
+def test_round_decimal_with_negative_places(t):
     type = dt.Decimal(12, 3)
     expr = t.float64_as_strings.cast(type).round(-1)
     result = expr.execute()
@@ -150,7 +159,7 @@ def test_quantile_multi(t, df, ibis_func, pandas_func, column):
     expr = ibis_func(t[column])
     result = expr.execute()
     expected = pandas_func(df[column])
-    tm.assert_numpy_array_equal(result, expected)
+    np.testing.assert_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -164,7 +173,7 @@ def test_quantile_multi(t, df, ibis_func, pandas_func, column):
         (lambda x: x.quantile(0.5, interpolation='foo'), ValueError),
     ],
 )
-def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
+def test_arraylike_functions_transform_errors(t, ibis_func, exc):
     with pytest.raises(exc):
         ibis_func(t.float64_with_zeros).execute()
 
@@ -211,7 +220,7 @@ def test_execute_with_same_hash_value_in_scope(
     left, right, expected_value, expected_type, left_dtype, right_dtype
 ):
     @udf.elementwise([left_dtype, right_dtype], left_dtype)
-    def my_func(x, y):
+    def my_func(x, _):
         return x
 
     df = pd.DataFrame({"left": [left], "right": [right]})

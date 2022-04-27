@@ -49,7 +49,7 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "pyspark"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_accepts_date_literals(alltypes):
     date_string = '2009-03-01'
     param = ibis.param(dt.timestamp)
@@ -173,17 +173,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "mysql",
-        "polars",
-        "dask",
-        "datafusion",
-        "sqlite",
-        "snowflake",
-        "impala",
-        "pyspark",
-        "mssql",
-    ]
+    ["mysql", "polars", "dask", "datafusion", "sqlite", "snowflake", "impala", "mssql"]
 )
 def test_scalar_param_date(backend, alltypes, value, dtype):
     param = ibis.param(dtype)

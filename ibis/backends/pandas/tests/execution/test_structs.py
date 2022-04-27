@@ -1,13 +1,13 @@
 from collections import OrderedDict
 
 import pandas as pd
-import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
 @pytest.fixture(scope="module")
@@ -78,4 +78,9 @@ def test_struct_field_series_group_by_value(struct_table):
     result = expr.execute()
     # these are floats because we have a NULL value in the input data
     expected = pd.DataFrame([("a", 0.0), ("b", 1.0)], columns=["key", "total"])
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result,
+        expected.assign(
+            total=lambda df: df.total.astype(expr.total.type().to_pandas())
+        ),
+    )

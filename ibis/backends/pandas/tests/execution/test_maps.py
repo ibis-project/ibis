@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-import pandas._testing as tm
 
 import ibis
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
 def test_map_length_expr(t):
@@ -48,14 +48,14 @@ def test_map_keys_scalar(client, t):
     expr = expr.keys()
     result = client.execute(expr)
     expected = np.array(['a', 'b', 'c', 'd'])
-    tm.assert_numpy_array_equal(result, expected)
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_map_values_expr(t):
     expr = t.map_of_complex_values.values()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        [None, np.array([[], [1, 2, 3]], dtype='object'), np.array([])],
+        [None, np.array([[1, 2, 3], []], dtype='object'), np.array([])],
         dtype='object',
         name='map_of_complex_values',
     )
@@ -67,7 +67,7 @@ def test_map_values_scalar(client, t):
     expr = expr.values()
     result = client.execute(expr)
     expected = np.array([10, 50, 20, 40])
-    tm.assert_numpy_array_equal(result, expected)
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_map_concat_expr(t):
@@ -90,4 +90,4 @@ def test_map_value_for_key_literal_broadcast(t):
     expr = lookup_table.get(t.dup_strings)
     result = expr.execute()
     expected = pd.Series([4, 1, 4], name='dup_strings')
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected.astype(expr.type().to_pandas()))

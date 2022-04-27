@@ -3,7 +3,6 @@ from operator import methodcaller
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as parse_version
 from pytest import param
@@ -11,6 +10,7 @@ from pytest import param
 from ibis import literal as L
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr import datatypes as dt
 
 

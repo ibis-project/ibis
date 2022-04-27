@@ -37,6 +37,7 @@ _ibis_dtypes = toolz.valmap(
         dt.UInt16: np.uint16,
         dt.UInt32: np.uint32,
         dt.UInt64: np.uint64,
+        dt.Float16: np.float16,
         dt.Float32: np.float32,
         dt.Float64: np.float64,
         dt.Decimal: np.object_,
@@ -135,6 +136,13 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     ):
         return column.astype(out_dtype_type)
     return column
+
+
+@sch.convert.register(DatetimeTZDtype, dt.Date, pd.Series)
+def convert_timestamp_to_date(in_dtype, out_dtype, column):
+    if in_dtype.tz is not None:
+        column = column.dt.tz_convert("UTC").dt.tz_localize(None)
+    return column.astype(out_dtype.to_pandas(), errors='ignore').dt.normalize()
 
 
 @sch.convert.register(object, dt.DataType, pd.Series)
