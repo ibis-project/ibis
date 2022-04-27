@@ -4,6 +4,7 @@ import collections
 import functools
 import itertools
 import operator
+import warnings
 from functools import cached_property
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
@@ -112,13 +113,13 @@ class Table(Expr):
             return what._to_semi_join(self)[self]
         elif isinstance(what, (list, tuple, Table)):
             # Projection case
-            return self.projection(what)
+            return self.select(what)
         elif isinstance(what, BooleanColumn):
             # Boolean predicate
             return self.filter([what])
         elif isinstance(what, Column):
             # Projection convenience
-            return self.projection(what)
+            return self.select(what)
         else:
             raise NotImplementedError(
                 'Selection rows or columns with {} objects is not '
@@ -572,11 +573,12 @@ class Table(Expr):
             exprs.append(value.name(name))
 
         mutation_exprs = an.get_mutation_exprs(exprs, self)
-        return self.projection(mutation_exprs)
+        return self.select(mutation_exprs)
 
     def select(
         self,
-        exprs: ir.Value | str | Sequence[ir.Value | str],
+        *exprs: ir.Value | str | Iterable[ir.Value | str],
+        **named_exprs: ir.Value | str,
     ) -> Table:
         """Compute a new table expression using `exprs`.
 
@@ -584,6 +586,10 @@ class Table(Expr):
         aggregate's value over the number of rows in the table and
         automatically constructs a window function expression. See the examples
         section for more details.
+
+        For backwards compatibility the keyword argument `exprs` is reserved
+        and cannot be used to name an expression. This behavior will be removed
+        in v4.
 
         Parameters
         ----------
@@ -601,9 +607,8 @@ class Table(Expr):
         Simple projection
 
         >>> import ibis
-        >>> fields = [('a', 'int64'), ('b', 'double')]
-        >>> t = ibis.table(fields, name='t')
-        >>> proj = t.projection([t.a, (t.b + 1).name('b_plus_1')])
+        >>> t = ibis.table(dict(a="int64", b="double"), name='t')
+        >>> proj = t.select(t.a, b_plus_1=t.b + 1)
         >>> proj
         r0 := UnboundTable[t]
           a int64
@@ -612,13 +617,13 @@ class Table(Expr):
           selections:
             a:        r0.a
             b_plus_1: r0.b + 1
-        >>> proj2 = t[t.a, (t.b + 1).name('b_plus_1')]
+        >>> proj2 = t.select("a", b_plus_1=t.b + 1)
         >>> proj.equals(proj2)
         True
 
         Aggregate projection
 
-        >>> agg_proj = t[t.a.sum().name('sum_a'), t.b.mean().name('mean_b')]
+        >>> agg_proj = t.select(sum_a=t.a.sum(), mean_b=t.b.mean())
         >>> agg_proj
         r0 := UnboundTable[t]
           a int64
@@ -635,7 +640,7 @@ class Table(Expr):
         The purpose of this expression rewrite is to make it easy to write
         column/scalar-aggregate operations like
 
-        >>> t[(t.a - t.a.mean()).name('demeaned_a')]
+        >>> t.select(demeaned_a=t.a - t.a.mean())
         r0 := UnboundTable[t]
           a int64
           b float64
@@ -645,8 +650,24 @@ class Table(Expr):
         """
         import ibis.expr.analysis as an
 
-        if isinstance(exprs, (Expr, str)):
-            exprs = [exprs]
+        if backcompat_exprs := named_exprs.pop("exprs", []):
+            warnings.warn(
+                "Passing `exprs` as a keyword argument is deprecated"
+                " and will be removed in 4.0. Pass the value(s) as"
+                " positional arguments.",
+                FutureWarning,
+            )
+
+        exprs = list(
+            itertools.chain(
+                itertools.chain.from_iterable(map(util.promote_list, exprs)),
+                util.promote_list(backcompat_exprs),
+                (
+                    self._ensure_expr(expr).name(name)
+                    for name, expr in named_exprs.items()
+                ),
+            )
+        )
 
         projector = an.Projector(self, exprs)
         op = projector.get_result()
@@ -681,7 +702,7 @@ class Table(Expr):
             if c not in observed:
                 raise KeyError(f'{c!r} is not an existing column')
 
-        return self.projection(exprs)
+        return self.select(exprs)
 
     def drop(self, fields: str | Sequence[str]) -> Table:
         """Remove fields from a table.
@@ -905,7 +926,7 @@ class Table(Expr):
             else:
                 proj_exprs.append(self[key])
 
-        return self.projection(proj_exprs)
+        return self.select(proj_exprs)
 
     def join(
         left: Table,
