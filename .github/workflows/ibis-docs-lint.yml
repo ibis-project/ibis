@@ -127,6 +127,8 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: build docs
         run: nix develop -f shell.nix --ignore-environment --keep-going -c mkdocs build
