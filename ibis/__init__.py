@@ -21,7 +21,7 @@ except ImportError:
 __all__ = ['api', 'ir', 'util', 'IbisError', 'options']
 __all__ += api.__all__
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 
 def __getattr__(name: str) -> BaseBackend:

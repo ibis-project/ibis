@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+### [3.0.1](https://github.com/ibis-project/ibis/compare/3.0.0...3.0.1) (2022-04-28)
+
+
+### Bug Fixes
+
+* **build:** replace version before exec plugin runs ([573139c](https://github.com/ibis-project/ibis/commit/573139c3569aa6c6a197910f3582c6e24593688e))
+
 ## [3.0.0](https://github.com/ibis-project/ibis/compare/2.1.1...3.0.0) (2022-04-25)
 
 
