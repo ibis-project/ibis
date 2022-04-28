@@ -13,14 +13,6 @@
       }
     ],
     [
-      "@semantic-release/exec",
-      {
-        "verifyConditionsCmd": "ci/release/verify.sh",
-        "prepareCmd": "ci/release/prepare.sh ${nextRelease.version}",
-        "publishCmd": "ci/release/publish.sh"
-      }
-    ],
-    [
       "@google/semantic-release-replace-plugin",
       {
         "replacements": [
@@ -39,6 +31,14 @@
             "countMatches": true
           }
         ]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "verifyConditionsCmd": "ci/release/verify.sh",
+        "prepareCmd": "ci/release/prepare.sh ${nextRelease.version}",
+        "publishCmd": "ci/release/publish.sh"
       }
     ],
     [
