@@ -73,4 +73,12 @@ self: super:
     {
       patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
     });
+
+  pymdown-extensions = super.pymdown-extensions.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.hatchling ];
+  });
+
+  docstring-parser = super.docstring-parser.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
+  });
 }
