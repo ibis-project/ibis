@@ -73,4 +73,18 @@ self: super:
     {
       patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
     });
+
+  pymdown-extensions = super.pymdown-extensions.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.hatchling ];
+  });
+
+  docstring-parser = super.docstring-parser.overridePythonAttrs (attrs: {
+    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.poetry-core ];
+  });
+
+  pybind11 = super.pybind11.overridePythonAttrs (_: {
+    postBuild = ''
+      make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
+    '';
+  });
 }
