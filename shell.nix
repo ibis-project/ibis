@@ -71,7 +71,7 @@ let
       # indavertently preventing this.
       export PYTHONPATH TEMPDIR
       PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
-      TEMPDIR="$(mktemp -d)"
+      TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
 
       mike "$@"
     '';
