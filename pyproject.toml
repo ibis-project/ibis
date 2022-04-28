@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "3.0.1"
+version = "3.0.2"
 packages = [{ include = "ibis" }]
 homepage = "https://ibis-project.org"
 repository = "https://github.com/ibis-project/ibis"
