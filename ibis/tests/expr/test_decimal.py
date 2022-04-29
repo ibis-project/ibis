@@ -2,6 +2,7 @@ import operator
 
 import pytest
 
+import ibis
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -25,6 +26,14 @@ def test_cast_scalar_to_decimal():
 
 def test_decimal_sum_type(lineitem):
     col = lineitem.l_extendedprice
+    result = col.sum()
+    assert isinstance(result, ir.DecimalScalar)
+    assert result.type() == dt.Decimal(38, 2)
+
+
+def test_decimal_sum_type_unbounded_precision():
+    t = ibis.table([("l_extendedprice", dt.Decimal(None, None))], name="t")
+    col = t.l_extendedprice
     result = col.sum()
     assert isinstance(result, ir.DecimalScalar)
     assert result.type() == dt.decimal
