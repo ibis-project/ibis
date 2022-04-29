@@ -440,7 +440,10 @@ class Decimal(DataType):
     @property
     def largest(self):
         """Return the largest type of decimal."""
-        return self.__class__(precision=None, scale=None)
+        return self.__class__(
+            precision=38 if self.precision is not None else None,
+            scale=2 if self.scale is not None else None,
+        )
 
     @property
     def _pretty_piece(self) -> str:
