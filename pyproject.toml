@@ -64,7 +64,7 @@ Shapely = { version = ">=1.6,<1.8.2", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
 
 [tool.poetry.dev-dependencies]
-absolufy-imports = "^0.3.1"
+absolufy-imports = ">=0.3.1,<1"
 black = ">=22.1.0,<23"
 click = ">=8.0.1,<9"
 commitizen = ">=2.20.3,<3"
@@ -73,12 +73,6 @@ ipdb = "^0.13.9"
 ipykernel = ">=6,<7"
 ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
-# jinja2 is necessary because of
-# https://github.com/mkdocstrings/mkdocstrings/issues/414
-Jinja2 = "<3"
-# necessary because of breakage in 2.1.0:
-# https://markupsafe.palletsprojects.com/en/2.1.x/changes/#version-2-1-0
-MarkupSafe = "<2.1"
 mike = ">=1.1.2,<2"
 mkdocs = ">=1.2.3,<2"
 mkdocs-exclude = ">=1.0.2,<2"
