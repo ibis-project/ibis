@@ -325,7 +325,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "dask"
-version = "2022.4.1"
+version = "2022.4.2"
 description = "Parallel PyData with Task Scheduling"
 category = "main"
 optional = true
@@ -343,10 +343,10 @@ toolz = ">=0.8.2"
 
 [package.extras]
 array = ["numpy (>=1.18)"]
-complete = ["bokeh (>=2.4.2)", "distributed (==2022.04.1)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
+complete = ["bokeh (>=2.4.2)", "distributed (==2022.04.2)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
 dataframe = ["numpy (>=1.18)", "pandas (>=1.0)"]
 diagnostics = ["bokeh (>=2.4.2)", "jinja2"]
-distributed = ["distributed (==2022.04.1)"]
+distributed = ["distributed (==2022.04.2)"]
 test = ["pytest", "pytest-rerunfailures", "pytest-xdist", "pre-commit"]
 
 [[package]]
@@ -2318,7 +2318,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "528ed0d192083ba659170e926a2eac8848d2eef97e62d6f11b45a795ab30793b"
+content-hash = "05405ff84bf75cfe79c01654f0ae0d317805712844b82164086b3df06e796866"
 
 [metadata.files]
 absolufy-imports = [
@@ -2792,8 +2792,8 @@ coverage = [
     {file = "coverage-6.3.2.tar.gz", hash = "sha256:03e2a7826086b91ef345ff18742ee9fc47a6839ccd517061ef8fa1976e652ce9"},
 ]
 dask = [
-    {file = "dask-2022.4.1-py3-none-any.whl", hash = "sha256:df4231680fb9ba2274b4eafc4a42d87372e32b9de3e72811120afdaf4e3a4edf"},
-    {file = "dask-2022.4.1.tar.gz", hash = "sha256:f3f4344edb8169f5040225f6a41dbc3042db886ed7546f11bab1270a5cd38454"},
+    {file = "dask-2022.4.2-py3-none-any.whl", hash = "sha256:aebac683ecd3846ae86466a41b88af06e5b0ada049c2be4b3755b9c313a5d6f9"},
+    {file = "dask-2022.4.2.tar.gz", hash = "sha256:da573206797768f6ff1b7aa1bd28ac0cd4fa2b7a30fd0f43af744c2d9b4f52d8"},
 ]
 datafusion = [
     {file = "datafusion-0.5.2-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:7bc19fbc01d42690b4698f1a8207b110a0e51bd8de2a5725fc86431b7c4ed8cd"},
