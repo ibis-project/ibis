@@ -3,26 +3,18 @@ let
   pkgs = import ./nix;
 
   devDeps = with pkgs; [
-    cacert
-    cachix
-    commitlint
-    curl
-    duckdb
-    git
+    # terminal markdown rendering
     glow
+    # used in the justfile
     jq
-    just
-    lychee
-    mariadb
-    niv
-    nix-linter
-    nixpkgs-fmt
-    poetry
-    prettierTOML
-    shellcheck
-    shfmt
-    unzip
     yj
+    # linting
+    commitlint
+    lychee
+    # packaging
+    cachix
+    niv
+    poetry
   ];
 
   impalaUdfDeps = with pkgs; [
@@ -30,52 +22,28 @@ let
     cmake
     ninja
   ];
-
   backendTestDeps = [ pkgs.docker-compose_2 ];
   vizDeps = [ pkgs.graphviz-nox ];
+  duckdbDeps = [ pkgs.duckdb ];
+  mysqlDeps = [ pkgs.mariadb-client ];
   pysparkDeps = [ pkgs.openjdk11_headless ];
-  docDeps = [ pkgs.pandoc ];
 
-  # postgresql is the client, not the server
-  postgresDeps = [ pkgs.postgresql ];
+  postgresDeps = [ pkgs.postgresql ];  # postgres client dependencies
   geospatialDeps = with pkgs; [ gdal_2 proj ];
-
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
   libraryDevDeps = impalaUdfDeps
     ++ backendTestDeps
     ++ vizDeps
     ++ pysparkDeps
-    ++ docDeps
     ++ geospatialDeps
     ++ postgresDeps
-    ++ sqliteDeps;
+    ++ sqliteDeps
+    ++ duckdbDeps
+    ++ mysqlDeps;
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
   pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
-  changelog = pkgs.writeShellApplication {
-    name = "changelog";
-    runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
-    text = ''
-      conventional-changelog --preset conventionalcommits
-    '';
-  };
-  mic = pkgs.writeShellApplication {
-    name = "mic";
-    runtimeInputs = [ pythonEnv pkgs.coreutils ];
-    text = ''
-      # The immediate reason this is necessary is to allow the subprocess
-      # invocations of `mkdocs` by `mike` to see Python dependencies.
-      #
-      # This shouldn't be necessary, but I think the nix wrappers may be
-      # indavertently preventing this.
-      export PYTHONPATH TEMPDIR
-      PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
-      TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
-
-      mike "$@"
-    '';
-  };
 in
 pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
@@ -91,11 +59,10 @@ pkgs.mkShell {
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [
-    changelog
-    mic
+    pkgs.changelog
+    pkgs.mic
     pythonEnv
-    (pythonEnv.python.pkgs.toPythonApplication pkgs.pre-commit)
-  ];
+  ] ++ pkgs.preCommitShell.buildInputs;
 
   PYTHONPATH = builtins.toPath ./.;
 }

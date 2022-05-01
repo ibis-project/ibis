@@ -53,8 +53,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          nix develop -f shell.nix --keep-going -c \
-            mic deploy \
+          nix run -f nix mic -- \
+            deploy \
               --push \
               --rebase \
               --update-aliases \
