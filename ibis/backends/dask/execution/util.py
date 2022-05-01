@@ -254,14 +254,14 @@ def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
     operate on objects with equal lengths, otherwise it will raise a
     ValueError in `concat_and_check`.
 
-    See https://github.com/dask/dask/blob/2c2e837674895cafdb0612be81250ef2657d947e/dask/dataframe/multi.py#L907 # noqa
+    See https://github.com/dask/dask/blob/2c2e837674895cafdb0612be81250ef2657d947e/dask/dataframe/multi.py#L907.
 
     Note - Repeatedly joining dataframes is likely to be quite slow, but this
     should be hit rarely in real usage. A situtation that triggeres this slow
     path is aggregations where aggregations return different numbers of rows
     (see `test_aggregation_group_by` for a specific example).
     TODO - performance.
-    """
+    """  # noqa: E501
     if len(dfs) == 1:
         maybe_df = dfs[0]
         if isinstance(maybe_df, dd.Series):

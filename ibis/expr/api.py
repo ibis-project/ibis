@@ -15,9 +15,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.expr.random import random  # noqa
+from ibis.expr.random import random
 from ibis.expr.schema import Schema
-from ibis.expr.types import (  # noqa
+from ibis.expr.types import (  # noqa: F401
     ArrayColumn,
     ArrayScalar,
     ArrayValue,

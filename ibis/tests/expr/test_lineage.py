@@ -65,16 +65,6 @@ def test_lineage(companies):
         1000000000,
     ]
 
-    bucket_names = [
-        '0 to 1m',
-        '1m to 10m',
-        '10m to 50m',
-        '50m to 100m',
-        '100m to 500m',
-        '500m to 1b',
-        'Over 1b',
-    ]
-
     bucket = companies.funding_total_usd.bucket(
         funding_buckets, include_over=True
     )
@@ -88,11 +78,6 @@ def test_lineage(companies):
     ]
 
     grouped = filtered.group_by(['bucket', 'status']).size()
-
-    # TODO(cpcloud): Should this be used?
-    joined = grouped.mutate(  # noqa
-        bucket_name=lambda x: x.bucket.label(bucket_names).fillna('Unknown')
-    )
 
     results = list(lin.lineage(bucket))
     expected = [bucket, companies.funding_total_usd, companies]
