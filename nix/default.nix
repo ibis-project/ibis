@@ -42,6 +42,24 @@ import sources.nixpkgs {
       ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;
       ibisDevEnv = pkgs.ibisDevEnv310;
 
+      mic = pkgs.writeShellApplication {
+        name = "mic";
+        runtimeInputs = [ pkgs.ibisDevEnv pkgs.coreutils ];
+        # The immediate reason setting PYTHONPATH is necessary is to allow the
+        # subprocess invocations of `mkdocs` by `mike` to see Python dependencies.
+        #
+        # This shouldn't be necessary, but I think the nix wrappers may be
+        # indavertently preventing this.
+        text = ''
+          export PYTHONPATH TEMPDIR
+
+          PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
+          TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
+
+          mike "$@"
+        '';
+      };
+
       gdal_2 = super.gdal_2.overrideAttrs (attrs: {
         patches = (attrs.patches or [ ]) ++ [
           (pkgs.fetchpatch {
@@ -71,6 +89,28 @@ import sources.nixpkgs {
           "s3"
           "sts"
           "transfer"
+        ];
+      };
+
+      changelog = pkgs.writeShellApplication {
+        name = "changelog";
+        runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
+        text = ''
+          conventional-changelog --preset conventionalcommits
+        '';
+      };
+
+      preCommitShell = pkgs.mkShell {
+        name = "preCommitShell";
+        buildInputs = with pkgs; [
+          git
+          just
+          nix-linter
+          nixpkgs-fmt
+          pre-commit
+          prettierTOML
+          shellcheck
+          shfmt
         ];
       };
     } // super.lib.optionalAttrs super.stdenv.isDarwin {

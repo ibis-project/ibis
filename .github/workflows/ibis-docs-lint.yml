@@ -50,7 +50,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: pre-commit checks
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c pre-commit run -a
+        run: nix develop -f nix preCommitShell --ignore-environment --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -148,11 +148,11 @@ jobs:
 
       - name: build docs
         if: ${{ github.event_name != 'push' }}
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c mkdocs build
+        run: nix run -f nix ibisDevEnv310 -- -m mkdocs build
 
       - name: verify internal links
         if: ${{ github.event_name != 'push' }}
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c just checklinks --offline --no-progress
+        run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
 
       - name: Configure git info
         if: ${{ github.event_name == 'push' }}
@@ -167,8 +167,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          nix develop -f shell.nix --keep-going -c \
-            mic deploy \
+          nix run -f nix mic -- \
+            deploy \
               --push \
               --rebase \
               --prefix docs \

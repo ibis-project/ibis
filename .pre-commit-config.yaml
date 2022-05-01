@@ -7,6 +7,8 @@ ci:
     - shellcheck
     - shfmt
     - just
+    - nixpkgs-fmt
+    - nix-linter
 default_stages:
   - commit
 repos:
@@ -37,19 +39,18 @@ repos:
   - repo: local
     hooks:
       - id: prettier
-        language: system
         name: prettier
+        language: system
         entry: prettier --write
-        exclude: poetry.lock
         types_or:
           - json
           - toml
           - yaml
           - markdown
       - id: shellcheck
+        name: shellcheck
         language: system
         entry: shellcheck
-        name: shellcheck
         files: \.sh$
         types:
           - shell
@@ -70,11 +71,31 @@ repos:
           - file
         types_or:
           - file
-      - entry: just --fmt --unstable --check
-        files: ^justfile$
-        id: just
-        language: system
+      - id: just
         name: just
+        language: system
+        entry: just --fmt --unstable --check
+        files: ^justfile$
         pass_filenames: false
         types:
+          - file
+      - id: nixpkgs-fmt
+        name: nixpkgs-fmt
+        language: system
+        entry: nixpkgs-fmt
+        exclude: nix/sources\.nix
+        files: \.nix$
+        types:
+          - file
+        types_or:
+          - file
+      - id: nix-linter
+        name: nix-linter
+        language: system
+        entry: nix-linter
+        exclude: nix/sources\.nix
+        files: \.nix$
+        types:
+          - file
+        types_or:
           - file
