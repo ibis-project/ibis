@@ -1,79 +1,56 @@
+ci:
+  autofix_commit_msg: "style: auto fixes from pre-commit.ci hooks"
+  autofix_prs: false
+  autoupdate_commit_msg: "style: pre-commit.ci autoupdate"
+  skip:
+    - prettier
+    - shellcheck
+    - shfmt
+    - just
 default_stages:
   - commit
 repos:
-  - hooks:
-      - entry: black --check
-        exclude: ^$
-        files: ""
-        id: black
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+  - repo: https://github.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+  - repo: https://github.com/MarcoGorelli/absolufy-imports
+    rev: v0.3.1
+    hooks:
+      - id: absolufy-imports
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.32.0
+    hooks:
+      - id: pyupgrade
+        exclude: setup.py
+        entry: pyupgrade --py38-plus
+        types:
+          - python
+  - repo: local
+    hooks:
+      - id: prettier
         language: system
-        name: black
-        pass_filenames: true
-        stages:
-          - commit
-        types:
-          - python
-          - file
-          - python
-        types_or: []
-      - entry: flake8
-        exclude: ^$
-        files: ""
-        id: flake8
-        language: python
-        name: flake8
-        pass_filenames: true
-        stages:
-          - commit
-        types:
-          - python
-        types_or: []
-      - entry: absolufy-imports
-        name: absolufy
-        id: absolufy
-        language: python
-        files: ""
-        stages:
-          - commit
-        types:
-          - python
-      - entry: isort --check
-        exclude: ^$
-        files: ""
-        id: isort
-        language: python
-        name: isort
-        pass_filenames: true
-        stages:
-          - commit
-        types:
-          - file
-          - python
+        name: prettier
+        entry: prettier --write
+        exclude: poetry.lock
         types_or:
-          - cython
-          - pyi
-          - python
-      - entry: pyupgrade --py38-plus
-        exclude: (setup.py)
-        files: ""
-        id: pyupgrade
+          - json
+          - toml
+          - yaml
+          - markdown
+      - id: shellcheck
         language: system
-        name: pyupgrade
-        pass_filenames: true
-        stages:
-          - commit
-        types:
-          - python
-        types_or: []
-      - entry: shellcheck
-        exclude: ^$
-        files: \.sh$
-        id: shellcheck
-        language: system
+        entry: shellcheck
         name: shellcheck
-        pass_filenames: true
-        stages:
-          - commit
+        files: \.sh$
         types:
           - shell
         types_or:
@@ -84,44 +61,20 @@ repos:
           - bats
           - dash
           - ksh
-      - entry: shfmt -i 2 -sr -d -s -l
-        exclude: ^$
-        files: \.sh$
-        id: shfmt
-        language: system
+      - id: shfmt
         name: shfmt
-        pass_filenames: true
-        stages:
-          - commit
-        types:
-          - file
-        types_or:
-          - file
-      - entry: prettier --check
-        exclude: ^$
-        files: ""
-        id: prettier
         language: system
-        name: prettier
-        pass_filenames: true
-        stages:
-          - commit
+        entry: shfmt -i 2 -sr -s
+        files: \.sh$
         types:
-          - text
+          - file
         types_or:
-          - json
-          - toml
-          - yaml
-          - markdown
+          - file
       - entry: just --fmt --unstable --check
-        exclude: ^$
         files: ^justfile$
         id: just
         language: system
         name: just
         pass_filenames: false
-        stages:
-          - commit
         types:
           - file
-    repo: local
