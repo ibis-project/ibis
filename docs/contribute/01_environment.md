@@ -131,6 +131,42 @@ hide:
 
     {% endfor %}
 
+=== "pip"
+
+    !!! warning "`pip` will not handle installation of system dependencies"
+
+        `pip` will not install system dependencies needed for some packages
+        such as `psycopg2` and `kerberos`.
+
+        For a better development experience see the `conda` or `nix` setup
+        instructions.
+
+    1. [Install `gh`](https://cli.github.com/manual/installation)
+
+    1. Fork and clone the ibis repository:
+
+        ```sh
+        gh repo fork --clone --remote ibis-project/ibis
+        ```
+
+    1. Change directory into `ibis`:
+
+        ```sh
+        cd ibis
+        ```
+
+    1. Install development dependencies
+
+        ```sh
+        pip install -r requirements.txt
+        ```
+
+    1. Install ibis in development mode
+
+        ```sh
+        pip install -e .
+        ```
+
 Once you've set up an environment, try building the documentation:
 
 ```sh
