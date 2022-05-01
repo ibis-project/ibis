@@ -394,14 +394,11 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
 name = "docstring-parser"
-version = "0.13"
-description = "\"Parse Python docstrings in reST, Google and Numpydoc format\""
+version = "0.14.1"
+description = "Parse Python docstrings in reST, Google and Numpydoc format"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
-
-[package.extras]
-test = ["pytest", "black"]
+python-versions = ">=3.6,<4.0"
 
 [[package]]
 name = "duckdb"
@@ -2323,7 +2320,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "141e837de174d1ddbbc1a7f8d519c0b0320323e4bb38f08de5f80740372ec4e3"
+content-hash = "4501f55101d3dc1cbc9c9e7f539d1c3b62ab1699f373b7b37f97bed9cd20e1d7"
 
 [metadata.files]
 absolufy-imports = [
@@ -2840,7 +2837,8 @@ defusedxml = [
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
 docstring-parser = [
-    {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
+    {file = "docstring_parser-0.14.1-py3-none-any.whl", hash = "sha256:14ac6ec1f1ba6905c4d8cb90fd0bc55394f5678183752c90e44812bf28d7a515"},
+    {file = "docstring_parser-0.14.1.tar.gz", hash = "sha256:2c77522e31b7c88b1ab457a1f3c9ae38947ad719732260ba77ee8a3deb58622a"},
 ]
 duckdb = [
     {file = "duckdb-0.3.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:4ecfa5e8c6bde61efead473b05b35ed989dc08fe76c7ab1c931e4c16e082b10b"},

@@ -97,7 +97,7 @@ pytest-mock = ">=3.6.1,<4"
 pytest-profiling = ">=1.7.0,<2"
 pytest-randomly = ">=3.10.1,<4"
 pytest-repeat = ">=0.9.1,<0.10"
-docstring_parser = ">=0.13,<0.14"
+docstring_parser = ">=0.13,<0.15"
 pytest-xdist = ">=2.3.0,<3"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
 pyupgrade = ">=2.26.0,<3"
