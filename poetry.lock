@@ -430,7 +430,7 @@ sqlalchemy = ">=1.3.19,<2.0.0"
 name = "dunamai"
 version = "1.11.1"
 description = "Dynamic version generation"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5,<4.0"
 
@@ -805,7 +805,7 @@ testing = ["Django (<3.1)", "colorama", "docopt", "pytest (<7.0.0)"]
 name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -963,7 +963,7 @@ testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 name = "markupsafe"
 version = "2.1.1"
 description = "Safely add untrusted strings to HTML/XML markup."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1478,7 +1478,7 @@ testing = ["pytest", "pytest-benchmark"]
 name = "poetry-dynamic-versioning"
 version = "0.15.0"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.5,<4.0"
 
@@ -2178,7 +2178,7 @@ python-versions = ">=3.7"
 name = "tomlkit"
 version = "0.10.2"
 description = "Style preserving TOML library"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6,<4.0"
 
@@ -2323,7 +2323,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "fc399c022e185b14ee358b088d4fc0917fd21e41f794437ca96bc4b52cc9999a"
+content-hash = "9edf56918970d5110f33f440c96bae541a8fdc4944c5b23dd2a380f4e2da2ed4"
 
 [metadata.files]
 absolufy-imports = [
