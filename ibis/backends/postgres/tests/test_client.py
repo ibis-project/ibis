@@ -75,7 +75,7 @@ def test_compile_toplevel():
     # it works!
     expr = t.foo.sum()
     result = ibis.postgres.compile(expr)
-    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"  # noqa
+    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"
 
     assert str(result) == expected
 
@@ -104,7 +104,7 @@ def test_metadata_is_per_table():
     assert len(con.meta.tables) == 0
 
     # assert that we reflect only when a table is requested
-    t = con.table('functional_alltypes')  # noqa
+    con.table('functional_alltypes')
     assert 'functional_alltypes' in con.meta.tables
     assert len(con.meta.tables) == 1
 

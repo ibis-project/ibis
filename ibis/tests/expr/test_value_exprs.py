@@ -541,10 +541,10 @@ def test_numbers_compare_numeric_literal(table, operation, column, case):
 def test_boolean_comparisons(table):
     bool_col = table.h
 
-    result = bool_col == True  # noqa
+    result = bool_col == True  # noqa: E712
     assert isinstance(result, ir.BooleanColumn)
 
-    result = bool_col == False  # noqa
+    result = bool_col == False  # noqa: E712
     assert isinstance(result, ir.BooleanColumn)
 
 
