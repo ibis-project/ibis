@@ -46,6 +46,9 @@ jobs:
       - name: generate setup.py
         run: ./dev/poetry2setup -o setup.py
 
+      - name: generate requirements.txt
+        run: nix run -f nix poetry -- export --dev --extras all --without-hashes --no-ansi > requirements.txt
+
       - name: setup git credentials
         uses: OleksiyRudenko/gha-git-credentials@v2.1
         with:
@@ -58,9 +61,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          git add setup.py
+          git add setup.py requirements.txt
 
-          if git commit -m 'chore(setup.py): regenerate'; then
+          if git commit -m 'chore(setuptools-files): regenerate'; then
             # pull in case another commit happened in the meantime
             #
             # `ours` is actually the *other* changeset, not the current branch, per
