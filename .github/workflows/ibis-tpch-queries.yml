@@ -28,7 +28,7 @@ jobs:
       - run: python -m pip install --upgrade pip click sqlparse
 
       - name: install ibis
-        run: python -m pip install "ibis-framework[duckdb]"
+        run: python -m pip install ".[duckdb]"
 
       - name: clone tpc-queries
         uses: actions/checkout@v3
