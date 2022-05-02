@@ -61,3 +61,5 @@ jobs:
               --prefix docs \
               --message "docs(release): ibis@${GITHUB_REF_NAME}" \
               "${GITHUB_REF_NAME}" latest
+        env:
+          PYTHONPATH: .
