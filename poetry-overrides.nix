@@ -59,9 +59,9 @@ self: super:
     enableParallelBuilding = true;
   });
 
-  pydantic = super.pydantic.overridePythonAttrs (attrs: {
-    setupPyBuildFlags = (attrs.setupPyBuildFlags or [ ])
-      ++ [ "--parallel" "$NIX_BUILD_CORES" ];
+  pydantic = super.pydantic.overridePythonAttrs (_: {
+    format = "setuptools";
+    enableParallelBuilding = true;
   });
 
   atpublic = super.atpublic.overridePythonAttrs (attrs: {
