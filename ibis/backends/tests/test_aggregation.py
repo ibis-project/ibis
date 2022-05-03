@@ -365,7 +365,7 @@ def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.notimpl(["datafusion", "pandas", "dask", "pyspark"])
+@mark.notimpl(["datafusion", "pandas", "dask"])
 def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.

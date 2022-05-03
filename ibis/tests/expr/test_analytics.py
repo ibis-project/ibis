@@ -15,7 +15,6 @@
 import pytest
 
 import ibis
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
@@ -111,7 +110,7 @@ def test_topk_analysis_bug(airlines):
 
     filtered = t.filter([delay_filter])
 
-    assert delay_filter._to_semi_join(t).equals(filtered)
+    assert delay_filter._to_semi_join(t)[t].equals(filtered)
 
 
 def test_topk_function_late_bind(airlines):
