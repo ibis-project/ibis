@@ -26,7 +26,7 @@ cloudpickle==2.0.0; python_version >= "3.8"
 colorama==0.4.4; platform_system == "Windows" and python_version >= "3.7" and python_full_version >= "3.6.2" and python_full_version < "4.0.0" and (python_version >= "3.8" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.8" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") or sys_platform == "win32" and python_version >= "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and python_full_version >= "3.5.0")
 commitizen==2.24.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 coverage==6.3.2; python_version >= "3.7"
-dask==2022.4.2; python_version >= "3.8"
+dask==2022.5.0; python_version >= "3.8"
 datafusion==0.5.2; python_version >= "3.6"
 debugpy==1.6.0; python_version >= "3.7"
 decli==0.5.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.6"
@@ -156,7 +156,7 @@ pyzmq==22.3.0; python_version >= "3.7"
 questionary==1.10.0; python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 regex==2022.4.24; python_version >= "3.6"
 requests==2.27.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
-shapely==1.8.1.post1; python_version >= "3.6"
+shapely==1.8.2; python_version >= "3.6"
 six==1.16.0; python_full_version >= "3.7.1" and python_version >= "3.8" and python_version < "3.9" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.7") and (python_version >= "3.8" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.8")
 smmap==5.0.0; python_version >= "3.7"
 snowballstemmer==2.2.0; python_version >= "3.6"
