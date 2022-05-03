@@ -49,6 +49,8 @@ pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
 
   shellHook = ''
+    set -euo pipefail
+
     data_dir="$PWD/ci/ibis-testing-data"
     mkdir -p "$data_dir"
     chmod u+rwx "$data_dir"
@@ -56,6 +58,9 @@ pkgs.mkShell {
     chmod --recursive u+rw "$data_dir"
 
     export IBIS_TEST_DATA_DIRECTORY="$data_dir"
+
+    export TEMPDIR
+    TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [
