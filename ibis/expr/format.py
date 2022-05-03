@@ -618,13 +618,6 @@ def _fmt_value_sort_key(op: ops.SortKey, *, aliases: Aliases) -> str:
 
 
 @fmt_value.register
-def _fmt_topk(op: ops.TopK, *, aliases: Aliases) -> str:
-    arg = fmt_value(op.arg, aliases=aliases)
-    by = fmt_value(op.by, aliases=aliases)
-    return f"TopK({arg}, {op.k}, {by})"
-
-
-@fmt_value.register
 def _fmt_value_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
     """Format a table as value.
 

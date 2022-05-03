@@ -592,7 +592,11 @@ class SelectBuilder:
 
     _visit_filter_NotAny = _visit_filter_Any
 
-    def _visit_filter_SummaryFilter(self, expr):
+    @util.deprecated(
+        instead="do nothing; SummaryFilter will be removed",
+        version="4.0.0",
+    )
+    def _visit_filter_SummaryFilter(self, expr):  # pragma: no cover
         # Top K is rewritten as an
         # - aggregation
         # - sort by

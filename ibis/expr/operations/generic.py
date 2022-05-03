@@ -17,7 +17,7 @@ from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
 from ibis.expr.operations.core import Node, UnaryOp, ValueOp, distinct_roots
-from ibis.util import frozendict
+from ibis.util import deprecated, frozendict
 
 try:
     import shapely
@@ -397,6 +397,10 @@ class HashBytes(ValueOp):
     output_shape = rlz.shape_like("arg")
 
 
+@deprecated(
+    instead="do nothing; SummaryFilter is no longer used internally",
+    version="4.0.0",
+)
 @public
 class SummaryFilter(ValueOp):
     expr = rlz.instance_of(ir.TopKExpr)
@@ -420,10 +424,10 @@ class TopK(Node):
 
     output_type = ir.TopKExpr
 
-    def blocks(self):
+    def blocks(self):  # pragma: no cover
         return True
 
-    def root_tables(self):
+    def root_tables(self):  # pragma: no cover
         args = (arg for arg in self.flat_args() if isinstance(arg, ir.Expr))
         return distinct_roots(*args)
 

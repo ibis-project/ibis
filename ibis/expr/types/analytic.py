@@ -5,6 +5,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis.expr.types.core import Expr
+from ibis.util import deprecated
 
 
 @public
@@ -27,11 +28,34 @@ class TopKExpr(AnalyticExpr):
     def type(self):
         return 'topk'
 
-    def _table_getitem(self):
-        return self.to_filter()
+    def _semi_join_components(self):
+        predicate = self._to_filter()
+        right = predicate.op().right.op().table
+        return predicate, right
 
+    def _to_semi_join(self, left):
+        predicate, right = self._semi_join_components()
+        return left.semi_join(right, predicate)
+
+    def _to_filter(self):
+        op = self.op()
+
+        rank_set = self.to_aggregation(backup_metric_name='__tmp__')
+
+        # GH 1393: previously because of GH667 we were substituting parents,
+        # but that introduced a bug when comparing reductions to columns on the
+        # same relation, so we leave this alone.
+        arg = op.arg
+        return arg == getattr(rank_set, arg.get_name())
+
+    @deprecated(
+        instead=(
+            "use __getitem__ on the relevant child table to produce a "
+            "semi-join"
+        ),
+        version="4.0.0",
+    )
     def to_filter(self):
-        # TODO: move to api.py
         import ibis.expr.operations as ops
 
         return ops.SummaryFilter(self).to_expr()
@@ -65,7 +89,7 @@ class TopKExpr(AnalyticExpr):
             agg = parent_table.aggregate(by, by=[op.arg])
         else:
             raise com.IbisError(
-                'Cross-table TopK; must provide a parent ' 'joined table'
+                'Cross-table TopK; must provide a parent joined table'
             )
 
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
