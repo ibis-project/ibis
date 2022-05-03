@@ -82,4 +82,11 @@ self: super:
     {
       patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
     });
+
+  pybind11 = super.pybind11.overridePythonAttrs (_: {
+    postBuild = ''
+      # build tests
+      make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
+    '';
+  });
 }
