@@ -54,9 +54,9 @@ self: super:
     TABULATE_INSTALL = "lib-only";
   });
 
-  pandas = super.pandas.overridePythonAttrs (attrs: {
-    setupPyBuildFlags = (attrs.setupPyBuildFlags or [ ])
-      ++ [ "--parallel" "$NIX_BUILD_CORES" ];
+  pandas = super.pandas.overridePythonAttrs (_: {
+    format = "setuptools";
+    enableParallelBuilding = true;
   });
 
   pydantic = super.pydantic.overridePythonAttrs (attrs: {
