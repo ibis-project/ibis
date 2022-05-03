@@ -98,7 +98,7 @@ class TableExpr(Expr):
         return self.execute()._repr_html_()
 
     def __getitem__(self, what):
-        from ibis.expr.types.analytic import AnalyticExpr
+        from ibis.expr.types.analytic import TopKExpr
         from ibis.expr.types.generic import ColumnExpr
         from ibis.expr.types.logical import BooleanColumn
 
@@ -122,10 +122,9 @@ class TableExpr(Expr):
 
         what = bind_expr(self, what)
 
-        if isinstance(what, AnalyticExpr):
-            what = what._table_getitem()
-
-        if isinstance(what, (list, tuple, TableExpr)):
+        if isinstance(what, TopKExpr):
+            return what._to_semi_join(self)[self]
+        elif isinstance(what, (list, tuple, TableExpr)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanColumn):
@@ -737,8 +736,11 @@ class TableExpr(Expr):
         """
         from ibis.expr import analysis as an
 
-        resolved_predicates = _resolve_predicates(self, predicates)
-        return an.apply_filter(self, resolved_predicates)
+        resolved_predicates, top_ks = _resolve_predicates(self, predicates)
+        child = self
+        for predicate, right in top_ks:
+            child = child.semi_join(right, predicate)[child]
+        return an.apply_filter(child, resolved_predicates)
 
     def count(self) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
@@ -1237,7 +1239,9 @@ class TableExpr(Expr):
         ).to_expr()
 
 
-def _resolve_predicates(table: TableExpr, predicates) -> list[ir.BooleanValue]:
+def _resolve_predicates(
+    table: TableExpr, predicates
+) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.TableExpr]]]:
     from ibis.expr import analysis as an
     from ibis.expr import types as ir
 
@@ -1246,12 +1250,14 @@ def _resolve_predicates(table: TableExpr, predicates) -> list[ir.BooleanValue]:
     predicates = util.promote_list(predicates)
     predicates = [ir.relations.bind_expr(table, x) for x in predicates]
     resolved_predicates = []
+    top_ks = []
     for pred in predicates:
-        if isinstance(pred, ir.AnalyticExpr):
-            pred = pred.to_filter()
-        resolved_predicates.append(pred)
+        if isinstance(pred, ir.TopKExpr):
+            top_ks.append(pred._semi_join_components())
+        else:
+            resolved_predicates.append(pred)
 
-    return resolved_predicates
+    return resolved_predicates, top_ks
 
 
 def bind_expr(table, expr):

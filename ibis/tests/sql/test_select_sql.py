@@ -893,20 +893,26 @@ def test_topk_analysis_bug():
 
     result = Compiler.to_sql(expr)
     expected = f"""\
-SELECT t0.`origin`, count(*) AS `count`
-FROM airlines t0
-  LEFT SEMI JOIN (
+SELECT `origin`, count(*) AS `count`
+FROM (
+  SELECT t1.*
+  FROM (
     SELECT *
-    FROM (
-      SELECT `dest`, avg(`arrdelay`) AS `mean`
-      FROM airlines
-      GROUP BY 1
-    ) t2
-    ORDER BY `mean` DESC
-    LIMIT 10
+    FROM airlines
+    WHERE `dest` IN {dests_formatted}
   ) t1
-    ON t0.`dest` = t1.`dest`
-WHERE t0.`dest` IN {dests_formatted}
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `dest`, avg(`arrdelay`) AS `mean`
+        FROM airlines
+        GROUP BY 1
+      ) t3
+      ORDER BY `mean` DESC
+      LIMIT 10
+    ) t2
+      ON `dest` = t2.`dest`
+) t0
 GROUP BY 1"""
 
     assert result == expected

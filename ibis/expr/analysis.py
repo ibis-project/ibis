@@ -1019,8 +1019,13 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ir.TopKExpr):
-                    # TopK not subjected to further analysis for now
+                elif isinstance(arg, ir.TopKExpr):  # pragma: no cover
+                    # we don't cover this branch because its implementation as
+                    # a filter is automatically turned into a semi-join before
+                    # this code path is hit
+                    #
+                    # we should change its base class to Expr instead of
+                    # AnalyticExpr and then remove this branch
                     roots_valid.append(True)
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
