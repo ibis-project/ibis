@@ -284,3 +284,9 @@ def test_select_filter_mutate_fusion():
     # to remove materialize for some performance in the short term
     assert len(first_selection.op().selections) == 0
     assert len(first_selection.op().predicates) == 1
+
+
+def test_no_filter_means_no_selection():
+    t = ibis.table(dict(a="string"))
+    proj = t.filter([])
+    assert proj.equals(t)

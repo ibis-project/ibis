@@ -608,8 +608,9 @@ def apply_filter(expr, predicates):
 
             return ir.TableExpr(result)
 
-    result = ops.Selection(expr, [], predicates)
-    return ir.TableExpr(result)
+    if not predicates:
+        return expr
+    return ops.Selection(expr, [], predicates).to_expr()
 
 
 def _filter_selection(expr, predicates):
