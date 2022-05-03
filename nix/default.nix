@@ -70,6 +70,9 @@ import sources.nixpkgs {
             excludes = [ "third_party/LercLib/Lerc2.h" ];
           })
         ];
+        # TODO: remove this when in nixos-unstable-small (the fix is merged, but not in
+        # nixos-unstable-small yet)
+        meta.broken = false;
       });
 
       aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
