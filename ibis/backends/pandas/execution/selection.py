@@ -141,7 +141,7 @@ def compute_projection_column_expr(
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)
 def compute_projection_table_expr(expr, parent, data, **kwargs):
-    if expr is parent.table:
+    if expr.equals(parent.table):
         return data
 
     parent_table_op = parent.table.op()
