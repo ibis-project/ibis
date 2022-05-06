@@ -282,7 +282,6 @@ channels = ["conda-forge"]
 # conda-lock doesn't map dependencies' extras to conda-forge packages and we
 # use the array and dataframe extras from dask
 dask = ">=2021.10.0"
-gdal = ">=2,<3"
 
 [build-system]
 requires = [
