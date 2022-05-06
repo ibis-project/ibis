@@ -60,21 +60,6 @@ import sources.nixpkgs {
         '';
       };
 
-      gdal_2 = super.gdal_2.overrideAttrs (attrs: {
-        patches = (attrs.patches or [ ]) ++ [
-          (pkgs.fetchpatch {
-            url = "https://github.com/OSGeo/gdal/commit/7a18e2669a733ebe3544e4f5c735fd4d2ded5fa3.patch";
-            sha256 = "sha256-rBgIxJcgRzZR1gyzDWK/Sh7MdPWeczxEYVELbYEV8JY=";
-            relative = "gdal";
-            # this doesn't apply correctly because of line endings
-            excludes = [ "third_party/LercLib/Lerc2.h" ];
-          })
-        ];
-        # TODO: remove this when in nixos-unstable-small (the fix is merged, but not in
-        # nixos-unstable-small yet)
-        meta.broken = false;
-      });
-
       aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
         patches = (attrs.patches or [ ]) ++ [
           # https://github.com/aws/aws-sdk-cpp/pull/1912
