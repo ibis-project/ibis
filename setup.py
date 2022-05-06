@@ -80,7 +80,7 @@ extras_require = {
         'impyla[kerberos]>=0.17,<0.19',
         'lz4>=3.1.10,<5',
         'psycopg2>=2.8.4,<3',
-        'pyarrow>=1,<8',
+        'pyarrow>=1,<9',
         'pymysql>=1,<2',
         'pyspark>=3,<4',
         'requests>=2,<3',
@@ -92,7 +92,7 @@ extras_require = {
         'clickhouse-driver>=0.1,<0.3',
         'lz4>=3.1.10,<5',
     ],
-    'dask': ['dask[array,dataframe]>=2021.10.0', 'pyarrow>=1,<8'],
+    'dask': ['dask[array,dataframe]>=2021.10.0', 'pyarrow>=1,<9'],
     'datafusion': ['datafusion>=0.4,<0.6'],
     'duckdb': [
         'duckdb>=0.3.2,<0.4.0',
@@ -111,7 +111,7 @@ extras_require = {
     ],
     'mysql': ['pymysql>=1,<2', 'sqlalchemy>=1.4,<2.0'],
     'postgres': ['psycopg2>=2.8.4,<3', 'sqlalchemy>=1.4,<2.0'],
-    'pyspark': ['pyarrow>=1,<8', 'pyspark>=3,<4'],
+    'pyspark': ['pyarrow>=1,<9', 'pyspark>=3,<4'],
     'sqlite': ['sqlalchemy>=1.4,<2.0'],
     'visualization': ['graphviz>=0.16,<0.21'],
 }

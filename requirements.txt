@@ -122,7 +122,7 @@ pure-sasl==0.6.2
 py-cpuinfo==8.0.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
 py4j==0.10.9.3; python_version >= "3.6"
 py==1.11.0; python_version >= "3.7" and python_full_version < "3.0.0" and implementation_name == "pypy" or python_full_version >= "3.5.0" and python_version >= "3.7" and implementation_name == "pypy"
-pyarrow==7.0.0; python_version >= "3.7"
+pyarrow==8.0.0; python_version >= "3.7"
 pycodestyle==2.8.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 pycparser==2.21; python_version >= "3.7" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.7" and python_full_version >= "3.4.0"
 pydantic==1.9.0; python_full_version >= "3.6.1"
