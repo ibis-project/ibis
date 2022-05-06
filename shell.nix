@@ -12,7 +12,6 @@ let
     commitlint
     lychee
     # packaging
-    cachix
     niv
     poetry
   ];
