@@ -49,8 +49,6 @@ pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
 
   shellHook = ''
-    set -euo pipefail
-
     data_dir="$PWD/ci/ibis-testing-data"
     mkdir -p "$data_dir"
     chmod u+rwx "$data_dir"
