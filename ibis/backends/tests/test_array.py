@@ -113,7 +113,9 @@ def test_array_discovery(con):
             scalar_column=dt.float64,
         )
     )
-    assert t.schema() == expected
+    assert list(t.columns) == list(expected.names)
+    for name, typ in t.schema().items():
+        assert isinstance(typ, type(expected[name]))
 
 
 @unnest
@@ -161,6 +163,10 @@ def test_unnest_complex(con):
     "pyspark",
     reason="pyspark throws away nulls in collect_list",
 )
+@pytest.mark.never(
+    "clickhouse",
+    reason="clickhouse throws away nulls in groupArray",
+)
 def test_unnest_idempotent(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -180,10 +186,10 @@ def test_unnest_no_nulls(con):
     array_types = con.table("array_types")
     df = array_types.execute()
     expr = (
-        array_types.select(["scalar_column", array_types.x.unnest().name("x")])
-        .filter(lambda t: t.x.notnull())
+        array_types.select(["scalar_column", array_types.x.unnest().name("y")])
+        .filter(lambda t: t.y.notnull())
         .group_by("scalar_column")
-        .aggregate(x=lambda t: t.x.collect())
+        .aggregate(x=lambda t: t.y.collect())
         .sort_by("scalar_column")
     )
     result = expr.execute()
@@ -196,3 +202,17 @@ def test_unnest_no_nulls(con):
         .reset_index()
     )
     tm.assert_frame_equal(result, expected)
+
+
+@unnest
+def test_unnest_unnamed(con):
+    array_types = con.table("array_types")
+    df = array_types.execute()
+    expr = (
+        array_types.x.cast("!array<int64>")
+        + ibis.array([1], type="!array<int64>")
+    ).unnest()
+    assert not expr.has_name()
+    result = expr.name("x").execute()
+    expected = df.x.map(lambda x: x + [1]).explode("x")
+    tm.assert_series_equal(result, expected.astype("float64"))
