@@ -658,6 +658,7 @@ operation_registry = {
     ops.Sum: _agg('sum'),
     ops.Max: _agg('max'),
     ops.Min: _agg('min'),
+    ops.ArrayCollect: _agg('groupArray'),
     ops.StandardDev: _agg_variance_like('stddev'),
     ops.Variance: _agg_variance_like('var'),
     ops.GroupConcat: _group_concat,
