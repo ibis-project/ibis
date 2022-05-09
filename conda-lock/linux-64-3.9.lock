@@ -156,7 +156,7 @@ https://conda.anaconda.org/conda-forge/linux-64/hdf5-1.12.1-nompi_h2386368_104.t
 https://conda.anaconda.org/conda-forge/noarch/heapdict-1.0.1-py_0.tar.bz2#77242bfb1e74a627fb06319b5a2d3b95
 https://conda.anaconda.org/conda-forge/noarch/idna-3.3-pyhd8ed1ab_0.tar.bz2#40b50b8b030f5f2f22085c062ed013dd
 https://conda.anaconda.org/conda-forge/noarch/iniconfig-1.1.1-pyh9f0ad1d_0.tar.bz2#39161f81cc5e5ca45b8226fbb06c6905
-https://conda.anaconda.org/conda-forge/linux-64/libgoogle-cloud-1.35.0-h6945097_2.tar.bz2#cd98869ef2ab424c943dcd3e1d8cd354
+https://conda.anaconda.org/conda-forge/linux-64/libgoogle-cloud-1.36.0-h6945097_0.tar.bz2#2c59ab40c22f2fc0d0eaaea6161537c5
 https://conda.anaconda.org/conda-forge/noarch/locket-1.0.0-pyhd8ed1ab_0.tar.bz2#91e27ef3d05cc772ce627e51cff111c4
 https://conda.anaconda.org/conda-forge/noarch/mccabe-0.6.1-py_1.tar.bz2#a326cb400c1ccd91789f3e7d02124d61
 https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.0-pyhd8ed1ab_0.tar.bz2#f8dab71fdc13b1bf29a01248b156d268
@@ -270,7 +270,7 @@ https://conda.anaconda.org/conda-forge/linux-64/typed-ast-1.5.3-py39hb9d737c_0.t
 https://conda.anaconda.org/conda-forge/noarch/typing-extensions-4.2.0-hd8ed1ab_1.tar.bz2#6d9d7480c5780514779967be2ee8b963
 https://conda.anaconda.org/conda-forge/linux-64/unicodedata2-14.0.0-py39hb9d737c_1.tar.bz2#ef84376736d1e8a814ccb06d1d814e6f
 https://conda.anaconda.org/conda-forge/noarch/zict-2.2.0-pyhd8ed1ab_0.tar.bz2#cd563d01df94e51f968645dbf3b310b0
-https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-7.0.0-py39h965a45d_4_cpu.tar.bz2#b03b51c36476a6e0db7b0348e0b8389c
+https://conda.anaconda.org/conda-forge/linux-64/arrow-cpp-7.0.0-py39heccc63a_5_cpu.tar.bz2#a69e3d24a34972dea810cc728474449c
 https://conda.anaconda.org/conda-forge/noarch/backports.functools_lru_cache-1.6.4-pyhd8ed1ab_0.tar.bz2#c5b3edc62d6309088f4970b3eaaa65a6
 https://conda.anaconda.org/conda-forge/noarch/black-22.3.0-pyhd8ed1ab_0.tar.bz2#7ecbfaae9a30b73c1a6e36e4a0debc03
 https://conda.anaconda.org/conda-forge/noarch/bleach-5.0.0-pyhd8ed1ab_0.tar.bz2#2a2ae7c56b8f72caba261363407b484a
@@ -353,7 +353,7 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-table-reader-plugin-1.0.0-p
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.2-pyhd8ed1ab_0.tar.bz2#3c4c9f5b3ae235dac5be51e119b39a82
 https://conda.anaconda.org/conda-forge/noarch/networkx-2.8-pyhd8ed1ab_0.tar.bz2#f23297b9fa680ba13f9fdfba58bb3064
 https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.29-pyha770c72_0.tar.bz2#9e720b57b22ef3032b4fb081697819dd
-https://conda.anaconda.org/conda-forge/linux-64/pyarrow-7.0.0-py39h42d110c_4_cpu.tar.bz2#8bd2b5162c43a6c0177774d7aaf1c98d
+https://conda.anaconda.org/conda-forge/linux-64/pyarrow-7.0.0-py39h42d110c_5_cpu.tar.bz2#d1711e4922ef0bda55af0759b5b985df
 https://conda.anaconda.org/conda-forge/noarch/pytest-xdist-2.5.0-pyhd8ed1ab_0.tar.bz2#1fdd1f3baccf0deb647385c677a1a48e
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.9-pyhd8ed1ab_0.tar.bz2#0ea179ee251aa7100807c35bc0252693
 https://conda.anaconda.org/conda-forge/linux-64/datafusion-0.4.0-py39h860a657_2.tar.bz2#44383c5f316bcf6fb69684c2d82dc554
