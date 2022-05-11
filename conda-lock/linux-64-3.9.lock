@@ -200,7 +200,7 @@ https://conda.anaconda.org/conda-forge/noarch/tokenize-rt-4.2.1-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/toml-0.10.2-pyhd8ed1ab_0.tar.bz2#f832c45a477c78bebd107098db465095
 https://conda.anaconda.org/conda-forge/noarch/tomli-2.0.1-pyhd8ed1ab_0.tar.bz2#5844808ffab9ebdb694585b50ba02a96
 https://conda.anaconda.org/conda-forge/noarch/toolz-0.11.2-pyhd8ed1ab_0.tar.bz2#f348d1590550371edfac5ed3c1d44f7e
-https://conda.anaconda.org/conda-forge/noarch/traitlets-5.1.1-pyhd8ed1ab_0.tar.bz2#a1bc9765ef9499760e88f568b3a6622c
+https://conda.anaconda.org/conda-forge/noarch/traitlets-5.2.0-pyhd8ed1ab_0.tar.bz2#b81786ff00b93d07560ea21d98a2b266
 https://conda.anaconda.org/conda-forge/noarch/typing-3.10.0.0-pyhd8ed1ab_0.tar.bz2#e6573ac68718f17b9d4f5c8eda3190f2
 https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.2.0-pyha770c72_1.tar.bz2#f0f7e024f94e23d3bfee0ab777bf335a
 https://conda.anaconda.org/conda-forge/noarch/verspec-0.1.0-pyhd8ed1ab_0.tar.bz2#64ebfc29e8399f3eeaf17cb2bd04e770
@@ -260,7 +260,7 @@ https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py39hb9d737c_4.tar.bz
 https://conda.anaconda.org/conda-forge/linux-64/pyzmq-22.3.0-py39headdf64_2.tar.bz2#79fce3734cb80a666837952b6a712ddb
 https://conda.anaconda.org/conda-forge/linux-64/regex-2022.4.24-py39hb9d737c_0.tar.bz2#9b1b96525a3c8304ee3e450f387e136f
 https://conda.anaconda.org/conda-forge/linux-64/rtree-1.0.0-py39hb102c33_1.tar.bz2#d760762fcdeadd7637dc7756c30b601c
-https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.1.0-py39hf3d152e_0.tar.bz2#199fa7c3b8ea037543cce82563918a59
+https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.2.0-py39hf3d152e_0.tar.bz2#4f0ba4202e0251b4b419a4540cce29be
 https://conda.anaconda.org/conda-forge/linux-64/thrift-0.16.0-py39h5a03fae_1.tar.bz2#b8ead51b8f8eb6f19af7ca9ced2965e9
 https://conda.anaconda.org/conda-forge/linux-64/tiledb-2.8.2-h1e4a385_0.tar.bz2#6d7fd75ababc7e3ad81dbc03c7b5d808
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
@@ -279,7 +279,7 @@ https://conda.anaconda.org/conda-forge/noarch/click-plugins-1.1.1-py_0.tar.bz2#4
 https://conda.anaconda.org/conda-forge/noarch/cligj-0.7.2-pyhd8ed1ab_1.tar.bz2#a29b7c141d6b2de4bb67788a5f107734
 https://conda.anaconda.org/conda-forge/linux-64/cryptography-36.0.2-py39hd97740a_1.tar.bz2#dbd00b111b182f40ecf998c8289fc4a2
 https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.5.0-pyhd8ed1ab_0.tar.bz2#3aef8ad6f9af56117e959a53cb9b9fd1
-https://conda.anaconda.org/conda-forge/noarch/dunamai-1.11.1-pyhd8ed1ab_0.tar.bz2#f1215f57f5294c5da1daf08464f99bef
+https://conda.anaconda.org/conda-forge/noarch/dunamai-1.12.0-pyhd8ed1ab_0.tar.bz2#54d78f5785b553075286b9121b8fff65
 https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_2.tar.bz2#a824bd55ce47e9c637427f730c651231
 https://conda.anaconda.org/conda-forge/linux-64/fonttools-4.33.3-py39hb9d737c_0.tar.bz2#43f3c538bbcf6ed0da225891e11bf0a8
 https://conda.anaconda.org/conda-forge/noarch/ghp-import-2.1.0-pyhd8ed1ab_0.tar.bz2#6d8d61116031a3f5b1f32e7899785866
@@ -296,7 +296,7 @@ https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.3.0-pyhd8ed1ab_0
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/linux-64/mypy-0.942-py39hb9d737c_0.tar.bz2#e1dfb7ab4c09a3d296a7578db70bdc56
 https://conda.anaconda.org/conda-forge/linux-64/pandas-1.4.2-py39h1832856_1.tar.bz2#264505bcd299b8d564195cfb3e6038f0
-https://conda.anaconda.org/conda-forge/linux-64/poppler-22.01.0-h1434ded_2.tar.bz2#85d8750bb8139ef061302511bf471c21
+https://conda.anaconda.org/conda-forge/linux-64/poppler-22.04.0-h1434ded_0.tar.bz2#864687071a99df6f24dd587b77e4c753
 https://conda.anaconda.org/conda-forge/noarch/pyaml-21.10.1-pyhd8ed1ab_0.tar.bz2#dd38ba892254ba8f8594c34be6198d27
 https://conda.anaconda.org/conda-forge/linux-64/pydantic-1.9.0-py39hb9d737c_1.tar.bz2#5e0f9261bada9bc3cbd4269240993f0b
 https://conda.anaconda.org/conda-forge/noarch/pygments-2.11.2-pyhd8ed1ab_0.tar.bz2#caef60540e2239e27bf62569a5015e3b
@@ -319,14 +319,14 @@ https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea
 https://conda.anaconda.org/conda-forge/noarch/geopandas-base-0.10.2-pyha770c72_1.tar.bz2#10584badfcd9fa04e6fc9a4d5dad1513
 https://conda.anaconda.org/conda-forge/noarch/impyla-0.17.0-pyhd8ed1ab_2.tar.bz2#6c2b6b92dacfa3e9fb974849c16b6e80
 https://conda.anaconda.org/conda-forge/noarch/jupyterlab_pygments-0.2.2-pyhd8ed1ab_0.tar.bz2#243f63592c8e449f40cd42eb5cf32f40
-https://conda.anaconda.org/conda-forge/linux-64/libgdal-3.4.2-hb785293_6.tar.bz2#32e7620fb49a6c4974e57825df9dba74
+https://conda.anaconda.org/conda-forge/linux-64/libgdal-3.4.2-h56144a5_7.tar.bz2#02add399b63844e59ef3df4e7854a861
 https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.5.2-py39h700656a_0.tar.bz2#ab1bcd0fd24e375f16d662e4cc783cab
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-1.3.0-pyhd8ed1ab_0.tar.bz2#58749db4f2cbec8b1658f30f46f1193f
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-extensions-1.0.3-pyhd8ed1ab_1.tar.bz2#2df48c1418df3742e8d0731502b7fd30
 https://conda.anaconda.org/conda-forge/noarch/nbformat-5.4.0-pyhd8ed1ab_0.tar.bz2#770f6659243e2c79a0b8488b0e463bd1
 https://conda.anaconda.org/conda-forge/linux-64/pango-1.50.7-hbd2fdc8_0.tar.bz2#1cff4bab8ed133d59b7c22fe7bf09263
 https://conda.anaconda.org/conda-forge/noarch/parquet-cpp-1.5.1-2.tar.bz2#79a5f78c42817594ae016a7896521a97
-https://conda.anaconda.org/conda-forge/noarch/poetry-dynamic-versioning-0.15.0-pyhd8ed1ab_0.tar.bz2#71faf1525dde5a99eefc5afc404ed871
+https://conda.anaconda.org/conda-forge/noarch/poetry-dynamic-versioning-0.16.0-pyhd8ed1ab_0.tar.bz2#97dfc21c679cd70ac361b5d855910b86
 https://conda.anaconda.org/conda-forge/noarch/pymdown-extensions-9.3-pyhd8ed1ab_0.tar.bz2#c0123a00c0bb79ad57ae43e85e4df596
 https://conda.anaconda.org/conda-forge/noarch/pyopenssl-22.0.0-pyhd8ed1ab_0.tar.bz2#1d7e241dfaf5475e893d4b824bb71b44
 https://conda.anaconda.org/conda-forge/noarch/pytest-benchmark-3.4.1-pyhd8ed1ab_0.tar.bz2#b43432959097d928368777783a113eaa
@@ -338,7 +338,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.11.0-pyhd8ed1ab_
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
 https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.0.2-py39h4dfa638_0.tar.bz2#389a22c8af77c8575a8a848fef79790e
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
-https://conda.anaconda.org/conda-forge/linux-64/gdal-3.4.2-py39hc691d54_6.tar.bz2#98c29845bb963e073efbcc5140a55ca9
+https://conda.anaconda.org/conda-forge/linux-64/gdal-3.4.2-py39hc691d54_7.tar.bz2#05cfa415810269575542af7f14380b91
 https://conda.anaconda.org/conda-forge/linux-64/gtk2-2.24.33-h90689f9_2.tar.bz2#957a0255ab58aaf394a91725d73ab422
 https://conda.anaconda.org/conda-forge/noarch/jupytext-1.13.8-pyh4b9bcc7_0.tar.bz2#aba00353637aa69640ec2ae150dc592d
 https://conda.anaconda.org/conda-forge/linux-64/librsvg-2.52.5-h0a9e6e8_3.tar.bz2#a08562889b985d021550e22443cf0fce
@@ -350,7 +350,7 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-git-revision-date-localized
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-literate-nav-0.4.1-pyhd8ed1ab_0.tar.bz2#93e0ddb91f9fb615fa3f9cda31434447
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.2.14-pyhd8ed1ab_0.tar.bz2#a573d0a85b24b24c4ccdf4a8f9fa7e9e
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-table-reader-plugin-1.0.0-pyhd8ed1ab_0.tar.bz2#e4a9e7019d3d1b8a52d792b86c6fc082
-https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.2-pyhd8ed1ab_0.tar.bz2#3c4c9f5b3ae235dac5be51e119b39a82
+https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.3-pyhd8ed1ab_0.tar.bz2#d9fd2a7bc1b4cabf52f114f9602e5b0a
 https://conda.anaconda.org/conda-forge/noarch/networkx-2.8-pyhd8ed1ab_0.tar.bz2#f23297b9fa680ba13f9fdfba58bb3064
 https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.29-pyha770c72_0.tar.bz2#9e720b57b22ef3032b4fb081697819dd
 https://conda.anaconda.org/conda-forge/linux-64/pyarrow-7.0.0-py39h42d110c_5_cpu.tar.bz2#d1711e4922ef0bda55af0759b5b985df
@@ -377,7 +377,7 @@ https://conda.anaconda.org/conda-forge/linux-64/ipykernel-6.13.0-py39hef51801_0.
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-pandoc-6.5.0-pyhd8ed1ab_0.tar.bz2#d7421adfc67100021d87032447066129
 https://conda.anaconda.org/conda-forge/noarch/python-graphviz-0.20-pyhaef67bd_0.tar.bz2#1ad62524f66312181161a935485c277b
 https://conda.anaconda.org/conda-forge/noarch/questionary-1.10.0-pyhd8ed1ab_1.tar.bz2#c48bf69327994b33a7036fa835b8989e
-https://conda.anaconda.org/conda-forge/noarch/commitizen-2.24.0-pyhd8ed1ab_0.tar.bz2#4df3e76e096ded537371f71ea6aa18f8
+https://conda.anaconda.org/conda-forge/noarch/commitizen-2.25.0-pyhd8ed1ab_0.tar.bz2#3814ae5286a62d458c5142f4f9867b92
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_1.tar.bz2#0682614964c1319304cfa554cbce90f0
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-6.5.0-pyhd8ed1ab_0.tar.bz2#156c180588e38b9f41758058824ec50f
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-jupyter-0.20.1-pyhd8ed1ab_0.tar.bz2#3dc9a9031af39d9d68d0930449bfc574
