@@ -54,18 +54,16 @@ self: super:
     TABULATE_INSTALL = "lib-only";
   });
 
-  pandas = super.pandas.overridePythonAttrs (_: {
+  pandas = super.pandas.overridePythonAttrs (attrs: {
     format = "setuptools";
     enableParallelBuilding = true;
+    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
 
-  pydantic = super.pydantic.overridePythonAttrs (_: {
+  pydantic = super.pydantic.overridePythonAttrs (attrs: {
     format = "setuptools";
     enableParallelBuilding = true;
-  });
-
-  atpublic = super.atpublic.overridePythonAttrs (attrs: {
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ]) ++ [ self.pdm-pep517 ];
+    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
 
   mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
