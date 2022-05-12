@@ -81,7 +81,7 @@ https://conda.anaconda.org/conda-forge/noarch/attrs-21.4.0-pyhd8ed1ab_0.tar.bz2#
 https://conda.anaconda.org/conda-forge/win-64/aws-c-io-0.10.5-h2fe331c_0.tar.bz2#d38ee034f93fb73f3f222d1be1e9c3a3
 https://conda.anaconda.org/conda-forge/noarch/backcall-0.2.0-pyh9f0ad1d_0.tar.bz2#6006a6d08a3fa99268a2681c7fb55213
 https://conda.anaconda.org/conda-forge/noarch/backports-1.0-py_2.tar.bz2#0da16b293affa6ac31812376f8eb79dd
-https://conda.anaconda.org/conda-forge/win-64/blosc-1.21.1-hf5c711b_1.tar.bz2#c03a43e2218ea2aa3349e666351a93b4
+https://conda.anaconda.org/conda-forge/win-64/blosc-1.21.1-h74325e0_2.tar.bz2#f8319b1bd5b5bc71d40534196ed5a538
 https://conda.anaconda.org/conda-forge/win-64/boost-cpp-1.74.0-h9f4b32c_8.tar.bz2#44f135fe326c0f8bac7a82a320b6e3a7
 https://conda.anaconda.org/conda-forge/win-64/brotli-bin-1.0.9-h8ffe710_7.tar.bz2#fd458f76be2068973734834202ac0352
 https://conda.anaconda.org/conda-forge/noarch/cached_property-1.5.2-pyha770c72_1.tar.bz2#576d629e47797577ab0f1b351297ef4a
@@ -134,7 +134,7 @@ https://conda.anaconda.org/conda-forge/noarch/pycodestyle-2.8.0-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/pycparser-2.21-pyhd8ed1ab_0.tar.bz2#076becd9e05608f8dc72757d5f3a91ff
 https://conda.anaconda.org/conda-forge/noarch/pyflakes-2.4.0-pyhd8ed1ab_0.tar.bz2#1aa3ecd37d0694e2ea5fef48da75371e
 https://conda.anaconda.org/conda-forge/noarch/pymysql-1.0.2-pyhd8ed1ab_0.tar.bz2#6b3c16769e390b5b60729d2eb46b8144
-https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.0.8-pyhd8ed1ab_0.tar.bz2#7f5738c49fdccd0fc755bfd25a5ea66c
+https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.0.9-pyhd8ed1ab_0.tar.bz2#e8fbc1b54b25f4b08281467bc13b70cc
 https://conda.anaconda.org/conda-forge/noarch/python-fastjsonschema-2.15.3-pyhd8ed1ab_0.tar.bz2#fae309d1cc996da1f63de9d321e65e27
 https://conda.anaconda.org/conda-forge/win-64/python_abi-3.8-2_cp38.tar.bz2#80b95487563108d4cf92ff6384050751
 https://conda.anaconda.org/conda-forge/noarch/pytz-2022.1-pyhd8ed1ab_0.tar.bz2#b87d66d6d3991d988fb31510c95a9267
@@ -170,7 +170,7 @@ https://conda.anaconda.org/conda-forge/noarch/astunparse-1.6.3-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/win-64/aws-c-event-stream-0.2.7-h70e1b0c_13.tar.bz2#c5946a20e3d686659e2173f4921160a7
 https://conda.anaconda.org/conda-forge/noarch/babel-2.10.1-pyhd8ed1ab_0.tar.bz2#2ec70a4a964b696170d730466c668f60
 https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.11.1-pyha770c72_0.tar.bz2#eeec8814bd97b2681f708bb127478d7d
-https://conda.anaconda.org/conda-forge/win-64/bitarray-2.5.0-py38h294d835_0.tar.bz2#65c1310f560809b1a6bd8cf44ecc89e9
+https://conda.anaconda.org/conda-forge/win-64/bitarray-2.5.1-py38h294d835_0.tar.bz2#fb70f447fdc7bd175ea3bf5970d2ec7e
 https://conda.anaconda.org/conda-forge/win-64/brotli-1.0.9-h8ffe710_7.tar.bz2#bdd3236d1f6962e8e6953276d12b7e5b
 https://conda.anaconda.org/conda-forge/noarch/cached-property-1.5.2-hd8ed1ab_1.tar.bz2#9b347a7ec10940d3f7941ff6c460b551
 https://conda.anaconda.org/conda-forge/win-64/certifi-2021.10.8-py38haa244fe_2.tar.bz2#632c416a7b1cda7712254bc58dd3de10
@@ -190,7 +190,7 @@ https://conda.anaconda.org/conda-forge/win-64/jedi-0.18.1-py38haa244fe_1.tar.bz2
 https://conda.anaconda.org/conda-forge/win-64/kiwisolver-1.4.2-py38hbd9d945_1.tar.bz2#171f7a504550a6093548f618df9a76f5
 https://conda.anaconda.org/conda-forge/win-64/lcms2-2.12-h2a16943_0.tar.bz2#fee639c27301c4165b4d1f7e442de8a5
 https://conda.anaconda.org/conda-forge/win-64/libcblas-3.9.0-14_win64_mkl.tar.bz2#b73477bd66b6efdcbcb8c7fb527794ae
-https://conda.anaconda.org/conda-forge/win-64/libcurl-7.83.0-h789b8ee_0.tar.bz2#0c7e764a98eb659044653fee48ad288e
+https://conda.anaconda.org/conda-forge/win-64/libcurl-7.83.1-h789b8ee_0.tar.bz2#b70caa5b0251f09a47eeae9f8fc0f5b2
 https://conda.anaconda.org/conda-forge/win-64/libkml-1.3.0-h9859afa_1014.tar.bz2#db1f77738473f157772146f003298cf7
 https://conda.anaconda.org/conda-forge/win-64/liblapack-3.9.0-14_win64_mkl.tar.bz2#741ce71c5f5522fbec9508830b05cc32
 https://conda.anaconda.org/conda-forge/win-64/libxcb-1.13-hcd874cb_1004.tar.bz2#a6d7fd030532378ecb6ba435cd9f8234
@@ -238,7 +238,7 @@ https://conda.anaconda.org/conda-forge/win-64/cfitsio-4.1.0-h5a969a9_0.tar.bz2#d
 https://conda.anaconda.org/conda-forge/noarch/click-plugins-1.1.1-py_0.tar.bz2#4fd2c6b53934bd7d96d1f3fdaf99b79f
 https://conda.anaconda.org/conda-forge/noarch/cligj-0.7.2-pyhd8ed1ab_1.tar.bz2#a29b7c141d6b2de4bb67788a5f107734
 https://conda.anaconda.org/conda-forge/win-64/cryptography-36.0.2-py38hb7941b4_1.tar.bz2#e8c71e699193603b90555aec63d5e60f
-https://conda.anaconda.org/conda-forge/win-64/curl-7.83.0-h789b8ee_0.tar.bz2#ad266a3d029045df8f107d06e6159a0a
+https://conda.anaconda.org/conda-forge/win-64/curl-7.83.1-h789b8ee_0.tar.bz2#21321b6738d077e54fadfce08a41f5c7
 https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.5.0-pyhd8ed1ab_0.tar.bz2#3aef8ad6f9af56117e959a53cb9b9fd1
 https://conda.anaconda.org/conda-forge/noarch/dunamai-1.12.0-pyhd8ed1ab_0.tar.bz2#54d78f5785b553075286b9121b8fff65
 https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_2.tar.bz2#a824bd55ce47e9c637427f730c651231
@@ -299,7 +299,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-cov-3.0.0-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/noarch/pytest-forked-1.4.0-pyhd8ed1ab_0.tar.bz2#95286e05a617de9ebfe3246cecbfb72f
 https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.7.0-pyhd8ed1ab_1.tar.bz2#6af5653a74c450ddc16ef5b39d2dedcd
 https://conda.anaconda.org/conda-forge/noarch/pytest-profiling-1.7.0-py_1.tar.bz2#4dc5c2917451a73cc7532fc893e2daea
-https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.11.0-pyhd8ed1ab_0.tar.bz2#37df2db1b3369bc58b24d6066cc82a7c
+https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.12.0-pyhd8ed1ab_0.tar.bz2#c428aad352580a0d3264740a4dd5aeae
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
 https://conda.anaconda.org/conda-forge/win-64/scipy-1.8.0-py38ha1292f7_1.tar.bz2#18623ace6c1d5a2e1c1b294cab3f994c
 https://conda.anaconda.org/conda-forge/win-64/shapely-1.8.2-py38h1e1a050_1.tar.bz2#56d0e7895ffb3f6e7b923ce2a1435496
