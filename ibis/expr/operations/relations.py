@@ -79,6 +79,67 @@ class UnboundTable(PhysicalTable):
 
 
 @public
+class LocalTable(PhysicalTable):
+    schema = rlz.instance_of(sch.Schema)
+    name = rlz.instance_of(str)
+
+
+@public
+class LocalWrite(TableNode, sch.HasSchema):
+    table = rlz.table
+    name = rlz.instance_of(str)
+
+    @cached_property
+    def schema(self):
+        return self.table.schema()
+
+
+@public
+class AsOfMerge(TableNode, sch.HasSchema):
+    tolerance = rlz.instance_of(int)
+    table0 = rlz.optional(rlz.table)
+    key_column0 = rlz.optional(rlz.column_from("table0"))
+    time_column0 = rlz.optional(rlz.column_from("table0"))
+    table1 = rlz.optional(rlz.table)
+    key_column1 = rlz.optional(rlz.column_from("table1"))
+    time_column1 = rlz.optional(rlz.column_from("table1"))
+    table2 = rlz.optional(rlz.table)
+    key_column2 = rlz.optional(rlz.column_from("table2"))
+    time_column2 = rlz.optional(rlz.column_from("table2"))
+    table3 = rlz.optional(rlz.table)
+    key_column3 = rlz.optional(rlz.column_from("table3"))
+    time_column3 = rlz.optional(rlz.column_from("table3"))
+    table4 = rlz.optional(rlz.table)
+    key_column4 = rlz.optional(rlz.column_from("table4"))
+    time_column4 = rlz.optional(rlz.column_from("table4"))
+    table5 = rlz.optional(rlz.table)
+    key_column5 = rlz.optional(rlz.column_from("table5"))
+    time_column5 = rlz.optional(rlz.column_from("table5"))
+
+    @cached_property
+    def schema(self):
+        return sch.Schema.merge([table.schema() for table in self.tables])
+
+    @cached_property
+    def tables(self):
+        return [t for t in [getattr(self, f"table{i}") for i in range(6)]
+                if t is not None
+               ]
+
+    @cached_property
+    def key_columns(self):
+        return [t for t in [getattr(self, f"key_column{i}") for i in range(6)]
+                if t is not None
+               ]
+
+    @cached_property
+    def time_columns(self):
+        return [t for t in [getattr(self, f"time_column{i}") for i in range(6)]
+                if t is not None
+               ]
+
+
+@public
 class DatabaseTable(PhysicalTable):
     name = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)

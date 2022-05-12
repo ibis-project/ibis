@@ -143,6 +143,16 @@ class Schema(Annotable, Comparable):
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return Schema(names, types)
 
+    @classmethod
+    def merge(cls, schemas):
+        named_types = collections.OrderedDict()
+        for schema in schemas:
+            for name, dtype in schema.items():
+                if name in named_types and named_types[name] != dtype:
+                    raise ValueError("Failed to merge schemas: '{}'={}!={}" % (name, named_types[name], dtype))
+                named_types[name] = dtype
+        return Schema.from_dict(named_types)
+
     def __gt__(self, other):
         return set(self.items()) > set(other.items())
 

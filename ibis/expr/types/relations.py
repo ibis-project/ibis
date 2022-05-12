@@ -666,6 +666,68 @@ class TableExpr(Expr):
 
     projection = select
 
+    def local_write(table: ir.TableExpr, name: str | None = None) -> ir.TableExpr:
+        """Create a local-write of a table.
+
+        Parameters
+        ----------
+        table
+            Table expression for the local-write
+        name
+            Name of local file or files for the write
+
+        Returns
+        -------
+        TableExpr
+            A table expression with the same schema
+        """
+        node = ops.LocalWrite(table, name=name)
+        return node.to_expr()
+
+    def as_of_merge(
+        table: ir.TableExpr,
+        more_tables: List[ir.TableExpr],
+        key_column: str,
+        time_column: str,
+        tolerance: int
+    ) -> ir.TableExpr:
+        """Create an as-of-merge of a table.
+
+
+        Parameters
+        ----------
+        table
+            Table expression for the as-of-merge
+        more_tables
+            More tables to include in the as-of-merge
+        key_column
+            Name of int32-typed key-column for the as-of-merge
+        time_column
+            Name of int64-typed time-column for the as-of-merge
+        tolerance
+            Time tolerance for the as-of-merge
+
+        Returns
+        -------
+        TableExpr
+            A table expression with the merged schema
+        """
+        from ibis.expr import operations as ops
+
+        all_tables = [table] + more_tables
+        node = ops.AsOfMerge(
+            tolerance,
+            *[arg
+              for t in all_tables
+              for arg in [
+                          t,
+                          t.get_column(key_column),
+                          t.get_column(time_column),
+                         ]
+              ]
+        )
+        return node.to_expr()
+
     def relabel(self, substitutions: Mapping[str, str]) -> TableExpr:
         """Change table column names, otherwise leaving table unaltered.
 

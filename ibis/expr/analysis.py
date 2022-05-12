@@ -826,7 +826,7 @@ class Projector:
         )
         self.clean_exprs = list(map(windowize_function, self.resolved_exprs))
 
-    def get_result(self):
+    def get_result(self, **kwargs):
         roots = self.parent_roots
         first_root = roots[0]
 
@@ -835,7 +835,7 @@ class Projector:
             if fused_op is not None:
                 return fused_op
 
-        return ops.Selection(self.parent, self.clean_exprs)
+        return ops.Selection(self.parent, self.clean_exprs, **kwargs)
 
     def try_fusion(self, root):
         assert self.parent.op() == root

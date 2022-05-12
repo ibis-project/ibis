@@ -178,6 +178,24 @@ class Clip(ValueOp):
 
 
 @public
+class ClipLower(ValueOp):
+    arg = rlz.strict_numeric
+    lower = rlz.optional(rlz.strict_numeric)
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("args")
+
+
+@public
+class ClipUpper(ValueOp):
+    arg = rlz.strict_numeric
+    upper = rlz.optional(rlz.strict_numeric)
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("args")
+
+
+@public
 class BaseConvert(ValueOp):
     arg = rlz.one_of([rlz.integer, rlz.string])
     from_base = rlz.integer

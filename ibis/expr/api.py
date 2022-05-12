@@ -178,6 +178,7 @@ __all__ = (
     'join',
     'least',
     'literal',
+    'local_table',
     'map',
     'NA',
     'negate',
@@ -321,6 +322,29 @@ def table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
         schema = _schema(pairs=schema)
 
     node = ops.UnboundTable(schema, name=name)
+    return node.to_expr()
+
+
+def local_table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
+    """Create a local table for build expressions without data.
+
+
+    Parameters
+    ----------
+    schema
+        A schema for the table
+    name
+        Name of local file or files of the table
+
+    Returns
+    -------
+    TableExpr
+        A local table expression
+    """
+    if not isinstance(schema, Schema):
+        schema = _schema(pairs=schema)
+
+    node = ops.LocalTable(schema, name=name)
     return node.to_expr()
 
 

@@ -112,7 +112,57 @@ class NumericValue(AnyValue):
                 "at least one of lower and upper must be provided"
             )
 
-        return ops.Clip(self, lower, upper).to_expr()
+        if lower is None:
+            op = ops.ClipUpper(self, upper)
+        elif upper is None:
+            op = ops.ClipLower(self, lower)
+        else:
+            op = ops.Clip(self, lower, upper)
+        return op.to_expr()
+
+    def clip_lower(
+        bound: ir.NumericValue | None = None,
+    ) -> ir.NumericValue:
+        """
+        Trim values at lower threshold.
+
+        Parameters
+        ----------
+        bound
+            Lower bound
+
+        Returns
+        -------
+        NumericValue
+            Clipped input
+        """
+        if bound is None:
+            raise ValueError("lower bound must be provided")
+
+        op = ops.ClipLower(self, bound)
+        return op.to_expr()
+
+    def clip_upper(
+        bound: ir.NumericValue | None = None,
+    ) -> ir.NumericValue:
+        """
+        Trim values at upper threshold.
+
+        Parameters
+        ----------
+        bound
+            Upper bound
+
+        Returns
+        -------
+        NumericValue
+            Clipped input
+        """
+        if bound is None:
+            raise ValueError("upper bound must be provided")
+
+        op = ops.ClipUpper(self, bound)
+        return op.to_expr()
 
     def abs(self) -> NumericValue:
         """Return the absolute value of `self`."""
