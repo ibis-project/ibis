@@ -89,4 +89,8 @@ self: super:
       make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
     '';
   });
+
+  traitlets = super.traitlets.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
+  });
 }
