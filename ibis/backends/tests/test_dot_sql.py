@@ -15,7 +15,21 @@ dot_sql_never = pytest.mark.never(
 
 @dot_sql_notimpl
 @dot_sql_never
-def test_dot_sql(backend, con):
+@pytest.mark.parametrize(
+    "dialect1",
+    [
+        pytest.param(dialect, id=f"{dialect}_dialect")
+        for dialect in (None, "mysql", "duckdb", "pyspark", "postgres")
+    ],
+)
+@pytest.mark.parametrize(
+    "dialect2",
+    [
+        pytest.param(dialect, id=f"{dialect}_dialect")
+        for dialect in (None, "mysql", "duckdb", "pyspark", "postgres")
+    ],
+)
+def test_dot_sql(backend, con, dialect1, dialect2):
     alltypes = con.table("functional_alltypes")
     t = (
         alltypes.sql(
@@ -24,12 +38,16 @@ def test_dot_sql(backend, con):
                 string_col as s,
                 double_col + 1.0 AS new_col
             FROM functional_alltypes
-            """
+            """,
+            dialect=dialect1,
         )
         .group_by("s")  # group by a column from SQL
         .aggregate(fancy_af=lambda t: t.new_col.mean())
         .alias("awesome_t")  # create a name for the aggregate
-        .sql("SELECT fancy_af AS yas FROM awesome_t ORDER BY fancy_af")
+        .sql(
+            "SELECT fancy_af AS yas FROM awesome_t ORDER BY fancy_af",
+            dialect=dialect2,
+        )
     )
 
     alltypes_df = alltypes.execute()
@@ -50,13 +68,20 @@ def test_dot_sql(backend, con):
 @dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.parametrize(
-    "dialect",
+    "dialect1",
     [
         pytest.param(dialect, id=f"{dialect}_dialect")
-        for dialect in ("mysql", "duckdb", "pyspark", "postgres")
+        for dialect in (None, "mysql", "duckdb", "pyspark", "postgres")
     ],
 )
-def test_dot_sql_with_join(backend, con, dialect):
+@pytest.mark.parametrize(
+    "dialect2",
+    [
+        pytest.param(dialect, id=f"{dialect}_dialect")
+        for dialect in (None, "mysql", "duckdb", "pyspark", "postgres")
+    ],
+)
+def test_dot_sql_with_join(backend, con, dialect1, dialect2):
     alltypes = con.table("functional_alltypes")
     t = (
         alltypes.sql(
@@ -65,7 +90,8 @@ def test_dot_sql_with_join(backend, con, dialect):
                 string_col as s,
                 double_col + 1.0 AS new_col
             FROM functional_alltypes
-            """
+            """,
+            dialect=dialect1,
         )
         .alias("ft")
         .group_by("s")  # group by a column from SQL
@@ -80,7 +106,7 @@ def test_dot_sql_with_join(backend, con, dialect):
             LEFT JOIN ft AS r
             ON l.s = r.s
             """,
-            dialect=dialect,
+            dialect=dialect2,
         )
         .sort_by(["s", "yas"])
     )

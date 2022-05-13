@@ -25,7 +25,7 @@ cligj==0.7.2; python_version >= "3.7" and python_full_version < "3.0.0" or pytho
 cloudpickle==2.0.0; python_version >= "3.8"
 colorama==0.4.4; platform_system == "Windows" and python_version >= "3.7" and python_full_version >= "3.6.2" and python_full_version < "4.0.0" and (python_version >= "3.8" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.8" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") or sys_platform == "win32" and python_version >= "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and python_full_version >= "3.5.0")
 commitizen==2.25.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
-coverage==6.3.2; python_version >= "3.7"
+coverage==6.3.3; python_version >= "3.7"
 dask==2022.5.0; python_version >= "3.8"
 datafusion==0.5.2; python_version >= "3.6"
 debugpy==1.6.0; python_version >= "3.7"
