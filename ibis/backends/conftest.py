@@ -127,20 +127,37 @@ def pytest_collection_modifyitems(session, config, items):
             # anything else is a "core" test and is run by default
             item.add_marker(pytest.mark.core)
 
-        if "sqlite" in item.nodeid:
-            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
-        if "duckdb" in item.nodeid:
-            item.add_marker(pytest.mark.xdist_group(name="duckdb"))
-
-        try:
-            callspec = item.callspec
-        except AttributeError:
-            pass
+        backend_tests_requiring_one_process = ("sqlite", "duckdb")
+        if backend in backend_tests_requiring_one_process:
+            item.add_marker(pytest.mark.xdist_group(name=backend))
         else:
-            if (
-                backend := callspec.params.get("backend", "")
-            ) == "mysql" and "dot_sql" in item.nodeid:
-                item.add_marker(pytest.mark.xdist_group(name=backend))
+            try:
+                callspec = item.callspec
+            except AttributeError:
+                pass
+            else:
+                # tests that hot dot_sql or are for the sqlite or duckdb
+                # backends must be run in the same process
+                #
+                # 1. sqlite does not work across processes
+                # 2. duckdb allows reads across processes but only in read-only
+                #    mode, and we test writing with the same backend connection
+                # 3. dot sql functionality stores process specific state to
+                #    allow overwriting the same temporary view, which makes it
+                #    fail when the same expression is executed in two different
+                #    processes
+                (backend,) = tuple(
+                    value
+                    for name, value in callspec.params.items()
+                    if "backend" in name
+                ) or (None,)
+                must_run_in_same_process = (
+                    "dot_sql" in item.nodeid
+                    or backend in backend_tests_requiring_one_process
+                )
+                if must_run_in_same_process:
+                    assert backend is not None
+                    item.add_marker(pytest.mark.xdist_group(name=backend))
 
 
 @lru_cache(maxsize=None)
