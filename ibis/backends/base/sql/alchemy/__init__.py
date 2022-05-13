@@ -514,6 +514,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         compiled = definition.compile()
         defn = self._get_temp_view_definition(name, definition=compiled)
         query = sa.text(defn).bindparams(**compiled.params)
-        self.con.execute(query, definition)
+        self.con.execute(query)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
