@@ -6,6 +6,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.backends.base.sql.registry import binary_infix
 from ibis.backends.clickhouse.datatypes import serialize
 from ibis.backends.clickhouse.identifiers import quote_identifier
 
@@ -149,43 +150,6 @@ def _agg_variance_like(func):
         return _aggregate(translator, variants[how], arg, where)
 
     return formatter
-
-
-def _binary_infix_op(infix_sym):
-    def formatter(translator, expr):
-        op = expr.op()
-
-        left, right = op.args
-        left_ = _parenthesize(translator, left)
-        right_ = _parenthesize(translator, right)
-
-        return f'{left_!s} {infix_sym!s} {right_!s}'
-
-    return formatter
-
-
-def _in(translator, expr):
-    op = expr.op()
-
-    left, right = op.args
-    if isinstance(right, ir.ListExpr) and not right:
-        return "FALSE"
-
-    left_ = _parenthesize(translator, left)
-    right_ = _parenthesize(translator, right)
-    return f"{left_} IN {right_}"
-
-
-def _not_in(translator, expr):
-    op = expr.op()
-
-    left, right = op.args
-    if isinstance(right, ir.ListExpr) and not right:
-        return "TRUE"
-
-    left_ = _parenthesize(translator, left)
-    right_ = _parenthesize(translator, right)
-    return f"{left_} NOT IN {right_}"
 
 
 def _call(translator, func, *args):
@@ -633,22 +597,22 @@ def _string_right(translator, expr):
 
 _binary_infix_ops = {
     # Binary operations
-    ops.Add: _binary_infix_op('+'),
-    ops.Subtract: _binary_infix_op('-'),
-    ops.Multiply: _binary_infix_op('*'),
-    ops.Divide: _binary_infix_op('/'),
+    ops.Add: binary_infix.binary_infix_op('+'),
+    ops.Subtract: binary_infix.binary_infix_op('-'),
+    ops.Multiply: binary_infix.binary_infix_op('*'),
+    ops.Divide: binary_infix.binary_infix_op('/'),
     ops.Power: _fixed_arity('pow', 2),
-    ops.Modulus: _binary_infix_op('%'),
+    ops.Modulus: binary_infix.binary_infix_op('%'),
     # Comparisons
-    ops.Equals: _binary_infix_op('='),
-    ops.NotEquals: _binary_infix_op('!='),
-    ops.GreaterEqual: _binary_infix_op('>='),
-    ops.Greater: _binary_infix_op('>'),
-    ops.LessEqual: _binary_infix_op('<='),
-    ops.Less: _binary_infix_op('<'),
+    ops.Equals: binary_infix.binary_infix_op('='),
+    ops.NotEquals: binary_infix.binary_infix_op('!='),
+    ops.GreaterEqual: binary_infix.binary_infix_op('>='),
+    ops.Greater: binary_infix.binary_infix_op('>'),
+    ops.LessEqual: binary_infix.binary_infix_op('<='),
+    ops.Less: binary_infix.binary_infix_op('<'),
     # Boolean comparisons
-    ops.And: _binary_infix_op('AND'),
-    ops.Or: _binary_infix_op('OR'),
+    ops.And: binary_infix.binary_infix_op('AND'),
+    ops.Or: binary_infix.binary_infix_op('OR'),
     ops.Xor: _xor,
 }
 
@@ -744,18 +708,18 @@ operation_registry = {
     ops.Least: _varargs('least'),
     ops.Where: _fixed_arity('if', 3),
     ops.Between: _between,
-    ops.Contains: _in,
-    ops.NotContains: _not_in,
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
-    ops.DateAdd: _binary_infix_op('+'),
-    ops.DateSub: _binary_infix_op('-'),
-    ops.DateDiff: _binary_infix_op('-'),
-    ops.TimestampAdd: _binary_infix_op('+'),
-    ops.TimestampSub: _binary_infix_op('-'),
-    ops.TimestampDiff: _binary_infix_op('-'),
+    ops.DateAdd: binary_infix.binary_infix_op('+'),
+    ops.DateSub: binary_infix.binary_infix_op('-'),
+    ops.DateDiff: binary_infix.binary_infix_op('-'),
+    ops.Contains: binary_infix.isin,
+    ops.NotContains: binary_infix.notin,
+    ops.TimestampAdd: binary_infix.binary_infix_op('+'),
+    ops.TimestampSub: binary_infix.binary_infix_op('-'),
+    ops.TimestampDiff: binary_infix.binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
     ops.ExistsSubquery: _exists_subquery,
     ops.NotExistsSubquery: _exists_subquery,
