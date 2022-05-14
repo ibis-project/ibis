@@ -2,6 +2,7 @@ import enum
 
 import parsy
 import pytest
+from pytest import param
 from toolz import identity
 
 import ibis
@@ -191,27 +192,47 @@ def test_invalid_member_of(obj, value, expected):
 @pytest.mark.parametrize(
     ('validator', 'values', 'expected'),
     [
-        (rlz.value_list_of(identity), (3, 2), ibis.sequence([3, 2])),
-        (rlz.value_list_of(rlz.integer), (3, 2), ibis.sequence([3, 2])),
-        (
+        param(
+            rlz.value_list_of(identity),
+            (3, 2),
+            ibis.sequence([3, 2]),
+            id="list_identity",
+        ),
+        param(
+            rlz.value_list_of(rlz.integer),
+            (3, 2),
+            ibis.sequence([3, 2]),
+            id="list_int",
+        ),
+        param(
             rlz.value_list_of(rlz.integer),
             (3, None),
             ibis.sequence([3, ibis.NA]),
+            id="list_int_null",
         ),
-        (rlz.value_list_of(rlz.string), ('a',), ibis.sequence(['a'])),
-        (rlz.value_list_of(rlz.string), ['a', 'b'], ibis.sequence(['a', 'b'])),
-        pytest.param(
+        param(
+            rlz.value_list_of(rlz.string),
+            ('a',),
+            ibis.sequence(['a']),
+            id="list_string_one",
+        ),
+        param(
+            rlz.value_list_of(rlz.string),
+            ['a', 'b'],
+            ibis.sequence(['a', 'b']),
+            id="list_string_two",
+        ),
+        param(
             rlz.value_list_of(rlz.value_list_of(rlz.string)),
             [[], ['a']],
-            ibis.sequence([[], ['a']]),
-            marks=pytest.mark.xfail(
-                raises=ValueError, reason='Not yet implemented'
-            ),
+            ibis.sequence([ibis.sequence([]), ibis.sequence(['a'])]),
+            id="list_list_string",
         ),
-        (
+        param(
             rlz.value_list_of(rlz.boolean, min_length=2),
             [True, False],
             ibis.sequence([True, False]),
+            id="boolean",
         ),
     ],
 )
