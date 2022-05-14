@@ -164,6 +164,30 @@ def _binary_infix_op(infix_sym):
     return formatter
 
 
+def _in(translator, expr):
+    op = expr.op()
+
+    left, right = op.args
+    if isinstance(right, ir.ListExpr) and not right:
+        return "FALSE"
+
+    left_ = _parenthesize(translator, left)
+    right_ = _parenthesize(translator, right)
+    return f"{left_} IN {right_}"
+
+
+def _not_in(translator, expr):
+    op = expr.op()
+
+    left, right = op.args
+    if isinstance(right, ir.ListExpr) and not right:
+        return "TRUE"
+
+    left_ = _parenthesize(translator, left)
+    right_ = _parenthesize(translator, right)
+    return f"{left_} NOT IN {right_}"
+
+
 def _call(translator, func, *args):
     args_ = ', '.join(map(translator.translate, args))
     return f'{func!s}({args_!s})'
@@ -720,8 +744,8 @@ operation_registry = {
     ops.Least: _varargs('least'),
     ops.Where: _fixed_arity('if', 3),
     ops.Between: _between,
-    ops.Contains: _binary_infix_op('IN'),
-    ops.NotContains: _binary_infix_op('NOT IN'),
+    ops.Contains: _in,
+    ops.NotContains: _not_in,
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
