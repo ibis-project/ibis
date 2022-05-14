@@ -140,7 +140,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         df = pd.DataFrame.from_records(
-            cursor.fetchall(),
+            cursor,
             columns=cursor.keys(),
             coerce_float=True,
         )
