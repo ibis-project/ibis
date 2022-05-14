@@ -166,11 +166,10 @@ class Backend(BaseSQLBackend):
     def fetch_from_cursor(self, cursor, schema):
         data, _ = cursor
         names = schema.names
-        if not len(data):
-            # handle empty resultset
-            return pd.DataFrame([], columns=names)
-
-        df = pd.DataFrame.from_dict(dict(zip(names, data)))
+        if not data:
+            df = pd.DataFrame([], columns=names)
+        else:
+            df = pd.DataFrame.from_dict(dict(zip(names, data)))
         return schema.apply_to(df)
 
     def close(self):
