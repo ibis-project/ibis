@@ -3,6 +3,7 @@ import io
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -10,6 +11,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.util as util
+from ibis import _
 from ibis import literal as L
 
 try:
@@ -424,3 +426,25 @@ def test_table_info(alltypes):
     assert "Nulls" in info_str
     assert all(str(type) in info_str for type in schema.types)
     assert all(name in info_str for name in schema.names)
+
+
+@pytest.mark.parametrize(
+    ("ibis_op", "pandas_op"),
+    [
+        param(
+            _.string_col.isin([]),
+            lambda df: df.string_col.isin([]),
+            id="isin",
+        ),
+        param(
+            _.string_col.notin([]),
+            lambda df: ~df.string_col.isin([]),
+            id="notin",
+        ),
+    ],
+)
+def test_empty_in_list(alltypes, df, ibis_op, pandas_op):
+    expr = alltypes[ibis_op]
+    expected = df.loc[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
+    result = expr.execute().sort_values(["id"]).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected, check_index_type=False)
