@@ -46,7 +46,7 @@ def highest_precedence_dtype(exprs):
       The highest precedence datatype
     """
     if not exprs:
-        raise ValueError('Must pass at least one expression')
+        return dt.null
 
     return dt.highest_precedence(expr.type() for expr in exprs)
 
