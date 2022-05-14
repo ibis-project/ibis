@@ -1,3 +1,4 @@
+import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import helpers
 
 
@@ -50,3 +51,36 @@ def xor(translator, expr):
         right_arg = helpers.parenthesize(right_arg)
 
     return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
+
+
+def isin(translator, expr):
+    op = expr.op()
+
+    left, right = op.args
+    if isinstance(right, ir.ListExpr) and not right:
+        return "FALSE"
+
+    left_arg = translator.translate(left)
+    right_arg = translator.translate(right)
+    if helpers.needs_parens(left):
+        left_arg = helpers.parenthesize(left_arg)
+
+    # we explicitly do NOT parenthesize the right side because it doesn't make
+    # sense to do so for ValueList operations
+
+    return f"{left_arg} IN {right_arg}"
+
+
+def notin(translator, expr):
+    op = expr.op()
+
+    left, right = op.args
+    if isinstance(right, ir.ListExpr) and not right:
+        return "TRUE"
+
+    left_arg = translator.translate(left)
+    right_arg = translator.translate(right)
+    if helpers.needs_parens(left):
+        left_arg = helpers.parenthesize(left_arg)
+
+    return f"{left_arg} NOT IN {right_arg}"

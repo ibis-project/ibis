@@ -441,9 +441,19 @@ def test_table_info(alltypes):
             lambda df: ~df.string_col.isin([]),
             id="notin",
         ),
+        param(
+            (_.string_col.length() * 1).isin([1]),
+            lambda df: (df.string_col.str.len() * 1).isin([1]),
+            id="isin_non_empty",
+        ),
+        param(
+            (_.string_col.length() * 1).notin([1]),
+            lambda df: ~(df.string_col.str.len() * 1).isin([1]),
+            id="notin_non_empty",
+        ),
     ],
 )
-def test_empty_in_list(alltypes, df, ibis_op, pandas_op):
+def test_isin_notin(alltypes, df, ibis_op, pandas_op):
     expr = alltypes[ibis_op]
     expected = df.loc[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute().sort_values(["id"]).reset_index(drop=True)
