@@ -138,7 +138,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             df = geopandas.GeoDataFrame(df, geometry=geom_col)
         return df
 
-    def fetch_from_cursor(self, cursor, schema):
+    def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         df = pd.DataFrame.from_records(
             cursor.fetchall(),
             columns=cursor.keys(),
