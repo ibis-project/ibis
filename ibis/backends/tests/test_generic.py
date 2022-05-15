@@ -3,7 +3,6 @@ import io
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -453,8 +452,50 @@ def test_table_info(alltypes):
         ),
     ],
 )
-def test_isin_notin(alltypes, df, ibis_op, pandas_op):
+def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     expr = alltypes[ibis_op]
     expected = df.loc[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute().sort_values(["id"]).reset_index(drop=True)
-    tm.assert_frame_equal(result, expected, check_index_type=False)
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["dask"],
+    reason="dask doesn't support Series as isin/notin argument",
+    raises=NotImplementedError,
+)
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.parametrize(
+    ("ibis_op", "pandas_op"),
+    [
+        param(
+            _.string_col.isin(_.string_col),
+            lambda df: df.string_col.isin(df.string_col),
+            id="isin_col",
+        ),
+        param(
+            (_.bigint_col + 1).isin(_.string_col.cast("int64") + 1),
+            lambda df: (df.bigint_col + 1).isin(
+                df.string_col.astype("int64") + 1
+            ),
+            id="isin_expr",
+        ),
+        param(
+            _.string_col.notin(_.string_col),
+            lambda df: ~df.string_col.isin(df.string_col),
+            id="notin_col",
+        ),
+        param(
+            (_.bigint_col + 1).notin(_.string_col.cast("int64") + 1),
+            lambda df: ~(df.bigint_col + 1).isin(
+                df.string_col.astype("int64") + 1
+            ),
+            id="notin_expr",
+        ),
+    ],
+)
+def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
+    expr = alltypes[ibis_op].sort_by("id")
+    expected = df[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
+    result = expr.execute()
+    backend.assert_frame_equal(result, expected)

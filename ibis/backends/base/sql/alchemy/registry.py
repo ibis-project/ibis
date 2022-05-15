@@ -170,22 +170,35 @@ def _cast(t, expr):
     sa_arg = t.translate(arg)
     sa_type = t.get_sqla_type(target_type)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
         return sa_arg
     else:
         return sa.cast(sa_arg, sa_type)
 
 
-def _contains(t, expr):
-    op = expr.op()
+def _contains(func):
+    def translate(t, expr):
+        op = expr.op()
 
-    left, right = (t.translate(arg) for arg in op.args)
+        raw_left, raw_right = op.args
+        left = t.translate(raw_left)
+        right = t.translate(raw_right)
 
-    return left.in_(right)
+        if (
+            # not a list expr
+            not isinstance(raw_right, ir.ListExpr)
+            # but still a column expr
+            and isinstance(raw_right, ir.ColumnExpr)
+            # wasn't already compiled into a select statement
+            and not isinstance(right, sa.sql.Selectable)
+        ):
+            right = sa.select(right)
+        else:
+            right = t.translate(raw_right)
 
+        return func(left, right)
 
-def _not_contains(t, expr):
-    return sa.not_(_contains(t, expr))
+    return translate
 
 
 def reduction(sa_func):
@@ -462,8 +475,8 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Cast: _cast,
     ops.Coalesce: varargs(sa.func.coalesce),
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
-    ops.Contains: _contains,
-    ops.NotContains: _not_contains,
+    ops.Contains: _contains(lambda left, right: left.in_(right)),
+    ops.NotContains: _contains(lambda left, right: left.notin_(right)),
     ops.Count: reduction(sa.func.count),
     ops.Sum: reduction(sa.func.sum),
     ops.Mean: reduction(sa.func.avg),

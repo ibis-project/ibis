@@ -870,14 +870,18 @@ def execute_node_string_join(op, args, **kwargs):
 
 
 @execute_node.register(
-    ops.Contains, pd.Series, (collections.abc.Sequence, collections.abc.Set)
+    ops.Contains,
+    pd.Series,
+    (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
 def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
 @execute_node.register(
-    ops.NotContains, pd.Series, (collections.abc.Sequence, collections.abc.Set)
+    ops.NotContains,
+    pd.Series,
+    (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
 def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     return ~(data.isin(elements))
