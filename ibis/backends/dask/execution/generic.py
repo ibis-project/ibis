@@ -125,13 +125,19 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.Contains: [
         (
-            (dd.Series, (collections.abc.Sequence, collections.abc.Set)),
+            (
+                dd.Series,
+                (collections.abc.Sequence, collections.abc.Set, dd.Series),
+            ),
             execute_node_contains_series_sequence,
         )
     ],
     ops.NotContains: [
         (
-            (dd.Series, (collections.abc.Sequence, collections.abc.Set)),
+            (
+                dd.Series,
+                (collections.abc.Sequence, collections.abc.Set, dd.Series),
+            ),
             execute_node_not_contains_series_sequence,
         )
     ],

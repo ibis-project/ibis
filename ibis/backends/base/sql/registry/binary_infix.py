@@ -1,3 +1,5 @@
+from typing import Literal
+
 import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import helpers
 
@@ -53,34 +55,45 @@ def xor(translator, expr):
     return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
 
 
-def isin(translator, expr):
-    op = expr.op()
+def contains(op_string: Literal["IN", "NOT IN"]) -> str:
+    def translate(translator, expr):
+        from ibis.backends.base.sql.registry.main import table_array_view
 
-    left, right = op.args
-    if isinstance(right, ir.ListExpr) and not right:
-        return "FALSE"
+        op = expr.op()
 
-    left_arg = translator.translate(left)
-    right_arg = translator.translate(right)
-    if helpers.needs_parens(left):
-        left_arg = helpers.parenthesize(left_arg)
+        left, right = op.args
+        if isinstance(right, ir.ListExpr) and not right:
+            return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
 
-    # we explicitly do NOT parenthesize the right side because it doesn't make
-    # sense to do so for ValueList operations
+        left_arg = translator.translate(left)
+        if helpers.needs_parens(left):
+            left_arg = helpers.parenthesize(left_arg)
 
-    return f"{left_arg} IN {right_arg}"
+        ctx = translator.context
 
+        # special case non-foreign isin/notin expressions
+        if (
+            not isinstance(right, ir.ListExpr)
+            and isinstance(right, ir.ColumnExpr)
+            # foreign refs are already been compiled correctly during
+            # TableColumn compilation
+            and not any(
+                ctx.is_foreign_expr(leaf.to_expr())
+                for leaf in right.op().root_tables()
+            )
+        ):
+            if not right.has_name():
+                right = right.name("tmp")
+            right_arg = table_array_view(
+                translator,
+                right.to_projection().to_array(),
+            )
+        else:
+            right_arg = translator.translate(right)
 
-def notin(translator, expr):
-    op = expr.op()
+        # we explicitly do NOT parenthesize the right side because it doesn't
+        # make sense to do so for ValueList operations
 
-    left, right = op.args
-    if isinstance(right, ir.ListExpr) and not right:
-        return "TRUE"
+        return f"{left_arg} {op_string} {right_arg}"
 
-    left_arg = translator.translate(left)
-    right_arg = translator.translate(right)
-    if helpers.needs_parens(left):
-        left_arg = helpers.parenthesize(left_arg)
-
-    return f"{left_arg} NOT IN {right_arg}"
+    return translate
