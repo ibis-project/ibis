@@ -17,6 +17,10 @@ class Analytic(Expr):
 
 
 @public
+@deprecated(
+    instead="remove usage of Exists/ExistsExpr, it will be removed",
+    version="4.0.0",
+)
 class Exists(Analytic):
     # TODO(kszucs): should be removed
     def type(self):
