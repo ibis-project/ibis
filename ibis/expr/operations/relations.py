@@ -758,7 +758,7 @@ class ExistsSubquery(Value):
 
     output_dtype = dt.boolean
     output_shape = rlz.Shape.COLUMNAR
-    output_type = ir.ExistsExpr
+    output_type = ir.Exists
 
 
 @public
@@ -766,7 +766,7 @@ class NotExistsSubquery(Node):
     foreign_table = rlz.table
     predicates = rlz.tuple_of(rlz.boolean)
 
-    output_type = ir.ExistsExpr
+    output_type = ir.Exists
 
 
 @public
