@@ -768,7 +768,7 @@ def windowize_function(expr, w=None):
                 walked = x
 
         op = walked.op()
-        if isinstance(op, ops.AnalyticOp) or getattr(op, '_reduction', False):
+        if isinstance(op, ops.Analytic) or getattr(op, '_reduction', False):
             if w is None:
                 w = window()
             return walked.over(w)
@@ -1131,7 +1131,7 @@ def flatten_predicate(expr):
 
 def is_analytic(expr, exclude_windows=False):
     def _is_analytic(op):
-        if isinstance(op, (ops.Reduction, ops.AnalyticOp, ops.Any, ops.All)):
+        if isinstance(op, (ops.Reduction, ops.Analytic, ops.Any, ops.All)):
             return True
         elif isinstance(op, ops.Window) and exclude_windows:
             return False

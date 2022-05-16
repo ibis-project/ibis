@@ -3,7 +3,7 @@ from types import FunctionType, LambdaType
 from public import public
 
 from ibis.expr import rules as rlz
-from ibis.expr.operations.analytic import AnalyticOp
+from ibis.expr.operations.analytic import Analytic
 from ibis.expr.operations.core import Value, distinct_roots
 from ibis.expr.operations.reductions import Reduction
 
@@ -44,7 +44,7 @@ class ReductionVectorizedUDF(VectorizedUDF, Reduction):
 
 # TODO(kszucs): revisit
 @public
-class AnalyticVectorizedUDF(VectorizedUDF, AnalyticOp):
+class AnalyticVectorizedUDF(VectorizedUDF, Analytic):
     """Node for analytics UDF."""
 
     output_shape = rlz.Shape.COLUMNAR

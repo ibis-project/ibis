@@ -499,7 +499,7 @@ def propagate_down_window(expr: ir.ValueExpr, window: Window):
     for arg in op.args:
         if isinstance(arg, ir.Expr) and not isinstance(op, ops.Window):
             new_arg = propagate_down_window(arg, window)
-            if isinstance(new_arg.op(), ops.AnalyticOp):
+            if isinstance(new_arg.op(), ops.Analytic):
                 new_arg = ops.Window(new_arg, window).to_expr()
             if arg is not new_arg:
                 unchanged = False
