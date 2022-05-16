@@ -1930,3 +1930,31 @@ def compile_null_if_zero(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     arg = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.when(arg == 0, F.lit(None)).otherwise(arg)
+
+
+@compiles(ops.Acos)
+@compiles(ops.Asin)
+@compiles(ops.Atan)
+@compiles(ops.Cos)
+@compiles(ops.Sin)
+@compiles(ops.Tan)
+def compile_trig(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext, **kwargs)
+    func_name = op.__class__.__name__.lower()
+    func = getattr(F, func_name)
+    return func(arg)
+
+
+@compiles(ops.Cot)
+def compile_cot(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext, **kwargs)
+    return F.cos(arg) / F.sin(arg)
+
+
+@compiles(ops.Atan2)
+def compile_atan2(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    y, x = (t.translate(arg, scope, timecontext, **kwargs) for arg in op.args)
+    return F.atan2(y, x)
