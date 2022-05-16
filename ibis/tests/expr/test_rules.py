@@ -238,7 +238,7 @@ def test_invalid_member_of(obj, value, expected):
 )
 def test_valid_value_list_of(validator, values, expected):
     result = validator(values)
-    assert isinstance(result, ir.ListExpr)
+    assert isinstance(result, ir.ValueList)
     assert len(result) == len(values)
     for a, b in zip(result, expected):
         assert a.equals(b)

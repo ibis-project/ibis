@@ -823,26 +823,14 @@ class NullColumn(Column, NullValue):
     pass  # noqa: E701,E302
 
 
-# TODO(kszucs): should remove the Column base class?
 @public
-class ListExpr(Column, Value):
+class ValueList(Value, Sequence[Value]):
     @property
     def values(self):
         return self.op().values
 
-    def __iter__(self):
-        return iter(self.values)
-
     def __getitem__(self, key):
         return self.values[key]
-
-    def __add__(self, other):
-        other_values = tuple(getattr(other, 'values', other))
-        return type(self.op())(self.values + other_values).to_expr()
-
-    def __radd__(self, other):
-        other_values = tuple(getattr(other, 'values', other))
-        return type(self.op())(other_values + self.values).to_expr()
 
     def __bool__(self):
         return bool(self.values)
@@ -973,4 +961,5 @@ public(
     AnyValue=Value,
     AnyScalar=Scalar,
     AnyColumn=Column,
+    ListExpr=ValueList,
 )
