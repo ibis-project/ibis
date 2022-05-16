@@ -186,8 +186,8 @@ class GroupedTableExpr:
         Selection[r0]
           selections:
             r0
-            qux:  WindowOp(Lag(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
-            qux2: WindowOp(Lead(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
+            qux:  Window(Lag(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
+            qux2: Window(Lead(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
 
         Returns
         -------

@@ -755,14 +755,14 @@ def _is_aliased(col_expr):
 
 def windowize_function(expr, w=None):
     def _windowize(x, w):
-        if not isinstance(x.op(), ops.WindowOp):
+        if not isinstance(x.op(), ops.Window):
             walked = _walk(x, w)
         else:
             window_arg, window_w = x.op().args
             walked_child = _walk(window_arg, w)
 
             if walked_child is not window_arg:
-                op = ops.WindowOp(walked_child, window_w)
+                op = ops.Window(walked_child, window_w)
                 walked = op.to_expr().name(x.get_name())
             else:
                 walked = x
@@ -772,7 +772,7 @@ def windowize_function(expr, w=None):
             if w is None:
                 w = window()
             return walked.over(w)
-        elif isinstance(op, ops.WindowOp):
+        elif isinstance(op, ops.Window):
             if w is not None:
                 return walked.over(w.combine(op.window))
             else:
@@ -1133,7 +1133,7 @@ def is_analytic(expr, exclude_windows=False):
     def _is_analytic(op):
         if isinstance(op, (ops.Reduction, ops.AnalyticOp, ops.Any, ops.All)):
             return True
-        elif isinstance(op, ops.WindowOp) and exclude_windows:
+        elif isinstance(op, ops.Window) and exclude_windows:
             return False
 
         for arg in op.args:

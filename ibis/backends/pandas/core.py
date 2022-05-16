@@ -81,7 +81,7 @@ Let's say you want to take a three day rolling average, and you want to include
 data in the result for a few reasons, one of which is that it would break the
 contract of window functions: given N rows of input there are N rows of output.
 
-Defining a ``post_execute`` rule for :class:`~ibis.expr.operations.WindowOp`
+Defining a ``post_execute`` rule for :class:`~ibis.expr.operations.Window`
 allows you to encode such logic. One might want to implement this using
 :class:`~ibis.expr.operations.ScalarParameter`, in which case the ``scope``
 passed to ``post_execute`` would be the bound values passed in at the time the

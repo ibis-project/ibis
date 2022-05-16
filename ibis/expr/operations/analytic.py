@@ -9,7 +9,7 @@ from ibis.expr.window import propagate_down_window
 
 
 @public
-class WindowOp(Value):
+class Window(Value):
     expr = rlz.analytic
     window = rlz.window(from_base_table_of="expr")
 
@@ -22,7 +22,7 @@ class WindowOp(Value):
 
     def over(self, window):
         new_window = self.window.combine(window)
-        return WindowOp(self.expr, new_window)
+        return Window(self.expr, new_window)
 
     @property
     def inputs(self):
@@ -263,3 +263,6 @@ class Any(Value):
 class NotAny(Any):
     def negate(self):
         return Any(self.arg)
+
+
+public(WindowOp=Window)

@@ -777,7 +777,7 @@ _undocumented_operations = {
 
 
 _unsupported_ops_list = [
-    ops.WindowOp,
+    ops.Window,
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,

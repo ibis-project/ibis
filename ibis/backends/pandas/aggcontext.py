@@ -578,7 +578,7 @@ class Window(AggregationContext):
 
         # Get the DataFrame from which the operand originated
         # (passed in when constructing this context object in
-        # execute_node(ops.WindowOp))
+        # execute_node(ops.Window))
         parent = self.parent
         frame = getattr(parent, 'obj', parent)
         obj = getattr(grouped_data, 'obj', grouped_data)

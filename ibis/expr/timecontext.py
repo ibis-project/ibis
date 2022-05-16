@@ -304,9 +304,9 @@ def adjust_context_asof_join(
     return timecontext
 
 
-@adjust_context.register(ops.WindowOp)
+@adjust_context.register(ops.Window)
 def adjust_context_window(
-    op: ops.WindowOp, scope: 'Scope', timecontext: TimeContext
+    op: ops.Window, scope: 'Scope', timecontext: TimeContext
 ) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext

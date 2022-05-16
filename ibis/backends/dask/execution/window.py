@@ -51,7 +51,7 @@ def _post_process_empty(
         return parent.apply(lambda row: result, meta=(None, 'object'))
 
 
-@execute_node.register(ops.WindowOp, dd.Series, win.Window)
+@execute_node.register(ops.Window, dd.Series, win.Window)
 def execute_window_op(
     op,
     data,

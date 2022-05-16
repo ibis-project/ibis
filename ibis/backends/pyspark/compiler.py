@@ -1209,7 +1209,7 @@ def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
     )
 
 
-@compiles(ops.WindowOp)
+@compiles(ops.Window)
 def compile_window_op(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     window = op.window

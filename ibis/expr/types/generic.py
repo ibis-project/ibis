@@ -414,10 +414,10 @@ class AnyValue(ValueExpr):
         if isinstance(prior_op, ops.Alias):
             return prior_op.arg.over(window).name(prior_op.name)
 
-        if isinstance(prior_op, ops.WindowOp):
+        if isinstance(prior_op, ops.Window):
             op = prior_op.over(window)
         else:
-            op = ops.WindowOp(self, window)
+            op = ops.Window(self, window)
 
         result = op.to_expr()
 
