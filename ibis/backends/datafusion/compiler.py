@@ -6,6 +6,7 @@ import datafusion.functions
 import pyarrow as pa
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.datafusion.datatypes import to_pyarrow_type
@@ -390,6 +391,15 @@ def not_contains(op, expr):
     value = translate(op.value)
     options = _prepare_contains_options(op.options)
     return df.functions.in_list(value, options, negated=True)
+
+
+@translate.register(ops.Negate)
+def negate(op, expr):
+    op_arg = op.arg
+    arg = translate(op_arg)
+    if op_arg.type() == dt.boolean:
+        return ~arg
+    return df.lit(-1) * arg
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)
