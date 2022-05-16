@@ -830,6 +830,8 @@ def compile_negate(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext)
+    if expr.type() == dtypes.boolean:
+        return ~src_column
     return -src_column
 
 
