@@ -197,12 +197,12 @@ class Backend(BaseBackend):
         return translate(expr)
 
     @classmethod
-    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
         from ibis.backends.datafusion.compiler import translate
 
         op_classes = translate.registry
         return operation in op_classes or any(
             issubclass(operation, op_impl)
             for op_impl in op_classes
-            if issubclass(op_impl, ops.ValueOp)
+            if issubclass(op_impl, ops.Value)
         )

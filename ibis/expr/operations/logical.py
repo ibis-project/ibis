@@ -2,7 +2,7 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import BinaryOp, UnaryOp, ValueOp
+from ibis.expr.operations.core import BinaryOp, UnaryOp, Value
 
 
 @public
@@ -95,7 +95,7 @@ class IdenticalTo(Comparison):
 
 
 @public
-class Between(ValueOp):
+class Between(Value):
     arg = rlz.any
     lower_bound = rlz.any
     upper_bound = rlz.any
@@ -120,7 +120,7 @@ class Between(ValueOp):
 
 
 @public
-class Contains(ValueOp):
+class Contains(Value):
     value = rlz.any
     options = rlz.one_of(
         [
@@ -141,7 +141,7 @@ class NotContains(Contains):
 
 
 @public
-class Where(ValueOp):
+class Where(Value):
 
     """
     Ternary case expression, equivalent to

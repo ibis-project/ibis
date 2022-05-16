@@ -4,17 +4,17 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import ValueOp, distinct_roots
+from ibis.expr.operations.core import Value, distinct_roots
 
 
 @public
-class Reduction(ValueOp):
+class Reduction(Value):
     _reduction = True
 
     output_shape = rlz.Shape.SCALAR
 
 
-class Filterable(ValueOp):
+class Filterable(Value):
     where = rlz.optional(rlz.boolean)
 
 

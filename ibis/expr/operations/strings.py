@@ -2,7 +2,7 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import UnaryOp, ValueOp
+from ibis.expr.operations.core import UnaryOp, Value
 
 
 @public
@@ -47,7 +47,7 @@ class Capitalize(StringUnaryOp):
 
 
 @public
-class Substring(ValueOp):
+class Substring(Value):
     arg = rlz.string
     start = rlz.integer
     length = rlz.optional(rlz.integer)
@@ -57,7 +57,7 @@ class Substring(ValueOp):
 
 
 @public
-class StrRight(ValueOp):
+class StrRight(Value):
     arg = rlz.string
     nchars = rlz.integer
     output_shape = rlz.shape_like("arg")
@@ -65,7 +65,7 @@ class StrRight(ValueOp):
 
 
 @public
-class Repeat(ValueOp):
+class Repeat(Value):
     arg = rlz.string
     times = rlz.integer
     output_shape = rlz.shape_like("arg")
@@ -73,7 +73,7 @@ class Repeat(ValueOp):
 
 
 @public
-class StringFind(ValueOp):
+class StringFind(Value):
     arg = rlz.string
     substr = rlz.string
     start = rlz.optional(rlz.integer)
@@ -84,7 +84,7 @@ class StringFind(ValueOp):
 
 
 @public
-class Translate(ValueOp):
+class Translate(Value):
     arg = rlz.string
     from_str = rlz.string
     to_str = rlz.string
@@ -94,7 +94,7 @@ class Translate(ValueOp):
 
 
 @public
-class LPad(ValueOp):
+class LPad(Value):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
@@ -104,7 +104,7 @@ class LPad(ValueOp):
 
 
 @public
-class RPad(ValueOp):
+class RPad(Value):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
@@ -114,7 +114,7 @@ class RPad(ValueOp):
 
 
 @public
-class FindInSet(ValueOp):
+class FindInSet(Value):
     needle = rlz.string
     values = rlz.value_list_of(rlz.string, min_length=1)
 
@@ -123,7 +123,7 @@ class FindInSet(ValueOp):
 
 
 @public
-class StringJoin(ValueOp):
+class StringJoin(Value):
     sep = rlz.string
     arg = rlz.value_list_of(rlz.string, min_length=1)
 
@@ -132,7 +132,7 @@ class StringJoin(ValueOp):
 
 
 @public
-class StartsWith(ValueOp):
+class StartsWith(Value):
     arg = rlz.string
     start = rlz.scalar(rlz.string)
     output_dtype = dt.boolean
@@ -140,7 +140,7 @@ class StartsWith(ValueOp):
 
 
 @public
-class EndsWith(ValueOp):
+class EndsWith(Value):
     arg = rlz.string
     end = rlz.scalar(rlz.string)
     output_dtype = dt.boolean
@@ -148,7 +148,7 @@ class EndsWith(ValueOp):
 
 
 @public
-class FuzzySearch(ValueOp):
+class FuzzySearch(Value):
     arg = rlz.string
     pattern = rlz.string
     output_dtype = dt.boolean
@@ -173,7 +173,7 @@ class RegexSearch(FuzzySearch):
 
 
 @public
-class RegexExtract(ValueOp):
+class RegexExtract(Value):
     arg = rlz.string
     pattern = rlz.string
     index = rlz.integer
@@ -183,7 +183,7 @@ class RegexExtract(ValueOp):
 
 
 @public
-class RegexReplace(ValueOp):
+class RegexReplace(Value):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
@@ -193,7 +193,7 @@ class RegexReplace(ValueOp):
 
 
 @public
-class StringReplace(ValueOp):
+class StringReplace(Value):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
@@ -203,7 +203,7 @@ class StringReplace(ValueOp):
 
 
 @public
-class StringSplit(ValueOp):
+class StringSplit(Value):
     arg = rlz.string
     delimiter = rlz.string
 
@@ -212,7 +212,7 @@ class StringSplit(ValueOp):
 
 
 @public
-class StringConcat(ValueOp):
+class StringConcat(Value):
     arg = rlz.value_list_of(rlz.string)
 
     output_shape = rlz.shape_like("arg")
@@ -220,7 +220,7 @@ class StringConcat(ValueOp):
 
 
 @public
-class ParseURL(ValueOp):
+class ParseURL(Value):
     arg = rlz.string
     extract = rlz.isin(
         {
@@ -251,7 +251,7 @@ class StringAscii(UnaryOp):
 
 
 @public
-class StringContains(ValueOp):
+class StringContains(Value):
     haystack = rlz.string
     needle = rlz.string
 

@@ -7,7 +7,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import BinaryOp, UnaryOp, ValueOp
+from ibis.expr.operations.core import BinaryOp, UnaryOp, Value
 
 
 @public
@@ -151,7 +151,7 @@ class Floor(UnaryOp):
 
 
 @public
-class Round(ValueOp):
+class Round(Value):
     arg = rlz.numeric
     digits = rlz.optional(rlz.numeric)
 
@@ -168,7 +168,7 @@ class Round(ValueOp):
 
 
 @public
-class Clip(ValueOp):
+class Clip(Value):
     arg = rlz.strict_numeric
     lower = rlz.optional(rlz.strict_numeric)
     upper = rlz.optional(rlz.strict_numeric)
@@ -178,7 +178,7 @@ class Clip(ValueOp):
 
 
 @public
-class BaseConvert(ValueOp):
+class BaseConvert(Value):
     arg = rlz.one_of([rlz.integer, rlz.string])
     from_base = rlz.integer
     to_base = rlz.integer

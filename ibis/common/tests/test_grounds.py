@@ -39,11 +39,11 @@ class Op(Annotable):
     pass
 
 
-class ValueOp(Op):
+class Value(Op):
     arg = InstanceOf(object)
 
 
-class StringOp(ValueOp):
+class StringOp(Value):
     arg = InstanceOf(str)
 
     def __eq__(self, other):
@@ -252,13 +252,13 @@ def test_multiple_inheritance():
     class Op(Annotable):
         __slots__ = ('_hash',)
 
-    class ValueOp(Annotable):
+    class Value(Annotable):
         arg = InstanceOf(object)
 
-    class Reduction(ValueOp):
+    class Reduction(Value):
         _reduction = True
 
-    class UDF(ValueOp):
+    class UDF(Value):
         func = ValidatorFunction(lambda fn, this: fn)
 
     class UDAF(UDF, Reduction):
@@ -295,10 +295,10 @@ def test_pickling_support(obj):
 
 
 def test_multiple_inheritance_argument_order():
-    class ValueOp(Annotable):
+    class Value(Annotable):
         arg = IsAny
 
-    class VersionedOp(ValueOp):
+    class VersionedOp(Value):
         version = IsInt
 
     class Reduction(Annotable):
@@ -312,13 +312,13 @@ def test_multiple_inheritance_argument_order():
 
 
 def test_multiple_inheritance_optional_argument_order():
-    class ValueOp(Annotable):
+    class Value(Annotable):
         pass
 
     class ConditionalOp(Annotable):
         where = Optional(IsBool, default=False)
 
-    class Between(ValueOp, ConditionalOp):
+    class Between(Value, ConditionalOp):
         min = IsInt
         max = IsInt
         how = Optional(IsStr, default="strict")
@@ -327,40 +327,40 @@ def test_multiple_inheritance_optional_argument_order():
 
 
 def test_immutability():
-    class ValueOp(Annotable):
+    class Value(Annotable):
         a = IsInt
 
-    op = ValueOp(1)
+    op = Value(1)
     with pytest.raises(TypeError):
         op.a = 3
 
 
 def test_immutable_property_basics():
-    class ValueOp(Annotable):
+    class Value(Annotable):
         a = IsInt
 
         @immutable_property
         def double_a(self):
             return 2 * self.a
 
-    op = ValueOp(1)
+    op = Value(1)
     assert op.a == 1
     assert op.double_a == 2
-    assert len(ValueOp.__properties__) == 1
-    assert "double_a" in ValueOp.__slots__
+    assert len(Value.__properties__) == 1
+    assert "double_a" in Value.__slots__
 
 
 def test_immutable_property_mixed_with_classvar():
-    class ValueOp(Annotable):
+    class Value(Annotable):
         arg = IsInt
 
         output_shape = "like-arg"
         output_dtype = "like-arg"
 
-    class Reduction(ValueOp):
+    class Reduction(Value):
         output_shape = "scalar"
 
-    class Variadic(ValueOp):
+    class Variadic(Value):
         @immutable_property
         def output_shape(self):
             if self.arg > 10:

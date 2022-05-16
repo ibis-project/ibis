@@ -74,9 +74,9 @@ An example of usage is a node that representats a logarithm operation:
 ```python
 
 import ibis.expr.rules as rlz
-from ibis.expr.operations import ValueOp
+from ibis.expr.operations import Value
 
-class Log(ValueOp):
+class Log(Value):
    # A double scalar or column
    arg = rlz.double
    # Optional argument, defaults to None

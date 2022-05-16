@@ -4,12 +4,12 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import ValueOp, distinct_roots
+from ibis.expr.operations.core import Value, distinct_roots
 from ibis.expr.window import propagate_down_window
 
 
 @public
-class WindowOp(ValueOp):
+class WindowOp(Value):
     expr = rlz.analytic
     window = rlz.window(from_base_table_of="expr")
 
@@ -35,7 +35,7 @@ class WindowOp(ValueOp):
 
 
 @public
-class AnalyticOp(ValueOp):
+class AnalyticOp(Value):
     output_shape = rlz.Shape.COLUMNAR
 
 
@@ -235,7 +235,7 @@ class NthValue(AnalyticOp):
 
 
 @public
-class Any(ValueOp):
+class Any(Value):
 
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)

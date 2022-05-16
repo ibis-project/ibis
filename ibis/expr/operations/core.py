@@ -111,7 +111,7 @@ class Node(Annotable, Comparable):
 
 
 @public
-class ValueOp(Node):
+class Value(Node):
     def root_tables(self):
         return distinct_roots(*self.exprs)
 
@@ -148,7 +148,7 @@ class ValueOp(Node):
 
 
 @public
-class Alias(ValueOp):
+class Alias(Value):
     arg = rlz.any
     name = rlz.instance_of((str, UnnamedMarker))
 
@@ -163,7 +163,7 @@ class Alias(ValueOp):
 
 
 @public
-class UnaryOp(ValueOp):
+class UnaryOp(Value):
     """A unary operation."""
 
     arg = rlz.any
@@ -174,7 +174,7 @@ class UnaryOp(ValueOp):
 
 
 @public
-class BinaryOp(ValueOp):
+class BinaryOp(Value):
     """A binary operation."""
 
     left = rlz.any
@@ -183,3 +183,6 @@ class BinaryOp(ValueOp):
     @property
     def output_shape(self):
         return max(self.left.op().output_shape, self.right.op().output_shape)
+
+
+public(ValueOp=Value)

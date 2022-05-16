@@ -32,7 +32,7 @@ ICONS = {
 
 
 def main():
-    possible_ops = frozenset(get_leaf_classes(ops.ValueOp))
+    possible_ops = frozenset(get_leaf_classes(ops.Value))
 
     support = {
         "operation": [f"`{op.__name__}`" for op in possible_ops],
