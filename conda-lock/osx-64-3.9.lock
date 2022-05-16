@@ -103,7 +103,6 @@ https://conda.anaconda.org/conda-forge/osx-64/orc-1.7.3-h84518c8_0.tar.bz2#b2282
 https://conda.anaconda.org/conda-forge/osx-64/python-3.9.12-h8b4d769_1_cpython.tar.bz2#ebd20128c3a2f2fe98c9e6562cf43f65
 https://conda.anaconda.org/conda-forge/noarch/absolufy-imports-0.3.1-pyhd8ed1ab_0.tar.bz2#6cfab7bc82c2a20549163c93c890e9d6
 https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.3-pyhd8ed1ab_0.tar.bz2#54ac328d703bff191256ffa1183126d1
-https://conda.anaconda.org/conda-forge/noarch/argh-0.26.2-pyh9f0ad1d_1002.tar.bz2#0af89261f0352895e1c1000d306b3dc7
 https://conda.anaconda.org/conda-forge/noarch/atpublic-3.0.1-pyhd8ed1ab_0.tar.bz2#39904aaf8de88f03fe9c27286dc35681
 https://conda.anaconda.org/conda-forge/noarch/attrs-21.4.0-pyhd8ed1ab_0.tar.bz2#f70280205d7044c8b8358c8de3190e5d
 https://conda.anaconda.org/conda-forge/osx-64/aws-c-event-stream-0.2.7-hb9330a7_13.tar.bz2#d7319f5973bc93e63eb1b32dbb4d03b8
@@ -290,7 +289,7 @@ https://conda.anaconda.org/conda-forge/osx-64/sqlalchemy-1.4.36-py39h701faf5_0.t
 https://conda.anaconda.org/conda-forge/noarch/stack_data-0.2.0-pyhd8ed1ab_0.tar.bz2#8c0ce3e6bf18a0c810125aef58a2a6f3
 https://conda.anaconda.org/conda-forge/noarch/thrift_sasl-0.4.3-pyhd8ed1ab_1.tar.bz2#6b4de64c72e1128f3290a1a06a03190d
 https://conda.anaconda.org/conda-forge/osx-64/tzlocal-4.2-py39h6e9494a_0.tar.bz2#8d9a2bb5d02a36a187763936d87387c7
-https://conda.anaconda.org/conda-forge/osx-64/watchdog-2.1.7-py39h147bbb7_1.tar.bz2#b5219ca4f9ff36da6997c66db7a2945c
+https://conda.anaconda.org/conda-forge/osx-64/watchdog-2.1.8-py39h0056ad7_1.tar.bz2#ffd8cad1c25f9600b7bf0a54273b5faf
 https://conda.anaconda.org/conda-forge/noarch/argcomplete-1.12.3-pyhd8ed1ab_2.tar.bz2#b8152341fc3fc9880c6e1b9d188974e5
 https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-8.0.0-py39hfe23411_0_cpu.tar.bz2#49ecfe0c8c32b8c8fbf74933c2691ecb
 https://conda.anaconda.org/conda-forge/osx-64/bokeh-2.4.2-py39h6e9494a_1.tar.bz2#8169c154a4ea732028a0ff5e933c3681
