@@ -187,7 +187,7 @@ def execute_sort_key_series_bool(op, data, ascending, **kwargs):
 
 
 def call_numpy_ufunc(func, op, data, **kwargs):
-    if data.dtype == np.dtype(np.object_):
+    if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
     return func(data)
 
@@ -211,6 +211,42 @@ def execute_series_group_by_negate(op, data, **kwargs):
 
 @execute_node.register(ops.Unary, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
+    function = getattr(np, type(op).__name__.lower())
+    return call_numpy_ufunc(function, op, data, **kwargs)
+
+
+@execute_node.register(ops.Acos, (pd.Series, *numeric_types))
+def execute_series_acos(_, data, **kwargs):
+    return np.arccos(data)
+
+
+@execute_node.register(ops.Asin, (pd.Series, *numeric_types))
+def execute_series_asin(_, data, **kwargs):
+    return np.arcsin(data)
+
+
+@execute_node.register(ops.Atan, (pd.Series, *numeric_types))
+def execute_series_atan(_, data, **kwargs):
+    return np.arctan(data)
+
+
+@execute_node.register(ops.Cot, (pd.Series, *numeric_types))
+def execute_series_cot(_, data, **kwargs):
+    return np.cos(data) / np.sin(data)
+
+
+@execute_node.register(
+    ops.Atan2, (pd.Series, *numeric_types), (pd.Series, *numeric_types)
+)
+def execute_series_atan2(_, y, x, **kwargs):
+    return np.arctan2(y, x)
+
+
+@execute_node.register(
+    (ops.Cos, ops.Sin, ops.Tan),
+    (pd.Series, *numeric_types),
+)
+def execute_series_trig(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)
 
