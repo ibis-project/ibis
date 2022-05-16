@@ -220,6 +220,14 @@ def _ibis_sqlite_sqrt(arg):
     return None if arg is None or arg < 0.0 else math.sqrt(arg)
 
 
+@udf
+def _ibis_sqlite_cot(arg):
+    arg = float(arg)
+    if arg is not None:
+        return float("inf") if not arg else math.cos(arg) / math.sin(arg)
+    return None
+
+
 class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
