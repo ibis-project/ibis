@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue, literal
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value, literal
 from ibis.expr.types.typing import K, V
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @public
-class MapValue(AnyValue):
+class MapValue(Value):
     def get(
         self,
         key: ir.Value,

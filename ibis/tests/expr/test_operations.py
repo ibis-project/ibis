@@ -148,3 +148,4 @@ def test_expression_class_aliases():
     assert ir.ValueExpr is ir.Value
     assert ir.ScalarExpr is ir.Scalar
     assert ir.ColumnExpr is ir.Column
+    assert ir.AnyValue is ir.Value

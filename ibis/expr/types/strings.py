@@ -11,11 +11,11 @@ from public import public
 
 from ibis import util
 from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
 
 
 @public
-class StringValue(AnyValue):
+class StringValue(Value):
     def __getitem__(self, key: slice | int | ir.IntegerValue) -> StringValue:
         from ibis.expr import types as ir
 

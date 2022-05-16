@@ -7,8 +7,8 @@ from public import public
 from ibis.expr.types.generic import (
     AnyColumn,
     AnyScalar,
-    AnyValue,
     Column,
+    Value,
     literal,
 )
 from ibis.expr.types.typing import V
@@ -21,7 +21,7 @@ import ibis.common.exceptions as com
 
 
 @public
-class ArrayValue(AnyValue):
+class ArrayValue(Value):
     def length(self) -> ir.IntegerValue:
         """Compute the length of an array.
 

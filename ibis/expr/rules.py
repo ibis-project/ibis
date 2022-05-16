@@ -122,14 +122,14 @@ def value(dtype, arg, **kwargs):
 
     Returns
     -------
-    arg : AnyValue
+    arg : Value
       An ibis value expression with the specified datatype
     """
     if not isinstance(arg, ir.Expr):
         # coerce python literal to ibis literal
         arg = ir.literal(arg)
 
-    if not isinstance(arg, ir.AnyValue):
+    if not isinstance(arg, ir.Value):
         raise com.IbisTypeError(
             f'Given argument with type {type(arg)} is not a value '
             'expression'

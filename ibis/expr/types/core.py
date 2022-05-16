@@ -315,9 +315,7 @@ unnamed = UnnamedMarker()
 
 
 def _binop(
-    op_class: type[ops.Binary],
-    left: ir.Value,
-    right: ir.Value,
+    op_class: type[ops.Binary], left: ir.Value, right: ir.Value
 ) -> ir.Value | NotImplemented:
     """Try to construct a binary operation.
 

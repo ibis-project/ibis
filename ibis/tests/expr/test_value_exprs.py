@@ -1012,7 +1012,7 @@ def test_between_time_failure_time(case, creator, left, right):
 
 
 def test_custom_type_binary_operations():
-    class Foo(ir.Value):
+    class Foo(ir.Expr):
         def __add__(self, other):
             op = self.op()
             return type(op)(op.value + other).to_expr()

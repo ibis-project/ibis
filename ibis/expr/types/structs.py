@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue, literal
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value, literal
 from ibis.expr.types.typing import V
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ def struct(
 
 
 @public
-class StructValue(AnyValue):
+class StructValue(Value):
     def __dir__(self):
         return sorted(
             frozenset(itertools.chain(dir(type(self)), self.type().names))
@@ -125,7 +125,7 @@ class StructColumn(AnyColumn, StructValue):
 
 
 @public
-class DestructValue(AnyValue):
+class DestructValue(Value):
     """Class that represents a destruct value.
 
     When assigning a destruct column, the field inside this destruct column

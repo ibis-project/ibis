@@ -486,37 +486,37 @@ class Value(Expr):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __eq__(self, other: AnyValue) -> ir.BooleanValue:
+    def __eq__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         return _binop(ops.Equals, self, rlz.any(other))
 
-    def __ne__(self, other: AnyValue) -> ir.BooleanValue:
+    def __ne__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         return _binop(ops.NotEquals, self, rlz.any(other))
 
-    def __ge__(self, other: AnyValue) -> ir.BooleanValue:
+    def __ge__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         return _binop(ops.GreaterEqual, self, rlz.any(other))
 
-    def __gt__(self, other: AnyValue) -> ir.BooleanValue:
+    def __gt__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         return _binop(ops.Greater, self, rlz.any(other))
 
-    def __le__(self, other: AnyValue) -> ir.BooleanValue:
+    def __le__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         return _binop(ops.LessEqual, self, rlz.any(other))
 
-    def __lt__(self, other: AnyValue) -> ir.BooleanValue:
+    def __lt__(self, other: Value) -> ir.BooleanValue:
         import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
@@ -808,28 +808,23 @@ class Column(Value):
         return ops.NthValue(self, n).to_expr()
 
 
-# TODO(kszucs): keep either Value or AnyValue
+# TODO(kszucs): keep either Value or Value
 # TODO(kszucs): keep either Column or AnyColumn
 # TODO(kszucs): keep either Scalar or ScalarColumn
 
 
 @public
-class AnyValue(Value):
-    pass
-
-
-@public
-class AnyScalar(Scalar, AnyValue):
+class AnyScalar(Scalar, Value):
     pass  # noqa: E701,E302
 
 
 @public
-class AnyColumn(Column, AnyValue):
+class AnyColumn(Column, Value):
     pass
 
 
 @public
-class NullValue(AnyValue):
+class NullValue(Value):
     pass  # noqa: E701,E302
 
 
@@ -845,7 +840,7 @@ class NullColumn(AnyColumn, NullValue):
 
 # TODO(kszucs): should remove the Column base class?
 @public
-class ListExpr(Column, AnyValue):
+class ListExpr(Column, Value):
     @property
     def values(self):
         return self.op().values
@@ -986,4 +981,4 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-public(ValueExpr=Value, ScalarExpr=Scalar, ColumnExpr=Column)
+public(ValueExpr=Value, ScalarExpr=Scalar, ColumnExpr=Column, AnyValue=Value)

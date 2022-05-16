@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from ibis.expr import types as ir
 
 from ibis.expr.types.core import Expr, _binop
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
 
 
 @public
-class TemporalValue(AnyValue):
+class TemporalValue(Value):
     def strftime(self, format_str: str) -> ir.StringValue:
         """Format timestamp according to `format_str`.
 
@@ -483,7 +483,7 @@ class TimestampColumn(TemporalColumn, TimestampValue):
 
 
 @public
-class IntervalValue(AnyValue):
+class IntervalValue(Value):
     def to_unit(self, target_unit: str) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
         import ibis.expr.operations as ops
