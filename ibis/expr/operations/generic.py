@@ -404,7 +404,7 @@ class HashBytes(Value):
 )
 @public
 class SummaryFilter(Value):
-    expr = rlz.instance_of(ir.TopKExpr)
+    expr = rlz.instance_of(ir.TopK)
 
     output_dtype = dt.boolean
     output_shape = rlz.Shape.COLUMNAR
@@ -423,7 +423,7 @@ class TopK(Node):
         )
     )
 
-    output_type = ir.TopKExpr
+    output_type = ir.TopK
 
     def blocks(self):  # pragma: no cover
         return True
