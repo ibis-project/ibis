@@ -75,7 +75,6 @@ https://conda.anaconda.org/conda-forge/win-64/zeromq-4.3.4-h0e60522_1.tar.bz2#e1
 https://conda.anaconda.org/conda-forge/win-64/zlib-1.2.11-h8ffe710_1014.tar.bz2#8f3f8b243814bddb2898c314ed024e03
 https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.2-h6255e5f_0.tar.bz2#68de506283d23d66cf1e4ce3814d6cdc
 https://conda.anaconda.org/conda-forge/noarch/absolufy-imports-0.3.1-pyhd8ed1ab_0.tar.bz2#6cfab7bc82c2a20549163c93c890e9d6
-https://conda.anaconda.org/conda-forge/noarch/argh-0.26.2-pyh9f0ad1d_1002.tar.bz2#0af89261f0352895e1c1000d306b3dc7
 https://conda.anaconda.org/conda-forge/noarch/atomicwrites-1.4.0-pyh9f0ad1d_0.tar.bz2#5e36230ffaf3b7bb599424592684ae53
 https://conda.anaconda.org/conda-forge/noarch/atpublic-3.0.1-pyhd8ed1ab_0.tar.bz2#39904aaf8de88f03fe9c27286dc35681
 https://conda.anaconda.org/conda-forge/noarch/attrs-21.4.0-pyhd8ed1ab_0.tar.bz2#f70280205d7044c8b8358c8de3190e5d
@@ -272,7 +271,7 @@ https://conda.anaconda.org/conda-forge/noarch/pyyaml-env-tag-0.1-pyhd8ed1ab_0.ta
 https://conda.anaconda.org/conda-forge/win-64/sqlalchemy-1.4.36-py310he2412df_0.tar.bz2#c8cf9108dbb3ac577e5b30bf7ebf60d1
 https://conda.anaconda.org/conda-forge/noarch/stack_data-0.2.0-pyhd8ed1ab_0.tar.bz2#8c0ce3e6bf18a0c810125aef58a2a6f3
 https://conda.anaconda.org/conda-forge/noarch/thrift_sasl-0.4.3-pyhd8ed1ab_1.tar.bz2#6b4de64c72e1128f3290a1a06a03190d
-https://conda.anaconda.org/conda-forge/win-64/watchdog-2.1.7-py310h5588dad_1.tar.bz2#9bbedf6ce358071aa540e25d08141fe7
+https://conda.anaconda.org/conda-forge/win-64/watchdog-2.1.8-py310h5588dad_1.tar.bz2#a6c4669f8dfce5eb98a5f1d56979b31b
 https://conda.anaconda.org/conda-forge/win-64/xorg-libx11-1.7.2-hcd874cb_0.tar.bz2#fc83d322fcfa4ca466b8529c4a2d259c
 https://conda.anaconda.org/conda-forge/noarch/argcomplete-1.12.3-pyhd8ed1ab_2.tar.bz2#b8152341fc3fc9880c6e1b9d188974e5
 https://conda.anaconda.org/conda-forge/win-64/arrow-cpp-8.0.0-py310h43be0d3_0_cpu.tar.bz2#2f6ed6183ce6463759dc87798e991988
