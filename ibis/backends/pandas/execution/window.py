@@ -253,7 +253,7 @@ def trim_window_result(
     return indexed_subset[name]
 
 
-@execute_node.register(ops.WindowOp, pd.Series, win.Window)
+@execute_node.register(ops.Window, pd.Series, win.Window)
 def execute_window_op(
     op,
     data,
@@ -284,7 +284,7 @@ def execute_window_op(
             op, timecontext=timecontext, clients=clients, scope=scope
         )
         # timecontext is the original time context required by parent node
-        # of this WindowOp, while adjusted_timecontext is the adjusted context
+        # of this Window, while adjusted_timecontext is the adjusted context
         # of this Window, since we are doing a manual execution here, use
         # adjusted_timecontext in later execution phases
         adjusted_timecontext = arg_timecontexts[0]

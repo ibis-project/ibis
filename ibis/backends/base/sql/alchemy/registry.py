@@ -574,7 +574,7 @@ sqlalchemy_window_functions_registry = {
     ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
     ops.MinRank: unary(lambda arg: sa.func.rank()),
     ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
-    ops.WindowOp: _window,
+    ops.Window: _window,
     ops.CumulativeOp: _window,
     ops.CumulativeMax: unary(sa.func.max),
     ops.CumulativeMin: unary(sa.func.min),

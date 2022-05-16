@@ -497,10 +497,10 @@ def propagate_down_window(expr: ir.ValueExpr, window: Window):
     clean_args = []
     unchanged = True
     for arg in op.args:
-        if isinstance(arg, ir.Expr) and not isinstance(op, ops.WindowOp):
+        if isinstance(arg, ir.Expr) and not isinstance(op, ops.Window):
             new_arg = propagate_down_window(arg, window)
             if isinstance(new_arg.op(), ops.AnalyticOp):
-                new_arg = ops.WindowOp(new_arg, window).to_expr()
+                new_arg = ops.Window(new_arg, window).to_expr()
             if arg is not new_arg:
                 unchanged = False
             arg = new_arg

@@ -63,9 +63,9 @@ def compute_time_context_asof_join(
     return new_timecontexts
 
 
-@compute_time_context.register(ops.WindowOp)
+@compute_time_context.register(ops.Window)
 def compute_time_context_window(
-    op: ops.WindowOp,
+    op: ops.Window,
     scope: Scope,
     clients: List[BaseBackend],
     timecontext: Optional[TimeContext] = None,

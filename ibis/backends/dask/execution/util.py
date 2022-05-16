@@ -447,7 +447,7 @@ def is_row_order_preserving(exprs) -> bool:
     """
 
     def _is_row_order_preserving(expr: ir.Expr):
-        if isinstance(expr.op(), (ops.Reduction, ops.WindowOp)):
+        if isinstance(expr.op(), (ops.Reduction, ops.Window)):
             return (lin.halt, False)
         else:
             return (lin.proceed, True)

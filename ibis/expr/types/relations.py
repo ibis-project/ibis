@@ -637,8 +637,8 @@ class TableExpr(Expr):
           b float64
         Selection[r0]
           selections:
-            sum_a:  WindowOp(Sum(r0.a), window=Window(how='rows'))
-            mean_b: WindowOp(Mean(r0.b), window=Window(how='rows'))
+            sum_a:  Window(Sum(r0.a), window=Window(how='rows'))
+            mean_b: Window(Mean(r0.b), window=Window(how='rows'))
 
         Note the `Window` objects here.
 
@@ -653,7 +653,7 @@ class TableExpr(Expr):
           b float64
         Selection[r0]
           selections:
-            demeaned_a: r0.a - WindowOp(Mean(r0.a), window=Window(how='rows'))
+            demeaned_a: r0.a - Window(Mean(r0.a), window=Window(how='rows'))
         """
         import ibis.expr.analysis as an
 

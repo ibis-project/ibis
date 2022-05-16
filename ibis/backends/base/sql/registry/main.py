@@ -370,7 +370,7 @@ operation_registry = {
     ops.NthValue: window.nth_value,
     ops.Lag: window.shift_like('lag'),
     ops.Lead: window.shift_like('lead'),
-    ops.WindowOp: window.window,
+    ops.Window: window.window,
     ops.NTile: window.ntile,
     ops.DayOfWeekIndex: timestamp.day_of_week_index,
     ops.DayOfWeekName: timestamp.day_of_week_name,
