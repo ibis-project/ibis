@@ -1923,3 +1923,10 @@ def compile_unnest(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     column = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.explode(column)
+
+
+@compiles(ops.NullIfZero)
+def compile_null_if_zero(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext, **kwargs)
+    return F.when(arg == 0, F.lit(None)).otherwise(arg)
