@@ -40,6 +40,33 @@ def execute_series_unary_op(op, data, **kwargs):
     return call_numpy_ufunc(function, op, data, **kwargs)
 
 
+@execute_node.register(ops.Acos, dd.Series)
+def execute_series_acos(_, data, **kwargs):
+    return np.arccos(data)
+
+
+@execute_node.register(ops.Asin, dd.Series)
+def execute_series_asin(_, data, **kwargs):
+    return np.arcsin(data)
+
+
+@execute_node.register(ops.Atan, dd.Series)
+def execute_series_atan(_, data, **kwargs):
+    return np.arctan(data)
+
+
+@execute_node.register(ops.Cot, dd.Series)
+def execute_series_cot(_, data, **kwargs):
+    return np.cos(data) / np.sin(data)
+
+
+@execute_node.register(ops.Atan2, dd.Series, dd.Series)
+@execute_node.register(ops.Atan2, numeric_types, dd.Series)
+@execute_node.register(ops.Atan2, dd.Series, numeric_types)
+def execute_series_atan2(_, y, x, **kwargs):
+    return np.arctan2(y, x)
+
+
 @execute_node.register((ops.Ceil, ops.Floor), dd.Series)
 def execute_series_ceil(op, data, **kwargs):
     return_type = np.object_ if data.dtype == np.object_ else np.int64
