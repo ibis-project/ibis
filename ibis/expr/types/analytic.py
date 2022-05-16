@@ -17,7 +17,7 @@ class Analytic(Expr):
 
 
 @public
-class ExistsExpr(Analytic):
+class Exists(Analytic):
     # TODO(kszucs): should be removed
     def type(self):
         return 'exists'
@@ -95,4 +95,4 @@ class TopK(Analytic):
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
-public(AnalyticExpr=Analytic, TopKExpr=TopK)
+public(AnalyticExpr=Analytic, ExistsExpr=Exists, TopKExpr=TopK)
