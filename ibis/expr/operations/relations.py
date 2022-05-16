@@ -426,7 +426,7 @@ class Selection(TableNode, sch.HasSchema):
                 for name in struct_type.names:
                     names.append(name)
                     types.append(struct_type[name])
-            elif isinstance(projection, ir.ValueExpr):
+            elif isinstance(projection, ir.Value):
                 names.append(projection.get_name())
                 types.append(projection.type())
             elif isinstance(projection, ir.Table):

@@ -44,7 +44,7 @@ class ArrayValue(AnyValue):
     def __getitem__(
         self,
         index: int | ir.IntegerValue | slice,
-    ) -> ir.ValueExpr:
+    ) -> ir.Value:
         """Extract one or more elements of `self`.
 
         Parameters
@@ -54,7 +54,7 @@ class ArrayValue(AnyValue):
 
         Returns
         -------
-        ValueExpr
+        Value
             - If `index` is an [`int`][int] or
               [`IntegerValue`][ibis.expr.types.IntegerValue] then the return
               type is the element type of `self`.
@@ -190,12 +190,12 @@ class ArrayValue(AnyValue):
 
         return ops.ArrayRepeat(self, n).to_expr()
 
-    def unnest(self) -> ir.ValueExpr:
+    def unnest(self) -> ir.Value:
         """Unnest an array.
 
         Returns
         -------
-        ir.ValueExpr
+        ir.Value
             Unnested array
         """
         import ibis.expr.operations as ops

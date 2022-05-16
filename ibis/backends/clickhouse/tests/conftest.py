@@ -46,9 +46,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         )
 
     @staticmethod
-    def greatest(
-        f: Callable[..., ir.ValueExpr], *args: ir.ValueExpr
-    ) -> ir.ValueExpr:
+    def greatest(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         if len(args) > 2:
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to greatest'
@@ -56,9 +54,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         return f(*args)
 
     @staticmethod
-    def least(
-        f: Callable[..., ir.ValueExpr], *args: ir.ValueExpr
-    ) -> ir.ValueExpr:
+    def least(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         if len(args) > 2:
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to least'

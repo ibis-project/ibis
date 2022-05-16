@@ -15,9 +15,9 @@ from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 class BooleanValue(NumericValue):
     def ifelse(
         self,
-        true_expr: ir.ValueExpr,
-        false_expr: ir.ValueExpr,
-    ) -> ir.ValueExpr:
+        true_expr: ir.Value,
+        false_expr: ir.Value,
+    ) -> ir.Value:
         """Construct a ternary conditional expression.
 
         Parameters
@@ -29,7 +29,7 @@ class BooleanValue(NumericValue):
 
         Returns
         -------
-        ValueExpr
+        Value
             The value of `true_expr` if `arg` is `True` else `false_expr`
 
         Examples

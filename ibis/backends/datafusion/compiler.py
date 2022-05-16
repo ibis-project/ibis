@@ -90,7 +90,7 @@ def selection(op, expr):
                 column = expr.get_column(name)
                 field = translate(column)
                 selections.append(field)
-        elif isinstance(expr, ir.ValueExpr):
+        elif isinstance(expr, ir.Value):
             field = translate(expr)
             selections.append(field)
         else:

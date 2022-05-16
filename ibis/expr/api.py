@@ -91,7 +91,7 @@ from ibis.expr.types import (  # noqa: F401
     TimestampScalar,
     TimestampValue,
     TimeValue,
-    ValueExpr,
+    Value,
     array,
     literal,
     map,
@@ -643,9 +643,9 @@ def _add_methods(klass, method_table):
 
 def where(
     boolean_expr: ir.BooleanValue,
-    true_expr: ir.ValueExpr,
-    false_null_expr: ir.ValueExpr,
-) -> ir.ValueExpr:
+    true_expr: ir.Value,
+    false_null_expr: ir.Value,
+) -> ir.Value:
     """Return `true_expr` if `boolean_expr` is `True` else `false_null_expr`.
 
     Parameters
@@ -659,7 +659,7 @@ def where(
 
     Returns
     -------
-    ir.ValueExpr
+    ir.Value
         An expression
     """
     op = ops.Where(boolean_expr, true_expr, false_null_expr)

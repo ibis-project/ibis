@@ -207,7 +207,7 @@ class AlchemySelect(Select):
 
         has_select_star = False
         for expr in self.select_set:
-            if isinstance(expr, ir.ValueExpr):
+            if isinstance(expr, ir.Value):
                 arg = self._translate(expr, named=True)
             elif isinstance(expr, ir.Table):
                 if expr.equals(self.table_set):

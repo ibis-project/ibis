@@ -118,9 +118,7 @@ class GroupedTable:
             window=self._window,
         )
 
-    def order_by(
-        self, expr: ir.ValueExpr | Iterable[ir.ValueExpr]
-    ) -> GroupedTable:
+    def order_by(self, expr: ir.Value | Iterable[ir.Value]) -> GroupedTable:
         """Sort a grouped table expression by `expr`.
 
         Notes
@@ -147,8 +145,8 @@ class GroupedTable:
 
     def mutate(
         self,
-        exprs: ir.ValueExpr | Sequence[ir.ValueExpr] | None = None,
-        **kwds: ir.ValueExpr,
+        exprs: ir.Value | Sequence[ir.Value] | None = None,
+        **kwds: ir.Value,
     ):
         """Return a table projection with window functions applied.
 

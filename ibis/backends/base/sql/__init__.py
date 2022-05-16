@@ -178,7 +178,7 @@ class BaseSQLBackend(BaseBackend):
 
         if isinstance(expr, (ir.Table, sch.HasSchema)):
             return expr.schema()
-        elif isinstance(expr, ir.ValueExpr):
+        elif isinstance(expr, ir.Value):
             return sch.schema([(expr.get_name(), expr.type())])
         else:
             raise ValueError(

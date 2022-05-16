@@ -489,7 +489,7 @@ def trailing_range_window(preceding, order_by, group_by=None) -> Window:
     )
 
 
-def propagate_down_window(expr: ir.ValueExpr, window: Window):
+def propagate_down_window(expr: ir.Value, window: Window):
     import ibis.expr.operations as ops
 
     op = expr.op()

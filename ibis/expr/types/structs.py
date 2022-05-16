@@ -54,7 +54,7 @@ class StructValue(AnyValue):
             frozenset(itertools.chain(dir(type(self)), self.type().names))
         )
 
-    def __getitem__(self, name: str) -> ir.ValueExpr:
+    def __getitem__(self, name: str) -> ir.Value:
         """Extract the `name` field from this struct.
 
         Parameters
@@ -64,7 +64,7 @@ class StructValue(AnyValue):
 
         Returns
         -------
-        ValueExpr
+        Value
             An expression with the type of the field being accessed.
 
         Examples

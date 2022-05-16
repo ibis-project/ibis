@@ -16,9 +16,9 @@ if TYPE_CHECKING:
 class MapValue(AnyValue):
     def get(
         self,
-        key: ir.ValueExpr,
-        default: ir.ValueExpr | None = None,
-    ) -> ir.ValueExpr:
+        key: ir.Value,
+        default: ir.Value | None = None,
+    ) -> ir.Value:
         """Return the value for `key` from `expr` or the default if `key` is not in the map.
 
         Parameters
@@ -30,7 +30,7 @@ class MapValue(AnyValue):
 
         Returns
         -------
-        ValueExpr
+        Value
             The element type of `self`
 
         Examples
@@ -67,7 +67,7 @@ class MapValue(AnyValue):
 
         return ops.MapLength(self).to_expr()
 
-    def __getitem__(self, key: ir.ValueExpr) -> ir.ValueExpr:
+    def __getitem__(self, key: ir.Value) -> ir.Value:
         """Get the value for a given map `key`.
 
         !!! info "This operation may have different semantics depending on the backend."
@@ -82,7 +82,7 @@ class MapValue(AnyValue):
 
         Returns
         -------
-        ValueExpr
+        Value
             An element with the value type of the map
 
         Examples

@@ -56,7 +56,7 @@ functionality of that specific backend.
 A concrete example of this is the [FARM_FINGERPRINT](https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-and-operators#farm_fingerprint)
 function in BigQuery.
 
-It is unlikely that the main ValueExpr API will ever grow such a method, but a
+It is unlikely that the main Value API will ever grow such a method, but a
 BigQuery user shouldn’t be restricted to using only the methods this API
 provides. Moreover, users should be able to bring their own methods to this API
 without having to consult the ibis developers and without the addition of such

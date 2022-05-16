@@ -110,15 +110,11 @@ class BackendTest(abc.ABC):
         return series.rename(name)
 
     @staticmethod
-    def greatest(
-        f: Callable[..., ir.ValueExpr], *args: ir.ValueExpr
-    ) -> ir.ValueExpr:
+    def greatest(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         return f(*args)
 
     @staticmethod
-    def least(
-        f: Callable[..., ir.ValueExpr], *args: ir.ValueExpr
-    ) -> ir.ValueExpr:
+    def least(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         return f(*args)
 
     @property
@@ -146,7 +142,5 @@ class BackendTest(abc.ABC):
     def api(self):
         return self.connection
 
-    def make_context(
-        self, params: Optional[Mapping[ir.ValueExpr, Any]] = None
-    ):
+    def make_context(self, params: Optional[Mapping[ir.Value, Any]] = None):
         return self.api.compiler.make_context(params=params)
