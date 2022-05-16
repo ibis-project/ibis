@@ -585,6 +585,12 @@ def _string_right(translator, expr):
     return f"substring({arg}, -({nchars}))"
 
 
+def _cotangent(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    return f"cos({arg}) / sin({arg})"
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -630,6 +636,16 @@ operation_registry = {
     ops.Ln: _unary('log'),
     ops.Log2: _unary('log2'),
     ops.Log10: _unary('log10'),
+    ops.Acos: _unary("acos"),
+    ops.Asin: _unary("asin"),
+    ops.Atan: _unary("atan"),
+    ops.Atan2: _fixed_arity("atan2", 2),
+    ops.Cos: _unary("cos"),
+    ops.Cot: _cotangent,
+    ops.Sin: _unary("sin"),
+    ops.Tan: _unary("tan"),
+    ops.Pi: _fixed_arity("pi", 0),
+    ops.E: _fixed_arity("e", 0),
     # Unary aggregates
     ops.CMSMedian: _agg('median'),
     # TODO: there is also a `uniq` function which is the
