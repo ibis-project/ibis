@@ -170,7 +170,7 @@ class Backend(BaseSQLBackend):
         self,
         expr: ir.Expr,
         timecontext: Mapping | None = None,
-        params: Mapping[ir.ScalarExpr, Any] | None = None,
+        params: Mapping[ir.Scalar, Any] | None = None,
         limit: str = 'default',
         **kwargs: Any,
     ) -> Any:
@@ -184,7 +184,7 @@ class Backend(BaseSQLBackend):
             return self.compile(
                 expr.to_projection(), timecontext, params, **kwargs
             ).toPandas()[expr.get_name()]
-        elif isinstance(expr, types.ScalarExpr):
+        elif isinstance(expr, types.Scalar):
             compiled = self.compile(expr, timecontext, params, **kwargs)
             if isinstance(compiled, Column):
                 # attach result column to a fake DataFrame and

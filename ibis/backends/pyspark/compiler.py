@@ -161,7 +161,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
                 for name in selection.type().names
             ]
             col_in_selection_order.extend(cols)
-        elif isinstance(selection, (types.ColumnExpr, types.ScalarExpr)):
+        elif isinstance(selection, (types.ColumnExpr, types.Scalar)):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
             # renames), we can get the selection name directly.

@@ -582,7 +582,7 @@ class Compiler:
         for query in reversed(query_ast.queries):
             if (
                 isinstance(query, Select)
-                and not isinstance(expr, ir.ScalarExpr)
+                and not isinstance(expr, ir.Scalar)
                 and query.table_set is not None
             ):
                 if query.limit is None:

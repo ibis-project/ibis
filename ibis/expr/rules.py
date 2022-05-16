@@ -154,7 +154,7 @@ def value(dtype, arg, **kwargs):
 
 @validator
 def scalar(inner, arg, **kwargs):
-    return instance_of(ir.ScalarExpr, inner(arg, **kwargs))
+    return instance_of(ir.Scalar, inner(arg, **kwargs))
 
 
 @validator
@@ -453,7 +453,7 @@ def is_computable_input(value, **kwargs):
 def named_literal(value, **kwargs):
     import ibis.expr.operations as ops
 
-    if not isinstance(value, ir.ScalarExpr):
+    if not isinstance(value, ir.Scalar):
         raise com.IbisTypeError(
             "`value` must be a scalar expression; "
             f"got value of type {type(value).__name__}"

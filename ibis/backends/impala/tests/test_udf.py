@@ -241,7 +241,7 @@ def test_mult_args(i32, d, s, b, t):
     assert issubclass(type(expr), ir.ColumnExpr)
 
     expr = func(1, 1.0, 'a', True, ibis.timestamp('1961-04-10'))
-    assert issubclass(type(expr), ir.ScalarExpr)
+    assert issubclass(type(expr), ir.Scalar)
 
 
 def _register_udf(inputs, output, name):
@@ -343,7 +343,7 @@ def test_decimal_fail(udfcon, test_data_db, udf_ll):
     )
 
     expr = func(literal)
-    assert issubclass(type(expr), ir.ScalarExpr)
+    assert issubclass(type(expr), ir.Scalar)
     result = udfcon.execute(expr)
     assert result == Decimal(1)
 
@@ -395,7 +395,7 @@ def identity_func_testing(
     )
 
     expr = func(literal)
-    assert issubclass(type(expr), ir.ScalarExpr)
+    assert issubclass(type(expr), ir.Scalar)
     result = udfcon.execute(expr)
     # Hacky
     if datatype == 'timestamp':

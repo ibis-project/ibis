@@ -1100,7 +1100,7 @@ def wrap_case_result(raw, expr):
         result = pd.Series(
             raw_1d, dtype=constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()]
         )
-    if result.size == 1 and isinstance(expr, ir.ScalarExpr):
+    if result.size == 1 and isinstance(expr, ir.Scalar):
         return result.iloc[0].item()
     return result
 

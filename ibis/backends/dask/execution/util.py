@@ -123,7 +123,7 @@ def coerce_to_output(
     elif isinstance(result, (pd.Series, dd.Series)):
         # Series from https://github.com/ibis-project/ibis/issues/2711
         return result.rename(result_name)
-    elif isinstance(expr, ir.ScalarExpr):
+    elif isinstance(expr, ir.Scalar):
         if isinstance(result, dd.core.Scalar):
             # wrap the scalar in a series
             out_dtype = _pandas_dtype_from_dd_scalar(result)

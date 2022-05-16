@@ -77,7 +77,7 @@ from ibis.expr.types import (  # noqa: F401
     PolygonColumn,
     PolygonScalar,
     PolygonValue,
-    ScalarExpr,
+    Scalar,
     StringColumn,
     StringScalar,
     StringValue,
@@ -216,7 +216,7 @@ T = TypeVar("T")
 negate = ir.NumericValue.negate
 
 
-def param(type: dt.DataType) -> ir.ScalarExpr:
+def param(type: dt.DataType) -> ir.Scalar:
     """Create a deferred parameter of a given type.
 
     Parameters
@@ -226,7 +226,7 @@ def param(type: dt.DataType) -> ir.ScalarExpr:
 
     Returns
     -------
-    ScalarExpr
+    Scalar
         A scalar expression backend by a parameter
 
     Examples

@@ -125,7 +125,7 @@ def coerce_to_output(
         return _coerce_to_dataframe(result, expr.type())
     elif isinstance(result, pd.Series):
         return result.rename(result_name)
-    elif isinstance(expr, ir.ScalarExpr):
+    elif isinstance(expr, ir.Scalar):
         if index is None:
             # Wrap `result` into a single-element Series.
             return pd.Series([result], name=result_name)

@@ -29,7 +29,7 @@ or table expression.
 
 Parameters
 ----------
-expr : Union[ir.ScalarExpr, ir.ColumnExpr, ir.Table]
+expr : Union[ir.Scalar, ir.ColumnExpr, ir.Table]
 parent : ops.Selection
 data : pd.DataFrame
 scope : Scope
@@ -41,13 +41,13 @@ value : scalar, pd.Series, pd.DataFrame
 
 Notes
 -----
-:class:`~ibis.expr.types.ScalarExpr` instances occur when a specific column
+:class:`~ibis.expr.types.Scalar` instances occur when a specific column
 projection is a window operation.
 """,
 )
 
 
-@compute_projection.register(ir.ScalarExpr, ops.Selection, pd.DataFrame)
+@compute_projection.register(ir.Scalar, ops.Selection, pd.DataFrame)
 def compute_projection_scalar_expr(
     expr,
     parent,

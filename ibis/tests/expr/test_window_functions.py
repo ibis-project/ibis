@@ -347,7 +347,7 @@ def test_quantile_shape():
     t = ibis.table([("a", "float64")])
 
     b1 = t.a.quantile(0.25).name("br2")
-    assert isinstance(b1, ir.ScalarExpr)
+    assert isinstance(b1, ir.Scalar)
 
     projs = [b1]
     expr = t.projection(projs)

@@ -32,7 +32,7 @@ from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
 
-@compute_projection.register(ir.ScalarExpr, ops.Selection, dd.DataFrame)
+@compute_projection.register(ir.Scalar, ops.Selection, dd.DataFrame)
 def compute_projection_scalar_expr(
     expr,
     parent,
