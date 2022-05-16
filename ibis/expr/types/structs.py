@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, AnyScalar, Value, literal
+from ibis.expr.types.generic import AnyColumn, Scalar, Value, literal
 from ibis.expr.types.typing import V
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ class StructValue(Value):
 
 
 @public
-class StructScalar(AnyScalar, StructValue):
+class StructScalar(Scalar, StructValue):
     def destructure(self) -> DestructScalar:
         """Destructure `self` into a `DestructScalar`.
 
@@ -138,7 +138,7 @@ class DestructValue(Value):
 
 
 @public
-class DestructScalar(AnyScalar, DestructValue):
+class DestructScalar(Scalar, DestructValue):
     pass
 
 

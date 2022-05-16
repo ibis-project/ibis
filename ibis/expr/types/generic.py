@@ -808,14 +808,7 @@ class Column(Value):
         return ops.NthValue(self, n).to_expr()
 
 
-# TODO(kszucs): keep either Value or Value
 # TODO(kszucs): keep either Column or AnyColumn
-# TODO(kszucs): keep either Scalar or ScalarColumn
-
-
-@public
-class AnyScalar(Scalar, Value):
-    pass  # noqa: E701,E302
 
 
 @public
@@ -829,7 +822,7 @@ class NullValue(Value):
 
 
 @public
-class NullScalar(AnyScalar, NullValue):
+class NullScalar(Scalar, NullValue):
     pass  # noqa: E701,E302
 
 
@@ -981,4 +974,10 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-public(ValueExpr=Value, ScalarExpr=Scalar, ColumnExpr=Column, AnyValue=Value)
+public(
+    ValueExpr=Value,
+    ScalarExpr=Scalar,
+    ColumnExpr=Column,
+    AnyValue=Value,
+    AnyScalar=Scalar,
+)
