@@ -99,7 +99,7 @@ class Table(Expr):
         return self.execute()._repr_html_()
 
     def __getitem__(self, what):
-        from ibis.expr.types.analytic import TopKExpr
+        from ibis.expr.types.analytic import TopK
         from ibis.expr.types.generic import ColumnExpr
         from ibis.expr.types.logical import BooleanColumn
 
@@ -123,7 +123,7 @@ class Table(Expr):
 
         what = bind_expr(self, what)
 
-        if isinstance(what, TopKExpr):
+        if isinstance(what, TopK):
             return what._to_semi_join(self)[self]
         elif isinstance(what, (list, tuple, Table)):
             # Projection case
@@ -1257,7 +1257,7 @@ def _resolve_predicates(
     resolved_predicates = []
     top_ks = []
     for pred in predicates:
-        if isinstance(pred, ir.TopKExpr):
+        if isinstance(pred, ir.TopK):
             top_ks.append(pred._semi_join_components())
         else:
             resolved_predicates.append(pred)

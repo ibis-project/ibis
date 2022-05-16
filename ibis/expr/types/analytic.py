@@ -24,7 +24,7 @@ class ExistsExpr(Analytic):
 
 
 @public
-class TopKExpr(Analytic):
+class TopK(Analytic):
     def type(self):
         return 'topk'
 
@@ -95,4 +95,4 @@ class TopKExpr(Analytic):
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
-public(AnalyticExpr=Analytic)
+public(AnalyticExpr=Analytic, TopKExpr=TopK)

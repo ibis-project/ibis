@@ -1015,7 +1015,7 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ir.TopKExpr):  # pragma: no cover
+                elif isinstance(arg, ir.TopK):  # pragma: no cover
                     # we don't cover this branch because its implementation as
                     # a filter is automatically turned into a semi-join before
                     # this code path is hit
