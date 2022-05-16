@@ -2,11 +2,11 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import BinaryOp, Unary, Value
+from ibis.expr.operations.core import Binary, Unary, Value
 
 
 @public
-class LogicalBinaryOp(BinaryOp):
+class LogicalBinary(Binary):
     left = rlz.boolean
     right = rlz.boolean
 
@@ -21,22 +21,22 @@ class Not(Unary):
 
 
 @public
-class And(LogicalBinaryOp):
+class And(LogicalBinary):
     pass
 
 
 @public
-class Or(LogicalBinaryOp):
+class Or(LogicalBinary):
     pass
 
 
 @public
-class Xor(LogicalBinaryOp):
+class Xor(LogicalBinary):
     pass
 
 
 @public
-class Comparison(BinaryOp):
+class Comparison(Binary):
     left = rlz.any
     right = rlz.any
 

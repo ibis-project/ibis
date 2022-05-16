@@ -1554,7 +1554,7 @@ def _get_interval_col(
 ):
     # if interval expression is a binary op, translate expression into
     # an interval column and return
-    if isinstance(interval_ibis_expr.op(), ops.IntervalBinaryOp):
+    if isinstance(interval_ibis_expr.op(), ops.IntervalBinary):
         return t.translate(interval_ibis_expr, scope, timecontext)
 
     # otherwise, translate expression into a literal op and construct

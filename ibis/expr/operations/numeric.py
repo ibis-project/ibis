@@ -7,27 +7,27 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import BinaryOp, Unary, Value
+from ibis.expr.operations.core import Binary, Unary, Value
 
 
 @public
-class NumericBinaryOp(BinaryOp):
+class NumericBinary(Binary):
     left = rlz.numeric
     right = rlz.numeric
 
 
 @public
-class Add(NumericBinaryOp):
+class Add(NumericBinary):
     output_dtype = rlz.numeric_like("args", operator.add)
 
 
 @public
-class Multiply(NumericBinaryOp):
+class Multiply(NumericBinary):
     output_dtype = rlz.numeric_like("args", operator.mul)
 
 
 @public
-class Power(NumericBinaryOp):
+class Power(NumericBinary):
     @property
     def output_dtype(self):
         if util.all_of(self.args, ir.IntegerValue):
@@ -37,12 +37,12 @@ class Power(NumericBinaryOp):
 
 
 @public
-class Subtract(NumericBinaryOp):
+class Subtract(NumericBinary):
     output_dtype = rlz.numeric_like("args", operator.sub)
 
 
 @public
-class Divide(NumericBinaryOp):
+class Divide(NumericBinary):
     output_dtype = dt.float64
 
 
@@ -52,7 +52,7 @@ class FloorDivide(Divide):
 
 
 @public
-class Modulus(NumericBinaryOp):
+class Modulus(NumericBinary):
     output_dtype = rlz.numeric_like("args", operator.mod)
 
 
@@ -270,7 +270,7 @@ class TrigonometricUnary(MathUnary):
 
 
 @public
-class TrigonometricBinary(BinaryOp):
+class TrigonometricBinary(Binary):
     """Trigonometric base binary"""
 
     left = rlz.numeric

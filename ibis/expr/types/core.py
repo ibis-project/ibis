@@ -315,7 +315,7 @@ unnamed = UnnamedMarker()
 
 
 def _binop(
-    op_class: type[ops.BinaryOp],
+    op_class: type[ops.Binary],
     left: ir.ValueExpr,
     right: ir.ValueExpr,
 ) -> ir.ValueExpr | NotImplemented:
@@ -324,7 +324,7 @@ def _binop(
     Parameters
     ----------
     op_class
-        The [`BinaryOp`][ibis.expr.operations.BinaryOp] subclass for the
+        The [`Binary`][ibis.expr.operations.Binary] subclass for the
         operation
     left
         Left operand

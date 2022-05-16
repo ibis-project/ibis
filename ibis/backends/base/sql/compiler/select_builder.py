@@ -547,7 +547,7 @@ class SelectBuilder:
             if L.is_reduction(expr):
                 return self._rewrite_reduction_filter(expr)
 
-        if isinstance(op, ops.BinaryOp):
+        if isinstance(op, ops.Binary):
             left = self._visit_filter(op.left)
             right = self._visit_filter(op.right)
             unchanged = left is op.left and right is op.right

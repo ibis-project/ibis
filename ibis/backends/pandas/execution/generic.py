@@ -686,19 +686,19 @@ def execute_not_bool(op, data, **kwargs):
     return not data
 
 
-@execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
+@execute_node.register(ops.Binary, pd.Series, pd.Series)
 @execute_node.register(
-    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     numeric_types,
     pd.Series,
 )
 @execute_node.register(
-    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     pd.Series,
     numeric_types,
 )
 @execute_node.register(
-    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     numeric_types,
     numeric_types,
 )
@@ -721,7 +721,7 @@ def execute_binary_op(op, left, right, **kwargs):
         return operation(left, right)
 
 
-@execute_node.register(ops.BinaryOp, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(ops.Binary, SeriesGroupBy, SeriesGroupBy)
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
     left_groupings = left.grouper.groupings
     right_groupings = right.grouper.groupings
@@ -734,13 +734,13 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
     return result.groupby(left_groupings)
 
 
-@execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
+@execute_node.register(ops.Binary, SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
     result = execute_binary_op(op, left.obj, right, **kwargs)
     return result.groupby(left.grouper.groupings)
 
 
-@execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
+@execute_node.register(ops.Binary, simple_types, SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     result = execute_binary_op(op, left, right.obj, **kwargs)
     return result.groupby(right.grouper.groupings)

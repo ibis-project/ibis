@@ -285,16 +285,16 @@ def execute_not_scalar_or_series(op, data, **kwargs):
     return ~data
 
 
-@execute_node.register(ops.BinaryOp, dd.Series, dd.Series)
-@execute_node.register(ops.BinaryOp, dd.Series, dd.core.Scalar)
-@execute_node.register(ops.BinaryOp, dd.core.Scalar, dd.Series)
+@execute_node.register(ops.Binary, dd.Series, dd.Series)
+@execute_node.register(ops.Binary, dd.Series, dd.core.Scalar)
+@execute_node.register(ops.Binary, dd.core.Scalar, dd.Series)
 @execute_node.register(
-    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     numeric_types,
     dd.Series,
 )
 @execute_node.register(
-    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     dd.Series,
     numeric_types,
 )
@@ -314,7 +314,7 @@ def execute_binary_op(op, left, right, **kwargs):
         return operation(left, right)
 
 
-@execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
+@execute_node.register(ops.Binary, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
     if left.index != right.index:
         raise ValueError(
@@ -327,13 +327,13 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
     return result.groupby(left.index)
 
 
-@execute_node.register(ops.BinaryOp, ddgb.SeriesGroupBy, simple_types)
+@execute_node.register(ops.Binary, ddgb.SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
     result = execute_binary_op(op, make_selected_obj(left), right, **kwargs)
     return result.groupby(left.index)
 
 
-@execute_node.register(ops.BinaryOp, simple_types, ddgb.SeriesGroupBy)
+@execute_node.register(ops.Binary, simple_types, ddgb.SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     result = execute_binary_op(op, left, make_selected_obj(right), **kwargs)
     return result.groupby(right.index)
