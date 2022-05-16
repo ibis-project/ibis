@@ -87,7 +87,7 @@ def test_simple_case_null_else(table):
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
-    assert isinstance(op.default, ir.ValueExpr)
+    assert isinstance(op.default, ir.Value)
     assert isinstance(op.default.op(), ops.Cast)
     assert op.default.op().to == dt.string
 
@@ -97,7 +97,7 @@ def test_multiple_case_null_else(table):
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
-    assert isinstance(op.default, ir.ValueExpr)
+    assert isinstance(op.default, ir.Value)
     assert isinstance(op.default.op(), ops.Cast)
     assert op.default.op().to == dt.string
 

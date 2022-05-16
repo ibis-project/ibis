@@ -37,7 +37,7 @@ def highest_precedence_dtype(exprs):
 
     Parameters
     ----------
-    exprs : Iterable[ir.ValueExpr]
+    exprs : Iterable[ir.Value]
       A sequence of Expressions
 
     Returns

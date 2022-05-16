@@ -621,7 +621,7 @@ class SelectBuilder:
     # Analysis of table set
 
     def _collect_elements(self):
-        # If expr is a ValueExpr, we must seek out the Tables that it
+        # If expr is a Value, we must seek out the Tables that it
         # references, build their ASTs, and mark them in our QueryContext
 
         # For now, we need to make the simplifying assumption that a value

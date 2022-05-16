@@ -53,7 +53,7 @@ def _string_or_timestamp_to_date(t, arg, _):
 
 @sqlite_cast.register(
     AlchemyExprTranslator,
-    ir.ValueExpr,
+    ir.Value,
     (dt.Date, dt.Timestamp),
 )
 def _value_to_temporal(t, arg, _):
@@ -65,7 +65,7 @@ def _category_to_int(t, arg, _):
     return t.translate(arg)
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.ValueExpr, dt.DataType)
+@sqlite_cast.register(AlchemyExprTranslator, ir.Value, dt.DataType)
 def _default_cast_impl(t, arg, target_type):
     return sa.cast(t.translate(arg), t.get_sqla_type(target_type))
 

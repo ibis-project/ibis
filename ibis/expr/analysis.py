@@ -279,7 +279,7 @@ class ExprSimplifier:
         lifted_node = type(node)(*lifted_args)
 
         result = type(expr)(lifted_node)
-        if isinstance(expr, ir.ValueExpr) and expr.has_name():
+        if isinstance(expr, ir.Value) and expr.has_name():
             result = result.name(expr.get_name())
 
         return result
@@ -551,9 +551,7 @@ def get_mutation_exprs(
                     else:
                         overwriting_cols_to_expr[name] = None
                     expr_contains_overwrite = True
-        elif (
-            isinstance(expr, ir.ValueExpr) and expr.get_name() in table_schema
-        ):
+        elif isinstance(expr, ir.Value) and expr.get_name() in table_schema:
             overwriting_cols_to_expr[expr.get_name()] = expr
             expr_contains_overwrite = True
 
@@ -706,7 +704,7 @@ class _PushdownValidate:
                 return lin.proceed, self._validate_column(expr)
             return lin.proceed, None
 
-        return lin.traverse(validate, expr, type=ir.ValueExpr)
+        return lin.traverse(validate, expr, type=ir.Value)
 
     def _validate_column(self, expr):
         if isinstance(self.parent, ops.Selection):
@@ -786,7 +784,7 @@ def windowize_function(expr, w=None):
         unchanged = True
         windowed_args = []
         for arg in op.args:
-            if not isinstance(arg, ir.ValueExpr):
+            if not isinstance(arg, ir.Value):
                 windowed_args.append(arg)
                 continue
 

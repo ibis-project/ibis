@@ -338,9 +338,9 @@ class Table(Expr):
     def aggregate(
         self,
         metrics: Sequence[ir.ScalarExpr] | None = None,
-        by: Sequence[ir.ValueExpr] | None = None,
+        by: Sequence[ir.Value] | None = None,
         having: Sequence[ir.BooleanValue] | None = None,
-        **kwargs: ir.ValueExpr,
+        **kwargs: ir.Value,
     ) -> Table:
         """Aggregate a table with a given set of reductions grouping by `by`.
 
@@ -500,7 +500,7 @@ class Table(Expr):
 
         Returns
         -------
-        ValueExpr
+        Value
             A single column view of a table
         """
         from ibis.expr import operations as ops
@@ -522,7 +522,7 @@ class Table(Expr):
     def mutate(
         self,
         exprs: Sequence[ir.Expr] | None = None,
-        **mutations: ir.ValueExpr,
+        **mutations: ir.Value,
     ) -> Table:
         """Add columns to a table expression.
 
@@ -558,7 +558,7 @@ class Table(Expr):
             baz: 5
             qux: r0.foo + r0.bar
 
-        Use the [`name`][ibis.expr.types.generic.ValueExpr.name] method to name
+        Use the [`name`][ibis.expr.types.generic.Value.name] method to name
         the new columns.
 
         >>> new_columns = [ibis.literal(5).name('baz',),
@@ -588,7 +588,7 @@ class Table(Expr):
 
     def select(
         self,
-        exprs: ir.ValueExpr | str | Sequence[ir.ValueExpr | str],
+        exprs: ir.Value | str | Sequence[ir.Value | str],
     ) -> Table:
         """Compute a new table expression using `exprs`.
 
@@ -881,7 +881,7 @@ class Table(Expr):
         footer_line = "-" * width
         print("\n".join([tabulated, footer_line, row_count]), file=buf)
 
-    def set_column(self, name: str, expr: ir.ValueExpr) -> Table:
+    def set_column(self, name: str, expr: ir.Value) -> Table:
         """Replace an existing column with a new expression.
 
         Parameters

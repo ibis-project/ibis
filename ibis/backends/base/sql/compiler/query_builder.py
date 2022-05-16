@@ -318,7 +318,7 @@ class Select(DML, Comparable):
         context = self.context
         formatted = []
         for expr in self.select_set:
-            if isinstance(expr, ir.ValueExpr):
+            if isinstance(expr, ir.Value):
                 expr_str = self._translate(expr, named=True)
             elif isinstance(expr, ir.Table):
                 # A * selection, possibly prefixed

@@ -78,7 +78,7 @@ def fmt_truncated(
     return sep.join([*pieces[:first_n], ellipsis, *pieces[-last_m:]])
 
 
-def selection_maxlen(expressions: Iterable[ir.ValueExpr]) -> int:
+def selection_maxlen(expressions: Iterable[ir.Value]) -> int:
     """Compute the length of the longest name of input expressions.
 
     Parameters
@@ -431,7 +431,7 @@ def _fmt_table_op_limit(op: ops.Limit, *, aliases: Aliases, **_: Any) -> str:
 
 
 @functools.singledispatch
-def fmt_selection_column(value_expr: ir.ValueExpr, **_: Any) -> str:
+def fmt_selection_column(value_expr: ir.Value, **_: Any) -> str:
     assert False, (
         "expression type not implemented for "
         f"fmt_selection_column: {type(value_expr)}"
@@ -445,7 +445,7 @@ def type_info(datatype: dt.DataType) -> str:
 
 @fmt_selection_column.register
 def _fmt_selection_column_value_expr(
-    expr: ir.ValueExpr, *, aliases: Aliases, maxlen: int = 0
+    expr: ir.Value, *, aliases: Aliases, maxlen: int = 0
 ) -> str:
     raw_name = expr._safe_name
     assert raw_name is not None, (

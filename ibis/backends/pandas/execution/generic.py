@@ -1086,7 +1086,7 @@ def wrap_case_result(raw, expr):
     ----------
     raw : ndarray[T]
         The raw results of executing the ``CASE`` expression
-    expr : ValueExpr
+    expr : Value
         The expression from the which `raw` was computed
 
     Returns
