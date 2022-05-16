@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
+from ibis.expr.types.generic import AnyColumn, Scalar, Value
 
 
 @public
@@ -34,7 +34,7 @@ class BinaryValue(Value):
 
 
 @public
-class BinaryScalar(AnyScalar, BinaryValue):
+class BinaryScalar(Scalar, BinaryValue):
     pass  # noqa: E701,E302
 
 

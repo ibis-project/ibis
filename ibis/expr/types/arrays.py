@@ -4,13 +4,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from public import public
 
-from ibis.expr.types.generic import (
-    AnyColumn,
-    AnyScalar,
-    Column,
-    Value,
-    literal,
-)
+from ibis.expr.types.generic import AnyColumn, Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
 
 if TYPE_CHECKING:
@@ -208,7 +202,7 @@ class ArrayValue(Value):
 
 
 @public
-class ArrayScalar(AnyScalar, ArrayValue):
+class ArrayScalar(Scalar, ArrayValue):
     pass
 
 

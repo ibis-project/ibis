@@ -365,7 +365,7 @@ def mean(op, expr):
 
 
 def _prepare_contains_options(options):
-    if isinstance(options, ir.AnyScalar):
+    if isinstance(options, ir.Scalar):
         # TODO(kszucs): it would be better if we could pass an arrow
         # ListScalar to datafusions in_list function
         return [df.literal(v) for v in options.op().value]

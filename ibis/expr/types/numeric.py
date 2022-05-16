@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal, Sequence
 from public import public
 
 from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
+from ibis.expr.types.generic import AnyColumn, Scalar, Value
 
 if TYPE_CHECKING:
     from ibis.expr import types as ir
@@ -376,7 +376,7 @@ class NumericValue(Value):
 
 
 @public
-class NumericScalar(AnyScalar, NumericValue):
+class NumericScalar(Scalar, NumericValue):
     pass  # noqa: E701,E302
 
 
