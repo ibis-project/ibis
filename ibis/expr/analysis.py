@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import operator
 
 import toolz
@@ -1007,6 +1008,9 @@ class FilterValidator(ExprValidator):
         if isinstance(op, ops.Contains):
             value_valid = super().validate(op.value)
             is_valid = value_valid
+        elif isinstance(op, (ops.ExistsSubquery, ops.NotExistsSubquery)):
+            predicate = functools.reduce(operator.and_, op.predicates)
+            is_valid = self.shares_some_roots(predicate)
         else:
             roots_valid = []
             for arg in op.flat_args():
