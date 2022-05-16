@@ -1,10 +1,10 @@
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
 
 
 @public
-class EnumValue(AnyValue):
+class EnumValue(Value):
     pass  # noqa: E701,E302
 
 
@@ -19,7 +19,7 @@ class EnumColumn(AnyColumn, EnumValue):
 
 
 @public
-class SetValue(AnyValue):
+class SetValue(Value):
     pass  # noqa: E701,E302
 
 

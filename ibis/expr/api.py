@@ -666,9 +666,9 @@ def where(
     return op.to_expr()
 
 
-coalesce = ir.AnyValue.coalesce
-greatest = ir.AnyValue.greatest
-least = ir.AnyValue.least
+coalesce = ir.Value.coalesce
+greatest = ir.Value.greatest
+least = ir.Value.least
 
 
 def category_label(

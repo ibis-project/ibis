@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING, Literal, Sequence
 from public import public
 
 from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import AnyColumn, AnyScalar, AnyValue
+from ibis.expr.types.generic import AnyColumn, AnyScalar, Value
 
 if TYPE_CHECKING:
     from ibis.expr import types as ir
 
 
 @public
-class NumericValue(AnyValue):
+class NumericValue(Value):
     def negate(self) -> NumericValue:
         """Negate a numeric expression.
 
