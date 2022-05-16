@@ -185,7 +185,7 @@ def _contains(func):
 
         if (
             # not a list expr
-            not isinstance(op.options, ir.ListExpr)
+            not isinstance(op.options, ir.ValueList)
             # but still a column expr
             and isinstance(op.options, ir.ColumnExpr)
             # wasn't already compiled into a select statement

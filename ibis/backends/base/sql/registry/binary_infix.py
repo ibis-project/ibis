@@ -62,7 +62,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
         op = expr.op()
 
         left, right = op.args
-        if isinstance(right, ir.ListExpr) and not right:
+        if isinstance(right, ir.ValueList) and not right:
             return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
 
         left_arg = translator.translate(left)
@@ -73,7 +73,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
 
         # special case non-foreign isin/notin expressions
         if (
-            not isinstance(right, ir.ListExpr)
+            not isinstance(right, ir.ValueList)
             and isinstance(right, ir.ColumnExpr)
             # foreign refs are already been compiled correctly during
             # TableColumn compilation

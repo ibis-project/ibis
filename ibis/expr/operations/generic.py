@@ -315,7 +315,7 @@ class ValueList(Value):
 
     values = rlz.tuple_of(rlz.any)
 
-    output_type = ir.ListExpr
+    output_type = ir.ValueList
     output_dtype = rlz.dtype_like("values")
     output_shape = rlz.shape_like("values")
 
@@ -457,7 +457,7 @@ class SimpleCase(Value):
         # TODO(kszucs): we could extend the functionality of
         # rlz.shape_like to support varargs with .flat_args()
         # to define a subset of input arguments
-        values = self.results + [self.default]
+        values = [*self.results, self.default]
         return rlz.highest_precedence_dtype(values)
 
 
@@ -478,5 +478,5 @@ class SearchedCase(Value):
 
     @immutable_property
     def output_dtype(self):
-        exprs = self.results + [self.default]
+        exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
