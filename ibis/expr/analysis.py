@@ -1021,9 +1021,9 @@ class FilterValidator(ExprValidator):
                     # this code path is hit
                     #
                     # we should change its base class to Expr instead of
-                    # AnalyticExpr and then remove this branch
+                    # Analytic and then remove this branch
                     roots_valid.append(True)
-                elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
+                elif isinstance(arg, (ir.ColumnExpr, ir.Analytic)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
                     raise NotImplementedError(repr((type(expr), type(arg))))
