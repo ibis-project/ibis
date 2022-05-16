@@ -209,7 +209,6 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             lambda t: (-t.double_col).abs(),
             lambda t: (-t.double_col).abs(),
             id='abs-neg',
-            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.abs(),
