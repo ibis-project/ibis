@@ -117,6 +117,7 @@ __all__ = (
     'date',
     'desc',
     'asc',
+    'e',
     'Expr',
     'geo_area',
     'geo_as_binary',
