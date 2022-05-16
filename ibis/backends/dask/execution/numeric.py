@@ -34,7 +34,7 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     return func(data)
 
 
-@execute_node.register(ops.UnaryOp, dd.Series)
+@execute_node.register(ops.Unary, dd.Series)
 def execute_series_unary_op(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)

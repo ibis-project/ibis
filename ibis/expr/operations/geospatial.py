@@ -2,7 +2,7 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import BinaryOp, UnaryOp
+from ibis.expr.operations.core import BinaryOp, Unary
 from ibis.expr.operations.reductions import Reduction
 
 
@@ -15,7 +15,7 @@ class GeoSpatialBinOp(BinaryOp):
 
 
 @public
-class GeoSpatialUnOp(UnaryOp):
+class GeoSpatialUnOp(Unary):
     """Geo Spatial base unary"""
 
     arg = rlz.geospatial

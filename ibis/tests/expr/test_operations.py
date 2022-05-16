@@ -134,3 +134,4 @@ def test_too_few_args_not_allowed(dummy_op):
 
 def test_operation_class_aliases():
     assert ops.ValueOp is ops.Value
+    assert ops.UnaryOp is ops.Unary

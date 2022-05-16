@@ -163,7 +163,7 @@ class Alias(Value):
 
 
 @public
-class UnaryOp(Value):
+class Unary(Value):
     """A unary operation."""
 
     arg = rlz.any
@@ -185,4 +185,4 @@ class BinaryOp(Value):
         return max(self.left.op().output_shape, self.right.op().output_shape)
 
 
-public(ValueOp=Value)
+public(ValueOp=Value, UnaryOp=Unary)

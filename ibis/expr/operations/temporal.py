@@ -8,17 +8,17 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import BinaryOp, Node, UnaryOp, Value
+from ibis.expr.operations.core import BinaryOp, Node, Unary, Value
 from ibis.expr.operations.logical import Between
 
 
 @public
-class TemporalUnaryOp(UnaryOp):
+class TemporalUnary(Unary):
     arg = rlz.temporal
 
 
 @public
-class TimestampUnaryOp(UnaryOp):
+class TimestampUnary(Unary):
     arg = rlz.timestamp
 
 
@@ -123,7 +123,7 @@ class StringToTimestamp(Value):
 
 
 @public
-class ExtractTemporalField(TemporalUnaryOp):
+class ExtractTemporalField(TemporalUnary):
     output_dtype = dt.int32
 
 
@@ -196,13 +196,13 @@ class ExtractMillisecond(ExtractTimeField):
 
 
 @public
-class DayOfWeekIndex(UnaryOp):
+class DayOfWeekIndex(Unary):
     arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_dtype = dt.int16
 
 
 @public
-class DayOfWeekName(UnaryOp):
+class DayOfWeekName(Unary):
     arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_dtype = dt.string
 
@@ -214,12 +214,12 @@ class DayOfWeekNode(Node):
 
 
 @public
-class Time(UnaryOp):
+class Time(Unary):
     output_dtype = dt.time
 
 
 @public
-class Date(UnaryOp):
+class Date(Unary):
     output_dtype = dt.date
 
 
