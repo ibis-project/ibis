@@ -238,7 +238,7 @@ def test_mult_args(i32, d, s, b, t):
     )
 
     expr = func(i32, d, s, b, t)
-    assert issubclass(type(expr), ir.ColumnExpr)
+    assert issubclass(type(expr), ir.Column)
 
     expr = func(1, 1.0, 'a', True, ibis.timestamp('1961-04-10'))
     assert issubclass(type(expr), ir.Scalar)
@@ -348,7 +348,7 @@ def test_decimal_fail(udfcon, test_data_db, udf_ll):
     assert result == Decimal(1)
 
     expr = func(col)
-    assert issubclass(type(expr), ir.ColumnExpr)
+    assert issubclass(type(expr), ir.Column)
     udfcon.execute(expr)
 
 
@@ -365,11 +365,11 @@ def test_mixed_inputs(udfcon, alltypes, test_data_db, udf_ll):
     )
 
     expr = func(alltypes.int_col, 1)
-    assert issubclass(type(expr), ir.ColumnExpr)
+    assert issubclass(type(expr), ir.Column)
     udfcon.execute(expr)
 
     expr = func(1, alltypes.int_col)
-    assert issubclass(type(expr), ir.ColumnExpr)
+    assert issubclass(type(expr), ir.Column)
     udfcon.execute(expr)
 
     expr = func(alltypes.int_col, alltypes.tinyint_col)
@@ -408,7 +408,7 @@ def identity_func_testing(
             np.testing.assert_allclose(result, udfcon.execute(literal), 5)
 
     expr = func(column)
-    assert issubclass(type(expr), ir.ColumnExpr)
+    assert issubclass(type(expr), ir.Column)
     udfcon.execute(expr)
 
 

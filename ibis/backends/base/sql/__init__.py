@@ -127,7 +127,7 @@ class BaseSQLBackend(BaseBackend):
         -------
         DataFrame | Series | Scalar
             * `Table`: pandas.DataFrame
-            * `ColumnExpr`: pandas.Series
+            * `Column`: pandas.Series
             * `Scalar`: Python scalar value
         """
         # TODO Reconsider having `kwargs` here. It's needed to support

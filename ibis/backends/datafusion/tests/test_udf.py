@@ -30,7 +30,7 @@ def test_udf(alltypes):
     expected = data_string_col.str.len() * 2
 
     expr = my_string_length(alltypes.date_string_col)
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
 
     result = expr.execute()
     tm.assert_series_equal(result, expected, check_names=False)

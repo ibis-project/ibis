@@ -163,7 +163,7 @@ class Backend(BaseBackend):
             frame = self.compile(expr, params, **kwargs)
             table = _to_pyarrow_table(frame)
             return table.to_pandas()
-        elif isinstance(expr, ir.ColumnExpr):
+        elif isinstance(expr, ir.Column):
             # expression must be named for the projection
             expr = expr.name('tmp').to_projection()
             frame = self.compile(expr, params, **kwargs)

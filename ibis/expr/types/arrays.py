@@ -8,7 +8,7 @@ from ibis.expr.types.generic import (
     AnyColumn,
     AnyScalar,
     AnyValue,
-    ColumnExpr,
+    Column,
     literal,
 )
 from ibis.expr.types.typing import V
@@ -266,9 +266,9 @@ def array(
     """
     import ibis.expr.operations as ops
 
-    if all([isinstance(value, ColumnExpr) for value in values]):
+    if all([isinstance(value, Column) for value in values]):
         return ops.ArrayColumn(values).to_expr()
-    elif any([isinstance(value, ColumnExpr) for value in values]):
+    elif any([isinstance(value, Column) for value in values]):
         raise com.IbisTypeError(
             'To create an array column using `array`, all input values must '
             'be column expressions.'

@@ -29,7 +29,7 @@ or table expression.
 
 Parameters
 ----------
-expr : Union[ir.Scalar, ir.ColumnExpr, ir.Table]
+expr : Union[ir.Scalar, ir.Column, ir.Table]
 parent : ops.Selection
 data : pd.DataFrame
 scope : Scope
@@ -87,7 +87,7 @@ def compute_projection_scalar_expr(
     return result
 
 
-@compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
+@compute_projection.register(ir.Column, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(
     expr,
     parent,
@@ -216,7 +216,7 @@ def _compute_predicates(
     Parameters
     ----------
     table_op : TableNode
-    predicates : List[ir.ColumnExpr]
+    predicates : List[ir.Column]
     data : pd.DataFrame
     scope : Scope
     timecontext: Optional[TimeContext]
@@ -300,7 +300,7 @@ def physical_tables_node(node):
 
 
 def build_df_from_selection(
-    selection_exprs: List[ir.ColumnExpr],
+    selection_exprs: List[ir.Column],
     data: pd.DataFrame,
     table_op: ops.Node,
 ) -> pd.DataFrame:

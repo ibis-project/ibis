@@ -177,7 +177,7 @@ class Backend(BaseSQLBackend):
         """Execute an expression."""
         if isinstance(expr, types.Table):
             return self.compile(expr, timecontext, params, **kwargs).toPandas()
-        elif isinstance(expr, types.ColumnExpr):
+        elif isinstance(expr, types.Column):
             # expression must be named for the projection
             if not expr.has_name():
                 expr = expr.name("tmp")

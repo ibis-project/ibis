@@ -20,7 +20,7 @@ from ibis.expr.types.core import Expr
 if TYPE_CHECKING:
     from ibis.expr import schema as sch
     from ibis.expr import types as ir
-    from ibis.expr.types.generic import ColumnExpr
+    from ibis.expr.types.generic import Column
     from ibis.expr.types.groupby import GroupedTable
 
 
@@ -45,9 +45,7 @@ def _regular_join_method(
         right: Table,
         predicates: str
         | Sequence[
-            str
-            | tuple[str | ir.ColumnExpr, str | ir.ColumnExpr]
-            | ir.BooleanValue
+            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue
         ] = (),
         suffixes: tuple[str, str] = ("_x", "_y"),
     ) -> Table:
@@ -100,7 +98,7 @@ class Table(Expr):
 
     def __getitem__(self, what):
         from ibis.expr.types.analytic import TopK
-        from ibis.expr.types.generic import ColumnExpr
+        from ibis.expr.types.generic import Column
         from ibis.expr.types.logical import BooleanColumn
 
         if isinstance(what, (str, int)):
@@ -131,7 +129,7 @@ class Table(Expr):
         elif isinstance(what, BooleanColumn):
             # Boolean predicate
             return self.filter([what])
-        elif isinstance(what, ColumnExpr):
+        elif isinstance(what, Column):
             # Projection convenience
             return self.projection(what)
         else:
@@ -185,7 +183,7 @@ class Table(Expr):
     def _get_type(self, name):
         return self._arg.get_type(name)
 
-    def get_columns(self, iterable: Iterable[str]) -> list[ColumnExpr]:
+    def get_columns(self, iterable: Iterable[str]) -> list[Column]:
         """
         Get multiple columns from the table
 
@@ -205,18 +203,18 @@ class Table(Expr):
 
         Returns
         -------
-        list[ir.ColumnExpr]
+        list[ir.Column]
             List of column expressions
         """
         return [self.get_column(x) for x in iterable]
 
-    def get_column(self, name: str) -> ColumnExpr:
+    def get_column(self, name: str) -> Column:
         """
         Get a reference to a single column from the table
 
         Returns
         -------
-        ColumnExpr
+        Column
             A column named `name`.
         """
         import ibis.expr.operations as ops
@@ -419,10 +417,10 @@ class Table(Expr):
     def sort_by(
         self,
         sort_exprs: str
-        | ir.ColumnExpr
+        | ir.Column
         | ir.SortKey
-        | tuple[str | ir.ColumnExpr, bool]
-        | Sequence[tuple[str | ir.ColumnExpr, bool]],
+        | tuple[str | ir.Column, bool]
+        | Sequence[tuple[str | ir.Column, bool]],
     ) -> Table:
         """Sort table by `sort_exprs`
 
@@ -495,7 +493,7 @@ class Table(Expr):
 
         return ops.Intersection(self, right).to_expr()
 
-    def to_array(self) -> ir.ColumnExpr:
+    def to_array(self) -> ir.Column:
         """View a single column table as an array.
 
         Returns
@@ -918,9 +916,7 @@ class Table(Expr):
         right: Table,
         predicates: str
         | Sequence[
-            str
-            | tuple[str | ir.ColumnExpr, str | ir.ColumnExpr]
-            | ir.BooleanColumn
+            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanColumn
         ] = (),
         how: Literal[
             'inner',
@@ -993,7 +989,7 @@ class Table(Expr):
         predicates: str
         | ir.BooleanColumn
         | Sequence[str | ir.BooleanColumn] = (),
-        by: str | ir.ColumnExpr | Sequence[str | ir.ColumnExpr] = (),
+        by: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
         suffixes: tuple[str, str] = ("_x", "_y"),

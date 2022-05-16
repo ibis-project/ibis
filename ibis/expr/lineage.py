@@ -95,7 +95,7 @@ def lineage(expr, container=Stack):
     ----------
     expr : Expr
         An ibis expression. It must be an instance of
-        :class:`ibis.expr.types.ColumnExpr`.
+        :class:`ibis.expr.types.Column`.
     container : Container, {Stack, Queue}
         Stack for depth-first traversal, and Queue for breadth-first.
         Depth-first will reach root table nodes before continuing on to other
@@ -108,8 +108,8 @@ def lineage(expr, container=Stack):
     node : Expr
         A column and its dependencies
     """
-    if not isinstance(expr, ir.ColumnExpr):
-        raise TypeError('Input expression must be an instance of ColumnExpr')
+    if not isinstance(expr, ir.Column):
+        raise TypeError('Input expression must be an instance of Column')
 
     c = container([(expr, expr.get_name() if expr.has_name() else None)])
 
