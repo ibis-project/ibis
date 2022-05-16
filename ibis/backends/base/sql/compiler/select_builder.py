@@ -459,7 +459,7 @@ class SelectBuilder:
 
         unchanged = True
 
-        if isinstance(op, ops.ValueOp):
+        if isinstance(op, ops.Value):
             new_args = []
             for arg in op.args:
                 if isinstance(arg, ir.Expr):
@@ -558,7 +558,7 @@ class SelectBuilder:
                 return new_op.to_expr()
         elif isinstance(op, (ops.Any, ops.TableColumn, ops.Literal)):
             return expr
-        elif isinstance(op, ops.ValueOp):
+        elif isinstance(op, ops.Value):
             visited = [
                 self._visit_filter(arg) if isinstance(arg, ir.Expr) else arg
                 for arg in op.args

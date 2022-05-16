@@ -568,7 +568,7 @@ class BaseBackend(abc.ABC):
         )
 
     @classmethod
-    def has_operation(cls, operation: type[ops.ValueOp]) -> bool:
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
         """Return whether the backend implements support for `operation`.
 
         Parameters

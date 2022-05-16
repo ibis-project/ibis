@@ -4,11 +4,11 @@ from public import public
 
 from ibis.expr import rules as rlz
 from ibis.expr.operations.analytic import AnalyticOp
-from ibis.expr.operations.core import ValueOp, distinct_roots
+from ibis.expr.operations.core import Value, distinct_roots
 from ibis.expr.operations.reductions import Reduction
 
 
-class VectorizedUDF(ValueOp):
+class VectorizedUDF(Value):
     func = rlz.instance_of((FunctionType, LambdaType))
     func_args = rlz.tuple_of(rlz.column(rlz.any))
     # TODO(kszucs): should rename these arguments to

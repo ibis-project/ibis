@@ -31,7 +31,7 @@ Release Notes
     are the only way to retrieve the expression's name and datatype.
   - `ibis.expr.operations.Node.output_type` is a property now not a method,
     decorate those methods with `@property`
-  - `ibis.expr.operations.ValueOp` subclasses must define `output_shape` and
+  - `ibis.expr.operations.Value` subclasses must define `output_shape` and
     `output_dtype` properties from now on (note the datatype abbreviation `dtype`
     in the property name)
   - `ibis.expr.rules.cast()`, `scalar_like()` and `array_like()` rules have been

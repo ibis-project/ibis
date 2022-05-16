@@ -56,7 +56,7 @@ class ExtractSubqueries:
             self.visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
             self.visit_physical_table(expr)
-        elif isinstance(node, ops.ValueOp):
+        elif isinstance(node, ops.Value):
             for arg in node.flat_args():
                 if not isinstance(arg, ir.Expr):
                     continue

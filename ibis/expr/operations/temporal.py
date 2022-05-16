@@ -8,7 +8,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import BinaryOp, Node, UnaryOp, ValueOp
+from ibis.expr.operations.core import BinaryOp, Node, UnaryOp, Value
 from ibis.expr.operations.logical import Between
 
 
@@ -77,7 +77,7 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 
 
 @public
-class TimestampTruncate(ValueOp):
+class TimestampTruncate(Value):
     arg = rlz.timestamp
     unit = rlz.isin(_timestamp_units)
 
@@ -86,7 +86,7 @@ class TimestampTruncate(ValueOp):
 
 
 @public
-class DateTruncate(ValueOp):
+class DateTruncate(Value):
     arg = rlz.date
     unit = rlz.isin(_date_units)
 
@@ -95,7 +95,7 @@ class DateTruncate(ValueOp):
 
 
 @public
-class TimeTruncate(ValueOp):
+class TimeTruncate(Value):
     arg = rlz.time
     unit = rlz.isin(_time_units)
 
@@ -104,7 +104,7 @@ class TimeTruncate(ValueOp):
 
 
 @public
-class Strftime(ValueOp):
+class Strftime(Value):
     arg = rlz.temporal
     format_str = rlz.string
 
@@ -113,7 +113,7 @@ class Strftime(ValueOp):
 
 
 @public
-class StringToTimestamp(ValueOp):
+class StringToTimestamp(Value):
     arg = rlz.string
     format_str = rlz.string
     timezone = rlz.optional(rlz.string)
@@ -224,7 +224,7 @@ class Date(UnaryOp):
 
 
 @public
-class DateFromYMD(ValueOp):
+class DateFromYMD(Value):
     year = rlz.integer
     month = rlz.integer
     day = rlz.integer
@@ -234,7 +234,7 @@ class DateFromYMD(ValueOp):
 
 
 @public
-class TimeFromHMS(ValueOp):
+class TimeFromHMS(Value):
     hours = rlz.integer
     minutes = rlz.integer
     seconds = rlz.integer
@@ -244,7 +244,7 @@ class TimeFromHMS(ValueOp):
 
 
 @public
-class TimestampFromYMDHMS(ValueOp):
+class TimestampFromYMDHMS(Value):
     year = rlz.integer
     month = rlz.integer
     day = rlz.integer
@@ -258,7 +258,7 @@ class TimestampFromYMDHMS(ValueOp):
 
 
 @public
-class TimestampFromUNIX(ValueOp):
+class TimestampFromUNIX(Value):
     arg = rlz.any
     # Only pandas-based backends support 'ns'
     unit = rlz.isin({'s', 'ms', 'us', 'ns'})
@@ -336,7 +336,7 @@ class TimestampDiff(BinaryOp):
 
 
 @public
-class ToIntervalUnit(ValueOp):
+class ToIntervalUnit(Value):
     arg = rlz.interval
     unit = rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
 
@@ -406,7 +406,7 @@ class IntervalFloorDivide(IntervalBinaryOp):
 
 
 @public
-class IntervalFromInteger(ValueOp):
+class IntervalFromInteger(Value):
     arg = rlz.integer
     unit = rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
 

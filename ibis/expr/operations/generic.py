@@ -16,7 +16,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Node, UnaryOp, ValueOp, distinct_roots
+from ibis.expr.operations.core import Node, UnaryOp, Value, distinct_roots
 from ibis.util import deprecated, frozendict
 
 try:
@@ -28,7 +28,7 @@ else:
 
 
 @public
-class TableColumn(ValueOp):
+class TableColumn(Value):
     """Selects a column from a `TableExpr`."""
 
     table = rlz.table
@@ -67,7 +67,7 @@ class TableColumn(ValueOp):
 
 
 @public
-class RowID(ValueOp):
+class RowID(Value):
     """The row number (an autonumeric) of the returned result."""
 
     output_shape = rlz.Shape.COLUMNAR
@@ -100,7 +100,7 @@ def find_all_base_tables(expr, memo=None):
 
 
 @public
-class TableArrayView(ValueOp):
+class TableArrayView(Value):
 
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
@@ -121,7 +121,7 @@ class TableArrayView(ValueOp):
 
 
 @public
-class Cast(ValueOp):
+class Cast(Value):
     """Explicitly cast value to a specific data type."""
 
     arg = rlz.any
@@ -170,7 +170,7 @@ class ZeroIfNull(UnaryOp):
 
 
 @public
-class IfNull(ValueOp):
+class IfNull(Value):
     """
     Equivalent to (but perhaps implemented differently):
 
@@ -186,7 +186,7 @@ class IfNull(ValueOp):
 
 
 @public
-class NullIf(ValueOp):
+class NullIf(Value):
     """Set values to NULL if they equal the null_if_expr"""
 
     arg = rlz.any
@@ -196,7 +196,7 @@ class NullIf(ValueOp):
 
 
 @public
-class CoalesceLike(ValueOp):
+class CoalesceLike(Value):
 
     # According to Impala documentation:
     # Return type: same as the initial argument value, except that integer
@@ -232,7 +232,7 @@ class Least(CoalesceLike):
 
 
 @public
-class Literal(ValueOp):
+class Literal(Value):
     value = rlz.one_of(
         (
             rlz.instance_of(
@@ -281,7 +281,7 @@ class NullLiteral(Literal):
 
 
 @public
-class ScalarParameter(ValueOp):
+class ScalarParameter(Value):
     _counter = itertools.count()
 
     dtype = rlz.datatype
@@ -307,10 +307,10 @@ class ScalarParameter(ValueOp):
 
 
 @public
-class ValueList(ValueOp):
+class ValueList(Value):
     """Data structure for a list of value expressions"""
 
-    # NOTE: this proxies the ValueOp behaviour to the underlying values
+    # NOTE: this proxies the Value behaviour to the underlying values
 
     values = rlz.tuple_of(rlz.any)
 
@@ -323,7 +323,7 @@ class ValueList(ValueOp):
 
 
 @public
-class Constant(ValueOp):
+class Constant(Value):
     output_shape = rlz.Shape.SCALAR
 
 
@@ -348,7 +348,7 @@ class Pi(Constant):
 
 
 @public
-class StructField(ValueOp):
+class StructField(Value):
     arg = rlz.struct
     field = rlz.instance_of(str)
 
@@ -380,7 +380,7 @@ class DecimalScale(UnaryOp):
 
 
 @public
-class Hash(ValueOp):
+class Hash(Value):
     arg = rlz.any
     how = rlz.isin({'fnv', 'farm_fingerprint'})
 
@@ -389,7 +389,7 @@ class Hash(ValueOp):
 
 
 @public
-class HashBytes(ValueOp):
+class HashBytes(Value):
     arg = rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)})
     how = rlz.isin({'md5', 'sha1', 'sha256', 'sha512'})
 
@@ -402,7 +402,7 @@ class HashBytes(ValueOp):
     version="4.0.0",
 )
 @public
-class SummaryFilter(ValueOp):
+class SummaryFilter(Value):
     expr = rlz.instance_of(ir.TopKExpr)
 
     output_dtype = dt.boolean
@@ -436,7 +436,7 @@ class TopK(Node):
 # cases, results and default optional arguments like they are in
 # api.py
 @public
-class SimpleCase(ValueOp):
+class SimpleCase(Value):
     base = rlz.any
     cases = rlz.value_list_of(rlz.any)
     results = rlz.value_list_of(rlz.any)
@@ -461,7 +461,7 @@ class SimpleCase(ValueOp):
 
 
 @public
-class SearchedCase(ValueOp):
+class SearchedCase(Value):
     cases = rlz.value_list_of(rlz.boolean)
     results = rlz.value_list_of(rlz.any)
     default = rlz.any

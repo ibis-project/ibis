@@ -316,7 +316,7 @@ class ExprSimplifier:
         except KeyError:
             pass
 
-        if isinstance(op, ops.ValueOp):
+        if isinstance(op, ops.Value):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Selection):
             result = self._lift_Selection(expr, block=block)

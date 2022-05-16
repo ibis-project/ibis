@@ -87,7 +87,7 @@ def test_instance_of_operation():
 
 
 def test_array_input():
-    class MyOp(ops.ValueOp):
+    class MyOp(ops.Value):
         value = rlz.value(dt.Array(dt.double))
         output_dtype = rlz.dtype_like('value')
         output_shape = rlz.shape_like('value')
@@ -116,7 +116,7 @@ def test_custom_table_expr():
 
 @pytest.fixture(scope='session')
 def dummy_op():
-    class DummyOp(ops.ValueOp):
+    class DummyOp(ops.Value):
         arg = rlz.any
 
     return DummyOp
@@ -130,3 +130,7 @@ def test_too_many_args_not_allowed(dummy_op):
 def test_too_few_args_not_allowed(dummy_op):
     with pytest.raises(TypeError):
         dummy_op()
+
+
+def test_operation_class_aliases():
+    assert ops.ValueOp is ops.Value

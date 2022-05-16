@@ -12,7 +12,7 @@ from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
 from ibis.backends.postgres.registry import operation_registry
 
 
-class PostgresUDFNode(ops.ValueOp):
+class PostgresUDFNode(ops.Value):
     output_shape = rlz.shape_like("args")
 
 

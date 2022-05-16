@@ -119,7 +119,7 @@ def _fmt_root_table_node(op: ops.TableNode, **kwargs: Any) -> str:
 
 @fmt_root.register
 def _fmt_root_value_op(
-    op: ops.ValueOp, *, name: str, aliases: Aliases, **_: Any
+    op: ops.Value, *, name: str, aliases: Aliases, **_: Any
 ) -> str:
     value = fmt_value(op, aliases=aliases)
     prefix = f"{name}: " if name is not None else ""
@@ -564,7 +564,7 @@ def _fmt_value_datatype(datatype: dt.DataType, **_: Any) -> str:
 
 
 @fmt_value.register
-def _fmt_value_value_op(op: ops.ValueOp, *, aliases: Aliases) -> str:
+def _fmt_value_value_op(op: ops.Value, *, aliases: Aliases) -> str:
     args = []
     # loop over argument names and original expression
     for argname, orig_expr in zip(op.argnames, op.args):
