@@ -302,7 +302,7 @@ class SelectBuilder:
         elif isinstance(expr, ir.Analytic):
             return expr.to_aggregation(), toolz.identity
 
-        elif isinstance(expr, ir.ColumnExpr):
+        elif isinstance(expr, ir.Column):
             op = expr.op()
 
             def _get_column(name):

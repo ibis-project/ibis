@@ -89,7 +89,7 @@ class Scalar(Value):
 
 
 @public
-class ColumnExpr(Value):
+class Column(Value):
     def parent(self):
         return self._arg
 
@@ -118,7 +118,7 @@ class ColumnExpr(Value):
 
 
 # TODO(kszucs): keep either Value or AnyValue
-# TODO(kszucs): keep either ColumnExpr or AnyColumn
+# TODO(kszucs): keep either Column or AnyColumn
 # TODO(kszucs): keep either Scalar or ScalarColumn
 
 
@@ -589,7 +589,7 @@ class AnyScalar(Scalar, AnyValue):
 
 
 @public
-class AnyColumn(ColumnExpr, AnyValue):
+class AnyColumn(Column, AnyValue):
     def bottomk(self, k: int, by: Value | None = None) -> ir.TopK:
         raise NotImplementedError("bottomk is not implemented")
 
@@ -748,37 +748,37 @@ class AnyColumn(ColumnExpr, AnyValue):
 
         return base.group_by(expr).aggregate(metric)
 
-    def first(self) -> ColumnExpr:
+    def first(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.FirstValue(self).to_expr()
 
-    def last(self) -> ColumnExpr:
+    def last(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.LastValue(self).to_expr()
 
-    def rank(self) -> ColumnExpr:
+    def rank(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.MinRank(self).to_expr()
 
-    def dense_rank(self) -> ColumnExpr:
+    def dense_rank(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.DenseRank(self).to_expr()
 
-    def percent_rank(self) -> ColumnExpr:
+    def percent_rank(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.PercentRank(self).to_expr()
 
-    def cummin(self) -> ColumnExpr:
+    def cummin(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.CumulativeMin(self).to_expr()
 
-    def cummax(self) -> ColumnExpr:
+    def cummax(self) -> Column:
         import ibis.expr.operations as ops
 
         return ops.CumulativeMax(self).to_expr()
@@ -787,7 +787,7 @@ class AnyColumn(ColumnExpr, AnyValue):
         self,
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
-    ) -> ColumnExpr:
+    ) -> Column:
         import ibis.expr.operations as ops
 
         return ops.Lag(self, offset, default).to_expr()
@@ -796,7 +796,7 @@ class AnyColumn(ColumnExpr, AnyValue):
         self,
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
-    ) -> ColumnExpr:
+    ) -> Column:
         import ibis.expr.operations as ops
 
         return ops.Lead(self, offset, default).to_expr()
@@ -806,7 +806,7 @@ class AnyColumn(ColumnExpr, AnyValue):
 
         return ops.NTile(self, buckets).to_expr()
 
-    def nth(self, n: int | ir.IntegerValue) -> ColumnExpr:
+    def nth(self, n: int | ir.IntegerValue) -> Column:
         """Return the `n`th value over a window.
 
         Parameters
@@ -816,7 +816,7 @@ class AnyColumn(ColumnExpr, AnyValue):
 
         Returns
         -------
-        ColumnExpr
+        Column
             The nth value over a window
         """
         import ibis.expr.operations as ops
@@ -839,9 +839,9 @@ class NullColumn(AnyColumn, NullValue):
     pass  # noqa: E701,E302
 
 
-# TODO(kszucs): should remove the ColumnExpr base class?
+# TODO(kszucs): should remove the Column base class?
 @public
-class ListExpr(ColumnExpr, AnyValue):
+class ListExpr(Column, AnyValue):
     @property
     def values(self):
         return self.op().values
@@ -982,4 +982,4 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-public(ValueExpr=Value, ScalarExpr=Scalar)
+public(ValueExpr=Value, ScalarExpr=Scalar, ColumnExpr=Column)

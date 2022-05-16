@@ -166,7 +166,7 @@ class Backend(BaseAlchemyBackend):
         Callable
             A callable ibis expression
 
-        Function that takes in ColumnExpr arguments and returns an instance
+        Function that takes in Column arguments and returns an instance
         inheriting from PostgresUDFNode
         """
 

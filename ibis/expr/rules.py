@@ -159,7 +159,7 @@ def scalar(inner, arg, **kwargs):
 
 @validator
 def column(inner, arg, **kwargs):
-    return instance_of(ir.ColumnExpr, inner(arg, **kwargs))
+    return instance_of(ir.Column, inner(arg, **kwargs))
 
 
 @validator

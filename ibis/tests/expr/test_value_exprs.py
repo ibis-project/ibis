@@ -381,7 +381,7 @@ def test_isnan_isinf_scalar(value):
 )
 def test_cumulative_yield_array_types(table, column, operation):
     expr = getattr(getattr(table, column), operation)()
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
 
 
 @pytest.fixture(params=['ln', 'log', 'log2', 'log10'])
@@ -438,7 +438,7 @@ def test_string_to_number(table, type):
     casted = table.g.cast(type)
     casted_literal = ibis.literal('5').cast(type).name('bar')
 
-    assert isinstance(casted, ir.ColumnExpr)
+    assert isinstance(casted, ir.Column)
     assert casted.type() == dt.dtype(type)
 
     assert isinstance(casted_literal, ir.Scalar)

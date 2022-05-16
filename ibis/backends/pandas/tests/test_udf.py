@@ -105,7 +105,7 @@ def quantiles(series, *, quantiles):
 def test_udf(t, df):
     expr = my_string_length(t.a)
 
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
 
     result = expr.execute()
     expected = df.a.str.len().mul(2)
@@ -115,7 +115,7 @@ def test_udf(t, df):
 def test_multiple_argument_udf(con, t, df):
     expr = my_add(t.b, t.c)
 
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
     assert isinstance(expr, ir.NumericColumn)
     assert isinstance(expr, ir.FloatingColumn)
 
@@ -128,7 +128,7 @@ def test_multiple_argument_udf_group_by(con, t, df):
     expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
     assert isinstance(expr, ir.Table)
-    assert isinstance(expr.my_add, ir.ColumnExpr)
+    assert isinstance(expr.my_add, ir.Column)
     assert isinstance(expr.my_add, ir.NumericColumn)
     assert isinstance(expr.my_add, ir.FloatingColumn)
 
@@ -152,7 +152,7 @@ def test_udaf(con, t, df):
 def test_udaf_analytic(con, t, df):
     expr = zscore(t.c)
 
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
 
     result = expr.execute()
 
@@ -166,7 +166,7 @@ def test_udaf_analytic(con, t, df):
 def test_udaf_analytic_groupby(con, t, df):
     expr = zscore(t.c).over(ibis.window(group_by=t.key))
 
-    assert isinstance(expr, ir.ColumnExpr)
+    assert isinstance(expr, ir.Column)
 
     result = expr.execute()
 

@@ -27,7 +27,7 @@ from ibis.expr.types import (  # noqa: F401
     BooleanValue,
     CategoryScalar,
     CategoryValue,
-    ColumnExpr,
+    Column,
     DateColumn,
     DateScalar,
     DateValue,
@@ -324,7 +324,7 @@ def table(schema: sch.Schema, name: str | None = None) -> ir.Table:
     return node.to_expr()
 
 
-def desc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
+def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
@@ -349,7 +349,7 @@ def desc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.SortKey(expr, ascending=False).to_expr()
 
 
-def asc(expr: ir.ColumnExpr | str) -> ir.SortExpr | ops.DeferredSortKey:
+def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters

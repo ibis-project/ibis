@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError, RelationError
-from ibis.expr.types import ColumnExpr, Table
+from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
@@ -85,7 +85,7 @@ def test_getitem_column_select(table):
         col = table[k]
 
         # Make sure it's the right type
-        assert isinstance(col, ColumnExpr)
+        assert isinstance(col, Column)
 
         # Ensure we have a field selection with back-reference to the table
         parent = col.parent()
@@ -102,7 +102,7 @@ def test_getitem_attribute(table):
     # Project and add a name that conflicts with a Table built-in
     # attribute
     view = table[[table, table['a'].name('schema')]]
-    assert not isinstance(view.schema, ColumnExpr)
+    assert not isinstance(view.schema, Column)
 
 
 def test_projection(table):
