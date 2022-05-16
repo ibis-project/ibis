@@ -137,3 +137,4 @@ def test_operation_class_aliases():
     assert ops.UnaryOp is ops.Unary
     assert ops.BinaryOp is ops.Binary
     assert ops.WindowOp is ops.Window
+    assert ops.AnalyticOp is ops.Analytic

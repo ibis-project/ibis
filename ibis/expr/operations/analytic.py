@@ -35,12 +35,12 @@ class Window(Value):
 
 
 @public
-class AnalyticOp(Value):
+class Analytic(Value):
     output_shape = rlz.Shape.COLUMNAR
 
 
 @public
-class ShiftBase(AnalyticOp):
+class ShiftBase(Analytic):
     arg = rlz.column(rlz.any)
 
     offset = rlz.optional(rlz.one_of((rlz.integer, rlz.interval)))
@@ -60,7 +60,7 @@ class Lead(ShiftBase):
 
 
 @public
-class RankBase(AnalyticOp):
+class RankBase(Analytic):
     output_dtype = dt.int64
 
 
@@ -136,7 +136,7 @@ class RowNumber(RankBase):
 
 
 @public
-class CumulativeOp(AnalyticOp):
+class CumulativeOp(Analytic):
     pass
 
 
@@ -197,20 +197,20 @@ class CumulativeAll(CumulativeOp):
 
 
 @public
-class PercentRank(AnalyticOp):
+class PercentRank(Analytic):
     arg = rlz.column(rlz.any)
     output_dtype = dt.double
 
 
 @public
-class NTile(AnalyticOp):
+class NTile(Analytic):
     arg = rlz.column(rlz.any)
     buckets = rlz.scalar(rlz.integer)
     output_dtype = dt.int64
 
 
 @public
-class FirstValue(AnalyticOp):
+class FirstValue(Analytic):
     """Retrieve the first element."""
 
     arg = rlz.column(rlz.any)
@@ -218,7 +218,7 @@ class FirstValue(AnalyticOp):
 
 
 @public
-class LastValue(AnalyticOp):
+class LastValue(Analytic):
     """Retrieve the last element."""
 
     arg = rlz.column(rlz.any)
@@ -226,7 +226,7 @@ class LastValue(AnalyticOp):
 
 
 @public
-class NthValue(AnalyticOp):
+class NthValue(Analytic):
     """Retrieve the Nth element."""
 
     arg = rlz.column(rlz.any)
@@ -265,4 +265,4 @@ class NotAny(Any):
         return Any(self.arg)
 
 
-public(WindowOp=Window)
+public(WindowOp=Window, AnalyticOp=Analytic)
