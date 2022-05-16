@@ -4,7 +4,7 @@ from ibis.common import exceptions as com
 from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import UnaryOp, Value
+from ibis.expr.operations.core import Unary, Value
 
 
 @public
@@ -28,7 +28,7 @@ class ArrayColumn(Value):
 
 
 @public
-class ArrayLength(UnaryOp):
+class ArrayLength(Unary):
     arg = rlz.array
 
     output_dtype = dt.int64

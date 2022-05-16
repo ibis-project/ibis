@@ -339,7 +339,7 @@ def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     return result.groupby(right.index)
 
 
-@execute_node.register(ops.UnaryOp, ddgb.SeriesGroupBy)
+@execute_node.register(ops.Unary, ddgb.SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
     result = execute_node(op, make_selected_obj(operand), **kwargs)
     return result.groupby(operand.index)

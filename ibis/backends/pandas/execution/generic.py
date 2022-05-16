@@ -209,7 +209,7 @@ def execute_series_group_by_negate(op, data, **kwargs):
     )
 
 
-@execute_node.register(ops.UnaryOp, pd.Series)
+@execute_node.register(ops.Unary, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)
@@ -746,7 +746,7 @@ def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     return result.groupby(right.grouper.groupings)
 
 
-@execute_node.register(ops.UnaryOp, SeriesGroupBy)
+@execute_node.register(ops.Unary, SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
     result = execute_node(op, operand.obj, **kwargs)
     return result.groupby(operand.grouper.groupings)

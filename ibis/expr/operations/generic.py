@@ -17,7 +17,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Node, UnaryOp, Value, distinct_roots
+from ibis.expr.operations.core import Node, Unary, Value, distinct_roots
 from ibis.util import deprecated, frozendict
 
 try:
@@ -135,12 +135,12 @@ class Cast(Value):
 
 
 @public
-class TypeOf(UnaryOp):
+class TypeOf(Unary):
     output_dtype = dt.string
 
 
 @public
-class IsNull(UnaryOp):
+class IsNull(Unary):
     """Return true if values are null.
 
     Returns
@@ -153,7 +153,7 @@ class IsNull(UnaryOp):
 
 
 @public
-class NotNull(UnaryOp):
+class NotNull(Unary):
     """Returns true if values are not null
 
     Returns
@@ -166,7 +166,7 @@ class NotNull(UnaryOp):
 
 
 @public
-class ZeroIfNull(UnaryOp):
+class ZeroIfNull(Unary):
     output_dtype = rlz.dtype_like("arg")
 
 
@@ -369,13 +369,13 @@ class StructField(Value):
 
 
 @public
-class DecimalPrecision(UnaryOp):
+class DecimalPrecision(Unary):
     arg = rlz.decimal
     output_dtype = dt.int32
 
 
 @public
-class DecimalScale(UnaryOp):
+class DecimalScale(Unary):
     arg = rlz.decimal
     output_dtype = dt.int32
 

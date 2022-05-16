@@ -4,11 +4,11 @@ from ibis.common import exceptions as com
 from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import UnaryOp, Value
+from ibis.expr.operations.core import Unary, Value
 
 
 @public
-class MapLength(UnaryOp):
+class MapLength(Unary):
     arg = rlz.mapping
     output_dtype = dt.int64
 
@@ -48,7 +48,7 @@ class MapValueOrDefaultForKey(Value):
 
 
 @public
-class MapKeys(UnaryOp):
+class MapKeys(Unary):
     arg = rlz.mapping
 
     @immutable_property
@@ -57,7 +57,7 @@ class MapKeys(UnaryOp):
 
 
 @public
-class MapValues(UnaryOp):
+class MapValues(Unary):
     arg = rlz.mapping
 
     @immutable_property

@@ -2,47 +2,47 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import UnaryOp, Value
+from ibis.expr.operations.core import Unary, Value
 
 
 @public
-class StringUnaryOp(UnaryOp):
+class StringUnary(Unary):
     arg = rlz.string
     output_dtype = dt.string
 
 
 @public
-class Uppercase(StringUnaryOp):
+class Uppercase(StringUnary):
     pass
 
 
 @public
-class Lowercase(StringUnaryOp):
+class Lowercase(StringUnary):
     pass
 
 
 @public
-class Reverse(StringUnaryOp):
+class Reverse(StringUnary):
     pass
 
 
 @public
-class Strip(StringUnaryOp):
+class Strip(StringUnary):
     pass
 
 
 @public
-class LStrip(StringUnaryOp):
+class LStrip(StringUnary):
     pass
 
 
 @public
-class RStrip(StringUnaryOp):
+class RStrip(StringUnary):
     pass
 
 
 @public
-class Capitalize(StringUnaryOp):
+class Capitalize(StringUnary):
     pass
 
 
@@ -241,12 +241,12 @@ class ParseURL(Value):
 
 
 @public
-class StringLength(UnaryOp):
+class StringLength(Unary):
     output_dtype = dt.int32
 
 
 @public
-class StringAscii(UnaryOp):
+class StringAscii(Unary):
     output_dtype = dt.int32
 
 

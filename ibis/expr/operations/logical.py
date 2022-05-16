@@ -2,7 +2,7 @@ from public import public
 
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import BinaryOp, UnaryOp, Value
+from ibis.expr.operations.core import BinaryOp, Unary, Value
 
 
 @public
@@ -14,7 +14,7 @@ class LogicalBinaryOp(BinaryOp):
 
 
 @public
-class Not(UnaryOp):
+class Not(Unary):
     arg = rlz.boolean
 
     output_dtype = dt.boolean
