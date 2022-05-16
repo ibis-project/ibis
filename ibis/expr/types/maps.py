@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, Scalar, Value, literal
+from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import K, V
 
 if TYPE_CHECKING:
@@ -193,7 +193,7 @@ class MapScalar(Scalar, MapValue):
 
 
 @public
-class MapColumn(AnyColumn, MapValue):
+class MapColumn(Column, MapValue):
     pass  # noqa: E701,E302
 
 

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from ibis.expr import types as ir
 
 from ibis.expr.types.core import Expr, _binop
-from ibis.expr.types.generic import AnyColumn, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
@@ -42,7 +42,7 @@ class TemporalScalar(Scalar, TemporalValue):
 
 
 @public
-class TemporalColumn(AnyColumn, TemporalValue):
+class TemporalColumn(Column, TemporalValue):
     pass  # noqa: E701,E302
 
 
@@ -629,7 +629,7 @@ class IntervalScalar(Scalar, IntervalValue):
 
 
 @public
-class IntervalColumn(AnyColumn, IntervalValue):
+class IntervalColumn(Column, IntervalValue):
     pass  # noqa: E701,E302
 
 
