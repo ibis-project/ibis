@@ -277,7 +277,7 @@ class SelectBuilder:
 
             return scalar_handler
 
-        if isinstance(expr, ir.ScalarExpr):
+        if isinstance(expr, ir.Scalar):
 
             if L.is_scalar_reduction(expr):
                 table_expr, name = L.reduction_to_aggregation(
@@ -543,7 +543,7 @@ class SelectBuilder:
             return f(expr)
 
         unchanged = True
-        if isinstance(expr, ir.ScalarExpr):
+        if isinstance(expr, ir.Scalar):
             if L.is_reduction(expr):
                 return self._rewrite_reduction_filter(expr)
 

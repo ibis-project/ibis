@@ -66,7 +66,7 @@ class Value(Expr):
 
 
 @public
-class ScalarExpr(Value):
+class Scalar(Value):
     def to_projection(self):
         """
         Promote this column expression to a table projection
@@ -119,7 +119,7 @@ class ColumnExpr(Value):
 
 # TODO(kszucs): keep either Value or AnyValue
 # TODO(kszucs): keep either ColumnExpr or AnyColumn
-# TODO(kszucs): keep either ScalarExpr or ScalarColumn
+# TODO(kszucs): keep either Scalar or ScalarColumn
 
 
 @public
@@ -245,7 +245,7 @@ class AnyValue(Value):
 
         return ops.TypeOf(self).to_expr()
 
-    def fillna(self, fill_value: ScalarExpr) -> Value:
+    def fillna(self, fill_value: Scalar) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
@@ -584,7 +584,7 @@ class AnyValue(Value):
 
 
 @public
-class AnyScalar(ScalarExpr, AnyValue):
+class AnyScalar(Scalar, AnyValue):
     pass  # noqa: E701,E302
 
 
@@ -604,17 +604,17 @@ class AnyColumn(ColumnExpr, AnyValue):
     def approx_median(
         self,
         where: ir.BooleanValue | None = None,
-    ) -> ScalarExpr:
+    ) -> Scalar:
         import ibis.expr.operations as ops
 
         return ops.CMSMedian(self, where).to_expr().name("approx_median")
 
-    def max(self, where: ir.BooleanValue | None = None) -> ScalarExpr:
+    def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         import ibis.expr.operations as ops
 
         return ops.Max(self, where).to_expr().name("max")
 
-    def min(self, where: ir.BooleanValue | None = None) -> ScalarExpr:
+    def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         import ibis.expr.operations as ops
 
         return ops.Min(self, where).to_expr().name("min")
@@ -691,7 +691,7 @@ class AnyColumn(ColumnExpr, AnyValue):
         self,
         where: ir.BooleanValue | None = None,
         how: str | None = None,
-    ) -> ScalarExpr:
+    ) -> Scalar:
         """Select an arbitrary value in a column.
 
         Parameters
@@ -704,7 +704,7 @@ class AnyColumn(ColumnExpr, AnyValue):
 
         Returns
         -------
-        ScalarExpr
+        Scalar
             An expression
         """
         import ibis.expr.operations as ops
@@ -885,7 +885,7 @@ def null():
 
 
 @public
-def literal(value: Any, type: dt.DataType | str | None = None) -> ScalarExpr:
+def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     """Create a scalar expression from a Python value.
 
     !!! tip "Use specific functions for arrays, structs and maps"
@@ -912,7 +912,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> ScalarExpr:
 
     Returns
     -------
-    ScalarExpr
+    Scalar
         An expression representing a literal value
 
     Examples
@@ -982,4 +982,4 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> ScalarExpr:
         return ops.Literal(value, dtype=dtype).to_expr()
 
 
-public(ValueExpr=Value)
+public(ValueExpr=Value, ScalarExpr=Scalar)

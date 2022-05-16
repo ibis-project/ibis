@@ -62,7 +62,7 @@ def test_null():
 def test_literal_with_implicit_type(value, expected_type):
     expr = ibis.literal(value)
 
-    assert isinstance(expr, ir.ScalarExpr)
+    assert isinstance(expr, ir.Scalar)
     assert expr.type() == dt.dtype(expected_type)
 
     assert isinstance(expr.op(), ops.Literal)
@@ -79,7 +79,7 @@ def test_literal_with_implicit_type(value, expected_type):
 def test_listeral_with_unhashable_values(value, expected_type, expected_value):
     expr = ibis.literal(value)
 
-    assert isinstance(expr, ir.ScalarExpr)
+    assert isinstance(expr, ir.Scalar)
     assert expr.type() == dt.dtype(expected_type)
 
     assert isinstance(expr.op(), ops.Literal)
@@ -441,7 +441,7 @@ def test_string_to_number(table, type):
     assert isinstance(casted, ir.ColumnExpr)
     assert casted.type() == dt.dtype(type)
 
-    assert isinstance(casted_literal, ir.ScalarExpr)
+    assert isinstance(casted_literal, ir.Scalar)
     assert casted_literal.type() == dt.dtype(type)
     assert casted_literal.get_name() == 'bar'
 
@@ -488,7 +488,7 @@ def test_arbitrary(table, column, how, condition_fn):
     where = condition_fn(table)
     expr = col.arbitrary(how=how, where=where)
     assert expr.type() == col.type()
-    assert isinstance(expr, ir.ScalarExpr)
+    assert isinstance(expr, ir.Scalar)
     assert L.is_reduction(expr)
 
 

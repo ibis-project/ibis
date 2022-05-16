@@ -413,7 +413,7 @@ def wrap_case_result(raw: np.ndarray, expr: ir.Value):
             raw_1d.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()])
         )
     # TODO - we force computation here
-    if isinstance(expr, ir.ScalarExpr) and result.size.compute() == 1:
+    if isinstance(expr, ir.Scalar) and result.size.compute() == 1:
         return result.head().item()
     return result
 

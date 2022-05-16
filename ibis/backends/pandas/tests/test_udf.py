@@ -142,7 +142,7 @@ def test_multiple_argument_udf_group_by(con, t, df):
 def test_udaf(con, t, df):
     expr = my_string_length_sum(t.a)
 
-    assert isinstance(expr, ir.ScalarExpr)
+    assert isinstance(expr, ir.Scalar)
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()

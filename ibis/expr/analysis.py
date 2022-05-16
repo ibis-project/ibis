@@ -1010,7 +1010,7 @@ class FilterValidator(ExprValidator):
         else:
             roots_valid = []
             for arg in op.flat_args():
-                if isinstance(arg, ir.ScalarExpr):
+                if isinstance(arg, ir.Scalar):
                     # arg_valid = True
                     pass
                 elif isinstance(arg, ir.TopK):  # pragma: no cover
@@ -1176,7 +1176,7 @@ def is_reduction(expr):
             return True
 
         for arg in op.args:
-            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
+            if isinstance(arg, ir.Scalar) and has_reduction(arg.op()):
                 return True
 
         return False
@@ -1185,4 +1185,4 @@ def is_reduction(expr):
 
 
 def is_scalar_reduction(expr):
-    return isinstance(expr, ir.ScalarExpr) and is_reduction(expr)
+    return isinstance(expr, ir.Scalar) and is_reduction(expr)

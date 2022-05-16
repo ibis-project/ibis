@@ -337,7 +337,7 @@ class Table(Expr):
 
     def aggregate(
         self,
-        metrics: Sequence[ir.ScalarExpr] | None = None,
+        metrics: Sequence[ir.Scalar] | None = None,
         by: Sequence[ir.Value] | None = None,
         having: Sequence[ir.BooleanValue] | None = None,
         **kwargs: ir.Value,
@@ -798,7 +798,7 @@ class Table(Expr):
 
     def fillna(
         self,
-        replacements: ir.ScalarExpr | Mapping[str, ir.ScalarExpr],
+        replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
         """Fill null values in a table expression.
 

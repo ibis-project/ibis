@@ -169,7 +169,7 @@ class Backend(BaseBackend):
             frame = self.compile(expr, params, **kwargs)
             table = _to_pyarrow_table(frame)
             return table['tmp'].to_pandas()
-        elif isinstance(expr, ir.ScalarExpr):
+        elif isinstance(expr, ir.Scalar):
             if expr.op().root_tables():
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
