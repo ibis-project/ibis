@@ -14,8 +14,8 @@ from ibis.backends.pandas.core import numeric_types
 
 
 @execute_node.register(ops.Negate, dd.Series)
-def execute_series_negate(op, data, **kwargs):
-    return data.mul(-1)
+def execute_series_negate(_, data, **kwargs):
+    return -data
 
 
 @execute_node.register(ops.Negate, ddgb.SeriesGroupBy)
