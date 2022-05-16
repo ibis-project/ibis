@@ -64,66 +64,6 @@ class Value(Expr):
     def type(self):
         return self.op().output_dtype
 
-
-@public
-class Scalar(Value):
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
-        from ibis.expr.types.relations import Table
-
-        roots = self.op().root_tables()
-        if len(roots) > 1:
-            raise com.RelationError(
-                'Cannot convert scalar expression '
-                'involving multiple base table references '
-                'to a projection'
-            )
-
-        table = Table(roots[0])
-        return table.projection([self])
-
-    def _repr_html_(self) -> str | None:
-        return None
-
-
-@public
-class Column(Value):
-    def parent(self):
-        return self._arg
-
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
-        from ibis.expr.types.relations import Table
-
-        roots = self.op().root_tables()
-        if len(roots) > 1:
-            raise com.RelationError(
-                'Cannot convert array expression '
-                'involving multiple base table references '
-                'to a projection'
-            )
-
-        table = Table(roots[0])
-        return table.projection([self])
-
-    def _repr_html_(self) -> str | None:
-        if not ibis.options.interactive:
-            return None
-
-        return self.execute().to_frame()._repr_html_()
-
-
-# TODO(kszucs): keep either Value or AnyValue
-# TODO(kszucs): keep either Column or AnyColumn
-# TODO(kszucs): keep either Scalar or ScalarColumn
-
-
-@public
-class AnyValue(Value):
     def hash(self, how: str = "fnv") -> ir.IntegerValue:
         """Compute an integer hash value.
 
@@ -584,12 +524,56 @@ class AnyValue(Value):
 
 
 @public
-class AnyScalar(Scalar, AnyValue):
-    pass  # noqa: E701,E302
+class Scalar(Value):
+    def to_projection(self):
+        """
+        Promote this column expression to a table projection
+        """
+        from ibis.expr.types.relations import Table
+
+        roots = self.op().root_tables()
+        if len(roots) > 1:
+            raise com.RelationError(
+                'Cannot convert scalar expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
+
+        table = Table(roots[0])
+        return table.projection([self])
+
+    def _repr_html_(self) -> str | None:
+        return None
 
 
 @public
-class AnyColumn(Column, AnyValue):
+class Column(Value):
+    def parent(self):
+        return self._arg
+
+    def to_projection(self):
+        """
+        Promote this column expression to a table projection
+        """
+        from ibis.expr.types.relations import Table
+
+        roots = self.op().root_tables()
+        if len(roots) > 1:
+            raise com.RelationError(
+                'Cannot convert array expression '
+                'involving multiple base table references '
+                'to a projection'
+            )
+
+        table = Table(roots[0])
+        return table.projection([self])
+
+    def _repr_html_(self) -> str | None:
+        if not ibis.options.interactive:
+            return None
+
+        return self.execute().to_frame()._repr_html_()
+
     def bottomk(self, k: int, by: Value | None = None) -> ir.TopK:
         raise NotImplementedError("bottomk is not implemented")
 
@@ -822,6 +806,26 @@ class AnyColumn(Column, AnyValue):
         import ibis.expr.operations as ops
 
         return ops.NthValue(self, n).to_expr()
+
+
+# TODO(kszucs): keep either Value or AnyValue
+# TODO(kszucs): keep either Column or AnyColumn
+# TODO(kszucs): keep either Scalar or ScalarColumn
+
+
+@public
+class AnyValue(Value):
+    pass
+
+
+@public
+class AnyScalar(Scalar, AnyValue):
+    pass  # noqa: E701,E302
+
+
+@public
+class AnyColumn(Column, AnyValue):
+    pass
 
 
 @public
