@@ -1,6 +1,6 @@
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
@@ -14,7 +14,7 @@ class EnumScalar(Scalar, EnumValue):
 
 
 @public
-class EnumColumn(AnyColumn, EnumValue):
+class EnumColumn(Column, EnumValue):
     pass  # noqa: E701,E302
 
 
@@ -29,5 +29,5 @@ class SetScalar(Scalar, SetValue):
 
 
 @public
-class SetColumn(AnyColumn, SetValue):
+class SetColumn(Column, SetValue):
     pass  # noqa: E701,E302

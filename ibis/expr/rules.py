@@ -359,7 +359,7 @@ def column_from(name, column, *, this):
 
     if isinstance(column, (str, int)):
         return table[column]
-    elif isinstance(column, ir.AnyColumn):
+    elif isinstance(column, ir.Column):
         if not column.has_name():
             raise com.IbisTypeError(f"Passed column {column} has no name")
 
@@ -377,7 +377,7 @@ def column_from(name, column, *, this):
             )
 
     raise com.IbisTypeError(
-        "value must be an int or str or AnyColumn, got "
+        "value must be an int or str or Column, got "
         f"{type(column).__name__}"
     )
 

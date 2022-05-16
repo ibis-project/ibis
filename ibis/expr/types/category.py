@@ -1,6 +1,6 @@
 from public import public
 
-from ibis.expr.types.generic import AnyColumn, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
@@ -14,5 +14,5 @@ class CategoryScalar(Scalar, CategoryValue):
 
 
 @public
-class CategoryColumn(AnyColumn, CategoryValue):
+class CategoryColumn(Column, CategoryValue):
     pass  # noqa: E701,E302

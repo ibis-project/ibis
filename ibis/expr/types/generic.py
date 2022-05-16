@@ -808,14 +808,6 @@ class Column(Value):
         return ops.NthValue(self, n).to_expr()
 
 
-# TODO(kszucs): keep either Column or AnyColumn
-
-
-@public
-class AnyColumn(Column, Value):
-    pass
-
-
 @public
 class NullValue(Value):
     pass  # noqa: E701,E302
@@ -827,7 +819,7 @@ class NullScalar(Scalar, NullValue):
 
 
 @public
-class NullColumn(AnyColumn, NullValue):
+class NullColumn(Column, NullValue):
     pass  # noqa: E701,E302
 
 
@@ -980,4 +972,5 @@ public(
     ColumnExpr=Column,
     AnyValue=Value,
     AnyScalar=Scalar,
+    AnyColumn=Column,
 )

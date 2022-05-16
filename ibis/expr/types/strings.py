@@ -11,7 +11,7 @@ from public import public
 
 from ibis import util
 from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import AnyColumn, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
@@ -846,5 +846,5 @@ class StringScalar(Scalar, StringValue):
 
 
 @public
-class StringColumn(AnyColumn, StringValue):
+class StringColumn(Column, StringValue):
     pass

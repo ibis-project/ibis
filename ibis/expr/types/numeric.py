@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Literal, Sequence
 from public import public
 
 from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import AnyColumn, Scalar, Value
+from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
     from ibis.expr import types as ir
@@ -381,7 +381,7 @@ class NumericScalar(Scalar, NumericValue):
 
 
 @public
-class NumericColumn(AnyColumn, NumericValue):
+class NumericColumn(Column, NumericValue):
     def quantile(
         self,
         quantile: Sequence[NumericValue | float],
