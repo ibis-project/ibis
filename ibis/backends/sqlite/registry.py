@@ -384,5 +384,6 @@ operation_registry.update(
             sa.func._ibis_sqlite_sqrt, variance_reduction('_ibis_sqlite_var')
         ),
         ops.RowID: lambda *_: sa.literal_column('rowid'),
+        ops.Cot: unary(sa.func._ibis_sqlite_cot),
     }
 )
