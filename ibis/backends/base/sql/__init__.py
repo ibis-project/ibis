@@ -21,9 +21,9 @@ class BaseSQLBackend(BaseBackend):
 
     compiler = Compiler
     table_class = ops.DatabaseTable
-    table_expr_class = ir.TableExpr
+    table_expr_class = ir.Table
 
-    def table(self, name: str, database: str | None = None) -> ir.TableExpr:
+    def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -35,7 +35,7 @@ class BaseSQLBackend(BaseBackend):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         qualified_name = self._fully_qualified_name(name, database)
@@ -47,7 +47,7 @@ class BaseSQLBackend(BaseBackend):
         # XXX
         return name
 
-    def sql(self, query: str) -> ir.TableExpr:
+    def sql(self, query: str) -> ir.Table:
         """Convert a SQL query to an Ibis table expression.
 
         Parameters
@@ -57,7 +57,7 @@ class BaseSQLBackend(BaseBackend):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         # Get the schema by adding a LIMIT 0 on to the end of the query. If
@@ -126,7 +126,7 @@ class BaseSQLBackend(BaseBackend):
         Returns
         -------
         DataFrame | Series | Scalar
-            * `TableExpr`: pandas.DataFrame
+            * `Table`: pandas.DataFrame
             * `ColumnExpr`: pandas.Series
             * `ScalarExpr`: Python scalar value
         """
@@ -176,7 +176,7 @@ class BaseSQLBackend(BaseBackend):
         dml = getattr(query_ast, 'dml', query_ast)
         expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
 
-        if isinstance(expr, (ir.TableExpr, sch.HasSchema)):
+        if isinstance(expr, (ir.Table, sch.HasSchema)):
             return expr.schema()
         elif isinstance(expr, ir.ValueExpr):
             return sch.schema([(expr.get_name(), expr.type())])

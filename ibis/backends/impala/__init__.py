@@ -515,7 +515,7 @@ class Backend(BaseSQLBackend):
         ----------
         name
             View name
-        expr : ibis TableExpr
+        expr : ibis Table
             Ibis table expression
         database
             Database name

@@ -22,7 +22,7 @@ def spark_dataframe_schema(df):
     return sch.schema(schema_struct.names, schema_struct.types)
 
 
-class PySparkTable(ir.TableExpr):
+class PySparkTable(ir.Table):
     @property
     def _qualified_name(self):
         return self.op().args[0]
@@ -81,7 +81,7 @@ class PySparkTable(ir.TableExpr):
 
     def insert(
         self,
-        obj: ir.TableExpr | pd.DataFrame | None = None,
+        obj: ir.Table | pd.DataFrame | None = None,
         overwrite: bool = False,
         values: Iterable[Any] | None = None,
         validate: bool = True,

@@ -329,7 +329,7 @@ def table(arg, *, schema=None, **kwargs):
     present it must be of the specified type. The table may have extra columns
     not specified in the schema.
     """
-    if not isinstance(arg, ir.TableExpr):
+    if not isinstance(arg, ir.Table):
         raise com.IbisTypeError(
             f'Argument is not a table; got type {type(arg).__name__}'
         )

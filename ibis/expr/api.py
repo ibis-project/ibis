@@ -84,7 +84,7 @@ from ibis.expr.types import (  # noqa: F401
     StructColumn,
     StructScalar,
     StructValue,
-    TableExpr,
+    Table,
     TimeColumn,
     TimeScalar,
     TimestampColumn,
@@ -301,7 +301,7 @@ def schema(
 _schema = schema
 
 
-def table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
+def table(schema: sch.Schema, name: str | None = None) -> ir.Table:
     """Create an unbound table for build expressions without data.
 
 
@@ -314,7 +314,7 @@ def table(schema: sch.Schema, name: str | None = None) -> ir.TableExpr:
 
     Returns
     -------
-    TableExpr
+    Table
         An unbound table expression
     """
     if not isinstance(schema, Schema):
@@ -760,10 +760,10 @@ _category_value_methods = {'label': category_label}
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 
-prevent_rewrite = ir.TableExpr.prevent_rewrite
-aggregate = ir.TableExpr.aggregate
-cross_join = ir.TableExpr.cross_join
-join = ir.TableExpr.join
-asof_join = ir.TableExpr.asof_join
+prevent_rewrite = ir.Table.prevent_rewrite
+aggregate = ir.Table.aggregate
+cross_join = ir.Table.cross_join
+join = ir.Table.join
+asof_join = ir.Table.asof_join
 
 _ = Deferred()

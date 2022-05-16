@@ -61,7 +61,7 @@ class BasePandasBackend(BaseBackend):
         df: pd.DataFrame,
         name: str = 'df',
         client: BasePandasBackend | None = None,
-    ) -> ir.TableExpr:
+    ) -> ir.Table:
         """Construct an ibis table from a pandas DataFrame.
 
         Parameters
@@ -76,7 +76,7 @@ class BasePandasBackend(BaseBackend):
 
         Returns
         -------
-        TableExpr
+        Table
             A table expression
         """
         if client is None:

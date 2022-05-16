@@ -288,7 +288,7 @@ def test_isin_notin_list(table, container):
 def test_value_counts(table, string_col):
     bool_clause = table[string_col].notin(['1', '4', '7'])
     expr = table[bool_clause][string_col].value_counts()
-    assert isinstance(expr, ir.TableExpr)
+    assert isinstance(expr, ir.Table)
 
 
 def test_isin_notin_scalars():
@@ -316,7 +316,7 @@ def test_scalar_isin_list_with_array(table):
 def test_distinct_table(functional_alltypes):
     expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
-    assert isinstance(expr, ir.TableExpr)
+    assert isinstance(expr, ir.Table)
     assert expr.op().table is functional_alltypes
 
 

@@ -42,7 +42,7 @@ IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD', 'postgres')
 
 
 def test_table(alltypes):
-    assert isinstance(alltypes, ir.TableExpr)
+    assert isinstance(alltypes, ir.Table)
 
 
 def test_array_execute(alltypes):

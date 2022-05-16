@@ -25,7 +25,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return ibis.sqlite.connect(str(path))  # type: ignore
 
     @property
-    def functional_alltypes(self) -> ir.TableExpr:
+    def functional_alltypes(self) -> ir.Table:
         t = super().functional_alltypes
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 

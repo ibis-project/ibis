@@ -42,7 +42,7 @@ different times during the loop.
 First, at the beginning of the main execution loop, ``compute_time_context`` is
 called. This function computes time contexts, and pass them to all children of
 the current node. These time contexts could be used in later steps to get data.
-This is essential for time series TableExpr, and related operations that adjust
+This is essential for time series Table, and related operations that adjust
 time context, such as window, asof_join, etc.
 
 By default, this function simply pass the unchanged time context to all
@@ -516,7 +516,7 @@ Notes
 For a given node, return with a list of timecontext that are going to be
 passed to its children nodes.
 time context is useful when data is not uniquely defined by op tree. e.g.
-a TableExpr can represent the query select count(a) from table, but the
+a Table can represent the query select count(a) from table, but the
 result of that is different with time context (pd.Timestamp("20190101"),
 pd.Timestamp("20200101")) vs (pd.Timestamp("20200101"),
 pd.Timestamp("20210101“)), because what data is in "table" also depends on

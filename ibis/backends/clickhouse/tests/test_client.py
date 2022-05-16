@@ -16,7 +16,7 @@ def test_run_sql(con):
     table = con.sql(query)
 
     fa = con.table('functional_alltypes')
-    assert isinstance(table, ir.TableExpr)
+    assert isinstance(table, ir.Table)
     assert table.schema() == fa.schema()
 
     expr = table.limit(10)
@@ -78,23 +78,23 @@ def test_sql_query_limits(alltypes):
     with config.option_context('sql.default_limit', 100000):
         # table has 25 rows
         assert len(table.execute()) == 7300
-        # comply with limit arg for TableExpr
+        # comply with limit arg for Table
         assert len(table.execute(limit=10)) == 10
         # state hasn't changed
         assert len(table.execute()) == 7300
-        # non-TableExpr ignores default_limit
+        # non-Table ignores default_limit
         assert table.count().execute() == 7300
-        # non-TableExpr doesn't observe limit arg
+        # non-Table doesn't observe limit arg
         assert table.count().execute(limit=10) == 7300
     with config.option_context('sql.default_limit', 20):
-        # TableExpr observes default limit setting
+        # Table observes default limit setting
         assert len(table.execute()) == 20
         # explicit limit= overrides default
         assert len(table.execute(limit=15)) == 15
         assert len(table.execute(limit=23)) == 23
-        # non-TableExpr ignores default_limit
+        # non-Table ignores default_limit
         assert table.count().execute() == 7300
-        # non-TableExpr doesn't observe limit arg
+        # non-Table doesn't observe limit arg
         assert table.count().execute(limit=10) == 7300
     # eliminating default_limit doesn't break anything
     with config.option_context('sql.default_limit', None):

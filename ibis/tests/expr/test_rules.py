@@ -57,7 +57,7 @@ def test_valid_instance_of(klass, value, expected):
 @pytest.mark.parametrize(
     ('klass', 'value', 'expected'),
     [
-        (ir.TableExpr, object, IbisTypeError),
+        (ir.Table, object, IbisTypeError),
         (ir.IntegerValue, 4, IbisTypeError),
     ],
 )

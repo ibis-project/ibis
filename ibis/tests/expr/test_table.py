@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError, RelationError
-from ibis.expr.types import ColumnExpr, TableExpr
+from ibis.expr.types import ColumnExpr, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
@@ -63,7 +63,7 @@ def test_columns(con):
 
 def test_view_new_relation(table):
     # For assisting with self-joins and other self-referential operations
-    # where we need to be able to treat instances of the same TableExpr as
+    # where we need to be able to treat instances of the same Table as
     # semantically distinct
     #
     # This thing is not exactly a projection, since it has no semantic
@@ -99,7 +99,7 @@ def test_getitem_attribute(table):
 
     assert 'a' in dir(table)
 
-    # Project and add a name that conflicts with a TableExpr built-in
+    # Project and add a name that conflicts with a Table built-in
     # attribute
     view = table[[table, table['a'].name('schema')]]
     assert not isinstance(view.schema, ColumnExpr)
@@ -109,7 +109,7 @@ def test_projection(table):
     cols = ['f', 'a', 'h']
 
     proj = table[cols]
-    assert isinstance(proj, TableExpr)
+    assert isinstance(proj, Table)
     assert isinstance(proj.op(), ops.Selection)
 
     assert proj.schema().names == tuple(cols)
@@ -466,10 +466,10 @@ def test_aggregate_no_keys(table):
         table['c'].mean().name('mean(c)'),
     ]
 
-    # A TableExpr, which in SQL at least will yield a table with a single
+    # A Table, which in SQL at least will yield a table with a single
     # row
     result = table.aggregate(metrics)
-    assert isinstance(result, TableExpr)
+    assert isinstance(result, Table)
 
 
 def test_aggregate_keys_basic(table):
@@ -478,10 +478,10 @@ def test_aggregate_keys_basic(table):
         table['c'].mean().name('mean(c)'),
     ]
 
-    # A TableExpr, which in SQL at least will yield a table with a single
+    # A Table, which in SQL at least will yield a table with a single
     # row
     result = table.aggregate(metrics, by=['g'])
-    assert isinstance(result, TableExpr)
+    assert isinstance(result, Table)
 
     # it works!
     repr(result)

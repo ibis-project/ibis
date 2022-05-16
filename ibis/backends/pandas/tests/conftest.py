@@ -84,13 +84,13 @@ class TestConf(BackendTest, RoundHalfToEven):
         )
 
     @property
-    def functional_alltypes(self) -> ir.TableExpr:
+    def functional_alltypes(self) -> ir.Table:
         return self.connection.table("functional_alltypes")
 
     @property
-    def batting(self) -> ir.TableExpr:
+    def batting(self) -> ir.Table:
         return self.connection.table("batting")
 
     @property
-    def awards_players(self) -> ir.TableExpr:
+    def awards_players(self) -> ir.Table:
         return self.connection.table("awards_players")

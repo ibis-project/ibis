@@ -177,7 +177,7 @@ def reduction_to_aggregation(expr, default_name='tmp'):
 
 
 def find_immediate_parent_tables(expr):
-    """Find every first occurrence of a :class:`ibis.expr.types.TableExpr`
+    """Find every first occurrence of a :class:`ibis.expr.types.Table`
     object in `expr`.
 
     Parameters
@@ -190,7 +190,7 @@ def find_immediate_parent_tables(expr):
 
     Notes
     -----
-    This function does not traverse into TableExpr objects. This means that the
+    This function does not traverse into Table objects. This means that the
     underlying PhysicalTable of a Selection will not be yielded, for example.
 
     Examples
@@ -211,7 +211,7 @@ def find_immediate_parent_tables(expr):
     """
 
     def finder(expr):
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             return lin.halt, expr
         else:
             return lin.proceed, None
@@ -439,7 +439,7 @@ class ExprSimplifier:
 
         if not unchanged:
             lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
-            result = ir.TableExpr(lifted_join)
+            result = ir.Table(lifted_join)
         else:
             result = expr
 
@@ -497,7 +497,7 @@ def has_reduction(expr):
 
 
 def get_mutation_exprs(
-    exprs: list[ir.Expr], table: ir.TableExpr
+    exprs: list[ir.Expr], table: ir.Table
 ) -> list[ir.Expr | None]:
     """Given the list of exprs and the underlying table of a mutation op,
     return the exprs to use to instantiate the mutation."""
@@ -606,7 +606,7 @@ def apply_filter(expr, predicates):
                 sort_keys=op.sort_keys,
             )
 
-            return ir.TableExpr(result)
+            return ir.Table(result)
 
     if not predicates:
         return expr
@@ -868,7 +868,7 @@ class Projector:
             lifted_val = substitute_parents(val, past_projection=False)
 
             # a * projection
-            if isinstance(val, ir.TableExpr) and (
+            if isinstance(val, ir.Table) and (
                 parent_op.compatible_with(val.op())
                 # gross we share the same table root. Better way to
                 # detect?
@@ -972,7 +972,7 @@ def fully_originate_from(exprs, parents):
     def finder(expr):
         op = expr.op()
 
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             return lin.proceed, expr.op()
         return lin.halt if op.blocks() else lin.proceed, None
 
@@ -1046,7 +1046,7 @@ def find_source_table(expr):
 
     Returns
     -------
-    table_expr : ir.TableExpr
+    table_expr : ir.Table
 
     Examples
     --------
@@ -1075,7 +1075,7 @@ def find_source_table(expr):
     """
 
     def finder(expr):
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             return lin.halt, expr
         else:
             return lin.proceed, None

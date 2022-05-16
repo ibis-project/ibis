@@ -209,7 +209,7 @@ class AlchemySelect(Select):
         for expr in self.select_set:
             if isinstance(expr, ir.ValueExpr):
                 arg = self._translate(expr, named=True)
-            elif isinstance(expr, ir.TableExpr):
+            elif isinstance(expr, ir.Table):
                 if expr.equals(self.table_set):
                     cached_table = self.context.get_ref(expr)
                     if cached_table is None:

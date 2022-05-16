@@ -70,8 +70,8 @@ class Database:
         """
         return self.list_tables()
 
-    def __getitem__(self, table: str) -> ir.TableExpr:
-        """Return a TableExpr for the given table name.
+    def __getitem__(self, table: str) -> ir.Table:
+        """Return a Table for the given table name.
 
         Parameters
         ----------
@@ -80,13 +80,13 @@ class Database:
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         return self.table(table)
 
-    def __getattr__(self, table: str) -> ir.TableExpr:
-        """Return a TableExpr for the given table name.
+    def __getattr__(self, table: str) -> ir.Table:
+        """Return a Table for the given table name.
 
         Parameters
         ----------
@@ -95,7 +95,7 @@ class Database:
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         return self.table(table)
@@ -117,7 +117,7 @@ class Database:
         """
         self.client.drop_database(self.name, force=force)
 
-    def table(self, name: str) -> ir.TableExpr:
+    def table(self, name: str) -> ir.Table:
         """Return a table expression referencing a table in this database.
 
         Parameters
@@ -127,7 +127,7 @@ class Database:
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         qualified_name = self._qualify(name)
@@ -364,7 +364,7 @@ class BaseBackend(abc.ABC):
         version='2.0',
         instead='change the current database before calling `.table()`',
     )
-    def table(self, name: str, database: str | None = None) -> ir.TableExpr:
+    def table(self, name: str, database: str | None = None) -> ir.Table:
         """Return a table expression from the database."""
 
     @deprecated(version='2.0', instead='use `.table(name).schema()`')
@@ -478,7 +478,7 @@ class BaseBackend(abc.ABC):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.TableExpr | None = None,
+        obj: pd.DataFrame | ir.Table | None = None,
         schema: ibis.Schema | None = None,
         database: str | None = None,
     ) -> None:
@@ -529,7 +529,7 @@ class BaseBackend(abc.ABC):
     def create_view(
         self,
         name: str,
-        expr: ir.TableExpr,
+        expr: ir.Table,
         database: str | None = None,
     ) -> None:
         """Create a view.

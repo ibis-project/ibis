@@ -25,7 +25,7 @@ def genname():
 
 @public
 class TableNode(Node):
-    output_type = ir.TableExpr
+    output_type = ir.Table
 
     def get_type(self, name):
         return self.schema[name]
@@ -429,7 +429,7 @@ class Selection(TableNode, sch.HasSchema):
             elif isinstance(projection, ir.ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
-            elif isinstance(projection, ir.TableExpr):
+            elif isinstance(projection, ir.Table):
                 schema = projection.schema()
                 names.extend(schema.names)
                 types.extend(schema.types)
@@ -838,10 +838,10 @@ class SQLStringView(PhysicalTable):
 
 
 def _dedup_join_columns(
-    expr: ir.TableExpr,
+    expr: ir.Table,
     *,
-    left: ir.TableExpr,
-    right: ir.TableExpr,
+    left: ir.Table,
+    right: ir.Table,
     suffixes: tuple[str, str],
 ):
     right_columns = frozenset(right.columns)

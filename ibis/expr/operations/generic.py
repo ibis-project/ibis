@@ -30,7 +30,7 @@ else:
 
 @public
 class TableColumn(Value):
-    """Selects a column from a `TableExpr`."""
+    """Selects a column from a `Table`."""
 
     table = rlz.table
     name = rlz.instance_of((str, int))
@@ -88,7 +88,7 @@ def find_all_base_tables(expr, memo=None):
 
     node = expr.op()
 
-    if isinstance(expr, ir.TableExpr) and node.blocks():
+    if isinstance(expr, ir.Table) and node.blocks():
         if expr not in memo:
             memo[node] = expr
         return memo

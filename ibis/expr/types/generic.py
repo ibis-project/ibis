@@ -71,7 +71,7 @@ class ScalarExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        from ibis.expr.types.relations import TableExpr
+        from ibis.expr.types.relations import Table
 
         roots = self.op().root_tables()
         if len(roots) > 1:
@@ -81,7 +81,7 @@ class ScalarExpr(ValueExpr):
                 'to a projection'
             )
 
-        table = TableExpr(roots[0])
+        table = Table(roots[0])
         return table.projection([self])
 
     def _repr_html_(self) -> str | None:
@@ -97,7 +97,7 @@ class ColumnExpr(ValueExpr):
         """
         Promote this column expression to a table projection
         """
-        from ibis.expr.types.relations import TableExpr
+        from ibis.expr.types.relations import Table
 
         roots = self.op().root_tables()
         if len(roots) > 1:
@@ -107,7 +107,7 @@ class ColumnExpr(ValueExpr):
                 'to a projection'
             )
 
-        table = TableExpr(roots[0])
+        table = Table(roots[0])
         return table.projection([self])
 
     def _repr_html_(self) -> str | None:
@@ -728,12 +728,12 @@ class AnyColumn(ColumnExpr, AnyValue):
 
         return ops.Count(self, where).to_expr().name("count")
 
-    def value_counts(self, metric_name: str = "count") -> ir.TableExpr:
+    def value_counts(self, metric_name: str = "count") -> ir.Table:
         """Compute a frequency table.
 
         Returns
         -------
-        TableExpr
+        Table
             Frequency table expression
         """
         from ibis.expr.types.relations import find_base_table

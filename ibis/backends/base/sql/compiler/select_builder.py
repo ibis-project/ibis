@@ -42,7 +42,7 @@ class _AnyToExistsTransform:
         node = expr.op()
 
         for arg in node.flat_args():
-            if isinstance(arg, ir.TableExpr):
+            if isinstance(arg, ir.Table):
                 self._visit_table(arg)
             elif isinstance(arg, ir.BooleanColumn):
                 for sub_expr in L.flatten_predicate(arg):
@@ -68,7 +68,7 @@ class _AnyToExistsTransform:
     def _visit_table(self, expr):
         node = expr.op()
 
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             base_table = self._find_blocking_table(expr)
             if base_table is not None:
                 base_node = base_table.op()
@@ -122,7 +122,7 @@ class _CorrelatedRefCheck:
         in_subquery = in_subquery or self.is_subquery(node)
 
         for arg in node.flat_args():
-            if isinstance(arg, ir.TableExpr):
+            if isinstance(arg, ir.Table):
                 self.visit_table(
                     arg,
                     in_subquery=in_subquery,
@@ -268,7 +268,7 @@ class SelectBuilder:
         # Canonical case is scalar values or arrays produced by some reductions
         # (simple reductions, or distinct, say)
 
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             return expr, toolz.identity
 
         def _get_scalar(field):
@@ -359,7 +359,7 @@ class SelectBuilder:
             return expr
         else:
             for arg in expr.op().flat_args():
-                if isinstance(arg, ir.TableExpr):
+                if isinstance(arg, ir.Table):
                     return cls._blocking_base(arg)
 
     @classmethod
@@ -425,7 +425,7 @@ class SelectBuilder:
         node = expr.op()
         if isinstance(node, ops.Join):
             for arg in node.args:
-                if isinstance(arg, ir.TableExpr):
+                if isinstance(arg, ir.Table):
                     self._make_table_aliases(arg)
         else:
             if not ctx.is_extracted(expr):
@@ -621,7 +621,7 @@ class SelectBuilder:
     # Analysis of table set
 
     def _collect_elements(self):
-        # If expr is a ValueExpr, we must seek out the TableExprs that it
+        # If expr is a ValueExpr, we must seek out the Tables that it
         # references, build their ASTs, and mark them in our QueryContext
 
         # For now, we need to make the simplifying assumption that a value
