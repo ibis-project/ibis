@@ -174,7 +174,7 @@ class Unary(Value):
 
 
 @public
-class BinaryOp(Value):
+class Binary(Value):
     """A binary operation."""
 
     left = rlz.any
@@ -185,4 +185,4 @@ class BinaryOp(Value):
         return max(self.left.op().output_shape, self.right.op().output_shape)
 
 
-public(ValueOp=Value, UnaryOp=Unary)
+public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

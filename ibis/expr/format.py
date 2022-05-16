@@ -533,7 +533,7 @@ def _fmt_value_node(op: ops.Node, **_: Any) -> str:
 
 
 @fmt_value.register
-def _fmt_value_binary_op(op: ops.BinaryOp, *, aliases: Aliases) -> str:
+def _fmt_value_binary_op(op: ops.Binary, *, aliases: Aliases) -> str:
     left = fmt_value(op.left, aliases=aliases)
     right = fmt_value(op.right, aliases=aliases)
     try:

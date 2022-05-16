@@ -8,7 +8,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import BinaryOp, Node, Unary, Value
+from ibis.expr.operations.core import Binary, Node, Unary, Value
 from ibis.expr.operations.logical import Between
 
 
@@ -269,49 +269,49 @@ class TimestampFromUNIX(Value):
 
 
 @public
-class DateAdd(BinaryOp):
+class DateAdd(Binary):
     left = rlz.date
     right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
     output_dtype = rlz.dtype_like('left')
 
 
 @public
-class DateSub(BinaryOp):
+class DateSub(Binary):
     left = rlz.date
     right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
     output_dtype = rlz.dtype_like('left')
 
 
 @public
-class DateDiff(BinaryOp):
+class DateDiff(Binary):
     left = rlz.date
     right = rlz.date
     output_dtype = dt.Interval('D')
 
 
 @public
-class TimeAdd(BinaryOp):
+class TimeAdd(Binary):
     left = rlz.time
     right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
     output_dtype = rlz.dtype_like('left')
 
 
 @public
-class TimeSub(BinaryOp):
+class TimeSub(Binary):
     left = rlz.time
     right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
     output_dtype = rlz.dtype_like('left')
 
 
 @public
-class TimeDiff(BinaryOp):
+class TimeDiff(Binary):
     left = rlz.time
     right = rlz.time
     output_dtype = dt.Interval('s')
 
 
 @public
-class TimestampAdd(BinaryOp):
+class TimestampAdd(Binary):
     left = rlz.timestamp
     right = rlz.interval(
         units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
@@ -320,7 +320,7 @@ class TimestampAdd(BinaryOp):
 
 
 @public
-class TimestampSub(BinaryOp):
+class TimestampSub(Binary):
     left = rlz.timestamp
     right = rlz.interval(
         units={'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'}
@@ -329,7 +329,7 @@ class TimestampSub(BinaryOp):
 
 
 @public
-class TimestampDiff(BinaryOp):
+class TimestampDiff(Binary):
     left = rlz.timestamp
     right = rlz.timestamp
     output_dtype = dt.Interval('s')
@@ -359,7 +359,7 @@ class ToIntervalUnit(Value):
 
 
 @public
-class IntervalBinaryOp(BinaryOp):
+class IntervalBinary(Binary):
     @immutable_property
     def output_dtype(self):
         integer_args = [
@@ -378,28 +378,28 @@ class IntervalBinaryOp(BinaryOp):
 
 
 @public
-class IntervalAdd(IntervalBinaryOp):
+class IntervalAdd(IntervalBinary):
     left = rlz.interval
     right = rlz.interval
     op = operator.add
 
 
 @public
-class IntervalSubtract(IntervalBinaryOp):
+class IntervalSubtract(IntervalBinary):
     left = rlz.interval
     right = rlz.interval
     op = operator.sub
 
 
 @public
-class IntervalMultiply(IntervalBinaryOp):
+class IntervalMultiply(IntervalBinary):
     left = rlz.interval
     right = rlz.numeric
     op = operator.mul
 
 
 @public
-class IntervalFloorDivide(IntervalBinaryOp):
+class IntervalFloorDivide(IntervalBinary):
     left = rlz.interval
     right = rlz.numeric
     op = operator.floordiv
