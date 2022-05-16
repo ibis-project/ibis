@@ -461,7 +461,7 @@ def _fmt_selection_column_value_expr(
 
 @fmt_selection_column.register
 def _fmt_selection_column_table_expr(
-    expr: ir.TableExpr, *, aliases: Aliases, **_: Any
+    expr: ir.Table, *, aliases: Aliases, **_: Any
 ) -> str:
     return str(aliases[expr.op()])
 

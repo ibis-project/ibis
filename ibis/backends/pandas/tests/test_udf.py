@@ -127,7 +127,7 @@ def test_multiple_argument_udf(con, t, df):
 def test_multiple_argument_udf_group_by(con, t, df):
     expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
-    assert isinstance(expr, ir.TableExpr)
+    assert isinstance(expr, ir.Table)
     assert isinstance(expr.my_add, ir.ColumnExpr)
     assert isinstance(expr.my_add, ir.NumericColumn)
     assert isinstance(expr.my_add, ir.FloatingColumn)
@@ -193,7 +193,7 @@ def test_udaf_groupby():
 
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
 
-    assert isinstance(expr, ir.TableExpr)
+    assert isinstance(expr, ir.Table)
 
     result = expr.execute().sort_values('key')
 

@@ -96,7 +96,7 @@ class Backend(BaseBackend):
         self,
         name: str,
         schema: sch.Schema | None = None,
-    ) -> ir.TableExpr:
+    ) -> ir.Table:
         """Get an ibis expression representing a DataFusion table.
 
         Parameters
@@ -108,7 +108,7 @@ class Backend(BaseBackend):
 
         Returns
         -------
-        TableExpr
+        Table
             A table expression
         """
         catalog = self._context.catalog()
@@ -159,7 +159,7 @@ class Backend(BaseBackend):
         limit: str = 'default',
         **kwargs: Any,
     ):
-        if isinstance(expr, ir.TableExpr):
+        if isinstance(expr, ir.Table):
             frame = self.compile(expr, params, **kwargs)
             table = _to_pyarrow_table(frame)
             return table.to_pandas()

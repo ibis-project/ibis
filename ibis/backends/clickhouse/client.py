@@ -10,7 +10,7 @@ import ibis.expr.types as ir
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 
-class ClickhouseTable(ir.TableExpr):
+class ClickhouseTable(ir.Table):
     """References a physical table in Clickhouse"""
 
     @property

@@ -48,7 +48,7 @@ columns, or scalars.
 <!-- prettier-ignore-start -->
 Examples of expression types include
 [`StringValue`][ibis.expr.types.StringValue] and
-[`TableExpr`][ibis.expr.types.TableExpr].
+[`Table`][ibis.expr.types.Table].
 <!-- prettier-ignore-end -->
 
 <!-- prettier-ignore-start -->

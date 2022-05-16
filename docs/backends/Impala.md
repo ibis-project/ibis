@@ -181,9 +181,9 @@ expression referencing a physical Impala table:
 table = client.table('functional_alltypes', database='ibis_testing')
 ```
 
-`ImpalaTable` is a Python subclass of the more general Ibis `TableExpr`
+`ImpalaTable` is a Python subclass of the more general Ibis `Table`
 that has additional Impala-specific methods. So you can use it
-interchangeably with any code expecting a `TableExpr`.
+interchangeably with any code expecting a `Table`.
 
 Like all table expressions in Ibis, `ImpalaTable` has a `schema` method
 you can use to examine its schema:

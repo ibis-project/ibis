@@ -176,7 +176,7 @@ class QueryContext:
         return not validator.validate(expr)
 
     def _get_table_key(self, table):
-        if isinstance(table, ir.TableExpr):
+        if isinstance(table, ir.Table):
             return table.op()
         elif isinstance(table, ops.TableNode):
             return table

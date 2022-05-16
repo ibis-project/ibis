@@ -113,7 +113,7 @@ def compute_projection_column_expr(
     return result
 
 
-compute_projection.register(ir.TableExpr, ops.Selection, dd.DataFrame)(
+compute_projection.register(ir.Table, ops.Selection, dd.DataFrame)(
     compute_projection_table_expr
 )
 

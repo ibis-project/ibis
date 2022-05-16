@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from ibis.expr import schema as sch
     from ibis.expr import types as ir
     from ibis.expr.types.generic import ColumnExpr
-    from ibis.expr.types.groupby import GroupedTableExpr
+    from ibis.expr.types.groupby import GroupedTable
 
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
@@ -41,8 +41,8 @@ def _regular_join_method(
     ],
 ):
     def f(
-        self: TableExpr,
-        right: TableExpr,
+        self: Table,
+        right: Table,
         predicates: str
         | Sequence[
             str
@@ -50,7 +50,7 @@ def _regular_join_method(
             | ir.BooleanValue
         ] = (),
         suffixes: tuple[str, str] = ("_x", "_y"),
-    ) -> TableExpr:
+    ) -> Table:
         f"""Perform a{'n' * how.startswith(tuple("aeiou"))} {how} join between two tables.
 
         Parameters
@@ -65,7 +65,7 @@ def _regular_join_method(
 
         Returns
         -------
-        TableExpr
+        Table
             Joined table
         """  # noqa: E501
         return self.join(right, predicates, how=how, suffixes=suffixes)
@@ -75,7 +75,7 @@ def _regular_join_method(
 
 
 @public
-class TableExpr(Expr):
+class Table(Expr):
     def _is_valid(self, exprs):
         try:
             self._assert_valid(util.promote_list(exprs))
@@ -125,7 +125,7 @@ class TableExpr(Expr):
 
         if isinstance(what, TopKExpr):
             return what._to_semi_join(self)[self]
-        elif isinstance(what, (list, tuple, TableExpr)):
+        elif isinstance(what, (list, tuple, Table)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanColumn):
@@ -243,7 +243,7 @@ class TableExpr(Expr):
         self,
         by=None,
         **additional_grouping_expressions: Any,
-    ) -> GroupedTableExpr:
+    ) -> GroupedTable:
         """
         Create a grouped table expression.
 
@@ -264,12 +264,12 @@ class TableExpr(Expr):
 
         Returns
         -------
-        GroupedTableExpr
+        GroupedTable
             A grouped table expression
         """
-        from ibis.expr.types.groupby import GroupedTableExpr
+        from ibis.expr.types.groupby import GroupedTable
 
-        return GroupedTableExpr(self, by, **additional_grouping_expressions)
+        return GroupedTable(self, by, **additional_grouping_expressions)
 
     groupby = group_by
 
@@ -302,21 +302,21 @@ class TableExpr(Expr):
 
         return ops.RowID().to_expr()
 
-    def view(self) -> TableExpr:
+    def view(self) -> Table:
         """Create a new table expression distinct from the current one.
 
         Use this API for any self-referencing operations like a self-join.
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         from ibis.expr import operations as ops
 
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, right: TableExpr) -> TableExpr:
+    def difference(self, right: Table) -> Table:
         """Compute the set difference of two table expressions.
 
         The input tables must have identical schemas.
@@ -328,7 +328,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             The rows present in `left` that are not present in `right`.
         """
         from ibis.expr import operations as ops
@@ -341,7 +341,7 @@ class TableExpr(Expr):
         by: Sequence[ir.ValueExpr] | None = None,
         having: Sequence[ir.BooleanValue] | None = None,
         **kwargs: ir.ValueExpr,
-    ) -> TableExpr:
+    ) -> Table:
         """Aggregate a table with a given set of reductions grouping by `by`.
 
         Parameters
@@ -357,7 +357,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             An aggregate table expression
         """
         metrics = [] if metrics is None else util.promote_list(metrics)
@@ -373,13 +373,13 @@ class TableExpr(Expr):
         )
         return op.to_expr()
 
-    def distinct(self) -> TableExpr:
+    def distinct(self) -> Table:
         """Compute the set of unique rows in the table."""
         from ibis.expr import operations as ops
 
         return ops.Distinct(self).to_expr()
 
-    def limit(self, n: int, offset: int = 0) -> TableExpr:
+    def limit(self, n: int, offset: int = 0) -> Table:
         """Select the first `n` rows at beginning of table starting at `offset`.
 
         Parameters
@@ -391,7 +391,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             The first `n` rows of `table` starting at `offset`
         """
         from ibis.expr import operations as ops
@@ -399,7 +399,7 @@ class TableExpr(Expr):
         op = ops.Limit(self, n, offset=offset)
         return op.to_expr()
 
-    def head(self, n: int = 5) -> TableExpr:
+    def head(self, n: int = 5) -> Table:
         """Select the first `n` rows of a table.
 
         The result set is not deterministic without a sort.
@@ -411,7 +411,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             `table` limited to `n` rows
         """
         return self.limit(n=n)
@@ -423,7 +423,7 @@ class TableExpr(Expr):
         | ir.SortKey
         | tuple[str | ir.ColumnExpr, bool]
         | Sequence[tuple[str | ir.ColumnExpr, bool]],
-    ) -> TableExpr:
+    ) -> Table:
         """Sort table by `sort_exprs`
 
         Parameters
@@ -439,7 +439,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Sorted table
         """
         if isinstance(sort_exprs, tuple):
@@ -452,9 +452,9 @@ class TableExpr(Expr):
 
     def union(
         self,
-        right: TableExpr,
+        right: Table,
         distinct: bool = False,
-    ) -> TableExpr:
+    ) -> Table:
         """Compute the set union of two table expressions.
 
         The input tables must have identical schemas.
@@ -469,14 +469,14 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Union of table and `right`
         """
         from ibis.expr import operations as ops
 
         return ops.Union(self, right, distinct=distinct).to_expr()
 
-    def intersect(self, right: TableExpr) -> TableExpr:
+    def intersect(self, right: Table) -> Table:
         """Compute the set intersection of two table expressions.
 
         The input tables must have identical schemas.
@@ -488,7 +488,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             The rows common amongst `left` and `right`.
         """
         from ibis.expr import operations as ops
@@ -523,7 +523,7 @@ class TableExpr(Expr):
         self,
         exprs: Sequence[ir.Expr] | None = None,
         **mutations: ir.ValueExpr,
-    ) -> TableExpr:
+    ) -> Table:
         """Add columns to a table expression.
 
         Parameters
@@ -535,7 +535,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression with additional columns
 
         Examples
@@ -589,7 +589,7 @@ class TableExpr(Expr):
     def select(
         self,
         exprs: ir.ValueExpr | str | Sequence[ir.ValueExpr | str],
-    ) -> TableExpr:
+    ) -> Table:
         """Compute a new table expression using `exprs`.
 
         Passing an aggregate function to this method will broadcast the
@@ -605,7 +605,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
 
         Examples
@@ -666,7 +666,7 @@ class TableExpr(Expr):
 
     projection = select
 
-    def relabel(self, substitutions: Mapping[str, str]) -> TableExpr:
+    def relabel(self, substitutions: Mapping[str, str]) -> Table:
         """Change table column names, otherwise leaving table unaltered.
 
         Parameters
@@ -676,7 +676,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             A relabeled table expression
         """
         observed = set()
@@ -695,7 +695,7 @@ class TableExpr(Expr):
 
         return self.projection(exprs)
 
-    def drop(self, fields: str | Sequence[str]) -> TableExpr:
+    def drop(self, fields: str | Sequence[str]) -> Table:
         """Remove fields from a table.
 
         Parameters
@@ -705,7 +705,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Expression without `fields`
         """
         if not fields:
@@ -726,7 +726,7 @@ class TableExpr(Expr):
     def filter(
         self,
         predicates: ir.BooleanValue | Sequence[ir.BooleanValue],
-    ) -> TableExpr:
+    ) -> Table:
         """Select rows from `table` based on `predicates`.
 
         Parameters
@@ -736,7 +736,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Filtered table expression
         """
         from ibis.expr import analysis as an
@@ -763,7 +763,7 @@ class TableExpr(Expr):
         self,
         subset: Sequence[str] | None = None,
         how: Literal["any", "all"] = "any",
-    ) -> TableExpr:
+    ) -> Table:
         """Remove rows with null values from the table.
 
         Parameters
@@ -786,7 +786,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         from ibis.expr import operations as ops
@@ -799,7 +799,7 @@ class TableExpr(Expr):
     def fillna(
         self,
         replacements: ir.ScalarExpr | Mapping[str, ir.ScalarExpr],
-    ) -> TableExpr:
+    ) -> Table:
         """Fill null values in a table expression.
 
         Parameters
@@ -834,7 +834,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """  # noqa: E501
         from ibis.expr import operations as ops
@@ -881,7 +881,7 @@ class TableExpr(Expr):
         footer_line = "-" * width
         print("\n".join([tabulated, footer_line, row_count]), file=buf)
 
-    def set_column(self, name: str, expr: ir.ValueExpr) -> TableExpr:
+    def set_column(self, name: str, expr: ir.ValueExpr) -> Table:
         """Replace an existing column with a new expression.
 
         Parameters
@@ -893,7 +893,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression with new columns
         """
         expr = self._ensure_expr(expr)
@@ -914,8 +914,8 @@ class TableExpr(Expr):
         return self.projection(proj_exprs)
 
     def join(
-        left: TableExpr,
-        right: TableExpr,
+        left: Table,
+        right: Table,
         predicates: str
         | Sequence[
             str
@@ -935,7 +935,7 @@ class TableExpr(Expr):
         ] = 'inner',
         *,
         suffixes: tuple[str, str] = ("_x", "_y"),
-    ) -> TableExpr:
+    ) -> Table:
         """Perform a join between two tables.
 
         Parameters
@@ -988,8 +988,8 @@ class TableExpr(Expr):
         )
 
     def asof_join(
-        left: TableExpr,
-        right: TableExpr,
+        left: Table,
+        right: Table,
         predicates: str
         | ir.BooleanColumn
         | Sequence[str | ir.BooleanColumn] = (),
@@ -997,7 +997,7 @@ class TableExpr(Expr):
         tolerance: str | ir.IntervalScalar | None = None,
         *,
         suffixes: tuple[str, str] = ("_x", "_y"),
-    ) -> TableExpr:
+    ) -> Table:
         """Perform an "as-of" join between `left` and `right`.
 
         Similar to a left join except that the match is done on nearest key
@@ -1023,7 +1023,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Table expression
         """
         from ibis.expr import operations as ops
@@ -1043,11 +1043,11 @@ class TableExpr(Expr):
         )
 
     def cross_join(
-        left: TableExpr,
-        right: TableExpr,
-        *rest: TableExpr,
+        left: Table,
+        right: Table,
+        *rest: Table,
         suffixes: tuple[str, str] = ("_x", "_y"),
-    ) -> TableExpr:
+    ) -> Table:
         """Compute the cross join of a sequence of tables.
 
         Parameters
@@ -1064,7 +1064,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             Cross join of `left`, `right` and `rest`
 
         Examples
@@ -1095,7 +1095,7 @@ class TableExpr(Expr):
 
         expr = ops.CrossJoin(
             left,
-            functools.reduce(TableExpr.cross_join, rest, right),
+            functools.reduce(Table.cross_join, rest, right),
             [],
         ).to_expr()
         return ops.relations._dedup_join_columns(
@@ -1105,7 +1105,7 @@ class TableExpr(Expr):
             suffixes=suffixes,
         )
 
-    def prevent_rewrite(self, client=None) -> TableExpr:
+    def prevent_rewrite(self, client=None) -> Table:
         """Prevent optimization from happening below this expression.
 
         Only valid on SQL-string generating backends.
@@ -1119,7 +1119,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             An opaque SQL query
         """
         from ibis.expr import operations as ops
@@ -1142,15 +1142,15 @@ class TableExpr(Expr):
         version="3.0",
         instead="remove the `.materialize()` call, it has no effect",
     )
-    def materialize(self) -> TableExpr:
+    def materialize(self) -> Table:
         return self
 
-    def alias(self, alias: str) -> ir.TableExpr:
+    def alias(self, alias: str) -> ir.Table:
         """Create a table expression with a specific name `alias`.
 
         This method is useful for exposing an ibis expression to the underlying
         backend for use in the
-        [`TableExpr.sql`][ibis.expr.types.relations.TableExpr.sql] method.
+        [`Table.sql`][ibis.expr.types.relations.Table.sql] method.
 
         !!! note "`.alias` will create a temporary view"
 
@@ -1166,7 +1166,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             An table expression
 
         Examples
@@ -1199,7 +1199,7 @@ class TableExpr(Expr):
         expr.compile()
         return expr
 
-    def sql(self, query: str) -> ir.TableExpr:
+    def sql(self, query: str) -> ir.Table:
         """Run a SQL query against a table expression.
 
         !!! note "The SQL string is backend specific"
@@ -1207,7 +1207,7 @@ class TableExpr(Expr):
             `query` must be valid SQL for the execution backend the expression
             will run against
 
-        See [`TableExpr.alias`][ibis.expr.types.relations.TableExpr.alias] for
+        See [`Table.alias`][ibis.expr.types.relations.Table.alias] for
         details on using named table expressions in a SQL string.
 
         Parameters
@@ -1217,7 +1217,7 @@ class TableExpr(Expr):
 
         Returns
         -------
-        TableExpr
+        Table
             An opaque table expression
 
         Examples
@@ -1245,8 +1245,8 @@ class TableExpr(Expr):
 
 
 def _resolve_predicates(
-    table: TableExpr, predicates
-) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.TableExpr]]]:
+    table: Table, predicates
+) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     from ibis.expr import analysis as an
     from ibis.expr import types as ir
 
@@ -1274,11 +1274,14 @@ def bind_expr(table, expr):
 
 # TODO: move to analysis
 def find_base_table(expr):
-    if isinstance(expr, TableExpr):
+    if isinstance(expr, Table):
         return expr
 
     for arg in expr.op().flat_args():
         if isinstance(arg, Expr):
             r = find_base_table(arg)
-            if isinstance(r, TableExpr):
+            if isinstance(r, Table):
                 return r
+
+
+public(TableExpr=Table)

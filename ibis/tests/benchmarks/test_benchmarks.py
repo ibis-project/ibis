@@ -516,7 +516,7 @@ def test_repr_huge_union(benchmark):
         )
         for i in range(n)
     ]
-    expr = functools.reduce(ir.TableExpr.union, tables)
+    expr = functools.reduce(ir.Table.union, tables)
     benchmark(repr, expr)
 
 

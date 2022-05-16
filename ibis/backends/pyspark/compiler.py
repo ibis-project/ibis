@@ -146,7 +146,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     col_to_drop = []
     result_table = src_table
     for selection in op.selections:
-        if isinstance(selection, types.TableExpr):
+        if isinstance(selection, types.Table):
             col_in_selection_order.extend(selection.columns)
         elif isinstance(selection, types.DestructColumn):
             struct_col = t.translate(selection, scope, adjusted_timecontext)
@@ -444,7 +444,7 @@ def compile_endswith(t, expr, scope, timecontext, **kwargs):
 
 
 def _is_table(table):
-    return isinstance(table.op().arg, ir.TableExpr)
+    return isinstance(table.op().arg, ir.Table)
 
 
 def compile_aggregator(

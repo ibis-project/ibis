@@ -122,22 +122,22 @@ class BackendTest(abc.ABC):
         return f(*args)
 
     @property
-    def functional_alltypes(self) -> ir.TableExpr:
+    def functional_alltypes(self) -> ir.Table:
         t = self.connection.table('functional_alltypes')
         if self.bool_is_int:
             return t.mutate(bool_col=t.bool_col == 1)
         return t
 
     @property
-    def batting(self) -> ir.TableExpr:
+    def batting(self) -> ir.Table:
         return self.connection.table('batting')
 
     @property
-    def awards_players(self) -> ir.TableExpr:
+    def awards_players(self) -> ir.Table:
         return self.connection.table('awards_players')
 
     @property
-    def geo(self) -> Optional[ir.TableExpr]:
+    def geo(self) -> Optional[ir.Table]:
         if 'geo' in self.connection.list_tables():
             return self.connection.table('geo')
         return None

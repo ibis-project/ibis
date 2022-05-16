@@ -5,15 +5,15 @@ existing SQL-like execution model for backends.
 
 Most of the execution is built on the foundation that "Data is uniquely
 defined by the op tree". This is true in SQL analysis where there is no
-ambiguity what the result of executing a TableExpr is.
+ambiguity what the result of executing a Table is.
 
 In time series analysis, however, this is not necessarily True. We have defined
 an extension to ibis execution for time series analysis where the result of
-executing a TableExpr is defined by the TableExpr plus the time context are
+executing a Table is defined by the Table plus the time context are
 associated with the execution.
 
 Time context specifies the temporal range of a query, it carries the start and
-end datetimes. For example, a TableExpr can represent the query select count(a)
+end datetimes. For example, a Table can represent the query select count(a)
 from table, but the result of that is different with time context
 ("20190101", "20200101") vs ("20200101", "20210101"), because what data is in
 "table" depends also on the time context.
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from ibis.expr.scope import Scope
 
 # In order to use time context feature, there must be a column of Timestamp
-# type, and named as 'time' in TableExpr. This TIME_COL constant will be
+# type, and named as 'time' in Table. This TIME_COL constant will be
 # used in filtering data from a table or columns of a table. It can be changed
 # by running:
 #

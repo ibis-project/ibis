@@ -55,7 +55,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return client
 
     @property
-    def functional_alltypes(self) -> ir.TableExpr:
+    def functional_alltypes(self) -> ir.Table:
         t = self.connection.table('functional_alltypes')
         return t.mutate(
             bool_col=t.bool_col == 1,

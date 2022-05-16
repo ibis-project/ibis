@@ -29,7 +29,7 @@ or table expression.
 
 Parameters
 ----------
-expr : Union[ir.ScalarExpr, ir.ColumnExpr, ir.TableExpr]
+expr : Union[ir.ScalarExpr, ir.ColumnExpr, ir.Table]
 parent : ops.Selection
 data : pd.DataFrame
 scope : Scope
@@ -139,7 +139,7 @@ def compute_projection_column_expr(
     return result
 
 
-@compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)
+@compute_projection.register(ir.Table, ops.Selection, pd.DataFrame)
 def compute_projection_table_expr(expr, parent, data, **kwargs):
     if expr.equals(parent.table):
         return data

@@ -241,7 +241,7 @@ def test_mutation_fusion_overwrite():
     )
 
     # Since the second selection overwrites existing columns, it will
-    # not have the TableExpr as the first selection
+    # not have the Table as the first selection
     assert len(second_selection.op().selections) == 5
     assert (
         second_selection.op().selections[0].equals((t['col'] - 1).name('col'))
