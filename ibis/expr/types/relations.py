@@ -1244,6 +1244,7 @@ def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     from ibis.expr import analysis as an
+    from ibis.expr import operations as ops
     from ibis.expr import types as ir
 
     if isinstance(predicates, Expr):
@@ -1255,6 +1256,9 @@ def _resolve_predicates(
     for pred in predicates:
         if isinstance(pred, ir.TopK):
             top_ks.append(pred._semi_join_components())
+        elif isinstance(pred.op(), (ops.Any, ops.NotAny)):
+            transform = _AnyToExistsTransform(pred, table)
+            resolved_predicates.append(transform.get_result())
         else:
             resolved_predicates.append(pred)
 
@@ -1281,3 +1285,92 @@ def find_base_table(expr):
 
 
 public(TableExpr=Table)
+
+
+class _AnyToExistsTransform:
+
+    """
+    Some code duplication with the correlated ref check; should investigate
+    better code reuse.
+    """
+
+    def __init__(self, expr, parent_table):
+        self.expr = expr
+        self.parent_table = parent_table
+        self.query_roots = frozenset(self.parent_table.op().root_tables())
+
+    def get_result(self):
+        import ibis.expr.datatypes as dt
+        import ibis.expr.operations as ops
+
+        self.foreign_table = None
+        self.predicates = []
+
+        self._visit(self.expr)
+
+        if type(self.expr.op()) == ops.Any:
+            op = ops.ExistsSubquery(self.foreign_table, self.predicates)
+        else:
+            op = ops.NotExistsSubquery(self.foreign_table, self.predicates)
+
+        expr_type = dt.boolean.column
+        return expr_type(op)
+
+    def _visit(self, expr):
+        import ibis.expr.analysis as L
+        import ibis.expr.types as ir
+
+        node = expr.op()
+
+        for arg in node.flat_args():
+            if isinstance(arg, ir.Table):
+                self._visit_table(arg)
+            elif isinstance(arg, ir.BooleanColumn):
+                for sub_expr in L.flatten_predicate(arg):
+                    self.predicates.append(sub_expr)
+                    self._visit(sub_expr)
+            elif isinstance(arg, ir.Expr):
+                self._visit(arg)
+            else:
+                continue
+
+    def _find_blocking_table(self, expr):
+        import ibis.expr.types as ir
+
+        node = expr.op()
+
+        if node.blocks():
+            return expr
+
+        for arg in node.flat_args():
+            if isinstance(arg, ir.Expr):
+                result = self._find_blocking_table(arg)
+                if result is not None:
+                    return result
+
+    def _visit_table(self, expr):
+        import ibis.expr.types as ir
+
+        node = expr.op()
+
+        if isinstance(expr, ir.Table):
+            base_table = self._find_blocking_table(expr)
+            if base_table is not None:
+                base_node = base_table.op()
+                if self._is_root(base_node):
+                    pass
+                else:
+                    # Foreign ref
+                    self.foreign_table = expr
+        else:
+            if not node.blocks():
+                for arg in node.flat_args():
+                    if isinstance(arg, ir.Expr):
+                        self._visit(arg)
+
+    def _is_root(self, what):
+        import ibis.expr.types as ir
+
+        if isinstance(what, ir.Expr):
+            what = what.op()
+        return what in self.query_roots

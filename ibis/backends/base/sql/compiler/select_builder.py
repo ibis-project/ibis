@@ -2,91 +2,12 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler.extract_subqueries import (
     ExtractSubqueries,
 )
-
-
-class _AnyToExistsTransform:
-
-    """
-    Some code duplication with the correlated ref check; should investigate
-    better code reuse.
-    """
-
-    def __init__(self, context, expr, parent_table):
-        self.context = context
-        self.expr = expr
-        self.parent_table = parent_table
-        self.query_roots = frozenset(self.parent_table.op().root_tables())
-
-    def get_result(self):
-        self.foreign_table = None
-        self.predicates = []
-
-        self._visit(self.expr)
-
-        if type(self.expr.op()) == ops.Any:
-            op = ops.ExistsSubquery(self.foreign_table, self.predicates)
-        else:
-            op = ops.NotExistsSubquery(self.foreign_table, self.predicates)
-
-        expr_type = dt.boolean.column
-        return expr_type(op)
-
-    def _visit(self, expr):
-        node = expr.op()
-
-        for arg in node.flat_args():
-            if isinstance(arg, ir.Table):
-                self._visit_table(arg)
-            elif isinstance(arg, ir.BooleanColumn):
-                for sub_expr in L.flatten_predicate(arg):
-                    self.predicates.append(sub_expr)
-                    self._visit(sub_expr)
-            elif isinstance(arg, ir.Expr):
-                self._visit(arg)
-            else:
-                continue
-
-    def _find_blocking_table(self, expr):
-        node = expr.op()
-
-        if node.blocks():
-            return expr
-
-        for arg in node.flat_args():
-            if isinstance(arg, ir.Expr):
-                result = self._find_blocking_table(arg)
-                if result is not None:
-                    return result
-
-    def _visit_table(self, expr):
-        node = expr.op()
-
-        if isinstance(expr, ir.Table):
-            base_table = self._find_blocking_table(expr)
-            if base_table is not None:
-                base_node = base_table.op()
-                if self._is_root(base_node):
-                    pass
-                else:
-                    # Foreign ref
-                    self.foreign_table = expr
-        else:
-            if not node.blocks():
-                for arg in node.flat_args():
-                    if isinstance(arg, ir.Expr):
-                        self._visit(arg)
-
-    def _is_root(self, what):
-        if isinstance(what, ir.Expr):
-            what = what.op()
-        return what in self.query_roots
 
 
 class _CorrelatedRefCheck:
@@ -556,7 +477,16 @@ class SelectBuilder:
             else:
                 new_op = type(op)(left, right)
                 return new_op.to_expr()
-        elif isinstance(op, (ops.Any, ops.TableColumn, ops.Literal)):
+        elif isinstance(
+            op,
+            (
+                ops.Any,
+                ops.TableColumn,
+                ops.Literal,
+                ops.ExistsSubquery,
+                ops.NotExistsSubquery,
+            ),
+        ):
             return expr
         elif isinstance(op, ops.Value):
             visited = [
@@ -584,10 +514,15 @@ class SelectBuilder:
         aggregation, _ = L.reduction_to_aggregation(expr, default_name='tmp')
         return aggregation.to_array()
 
+    @util.deprecated(
+        instead=(
+            "do nothing; Any/NotAny is transformed into "
+            "ExistsSubquery/NotExistsSubquery at expression construction time"
+        ),
+        version="4.0.0",
+    )
     def _visit_filter_Any(self, expr):
-        # Rewrite semi/anti-join predicates in way that can hook into SQL
-        # translation step
-        transform = _AnyToExistsTransform(self.context, expr, self.table_set)
+        transform = ir.relations._AnyToExistsTransform(expr, self.table_set)
         return transform.get_result()
 
     _visit_filter_NotAny = _visit_filter_Any
