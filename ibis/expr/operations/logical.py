@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+import abc
+
 from public import public
 
+from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Binary, Unary, Value
@@ -179,7 +184,7 @@ class _AnyBase(Value):
             return rlz.Shape.COLUMNAR
 
     @abc.abstractmethod
-    def negate(self):  # pragma: no cover
+    def negate(self):
         ...
 
 

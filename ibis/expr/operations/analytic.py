@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from ibis.common.validators import immutable_property
@@ -232,37 +234,6 @@ class NthValue(Analytic):
     arg = rlz.column(rlz.any)
     nth = rlz.integer
     output_dtype = rlz.dtype_like("arg")
-
-
-@public
-class Any(Value):
-
-    # Depending on the kind of input boolean array, the result might either be
-    # array-like (an existence-type predicate) or scalar (a reduction)
-    arg = rlz.column(rlz.boolean)
-
-    output_dtype = dt.boolean
-
-    @property
-    def _reduction(self):
-        roots = self.arg.op().root_tables()
-        return len(roots) < 2
-
-    @immutable_property
-    def output_shape(self):
-        if self._reduction:
-            return rlz.Shape.SCALAR
-        else:
-            return rlz.Shape.COLUMNAR
-
-    def negate(self):
-        return NotAny(self.arg)
-
-
-@public
-class NotAny(Any):
-    def negate(self):
-        return Any(self.arg)
 
 
 public(WindowOp=Window, AnalyticOp=Analytic)

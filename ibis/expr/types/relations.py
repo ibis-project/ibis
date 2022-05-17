@@ -1249,14 +1249,18 @@ def _resolve_predicates(
 
     if isinstance(predicates, Expr):
         predicates = an.flatten_predicate(predicates)
-    predicates = util.promote_list(predicates)
-    predicates = [ir.relations.bind_expr(table, x) for x in predicates]
+
+    predicates = [
+        ir.relations.bind_expr(table, pred)
+        for pred in util.promote_list(predicates)
+    ]
+
     resolved_predicates = []
     top_ks = []
     for pred in predicates:
         if isinstance(pred, ir.TopK):
             top_ks.append(pred._semi_join_components())
-        elif isinstance(pred.op(), (ops.Any, ops.NotAny)):
+        elif isinstance(pred.op(), ops.logical._AnyBase):
             transform = _AnyToExistsTransform(pred, table)
             resolved_predicates.append(transform.get_result())
         else:
@@ -1300,7 +1304,6 @@ class _AnyToExistsTransform:
         self.query_roots = frozenset(self.parent_table.op().root_tables())
 
     def get_result(self):
-        import ibis.expr.datatypes as dt
         import ibis.expr.operations as ops
 
         self.foreign_table = None
@@ -1308,13 +1311,15 @@ class _AnyToExistsTransform:
 
         self._visit(self.expr)
 
-        if type(self.expr.op()) == ops.Any:
-            op = ops.ExistsSubquery(self.foreign_table, self.predicates)
-        else:
-            op = ops.NotExistsSubquery(self.foreign_table, self.predicates)
+        op = self.expr.op()
 
-        expr_type = dt.boolean.column
-        return expr_type(op)
+        if isinstance(op, ops.Any):
+            op_class = ops.ExistsSubquery
+        else:
+            assert isinstance(op, ops.NotAny)
+            op_class = ops.NotExistsSubquery
+
+        return op_class(self.foreign_table, self.predicates).to_expr()
 
     def _visit(self, expr):
         import ibis.expr.analysis as L
@@ -1331,8 +1336,6 @@ class _AnyToExistsTransform:
                     self._visit(sub_expr)
             elif isinstance(arg, ir.Expr):
                 self._visit(arg)
-            else:
-                continue
 
     def _find_blocking_table(self, expr):
         import ibis.expr.types as ir
@@ -1342,35 +1345,25 @@ class _AnyToExistsTransform:
         if node.blocks():
             return expr
 
-        for arg in node.flat_args():
-            if isinstance(arg, ir.Expr):
-                result = self._find_blocking_table(arg)
-                if result is not None:
-                    return result
+        return next(
+            (
+                result
+                for arg in node.flat_args()
+                if (
+                    isinstance(arg, ir.Expr)
+                    and (result := self._find_blocking_table(arg)) is not None
+                )
+            ),
+            None,
+        )
 
     def _visit_table(self, expr):
         import ibis.expr.types as ir
 
-        node = expr.op()
-
         if isinstance(expr, ir.Table):
             base_table = self._find_blocking_table(expr)
-            if base_table is not None:
-                base_node = base_table.op()
-                if self._is_root(base_node):
-                    pass
-                else:
-                    # Foreign ref
-                    self.foreign_table = expr
-        else:
-            if not node.blocks():
-                for arg in node.flat_args():
-                    if isinstance(arg, ir.Expr):
-                        self._visit(arg)
-
-    def _is_root(self, what):
-        import ibis.expr.types as ir
-
-        if isinstance(what, ir.Expr):
-            what = what.op()
-        return what in self.query_roots
+            if (
+                base_table is not None
+                and base_table.op() not in self.query_roots
+            ):
+                self.foreign_table = expr
