@@ -184,7 +184,7 @@ class _AnyBase(Value):
             return rlz.Shape.COLUMNAR
 
     @abc.abstractmethod
-    def negate(self):
+    def negate(self):  # pragma: no cover
         ...
 
 
