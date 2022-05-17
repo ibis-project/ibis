@@ -1,3 +1,19 @@
-# convert imports to absolute
-5332737fefbef3eac1063d93034d7ce87ba1c01b
-bb025103420741836cf594aa8163962d03b71b7b
+5332737f # convert imports to absolute
+bb025103 # convert imports to absolute
+5c0895a3 # refactor(ir): rename ir.ListExpr -> ir.ValueList
+20e3f8d3 # refactor(ir): keep ir.Column instead of both ir.Column and ir.AnyColumn
+1fb3a21a # refactor(ir): keep ir.Scalar instead of both ir.Scalar and ir.AnyScalar
+2aecdc91 # refactor(ir): keep ir.Value instead of both ir.Value and ir.AnyValue
+ecc9d173 # refactor(ir): reorganize ir.Scalar and ir.Column methods
+bcd0091c # refactor(ir): rename ir.ColumnExpr -> ir.Column
+64416c25 # refactor(ir): rename ir.ScalarExpr -> ir.Scalar
+7901860b # refactor(ir): rename ir.ValueExpr -> ir.Value
+fa1387ac # refactor(ir): rename ir.ExistsExpr -> ir.Exists
+37ee8323 # refactor(ir): rename ir.TopKExpr -> ir.TopK
+e284a966 # refactor(ir): rename ir.AnalyticExpr -> ir.Analytic
+8a3326e7 # refactor(ir): rename ir.TableExpr -> ir.Table
+cd313895 # refactor(ir): rename ops.AnalyticOp -> ops.Analytic
+6ecaaed5 # refactor(ir): rename ops.WindowOp -> ops.Window
+96b5b584 # refactor(ir): rename ops.BinaryOp -> ops.Binary
+2673ac39 # refactor(ir): rename ops.UnaryOp -> ops.Unary
+4803894d # refactor(ir): rename ops.ValueOp -> ops.Value
