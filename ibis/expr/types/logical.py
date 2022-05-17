@@ -73,12 +73,7 @@ class BooleanValue(NumericValue):
     __rxor__ = __xor__
 
     def __invert__(self) -> BooleanValue:
-        from ibis.expr import operations as ops
-
-        try:
-            return self.negate()
-        except AttributeError:
-            return ops.Not(self).to_expr()
+        return self.negate()
 
 
 @public
