@@ -157,3 +157,39 @@ class Where(Value):
 
     output_dtype = rlz.dtype_like("true_expr")
     output_shape = rlz.shape_like("bool_expr")
+
+
+class _AnyBase(Value):
+    # Depending on the kind of input boolean array, the result might either be
+    # array-like (an existence-type predicate) or scalar (a reduction)
+    arg = rlz.column(rlz.boolean)
+
+    output_dtype = dt.boolean
+
+    @property
+    def _reduction(self):
+        roots = self.arg.op().root_tables()
+        return len(roots) < 2
+
+    @immutable_property
+    def output_shape(self):
+        if self._reduction:
+            return rlz.Shape.SCALAR
+        else:
+            return rlz.Shape.COLUMNAR
+
+    @abc.abstractmethod
+    def negate(self):  # pragma: no cover
+        ...
+
+
+@public
+class Any(_AnyBase):
+    def negate(self):
+        return NotAny(self.arg)
+
+
+@public
+class NotAny(_AnyBase):
+    def negate(self):
+        return Any(self.arg)
