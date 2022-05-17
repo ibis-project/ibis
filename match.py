@@ -107,12 +107,12 @@ class Literal(Node):
     dtype = noop
 
 
-class BinaryOp(Node):
+class Binary(Node):
     right = noop
     left = noop
 
 
-class Add(BinaryOp, commutative=True, associative=True):
+class Add(Binary, commutative=True, associative=True):
     pass
 
 

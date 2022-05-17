@@ -501,16 +501,6 @@ def test_arbitrary(table, column, how, condition_fn):
     assert L.is_reduction(expr)
 
 
-@pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
-@pytest.mark.parametrize('how', [None, 'first', 'last', 'heavy'])
-@pytest.mark.parametrize('condition_fn', [lambda t: None, lambda t: t.a > 8])
-def test_arbitrary_erase_expr(table, column, how, condition_fn):
-    col = table[column]
-    where = condition_fn(table)
-    expr = col.arbitrary(how=how, where=where)
-    expr.op()._erase_exprs()
-
-
 @pytest.mark.parametrize(
     ['column', 'operation'],
     [
@@ -1065,6 +1055,7 @@ def test_empty_array_as_argument():
     class FooNode(ops.Node):
         value = rlz.value(dt.Array(dt.int64))
 
+        @property
         def output_type(self):
             return Foo
 

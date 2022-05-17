@@ -8,15 +8,14 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
 
+# def test_operation():
+#     class Log(ops.Node):
+#         arg = rlz.double()
+#         base = rlz.optional(rlz.double())
 
-def test_operation():
-    class Log(ops.Node):
-        arg = rlz.double()
-        base = rlz.optional(rlz.double())
-
-    Log(1, base=2)
-    Log(1, base=2)
-    Log(arg=10)
+#     Log(1, base=2)
+#     Log(1, base=2)
+#     Log(arg=10)
 
 
 def test_ops_smoke():
@@ -76,14 +75,14 @@ def test_ops_smoke():
     ops.EndsWith('asd', 'xyz')
 
 
-def test_instance_of_operation():
-    class MyOperation(ops.Node):
-        arg = rlz.instance_of(ir.IntegerValue)
+# def test_instance_of_operation():
+#     class MyOperation(ops.Node):
+#         arg = rlz.instance_of(ir.IntegerValue)
 
-    MyOperation(ir.literal(5))
+#     MyOperation(ir.literal(5))
 
-    with pytest.raises(IbisTypeError):
-        MyOperation(ir.literal('string'))
+#     with pytest.raises(IbisTypeError):
+#         MyOperation(ir.literal('string'))
 
 
 def test_array_input():

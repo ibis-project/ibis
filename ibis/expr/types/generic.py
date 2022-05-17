@@ -887,11 +887,7 @@ def null():
     """Create a NULL/NA scalar"""
     import ibis.expr.operations as ops
 
-    global _NULL
-    if _NULL is None:
-        _NULL = ops.NullLiteral().to_expr()
-
-    return _NULL
+    return ops.NullLiteral().to_expr()
 
 
 @public

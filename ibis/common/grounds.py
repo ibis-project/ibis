@@ -124,14 +124,14 @@ class AnnotableMeta(BaseMeta):
         attribs["__slots__"] = tuple(slots)
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
-        attribs["argnames"] = tuple(signature.parameters.keys())
+        attribs["__argnames__"] = tuple(signature.parameters.keys())
         return super().__new__(metacls, clsname, bases, attribs, **kwargs)
 
 
 class Annotable(Base, Hashable, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __slots__ = ("args", "_hash")
+    __slots__ = ("__args__", "_hash")
 
     @classmethod
     def __create__(cls, *args, **kwargs):
@@ -157,8 +157,8 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
             object.__setattr__(self, name, value)
 
         # optimizations to store frequently accessed generic properties
-        args = tuple(kwargs[name] for name in self.argnames)
-        object.__setattr__(self, "args", args)
+        args = tuple(kwargs[name] for name in self.__argnames__)
+        object.__setattr__(self, "__args__", args)
         object.__setattr__(self, "_hash", hash((self.__class__, args)))
 
         # calculate special property-like objects only once due to the
@@ -187,7 +187,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
     def __repr__(self) -> str:
         args = ", ".join(
             f"{name}={value!r}"
-            for name, value in zip(self.argnames, self.args)
+            for name, value in zip(self.__argnames__, self.__args__)
         )
         return f"{self.__class__.__name__}({args})"
 
@@ -200,7 +200,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
         return self
 
     def __reduce__(self):
-        kwargs = dict(zip(self.argnames, self.args))
+        kwargs = dict(zip(self.__argnames__, self.__args__))
         return (self._reconstruct, (kwargs,))
 
 

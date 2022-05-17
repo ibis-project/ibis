@@ -13,7 +13,7 @@ with pytest.warns(FutureWarning, match=ARGUMENT_USAGE_MSG):
         baz = Argument(int)
 
         def __eq__(self, other):
-            return self.args == other.args
+            return self.__args__ == other.__args__
 
 
 def test_argument_raise_on_missing_value():

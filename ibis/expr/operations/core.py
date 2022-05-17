@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import toolz
+from matchpy import Arity, Operation, Wildcard
 from public import public
 
 from ibis import util
@@ -24,33 +25,135 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots))
 
 
-def _compare_items(a, b):
-    try:
-        return a.equals(b)
-    except AttributeError:
-        if isinstance(a, tuple):
-            return _compare_tuples(a, b)
-        else:
-            return a == b
-
-
-def _compare_tuples(a, b):
-    if len(a) != len(b):
-        return False
-    return all(map(_compare_items, a, b))
-
-
 def _erase_exprs(arg):
+    """
+    Remove intermediate expressions.
+    """
     if isinstance(arg, ir.Expr):
-        return arg.op()._erase_exprs()
+        return arg.op()
     elif isinstance(arg, tuple):
         return tuple(map(_erase_exprs, arg))
     else:
         return arg
 
 
+def _create_exprs(arg):
+    if isinstance(arg, Node):
+        return arg.to_expr()
+    elif isinstance(arg, tuple):
+        return tuple(map(_create_exprs, arg))
+    else:
+        return arg
+
+
+# TODO(kszucs): should rename to Operator
 @public
 class Node(Annotable, Comparable):
+
+    __slots__ = ('args',)
+
+    ####################### MATCHPY API ###############################  # noqa
+
+    def __init_subclass__(
+        cls,
+        /,
+        name=None,
+        arity=False,
+        associative=False,
+        commutative=False,
+        one_identity=False,
+        infix=False,
+        **kwargs,
+    ):
+        # TODO(kszucs): raise if class already has these attributes
+        # cls.name = name or cls.__name__
+        cls.arity = arity or Arity(len(cls.__argnames__), True)
+        cls.associative = associative
+        cls.commutative = commutative
+        cls.one_identity = one_identity
+        cls.infix = infix
+
+    # TODO(kszucs): restore iter and len
+    def __iter__(self):
+        # returns with an iterator of Nodes
+        return iter(self.__args__)
+
+    def __len__(self):
+        return len(self.__args__)
+
+    # def __getitem__(self, key):
+    #     index = self.__argnames__.index(key)
+    #     return self.__args__[index]
+
+    # def __contains__(self, key):
+    #     return key in self.__argnames__
+
+    # @property
+    # def operands(self):
+    #     raise NotImplementedError()
+
+    # def collect_variables(self):
+    #     raise NotImplementedError()
+
+    # def collect_symbols(self, symbols):
+    #     raise NotImplementedError()
+
+    @classmethod
+    def __create__(cls, *args, bypass_validation=False, **kwargs):
+        bound = cls.__signature__.bind(*args, **kwargs)
+        bound.apply_defaults()
+
+        # bound the signature to the passed arguments and apply the validators
+        # before passing the arguments, so self.__init__() receives already
+        # validated arguments as keywords
+        kwargs = {}
+        for name, value in bound.arguments.items():
+            param = cls.__signature__.parameters[name]
+            # TODO(kszucs): provide more error context on failure
+            # FIXME(kszucs): hack for supporting matchpy wildcards for pattern
+            # matching
+            # print(name, type(value))
+            # HACK
+            if bypass_validation or isinstance(value, (Wildcard, Node)):
+                kwargs[name] = value
+            else:
+                kwargs[name] = param.validate(kwargs, value)
+
+        # construct the instance by passing the validated keyword arguments
+        return super(Annotable, cls).__create__(**kwargs)
+
+    ####################### MATCHPY API END ###########################  # noqa
+
+    def __init__(self, **kwargs):
+        kwargs = {k: _erase_exprs(v) for k, v in kwargs.items()}
+        object.__setattr__(
+            self, 'args', tuple(map(_create_exprs, kwargs.values()))
+        )
+        super().__init__(**kwargs)
+
+    def __post_init__(self):
+        for arg in self.__args__:
+            assert not isinstance(arg, ir.Expr)
+        for arg in self.args:
+            assert not isinstance(arg, Node)
+
+    @property
+    def argnames(self):
+        return self.__argnames__
+
+    def get(self, name):
+        return super().__getattr__(name)
+
+    def __getattribute__(self, name):
+        arg = super().__getattribute__(name)
+        if name in type(self).__argnames__:
+            arg = _create_exprs(arg)
+        return arg
+
+    def __reduce__(self):
+        kwargs = dict(zip(self.argnames, self.args))
+        return (self._reconstruct, (kwargs,))
+
     @immutable_property
     def _flat_ops(self):
         import ibis.expr.types as ir
@@ -59,22 +162,8 @@ class Node(Annotable, Comparable):
             arg.op() for arg in self.flat_args() if isinstance(arg, ir.Expr)
         )
 
-    def _erase_exprs(self):
-        """
-        Remove intermediate expressions.
-
-        Note that this method is only for internal use.
-        """
-        cls = self.__class__
-        new = cls.__new__(cls)
-        for name, arg in zip(self.argnames, self.args):
-            object.__setattr__(new, name, _erase_exprs(arg))
-        return new
-
     def __equals__(self, other):
-        return self._hash == other._hash and _compare_tuples(
-            self.args, other.args
-        )
+        return self._hash == other._hash and self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -132,6 +221,9 @@ class Node(Annotable, Comparable):
                 yield from arg
             else:
                 yield arg
+
+
+Operation.register(Node)
 
 
 @public
@@ -209,4 +301,31 @@ class Binary(Value):
         return max(self.left.op().output_shape, self.right.op().output_shape)
 
 
-public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)
+
+@public
+class List(Node):
+    """Data structure for a list of expressions"""
+
+    values = rlz.tuple_of(rlz.instance_of(ir.Expr))
+
+    output_type = ir.List
+
+    def root_tables(self):
+        return distinct_roots(*self.values)
+
+
+@public
+class ValueList(List, Value):
+    """Data structure for a list of value expressions"""
+
+    values = rlz.tuple_of(rlz.any)
+
+    output_type = ir.ValueList
+    output_dtype = rlz.dtype_like("values")
+    output_shape = rlz.shape_like("values")
+
+    # def root_tables(self):
+    #     return distinct_roots(*self.values)
+
+
+public(UnaryOp=Unary, BinaryOp=Binary, ValueOp=Value)

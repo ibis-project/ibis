@@ -104,7 +104,7 @@ class DataType(Annotable, Comparable):
                 "Please construct a new instance of the type to change the "
                 "values of the attributes."
             )
-        kwargs = dict(zip(self.argnames, self.args))
+        kwargs = dict(zip(self.__argnames__, self.__args__))
         kwargs["nullable"] = nullable
         return self.__class__(**kwargs)
 
@@ -125,7 +125,7 @@ class DataType(Annotable, Comparable):
         self,
         other: typing.Any,
     ) -> bool:
-        return self.args == other.args
+        return self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, DataType):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Hashable, Mapping
+from typing import TYPE_CHECKING, Any, Hashable, Mapping, Sequence
 
 from cached_property import cached_property
 from public import public
@@ -31,9 +31,6 @@ class Expr:
     def __init__(self, arg: ops.Node) -> None:
         # TODO: all inputs must inherit from a common table API
         self._arg = arg
-
-    def _erase_exprs(self):
-        return self._arg._erase_exprs()
 
     def __repr__(self) -> str:
         if not config.options.interactive:
@@ -312,6 +309,35 @@ class Expr:
             return False
         else:
             return True
+
+
+@public
+class List(Expr, Sequence[Expr]):
+    @property
+    def values(self):
+        return self.op().values
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __getitem__(self, key):
+        return self.values[key]
+
+    def __add__(self, other):
+        other_values = tuple(getattr(other, 'values', other))
+        return type(self.op())(self.values + other_values).to_expr()
+
+    def __radd__(self, other):
+        other_values = tuple(getattr(other, 'values', other))
+        return type(self.op())(other_values + self.values).to_expr()
+
+    def __bool__(self):
+        return bool(self.values)
+
+    __nonzero__ = __bool__
+
+    def __len__(self):
+        return len(self.values)
 
 
 unnamed = UnnamedMarker()

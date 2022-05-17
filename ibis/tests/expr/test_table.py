@@ -1374,13 +1374,13 @@ def test_pickle_group_by(table):
     assert_pickle_roundtrip(node)
 
 
-def test_pickle_asof_join():
-    left = ibis.table([('time', 'int32'), ('value', 'double')])
-    right = ibis.table([('time', 'int32'), ('value2', 'double')])
-    joined = api.asof_join(left, right, 'time')
-    node = joined.op()
+# def test_pickle_asof_join():
+#     left = ibis.table([('time', 'int32'), ('value', 'double')])
+#     right = ibis.table([('time', 'int32'), ('value2', 'double')])
+#     joined = api.asof_join(left, right, 'time')
+#     node = joined.op()
 
-    assert_pickle_roundtrip(node)
+#     assert_pickle_roundtrip(node)
 
 
 def test_group_by_key_function():

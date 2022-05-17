@@ -5,6 +5,7 @@ import operator
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import toolz
 from packaging.version import parse as vparse

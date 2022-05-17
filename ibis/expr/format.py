@@ -106,7 +106,7 @@ def fmt_root(op: ops.Node, *, aliases: Aliases, **_: Any) -> str:
     """Fallback formatting implementation."""
     raw_parts = fmt_fields(
         op,
-        dict.fromkeys(op.argnames, fmt_value),
+        dict.fromkeys(op.__argnames__, fmt_value),
         aliases=aliases,
     )
     return f"{op.__class__.__name__}\n{raw_parts}"
@@ -567,7 +567,7 @@ def _fmt_value_datatype(datatype: dt.DataType, **_: Any) -> str:
 def _fmt_value_value_op(op: ops.Value, *, aliases: Aliases) -> str:
     args = []
     # loop over argument names and original expression
-    for argname, orig_expr in zip(op.argnames, op.args):
+    for argname, orig_expr in zip(op.__argnames__, op.args):
         # promote argument to a list, so that we don't accidentially repr
         # entire subtrees when all we want is the formatted argument value
         if exprs := [

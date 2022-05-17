@@ -36,8 +36,8 @@ def test_ast_with_projection_join_filter(con):
     tbl = stmt.table_set
     tbl_node = tbl.op()
     assert isinstance(tbl_node, ops.InnerJoin)
-    assert tbl_node.left is table2
-    assert tbl_node.right is table3
+    assert tbl_node.left.equals(table2)
+    assert tbl_node.right.equals(table3)
 
 
 def test_ast_with_aggregation_join_filter(con):

@@ -313,22 +313,6 @@ class ScalarParameter(Value):
 
 
 @public
-class ValueList(Value):
-    """Data structure for a list of value expressions"""
-
-    # NOTE: this proxies the Value behaviour to the underlying values
-
-    values = rlz.tuple_of(rlz.any)
-
-    output_type = ir.ValueList
-    output_dtype = rlz.dtype_like("values")
-    output_shape = rlz.shape_like("values")
-
-    def root_tables(self):
-        return distinct_roots(*self.values)
-
-
-@public
 class Constant(Value):
     output_shape = rlz.Shape.SCALAR
 

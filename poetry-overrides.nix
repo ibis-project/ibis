@@ -91,4 +91,8 @@ self: super:
   traitlets = super.traitlets.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
   });
+
+  multiset = super.multiset.overridePythonAttrs (attrs: {
+    propagatedBuildInputs = (attrs.propagatedBuildInputs or [ ]) ++ [ self.pytest-runner ];
+  });
 }

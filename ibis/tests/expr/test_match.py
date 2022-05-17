@@ -18,8 +18,8 @@ class MyOp(ops.Node):
     b = noop
 
 
-def test_instance_of_operation():
-    MyOp(1, 2)
+# def test_instance_of_operation():
+#     MyOp(1, 2)
 
 
 def test_pina():
@@ -47,16 +47,16 @@ def test_pina():
     print(substitution)
 
 
-def test_valami():
-    a = Symbol('a')
-    b = Symbol('b')
-    x = Wildcard.dot('x')
-    y = Wildcard.dot('y')
+# def test_valami():
+#     a = Symbol('a')
+#     b = Symbol('b')
+#     x = Wildcard.dot('x')
+#     y = Wildcard.dot('y')
 
-    subject = MyOp(a, b)
-    pattern = Pattern(MyOp(x, y))
+#     subject = MyOp(a, b)
+#     pattern = Pattern(MyOp(x, y))
 
-    next(match(subject, pattern))
-    return
-    substitution = next(match(subject, pattern))
-    print(substitution)
+#     next(match(subject, pattern))
+#     return
+#     substitution = next(match(subject, pattern))
+#     print(substitution)
