@@ -12,6 +12,7 @@ import pandas as pd
 from public import public
 
 from ibis.common import exceptions as com
+from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
@@ -273,7 +274,7 @@ class Literal(ValueOp):
 
 
 @public
-class NullLiteral(Literal):
+class NullLiteral(Literal, Singleton):
     """Typeless NULL literal"""
 
     value = rlz.optional(type(None))
