@@ -1193,3 +1193,81 @@ def is_reduction(expr):
 
 def is_scalar_reduction(expr):
     return isinstance(expr, ir.Scalar) and is_reduction(expr)
+
+
+class _AnyToExistsTransform:
+
+    """
+    Some code duplication with the correlated ref check; should investigate
+    better code reuse.
+    """
+
+    def __init__(self, expr, parent_table):
+        self.expr = expr
+        self.parent_table = parent_table
+        self.query_roots = frozenset(self.parent_table.op().root_tables())
+
+    def get_result(self):
+        import ibis.expr.operations as ops
+
+        self.foreign_table = None
+        self.predicates = []
+
+        self._visit(self.expr)
+
+        op = self.expr.op()
+
+        if isinstance(op, ops.Any):
+            op_class = ops.ExistsSubquery
+        else:
+            assert isinstance(op, ops.NotAny)
+            op_class = ops.NotExistsSubquery
+
+        return op_class(self.foreign_table, self.predicates).to_expr()
+
+    def _visit(self, expr):
+        import ibis.expr.analysis as L
+        import ibis.expr.types as ir
+
+        node = expr.op()
+
+        for arg in node.flat_args():
+            if isinstance(arg, ir.Table):
+                self._visit_table(arg)
+            elif isinstance(arg, ir.BooleanColumn):
+                for sub_expr in L.flatten_predicate(arg):
+                    self.predicates.append(sub_expr)
+                    self._visit(sub_expr)
+            elif isinstance(arg, ir.Expr):
+                self._visit(arg)
+
+    def _find_blocking_table(self, expr):
+        import ibis.expr.types as ir
+
+        node = expr.op()
+
+        if node.blocks():
+            return expr
+
+        return next(
+            (
+                result
+                for arg in node.flat_args()
+                if (
+                    isinstance(arg, ir.Expr)
+                    and (result := self._find_blocking_table(arg)) is not None
+                )
+            ),
+            None,
+        )
+
+    def _visit_table(self, expr):
+        import ibis.expr.types as ir
+
+        if isinstance(expr, ir.Table):
+            base_table = self._find_blocking_table(expr)
+            if (
+                base_table is not None
+                and base_table.op() not in self.query_roots
+            ):
+                self.foreign_table = expr

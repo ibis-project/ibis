@@ -521,8 +521,8 @@ class SelectBuilder:
         ),
         version="4.0.0",
     )
-    def _visit_filter_Any(self, expr):
-        transform = ir.relations._AnyToExistsTransform(expr, self.table_set)
+    def _visit_filter_Any(self, expr):  # pragma: no cover
+        transform = L._AnyToExistsTransform(expr, self.table_set)
         return transform.get_result()
 
     _visit_filter_NotAny = _visit_filter_Any
