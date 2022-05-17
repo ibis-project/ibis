@@ -180,21 +180,20 @@ def _contains(func):
     def translate(t, expr):
         op = expr.op()
 
-        raw_left, raw_right = op.args
-        left = t.translate(raw_left)
-        right = t.translate(raw_right)
+        left = t.translate(op.value)
+        right = t.translate(op.options)
 
         if (
             # not a list expr
-            not isinstance(raw_right, ir.ListExpr)
+            not isinstance(op.options, ir.ListExpr)
             # but still a column expr
-            and isinstance(raw_right, ir.ColumnExpr)
+            and isinstance(op.options, ir.ColumnExpr)
             # wasn't already compiled into a select statement
             and not isinstance(right, sa.sql.Selectable)
         ):
             right = sa.select(right)
         else:
-            right = t.translate(raw_right)
+            right = t.translate(op.options)
 
         return func(left, right)
 
