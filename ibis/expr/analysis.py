@@ -867,9 +867,6 @@ class ExprValidator:
         for expr in self.parent_exprs:
             self.roots.extend(expr.op().root_tables())
 
-    def has_common_roots(self, expr):
-        return self.validate(expr)
-
     def validate(self, expr):
         op = expr.op()
 
@@ -887,22 +884,15 @@ class ExprValidator:
         return True
 
     def _among_roots(self, node):
-        return self.roots_shared(node) > 0
-
-    def roots_shared(self, node):
-        return sum(
+        roots_shared = (
             root.is_ancestor(node) or node.compatible_with(root)
             for root in self.roots
         )
+        return sum(roots_shared) > 0
 
     def shares_some_roots(self, expr):
         expr_roots = expr.op().root_tables()
         return any(self._among_roots(root) for root in expr_roots)
-
-    def shares_one_root(self, expr):
-        expr_roots = expr.op().root_tables()
-        total = sum(self.roots_shared(root) for root in expr_roots)
-        return total == 1
 
     def validate_all(self, exprs):
         for expr in exprs:
