@@ -785,21 +785,21 @@ def test_filter_subquery_derived_reduction(filter_subquery_derived_reduction):
     result = Compiler.to_sql(expr3)
     expected = """SELECT *
 FROM star1
-WHERE `f` > (
-  SELECT ln(avg(`f`)) AS `tmp`
+WHERE `f` > ln((
+  SELECT avg(`f`) AS `mean`
   FROM star1
   WHERE `foo_id` = 'foo'
-)"""
+))"""
     assert result == expected
 
     result = Compiler.to_sql(expr4)
     expected = """SELECT *
 FROM star1
-WHERE `f` > (
-  SELECT ln(avg(`f`)) + 1 AS `tmp`
+WHERE `f` > ln((
+  SELECT avg(`f`) AS `mean`
   FROM star1
   WHERE `foo_id` = 'foo'
-)"""
+)) + 1"""
     assert result == expected
 
 

@@ -734,7 +734,13 @@ class Table(Expr):
         child = self
         for predicate, right in top_ks:
             child = child.semi_join(right, predicate)[child]
-        return an.apply_filter(child, resolved_predicates)
+        return an.apply_filter(
+            child,
+            [
+                an._rewrite_filter(pred.op(), pred)
+                for pred in resolved_predicates
+            ],
+        )
 
     def count(self) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
