@@ -12,7 +12,7 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
 from ibis.backends.postgres.datatypes import _get_type
-from ibis.backends.postgres.udf import udf
+from ibis.backends.postgres.udf import udf as _udf
 
 
 class Backend(BaseAlchemyBackend):
@@ -170,7 +170,7 @@ class Backend(BaseAlchemyBackend):
         inheriting from PostgresUDFNode
         """
 
-        return udf(
+        return _udf(
             client=self,
             python_func=pyfunc,
             in_types=in_types,
