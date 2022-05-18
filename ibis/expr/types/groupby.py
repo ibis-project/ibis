@@ -225,8 +225,12 @@ class GroupedTable:
         return _window.window(
             preceding=preceding,
             following=following,
-            group_by=groups,
-            order_by=sorts,
+            group_by=list(
+                map(self.table._ensure_expr, util.promote_list(groups))
+            ),
+            order_by=list(
+                map(self.table._ensure_expr, util.promote_list(sorts))
+            ),
         )
 
     def over(self, window: _window.Window) -> GroupedTable:
