@@ -1,9 +1,11 @@
 import decimal
 import io
+import operator
 
 import numpy as np
 import pandas as pd
 import pytest
+import toolz
 from packaging.version import parse as vparse
 from pytest import param
 
@@ -499,3 +501,25 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
     expected = df[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute()
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected", "op"),
+    [
+        param(True, True, toolz.identity, id="true_noop"),
+        param(False, False, toolz.identity, id="false_noop"),
+        param(True, False, operator.invert, id="true_invert"),
+        param(False, True, operator.invert, id="false_invert"),
+        param(True, False, operator.neg, id="true_negate"),
+        param(False, True, operator.neg, id="false_negate"),
+    ],
+)
+def test_logical_negation_literal(con, expr, expected, op):
+    assert con.execute(op(ibis.literal(expr))) == expected
+
+
+@pytest.mark.parametrize("op", [toolz.identity, operator.invert, operator.neg])
+def test_logical_negation_column(backend, alltypes, df, op):
+    result = op(alltypes["bool_col"]).execute()
+    expected = op(df["bool_col"])
+    backend.assert_series_equal(result, expected, check_names=False)

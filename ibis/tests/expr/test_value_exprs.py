@@ -466,7 +466,7 @@ def test_casted_exprs_are_named(table):
     expr.value_counts()
 
 
-@pytest.mark.parametrize('col', list('abcdefh'))
+@pytest.mark.parametrize('col', list('abcdef'))
 def test_negate(table, col):
     c = table[col]
     result = -c
@@ -474,10 +474,19 @@ def test_negate(table, col):
     assert isinstance(result.op(), ops.Negate)
 
 
-def test_negate_boolean_scalar():
-    result = -(ibis.literal(False))
+@pytest.mark.parametrize("op", [operator.neg, operator.invert])
+@pytest.mark.parametrize("value", [True, False])
+def test_negate_boolean_scalar(op, value):
+    result = op(ibis.literal(value))
     assert isinstance(result, ir.BooleanScalar)
-    assert isinstance(result.op(), ops.Negate)
+    assert isinstance(result.op(), ops.Not)
+
+
+@pytest.mark.parametrize("op", [operator.neg, operator.invert])
+def test_negate_boolean_column(table, op):
+    result = op(table["h"])
+    assert isinstance(result, ir.BooleanColumn)
+    assert isinstance(result.op(), ops.Not)
 
 
 @pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
