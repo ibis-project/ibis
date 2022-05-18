@@ -220,12 +220,61 @@ def _ibis_sqlite_sqrt(arg):
     return None if arg is None or arg < 0.0 else math.sqrt(arg)
 
 
+def _trig_func_unary(func, arg):
+    if arg is None:
+        return None
+
+    return func(float(arg))
+
+
+def _trig_func_binary(func, arg1, arg2):
+    if arg1 is None or arg2 is None:
+        return None
+
+    return func(float(arg1), float(arg2))
+
+
 @udf
 def _ibis_sqlite_cot(arg):
-    arg = float(arg)
-    if arg is not None:
-        return float("inf") if not arg else math.cos(arg) / math.sin(arg)
-    return None
+    return _trig_func_unary(
+        lambda arg: float("inf") if not arg else math.cos(arg) / math.sin(arg),
+        arg,
+    )
+
+
+@udf
+def _ibis_sqlite_sin(arg):
+    return _trig_func_unary(math.sin, arg)
+
+
+@udf
+def _ibis_sqlite_cos(arg):
+    return _trig_func_unary(math.cos, arg)
+
+
+@udf
+def _ibis_sqlite_tan(arg):
+    return _trig_func_unary(math.tan, arg)
+
+
+@udf
+def _ibis_sqlite_asin(arg):
+    return _trig_func_unary(math.asin, arg)
+
+
+@udf
+def _ibis_sqlite_acos(arg):
+    return _trig_func_unary(math.acos, arg)
+
+
+@udf
+def _ibis_sqlite_atan(arg):
+    return _trig_func_unary(math.atan, arg)
+
+
+@udf
+def _ibis_sqlite_atan2(y, x):
+    return _trig_func_binary(math.atan2, y, x)
 
 
 class _ibis_sqlite_var:
