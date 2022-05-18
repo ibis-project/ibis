@@ -1093,23 +1093,16 @@ def flatten_predicate(expr):
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
 
 
-def is_analytic(expr, exclude_windows=False):
-    def _is_analytic(op):
+def is_analytic(expr):
+    def predicate(expr):
         if isinstance(
-            op,
-            (ops.Reduction, ops.Analytic, ops.logical._AnyBase, ops.All),
+            expr.op(), (ops.Reduction, ops.Analytic, ops.logical._AnyBase)
         ):
-            return True
-        elif isinstance(op, ops.Window) and exclude_windows:
-            return False
+            return lin.halt, expr
+        else:
+            return lin.proceed, None
 
-        for arg in op.args:
-            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
-                return True
-
-        return False
-
-    return _is_analytic(expr.op())
+    return any(lin.traverse(predicate, expr))
 
 
 def is_reduction(expr):
