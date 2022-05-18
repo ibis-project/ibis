@@ -10,6 +10,7 @@ from pyspark.sql.column import Column
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
+    import ibis.expr.operations as ops
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
@@ -582,3 +583,6 @@ class Backend(BaseSQLBackend):
             self._fully_qualified_name(name, database), maybe_noscan
         )
         return self.raw_sql(stmt)
+
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        return operation in PySparkExprTranslator._registry.keys()
