@@ -541,24 +541,16 @@ class AggregateSelection:
     def _pushdown_exprs(self, exprs):
         import ibis.expr.analysis as L
 
-        # exit early if there's nothing to push down
-        if not exprs:
-            return True, []
-
-        resolved = [
-            self.op.table._ensure_expr(expr)
-            for expr in util.promote_list(exprs)
-        ]
         subbed_exprs = []
+        for expr in util.promote_list(exprs):
+            expr = self.op.table._ensure_expr(expr)
+            subbed = L.sub_for(expr, [(self.parent, self.op.table)])
+            subbed_exprs.append(subbed)
 
-        valid = False
-        if resolved:
-            for x in util.promote_list(resolved):
-                subbed = L.sub_for(x, [(self.parent, self.op.table)])
-                subbed_exprs.append(subbed)
+        if subbed_exprs:
             valid = self.op.table._is_valid(subbed_exprs)
         else:
-            valid = False
+            valid = True
 
         return valid, subbed_exprs
 
