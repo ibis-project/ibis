@@ -37,27 +37,20 @@ def _between(translator, expr):
 
 
 def _negate(translator, expr):
-    arg = expr.op().args[0]
-    if isinstance(expr, ir.BooleanValue):
-        arg_ = translator.translate(arg)
-        return f'NOT {arg_!s}'
-    else:
-        arg_ = _parenthesize(translator, arg)
-        return f'-{arg_!s}'
+    return f"-{_parenthesize(translator, expr.op().arg)}"
 
 
 def _not(translator, expr):
-    return 'NOT {}'.format(*map(translator.translate, expr.op().args))
+    return f"NOT {_parenthesize(translator, expr.op().arg)}"
 
 
 def _parenthesize(translator, expr):
     op = expr.op()
-    op_klass = type(op)
 
     # function calls don't need parens
     what_ = translator.translate(expr)
-    if (op_klass in _binary_infix_ops) or (op_klass in _unary_ops):
-        return f'({what_!s})'
+    if isinstance(op, (*_binary_infix_ops.keys(), *_unary_ops.keys())):
+        return f"({what_})"
     else:
         return what_
 
