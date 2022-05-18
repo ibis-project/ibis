@@ -622,6 +622,12 @@ class IntervalValue(Value):
 
     __neg__ = negate
 
+    @staticmethod
+    def __negate_op__():
+        import ibis.expr.operations as ops
+
+        return ops.Negate
+
 
 @public
 class IntervalScalar(Scalar, IntervalValue):
