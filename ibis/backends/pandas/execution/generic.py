@@ -681,8 +681,8 @@ def execute_count_frame(op, data, _, **kwargs):
     return len(data)
 
 
-@execute_node.register(ops.Not, (bool, np.bool_))
-def execute_not_bool(op, data, **kwargs):
+@execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
+def execute_not_bool(_, data, **kwargs):
     return not data
 
 
