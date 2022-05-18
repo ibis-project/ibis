@@ -14,6 +14,12 @@ if TYPE_CHECKING:
 
 @public
 class NumericValue(Value):
+    @staticmethod
+    def __negate_op__():
+        from ibis.expr import operations as ops
+
+        return ops.Negate
+
     def negate(self) -> NumericValue:
         """Negate a numeric expression.
 
@@ -22,13 +28,12 @@ class NumericValue(Value):
         NumericValue
             A numeric value expression
         """
-        from ibis.expr import operations as ops
-
         op = self.op()
-        if hasattr(op, 'negate'):
+        try:
             result = op.negate()
-        else:
-            result = ops.Negate(self)
+        except AttributeError:
+            op_class = self.__negate_op__()
+            result = op_class(self)
 
         return result.to_expr()
 

@@ -75,6 +75,12 @@ class BooleanValue(NumericValue):
     def __invert__(self) -> BooleanValue:
         return self.negate()
 
+    @staticmethod
+    def __negate_op__():
+        from ibis.expr import operations as ops
+
+        return ops.Not
+
 
 @public
 class BooleanScalar(NumericScalar, BooleanValue):
