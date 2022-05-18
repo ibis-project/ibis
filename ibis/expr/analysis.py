@@ -1139,7 +1139,7 @@ def is_analytic(expr):
         if isinstance(
             expr.op(), (ops.Reduction, ops.Analytic, ops.logical._AnyBase)
         ):
-            return lin.halt, expr
+            return lin.halt, True
         else:
             return lin.proceed, None
 
