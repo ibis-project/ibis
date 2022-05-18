@@ -465,38 +465,6 @@ def _base_table(table_node):
         return _base_table(table_node.table.op())
 
 
-def has_reduction(expr):
-    """Does `expr` contain a reduction?
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-        An ibis expression
-
-    Returns
-    -------
-    truth_value : bool
-        Whether or not there's at least one reduction in `expr`
-
-    Notes
-    -----
-    The ``isinstance(op, ops.TableNode)`` check in this function implies
-    that we only examine every non-table expression that precedes the first
-    table expression.
-    """
-
-    def fn(expr):
-        op = expr.op()
-        if isinstance(op, ops.TableNode):  # don't go below any table nodes
-            return lin.halt, None
-        if isinstance(op, ops.Reduction):
-            return lin.halt, True
-        return lin.proceed, None
-
-    reduction_status = lin.traverse(fn, expr)
-    return any(reduction_status)
-
-
 def get_mutation_exprs(
     exprs: list[ir.Expr], table: ir.Table
 ) -> list[ir.Expr | None]:
@@ -590,7 +558,7 @@ def apply_filter(expr, predicates):
             #
             # See https://github.com/ibis-project/ibis/pull/3341 for details
             sub_for(predicate, [(op.table, expr)])
-            if not has_reduction(predicate)
+            if not is_reduction(predicate)
             else predicate
             for predicate in predicates
         )
@@ -633,7 +601,7 @@ def _filter_selection(expr, predicates):
         # ref issue (described in more detail in #59)
         simplified_predicates = tuple(
             sub_for(predicate, [(expr, op.table)])
-            if not has_reduction(predicate)
+            if not is_reduction(predicate)
             else predicate
             for predicate in predicates
         )
@@ -696,7 +664,7 @@ class _PushdownValidate:
 
     def get_result(self):
         predicate = self.pred
-        return not has_reduction(predicate) and all(self._walk(predicate))
+        return not is_reduction(predicate) and all(self._walk(predicate))
 
     def _walk(self, expr):
         def validate(expr):
@@ -1154,7 +1122,8 @@ def is_analytic(expr, exclude_windows=False):
 
 
 def is_reduction(expr):
-    """Check whether an expression is a reduction or not
+    """
+    Check whether an expression contains a reduction or not
 
     Aggregations yield typed scalar expressions, since the result of an
     aggregation is a single value. When creating an table expression
@@ -1184,6 +1153,9 @@ def is_reduction(expr):
     def predicate(expr):
         if getattr(expr.op(), '_reduction', False):
             return lin.halt, expr
+        elif isinstance(expr.op(), ops.TableNode):
+            # don't go below any table nodes
+            return lin.halt, None
         else:
             return lin.proceed, None
 
