@@ -1207,3 +1207,60 @@ class _AnyToExistsTransform:
                 and base_table.op() not in self.query_roots
             ):
                 self.foreign_table = expr
+
+
+@functools.singledispatch
+def _rewrite_filter(op, _, **kwargs):
+    raise NotImplementedError(type(op))
+
+
+@_rewrite_filter.register(ops.Reduction)
+def _rewrite_filter_reduction(_, expr, name: str | None = None, **kwargs):
+    """Turn a reduction inside of a filter into an aggregate."""
+    # TODO: what about reductions that reference a join that isn't visible at
+    # this level? Means we probably have the wrong design, but will have to
+    # revisit when it becomes a problem.
+    aggregation, _ = reduction_to_aggregation(expr, default_name=name)
+    return aggregation.to_array()
+
+
+@_rewrite_filter.register(ops.Any)
+@_rewrite_filter.register(ops.TableColumn)
+@_rewrite_filter.register(ops.Literal)
+@_rewrite_filter.register(ops.ExistsSubquery)
+@_rewrite_filter.register(ops.NotExistsSubquery)
+@_rewrite_filter.register(ops.Window)
+def _rewrite_filter_subqueries(_, expr, **kwargs):
+    """Don't rewrite any of these operations in filters."""
+    return expr
+
+
+@_rewrite_filter.register(ops.Alias)
+def _rewrite_filter_alias(op, _, name: str | None = None, **kwargs):
+    """Rewrite filters on aliases."""
+    return _rewrite_filter(
+        op.arg.op(),
+        op.arg,
+        name=name if name is not None else op.name,
+        **kwargs,
+    )
+
+
+@_rewrite_filter.register(ops.Value)
+def _rewrite_filter_value(op, expr, **kwargs):
+    """Recursively apply filter rewriting on operations."""
+    args = op.args
+    visited = [
+        _rewrite_filter(arg.op(), arg, **kwargs)
+        if isinstance(arg, ir.Expr)
+        else arg
+        for arg in args
+    ]
+    if all(map(operator.is_, visited, args)):
+        return expr
+    else:
+        return (
+            op.__class__(*visited)
+            .to_expr()
+            .name("tmp" if not expr.has_name() else expr.get_name())
+        )

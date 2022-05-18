@@ -199,7 +199,6 @@ class SelectBuilder:
             return scalar_handler
 
         if isinstance(expr, ir.Scalar):
-
             if L.is_scalar_reduction(expr):
                 table_expr, name = L.reduction_to_aggregation(
                     expr, default_name='tmp'
@@ -298,7 +297,6 @@ class SelectBuilder:
         self._collect_elements()
 
         self._analyze_select_exprs()
-        self._analyze_filter_exprs()
         self._analyze_subqueries()
         self._populate_context()
 
@@ -431,88 +429,6 @@ class SelectBuilder:
             bucket = bucket.name(expr.get_name())
 
         return bucket
-
-    def _analyze_filter_exprs(self):
-        # What's semantically contained in the filter predicates may need to be
-        # rewritten. Not sure if this is the right place to do this, but a
-        # starting point
-
-        # Various kinds of semantically valid WHERE clauses may need to be
-        # rewritten into a form that we can actually translate into valid SQL.
-        new_where = []
-        for expr in self.filters:
-            new_expr = self._visit_filter(expr)
-
-            # Transformations may result in there being no outputted filter
-            # predicate
-            if new_expr is not None:
-                new_where.append(new_expr)
-
-        self.filters = new_where
-
-    def _visit_filter(self, expr):
-        # Dumping ground for analysis of WHERE expressions
-        # - Subquery extraction
-        # - Conversion to explicit semi/anti joins
-        # - Rewrites to generate subqueries
-
-        op = expr.op()
-
-        method = f'_visit_filter_{type(op).__name__}'
-        if hasattr(self, method):
-            f = getattr(self, method)
-            return f(expr)
-
-        unchanged = True
-        if isinstance(expr, ir.Scalar):
-            if L.is_reduction(expr):
-                return self._rewrite_reduction_filter(expr)
-
-        if isinstance(op, ops.Binary):
-            left = self._visit_filter(op.left)
-            right = self._visit_filter(op.right)
-            unchanged = left is op.left and right is op.right
-            if unchanged:
-                return expr
-            else:
-                new_op = type(op)(left, right)
-                return new_op.to_expr()
-        elif isinstance(
-            op,
-            (
-                ops.Any,
-                ops.TableColumn,
-                ops.Literal,
-                ops.ExistsSubquery,
-                ops.NotExistsSubquery,
-            ),
-        ):
-            return expr
-        elif isinstance(op, ops.Value):
-            visited = [
-                self._visit_filter(arg) if isinstance(arg, ir.Expr) else arg
-                for arg in op.args
-            ]
-            unchanged = True
-            for new, old in zip(visited, op.args):
-                if new is not old:
-                    unchanged = False
-            if not unchanged:
-                new_op = type(op)(*visited)
-                return new_op.to_expr()
-            else:
-                return expr
-        else:
-            raise NotImplementedError(type(op))
-
-    def _rewrite_reduction_filter(self, expr):
-        # Find the table that this reduction references.
-
-        # TODO: what about reductions that reference a join that isn't visible
-        # at this level? Means we probably have the wrong design, but will have
-        # to revisit when it becomes a problem.
-        aggregation, _ = L.reduction_to_aggregation(expr, default_name='tmp')
-        return aggregation.to_array()
 
     @util.deprecated(
         instead=(
