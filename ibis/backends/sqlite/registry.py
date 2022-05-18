@@ -385,5 +385,12 @@ operation_registry.update(
         ),
         ops.RowID: lambda *_: sa.literal_column('rowid'),
         ops.Cot: unary(sa.func._ibis_sqlite_cot),
+        ops.Cos: unary(sa.func._ibis_sqlite_cos),
+        ops.Sin: unary(sa.func._ibis_sqlite_sin),
+        ops.Tan: unary(sa.func._ibis_sqlite_tan),
+        ops.Acos: unary(sa.func._ibis_sqlite_acos),
+        ops.Asin: unary(sa.func._ibis_sqlite_asin),
+        ops.Atan: unary(sa.func._ibis_sqlite_atan),
+        ops.Atan2: fixed_arity(sa.func._ibis_sqlite_atan2, 2),
     }
 )
