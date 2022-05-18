@@ -660,27 +660,18 @@ class _PushdownValidate:
     def __init__(self, parent, predicate):
         self.parent = parent
         self.pred = predicate
-        self.validator = ExprValidator([self.parent.table])
 
     def get_result(self):
-        predicate = self.pred
-        return not is_reduction(predicate) and all(self._walk(predicate))
-
-    def _walk(self, expr):
         def validate(expr):
             op = expr.op()
             if isinstance(op, ops.TableColumn):
-                return lin.proceed, self._validate_column(expr)
+                return lin.proceed, self._validate_projection(expr)
             return lin.proceed, None
 
-        return lin.traverse(validate, expr, type=ir.Value)
+        if is_reduction(self.pred):
+            return False
 
-    def _validate_column(self, expr):
-        if isinstance(self.parent, ops.Selection):
-            return self._validate_projection(expr)
-        else:
-            validator = ExprValidator([self.parent.table])
-            return validator.validate(expr)
+        return all(lin.traverse(validate, self.pred, type=ir.Value))
 
     def _validate_projection(self, expr):
         is_valid = False
