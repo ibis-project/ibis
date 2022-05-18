@@ -545,7 +545,10 @@ class AggregateSelection:
         if not exprs:
             return True, []
 
-        resolved = self.op.table._resolve(exprs)
+        resolved = [
+            self.op.table._ensure_expr(expr)
+            for expr in util.promote_list(exprs)
+        ]
         subbed_exprs = []
 
         valid = False

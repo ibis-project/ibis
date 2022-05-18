@@ -848,7 +848,10 @@ class Projector:
 
         if not isinstance(root_table.op(), ops.Join):
             try:
-                resolved = root_table._resolve(self.input_exprs)
+                resolved = [
+                    root_table._ensure_expr(expr)
+                    for expr in util.promote_list(self.input_exprs)
+                ]
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
         else:

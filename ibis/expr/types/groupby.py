@@ -22,17 +22,10 @@ from typing import Iterable, Sequence
 import toolz
 
 import ibis.expr.analysis as L
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
 from ibis.expr.deferred import Deferred
-
-
-def _resolve_exprs(table, exprs):
-    exprs = util.promote_list(exprs)
-    return table._resolve(exprs)
-
 
 _function_types = tuple(
     filter(
@@ -197,13 +190,11 @@ class GroupedTable:
         else:
             exprs = util.promote_list(exprs)
 
-        kwd_keys = list(kwds.keys())
-        kwd_values = self.table._resolve(list(kwds.values()))
+        for name, expr in kwds.items():
+            expr = self.table._ensure_expr(expr)
+            exprs.append(expr.name(name))
 
-        for k, v in zip(kwd_keys, kwd_values):
-            exprs.append(v.name(k))
-
-        return self.projection([self.table] + exprs)
+        return self.projection([self.table, *exprs])
 
     def projection(self, exprs):
         """Project new columns out of the grouped table.
@@ -214,8 +205,8 @@ class GroupedTable:
         """
         w = self._get_window()
         windowed_exprs = []
-        exprs = self.table._resolve(exprs)
-        for expr in exprs:
+        for expr in util.promote_list(exprs):
+            expr = self.table._ensure_expr(expr)
             expr = L.windowize_function(expr, w=w)
             windowed_exprs.append(expr)
         return self.table.projection(windowed_exprs)
@@ -230,10 +221,6 @@ class GroupedTable:
             groups = w.group_by + self.by
             sorts = w.order_by + self._order_by
             preceding, following = w.preceding, w.following
-
-        sorts = [ops.sortkeys._to_sort_key(k, table=self.table) for k in sorts]
-
-        groups = _resolve_exprs(self.table, groups)
 
         return _window.window(
             preceding=preceding,

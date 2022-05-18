@@ -248,11 +248,12 @@ class Window(Comparable):
                 )
 
     def bind(self, table):
-        import ibis.expr.operations as ops
-
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
-        groups = table._resolve(self._group_by)
+
+        import ibis.expr.operations as ops
+
+        groups = [table._ensure_expr(expr) for expr in self._group_by]
         sorts = [
             ops.sortkeys._to_sort_key(k, table=table) for k in self._order_by
         ]
