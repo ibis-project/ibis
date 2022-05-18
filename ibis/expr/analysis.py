@@ -1181,17 +1181,13 @@ def is_reduction(expr):
     check output : bool
     """
 
-    def has_reduction(op):
-        if getattr(op, '_reduction', False):
-            return True
+    def predicate(expr):
+        if getattr(expr.op(), '_reduction', False):
+            return lin.halt, expr
+        else:
+            return lin.proceed, None
 
-        for arg in op.args:
-            if isinstance(arg, ir.Scalar) and has_reduction(arg.op()):
-                return True
-
-        return False
-
-    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
+    return bool(list(lin.traverse(predicate, expr)))
 
 
 def is_scalar_reduction(expr):
