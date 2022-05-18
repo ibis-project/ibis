@@ -1143,14 +1143,14 @@ def is_reduction(expr):
 
     def predicate(expr):
         if getattr(expr.op(), '_reduction', False):
-            return lin.halt, expr
+            return lin.halt, True
         elif isinstance(expr.op(), ops.TableNode):
             # don't go below any table nodes
             return lin.halt, None
         else:
             return lin.proceed, None
 
-    return bool(list(lin.traverse(predicate, expr)))
+    return any(lin.traverse(predicate, expr))
 
 
 def is_scalar_reduction(expr):
