@@ -717,10 +717,6 @@ class _PushdownValidate:
         is_valid = False
         node = expr.op()
 
-        # Has a different alias, invalid
-        if _is_aliased(expr):
-            return False
-
         for val in self.parent.selections:
             if (
                 isinstance(val.op(), ops.PhysicalTable)
@@ -730,7 +726,6 @@ class _PushdownValidate:
             elif (
                 isinstance(val.op(), ops.TableColumn)
                 and node.name == val.get_name()
-                and not _is_aliased(val)
             ):
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
@@ -745,10 +740,6 @@ class _PushdownValidate:
                 ) or col_table.equals(lifted_node.table.op())
 
         return is_valid
-
-
-def _is_aliased(col_expr):
-    return col_expr.op().name != col_expr.get_name()
 
 
 def windowize_function(expr, w=None):
