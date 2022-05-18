@@ -162,11 +162,6 @@ class Table(Expr):
         return sorted(frozenset(dir(type(self)) + self.columns))
 
     # TODO(kszucs): should be removed
-    def _resolve(self, exprs):
-        exprs = util.promote_list(exprs)
-        return list(map(self._ensure_expr, exprs))
-
-    # TODO(kszucs): should be removed
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
             return self[expr]
