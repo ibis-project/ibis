@@ -27,7 +27,9 @@ def genname():
 class TableNode(Node):
     output_type = ir.Table
 
-    @util.deprecated(instead="Use table.schema[name] instead", version="4.0.0")
+    @util.deprecated(
+        instead="Use table.schema()[name] instead", version="4.0.0"
+    )
     def get_type(self, name):
         return self.schema[name]
 
