@@ -77,7 +77,7 @@ class Node(Annotable, Comparable):
         return False
 
     @util.deprecated(instead="", version="4.0.0")
-    def compatible_with(self, other):
+    def compatible_with(self, other):  # pragma: no cover
         return self.equals(other)
 
     def is_ancestor(self, other):
