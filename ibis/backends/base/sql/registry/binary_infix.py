@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 import ibis.expr.types as ir
