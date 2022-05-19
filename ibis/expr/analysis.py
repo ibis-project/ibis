@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import operator
+from typing import AbstractSet, MutableSequence
 
 import toolz
 
@@ -1144,23 +1145,24 @@ def is_scalar_reduction(expr):
 
 
 class _AnyToExistsTransform:
+    __slots__ = (
+        "expr",
+        "parent_table",
+        "query_roots",
+        "foreign_table",
+        "predicates",
+    )
 
-    """
-    Some code duplication with the correlated ref check; should investigate
-    better code reuse.
-    """
-
-    def __init__(self, expr, parent_table):
+    def __init__(self, expr: ir.Expr, parent_table: ir.Table) -> None:
         self.expr = expr
         self.parent_table = parent_table
-        self.query_roots = frozenset(self.parent_table.op().root_tables())
+        self.query_roots: AbstractSet[ops.TableNode] = frozenset(
+            self.parent_table.op().root_tables()
+        )
+        self.foreign_table: ir.Table | None = None
+        self.predicates: MutableSequence[ir.BooleanValue] = []
 
-    def get_result(self):
-        import ibis.expr.operations as ops
-
-        self.foreign_table = None
-        self.predicates = []
-
+    def get_result(self) -> ir.BooleanColumn:
         self._visit(self.expr)
 
         op = self.expr.op()
@@ -1173,25 +1175,20 @@ class _AnyToExistsTransform:
 
         return op_class(self.foreign_table, self.predicates).to_expr()
 
-    def _visit(self, expr):
-        import ibis.expr.analysis as L
-        import ibis.expr.types as ir
-
+    def _visit(self, expr: ir.Expr) -> None:
         node = expr.op()
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Table):
                 self._visit_table(arg)
             elif isinstance(arg, ir.BooleanColumn):
-                for sub_expr in L.flatten_predicate(arg):
+                for sub_expr in flatten_predicate(arg):
                     self.predicates.append(sub_expr)
                     self._visit(sub_expr)
             elif isinstance(arg, ir.Expr):
                 self._visit(arg)
 
-    def _find_blocking_table(self, expr):
-        import ibis.expr.types as ir
-
+    def _find_blocking_table(self, expr: ir.Expr) -> ir.Expr:
         node = expr.op()
 
         if node.blocks():
@@ -1209,16 +1206,13 @@ class _AnyToExistsTransform:
             None,
         )
 
-    def _visit_table(self, expr):
-        import ibis.expr.types as ir
-
-        if isinstance(expr, ir.Table):
-            base_table = self._find_blocking_table(expr)
-            if (
-                base_table is not None
-                and base_table.op() not in self.query_roots
-            ):
-                self.foreign_table = expr
+    def _visit_table(self, expr: ir.Expr) -> None:
+        if (
+            isinstance(expr, ir.Table)
+            and (base_table := self._find_blocking_table(expr)) is not None
+            and base_table.op() not in self.query_roots
+        ):
+            self.foreign_table = expr
 
 
 @functools.singledispatch
@@ -1250,9 +1244,10 @@ def _rewrite_filter_subqueries(_, expr, **kwargs):
 @_rewrite_filter.register(ops.Alias)
 def _rewrite_filter_alias(op, _, name: str | None = None, **kwargs):
     """Rewrite filters on aliases."""
+    arg = op.arg
     return _rewrite_filter(
-        op.arg.op(),
-        op.arg,
+        arg.op(),
+        arg,
         name=name if name is not None else op.name,
         **kwargs,
     )
