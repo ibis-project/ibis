@@ -30,7 +30,7 @@ class TableNode(Node):
     @util.deprecated(
         instead="Use table.schema()[name] instead", version="4.0.0"
     )
-    def get_type(self, name):
+    def get_type(self, name):  # pragma: no cover
         return self.schema[name]
 
     def aggregate(self, this, metrics, by=None, having=None):
