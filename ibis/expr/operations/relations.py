@@ -440,18 +440,18 @@ class Selection(TableNode, sch.HasSchema):
         return bool(self.selections)
 
     @util.deprecated(instead="instantiate Selection directly", version="4.0.0")
-    def substitute_table(self, table_expr):
+    def substitute_table(self, table_expr):  # pragma: no cover
         return Selection(table_expr, self.selections)
 
     def root_tables(self):
         return [self]
 
     @util.deprecated(instead="", version="4.0.0")
-    def can_add_filters(self, wrapped_expr, predicates):
+    def can_add_filters(self, wrapped_expr, predicates):  # pragma: no cover
         pass
 
     @util.deprecated(instead="", version="4.0.0")
-    def empty_or_equal(self, other) -> bool:
+    def empty_or_equal(self, other) -> bool:  # pragma: no cover
         for field in "selections", "sort_keys", "predicates":
             selfs = getattr(self, field)
             others = getattr(other, field)
@@ -465,7 +465,7 @@ class Selection(TableNode, sch.HasSchema):
         return True
 
     @util.deprecated(instead="", version="4.0.0")
-    def compatible_with(self, other):
+    def compatible_with(self, other):  # pragma: no cover
         # self and other are equivalent except for predicates, selections, or
         # sort keys any of which is allowed to be empty. If both are not empty
         # then they must be equal
@@ -681,7 +681,7 @@ class Aggregation(TableNode, sch.HasSchema):
     @util.deprecated(
         instead="instantiate Aggregation directly", version="4.0.0"
     )
-    def substitute_table(self, table_expr):
+    def substitute_table(self, table_expr):  # pragma: no cover
         return Aggregation(
             table_expr, self.metrics, by=self.by, having=self.having
         )
