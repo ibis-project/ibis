@@ -439,15 +439,18 @@ class Selection(TableNode, sch.HasSchema):
     def blocks(self):
         return bool(self.selections)
 
+    @util.deprecated(instead="instantiate Selection directly", version="4.0.0")
     def substitute_table(self, table_expr):
         return Selection(table_expr, self.selections)
 
     def root_tables(self):
         return [self]
 
+    @util.deprecated(instead="", version="4.0.0")
     def can_add_filters(self, wrapped_expr, predicates):
         pass
 
+    @util.deprecated(instead="", version="4.0.0")
     def empty_or_equal(self, other) -> bool:
         for field in "selections", "sort_keys", "predicates":
             selfs = getattr(self, field)
@@ -461,6 +464,7 @@ class Selection(TableNode, sch.HasSchema):
                 return False
         return True
 
+    @util.deprecated(instead="", version="4.0.0")
     def compatible_with(self, other):
         # self and other are equivalent except for predicates, selections, or
         # sort keys any of which is allowed to be empty. If both are not empty
@@ -472,8 +476,6 @@ class Selection(TableNode, sch.HasSchema):
             return False
 
         return self.table.equals(other.table) and self.empty_or_equal(other)
-
-    # Operator combination / fusion logic
 
     def aggregate(self, this, metrics, by=None, having=None):
         if len(self.selections) > 0:
@@ -676,6 +678,9 @@ class Aggregation(TableNode, sch.HasSchema):
     def blocks(self):
         return True
 
+    @util.deprecated(
+        instead="instantiate Aggregation directly", version="4.0.0"
+    )
     def substitute_table(self, table_expr):
         return Aggregation(
             table_expr, self.metrics, by=self.by, having=self.having

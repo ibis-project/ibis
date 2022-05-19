@@ -821,7 +821,7 @@ class Projector:
 
             # a * projection
             if isinstance(val, ir.Table) and (
-                parent_op.compatible_with(val.op())
+                parent_op.equals(val.op())
                 # gross we share the same table root. Better way to
                 # detect?
                 or len(roots) == 1
@@ -885,10 +885,22 @@ class ExprValidator:
 
     def _among_roots(self, node):
         roots_shared = (
-            root.is_ancestor(node) or node.compatible_with(root)
+            root.is_ancestor(node) or self.compatible_with(node, root)
             for root in self.roots
         )
         return sum(roots_shared) > 0
+
+    def compatible_with(self, a, b):
+        # self and other are equivalent except for predicates, selections, or
+        # sort keys any of which is allowed to be empty. If both are not empty
+        # then they must be equal
+        if not isinstance(b, type(a)):
+            return False
+
+        if isinstance(a, ops.Selection):
+            return a.table.equals(b.table)
+
+        return False
 
     def shares_some_roots(self, expr):
         expr_roots = expr.op().root_tables()
