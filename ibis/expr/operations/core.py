@@ -5,6 +5,7 @@ from abc import abstractmethod
 import toolz
 from public import public
 
+from ibis import util
 from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Comparable
 from ibis.common.validators import immutable_property
@@ -75,6 +76,7 @@ class Node(Annotable, Comparable):
         # analyzed deeper
         return False
 
+    @util.deprecated(instead="", version="4.0.0")
     def compatible_with(self, other):
         return self.equals(other)
 
