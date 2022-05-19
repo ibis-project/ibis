@@ -2,7 +2,7 @@
 # platform: win-64
 # input_hash: 819076c93c797ddb06e3a374003c4f30254a34e09d7be74e821726d794e8514a
 @EXPLICIT
-https://conda.anaconda.org/conda-forge/win-64/ca-certificates-2021.10.8-h5b45459_0.tar.bz2#2ddd48c9b52f7f65361b9645b2c5d370
+https://conda.anaconda.org/conda-forge/win-64/ca-certificates-2022.5.18-h5b45459_0.tar.bz2#8d4adca89a5e6581f767c6250addc0a0
 https://conda.anaconda.org/conda-forge/noarch/font-ttf-dejavu-sans-mono-2.37-hab24e00_0.tar.bz2#0c96522c6bdaed4b1566d11387caaf45
 https://conda.anaconda.org/conda-forge/noarch/font-ttf-inconsolata-3.000-h77eed37_0.tar.bz2#34893075a5c9e55cdafac56607368fc6
 https://conda.anaconda.org/conda-forge/noarch/font-ttf-source-code-pro-2.038-h77eed37_0.tar.bz2#4d59c254e01d9cde7957100457e2d5fb
@@ -118,6 +118,7 @@ https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.0-pyhd8ed1ab_0.tar.bz2#f
 https://conda.anaconda.org/conda-forge/noarch/mergedeep-1.3.4-pyhd8ed1ab_0.tar.bz2#1a160a3cab5cb6bd46264b52cd6f69a2
 https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2#2ba8498c1018c1e9c61eb99b973dfe19
 https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.5.5-pyhd8ed1ab_0.tar.bz2#dc36c992aec485c0efff619ed2e63957
+https://conda.anaconda.org/conda-forge/noarch/networkx-2.8.1-pyhd8ed1ab_0.tar.bz2#e4a2923d333422f20139cafbbf6b2194
 https://conda.anaconda.org/conda-forge/noarch/pandocfilters-1.5.0-pyhd8ed1ab_0.tar.bz2#457c2c8c08e54905d6954e79cb5b5db9
 https://conda.anaconda.org/conda-forge/noarch/parso-0.8.3-pyhd8ed1ab_0.tar.bz2#17a565a0c3899244e938cdf417e7b094
 https://conda.anaconda.org/conda-forge/noarch/parsy-1.3.0-pyhd8ed1ab_0.tar.bz2#94cd1a4bfe56d25b4e441c46e630b147
@@ -173,7 +174,7 @@ https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.11.1-pyha770c72_0
 https://conda.anaconda.org/conda-forge/win-64/bitarray-2.5.1-py39hb82d6ee_0.tar.bz2#9aadbc7e78b23c0a57e4f8697ca76c6f
 https://conda.anaconda.org/conda-forge/win-64/brotli-1.0.9-h8ffe710_7.tar.bz2#bdd3236d1f6962e8e6953276d12b7e5b
 https://conda.anaconda.org/conda-forge/noarch/cached-property-1.5.2-hd8ed1ab_1.tar.bz2#9b347a7ec10940d3f7941ff6c460b551
-https://conda.anaconda.org/conda-forge/win-64/certifi-2021.10.8-py39hcbf5309_2.tar.bz2#07c102bffc4d29190588053929fa005e
+https://conda.anaconda.org/conda-forge/win-64/certifi-2022.5.18-py39hcbf5309_0.tar.bz2#0a2b38bf0174675dc5190d75aa6edbaf
 https://conda.anaconda.org/conda-forge/win-64/cffi-1.15.0-py39h0878f49_0.tar.bz2#9b02bf41ccb19167aa4bb51a7b2b6a9f
 https://conda.anaconda.org/conda-forge/win-64/click-8.1.3-py39hcbf5309_0.tar.bz2#da76bc626dfbeb0bebbbce385d003d64
 https://conda.anaconda.org/conda-forge/win-64/coverage-6.3.3-py39hb82d6ee_0.tar.bz2#309e26f04820e95c64d3c110f5bc787e
@@ -323,7 +324,6 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-literate-nav-0.4.1-pyhd8ed1
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.2.15-pyhd8ed1ab_0.tar.bz2#d32c656b232a37d4627fa041cc4e94ce
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-table-reader-plugin-1.0.0-pyhd8ed1ab_0.tar.bz2#e4a9e7019d3d1b8a52d792b86c6fc082
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.3-pyhd8ed1ab_0.tar.bz2#d9fd2a7bc1b4cabf52f114f9602e5b0a
-https://conda.anaconda.org/conda-forge/noarch/networkx-2.8-pyhd8ed1ab_0.tar.bz2#f23297b9fa680ba13f9fdfba58bb3064
 https://conda.anaconda.org/conda-forge/noarch/parquet-cpp-1.5.1-2.tar.bz2#79a5f78c42817594ae016a7896521a97
 https://conda.anaconda.org/conda-forge/win-64/poppler-22.04.0-h24fffdf_0.tar.bz2#96741eacc36a018878278e121a625e32
 https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.29-pyha770c72_0.tar.bz2#9e720b57b22ef3032b4fb081697819dd
