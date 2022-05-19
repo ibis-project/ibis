@@ -64,7 +64,8 @@ class TableColumn(Value):
 
     @property
     def output_dtype(self):
-        return self.table._get_type(self.name)
+        schema = self.table.schema()
+        return schema[self.name]
 
 
 @public
@@ -114,7 +115,8 @@ class TableArrayView(Value):
 
     @property
     def output_dtype(self):
-        return self.table._get_type(self.name)
+        schema = self.table.schema()
+        return schema[self.name]
 
     @property
     def name(self):

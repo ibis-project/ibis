@@ -174,10 +174,6 @@ class Table(Expr):
         else:
             return expr
 
-    # TODO(kszucs): should be removed
-    def _get_type(self, name):
-        return self._arg.get_type(name)
-
     def get_columns(self, iterable: Iterable[str]) -> list[Column]:
         """
         Get multiple columns from the table

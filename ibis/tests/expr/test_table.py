@@ -75,11 +75,6 @@ def test_view_new_relation(table):
     assert roots[0] is tview.op()
 
 
-def test_get_type(table, schema):
-    for k, v in schema:
-        assert table._get_type(k) == dt.dtype(v)
-
-
 def test_getitem_column_select(table):
     for k in table.columns:
         col = table[k]
