@@ -476,9 +476,9 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             id="isin_col",
         ),
         param(
-            (_.bigint_col + 1).isin(_.string_col.cast("int64") + 1),
-            lambda df: (df.bigint_col + 1).isin(
-                df.string_col.astype("int64") + 1
+            (_.bigint_col + 1).isin(_.string_col.length() + 1),
+            lambda df: df.bigint_col.add(1).isin(
+                df.string_col.str.len().add(1)
             ),
             id="isin_expr",
         ),
@@ -488,9 +488,9 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             id="notin_col",
         ),
         param(
-            (_.bigint_col + 1).notin(_.string_col.cast("int64") + 1),
-            lambda df: ~(df.bigint_col + 1).isin(
-                df.string_col.astype("int64") + 1
+            (_.bigint_col + 1).notin(_.string_col.length() + 1),
+            lambda df: ~(df.bigint_col.add(1)).isin(
+                df.string_col.str.len().add(1)
             ),
             id="notin_expr",
         ),
