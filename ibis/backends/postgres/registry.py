@@ -504,14 +504,6 @@ def _identical_to(t, expr):
         return left.op('IS NOT DISTINCT FROM')(right)
 
 
-def _hll_cardinality(t, expr):
-    # postgres doesn't have a builtin HLL algorithm, so we default to standard
-    # count distinct for now
-    arg, _ = expr.op().args
-    sa_arg = t.translate(arg)
-    return sa.func.count(sa.distinct(sa_arg))
-
-
 def _table_column(t, expr):
     op = expr.op()
     ctx = t.context
@@ -720,7 +712,6 @@ operation_registry.update(
         ),
         ops.ArrayRepeat: _array_repeat,
         ops.IdenticalTo: _identical_to,
-        ops.HLLCardinality: _hll_cardinality,
         ops.Unnest: unary(sa.func.unnest),
     }
 )
