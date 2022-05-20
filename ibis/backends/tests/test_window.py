@@ -70,6 +70,23 @@ def calc_zscore(s):
             id='last',
         ),
         param(
+            lambda t, win: t.float_col.nth(3).over(win),
+            lambda t: t.float_col.apply(
+                lambda s: pd.concat(
+                    [
+                        pd.Series(np.nan, index=s.index[:3], dtype="float32"),
+                        pd.Series(
+                            s.iloc[3],
+                            index=s.index[3:],
+                            dtype="float32",
+                        ),
+                    ]
+                )
+            ),
+            id="nth",
+            marks=pytest.mark.notimpl(["pandas"]),
+        ),
+        param(
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id='row_number',

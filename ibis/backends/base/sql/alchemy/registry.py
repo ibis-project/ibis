@@ -580,6 +580,11 @@ _binary_ops = {
 }
 
 
+def _nth_value(t, expr):
+    op = expr.op()
+    return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
+
+
 sqlalchemy_window_functions_registry = {
     ops.Lag: _lag,
     ops.Lead: _lead,
@@ -590,6 +595,7 @@ sqlalchemy_window_functions_registry = {
     ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
     ops.MinRank: unary(lambda arg: sa.func.rank()),
     ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
+    ops.NthValue: _nth_value,
     ops.Window: _window,
     ops.CumulativeOp: _window,
     ops.CumulativeMax: unary(sa.func.max),
