@@ -198,8 +198,29 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t['bool_col'],
             lambda df: df['bool_col'],
             marks=pytest.mark.notimpl(["datafusion"]),
+            id="no_op",
         ),
-        (lambda t: ~t['bool_col'], lambda df: ~df['bool_col']),
+        param(
+            lambda t: ~t['bool_col'], lambda df: ~df['bool_col'], id="negate"
+        ),
+        param(
+            lambda t: t.bool_col & t.bool_col,
+            lambda df: df.bool_col & df.bool_col,
+            id="and",
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            lambda t: t.bool_col | t.bool_col,
+            lambda df: df.bool_col | df.bool_col,
+            id="or",
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
+        param(
+            lambda t: t.bool_col ^ t.bool_col,
+            lambda df: df.bool_col ^ df.bool_col,
+            id="xor",
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
     ],
 )
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
