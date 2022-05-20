@@ -10,6 +10,7 @@ from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 from ibis.backends.base.sql.alchemy.registry import (
     _geospatial_functions,
     _table_column,
+    reduction,
 )
 from ibis.backends.postgres.registry import fixed_arity, operation_registry
 
@@ -166,6 +167,7 @@ operation_registry.update(
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
+        ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
     }
 )
 
