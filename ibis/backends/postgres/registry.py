@@ -27,7 +27,6 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
-    variance_reduction,
 )
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import get_col_or_deferred_col
@@ -688,12 +687,6 @@ operation_registry.update(
         ops.ExtractMillisecond: _millisecond,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
-        ops.Sum: _reduction('sum'),
-        ops.Mean: _reduction('avg'),
-        ops.Min: _reduction('min'),
-        ops.Max: _reduction('max'),
-        ops.Variance: variance_reduction('var'),
-        ops.StandardDev: variance_reduction('stddev'),
         ops.RandomScalar: _random,
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
