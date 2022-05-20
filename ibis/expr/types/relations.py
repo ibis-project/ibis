@@ -502,12 +502,6 @@ class Table(Expr):
 
         return ops.TableArrayView(self).to_expr()
 
-    def _safe_get_name(expr):
-        try:
-            return expr.get_name()
-        except com.ExpressionError:
-            return None
-
     def mutate(
         self,
         exprs: Sequence[ir.Expr] | None = None,
