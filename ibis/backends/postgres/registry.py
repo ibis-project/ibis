@@ -236,7 +236,7 @@ except AttributeError:
 # translate strftime spec into mostly equivalent PostgreSQL spec
 _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
     # double quotes need to be escaped
-    [('"', lambda scanner, token: r'\"')]
+    [('"', lambda *_: r'\"')]
     + [
         (
             '|'.join(
@@ -257,7 +257,7 @@ _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
                     ),
                 )
             ),
-            lambda scanner, token: token,
+            lambda _, token: token,
         )
     ]
 )
@@ -585,7 +585,7 @@ def _array_slice(t, expr):
     return sa_arg[sa_start + 1 : sa_stop]
 
 
-def _literal(t, expr):
+def _literal(_, expr):
     dtype = expr.type()
     op = expr.op()
     value = op.value
