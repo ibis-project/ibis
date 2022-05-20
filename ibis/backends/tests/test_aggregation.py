@@ -309,7 +309,6 @@ def test_reduction_ops(
     [
         "dask",
         "datafusion",
-        "duckdb",
         "mysql",
         "pandas",
         "postgres",
@@ -320,7 +319,7 @@ def test_reduction_ops(
 def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
-    assert result is not None
+    assert isinstance(result, float)
 
 
 @pytest.mark.parametrize(
