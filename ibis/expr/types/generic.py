@@ -581,6 +581,25 @@ class Column(Value):
         self,
         where: ir.BooleanValue | None = None,
     ) -> ir.IntegerScalar:
+        """Return the approximate number of distinct elements in `self`.
+
+        !!! note "The result may or may not be exact."
+
+            Whether the result is an approximation depends
+            on the backend.
+
+            Do *not* depend on the results being exact.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        ValueExpr
+            An approximate count of the distinct elements of `self`
+        """
         import ibis.expr.operations as ops
 
         return ops.HLLCardinality(self, where).to_expr().name("approx_nunique")
@@ -589,6 +608,25 @@ class Column(Value):
         self,
         where: ir.BooleanValue | None = None,
     ) -> Scalar:
+        """Return an approximate of the median of `self`.
+
+        !!! note "The result may or may not be exact."
+
+            Whether the result is an approximation depends
+            on the backend.
+
+            Do *not* depend on the results being exact.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        ValueExpr
+            An approximation of the median of `self`
+        """
         import ibis.expr.operations as ops
 
         return ops.CMSMedian(self, where).to_expr().name("approx_median")
