@@ -159,6 +159,12 @@ def _strftime(t, expr):
     )
 
 
+def _arbitrary(t, expr):
+    if (how := expr.op().how) == "heavy":
+        raise ValueError(f"how={how!r} not supported in the DuckDB backend")
+    return t._reduction(getattr(sa.func, how), expr)
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
@@ -187,6 +193,7 @@ operation_registry.update(
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
         ops.Strftime: _strftime,
+        ops.Arbitrary: _arbitrary,
     }
 )
 

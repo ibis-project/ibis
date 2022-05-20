@@ -238,7 +238,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
+                ['impala', 'postgres', 'mysql', 'sqlite']
             ),
         ),
         param(
@@ -246,7 +246,7 @@ def test_aggregate_grouped(
             lambda t, where: t.double_col[where].iloc[-1],
             id='arbitrary_last',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
+                ['impala', 'postgres', 'mysql', 'sqlite']
             ),
         ),
         param(
