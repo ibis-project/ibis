@@ -469,6 +469,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
+    ops.Xor: fixed_arity(lambda x, y: (x | y) & ~(x & y), 2),
     ops.Not: unary(sa.not_),
     ops.Abs: unary(sa.func.abs),
     ops.Cast: _cast,
