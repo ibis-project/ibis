@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
@@ -40,11 +43,38 @@ class AlchemyExprTranslator(ExprTranslator):
 
     context_class = AlchemyContext
 
+    _bool_aggs_need_cast_to_int32 = True
+    _boolean_cast_ops = ops.Sum, ops.Mean, ops.Min, ops.Max
+    _has_filter_syntax = False
+
     def name(self, translated, name, force=True):
         return translated.label(name)
 
     def get_sqla_type(self, data_type):
         return to_sqla_type(data_type, type_map=self._type_map)
+
+    def _reduction(self, sa_func, expr):
+        op = expr.op()
+        arg = op.arg
+        if (
+            self._bool_aggs_need_cast_to_int32
+            and isinstance(op, self._boolean_cast_ops)
+            and isinstance(
+                type := arg.type(),
+                dt.Boolean,
+            )
+        ):
+            arg = arg.cast(dt.Int32(nullable=type.nullable))
+
+        if (where := op.where) is not None:
+            if self._has_filter_syntax:
+                sa_arg = self.translate(arg).filter(self.translate(where))
+            else:
+                sa_arg = self.translate(where.ifelse(arg, None))
+        else:
+            sa_arg = self.translate(arg)
+
+        return sa_func(sa_arg)
 
 
 rewrites = AlchemyExprTranslator.rewrites

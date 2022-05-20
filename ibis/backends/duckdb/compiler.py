@@ -13,6 +13,7 @@ class DuckDBSQLExprTranslator(AlchemyExprTranslator):
     # type that duckdb doesn't understand, but we probably still want
     # the updated `operation_registry` from postgres
     _type_map = AlchemyExprTranslator._type_map.copy()
+    _has_filter_syntax = True
 
 
 rewrites = DuckDBSQLExprTranslator.rewrites
