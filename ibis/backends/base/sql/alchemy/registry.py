@@ -13,6 +13,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 
@@ -449,6 +450,16 @@ def reduction(sa_func):
     return compile_expr
 
 
+def _zero_if_null(t, expr):
+    op = expr.op()
+    arg = op.arg
+    sa_arg = t.translate(op.arg)
+    return sa.case(
+        [(sa_arg.is_(None), sa.cast(0, to_sqla_type(arg.type())))],
+        else_=sa_arg,
+    )
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(sql.and_, 2),
@@ -541,6 +552,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),
+    ops.ZeroIfNull: _zero_if_null,
 }
 
 # TODO: unit tests for each of these
