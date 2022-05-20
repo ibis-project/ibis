@@ -337,6 +337,7 @@ def test_verify(ddl_backend, ddl_con):
         assert ddl_backend.api.verify(expr)
 
 
+@pytest.mark.never(["duckdb"], reason="duckdb supports approximate median")
 def test_not_verify(alchemy_con, alchemy_backend):
     # There is no expression that can't be compiled to any backend
     # Testing `not verify()` only for an expression not supported in postgres
