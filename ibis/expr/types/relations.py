@@ -1093,7 +1093,7 @@ class Table(Expr):
         )
 
     @util.deprecated(version="4.0", instead="")
-    def prevent_rewrite(self, client=None) -> Table:
+    def prevent_rewrite(self, client=None) -> Table:  # pragma: no cover
         """Prevent optimization from happening below this expression.
 
         Only valid on SQL-string generating backends.
