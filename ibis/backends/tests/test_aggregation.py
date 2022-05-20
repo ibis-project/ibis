@@ -149,48 +149,48 @@ def test_aggregate_grouped(
             id='all_negate',
         ),
         param(
-            lambda t, where: t.double_col.sum(),
-            lambda t, where: t.double_col.sum(),
+            lambda t, where: t.double_col.sum(where=where),
+            lambda t, where: t.double_col[where].sum(),
             id='sum',
         ),
         param(
-            lambda t, where: t.double_col.mean(),
-            lambda t, where: t.double_col.mean(),
+            lambda t, where: t.double_col.mean(where=where),
+            lambda t, where: t.double_col[where].mean(),
             id='mean',
         ),
         param(
-            lambda t, where: t.double_col.min(),
-            lambda t, where: t.double_col.min(),
+            lambda t, where: t.double_col.min(where=where),
+            lambda t, where: t.double_col[where].min(),
             id='min',
         ),
         param(
-            lambda t, where: t.double_col.max(),
-            lambda t, where: t.double_col.max(),
+            lambda t, where: t.double_col.max(where=where),
+            lambda t, where: t.double_col[where].max(),
             id='max',
         ),
         param(
-            lambda t, where: t.double_col.std(how='sample'),
-            lambda t, where: t.double_col.std(ddof=1),
+            lambda t, where: t.double_col.std(how='sample', where=where),
+            lambda t, where: t.double_col[where].std(ddof=1),
             id='std',
         ),
         param(
-            lambda t, where: t.double_col.var(how='sample'),
-            lambda t, where: t.double_col.var(ddof=1),
+            lambda t, where: t.double_col.var(how='sample', where=where),
+            lambda t, where: t.double_col[where].var(ddof=1),
             id='var',
         ),
         param(
-            lambda t, where: t.double_col.std(how='pop'),
-            lambda t, where: t.double_col.std(ddof=0),
+            lambda t, where: t.double_col.std(how='pop', where=where),
+            lambda t, where: t.double_col[where].std(ddof=0),
             id='std_pop',
         ),
         param(
-            lambda t, where: t.double_col.var(how='pop'),
-            lambda t, where: t.double_col.var(ddof=0),
+            lambda t, where: t.double_col.var(how='pop', where=where),
+            lambda t, where: t.double_col[where].var(ddof=0),
             id='var_pop',
         ),
         param(
-            lambda t, where: t.double_col.cov(t.float_col),
-            lambda t, where: t.double_col.cov(t.float_col),
+            lambda t, where: t.double_col.cov(t.float_col, where=where),
+            lambda t, where: t.double_col[where].cov(t.float_col[where]),
             id='covar',
             marks=[
                 pytest.mark.notimpl(
@@ -209,8 +209,8 @@ def test_aggregate_grouped(
             ],
         ),
         param(
-            lambda t, where: t.double_col.corr(t.float_col),
-            lambda t, where: t.double_col.corr(t.float_col),
+            lambda t, where: t.double_col.corr(t.float_col, where=where),
+            lambda t, where: t.double_col[where].corr(t.float_col[where]),
             id='corr',
             marks=[
                 pytest.mark.notimpl(
@@ -229,22 +229,22 @@ def test_aggregate_grouped(
             ],
         ),
         param(
-            lambda t, where: t.string_col.approx_nunique(),
-            lambda t, where: t.string_col.nunique(),
+            lambda t, where: t.string_col.approx_nunique(where=where),
+            lambda t, where: t.string_col[where].nunique(),
             id='approx_nunique',
             marks=pytest.mark.notyet(['mysql', 'sqlite', 'pyspark']),
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(how='first'),
-            lambda t, where: t.double_col.iloc[0],
+            lambda t, where: t.double_col.arbitrary(how='first', where=where),
+            lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
                 ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
             ),
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(how='last'),
-            lambda t, where: t.double_col.iloc[-1],
+            lambda t, where: t.double_col.arbitrary(how='last', where=where),
+            lambda t, where: t.double_col[where].iloc[-1],
             id='arbitrary_last',
             marks=pytest.mark.notimpl(
                 ['impala', 'postgres', 'mysql', 'sqlite', 'duckdb']
