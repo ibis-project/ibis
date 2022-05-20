@@ -28,6 +28,7 @@ class MySQLExprTranslator(AlchemyExprTranslator):
             dt.String: mysql.VARCHAR,
         }
     )
+    _bool_aggs_need_cast_to_int32 = False
 
 
 rewrites = MySQLExprTranslator.rewrites
