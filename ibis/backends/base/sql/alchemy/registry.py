@@ -200,18 +200,6 @@ def _contains(func):
     return translate
 
 
-def reduction(sa_func):
-    def formatter(t, expr):
-        op = expr.op()
-        if op.where is not None:
-            arg = t.translate(op.where.ifelse(op.arg, ibis.NA))
-        else:
-            arg = t.translate(op.arg)
-        return sa_func(arg)
-
-    return formatter
-
-
 def _group_concat(t, expr):
     op = expr.op()
     sep = t.translate(op.sep)
@@ -463,6 +451,13 @@ def _sort_key(t, expr):
 def _string_join(t, expr):
     sep, elements = expr.op().args
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+
+
+def reduction(sa_func):
+    def compile_expr(t, expr):
+        return t._reduction(sa_func, expr)
+
+    return compile_expr
 
 
 sqlalchemy_operation_registry: Dict[Any, Any] = {
