@@ -229,7 +229,7 @@ def client(arg, **kwargs):
 
 
 @util.deprecated(version="4.0", instead="")
-def promoter(fn):
+def promoter(fn):  # pragma: no cover
     @functools.wraps(fn)
     def wrapper(name_or_value, *args, **kwargs):
         if isinstance(name_or_value, str):
