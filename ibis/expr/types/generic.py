@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -525,10 +525,8 @@ class Value(Expr):
 
 @public
 class Scalar(Value):
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
+    def to_projection(self) -> ir.Table:
+        """Promote this scalar expression to a projection."""
         from ibis.expr.types.relations import Table
 
         roots = self.op().root_tables()
@@ -551,10 +549,8 @@ class Column(Value):
     def parent(self):
         return self._arg
 
-    def to_projection(self):
-        """
-        Promote this column expression to a table projection
-        """
+    def to_projection(self) -> ir.Table:
+        """Promote this column expression to a projection."""
         from ibis.expr.types.relations import Table
 
         roots = self.op().root_tables()
@@ -583,12 +579,11 @@ class Column(Value):
     ) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
-        !!! note "The result may or may not be exact."
+        !!! info "The result may or may not be exact"
 
-            Whether the result is an approximation depends
-            on the backend.
+            Whether the result is an approximation depends on the backend.
 
-            Do *not* depend on the results being exact.
+            !!! warning "Do not depend on the results being exact"
 
         Parameters
         ----------
@@ -597,7 +592,7 @@ class Column(Value):
 
         Returns
         -------
-        ValueExpr
+        Scalar
             An approximate count of the distinct elements of `self`
         """
         import ibis.expr.operations as ops
@@ -610,12 +605,11 @@ class Column(Value):
     ) -> Scalar:
         """Return an approximate of the median of `self`.
 
-        !!! note "The result may or may not be exact."
+        !!! info "The result may or may not be exact"
 
-            Whether the result is an approximation depends
-            on the backend.
+            Whether the result is an approximation depends on the backend.
 
-            Do *not* depend on the results being exact.
+            !!! warning "Do not depend on the results being exact"
 
         Parameters
         ----------
@@ -624,7 +618,7 @@ class Column(Value):
 
         Returns
         -------
-        ValueExpr
+        Scalar
             An approximation of the median of `self`
         """
         import ibis.expr.operations as ops
@@ -712,7 +706,7 @@ class Column(Value):
     def arbitrary(
         self,
         where: ir.BooleanValue | None = None,
-        how: str | None = None,
+        how: Literal["first", "last", "heavy"] | None = None,
     ) -> Scalar:
         """Select an arbitrary value in a column.
 
@@ -721,8 +715,13 @@ class Column(Value):
         where
             A filter expression
         how
-            Heavy selects a frequently occurring value using the heavy hitters
-            algorithm. Heavy is only supported by Clickhouse backend.
+            The method to use for selecting the element.
+
+            * `"first"`: Select the first non-`NULL` element
+            * `"last"`: Select the last non-`NULL` element
+            * `"heavy"`: Select a frequently occurring value using the heavy
+              hitters algorithm. `"heavy"` is only supported by Clickhouse
+              backend.
 
         Returns
         -------
