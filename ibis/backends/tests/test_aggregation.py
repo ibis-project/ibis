@@ -282,7 +282,7 @@ def test_aggregate_grouped(
 @pytest.mark.parametrize(
     ('ibis_cond', 'pandas_cond'),
     [
-        param(lambda t: None, lambda t: slice(None), id='no_cond'),
+        param(lambda _: None, lambda _: slice(None), id='no_cond'),
         param(
             lambda t: t.string_col.isin(['1', '7']),
             lambda t: t.string_col.isin(['1', '7']),
@@ -292,7 +292,6 @@ def test_aggregate_grouped(
 )
 @mark.notimpl(["datafusion"])
 def test_reduction_ops(
-    backend,
     alltypes,
     df,
     result_fn,
@@ -319,7 +318,7 @@ def test_reduction_ops(
         "sqlite",
     ]
 )
-def test_approx_median(backend, alltypes, df):
+def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
     assert result is not None
@@ -345,7 +344,7 @@ def test_approx_median(backend, alltypes, df):
     ],
 )
 @mark.notimpl(["datafusion", "duckdb"])
-def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
+def test_group_concat(alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
 
@@ -366,7 +365,7 @@ def test_group_concat(backend, alltypes, df, result_fn, expected_fn):
 )
 @mark.notimpl(["pandas", "dask"])
 @pytest.mark.notyet(["pyspark", "datafusion"])
-def test_topk_op(backend, alltypes, df, result_fn, expected_fn):
+def test_topk_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
