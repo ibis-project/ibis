@@ -232,7 +232,6 @@ def test_aggregate_grouped(
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id='approx_nunique',
-            marks=pytest.mark.notyet(['mysql', 'sqlite', 'pyspark']),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(how='first', where=where),
