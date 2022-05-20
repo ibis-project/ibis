@@ -458,14 +458,6 @@ class ExprSimplifier:
         return helper.get_result()
 
 
-def _base_table(table_node):
-    # Find the aggregate or projection root. Not proud of this
-    if table_node.blocks():
-        return table_node
-    else:
-        return _base_table(table_node.table.op())
-
-
 def get_mutation_exprs(
     exprs: list[ir.Expr], table: ir.Table
 ) -> list[ir.Expr | None]:
