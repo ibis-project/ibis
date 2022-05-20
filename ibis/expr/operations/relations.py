@@ -185,7 +185,6 @@ class Join(TableNode):
             left=left, right=right, predicates=predicates, **kwargs
         )
 
-    # could use @promoter here
     @property
     def schema(self):
         # For joins retaining both table schemas, merge them together here
