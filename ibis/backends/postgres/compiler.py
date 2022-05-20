@@ -27,6 +27,7 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
             dt.Float64: postgresql.DOUBLE_PRECISION,
         }
     )
+    _has_reduction_filter_syntax = True
 
 
 rewrites = PostgreSQLExprTranslator.rewrites
