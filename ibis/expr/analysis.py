@@ -99,41 +99,28 @@ class Substitutor:
 
 
 class ScalarAggregate:
-    def __init__(self, expr, memo=None, default_name='tmp'):
+    def __init__(self, expr):
         self.expr = expr
-        self.memo = memo or {}
         self.tables = []
-        self.default_name = default_name
 
     def get_result(self):
         expr = self.expr
         subbed_expr = self._visit(expr)
 
-        try:
-            name = subbed_expr.get_name()
-            named_expr = subbed_expr
-        except ExpressionError:
-            name = self.default_name
-            named_expr = subbed_expr.name(self.default_name)
-
         table = self.tables[0]
         for other in self.tables[1:]:
             table = table.cross_join(other)
 
-        return table.projection([named_expr]), name
+        return table.projection([subbed_expr])
 
     def _visit(self, expr):
         if is_scalar_reduction(expr) and not has_multiple_bases(expr):
             # An aggregation unit
-            key = self._key(expr)
-            if key not in self.memo:
-                agg_expr, name = reduction_to_aggregation(expr)
-                self.memo[key] = agg_expr, name
-                self.tables.append(agg_expr)
-            else:
-                agg_expr, name = self.memo[key]
-            return agg_expr[name]
-
+            if not expr.has_name():
+                expr = expr.name('tmp')
+            agg_expr = reduction_to_aggregation(expr)
+            self.tables.append(agg_expr)
+            return agg_expr[expr.get_name()]
         elif not isinstance(expr, ir.Expr):
             return expr
 
@@ -153,29 +140,21 @@ class ScalarAggregate:
 
         return new_expr
 
-    def _key(self, expr):
-        return repr(expr.op())
-
 
 def has_multiple_bases(expr):
     return toolz.count(find_immediate_parent_tables(expr)) > 1
 
 
-def reduction_to_aggregation(expr, default_name='tmp'):
+def reduction_to_aggregation(expr):
     tables = list(find_immediate_parent_tables(expr))
-
-    try:
-        name = expr.get_name()
-        named_expr = expr
-    except ExpressionError:
-        name = default_name
-        named_expr = expr.name(default_name)
 
     if len(tables) == 1:
         (table,) = tables
-        return table.aggregate([named_expr]), name
+        agg = table.aggregate([expr])
     else:
-        return ScalarAggregate(expr, None, default_name).get_result()
+        agg = ScalarAggregate(expr).get_result()
+
+    return agg
 
 
 def find_immediate_parent_tables(expr):
@@ -1218,7 +1197,9 @@ def _rewrite_filter_reduction(_, expr, name: str | None = None, **kwargs):
     # TODO: what about reductions that reference a join that isn't visible at
     # this level? Means we probably have the wrong design, but will have to
     # revisit when it becomes a problem.
-    aggregation, _ = reduction_to_aggregation(expr, default_name=name)
+    if name is not None:
+        expr = expr.name(name)
+    aggregation = reduction_to_aggregation(expr)
     return aggregation.to_array()
 
 
