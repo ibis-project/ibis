@@ -606,10 +606,6 @@ def _literal(_, expr):
         return sa.literal(value)
 
 
-def _random(t, expr):
-    return sa.func.random()
-
-
 def _day_of_week_index(t, expr):
     (sa_arg,) = map(t.translate, expr.op().args)
     return sa.cast(
@@ -687,7 +683,7 @@ operation_registry.update(
         ops.ExtractMillisecond: _millisecond,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
-        ops.RandomScalar: _random,
+        ops.RandomScalar: fixed_arity(sa.func.random, 0),
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
