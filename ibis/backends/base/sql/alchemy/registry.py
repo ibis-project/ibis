@@ -554,8 +554,9 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.TimestampFromYMDHMS: lambda t, expr: sa.func.make_timestamp(
         *map(t.translate, expr.op().args[:6])  # ignore timezone
     ),
+    ops.Degrees: unary(sa.func.degrees),
+    ops.Radians: unary(sa.func.radians),
 }
-
 
 # TODO: unit tests for each of these
 _binary_ops = {
