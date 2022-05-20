@@ -200,10 +200,10 @@ class SelectBuilder:
 
         if isinstance(expr, ir.Scalar):
             if L.is_scalar_reduction(expr):
-                table_expr, name = L.reduction_to_aggregation(
-                    expr, default_name='tmp'
-                )
-                return table_expr, _get_scalar(name)
+                if not expr.has_name():
+                    expr = expr.name('tmp')
+                table_expr = L.reduction_to_aggregation(expr)
+                return table_expr, _get_scalar(expr.get_name())
             else:
                 base_table = ir.relations.find_base_table(expr)
                 if base_table is None:
