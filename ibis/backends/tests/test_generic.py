@@ -544,3 +544,24 @@ def test_logical_negation_column(backend, alltypes, df, op):
     result = op(alltypes["bool_col"]).execute()
     expected = op(df["bool_col"])
     backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "pyspark"])
+@pytest.mark.parametrize(
+    ("dtype", "zero", "expected"),
+    [("int64", 0, 1), ("float64", 0.0, 1.0)],
+)
+def test_zeroifnull_literals(con, dtype, zero, expected):
+    assert con.execute(ibis.NA.cast(dtype).zeroifnull()) == zero
+    assert (
+        con.execute(ibis.literal(expected, type=dtype).zeroifnull())
+        == expected
+    )
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "pyspark"])
+def test_zeroifnull_column(backend, alltypes, df):
+    expr = alltypes.int_col.nullif(1).zeroifnull()
+    result = expr.execute()
+    expected = df.int_col.replace(1, 0).rename("tmp")
+    backend.assert_series_equal(result, expected)
