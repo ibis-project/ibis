@@ -602,6 +602,10 @@ def _day_of_week_name(t, expr):
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 
+def _array_column(t, expr):
+    return postgresql.array(list(map(t.translate, expr.op().cols)))
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -676,6 +680,7 @@ operation_registry.update(
         # array operations
         ops.ArrayLength: unary(_cardinality),
         ops.ArrayCollect: unary(sa.func.array_agg),
+        ops.ArrayColumn: _array_column,
         ops.ArraySlice: _array_slice,
         ops.ArrayIndex: fixed_arity(
             lambda array, index: array[_neg_idx_to_pos(array, index) + 1], 2

@@ -10,7 +10,7 @@ import ibis.expr.types as ir
 pytestmark = pytest.mark.never(["sqlite", "mysql"], reason="No array support")
 
 
-@pytest.mark.notimpl(["impala", "postgres", "clickhouse", "datafusion"])
+@pytest.mark.notimpl(["impala", "clickhouse", "datafusion"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
