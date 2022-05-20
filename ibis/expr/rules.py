@@ -225,9 +225,10 @@ def client(arg, **kwargs):
 
 
 # ---------------------------------------------------------------------
-# Ouput type promoter functions
+# Ouput type functions
 
 
+@util.deprecated(version="4.0", instead="")
 def promoter(fn):
     @functools.wraps(fn)
     def wrapper(name_or_value, *args, **kwargs):
