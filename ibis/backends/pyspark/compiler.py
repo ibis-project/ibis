@@ -604,6 +604,21 @@ def compile_sum(t, expr, scope, timecontext, context=None, **kwargs):
     )
 
 
+@compiles(ops.HLLCardinality)
+def compile_approx_count_distinct(
+    t, expr, scope, timecontext, context=None, **kwargs
+):
+    return compile_aggregator(
+        t,
+        expr,
+        scope,
+        timecontext,
+        fn=F.approx_count_distinct,
+        context=context,
+        **kwargs,
+    )
+
+
 @compiles(ops.StandardDev)
 def compile_std(t, expr, scope, timecontext, context=None, **kwargs):
     how = expr.op().how
