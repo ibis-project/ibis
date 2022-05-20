@@ -1098,6 +1098,7 @@ class Table(Expr):
             suffixes=suffixes,
         )
 
+    @util.deprecated(version="4.0", instead="")
     def prevent_rewrite(self, client=None) -> Table:
         """Prevent optimization from happening below this expression.
 
