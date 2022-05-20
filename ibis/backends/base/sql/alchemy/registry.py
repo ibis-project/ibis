@@ -260,17 +260,6 @@ def _floor_divide(t, expr):
     return sa.func.floor(left / right)
 
 
-def _count_distinct(t, expr):
-    arg, where = expr.op().args
-
-    if where is not None:
-        sa_arg = t.translate(where.ifelse(arg, None))
-    else:
-        sa_arg = t.translate(arg)
-
-    return sa.func.count(sa_arg.distinct())
-
-
 def _simple_case(t, expr):
     op = expr.op()
 
