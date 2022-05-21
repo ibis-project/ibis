@@ -458,20 +458,36 @@ def compile_endswith(t, expr, scope, timecontext, **kwargs):
 
 
 def _is_table(table):
-    return isinstance(table.op().arg, ir.Table)
+    try:
+        return isinstance(table.op().arg, ir.Table)
+    except AttributeError:
+        return False
 
 
 def compile_aggregator(
     t, expr, scope, timecontext, *, fn, context=None, **kwargs
 ):
     op = expr.op()
-    src_col = t.translate(op.arg, scope, timecontext)
+    if (where := getattr(op, 'where', None)) is not None:
+        condition = t.translate(where, scope, timecontext)
+    else:
+        condition = None
 
-    if getattr(op, 'where', None) is not None:
-        condition = t.translate(op.where, scope, timecontext)
-        src_col = F.when(condition, src_col)
+    def translate_arg(arg):
+        src_col = t.translate(arg, scope, timecontext)
 
-    col = fn(src_col)
+        if condition is not None:
+            src_col = F.when(condition, src_col)
+        return src_col
+
+    src_inputs = tuple(
+        arg for arg in op.args if arg is not getattr(op, "where", None)
+    )
+    src_cols = tuple(
+        translate_arg(arg) for arg in src_inputs if isinstance(arg, ir.Expr)
+    )
+
+    col = fn(*src_cols)
     if context:
         return col
     else:
@@ -481,17 +497,17 @@ def compile_aggregator(
         # the expr to:
         # df.select(max(some_col))
         if _is_table(expr):
+            (src_col,) = src_cols
             return src_col.select(col)
-        return t.translate(
-            expr.op().arg.op().table, scope, timecontext
-        ).select(col)
+        (table_op,) = op.root_tables()
+        return t.translate(table_op.to_expr(), scope, timecontext).select(col)
 
 
 @compiles(ops.GroupConcat)
 def compile_group_concat(t, expr, scope, timecontext, context=None, **kwargs):
-    sep = expr.op().sep.op().value
+    sep = t.translate(expr.op().sep, scope, timecontext, raw=True)
 
-    def fn(col):
+    def fn(col, _):
         collected = F.collect_list(col)
         return F.array_join(
             F.when(F.size(collected) == 0, F.lit(None)).otherwise(collected),
