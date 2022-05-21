@@ -84,7 +84,10 @@ def calc_zscore(s):
                 )
             ),
             id="nth",
-            marks=pytest.mark.notimpl(["pandas"]),
+            marks=[
+                pytest.mark.notimpl(["pandas"]),
+                pytest.mark.notyet(["impala"]),
+            ],
         ),
         param(
             lambda _, win: ibis.row_number().over(win),
