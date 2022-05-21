@@ -761,6 +761,7 @@ operation_registry = {
     ops.BitXor: _bit_agg("groupBitXor"),
     ops.Degrees: _unary("degrees"),
     ops.Radians: _unary("radians"),
+    ops.Strftime: _fixed_arity("formatDateTime", 2),
 }
 
 

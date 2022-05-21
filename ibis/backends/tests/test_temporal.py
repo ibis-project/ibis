@@ -469,7 +469,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
 @pytest.mark.parametrize(
     ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
 )
-@pytest.mark.notimpl(["clickhouse", "datafusion", "duckdb", "impala"])
+@pytest.mark.notimpl(["datafusion", "duckdb", "impala"])
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
     expr = alltypes.timestamp_col.strftime(ibis_pattern)
     expected = df.timestamp_col.dt.strftime(pandas_pattern)
