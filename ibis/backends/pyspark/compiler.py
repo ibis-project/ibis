@@ -619,6 +619,19 @@ def compile_approx_count_distinct(
     )
 
 
+@compiles(ops.CMSMedian)
+def compile_approx_median(t, expr, scope, timecontext, context=None, **kwargs):
+    return compile_aggregator(
+        t,
+        expr,
+        scope,
+        timecontext,
+        fn=lambda arg: F.percentile_approx(arg, 0.5),
+        context=context,
+        **kwargs,
+    )
+
+
 @compiles(ops.StandardDev)
 def compile_std(t, expr, scope, timecontext, context=None, **kwargs):
     how = expr.op().how
