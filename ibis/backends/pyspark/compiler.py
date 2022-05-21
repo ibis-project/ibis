@@ -2012,3 +2012,9 @@ def compile_degrees(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Radians)
 def compile_radians(t, expr, scope, timecontext, **kwargs):
     return F.radians(t.translate(expr.op().arg, scope, timecontext, **kwargs))
+
+
+@compiles(ops.ZeroIfNull)
+def compile_zero_if_null(t, expr, scope, timecontext, **kwargs):
+    col = t.translate(expr.op().arg, scope, timecontext, **kwargs)
+    return F.when(col.isNull() | F.isnan(col), F.lit(0)).otherwise(col)
