@@ -278,6 +278,14 @@ def compile_or(t, expr, scope, timecontext, **kwargs):
     )
 
 
+@compiles(ops.Xor)
+def compile_xor(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    left = t.translate(op.left, scope, timecontext)
+    right = t.translate(op.right, scope, timecontext)
+    return (left | right) & ~(left & right)
+
+
 @compiles(ops.Equals)
 def compile_equals(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
