@@ -1353,6 +1353,14 @@ def compile_last_value(t, expr, scope, timecontext, **kwargs):
     return F.last(src_column)
 
 
+@compiles(ops.NthValue)
+def compile_nth_value(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    src_column = t.translate(op.arg, scope, timecontext)
+    nth = t.translate(op.nth, scope, timecontext, raw=True)
+    return F.nth_value(src_column, nth + 1)
+
+
 @compiles(ops.RowNumber)
 def compile_row_number(t, expr, scope, timecontext, **kwargs):
     return F.row_number()
