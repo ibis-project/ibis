@@ -486,6 +486,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.BitAnd: reduction(sa.func.bit_and),
     ops.BitOr: reduction(sa.func.bit_or),
     ops.BitXor: reduction(sa.func.bit_xor),
+    ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.GroupConcat: _group_concat,
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
