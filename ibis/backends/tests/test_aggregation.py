@@ -195,7 +195,6 @@ def test_aggregate_grouped(
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "clickhouse",
                         "dask",
                         "duckdb",
                         "impala",
