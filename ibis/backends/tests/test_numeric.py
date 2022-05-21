@@ -157,7 +157,6 @@ def test_isnan_isinf(
             id='radians',
             marks=pytest.mark.notimpl(
                 [
-                    "clickhouse",
                     "dask",
                     "datafusion",
                     "impala",
