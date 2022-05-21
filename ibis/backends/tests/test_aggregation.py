@@ -200,8 +200,6 @@ def test_aggregate_grouped(
                         "impala",
                         "mysql",
                         "pandas",
-                        "postgres",
-                        "pyspark",
                         "sqlite",
                     ]
                 )
@@ -220,8 +218,6 @@ def test_aggregate_grouped(
                         "impala",
                         "mysql",
                         "pandas",
-                        "postgres",
-                        "pyspark",
                         "sqlite",
                     ]
                 )

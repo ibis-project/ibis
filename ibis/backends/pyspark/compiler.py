@@ -690,6 +690,44 @@ def compile_variance(t, expr, scope, timecontext, context=None, **kwargs):
     )
 
 
+@compiles(ops.Covariance)
+def compile_covariance(t, expr, scope, timecontext, context=None, **kwargs):
+    op = expr.op()
+    how = op.how
+
+    fn = {"sample": F.covar_samp, "pop": F.covar_pop}[how]
+
+    pyspark_double_type = ibis_dtype_to_spark_dtype(dtypes.double)
+    expr = op.__class__(
+        left=op.left.cast(pyspark_double_type),
+        right=op.right.cast(pyspark_double_type),
+        how=how,
+        where=op.where,
+    ).to_expr()
+    return compile_aggregator(
+        t, expr, scope, timecontext, fn=fn, context=context
+    )
+
+
+@compiles(ops.Correlation)
+def compile_correlation(t, expr, scope, timecontext, context=None, **kwargs):
+    op = expr.op()
+
+    if (how := op.how) == "pop":
+        raise ValueError("PySpark only implements sample correlation")
+
+    pyspark_double_type = ibis_dtype_to_spark_dtype(dtypes.double)
+    expr = op.__class__(
+        left=op.left.cast(pyspark_double_type),
+        right=op.right.cast(pyspark_double_type),
+        how=how,
+        where=op.where,
+    ).to_expr()
+    return compile_aggregator(
+        t, expr, scope, timecontext, fn=F.corr, context=context
+    )
+
+
 @compiles(ops.Arbitrary)
 def compile_arbitrary(t, expr, scope, timecontext, context=None, **kwargs):
     how = expr.op().how
