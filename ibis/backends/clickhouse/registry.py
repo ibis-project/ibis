@@ -635,6 +635,11 @@ def _clip(translator, expr):
     return arg
 
 
+def _struct_field(translator, expr):
+    op = expr.op()
+    return f"{translator.translate(op.arg)}.`{op.field}`"
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -790,6 +795,7 @@ operation_registry = {
     ops.Strftime: _fixed_arity("formatDateTime", 2),
     ops.ArrayColumn: _array_column,
     ops.Clip: _clip,
+    ops.StructField: _struct_field,
 }
 
 
