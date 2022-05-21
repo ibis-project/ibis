@@ -759,6 +759,7 @@ operation_registry = {
     ops.BitAnd: _bit_agg("groupBitAnd"),
     ops.BitOr: _bit_agg("groupBitOr"),
     ops.BitXor: _bit_agg("groupBitXor"),
+    ops.Degrees: _unary("degrees"),
 }
 
 
