@@ -172,7 +172,6 @@ def test_isnan_isinf(
             id='degrees',
             marks=pytest.mark.notimpl(
                 [
-                    "clickhouse",
                     "dask",
                     "datafusion",
                     "impala",
