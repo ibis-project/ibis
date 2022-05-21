@@ -556,7 +556,7 @@ def test_interactive_repr_shows_error(alltypes):
     # #591. Doing this in SQLite because so many built-in functions are not
     # available
 
-    expr = alltypes.double_col.approx_nunique()
+    expr = alltypes.double_col.approx_median()
 
     with config.option_context('interactive', True):
         result = repr(expr)
