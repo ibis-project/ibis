@@ -291,16 +291,6 @@ def window(translator, expr):
         return result
 
 
-def nth_value(translator, expr):
-    op = expr.op()
-    arg, rank = op.args
-
-    arg_formatted = translator.translate(arg)
-    rank_formatted = translator.translate(rank - 1)
-
-    return f'first_value(lag({arg_formatted}, {rank_formatted}))'
-
-
 def shift_like(name):
     def formatter(translator, expr):
         op = expr.op()

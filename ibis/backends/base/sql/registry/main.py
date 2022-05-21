@@ -377,7 +377,6 @@ operation_registry = {
     ops.PercentRank: lambda *args: 'percent_rank()',
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
-    ops.NthValue: window.nth_value,
     ops.Lag: window.shift_like('lag'),
     ops.Lead: window.shift_like('lead'),
     ops.Window: window.window,
