@@ -3,6 +3,7 @@ from io import StringIO
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
@@ -591,6 +592,23 @@ def _cotangent(translator, expr):
     return f"cos({arg}) / sin({arg})"
 
 
+def _bit_agg(func):
+    def compile(translator, expr):
+        op = expr.op()
+        raw_arg = op.arg
+        arg = translator.translate(raw_arg)
+        if not isinstance((type := raw_arg.type()), dt.UnsignedInteger):
+            nbits = type._nbytes * 8
+            arg = f"reinterpretAsUInt{nbits}({arg})"
+
+        if (where := op.where) is not None:
+            return f"{func}If({arg}, {translator.translate(where)})"
+        else:
+            return f"{func}({arg})"
+
+    return compile
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -738,6 +756,9 @@ operation_registry = {
     ops.ArrayRepeat: _array_repeat_op,
     ops.ArraySlice: _array_slice_op,
     ops.Unnest: _unary("arrayJoin"),
+    ops.BitAnd: _bit_agg("groupBitAnd"),
+    ops.BitOr: _bit_agg("groupBitOr"),
+    ops.BitXor: _bit_agg("groupBitXor"),
 }
 
 
