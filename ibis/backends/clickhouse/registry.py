@@ -150,6 +150,15 @@ def _agg_variance_like(func):
     return formatter
 
 
+def _corr(translator, expr):
+    op = expr.op()
+    if op.how == "pop":
+        raise ValueError(
+            "ClickHouse only implements `sample` correlation coefficient"
+        )
+    return _aggregate(translator, "corr", op.left, op.right, where=op.where)
+
+
 def _call(translator, func, *args):
     args_ = ', '.join(map(translator.translate, args))
     return f'{func!s}({args_!s})'
@@ -714,6 +723,8 @@ operation_registry = {
     ops.ArrayCollect: _agg('groupArray'),
     ops.StandardDev: _agg_variance_like('stddev'),
     ops.Variance: _agg_variance_like('var'),
+    ops.Covariance: _agg_variance_like('covar'),
+    ops.Correlation: _corr,
     ops.GroupConcat: _group_concat,
     ops.Count: _agg('count'),
     ops.CountDistinct: _agg('uniq'),
