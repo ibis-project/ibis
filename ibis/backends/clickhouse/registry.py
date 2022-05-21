@@ -130,7 +130,12 @@ def _array_slice_op(translator, expr):
 
 def _agg(func):
     def formatter(translator, expr):
-        return _aggregate(translator, func, *expr.op().args)
+        op = expr.op()
+        where = getattr(op, "where", None)
+        args = tuple(
+            arg for arg in op.args if arg is not None and arg is not where
+        )
+        return _aggregate(translator, func, *args, where=where)
 
     return formatter
 
@@ -139,8 +144,8 @@ def _agg_variance_like(func):
     variants = {'sample': f'{func}Samp', 'pop': f'{func}Pop'}
 
     def formatter(translator, expr):
-        arg, how, where = expr.op().args
-        return _aggregate(translator, variants[how], arg, where)
+        *args, how, where = expr.op().args
+        return _aggregate(translator, variants[how], *args, where=where)
 
     return formatter
 
@@ -150,11 +155,11 @@ def _call(translator, func, *args):
     return f'{func!s}({args_!s})'
 
 
-def _aggregate(translator, func, arg, where=None):
+def _aggregate(translator, func, *args, where=None):
     if where is not None:
-        return _call(translator, func + 'If', arg, where)
+        return _call(translator, f"{func}If", *args, where)
     else:
-        return _call(translator, func, arg)
+        return _call(translator, func, *args)
 
 
 def _xor(translator, expr):
