@@ -312,7 +312,6 @@ def test_reduction_ops(
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "sqlite",
     ]
 )
