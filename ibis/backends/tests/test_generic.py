@@ -546,7 +546,7 @@ def test_logical_negation_column(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -559,9 +559,9 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     )
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 def test_zeroifnull_column(backend, alltypes, df):
     expr = alltypes.int_col.nullif(1).zeroifnull()
-    result = expr.execute()
-    expected = df.int_col.replace(1, 0).rename("tmp")
+    result = expr.execute().astype("int32")
+    expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)
