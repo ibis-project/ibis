@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import functools
 import inspect
 import math
+import operator
+from typing import Callable
 
 import regex as re
 
@@ -308,6 +312,42 @@ class _ibis_sqlite_var_pop(_ibis_sqlite_var):
 class _ibis_sqlite_var_samp(_ibis_sqlite_var):
     def __init__(self):
         super().__init__(1)
+
+
+class _ibis_sqlite_bit_agg:
+    def __init__(self, op):
+        self.value: int | None = None
+        self.count: int = 0
+        self.op: Callable[[int, int], int] = op
+
+    def step(self, value):
+        if value is not None:
+            if not self.count:
+                self.value = value
+            else:
+                self.value = self.op(self.value, value)
+            self.count += 1
+
+    def finalize(self) -> int | None:
+        return self.value
+
+
+@udaf
+class _ibis_sqlite_bit_or(_ibis_sqlite_bit_agg):
+    def __init__(self):
+        super().__init__(operator.or_)
+
+
+@udaf
+class _ibis_sqlite_bit_and(_ibis_sqlite_bit_agg):
+    def __init__(self):
+        super().__init__(operator.and_)
+
+
+@udaf
+class _ibis_sqlite_bit_xor(_ibis_sqlite_bit_agg):
+    def __init__(self):
+        super().__init__(operator.xor)
 
 
 def _number_of_arguments(callable):

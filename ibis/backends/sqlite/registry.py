@@ -13,6 +13,7 @@ import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     fixed_arity,
+    reduction,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
@@ -392,5 +393,8 @@ operation_registry.update(
         ops.Asin: unary(sa.func._ibis_sqlite_asin),
         ops.Atan: unary(sa.func._ibis_sqlite_atan),
         ops.Atan2: fixed_arity(sa.func._ibis_sqlite_atan2, 2),
+        ops.BitOr: reduction(sa.func._ibis_sqlite_bit_or),
+        ops.BitAnd: reduction(sa.func._ibis_sqlite_bit_and),
+        ops.BitXor: reduction(sa.func._ibis_sqlite_bit_xor),
     }
 )
