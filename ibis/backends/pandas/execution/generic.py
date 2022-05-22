@@ -256,6 +256,11 @@ def execute_series_radians(_, data, **kwargs):
     return np.radians(data)
 
 
+@execute_node.register(ops.Degrees, (pd.Series, *numeric_types))
+def execute_series_degrees(_, data, **kwargs):
+    return np.degrees(data)
+
+
 @execute_node.register((ops.Ceil, ops.Floor), pd.Series)
 def execute_series_ceil(op, data, **kwargs):
     return_type = np.object_ if data.dtype == np.object_ else np.int64
