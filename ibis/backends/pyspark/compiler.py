@@ -1974,3 +1974,8 @@ def compile_atan2(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     y, x = (t.translate(arg, scope, timecontext, **kwargs) for arg in op.args)
     return F.atan2(y, x)
+
+
+@compiles(ops.Degrees)
+def compile_degrees(t, expr, scope, timecontext, **kwargs):
+    return F.degrees(t.translate(expr.op().arg, scope, timecontext, **kwargs))
