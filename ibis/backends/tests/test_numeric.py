@@ -161,7 +161,6 @@ def test_isnan_isinf(
                     "datafusion",
                     "impala",
                     "pandas",
-                    "pyspark",
                 ]
             ),
         ),
