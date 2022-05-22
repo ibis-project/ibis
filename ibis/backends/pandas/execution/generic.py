@@ -251,6 +251,11 @@ def execute_series_trig(op, data, **kwargs):
     return call_numpy_ufunc(function, op, data, **kwargs)
 
 
+@execute_node.register(ops.Radians, (pd.Series, *numeric_types))
+def execute_series_radians(_, data, **kwargs):
+    return np.radians(data)
+
+
 @execute_node.register((ops.Ceil, ops.Floor), pd.Series)
 def execute_series_ceil(op, data, **kwargs):
     return_type = np.object_ if data.dtype == np.object_ else np.int64
