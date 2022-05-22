@@ -1214,3 +1214,19 @@ def execute_rowid(op, *args, **kwargs):
 @execute_node.register(ops.TableArrayView, pd.DataFrame)
 def execute_table_array_view(op, _, **kwargs):
     return execute(op.table).squeeze()
+
+
+@execute_node.register(ops.ZeroIfNull, pd.Series)
+def execute_zero_if_null_series(op, data, **kwargs):
+    zero = op.arg.type().to_pandas().type(0)
+    return data.replace({np.nan: zero, None: zero, pd.NA: zero})
+
+
+@execute_node.register(
+    ops.ZeroIfNull,
+    (type(None), type(pd.NA), numbers.Real, np.integer, np.floating),
+)
+def execute_zero_if_null_scalar(op, data, **kwargs):
+    if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
+        return op.arg.type().to_pandas().type(0)
+    return data
