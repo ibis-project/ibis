@@ -717,6 +717,30 @@ def execute_count_frame(op, data, _, **kwargs):
     return len(data)
 
 
+@execute_node.register(ops.BitAnd, pd.Series, (pd.Series, type(None)))
+def execute_bit_and_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data,
+        np.bitwise_and.reduce,
+    )
+
+
+@execute_node.register(ops.BitOr, pd.Series, (pd.Series, type(None)))
+def execute_bit_or_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data,
+        np.bitwise_or.reduce,
+    )
+
+
+@execute_node.register(ops.BitXor, pd.Series, (pd.Series, type(None)))
+def execute_bit_xor_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data,
+        np.bitwise_xor.reduce,
+    )
+
+
 @execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
 def execute_not_bool(_, data, **kwargs):
     return not data

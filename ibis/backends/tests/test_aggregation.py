@@ -255,7 +255,7 @@ def test_aggregate_grouped(
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id='bit_and',
             marks=[
-                pytest.mark.notimpl(["dask", "pandas"]),
+                pytest.mark.notimpl(["dask"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -264,7 +264,7 @@ def test_aggregate_grouped(
             lambda t, where: np.bitwise_or.reduce(t.bigint_col[where].values),
             id='bit_or',
             marks=[
-                pytest.mark.notimpl(["dask", "pandas"]),
+                pytest.mark.notimpl(["dask"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -273,7 +273,7 @@ def test_aggregate_grouped(
             lambda t, where: np.bitwise_xor.reduce(t.bigint_col[where].values),
             id='bit_xor',
             marks=[
-                pytest.mark.notimpl(["dask", "pandas"]),
+                pytest.mark.notimpl(["dask"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
