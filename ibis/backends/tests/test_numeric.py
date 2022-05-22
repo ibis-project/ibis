@@ -161,7 +161,7 @@ def test_isnan_isinf(
             L(5.556).degrees(),
             math.degrees(5.556),
             id='degrees',
-            marks=pytest.mark.notimpl(["dask", "datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
