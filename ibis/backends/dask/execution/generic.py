@@ -61,6 +61,7 @@ from ibis.backends.pandas.execution.generic import (
     execute_series_notnnull,
     execute_sort_key_series_bool,
     execute_table_column_df_or_df_groupby,
+    execute_zero_if_null_series,
 )
 
 # Many dask and pandas functions are functionally equivalent, so we just add
@@ -150,6 +151,13 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, simple_types), execute_node_nullif_series_scalar),
     ],
     ops.Distinct: [((dd.DataFrame,), execute_distinct_dataframe)],
+    ops.ZeroIfNull: [
+        ((dd.Series,), execute_zero_if_null_series),
+        (
+            (type(None), type(pd.NA), np.floating, float),
+            execute_zero_if_null_series,
+        ),
+    ],
 }
 
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
