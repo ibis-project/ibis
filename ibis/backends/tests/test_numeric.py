@@ -155,7 +155,7 @@ def test_isnan_isinf(
             L(5.556).radians(),
             math.radians(5.556),
             id='radians',
-            marks=pytest.mark.notimpl(["dask", "datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(
             L(5.556).degrees(),
