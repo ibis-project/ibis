@@ -281,6 +281,16 @@ def _ibis_sqlite_atan2(y, x):
     return _trig_func_binary(math.atan2, y, x)
 
 
+@udf
+def _ibis_sqlite_degrees(x):
+    return None if x is None else math.degrees(x)
+
+
+@udf
+def _ibis_sqlite_radians(x):
+    return None if x is None else math.radians(x)
+
+
 class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
