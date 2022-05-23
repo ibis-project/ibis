@@ -1663,7 +1663,9 @@ def _int(typ: Integer, value: float) -> float:
     return int(value)
 
 
-@_normalize.register(Floating, (int, float, np.integer, np.floating))
+@_normalize.register(
+    Floating, (int, float, np.integer, np.floating, typing.SupportsFloat)
+)
 def _float(typ: Floating, value: float) -> float:
     return float(value)
 
