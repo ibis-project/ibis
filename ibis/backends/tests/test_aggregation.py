@@ -250,6 +250,25 @@ def test_aggregate_grouped(
             ),
         ),
         param(
+            lambda t, where: t.double_col.arbitrary(how='heavy', where=where),
+            lambda t, where: t.double_col[where].iloc[8],
+            id='arbitrary_heavy',
+            # only clickhouse implements this option
+            marks=pytest.mark.notimpl(
+                [
+                    "dask",
+                    "datafusion",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ],
+            ),
+        ),
+        param(
             lambda t, where: t.bigint_col.bit_and(where=where),
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id='bit_and',
