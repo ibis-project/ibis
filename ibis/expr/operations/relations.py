@@ -190,6 +190,7 @@ class Join(TableNode):
         # For joins retaining both table schemas, merge them together here
         return self.left.schema().append(self.right.schema())
 
+    @util.deprecated(version="4.0", instead="")
     def has_schema(self):
         return not set(self.left.columns) & set(self.right.columns)
 
@@ -311,6 +312,7 @@ class Limit(TableNode):
     def schema(self):
         return self.table.schema()
 
+    @util.deprecated(version="4.0", instead="")
     def has_schema(self):
         return self.table.op().has_schema()
 

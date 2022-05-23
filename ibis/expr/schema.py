@@ -15,7 +15,7 @@ from ibis.common.validators import (
     validator,
 )
 from ibis.expr import datatypes as dt
-from ibis.util import UnnamedMarker, indent
+from ibis.util import UnnamedMarker, deprecated, indent
 
 convert = Dispatcher(
     'convert',
@@ -216,6 +216,7 @@ class Schema(Annotable, Comparable):
 class HasSchema(abc.ABC):
     """Mixin representing a structured dataset with a schema."""
 
+    @deprecated(version="4.0", instead="")
     def has_schema(self):
         return True
 
