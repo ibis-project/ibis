@@ -50,7 +50,7 @@ class TableNode(Node):
         version="4.0.0",
         instead="Use ibis.expr.analysis.is_ancestor() instead",
     )
-    def is_ancestor(self, other):
+    def is_ancestor(self, other):  # pragma: no cover
         from ibis.expr.analysis import is_ancestor
 
         return is_ancestor(self, other)
