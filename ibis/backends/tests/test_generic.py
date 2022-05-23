@@ -1,4 +1,5 @@
 import decimal
+import importlib
 import io
 import operator
 
@@ -559,8 +560,25 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     )
 
 
+DASK_WITH_FIXED_REPLACE = vparse("2022.01.1")
+
+
+def skip_if_dask_replace_is_broken(backend):
+    if (name := backend.name()) != "dask":
+        return
+    if (
+        version := vparse(importlib.import_module(name).__version__)
+    ) < DASK_WITH_FIXED_REPLACE:
+        pytest.skip(
+            f"{name}@{version} doesn't support this operation with later "
+            "versions of pandas"
+        )
+
+
 @pytest.mark.notimpl(["datafusion"])
 def test_zeroifnull_column(backend, alltypes, df):
+    skip_if_dask_replace_is_broken(backend)
+
     expr = alltypes.int_col.nullif(1).zeroifnull()
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
