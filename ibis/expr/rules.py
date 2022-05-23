@@ -437,7 +437,7 @@ def python_literal(value, arg, **kwargs):
 
 @validator
 @util.deprecated(version="4.0", instead="")
-def is_computable_input(value, **kwargs):
+def is_computable_input(value, **kwargs):  # pragma: no cover
     from ibis.backends.pandas.core import (
         is_computable_input as _is_computable_input,
     )
