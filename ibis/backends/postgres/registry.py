@@ -383,22 +383,6 @@ def _regex_replace(t, expr):
     return sa.func.regexp_replace(string, pattern, replacement, 'g')
 
 
-def _reduction(func_name):
-    def reduction_compiler(t, expr):
-        arg, where = expr.op().args
-
-        if arg.type().equals(dt.boolean):
-            arg = arg.cast('int32')
-
-        func = getattr(sa.func, func_name)
-
-        if where is not None:
-            arg = where.ifelse(arg, None)
-        return func(t.translate(arg))
-
-    return reduction_compiler
-
-
 def _log(t, expr):
     arg, base = expr.op().args
     sa_arg = t.translate(arg)
