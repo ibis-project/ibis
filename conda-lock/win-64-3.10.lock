@@ -186,7 +186,7 @@ https://conda.anaconda.org/conda-forge/noarch/gitdb-4.0.9-pyhd8ed1ab_0.tar.bz2#4
 https://conda.anaconda.org/conda-forge/win-64/greenlet-1.1.2-py310h8a704f9_2.tar.bz2#e1f6cfcf020c32e3a63e6583dbdeb867
 https://conda.anaconda.org/conda-forge/win-64/grpc-cpp-1.43.2-he33f7c1_3.tar.bz2#f5d841b2cf4cfa7618a3d8af003f1f81
 https://conda.anaconda.org/conda-forge/win-64/gts-0.7.6-h7c369d9_2.tar.bz2#509e4ea898407220d7bdbc6f8a02fe63
-https://conda.anaconda.org/conda-forge/win-64/importlib-metadata-4.11.3-py310h5588dad_1.tar.bz2#babf3152d2d04200112e9a4f5c2942ca
+https://conda.anaconda.org/conda-forge/win-64/importlib-metadata-4.11.4-py310h5588dad_0.tar.bz2#16ef54587496fadabd26ba48ff221750
 https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.7.1-pyhd8ed1ab_1.tar.bz2#56567286f9f9716bea44fe9301e1b34d
 https://conda.anaconda.org/conda-forge/win-64/jedi-0.18.1-py310h5588dad_1.tar.bz2#89a5ea48d8c83a5ddf41f1aab3c21638
 https://conda.anaconda.org/conda-forge/win-64/kiwisolver-1.4.2-py310h476a331_1.tar.bz2#bb82dc9ea996b6168f05bcd13eebb3ff
@@ -226,7 +226,7 @@ https://conda.anaconda.org/conda-forge/win-64/thrift-0.16.0-py310h8a704f9_1.tar.
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
 https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.10.2-pyha770c72_0.tar.bz2#482e5775f80665a7c9f76cd72a66eae8
 https://conda.anaconda.org/conda-forge/win-64/tornado-6.1-py310he2412df_3.tar.bz2#f5e310d96e266e6acda33c31c722e2cb
-https://conda.anaconda.org/conda-forge/win-64/typed-ast-1.5.3-py310he2412df_0.tar.bz2#8f1f5febf37268b6135fde9da5244dd8
+https://conda.anaconda.org/conda-forge/win-64/typed-ast-1.5.4-py310he2412df_0.tar.bz2#bc81264f0312aac5942257aeaeaa60af
 https://conda.anaconda.org/conda-forge/noarch/typing-extensions-4.2.0-hd8ed1ab_1.tar.bz2#6d9d7480c5780514779967be2ee8b963
 https://conda.anaconda.org/conda-forge/win-64/unicodedata2-14.0.0-py310he2412df_1.tar.bz2#a122d354e5f14ccf90ed05deb86a8e18
 https://conda.anaconda.org/conda-forge/win-64/win_inet_pton-1.1.0-py310h5588dad_4.tar.bz2#674aa7b17ab884a99afeec3547a03bb8
@@ -251,7 +251,7 @@ https://conda.anaconda.org/conda-forge/win-64/fonttools-4.33.3-py310he2412df_0.t
 https://conda.anaconda.org/conda-forge/noarch/ghp-import-2.1.0-pyhd8ed1ab_0.tar.bz2#6d8d61116031a3f5b1f32e7899785866
 https://conda.anaconda.org/conda-forge/noarch/gitpython-3.1.27-pyhd8ed1ab_0.tar.bz2#20acbaab17a50ac9b64138eb9a0e1af8
 https://conda.anaconda.org/conda-forge/win-64/hdf5-1.12.1-nompi_h2a0e4a3_104.tar.bz2#709e87acdf50633bd823c4467a9b50a1
-https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.11.3-hd8ed1ab_1.tar.bz2#bd6b6ae37c03e68061574d5e32fe5bd1
+https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.11.4-hd8ed1ab_0.tar.bz2#9a1925fdb91c81437b8012e48ede6851
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
 https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_0.tar.bz2#2d307d13155817b5f5da36cc69358fe6
 https://conda.anaconda.org/conda-forge/noarch/joblib-1.1.0-pyhd8ed1ab_0.tar.bz2#07d1b5c8cde14d95998fd4767e1e62d2
@@ -354,7 +354,7 @@ https://conda.anaconda.org/conda-forge/win-64/ipykernel-6.13.0-py310hbbfc1a7_0.t
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-pandoc-6.5.0-pyhd8ed1ab_0.tar.bz2#d7421adfc67100021d87032447066129
 https://conda.anaconda.org/conda-forge/noarch/pyspark-3.2.1-pyhd8ed1ab_0.tar.bz2#99883d37054647870c3c68f7d0691027
 https://conda.anaconda.org/conda-forge/noarch/questionary-1.10.0-pyhd8ed1ab_1.tar.bz2#c48bf69327994b33a7036fa835b8989e
-https://conda.anaconda.org/conda-forge/noarch/commitizen-2.27.0-pyhd8ed1ab_0.tar.bz2#071d1ee91a05025f1a20d78a8c2a3a9e
+https://conda.anaconda.org/conda-forge/noarch/commitizen-2.27.1-pyhd8ed1ab_0.tar.bz2#a29af0f7e2773c6c60f9b65fc0194857
 https://conda.anaconda.org/conda-forge/win-64/fiona-1.8.21-py310he438f8f_0.tar.bz2#8a908aa296025245d9983ca1c32c33e4
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-6.5.0-pyhd8ed1ab_0.tar.bz2#156c180588e38b9f41758058824ec50f
 https://conda.anaconda.org/conda-forge/noarch/python-graphviz-0.20-pyhaef67bd_0.tar.bz2#1ad62524f66312181161a935485c277b

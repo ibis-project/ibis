@@ -207,7 +207,7 @@ https://conda.anaconda.org/conda-forge/osx-64/future-0.18.2-py39h6e9494a_5.tar.b
 https://conda.anaconda.org/conda-forge/osx-64/geotiff-1.7.1-had63758_1.tar.bz2#836ad7fae692b9e40c55514ffe9e44e7
 https://conda.anaconda.org/conda-forge/noarch/gitdb-4.0.9-pyhd8ed1ab_0.tar.bz2#40fc6b14a45dee3a3fd9f302d026108e
 https://conda.anaconda.org/conda-forge/osx-64/greenlet-1.1.2-py39hfd1d529_2.tar.bz2#18ffa500d722e7d42705f5c75c003b80
-https://conda.anaconda.org/conda-forge/osx-64/importlib-metadata-4.11.3-py39h6e9494a_1.tar.bz2#9795d43694c096de21d356d286e34320
+https://conda.anaconda.org/conda-forge/osx-64/importlib-metadata-4.11.4-py39h6e9494a_0.tar.bz2#adc0fa796414c4235c3ba372d2c93c26
 https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.7.1-pyhd8ed1ab_1.tar.bz2#56567286f9f9716bea44fe9301e1b34d
 https://conda.anaconda.org/conda-forge/osx-64/jedi-0.18.1-py39h6e9494a_1.tar.bz2#17fd05dd01cc6e30715af4a5703cf0ef
 https://conda.anaconda.org/conda-forge/osx-64/jupyter_core-4.10.0-py39h6e9494a_0.tar.bz2#a056bc8146dd6e6a71f46ed3e64bce64
@@ -251,7 +251,7 @@ https://conda.anaconda.org/conda-forge/osx-64/tiledb-2.8.3-hf17dc58_1.tar.bz2#06
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
 https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.10.2-pyha770c72_0.tar.bz2#482e5775f80665a7c9f76cd72a66eae8
 https://conda.anaconda.org/conda-forge/osx-64/tornado-6.1-py39h63b48b0_3.tar.bz2#82c1e73cdc3ae881ef28d56a3a58225c
-https://conda.anaconda.org/conda-forge/osx-64/typed-ast-1.5.3-py39h63b48b0_0.tar.bz2#728d03eb9b3f4a5d53b3ebaa5b144e76
+https://conda.anaconda.org/conda-forge/osx-64/typed-ast-1.5.4-py39h701faf5_0.tar.bz2#9acade6a70c88198b48eb567a2df05d3
 https://conda.anaconda.org/conda-forge/noarch/typing-extensions-4.2.0-hd8ed1ab_1.tar.bz2#6d9d7480c5780514779967be2ee8b963
 https://conda.anaconda.org/conda-forge/osx-64/unicodedata2-14.0.0-py39h63b48b0_1.tar.bz2#19c1ac41e067315d023bed42e214c8ea
 https://conda.anaconda.org/conda-forge/noarch/zict-2.2.0-pyhd8ed1ab_0.tar.bz2#cd563d01df94e51f968645dbf3b310b0
@@ -270,7 +270,7 @@ https://conda.anaconda.org/conda-forge/osx-64/fonttools-4.33.3-py39h701faf5_0.ta
 https://conda.anaconda.org/conda-forge/noarch/ghp-import-2.1.0-pyhd8ed1ab_0.tar.bz2#6d8d61116031a3f5b1f32e7899785866
 https://conda.anaconda.org/conda-forge/noarch/gitpython-3.1.27-pyhd8ed1ab_0.tar.bz2#20acbaab17a50ac9b64138eb9a0e1af8
 https://conda.anaconda.org/conda-forge/osx-64/harfbuzz-4.2.0-h48644e2_0.tar.bz2#3be0ff0aae5b2e76cff0ca47d3e852f0
-https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.11.3-hd8ed1ab_1.tar.bz2#bd6b6ae37c03e68061574d5e32fe5bd1
+https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.11.4-hd8ed1ab_0.tar.bz2#9a1925fdb91c81437b8012e48ede6851
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
 https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_0.tar.bz2#2d307d13155817b5f5da36cc69358fe6
 https://conda.anaconda.org/conda-forge/noarch/joblib-1.1.0-pyhd8ed1ab_0.tar.bz2#07d1b5c8cde14d95998fd4767e1e62d2
@@ -364,7 +364,7 @@ https://conda.anaconda.org/conda-forge/noarch/pyspark-3.2.1-pyhd8ed1ab_0.tar.bz2
 https://conda.anaconda.org/conda-forge/osx-64/python-duckdb-0.3.4-py39hb2228b3_0.tar.bz2#bfe798d2428965fed3aae3d4d7b743ac
 https://conda.anaconda.org/conda-forge/noarch/python-graphviz-0.20-pyhaef67bd_0.tar.bz2#1ad62524f66312181161a935485c277b
 https://conda.anaconda.org/conda-forge/noarch/questionary-1.10.0-pyhd8ed1ab_1.tar.bz2#c48bf69327994b33a7036fa835b8989e
-https://conda.anaconda.org/conda-forge/noarch/commitizen-2.27.0-pyhd8ed1ab_0.tar.bz2#071d1ee91a05025f1a20d78a8c2a3a9e
+https://conda.anaconda.org/conda-forge/noarch/commitizen-2.27.1-pyhd8ed1ab_0.tar.bz2#a29af0f7e2773c6c60f9b65fc0194857
 https://conda.anaconda.org/conda-forge/osx-64/duckdb-engine-0.1.8-py39h6e9494a_1.tar.bz2#66b65cced284b5de3b3c346f93a3d31d
 https://conda.anaconda.org/conda-forge/noarch/geopandas-0.10.2-pyhd8ed1ab_1.tar.bz2#0682614964c1319304cfa554cbce90f0
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-6.5.0-pyhd8ed1ab_0.tar.bz2#156c180588e38b9f41758058824ec50f
