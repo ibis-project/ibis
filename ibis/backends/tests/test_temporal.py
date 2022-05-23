@@ -467,15 +467,40 @@ def test_interval_add_cast_column(backend, alltypes, df):
 
 
 @pytest.mark.parametrize(
-    ('ibis_pattern', 'pandas_pattern'), [('%Y%m%d', '%Y%m%d')]
+    ('expr_fn', 'pandas_pattern'),
+    [
+        param(
+            lambda t: t.timestamp_col.strftime('%Y%m%d').name("formatted"),
+            '%Y%m%d',
+            id="literal_format_str",
+        ),
+        param(
+            lambda t: (
+                t.mutate(suffix="%d")
+                .select(
+                    [
+                        lambda t: t.timestamp_col.strftime(
+                            "%Y%m" + t.suffix
+                        ).name("formatted")
+                    ]
+                )
+                .formatted
+            ),
+            '%Y%m%d',
+            marks=[
+                pytest.mark.notimpl(["dask", "pandas", "postgres"]),
+                pytest.mark.notyet(["duckdb"]),
+            ],
+            id="column_format_str",
+        ),
+    ],
 )
-@pytest.mark.notimpl(["datafusion", "duckdb", "impala"])
-def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
-    expr = alltypes.timestamp_col.strftime(ibis_pattern)
-    expected = df.timestamp_col.dt.strftime(pandas_pattern)
+@pytest.mark.notimpl(["datafusion", "impala"])
+def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
+    expr = expr_fn(alltypes)
+    expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
 
     result = expr.execute()
-    expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
 
 
