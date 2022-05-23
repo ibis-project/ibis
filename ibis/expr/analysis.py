@@ -201,9 +201,7 @@ def find_immediate_parent_tables(expr):
 
 
 def substitute_parents(expr, lift_memo=None, past_projection=True):
-    rewriter = ExprSimplifier(
-        expr, lift_memo=lift_memo, block_projection=not past_projection
-    )
+    rewriter = ExprSimplifier(expr, block_projection=not past_projection)
     return rewriter.get_result()
 
 
@@ -216,10 +214,8 @@ class ExprSimplifier:
     semantic result)
     """
 
-    def __init__(self, expr, lift_memo=None, block_projection=False):
+    def __init__(self, expr, block_projection=False):
         self.expr = expr
-        self.lift_memo = lift_memo or {}
-
         self.block_projection = block_projection
 
     def get_result(self):
@@ -238,9 +234,7 @@ class ExprSimplifier:
                 return result
         # Temporary hacks around issues addressed in #109
         elif isinstance(node, ops.Selection):
-            return self._lift_Selection(expr, block=self.block_projection)
-        elif isinstance(node, ops.Aggregation):
-            return self._lift_Aggregation(expr, block=self.block_projection)
+            return expr
 
         unchanged = True
 
@@ -265,7 +259,7 @@ class ExprSimplifier:
 
         return result
 
-    def _lift_arg(self, arg, block=None):
+    def _lift_arg(self, arg, block):
         changed = 0
 
         def _lift(expr):
@@ -289,31 +283,19 @@ class ExprSimplifier:
 
         return result, not changed
 
-    def lift(self, expr, block=None):
-        op, _ = key = expr.op(), block
-
-        try:
-            return self.lift_memo[key]
-        except KeyError:
-            pass
+    def lift(self, expr, block):
+        op = expr.op()
 
         if isinstance(op, ops.Value):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Selection):
-            result = self._lift_Selection(expr, block=block)
-        elif isinstance(op, ops.Join):
-            result = self._lift_Join(expr, block=block)
+            return expr
         elif isinstance(op, (ops.TableNode, HasSchema)):
             return expr
         else:
             return self._sub(expr, block=block)
 
-        # If we get here, time to record the modified expression in our memo to
-        # avoid excessive graph-walking
-        self.lift_memo[key] = result
-        return result
-
-    def _lift_TableColumn(self, expr, block=None):
+    def _lift_TableColumn(self, expr, block):
         node = expr.op()
         root = node.table.op()
         result = expr
@@ -327,7 +309,7 @@ class ExprSimplifier:
                     and node.name in val.schema()
                 ):
                     can_lift = True
-                    lifted_root = self.lift(val)
+                    lifted_root = self.lift(val, block=False)
 
             if can_lift and not block:
                 lifted_node = ops.TableColumn(lifted_root, node.name)
@@ -335,105 +317,9 @@ class ExprSimplifier:
 
         return result
 
-    def _lift_Aggregation(self, expr, block=None):
-        if block is None:
-            block = self.block_projection
-
-        op = expr.op()
-        table = op.table
-
-        # as exposed in #544, do not lift the table inside (which may be
-        # filtered or otherwise altered in some way) if blocking
-
-        if block:
-            lifted_table = table
-        else:
-            lifted_table = self.lift(table, block=True)
-
-        unch = lifted_table is op.table
-
-        lifted_aggs, unch1 = self._lift_arg(op.metrics, block=True)
-        lifted_by, unch2 = self._lift_arg(op.by, block=True)
-        lifted_having, unch3 = self._lift_arg(op.having, block=True)
-
-        unchanged = unch and unch1 and unch2 and unch3
-
-        if not unchanged:
-            lifted_op = ops.Aggregation(
-                lifted_table, lifted_aggs, by=lifted_by, having=lifted_having
-            )
-            result = lifted_op.to_expr()
-        else:
-            result = expr
-
-        return result
-
-    def _lift_Selection(self, expr, block=None):
-        if block is None:
-            block = self.block_projection
-
-        op = expr.op()
-
-        if block and op.blocks():
-            # GH #549: dig no further
-            return expr
-        else:
-            lifted_table, unch = self._lift_arg(op.table, block=True)
-
-        lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
-        unchanged = unch and unch_sel
-
-        lifted_predicates, unch_sel = self._lift_arg(op.predicates, block=True)
-        unchanged = unch and unch_sel
-
-        lifted_sort_keys, unch_sel = self._lift_arg(op.sort_keys, block=True)
-        unchanged = unch and unch_sel
-
-        if not unchanged:
-            lifted_projection = ops.Selection(
-                lifted_table,
-                lifted_selections,
-                lifted_predicates,
-                lifted_sort_keys,
-            )
-            result = lifted_projection.to_expr()
-        else:
-            result = expr
-
-        return result
-
-    def _lift_Join(self, expr, block=None):
-        op = expr.op()
-
-        left_lifted = self.lift(op.left, block=block)
-        right_lifted = self.lift(op.right, block=block)
-
-        unchanged = left_lifted is op.left and right_lifted is op.right
-
-        # Fix predicates
-        lifted_preds = []
-        for x in op.predicates:
-            subbed = self._sub(x, block=True)
-            if subbed is not x:
-                unchanged = False
-            lifted_preds.append(subbed)
-
-        if not unchanged:
-            lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
-            result = ir.Table(lifted_join)
-        else:
-            result = expr
-
-        return result
-
-    def _sub(self, expr, block=None):
+    def _sub(self, expr, block):
         # catchall recursive rewriter
-        if block is None:
-            block = self.block_projection
-
-        helper = ExprSimplifier(
-            expr, lift_memo=self.lift_memo, block_projection=block
-        )
+        helper = ExprSimplifier(expr, block_projection=block)
         return helper.get_result()
 
 
