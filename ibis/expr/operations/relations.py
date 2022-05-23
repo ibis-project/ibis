@@ -46,21 +46,14 @@ class TableNode(Node):
             ),
         )
 
+    @util.deprecated(
+        version="4.0.0",
+        instead="Use ibis.expr.analysis.is_ancestor() instead",
+    )
     def is_ancestor(self, other):
-        import ibis.expr.lineage as lin
+        from ibis.expr.analysis import is_ancestor
 
-        if isinstance(other, ir.Expr):
-            other = other.op()
-
-        if self.equals(other):
-            return True
-
-        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
-        expr = self.to_expr()
-        for child in lin.traverse(fn, expr):
-            if child.equals(other):
-                return True
-        return False
+        return is_ancestor(self, other)
 
 
 @public

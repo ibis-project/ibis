@@ -743,7 +743,7 @@ class ExprValidator:
 
     def _among_roots(self, node):
         roots_shared = (
-            root.is_ancestor(node) or self.compatible_with(node, root)
+            is_ancestor(root, node) or self.compatible_with(node, root)
             for root in self.roots
         )
         return sum(roots_shared) > 0
@@ -942,6 +942,29 @@ def flatten_predicate(expr):
             return lin.halt, expr
 
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
+
+
+def is_ancestor(parent, child):
+    """
+    Check whether an operation is an ancestor node of another.
+
+    Parameters
+    ----------
+    parent : ops.Node
+    child : ops.Node
+
+    Returns
+    -------
+    check output : bool
+    """
+
+    def predicate(expr):
+        if expr.op() == child:
+            return lin.halt, True
+        else:
+            return lin.proceed, None
+
+    return any(lin.traverse(predicate, parent.to_expr()))
 
 
 def is_analytic(expr):
