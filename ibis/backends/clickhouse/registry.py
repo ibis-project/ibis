@@ -609,6 +609,11 @@ def _bit_agg(func):
     return compile
 
 
+def _array_column(t, expr):
+    args = ", ".join(map(t.translate, expr.op().cols))
+    return f"[{args}]"
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -762,6 +767,7 @@ operation_registry = {
     ops.Degrees: _unary("degrees"),
     ops.Radians: _unary("radians"),
     ops.Strftime: _fixed_arity("formatDateTime", 2),
+    ops.ArrayColumn: _array_column,
 }
 
 

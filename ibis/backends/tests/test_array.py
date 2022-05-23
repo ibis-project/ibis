@@ -10,16 +10,14 @@ import ibis.expr.types as ir
 pytestmark = pytest.mark.never(["sqlite", "mysql"], reason="No array support")
 
 
-@pytest.mark.notimpl(["impala", "clickhouse", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
 
     result = expr.execute()
     expected = df.apply(
-        lambda row: np.array(
-            [row['double_col'], row['double_col']], dtype=object
-        ),
+        lambda row: [row['double_col'], row['double_col']],
         axis=1,
     )
     backend.assert_series_equal(result, expected, check_names=False)
