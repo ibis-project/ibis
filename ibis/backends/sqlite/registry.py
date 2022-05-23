@@ -396,5 +396,7 @@ operation_registry.update(
         ops.BitOr: reduction(sa.func._ibis_sqlite_bit_or),
         ops.BitAnd: reduction(sa.func._ibis_sqlite_bit_and),
         ops.BitXor: reduction(sa.func._ibis_sqlite_bit_xor),
+        ops.Degrees: unary(sa.func._ibis_sqlite_degrees),
+        ops.Radians: unary(sa.func._ibis_sqlite_radians),
     }
 )
