@@ -488,7 +488,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
             ),
             '%Y%m%d',
             marks=[
-                pytest.mark.notimpl(["dask", "pandas", "postgres"]),
+                pytest.mark.notimpl(["dask", "pandas", "postgres", "pyspark"]),
                 pytest.mark.notyet(["duckdb"]),
             ],
             id="column_format_str",
