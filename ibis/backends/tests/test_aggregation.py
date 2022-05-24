@@ -344,29 +344,60 @@ def test_approx_median(alltypes):
     ('result_fn', 'expected_fn'),
     [
         param(
-            lambda t: (
-                t.groupby('bigint_col').aggregate(
-                    tmp=lambda t: t.string_col.group_concat(',')
-                )
-            ),
-            lambda t: (
+            lambda t, where: (
                 t.groupby('bigint_col')
-                .string_col.agg(lambda s: ','.join(s.values))
+                .aggregate(
+                    tmp=lambda t: t.string_col.group_concat(',', where=where)
+                )
+                .sort_by('bigint_col')
+            ),
+            lambda t, where: (
+                (
+                    t.assign(string_col=t.string_col.where(where))
+                    if not isinstance(where, slice)
+                    else t
+                )
+                .groupby('bigint_col')
+                .string_col.agg(
+                    lambda s: (
+                        np.nan if pd.isna(s).all() else ','.join(s.values)
+                    )
+                )
                 .rename('tmp')
+                .sort_index()
                 .reset_index()
             ),
             id='group_concat',
         )
     ],
 )
+@pytest.mark.parametrize(
+    ('ibis_cond', 'pandas_cond'),
+    [
+        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(
+            lambda t: t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.isin(['1', '7']),
+            marks=pytest.mark.notimpl(["dask", "pandas"]),
+            id='is_in',
+        ),
+    ],
+)
 @mark.notimpl(["datafusion"])
-def test_group_concat(alltypes, df, result_fn, expected_fn):
-    expr = result_fn(alltypes)
+def test_group_concat(
+    backend,
+    alltypes,
+    df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
+):
+    expr = result_fn(alltypes, ibis_cond(alltypes))
     result = expr.execute()
+    expected = expected_fn(df, pandas_cond(df))
 
-    expected = expected_fn(df)
-
-    assert set(result.iloc[:, 1]) == set(expected.iloc[:, 1])
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
