@@ -570,7 +570,7 @@ class SelectBuilder:
                 sort_keys = sop.sort_keys
                 table = sop.table
 
-            if len(selections) == 0:
+            if not selections:
                 # select *
                 selections = [table]
 
