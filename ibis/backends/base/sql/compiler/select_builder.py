@@ -96,24 +96,22 @@ class _CorrelatedRefCheck:
                     visit_table_cache=visit_table_cache,
                 )
 
-    def ref_check(self, node, in_subquery=False):
+    def ref_check(self, node, in_subquery: bool = False) -> None:
         ctx = self.ctx
-        is_aliased = ctx.has_ref(node)
 
-        if self.is_root(node):
-            if in_subquery:
-                self.has_query_root = True
-        else:
-            if in_subquery:
-                self.has_foreign_root = True
-                if not is_aliased and ctx.has_ref(node, parent_contexts=True):
-                    ctx.make_alias(node)
-            elif not ctx.has_ref(node):
-                ctx.make_alias(node)
+        is_root = self.is_root(node)
 
-    def is_root(self, what):
-        if isinstance(what, ir.Expr):
-            what = what.op()
+        self.has_query_root |= is_root and in_subquery
+        self.has_foreign_root |= not is_root and in_subquery
+
+        if (
+            not is_root
+            and not ctx.has_ref(node)
+            and (not in_subquery or ctx.has_ref(node, parent_contexts=True))
+        ):
+            ctx.make_alias(node)
+
+    def is_root(self, what: ops.TableNode) -> bool:
         return what in self.query_roots
 
 
