@@ -359,7 +359,7 @@ def test_approx_median(alltypes):
         )
     ],
 )
-@mark.notimpl(["datafusion", "duckdb"])
+@mark.notimpl(["datafusion"])
 def test_group_concat(alltypes, df, result_fn, expected_fn):
     expr = result_fn(alltypes)
     result = expr.execute()
