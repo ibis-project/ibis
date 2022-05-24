@@ -16,8 +16,8 @@ pytest.importorskip('geopandas')
 shapely = pytest.importorskip('shapely')
 
 # geo literals declaration
-point_0 = ibis.literal((0, 0), type='point').name('tmp')
-point_0_4326 = ibis.literal((0, 0), type='point;4326').name('tmp')
+point_0 = ibis.literal((0, 0), type='point').name('p')
+point_0_4326 = ibis.literal((0, 0), type='point;4326').name('p')
 
 point_geom_0 = ibis.literal((0, 0), type='point;4326:geometry').name('p')
 point_geom_1 = ibis.literal((1, 1), type='point;4326:geometry').name('p')
@@ -71,7 +71,7 @@ shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 )
 def test_literal_geospatial_explicit(con, expr, expected):
     result = str(con.compile(expr))
-    assert result == f"SELECT {expected} AS tmp"
+    assert result == f"SELECT {expected} AS p"
 
 
 @pytest.mark.parametrize(
