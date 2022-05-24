@@ -1268,16 +1268,14 @@ def bind_expr(table, expr):
     return table._ensure_expr(expr)
 
 
-# TODO: move to analysis
-def find_base_table(expr):
-    if isinstance(expr, Table):
-        return expr
+@util.deprecated(
+    version="4.0",
+    instead="Use ibis.expr.analysis.find_first_base_table() instead",
+)
+def find_base_table(expr):  # pragma: no cover
+    from ibis.expr.analysis import find_first_base_table
 
-    for arg in expr.op().flat_args():
-        if isinstance(arg, Expr):
-            r = find_base_table(arg)
-            if isinstance(r, Table):
-                return r
+    return find_first_base_table(expr)
 
 
 public(TableExpr=Table)
