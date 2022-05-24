@@ -157,8 +157,6 @@ class SelectBuilder:
         self.subqueries = []
         self.distinct = False
 
-        self.op_memo = set()
-
         # make idempotent
         if self.queries:
             return self._wrap_result()
@@ -489,10 +487,6 @@ class SelectBuilder:
         op = expr.op()
         method = f'_collect_{type(op).__name__}'
 
-        # Do not visit nodes twice
-        if op in self.op_memo:
-            return
-
         if hasattr(self, method):
             f = getattr(self, method)
             f(expr, toplevel=toplevel)
@@ -502,8 +496,6 @@ class SelectBuilder:
             self._collect_Join(expr, toplevel=toplevel)
         else:
             raise NotImplementedError(type(op))
-
-        self.op_memo.add(op)
 
     def _collect_Distinct(self, expr, toplevel=False):
         if toplevel:
