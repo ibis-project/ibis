@@ -219,7 +219,7 @@ https://conda.anaconda.org/conda-forge/linux-64/certifi-2022.5.18.1-py38h578d9bd
 https://conda.anaconda.org/conda-forge/linux-64/cffi-1.15.0-py38h3931269_0.tar.bz2#9c491a90ae11d08ca97326a0ed876f3a
 https://conda.anaconda.org/conda-forge/linux-64/click-8.1.3-py38h578d9bd_0.tar.bz2#a863b3d0df14d2d5335d917eef8523f6
 https://conda.anaconda.org/conda-forge/linux-64/clickhouse-cityhash-1.0.2.3-py38h709712a_3.tar.bz2#db6f3b6de7fb07dbb5c30958dbc22ca7
-https://conda.anaconda.org/conda-forge/linux-64/coverage-6.3.3-py38h0a891b7_0.tar.bz2#b9ccc9967a195761debaf558dc9da244
+https://conda.anaconda.org/conda-forge/linux-64/coverage-6.4-py38h0a891b7_0.tar.bz2#c35902f693cbf0ac3fbee814812e55b1
 https://conda.anaconda.org/conda-forge/linux-64/cytoolz-0.11.2-py38h0a891b7_2.tar.bz2#71f54bf65927270177d66e26664f11ea
 https://conda.anaconda.org/conda-forge/linux-64/debugpy-1.6.0-py38hfa26641_0.tar.bz2#b9569e59e1bd791e0ec7e4c36dd4eabe
 https://conda.anaconda.org/conda-forge/linux-64/future-0.18.2-py38h578d9bd_5.tar.bz2#8658059c99ca16e4f5fb322aa23eeac8
@@ -244,7 +244,7 @@ https://conda.anaconda.org/conda-forge/linux-64/mistune-0.8.4-py38h497a2fe_1005.
 https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.0.3-py38h43d8883_1.tar.bz2#1f693a697cb5bfd759fac1da3202dbc9
 https://conda.anaconda.org/conda-forge/noarch/multipledispatch-0.6.0-py_0.tar.bz2#1073dc92c8f247d94ac14dd79ca0bbec
 https://conda.anaconda.org/conda-forge/linux-64/mypy_extensions-0.4.3-py38h578d9bd_5.tar.bz2#60e384c65fde89976c030a810641e8ca
-https://conda.anaconda.org/conda-forge/linux-64/numpy-1.22.3-py38h99721a1_2.tar.bz2#e6ed43e96f813b184fe9bb677476e56d
+https://conda.anaconda.org/conda-forge/linux-64/numpy-1.22.4-py38h99721a1_0.tar.bz2#fc4f99d9d9296861d09d487c7c32069f
 https://conda.anaconda.org/conda-forge/noarch/packaging-21.3-pyhd8ed1ab_0.tar.bz2#71f1ab2de48613876becddd496371c85
 https://conda.anaconda.org/conda-forge/noarch/partd-1.2.0-pyhd8ed1ab_0.tar.bz2#0c32f563d7f22e3a34c95cad8cc95651
 https://conda.anaconda.org/conda-forge/noarch/pexpect-4.8.0-pyh9f0ad1d_2.tar.bz2#5909e7b978141dd80d28dbf9de627827
@@ -338,7 +338,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.7.0-pyhd8ed1ab_1.tar
 https://conda.anaconda.org/conda-forge/noarch/pytest-profiling-1.7.0-py_1.tar.bz2#4dc5c2917451a73cc7532fc893e2daea
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.12.0-pyhd8ed1ab_0.tar.bz2#c428aad352580a0d3264740a4dd5aeae
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
-https://conda.anaconda.org/conda-forge/noarch/rich-12.4.1-pyhd8ed1ab_1.tar.bz2#f82c36bb0020e928dbb02a9f3d75885f
+https://conda.anaconda.org/conda-forge/noarch/rich-12.4.3-pyhd8ed1ab_0.tar.bz2#3e9322a1f0707089a40c3218f60f2da6
 https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.1.1-py38hf80bbf7_0.tar.bz2#cf4d22e16908a4288f21c18ae28a8b23
 https://conda.anaconda.org/conda-forge/linux-64/tzlocal-4.2-py38h578d9bd_0.tar.bz2#3792a718d77e76d5350b6d91bcf79b77
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee

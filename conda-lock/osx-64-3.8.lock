@@ -60,7 +60,7 @@ https://conda.anaconda.org/conda-forge/osx-64/lz4-c-1.9.3-he49afe7_1.tar.bz2#05c
 https://conda.anaconda.org/conda-forge/osx-64/nspr-4.32-hcd9eead_1.tar.bz2#8d7d6d0d86b10bd80e2096058c240a45
 https://conda.anaconda.org/conda-forge/osx-64/openssl-1.1.1o-hfe4f2af_0.tar.bz2#655048e118f0b7029e5c216a1d7a6189
 https://conda.anaconda.org/conda-forge/osx-64/pcre-8.45-he49afe7_0.tar.bz2#0526850419e04ac003bc0b65a78dc4cc
-https://conda.anaconda.org/conda-forge/osx-64/re2-2022.02.01-he49afe7_0.tar.bz2#8ddf42c89da2925f4cc49ac6ce19eced
+https://conda.anaconda.org/conda-forge/osx-64/re2-2022.04.01-h96cf925_0.tar.bz2#65029ca8742d353a89f2380aec86c8e2
 https://conda.anaconda.org/conda-forge/osx-64/readline-8.1-h05e3726_0.tar.bz2#2832e9b6a7caa7cb192fcda6cfcd8871
 https://conda.anaconda.org/conda-forge/osx-64/snappy-1.1.9-h6e38e02_1.tar.bz2#ffa92d111ec90eec8ffc09220a9c5aba
 https://conda.anaconda.org/conda-forge/osx-64/tk-8.6.12-h5dbffcc_0.tar.bz2#8e9480d9c47061db2ed1b4ecce519a7f
@@ -77,7 +77,7 @@ https://conda.anaconda.org/conda-forge/osx-64/libgfortran-5.0.0-9_3_0_h6c81a4c_2
 https://conda.anaconda.org/conda-forge/osx-64/libglib-2.70.2-hf1fb8c0_4.tar.bz2#2d01e3a78efd30c56ec19e65c0ec7ce1
 https://conda.anaconda.org/conda-forge/osx-64/libnghttp2-1.47.0-h942079c_0.tar.bz2#86fc370e607a269b64ac6fa5d29e55e8
 https://conda.anaconda.org/conda-forge/osx-64/libpng-1.6.37-h7cec526_2.tar.bz2#9e52521faba2b53269672628d34e1513
-https://conda.anaconda.org/conda-forge/osx-64/libprotobuf-3.19.4-hcf210ce_0.tar.bz2#00feb1836b9b452beb42a9cc4e6c45f4
+https://conda.anaconda.org/conda-forge/osx-64/libprotobuf-3.20.1-h2292cb8_0.tar.bz2#271ea7275ec6b91180306dcc30cce6ae
 https://conda.anaconda.org/conda-forge/osx-64/librttopo-1.1.0-hec60dd8_9.tar.bz2#fa5ca24887925ba351d7dd008d5e4deb
 https://conda.anaconda.org/conda-forge/osx-64/libssh2-1.10.0-h52ee1ee_2.tar.bz2#8c8f3804e8e252b47443cfe8e40eddf9
 https://conda.anaconda.org/conda-forge/osx-64/libxml2-2.9.12-h7e28ab6_1.tar.bz2#2c7f67fde580b88748f9fab02f98b2ba
@@ -91,7 +91,7 @@ https://conda.anaconda.org/conda-forge/osx-64/blosc-1.21.1-h97e831e_3.tar.bz2#c7
 https://conda.anaconda.org/conda-forge/osx-64/boost-cpp-1.74.0-hdbf7018_7.tar.bz2#5d29a260489cdad68bee48121b24f9bc
 https://conda.anaconda.org/conda-forge/osx-64/brotli-1.0.9-h5eb16cf_7.tar.bz2#d3320319f06d6adb52ed01e1839475a1
 https://conda.anaconda.org/conda-forge/osx-64/freetype-2.10.4-h4cff582_1.tar.bz2#5a136a432c6062362cd7990c514bd8d6
-https://conda.anaconda.org/conda-forge/osx-64/grpc-cpp-1.43.2-ha04666b_3.tar.bz2#bb9a652a2fa3dc0c2c95d4e693eb2e31
+https://conda.anaconda.org/conda-forge/osx-64/grpc-cpp-1.45.2-hb472a99_3.tar.bz2#e28f70707ec6eee4cf5472d7ab9fd936
 https://conda.anaconda.org/conda-forge/osx-64/gts-0.7.6-hccb3bdf_2.tar.bz2#ad799f4bcdacc510347c2d9d19b40bc3
 https://conda.anaconda.org/conda-forge/osx-64/libcurl-7.83.1-h372c54d_0.tar.bz2#393526f4c307ded911957e3723e34bed
 https://conda.anaconda.org/conda-forge/osx-64/libopenblas-0.3.20-openmp_hb3cd9ec_0.tar.bz2#d862e4a5c6e7bf0bc9d66a38f5c73142
@@ -99,7 +99,7 @@ https://conda.anaconda.org/conda-forge/osx-64/libpq-14.2-hea3049e_0.tar.bz2#9255
 https://conda.anaconda.org/conda-forge/osx-64/libthrift-0.16.0-h9702cd6_1.tar.bz2#d5b6e66507bfaa85e35624ca745776af
 https://conda.anaconda.org/conda-forge/osx-64/libtiff-4.3.0-h17f2ce3_3.tar.bz2#8a2611163920a17b13a1325bb70d7293
 https://conda.anaconda.org/conda-forge/osx-64/nss-3.77-hfce436b_0.tar.bz2#a46093a99d96a15763030a61acbbcec2
-https://conda.anaconda.org/conda-forge/osx-64/orc-1.7.3-h84518c8_0.tar.bz2#b2282713ac147d6ee66c320636e9f509
+https://conda.anaconda.org/conda-forge/osx-64/orc-1.7.3-h5ac28ee_1.tar.bz2#ad263cee496ceb202e0e0d62db97766e
 https://conda.anaconda.org/conda-forge/osx-64/python-3.8.13-h394c593_0_cpython.tar.bz2#6d0c7bf13396e2f00e57cbd929f697f8
 https://conda.anaconda.org/conda-forge/noarch/absolufy-imports-0.3.1-pyhd8ed1ab_0.tar.bz2#6cfab7bc82c2a20549163c93c890e9d6
 https://conda.anaconda.org/conda-forge/noarch/appnope-0.1.3-pyhd8ed1ab_0.tar.bz2#54ac328d703bff191256ffa1183126d1
@@ -133,7 +133,7 @@ https://conda.anaconda.org/conda-forge/noarch/idna-3.3-pyhd8ed1ab_0.tar.bz2#40b5
 https://conda.anaconda.org/conda-forge/noarch/iniconfig-1.1.1-pyh9f0ad1d_0.tar.bz2#39161f81cc5e5ca45b8226fbb06c6905
 https://conda.anaconda.org/conda-forge/osx-64/lcms2-2.12-h577c468_0.tar.bz2#abce77b852b73670e85e104746b0ea1b
 https://conda.anaconda.org/conda-forge/osx-64/libblas-3.9.0-14_osx64_openblas.tar.bz2#7440571e6f75b795ebc25a71429ca99d
-https://conda.anaconda.org/conda-forge/osx-64/libgoogle-cloud-1.36.0-h52a585b_0.tar.bz2#89f74f77d557e9ff38222be38cc6ff39
+https://conda.anaconda.org/conda-forge/osx-64/libgoogle-cloud-1.40.2-hc6327d4_0.tar.bz2#4133860f4419672ae96ada35b000634a
 https://conda.anaconda.org/conda-forge/osx-64/libkml-1.3.0-h8fd9edb_1014.tar.bz2#10d981c033091fd139cb9914a495cc30
 https://conda.anaconda.org/conda-forge/osx-64/libwebp-1.2.2-h28dabe5_0.tar.bz2#6aa31e81854e3172dae89300ae9a5444
 https://conda.anaconda.org/conda-forge/noarch/locket-1.0.0-pyhd8ed1ab_0.tar.bz2#91e27ef3d05cc772ce627e51cff111c4
@@ -201,7 +201,7 @@ https://conda.anaconda.org/conda-forge/osx-64/certifi-2022.5.18.1-py38h50d1736_0
 https://conda.anaconda.org/conda-forge/osx-64/cffi-1.15.0-py38h1a44b6c_0.tar.bz2#3ec046bfb079a655aeba431cc7371ab7
 https://conda.anaconda.org/conda-forge/osx-64/click-8.1.3-py38h50d1736_0.tar.bz2#b889134c7ab7be0bd69cd879db0b9134
 https://conda.anaconda.org/conda-forge/osx-64/clickhouse-cityhash-1.0.2.3-py38ha048514_3.tar.bz2#f0efdfe3da23020b2773305298f0f520
-https://conda.anaconda.org/conda-forge/osx-64/coverage-6.3.3-py38h0dd4459_0.tar.bz2#4a7f5f05321d98ee052f5edf10e77401
+https://conda.anaconda.org/conda-forge/osx-64/coverage-6.4-py38h0dd4459_0.tar.bz2#63de7429474e791f4769cb45682bf013
 https://conda.anaconda.org/conda-forge/osx-64/cytoolz-0.11.2-py38hed1de0f_2.tar.bz2#4dd3e2dc63662ab5f118a8f7356b8cb4
 https://conda.anaconda.org/conda-forge/osx-64/debugpy-1.6.0-py38h038c8f4_0.tar.bz2#718db7214f81f126bfe23d7e11787814
 https://conda.anaconda.org/conda-forge/osx-64/future-0.18.2-py38h50d1736_5.tar.bz2#acaea98a0d9f14580661dc67e713335b
@@ -280,7 +280,7 @@ https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.7-pyhd8ed1ab_0.tar.bz
 https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.3.0-pyhd8ed1ab_0.tar.bz2#adf9129f76ca651869acf2219fac2050
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/osx-64/mypy-0.950-py38h0dd4459_0.tar.bz2#519a2717e710c9fca843dc218ccd2fa6
-https://conda.anaconda.org/conda-forge/osx-64/numpy-1.22.3-py38h7eae8df_2.tar.bz2#b26274f4d974327002cde2ff1ff26e55
+https://conda.anaconda.org/conda-forge/osx-64/numpy-1.22.4-py38h3ad0702_0.tar.bz2#030b73b79d13b93e97443d4adcf53245
 https://conda.anaconda.org/conda-forge/osx-64/poppler-22.04.0-h39497b0_0.tar.bz2#2102213d5660beee390d98f9ff873d0c
 https://conda.anaconda.org/conda-forge/noarch/pyaml-21.10.1-pyhd8ed1ab_0.tar.bz2#dd38ba892254ba8f8594c34be6198d27
 https://conda.anaconda.org/conda-forge/osx-64/pydantic-1.9.1-py38h0dd4459_0.tar.bz2#0f58790f6bb9b7d3667417db470e1450
@@ -295,7 +295,7 @@ https://conda.anaconda.org/conda-forge/noarch/stack_data-0.2.0-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/noarch/thrift_sasl-0.4.3-pyhd8ed1ab_1.tar.bz2#6b4de64c72e1128f3290a1a06a03190d
 https://conda.anaconda.org/conda-forge/osx-64/watchdog-2.1.8-py38hc6f74f6_1.tar.bz2#26e67784c04e37e9f62014de390d72bb
 https://conda.anaconda.org/conda-forge/noarch/argcomplete-1.12.3-pyhd8ed1ab_2.tar.bz2#b8152341fc3fc9880c6e1b9d188974e5
-https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-8.0.0-py38h137a19c_1_cpu.tar.bz2#a6dcfcb00da6e146bd1fa51eb5583f37
+https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-8.0.0-py38h2548bce_1_cpu.tar.bz2#39a34ab5b2d9b4abb2ca8c9d7346bfcf
 https://conda.anaconda.org/conda-forge/osx-64/bokeh-2.4.3-py38h50d1736_0.tar.bz2#01ce5e90c5b1a177ebbe9308cbbeb470
 https://conda.anaconda.org/conda-forge/noarch/branca-0.5.0-pyhd8ed1ab_0.tar.bz2#d96c4ccb1e66b1c1f507dd12c226749a
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea49d7c1392265e007a8b2f8de0713b
@@ -318,7 +318,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.7.0-pyhd8ed1ab_1.tar
 https://conda.anaconda.org/conda-forge/noarch/pytest-profiling-1.7.0-py_1.tar.bz2#4dc5c2917451a73cc7532fc893e2daea
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.12.0-pyhd8ed1ab_0.tar.bz2#c428aad352580a0d3264740a4dd5aeae
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
-https://conda.anaconda.org/conda-forge/noarch/rich-12.4.1-pyhd8ed1ab_1.tar.bz2#f82c36bb0020e928dbb02a9f3d75885f
+https://conda.anaconda.org/conda-forge/noarch/rich-12.4.3-pyhd8ed1ab_0.tar.bz2#3e9322a1f0707089a40c3218f60f2da6
 https://conda.anaconda.org/conda-forge/osx-64/scipy-1.8.1-py38h2c99f22_0.tar.bz2#c1e780ea5e73a319a6d3f500995c27e3
 https://conda.anaconda.org/conda-forge/osx-64/shapely-1.8.1-py38hf131974_0.tar.bz2#9c2f587ee0e6275f62823a977d5a9803
 https://conda.anaconda.org/conda-forge/osx-64/tzlocal-4.2-py38h50d1736_0.tar.bz2#b17d139a8ab962d9daa627e0f9e45732
@@ -353,7 +353,7 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-macros-plugin-0.7.0-pyhd8ed
 https://conda.anaconda.org/conda-forge/noarch/mkdocstrings-0.17.0-pyhd8ed1ab_0.tar.bz2#6a7c23446f94a291871604978fd292e6
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-core-6.5.0-pyhd8ed1ab_0.tar.bz2#42f74c4b38a099025167e76a7437edf1
 https://conda.anaconda.org/conda-forge/noarch/prompt_toolkit-3.0.29-hd8ed1ab_0.tar.bz2#dd7205c7635ba7a44acf4f7d2b50b74d
-https://conda.anaconda.org/conda-forge/osx-64/pyarrow-8.0.0-py38h83ad6b9_1_cpu.tar.bz2#902bb33da1db0dca5012e6da71fbdade
+https://conda.anaconda.org/conda-forge/osx-64/pyarrow-8.0.0-py38h6b8f029_1_cpu.tar.bz2#3b9a54733a44122567eb8efd63c9997c
 https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2#7c1c427246b057b8fa97200ecdb2ed62
 https://conda.anaconda.org/conda-forge/noarch/dask-2022.5.0-pyhd8ed1ab_0.tar.bz2#4631f8090bca5eb85dbe2bb9919db226
 https://conda.anaconda.org/conda-forge/osx-64/datafusion-0.4.0-py38h74accb0_2.tar.bz2#8400a288e0106ad9f9207d08177f1be2
