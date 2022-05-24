@@ -556,9 +556,8 @@ class Column(Value):
         roots = self.op().root_tables()
         if len(roots) > 1:
             raise com.RelationError(
-                'Cannot convert array expression '
-                'involving multiple base table references '
-                'to a projection'
+                'Cannot convert array expression involving multiple base '
+                'table references to a projection'
             )
 
         table = Table(roots[0])

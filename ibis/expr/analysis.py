@@ -851,6 +851,7 @@ class FilterValidator(ExprValidator):
         return is_valid
 
 
+@util.deprecated(version="4.0", instead="")
 def find_source_table(expr):
     """Find the first table expression observed for each argument that the
     expression depends on
