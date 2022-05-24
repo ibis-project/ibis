@@ -486,7 +486,11 @@ def compile_group_concat(t, expr, scope, timecontext, context=None, **kwargs):
     sep = expr.op().sep.op().value
 
     def fn(col):
-        return F.concat_ws(sep, F.collect_list(col))
+        collected = F.collect_list(col)
+        return F.array_join(
+            F.when(F.size(collected) == 0, F.lit(None)).otherwise(collected),
+            sep,
+        )
 
     return compile_aggregator(
         t, expr, scope, timecontext, fn=fn, context=context
