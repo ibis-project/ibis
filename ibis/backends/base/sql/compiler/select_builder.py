@@ -579,7 +579,13 @@ class SelectBuilder:
             self.table_set = table
             self.filters = filters
 
-    def _collect_MaterializedJoin(self, expr, toplevel=False):
+    @util.deprecated(
+        version="3.0.0",
+        instead="do nothing; MaterializedJoin is removed",
+    )
+    def _collect_MaterializedJoin(
+        self, expr, toplevel=False
+    ):  # pragma: no cover
         op = expr.op()
         join = op.join
 
