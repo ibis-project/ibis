@@ -235,13 +235,9 @@ class SelectBuilder:
                 table_expr = op.table[[op.name]]
                 result_handler = _get_column(op.name)
             else:
-                # Something more complicated.
-                base_table = L.find_source_table(expr)
-
                 if not expr.has_name():
                     expr = expr.name('tmp')
-
-                table_expr = base_table.projection([expr])
+                table_expr = expr.to_projection()
                 result_handler = _get_column(expr.get_name())
 
             return table_expr, result_handler
