@@ -42,7 +42,6 @@ jobs:
         run: mamba install 'conda-lock <1.0'
 
       - name: generate lock file
-        continue-on-error: ${{ matrix.python-version == '3.10' }}
         run: |
           set -euo pipefail
 
@@ -86,11 +85,9 @@ jobs:
             --mamba
 
       - name: create conda environment
-        continue-on-error: ${{ matrix.python-version == '3.10' }}
         run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
 
       - name: upload conda lock files
-        continue-on-error: ${{ matrix.python-version == '3.10' }}
         uses: actions/upload-artifact@v3
         with:
           name: conda-lock-files-${{ github.run_attempt }}
