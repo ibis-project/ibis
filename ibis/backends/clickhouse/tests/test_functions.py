@@ -557,16 +557,20 @@ def test_count_distinct_with_filter(alltypes):
 @pytest.mark.parametrize(
     ('sep', 'where_case', 'expected'),
     [
-        (',', None, "arrayStringConcat(groupArray(`string_col`), ',')"),
-        ('-', None, "arrayStringConcat(groupArray(`string_col`), '-')"),
+        (
+            ',',
+            None,
+            "CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), ',') END",  # noqa: E501
+        ),
+        (
+            '-',
+            None,
+            "CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), '-') END",  # noqa: E501
+        ),
         pytest.param(
             ',',
             0,
-            (
-                "arrayStringConcat(groupArray("
-                "CASE WHEN `bool_col` = 0 THEN "
-                "`string_col` ELSE Null END), ',')"
-            ),
+            "CASE WHEN empty(groupArrayIf(`string_col`, `bool_col` = 0)) THEN NULL ELSE arrayStringConcat(groupArrayIf(`string_col`, `bool_col` = 0), ',') END",  # noqa: E501
         ),
     ],
 )
