@@ -852,7 +852,7 @@ class FilterValidator(ExprValidator):
 
 
 @util.deprecated(version="4.0", instead="")
-def find_source_table(expr):
+def find_source_table(expr):  # pragma: no cover
     """Find the first table expression observed for each argument that the
     expression depends on
 
