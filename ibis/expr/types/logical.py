@@ -90,14 +90,16 @@ class BooleanScalar(NumericScalar, BooleanValue):
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
     def any(self) -> BooleanValue:
+        import ibis.expr.analysis as L
         from ibis.expr import operations as ops
 
-        return ops.Any(self).to_expr()
+        return L._make_any(self, ops.Any)
 
     def notany(self) -> BooleanValue:
+        import ibis.expr.analysis as L
         from ibis.expr import operations as ops
 
-        return ops.NotAny(self).to_expr()
+        return L._make_any(self, ops.NotAny)
 
     def all(self) -> BooleanScalar:
         from ibis.expr import operations as ops

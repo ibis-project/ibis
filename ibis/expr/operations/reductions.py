@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from ibis.common.validators import immutable_property
@@ -5,12 +7,11 @@ from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
 from ibis.expr.operations.core import Value, distinct_roots
+from ibis.expr.operations.generic import _Negatable
 
 
 @public
 class Reduction(Value):
-    _reduction = True
-
     output_shape = rlz.Shape.SCALAR
 
 
@@ -250,3 +251,23 @@ class ArrayCollect(Reduction):
     @immutable_property
     def output_dtype(self):
         return dt.Array(self.arg.type())
+
+
+@public
+class Any(Reduction, _Negatable):
+    arg = rlz.column(rlz.boolean)
+
+    output_dtype = dt.boolean
+
+    def negate(self) -> NotAny:
+        return NotAny(*self.args)
+
+
+@public
+class NotAny(Reduction, _Negatable):
+    arg = rlz.column(rlz.boolean)
+
+    output_dtype = dt.boolean
+
+    def negate(self) -> Any:
+        return Any(*self.args)

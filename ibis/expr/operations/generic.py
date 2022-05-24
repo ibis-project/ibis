@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import datetime
 import decimal
 import enum
@@ -477,3 +478,9 @@ class SearchedCase(Value):
     def output_dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
+
+
+class _Negatable(abc.ABC):
+    @abc.abstractmethod
+    def negate(self):  # pragma: no cover
+        ...

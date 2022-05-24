@@ -1252,9 +1252,8 @@ def _resolve_predicates(
     for pred in predicates:
         if isinstance(pred, ir.TopK):
             top_ks.append(pred._semi_join_components())
-        elif isinstance(pred.op(), ops.logical._AnyBase):
-            transform = an._AnyToExistsTransform(pred, table)
-            resolved_predicates.append(transform.get_result())
+        elif isinstance(pred_op := pred.op(), ops.logical._UnresolvedSubquery):
+            resolved_predicates.append(pred_op._resolve(table))
         else:
             resolved_predicates.append(pred)
 

@@ -4,6 +4,7 @@ import re
 
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -584,8 +585,8 @@ def test_filter_aggregate_pushdown_predicate(table):
 @pytest.mark.parametrize(
     "case_fn",
     [
-        pytest.param(lambda t: t.f.sum(), id="non_boolean"),
-        pytest.param(lambda t: t.f > 2, id="non_scalar"),
+        param(lambda t: t.f.sum(), id="non_boolean"),
+        param(lambda t: t.f > 2, id="non_scalar"),
     ],
 )
 def test_aggregate_post_predicate(table, case_fn):
@@ -1145,21 +1146,71 @@ def t2():
     return ibis.table([('key1', 'string'), ('key2', 'string')], 'bar')
 
 
-def test_simple_existence_predicate(t1, t2):
-    cond = (t1.key1 == t2.key1).any()
+@pytest.mark.parametrize(
+    ("func", "expected_type"),
+    [
+        param(
+            lambda t1, t2: (t1.key1 == t2.key1).any(),
+            ops.UnresolvedExistsSubquery,
+            id="exists",
+        ),
+        param(
+            lambda t1, t2: -(t1.key1 == t2.key1).any(),
+            ops.UnresolvedNotExistsSubquery,
+            id="not_exists",
+        ),
+        param(
+            lambda t1, t2: -(-(t1.key1 == t2.key1).any()),
+            ops.UnresolvedExistsSubquery,
+            id="not_not_exists",
+        ),
+    ],
+)
+def test_unresolved_existence_predicate(t1, t2, func, expected_type):
+    expr = func(t1, t2)
+    assert isinstance(expr, ir.BooleanColumn)
 
-    assert isinstance(cond, ir.BooleanColumn)
-    op = cond.op()
-    assert isinstance(op, ops.Any)
-
-    # it works!
-    expr = t1[cond]
-    assert isinstance(expr.op(), ops.Selection)
+    op = expr.op()
+    assert isinstance(op, expected_type)
 
 
-def test_not_exists_predicate(t1, t2):
-    cond = -((t1.key1 == t2.key1).any())
-    assert isinstance(cond.op(), ops.NotAny)
+@pytest.mark.parametrize(
+    ("func", "expected_type", "expected_negated_type"),
+    [
+        param(
+            lambda t1, t2: t1[(t1.key1 == t2.key1).any()],
+            ops.ExistsSubquery,
+            ops.NotExistsSubquery,
+            id="exists",
+        ),
+        param(
+            lambda t1, t2: t1[-(t1.key1 == t2.key1).any()],
+            ops.NotExistsSubquery,
+            ops.ExistsSubquery,
+            id="not_exists",
+        ),
+        param(
+            lambda t1, t2: t1[-(-(t1.key1 == t2.key1).any())],
+            ops.ExistsSubquery,
+            ops.NotExistsSubquery,
+            id="not_not_exists",
+        ),
+    ],
+)
+def test_resolve_existence_predicate(
+    t1,
+    t2,
+    func,
+    expected_type,
+    expected_negated_type,
+):
+    expr = func(t1, t2)
+    op = expr.op()
+    assert isinstance(op, ops.Selection)
+
+    pred = op.predicates[0]
+    assert isinstance(pred.op(), expected_type)
+    assert isinstance((-pred).op(), expected_negated_type)
 
 
 def test_aggregate_metrics(table):

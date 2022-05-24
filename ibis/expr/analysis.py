@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools
 import operator
-from typing import AbstractSet, MutableSequence
 
 import toolz
 
@@ -575,7 +574,7 @@ def windowize_function(expr, w=None):
                 walked = x
 
         op = walked.op()
-        if isinstance(op, ops.Analytic) or getattr(op, '_reduction', False):
+        if isinstance(op, (ops.Analytic, ops.Reduction)):
             if w is None:
                 w = window()
             return walked.over(w)
@@ -984,9 +983,7 @@ def is_ancestor(parent, child):
 
 def is_analytic(expr):
     def predicate(expr):
-        if isinstance(
-            expr.op(), (ops.Reduction, ops.Analytic, ops.logical._AnyBase)
-        ):
+        if isinstance(expr.op(), (ops.Reduction, ops.Analytic)):
             return lin.halt, True
         else:
             return lin.proceed, None
@@ -1024,7 +1021,7 @@ def is_reduction(expr):
     """
 
     def predicate(expr):
-        if getattr(expr.op(), '_reduction', False):
+        if isinstance(expr.op(), ops.Reduction):
             return lin.halt, True
         elif isinstance(expr.op(), ops.TableNode):
             # don't go below any table nodes
@@ -1039,75 +1036,39 @@ def is_scalar_reduction(expr):
     return isinstance(expr, ir.Scalar) and is_reduction(expr)
 
 
-class _AnyToExistsTransform:
-    __slots__ = (
-        "expr",
-        "parent_table",
-        "query_roots",
-        "foreign_table",
-        "predicates",
-    )
+_ANY_OP_MAPPING = {
+    ops.Any: ops.UnresolvedExistsSubquery,
+    ops.NotAny: ops.UnresolvedNotExistsSubquery,
+}
 
-    def __init__(self, expr: ir.Expr, parent_table: ir.Table) -> None:
-        self.expr = expr
-        self.parent_table = parent_table
-        self.query_roots: AbstractSet[ops.TableNode] = frozenset(
-            self.parent_table.op().root_tables()
+
+def find_predicates(expr, flatten=True):
+    def predicate(expr):
+        if isinstance(expr, ir.BooleanColumn):
+            if flatten and isinstance(expr.op(), ops.And):
+                return lin.proceed, None
+            else:
+                return lin.halt, expr
+        return lin.proceed, None
+
+    return list(lin.traverse(predicate, expr))
+
+
+def _make_any(
+    expr,
+    any_op_class: type[ops.Any] | type[ops.NotAny],
+):
+    tables = list(find_immediate_parent_tables(expr))
+    predicates = find_predicates(expr, flatten=True)
+
+    if len(tables) > 1:
+        op = _ANY_OP_MAPPING[any_op_class](
+            tables=tables,
+            predicates=predicates,
         )
-        self.foreign_table: ir.Table | None = None
-        self.predicates: MutableSequence[ir.BooleanValue] = []
-
-    def get_result(self) -> ir.BooleanColumn:
-        self._visit(self.expr)
-
-        op = self.expr.op()
-
-        if isinstance(op, ops.Any):
-            op_class = ops.ExistsSubquery
-        else:
-            assert isinstance(op, ops.NotAny)
-            op_class = ops.NotExistsSubquery
-
-        return op_class(self.foreign_table, self.predicates).to_expr()
-
-    def _visit(self, expr: ir.Expr) -> None:
-        node = expr.op()
-
-        for arg in node.flat_args():
-            if isinstance(arg, ir.Table):
-                self._visit_table(arg)
-            elif isinstance(arg, ir.BooleanColumn):
-                for sub_expr in flatten_predicate(arg):
-                    self.predicates.append(sub_expr)
-                    self._visit(sub_expr)
-            elif isinstance(arg, ir.Expr):
-                self._visit(arg)
-
-    def _find_blocking_table(self, expr: ir.Expr) -> ir.Expr:
-        node = expr.op()
-
-        if node.blocks():
-            return expr
-
-        return next(
-            (
-                result
-                for arg in node.flat_args()
-                if (
-                    isinstance(arg, ir.Expr)
-                    and (result := self._find_blocking_table(arg)) is not None
-                )
-            ),
-            None,
-        )
-
-    def _visit_table(self, expr: ir.Expr) -> None:
-        if (
-            isinstance(expr, ir.Table)
-            and (base_table := self._find_blocking_table(expr)) is not None
-            and base_table.op() not in self.query_roots
-        ):
-            self.foreign_table = expr
+    else:
+        op = any_op_class(expr)
+    return op.to_expr()
 
 
 @functools.singledispatch
