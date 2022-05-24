@@ -1,7 +1,6 @@
 from datetime import date, datetime
 from io import StringIO
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -571,12 +570,21 @@ def _string_ilike(translator, expr):
 
 
 def _group_concat(translator, expr):
-    arg, sep, where = expr.op().args
-    if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
-    return 'arrayStringConcat(groupArray({}), {})'.format(
-        *map(translator.translate, (arg, sep))
-    )
+    op = expr.op()
+
+    arg = translator.translate(op.arg)
+    sep = translator.translate(op.sep)
+
+    translated_args = [arg]
+    func = "groupArray"
+
+    if (where := op.where) is not None:
+        func += "If"
+        translated_args.append(translator.translate(where))
+
+    call = f"{func}({', '.join(translated_args)})"
+    expr = f"arrayStringConcat({call}, {sep})"
+    return f"CASE WHEN empty({call}) THEN NULL ELSE {expr} END"
 
 
 def _string_right(translator, expr):
