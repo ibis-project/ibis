@@ -177,7 +177,7 @@ https://conda.anaconda.org/conda-forge/noarch/cached-property-1.5.2-hd8ed1ab_1.t
 https://conda.anaconda.org/conda-forge/win-64/certifi-2022.5.18.1-py39hcbf5309_0.tar.bz2#9a38f2a69017d1c03fdab3584f1b9623
 https://conda.anaconda.org/conda-forge/win-64/cffi-1.15.0-py39h0878f49_0.tar.bz2#9b02bf41ccb19167aa4bb51a7b2b6a9f
 https://conda.anaconda.org/conda-forge/win-64/click-8.1.3-py39hcbf5309_0.tar.bz2#da76bc626dfbeb0bebbbce385d003d64
-https://conda.anaconda.org/conda-forge/win-64/coverage-6.3.3-py39hb82d6ee_0.tar.bz2#309e26f04820e95c64d3c110f5bc787e
+https://conda.anaconda.org/conda-forge/win-64/coverage-6.4-py39hb82d6ee_0.tar.bz2#a0330ab62c20c628b618e754a4a8b73f
 https://conda.anaconda.org/conda-forge/win-64/cytoolz-0.11.2-py39hb82d6ee_2.tar.bz2#8982a8578e967571f3fcde768585b6e5
 https://conda.anaconda.org/conda-forge/win-64/debugpy-1.6.0-py39h415ef7b_0.tar.bz2#ead76d5e675b5bf8e6fd390080942505
 https://conda.anaconda.org/conda-forge/win-64/freetype-2.10.4-h546665d_1.tar.bz2#1215a2e49d23da91c28d97cff8de35ea
@@ -262,7 +262,7 @@ https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.7-pyhd8ed1ab_0.tar.bz
 https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.3.0-pyhd8ed1ab_0.tar.bz2#adf9129f76ca651869acf2219fac2050
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/win-64/mypy-0.950-py39hb82d6ee_0.tar.bz2#9a7a4aa253cbe7c600afd464ad1f54c7
-https://conda.anaconda.org/conda-forge/win-64/numpy-1.22.3-py39h0948cea_2.tar.bz2#e59bc53d448d2f757e8711e96f3ea60b
+https://conda.anaconda.org/conda-forge/win-64/numpy-1.22.4-py39h0948cea_0.tar.bz2#a3d0bb2b75ee4f923ff520d25cecbe7f
 https://conda.anaconda.org/conda-forge/win-64/pillow-9.1.1-py39ha53f419_0.tar.bz2#5a9a0f2c76636fddc29549349aeb342d
 https://conda.anaconda.org/conda-forge/win-64/proj-9.0.0-h1cfcee9_1.tar.bz2#b5d08d4a1f3e32deb6201b7a904b5ff4
 https://conda.anaconda.org/conda-forge/noarch/pyaml-21.10.1-pyhd8ed1ab_0.tar.bz2#dd38ba892254ba8f8594c34be6198d27
@@ -305,7 +305,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.7.0-pyhd8ed1ab_1.tar
 https://conda.anaconda.org/conda-forge/noarch/pytest-profiling-1.7.0-py_1.tar.bz2#4dc5c2917451a73cc7532fc893e2daea
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.12.0-pyhd8ed1ab_0.tar.bz2#c428aad352580a0d3264740a4dd5aeae
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
-https://conda.anaconda.org/conda-forge/noarch/rich-12.4.1-pyhd8ed1ab_1.tar.bz2#f82c36bb0020e928dbb02a9f3d75885f
+https://conda.anaconda.org/conda-forge/noarch/rich-12.4.3-pyhd8ed1ab_0.tar.bz2#3e9322a1f0707089a40c3218f60f2da6
 https://conda.anaconda.org/conda-forge/win-64/scipy-1.8.1-py39hc0c34ad_0.tar.bz2#f2ba88df16c5b1514a328d4a37fb0aae
 https://conda.anaconda.org/conda-forge/win-64/shapely-1.8.2-py39hf063a39_1.tar.bz2#df98223e7ee31996ddf34b3481b12cfe
 https://conda.anaconda.org/conda-forge/win-64/tiledb-2.8.3-h5689973_1.tar.bz2#c8cba9b4d95f054caf5453bf8169429a
