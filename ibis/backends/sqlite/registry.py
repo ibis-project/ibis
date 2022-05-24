@@ -20,6 +20,7 @@ from ibis.backends.base.sql.alchemy import (
     varargs,
     variance_reduction,
 )
+from ibis.backends.base.sql.alchemy.registry import _gen_string_find
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -76,21 +77,6 @@ def _cast(t, expr):
     return sqlite_cast(t, op.arg, op.to)
 
 
-def _substr(t, expr):
-    f = sa.func.substr
-
-    arg, start, length = expr.op().args
-
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
-
-    if length is None:
-        return f(sa_arg, sa_start + 1)
-    else:
-        sa_length = t.translate(length)
-        return f(sa_arg, sa_start + 1, sa_length)
-
-
 def _string_right(t, expr):
     f = sa.func.substr
 
@@ -100,19 +86,6 @@ def _string_right(t, expr):
     sa_length = t.translate(length)
 
     return f(sa_arg, -sa_length, sa_length)
-
-
-def _string_find(t, expr):
-    arg, substr, start, _ = expr.op().args
-
-    if start is not None:
-        raise NotImplementedError
-
-    sa_arg = t.translate(arg)
-    sa_substr = t.translate(substr)
-
-    f = sa.func.instr
-    return f(sa_arg, sa_substr) - 1
 
 
 def _strftime(t, expr):
@@ -179,17 +152,6 @@ def _millisecond(t, expr):
     sa_arg = t.translate(arg)
     fractional_second = sa.func.strftime('%f', sa_arg)
     return (fractional_second * 1000) % 1000
-
-
-def _identical_to(t, expr):
-    left, right = args = expr.op().args
-    if left.equals(right):
-        return True
-    else:
-        left, right = map(t.translate, args)
-        return sa.func.coalesce(
-            (left.is_(None) & right.is_(None)) | (left == right), False
-        )
 
 
 def _log(t, expr):
@@ -330,9 +292,8 @@ operation_registry.update(
     {
         ops.Cast: _cast,
         ops.DateFromYMD: _date_from_ymd,
-        ops.Substring: _substr,
         ops.StrRight: _string_right,
-        ops.StringFind: _string_find,
+        ops.StringFind: _gen_string_find(sa.func.instr),
         ops.StringJoin: _string_join,
         ops.StringConcat: _string_concat,
         ops.Least: varargs(sa.func.min),
@@ -357,7 +318,6 @@ operation_registry.update(
         ops.ExtractSecond: _strftime_int('%S'),
         ops.ExtractMillisecond: _millisecond,
         ops.TimestampNow: fixed_arity(lambda: sa.func.datetime("now"), 0),
-        ops.IdenticalTo: _identical_to,
         ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
         ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
         ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),
