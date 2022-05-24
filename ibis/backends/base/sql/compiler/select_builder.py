@@ -40,7 +40,7 @@ class _CorrelatedRefCheck:
 
         visit_cache.add(key)
 
-        in_subquery = in_subquery or self.is_subquery(node)
+        in_subquery |= self.is_subquery(node)
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Table):
@@ -59,21 +59,17 @@ class _CorrelatedRefCheck:
                 )
 
     def is_subquery(self, node):
-        # XXX
-        if isinstance(
+        return isinstance(
             node,
             (
                 ops.TableArrayView,
                 ops.ExistsSubquery,
                 ops.NotExistsSubquery,
             ),
-        ):
-            return True
-
-        if isinstance(node, ops.TableColumn):
-            return not self.is_root(node.table)
-
-        return False
+        ) or (
+            isinstance(node, ops.TableColumn)
+            and not self.is_root(node.table.op())
+        )
 
     def visit_table(
         self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None
