@@ -115,6 +115,20 @@ class _CorrelatedRefCheck:
         return what in self.query_roots
 
 
+def _get_scalar(field):
+    def scalar_handler(results):
+        return results[field][0]
+
+    return scalar_handler
+
+
+def _get_column(name):
+    def column_handler(results):
+        return results[name]
+
+    return column_handler
+
+
 class SelectBuilder:
 
     """
@@ -184,44 +198,21 @@ class SelectBuilder:
         if isinstance(expr, ir.Table):
             return expr, toolz.identity
 
-        def _get_scalar(field):
-            def scalar_handler(results):
-                return results[field][0]
-
-            return scalar_handler
-
         if isinstance(expr, ir.Scalar):
+            if not expr.has_name():
+                expr = expr.name('tmp')
+
             if L.is_scalar_reduction(expr):
-                if not expr.has_name():
-                    expr = expr.name('tmp')
                 table_expr = L.reduction_to_aggregation(expr)
                 return table_expr, _get_scalar(expr.get_name())
             else:
-                base_table = ir.relations.find_base_table(expr)
-                if base_table is None:
-                    # exprs with no table refs
-                    # TODO(phillipc): remove ScalarParameter hack
-                    if isinstance(expr.op(), ops.ScalarParameter):
-                        name = expr.get_name()
-                        assert (
-                            name is not None
-                        ), f'scalar parameter {expr} has no name'
-                        return expr, _get_scalar(name)
-                    return expr.name('tmp'), _get_scalar('tmp')
-
-                raise NotImplementedError(repr(expr))
+                return expr, _get_scalar(expr.get_name())
 
         elif isinstance(expr, ir.Analytic):
             return expr.to_aggregation(), toolz.identity
 
         elif isinstance(expr, ir.Column):
             op = expr.op()
-
-            def _get_column(name):
-                def column_handler(results):
-                    return results[name]
-
-                return column_handler
 
             if isinstance(op, ops.TableColumn):
                 table_expr = op.table[[op.name]]

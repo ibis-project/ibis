@@ -11,12 +11,12 @@ import numpy as np
 import pandas as pd
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Node, Unary, Value, distinct_roots
 from ibis.util import deprecated, frozendict
 
@@ -82,6 +82,7 @@ class RowID(Value):
         return True
 
 
+# TODO(kszucs): deprecate then remove
 @public
 def find_all_base_tables(expr, memo=None):
     if memo is None:
@@ -418,13 +419,7 @@ class SummaryFilter(Value):
 class TopK(Node):
     arg = rlz.column(rlz.any)
     k = rlz.non_negative_integer
-    by = rlz.one_of(
-        (
-            rlz.function_of("arg", preprocess=ir.relations.find_base_table),
-            rlz.any,
-        )
-    )
-
+    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
     output_type = ir.TopK
 
     def blocks(self):  # pragma: no cover

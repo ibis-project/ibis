@@ -2,8 +2,6 @@ import enum
 import functools
 from itertools import product, starmap
 
-from toolz import identity
-
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -69,6 +67,7 @@ def comparable(left, right):
 # Input type validators / coercion functions
 
 
+# TODO(kszucs): deprecate then remove
 @validator
 def member_of(obj, arg, **kwargs):
     if isinstance(arg, ir.EnumValue):
@@ -384,12 +383,23 @@ def column_from(name, column, *, this):
 
 
 @validator
+def base_table_of(name, *, this):
+    from ibis.expr.analysis import find_first_base_table
+
+    arg = this[name]
+    base = find_first_base_table(arg)
+    if base is None:
+        raise com.IbisTypeError(f"`{arg}` doesn't have a base table")
+    else:
+        return base
+
+
+@validator
 def function_of(
-    argument,
+    arg,
     fn,
     *,
     output_rule=any,
-    preprocess=identity,
     this,
 ):
     if not util.is_function(fn):
@@ -397,7 +407,12 @@ def function_of(
             'argument `fn` must be a function, lambda or deferred operation'
         )
 
-    return output_rule(fn(preprocess(this[argument])), this=this)
+    if isinstance(arg, str):
+        arg = this[arg]
+    elif callable(arg):
+        arg = arg(this=this)
+
+    return output_rule(fn(arg), this=this)
 
 
 @validator
@@ -491,6 +506,7 @@ def analytic(arg, **kwargs):
 
 @validator
 def window(win, *, from_base_table_of, this):
+    from ibis.expr.analysis import find_first_base_table
     from ibis.expr.window import Window
 
     if not isinstance(win, Window):
@@ -498,7 +514,8 @@ def window(win, *, from_base_table_of, this):
             "`win` argument should be of type `ibis.expr.window.Window`; "
             f"got type {type(win).__name__}"
         )
-    table = ir.relations.find_base_table(this[from_base_table_of])
+
+    table = find_first_base_table(this[from_base_table_of])
     if table is not None:
         win = win.bind(table)
 

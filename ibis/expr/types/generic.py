@@ -756,9 +756,9 @@ class Column(Value):
         Table
             Frequency table expression
         """
-        from ibis.expr.types.relations import find_base_table
+        from ibis.expr.analysis import find_first_base_table
 
-        base = find_base_table(self)
+        base = find_first_base_table(self)
         metric = base.count().name(metric_name)
 
         if not self.has_name():

@@ -780,6 +780,20 @@ class ExprValidator:
         )
 
 
+def find_first_base_table(expr):
+    def predicate(expr):
+        op = expr.op()
+        if isinstance(op, ops.TableNode):
+            return lin.halt, expr
+        else:
+            return lin.proceed, None
+
+    try:
+        return next(lin.traverse(predicate, expr))
+    except StopIteration:
+        return None
+
+
 def fully_originate_from(exprs, parents):
     def finder(expr):
         op = expr.op()

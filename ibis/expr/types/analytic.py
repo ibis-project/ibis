@@ -3,7 +3,6 @@ from __future__ import annotations
 from public import public
 
 import ibis.common.exceptions as com
-import ibis.expr.types as ir
 from ibis.expr.types.core import Expr
 from ibis.util import deprecated
 
@@ -70,16 +69,18 @@ class TopK(Analytic):
         """
         Convert the TopK operation to a table aggregation
         """
+        from ibis.expr.analysis import find_first_base_table
+
         op = self.op()
 
-        arg_table = ir.relations.find_base_table(op.arg)
+        arg_table = find_first_base_table(op.arg)
 
         by = op.by
-        if not isinstance(by, Expr):
+        if isinstance(by, Expr):
+            by_table = find_first_base_table(op.by)
+        else:
             by = by(arg_table)
             by_table = arg_table
-        else:
-            by_table = ir.relations.find_base_table(op.by)
 
         if metric_name is None:
             if by.get_name() == op.arg.get_name():
