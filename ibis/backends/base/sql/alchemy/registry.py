@@ -3,7 +3,6 @@ import operator
 from typing import Any, Dict
 
 import sqlalchemy as sa
-import sqlalchemy.sql as sql
 
 import ibis
 import ibis.common.exceptions as com
@@ -166,15 +165,27 @@ def _exists_subquery(t, expr):
 
 
 def _cast(t, expr):
-    op = expr.op()
-    arg, target_type = op.args
-    sa_arg = t.translate(arg)
-    sa_type = t.get_sqla_type(target_type)
+    arg, typ = expr.op().args
 
-    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
+    sa_arg = t.translate(arg)
+    sa_type = t.get_sqla_type(typ)
+
+    if isinstance(arg, ir.CategoryValue) and typ == dt.int32:
         return sa_arg
-    else:
-        return sa.cast(sa_arg, sa_type)
+
+    # specialize going from an integer type to a timestamp
+    if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
+        return sa.func.timezone('UTC', sa.func.to_timestamp(sa_arg))
+
+    if arg.type().equals(dt.binary) and typ.equals(dt.string):
+        return sa.func.encode(sa_arg, 'escape')
+
+    if typ.equals(dt.binary):
+        #  decode yields a column of memoryview which is annoying to deal with
+        # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
+        return sa.cast(sa_arg, sa.LargeBinary())
+
+    return sa.cast(sa_arg, sa_type)
 
 
 def _contains(func):
@@ -218,7 +229,7 @@ def _alias(t, expr):
     return t.translate(op.arg)
 
 
-def _literal(t, expr):
+def _literal(_, expr):
     dtype = expr.type()
     value = expr.op().value
 
@@ -427,7 +438,7 @@ def _lead(t, expr):
 def _ntile(t, expr):
     op = expr.op()
     args = op.args
-    arg, buckets = map(t.translate, args)
+    _, buckets = map(t.translate, args)
     return sa.func.ntile(buckets)
 
 
@@ -460,10 +471,41 @@ def _zero_if_null(t, expr):
     )
 
 
+def _substring(t, expr):
+    op = expr.op()
+
+    args = t.translate(op.arg), t.translate(op.start) + 1
+
+    if (length := op.length) is not None:
+        args += (t.translate(length),)
+
+    return sa.func.substr(*args)
+
+
+def _gen_string_find(func):
+    def string_find(t, expr):
+        op = expr.op()
+
+        if op.start is not None:
+            raise NotImplementedError("`start` not yet implemented")
+
+        if op.end is not None:
+            raise NotImplementedError("`end` not yet implemented")
+
+        return func(t.translate(op.arg), t.translate(op.substr)) - 1
+
+    return string_find
+
+
+def _nth_value(t, expr):
+    op = expr.op()
+    return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
-    ops.And: fixed_arity(sql.and_, 2),
-    ops.Or: fixed_arity(sql.or_, 2),
+    ops.And: fixed_arity(operator.and_, 2),
+    ops.Or: fixed_arity(operator.or_, 2),
     ops.Xor: fixed_arity(lambda x, y: (x | y) & ~(x & y), 2),
     ops.Not: unary(sa.not_),
     ops.Abs: unary(sa.func.abs),
@@ -515,6 +557,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Lowercase: unary(sa.func.lower),
     ops.Uppercase: unary(sa.func.upper),
     ops.StringAscii: unary(sa.func.ascii),
+    ops.StringFind: _gen_string_find(sa.func.strpos),
     ops.StringLength: unary(sa.func.length),
     ops.StringJoin: _string_join,
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
@@ -523,6 +566,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.StartsWith: _startswith,
     ops.EndsWith: _endswith,
     ops.StringConcat: varargs(sa.func.concat),
+    ops.Substring: _substring,
     # math
     ops.Ln: unary(sa.func.ln),
     ops.Exp: unary(sa.func.exp),
@@ -553,34 +597,26 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),
     ops.ZeroIfNull: _zero_if_null,
-}
-
-# TODO: unit tests for each of these
-_binary_ops = {
+    ops.RandomScalar: fixed_arity(sa.func.random, 0),
     # Binary arithmetic
-    ops.Add: operator.add,
-    ops.Subtract: operator.sub,
-    ops.Multiply: operator.mul,
+    ops.Add: fixed_arity(operator.add, 2),
+    ops.Subtract: fixed_arity(operator.sub, 2),
+    ops.Multiply: fixed_arity(operator.mul, 2),
     # XXX `ops.Divide` is overwritten in `translator.py` with a custom
     # function `_true_divide`, but for some reason both are required
-    ops.Divide: operator.truediv,
-    ops.Modulus: operator.mod,
+    ops.Divide: fixed_arity(operator.truediv, 2),
+    ops.Modulus: fixed_arity(operator.mod, 2),
     # Comparisons
-    ops.Equals: operator.eq,
-    ops.NotEquals: operator.ne,
-    ops.Less: operator.lt,
-    ops.LessEqual: operator.le,
-    ops.Greater: operator.gt,
-    ops.GreaterEqual: operator.ge,
-    ops.IdenticalTo: lambda x, y: x.op('IS NOT DISTINCT FROM')(y),
-    # Boolean comparisons
-    # TODO
+    ops.Equals: fixed_arity(operator.eq, 2),
+    ops.NotEquals: fixed_arity(operator.ne, 2),
+    ops.Less: fixed_arity(operator.lt, 2),
+    ops.LessEqual: fixed_arity(operator.le, 2),
+    ops.Greater: fixed_arity(operator.gt, 2),
+    ops.GreaterEqual: fixed_arity(operator.ge, 2),
+    ops.IdenticalTo: fixed_arity(
+        sa.sql.expression.ColumnElement.is_not_distinct_from, 2
+    ),
 }
-
-
-def _nth_value(t, expr):
-    op = expr.op()
-    return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
 
 
 sqlalchemy_window_functions_registry = {
@@ -666,7 +702,3 @@ if geospatial_supported:
     }
 else:
     _geospatial_functions = {}
-
-
-for _k, _v in _binary_ops.items():
-    sqlalchemy_operation_registry[_k] = fixed_arity(_v, 2)
