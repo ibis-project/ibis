@@ -7,6 +7,7 @@ from toolz import identity
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
@@ -418,3 +419,14 @@ def test_optional(validator, input):
     else:
         assert rlz.optional(validator)(input) == expected
     assert rlz.optional(validator)(None) is None
+
+
+def test_base_table_of_failure_mode():
+    class BrokenUseOfBaseTableOf(ops.Node):
+        arg = rlz.any
+        foo = rlz.function_of(rlz.base_table_of("arg"))
+
+    arg = ibis.literal("abc")
+
+    with pytest.raises(IbisTypeError, match="doesn't have a base table"):
+        BrokenUseOfBaseTableOf(arg, identity)
