@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import abc
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 from public import public
 
-from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Binary, Unary, Value
+from ibis.expr.operations.generic import _Negatable
 
 
 @public
@@ -164,37 +168,96 @@ class Where(Value):
     output_shape = rlz.shape_like("bool_expr")
 
 
-class _AnyBase(Value):
-    # Depending on the kind of input boolean array, the result might either be
-    # array-like (an existence-type predicate) or scalar (a reduction)
-    arg = rlz.column(rlz.boolean)
+@public
+class ExistsSubquery(Value, _Negatable):
+    foreign_table = rlz.table
+    predicates = rlz.tuple_of(rlz.boolean)
 
     output_dtype = dt.boolean
+    output_shape = rlz.Shape.COLUMNAR
 
-    @property
-    def _reduction(self):
-        roots = self.arg.op().root_tables()
-        return len(roots) < 2
+    def negate(self) -> NotExistsSubquery:
+        return NotExistsSubquery(*self.args)
 
-    @immutable_property
-    def output_shape(self):
-        if self._reduction:
-            return rlz.Shape.SCALAR
-        else:
-            return rlz.Shape.COLUMNAR
+
+@public
+class NotExistsSubquery(Value, _Negatable):
+    foreign_table = rlz.table
+    predicates = rlz.tuple_of(rlz.boolean)
+
+    output_dtype = dt.boolean
+    output_shape = rlz.Shape.COLUMNAR
+
+    def negate(self) -> ExistsSubquery:
+        return ExistsSubquery(*self.args)
+
+
+class _UnresolvedSubquery(Value, _Negatable):
+    """An exists subquery whose outer leaf table is unknown.
+
+    Notes
+    -----
+    Consider the following ibis expressions
+
+    >>> t = ibis.table(dict(a="string"))
+    >>> s = ibis.table(dict(a="string"))
+    >>> cond = (t.a == s.a).any()
+
+    Without knowing the table to use as the outer query there are two ways to
+    turn this expression into a SQL `EXISTS` predicate depending on which of
+    `t` or `s` is filtered on.
+
+    Filtering from `t`:
+
+    ```sql
+    SELECT *
+    FROM t
+    WHERE EXISTS (SELECT 1 WHERE t.a = s.a)
+    ```
+
+    Filtering from `s`:
+
+    ```sql
+    SELECT *
+    FROM s
+    WHERE EXISTS (SELECT 1 WHERE t.a = s.a)
+    ```
+
+    Notably the subquery `(SELECT 1 WHERE t.a = s.a)` cannot stand on its own.
+
+    The purpose of `_UnresolvedSubquery` is to capture enough information about
+    an exists predicate such that it can be resolved when predicates are
+    resolved against the outer leaf table when `Selection`s are constructed.
+    """
+
+    tables = rlz.tuple_of(rlz.table)
+    predicates = rlz.tuple_of(rlz.boolean)
+
+    output_dtype = dt.boolean
+    output_shape = rlz.Shape.COLUMNAR
 
     @abc.abstractmethod
-    def negate(self):  # pragma: no cover
+    def _resolve(
+        self, table: ir.Table
+    ) -> type[ExistsSubquery] | type[NotExistsSubquery]:  # pragma: no cover
         ...
 
 
 @public
-class Any(_AnyBase):
-    def negate(self):
-        return NotAny(self.arg)
+class UnresolvedExistsSubquery(_UnresolvedSubquery):
+    def negate(self) -> UnresolvedNotExistsSubquery:
+        return UnresolvedNotExistsSubquery(*self.args)
+
+    def _resolve(self, table: ir.Table) -> ExistsSubquery:
+        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+        return ExistsSubquery(foreign_table, self.predicates).to_expr()
 
 
 @public
-class NotAny(_AnyBase):
-    def negate(self):
-        return Any(self.arg)
+class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
+    def negate(self) -> UnresolvedExistsSubquery:
+        return UnresolvedExistsSubquery(*self.args)
+
+    def _resolve(self, table: ir.Table) -> NotExistsSubquery:
+        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+        return NotExistsSubquery(foreign_table, self.predicates).to_expr()

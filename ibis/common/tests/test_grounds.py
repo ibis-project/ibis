@@ -256,7 +256,7 @@ def test_multiple_inheritance():
         arg = InstanceOf(object)
 
     class Reduction(Value):
-        _reduction = True
+        pass
 
     class UDF(Value):
         func = ValidatorFunction(lambda fn, this: fn)
@@ -280,7 +280,6 @@ def test_multiple_inheritance():
     strlen = UDAF(arg=2, func=lambda value: len(str(value)), arity=1)
     assert strlen.arg == 2
     assert strlen.arity == 1
-    assert strlen._reduction is True
 
 
 @pytest.mark.parametrize(
@@ -302,12 +301,11 @@ def test_multiple_inheritance_argument_order():
         version = IsInt
 
     class Reduction(Annotable):
-        _reduction = True
+        pass
 
     class Sum(VersionedOp, Reduction):
         where = Optional(IsBool, default=False)
 
-    assert Sum._reduction is True
     assert str(Sum.__signature__) == "(arg, version, where=None)"
 
 

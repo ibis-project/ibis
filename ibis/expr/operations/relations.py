@@ -8,11 +8,11 @@ from public import public
 
 from ibis import util
 from ibis.common import exceptions as com
-from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import schema as sch
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Node, Value, distinct_roots
+from ibis.expr.operations.core import Node, distinct_roots
+from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
@@ -749,24 +749,6 @@ class Distinct(TableNode, sch.HasSchema):
 
 
 @public
-class ExistsSubquery(Value):
-    foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
-
-    output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
-
-
-@public
-class NotExistsSubquery(Value):
-    foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
-
-    output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
-
-
-@public
 class FillNa(TableNode, sch.HasSchema):
     """Fill null values in the table."""
 
@@ -865,3 +847,6 @@ def _dedup_join_columns(
         for column in right.columns
     ]
     return expr.projection(left_projections + right_projections)
+
+
+public(ExistsSubquery=ExistsSubquery, NotExistsSubquery=NotExistsSubquery)
