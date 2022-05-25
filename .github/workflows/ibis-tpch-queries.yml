@@ -22,10 +22,11 @@ jobs:
 
       - name: install python
         uses: actions/setup-python@v3
+        id: install_python
         with:
           python-version: "3.10"
 
-      - run: python -m pip install --upgrade pip click sqlparse
+      - run: python -m pip install --upgrade pip click sqlparse coverage
 
       - name: install ibis
         run: python -m pip install ".[duckdb]"
@@ -43,4 +44,16 @@ jobs:
 
       - name: run tpc-h queries
         working-directory: tpc-queries
-        run: ./runtpc -i ibis -i duckdb -d 'tpch.ddb' -b 'duckdb'
+        run: coverage run --rcfile=../.coveragerc ./runtpc -i ibis -i duckdb -d 'tpch.ddb' -b 'duckdb'
+
+      - name: generate coverage report
+        working-directory: tpc-queries
+        run: coverage xml --rcfile=../.coveragerc -o ./junit.xml
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./tpc-queries/junit.xml
+          fail_ci_if_error: true
+          flags: tpc,tpch,duckdb,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
