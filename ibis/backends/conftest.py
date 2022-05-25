@@ -352,6 +352,11 @@ def alltypes(backend):
 
 
 @pytest.fixture(scope='session')
+def struct(backend):
+    return backend.struct
+
+
+@pytest.fixture(scope='session')
 def sorted_alltypes(backend, alltypes):
     return alltypes.sort_by('id')
 
@@ -379,6 +384,11 @@ def analytic_alltypes(alltypes):
 @pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def struct_df(struct):
+    return struct.execute()
 
 
 @pytest.fixture(scope='session')
