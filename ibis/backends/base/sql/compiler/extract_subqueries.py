@@ -1,15 +1,15 @@
-from collections import OrderedDict
+from collections import Counter
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 
 class ExtractSubqueries:
-    def __init__(self, query, greedy=False):
+    __slots__ = "query", "counts"
+
+    def __init__(self, query):
         self.query = query
-        self.greedy = greedy
-        self.expr_counts = OrderedDict()
-        self.node_to_expr = {}
+        self.counts = Counter()
 
     @classmethod
     def extract(cls, select_stmt):
@@ -17,37 +17,24 @@ class ExtractSubqueries:
         return helper.get_result()
 
     def get_result(self):
-        if self.query.table_set is not None:
-            self.visit(self.query.table_set)
+        query = self.query
+        if query.table_set is not None:
+            self.visit(query.table_set)
 
-        for clause in self.query.filters:
+        for clause in query.filters:
             self.visit(clause)
 
-        expr_counts = self.expr_counts
-
-        if self.greedy:
-            to_extract = list(expr_counts.keys())
-        else:
-            to_extract = [op for op, count in expr_counts.items() if count > 1]
-
-        node_to_expr = self.node_to_expr
-        return [node_to_expr[op] for op in to_extract]
+        return [op.to_expr() for op, count in self.counts.items() if count > 1]
 
     def observe(self, expr):
-        key = expr.op()
+        self.counts[expr.op()] += 1
 
-        if key not in self.node_to_expr:
-            self.node_to_expr[key] = expr
-
-        assert self.node_to_expr[key].equals(expr)
-        self.expr_counts[key] = self.expr_counts.setdefault(key, 0) + 1
-
-    def seen(self, expr):
-        return expr.op() in self.expr_counts
+    def seen(self, expr) -> bool:
+        return bool(self.counts[expr.op()])
 
     def visit(self, expr):
         node = expr.op()
-        method = f'visit_{type(node).__name__}'
+        method = f"visit_{type(node).__name__}"
 
         if hasattr(self, method):
             f = getattr(self, method)
