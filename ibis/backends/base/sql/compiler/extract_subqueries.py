@@ -40,6 +40,11 @@ class ExtractSubqueries:
             self.visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
             self.visit_physical_table(expr)
+        elif isinstance(node, ops.TableNode):
+            for arg in node.flat_args():
+                if isinstance(arg, ir.Table):
+                    self.visit(arg)
+            self.observe(expr)
         elif isinstance(node, ops.Value):
             for arg in node.flat_args():
                 if not isinstance(arg, ir.Expr):
@@ -64,33 +69,7 @@ class ExtractSubqueries:
 
     visit_NotExistsSubquery = visit_ExistsSubquery = visit_Exists
 
-    def visit_Aggregation(self, expr):
-        self.visit(expr.op().table)
-        self.observe(expr)
-
     def visit_Distinct(self, expr):
-        self.observe(expr)
-
-    def visit_Limit(self, expr):
-        self.visit(expr.op().table)
-        self.observe(expr)
-
-    def visit_Union(self, expr):
-        op = expr.op()
-        self.visit(op.left)
-        self.visit(op.right)
-        self.observe(expr)
-
-    def visit_Intersection(self, expr):
-        op = expr.op()
-        self.visit(op.left)
-        self.visit(op.right)
-        self.observe(expr)
-
-    def visit_Difference(self, expr):
-        op = expr.op()
-        self.visit(op.left)
-        self.visit(op.right)
         self.observe(expr)
 
     def visit_Selection(self, expr):
@@ -98,14 +77,6 @@ class ExtractSubqueries:
         self.observe(expr)
 
     def visit_SQLQueryResult(self, expr):
-        self.observe(expr)
-
-    def visit_View(self, expr):
-        self.visit(expr.op().child)
-        self.observe(expr)
-
-    def visit_SQLStringView(self, expr):
-        self.visit(expr.op().child)
         self.observe(expr)
 
     def visit_TableColumn(self, expr):
