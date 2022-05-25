@@ -139,6 +139,10 @@ class BackendTest(abc.ABC):
         return None
 
     @property
+    def struct(self) -> Optional[ir.Table]:
+        return self.connection.table("struct")
+
+    @property
     def api(self):
         return self.connection
 
