@@ -29,9 +29,6 @@ class ExtractSubqueries:
     def observe(self, expr):
         self.counts[expr.op()] += 1
 
-    def seen(self, expr) -> bool:
-        return bool(self.counts[expr.op()])
-
     def visit(self, expr):
         node = expr.op()
 
@@ -113,7 +110,7 @@ class ExtractSubqueries:
 
     def visit_TableColumn(self, expr):
         table = expr.op().table
-        if not self.seen(table):
+        if not self.counts[table.op()]:
             self.visit(table)
 
     def visit_SelfReference(self, expr):
