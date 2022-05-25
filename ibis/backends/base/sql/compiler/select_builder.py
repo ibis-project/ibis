@@ -16,10 +16,6 @@ class _CorrelatedRefCheck:
         self.ctx = query.context
         self.expr = expr
         self.query_roots = frozenset(self.query.table_set.op().root_tables())
-
-        # aliasing required
-        self.foreign_refs = []
-
         self.has_foreign_root = False
         self.has_query_root = False
 
@@ -488,24 +484,14 @@ class SelectBuilder:
         table = op.table
 
         if toplevel:
-            subbed = self._sub(expr)
-            sop = subbed.op()
-
             if isinstance(table.op(), ops.Join):
-                can_sub = self._collect_Join(table)
+                self._collect_Join(table)
             else:
-                can_sub = False
                 self._collect(table)
 
             selections = op.selections
             sort_keys = op.sort_keys
             filters = op.predicates
-
-            if can_sub:
-                selections = sop.selections
-                filters = sop.predicates
-                sort_keys = sop.sort_keys
-                table = sop.table
 
             if not selections:
                 # select *
@@ -515,23 +501,6 @@ class SelectBuilder:
             self.select_set = selections
             self.table_set = table
             self.filters = filters
-
-    @util.deprecated(
-        version="3.0.0",
-        instead="do nothing; MaterializedJoin is removed",
-    )
-    def _collect_MaterializedJoin(
-        self, expr, toplevel=False
-    ):  # pragma: no cover
-        op = expr.op()
-        join = op.join
-
-        if toplevel:
-            subbed = self._sub(join)
-            self.table_set = subbed
-            self.select_set = [subbed]
-
-        self._collect_Join(join, toplevel=False)
 
     def _convert_group_by(self, exprs):
         return list(range(len(exprs)))
@@ -545,7 +514,7 @@ class SelectBuilder:
     def _collect_PhysicalTable(self, expr, toplevel=False):
         if toplevel:
             self.select_set = [expr]
-            self.table_set = expr  # self._sub(expr)
+            self.table_set = expr
 
     def _collect_SelfReference(self, expr, toplevel=False):
         op = expr.op()
