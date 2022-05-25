@@ -34,11 +34,11 @@ class ExtractSubqueries:
 
     def visit(self, expr):
         node = expr.op()
-        method = f"visit_{type(node).__name__}"
 
-        if hasattr(self, method):
-            f = getattr(self, method)
-            f(expr)
+        if (
+            method := getattr(self, f"visit_{type(node).__name__}", None)
+        ) is not None:
+            method(expr)
         elif isinstance(node, ops.Join):
             self.visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
