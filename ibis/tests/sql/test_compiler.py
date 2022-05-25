@@ -243,6 +243,7 @@ WHERE t2.`a` = (
   FROM t1
   WHERE t1.`a` < 100
 )"""
+
     assert result == expected
 
 

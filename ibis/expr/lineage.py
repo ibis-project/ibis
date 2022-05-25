@@ -156,15 +156,10 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
     """
     args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
     todo = container(arg for arg in args if isinstance(arg, type))
-    seen = set()
 
     while todo:
         expr = todo.get()
         op = expr.op()
-        if op in seen:
-            continue
-        else:
-            seen.add(op)
 
         control, result = fn(expr)
         if result is not None:

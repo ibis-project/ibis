@@ -5,8 +5,8 @@ import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.compiler.extract_subqueries import (
-    ExtractSubqueries,
+from ibis.backends.base.sql.compiler.base import (
+    _extract_common_table_expressions,
 )
 
 
@@ -548,7 +548,10 @@ class SelectBuilder:
         # want.
 
         # Find the subqueries, and record them in the passed query context.
-        subqueries = ExtractSubqueries.extract(self)
+        subqueries = _extract_common_table_expressions(
+            [self.table_set, *self.filters]
+        )
+
         self.subqueries = []
         for expr in subqueries:
             # See #173. Might have been extracted already in a parent context.
