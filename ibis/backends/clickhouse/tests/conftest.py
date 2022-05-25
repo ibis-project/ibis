@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis.backends.conftest import TEST_TABLES, read_tables
 from ibis.backends.tests.base import (
     BackendTest,
     RoundHalfToEven,
@@ -26,6 +27,49 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
     bool_is_int = True
+
+    @staticmethod
+    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+        """Load testdata into a clikhouse backend.
+
+        Parameters
+        ----------
+        data_dir : Path
+            Location of testdata
+        script_dir : Path
+            Location of scripts defining schemas
+        """
+        import clickhouse_driver
+
+        host = kwargs.get("host", CLICKHOUSE_HOST)
+        port = kwargs.get("port", CLICKHOUSE_PORT)
+        user = kwargs.get("user", CLICKHOUSE_USER)
+        password = kwargs.get("password", CLICKHOUSE_PASS)
+        database = kwargs.get("database", IBIS_TEST_CLICKHOUSE_DB)
+
+        tables = list(TEST_TABLES.keys())
+        client = clickhouse_driver.Client(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+        )
+
+        client.execute(f"DROP DATABASE IF EXISTS {database}")
+        client.execute(f"CREATE DATABASE {database}")
+        client.execute(f"USE {database}")
+
+        with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
+            for stmt in filter(None, map(str.strip, schema.read().split(";"))):
+                client.execute(stmt)
+
+        for table, df in read_tables(tables, data_dir):
+            query = f"INSERT INTO {table} VALUES"
+            client.insert_dataframe(
+                query,
+                df.to_pandas(),
+                settings={"use_numpy": True},
+            )
 
     @staticmethod
     def connect(data_directory: Path):

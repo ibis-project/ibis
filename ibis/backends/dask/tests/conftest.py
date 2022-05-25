@@ -22,6 +22,10 @@ class TestConf(PandasTest):
     supports_structs = False
 
     @staticmethod
+    def load_data(data_dir, script_dir, **kwargs):
+        """No-op to allow pytest -m dask"""
+
+    @staticmethod
     def connect(data_directory: Path):
         # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of
         # `dd.read_csv` due to https://github.com/dask/dask/issues/6970

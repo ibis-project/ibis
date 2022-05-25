@@ -1,10 +1,13 @@
 import os
+import textwrap
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 from pkg_resources import parse_version
 
 import ibis
+from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
@@ -48,6 +51,49 @@ class TestConf(BackendTest, RoundHalfToEven):
         elif parse_version(con.version) >= parse_version('8.0'):
             # mysql supports window operations after version 8
             self.__class__.supports_window_operations = True
+
+    @staticmethod
+    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+        """Load testdata into a mysql backend.
+
+        Parameters
+        ----------
+        data_dir : Path
+            Location of testdata
+        script_dir : Path
+            Location of scripts defining schemas
+        """
+        user = kwargs.get("username", MYSQL_USER)
+        password = kwargs.get("password", MYSQL_PASS)
+        host = kwargs.get("host", MYSQL_HOST)
+        port = kwargs.get("port", MYSQL_PORT)
+        database = kwargs.get("database", IBIS_TEST_MYSQL_DB)
+
+        tables = list(TEST_TABLES.keys())
+        with open(script_dir / 'schema' / 'mysql.sql') as schema:
+
+            engine = init_database(
+                url=sa.engine.make_url(
+                    f"mysql+pymysql://{user}:{password}@{host}:{port}?local_infile=1",  # noqa: E501
+                ),
+                database=database,
+                schema=schema,
+                isolation_level="AUTOCOMMIT",
+            )
+            with engine.connect() as con:
+                for table in tables:
+                    con.execute(
+                        textwrap.dedent(
+                            f"""\
+                        LOAD DATA LOCAL INFILE\
+                        '{data_dir / f"{table}.csv"}'
+                        INTO TABLE {table}
+                        COLUMNS TERMINATED BY ','
+                        OPTIONALLY ENCLOSED BY '"'
+                        LINES TERMINATED BY '\\n'
+                        IGNORE 1 LINES"""
+                        )
+                    )
 
     @staticmethod
     def connect(_: Path):
