@@ -84,3 +84,23 @@ INSERT INTO array_types VALUES
     ([NULL, 1, NULL], [NULL, 'a', NULL], [], 'b', 4.0),
     ([2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0),
     ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0);
+
+
+CREATE TABLE IF NOT EXISTS struct (
+    abc Tuple(
+        a Nullable(Float64),
+        b Nullable(String),
+        c Nullable(Int64)
+    )
+) ENGINE = Memory;
+
+-- NULL is the same as tuple(NULL, NULL, NULL) because clickhouse doesn't
+-- support Nullable(Tuple(...))
+INSERT INTO struct VALUES
+    (tuple(1.0, 'banana', 2)),
+    (tuple(2.0, 'apple', 3)),
+    (tuple(3.0, 'orange', 4)),
+    (tuple(NULL, 'banana', 2)),
+    (tuple(2.0, NULL, 3)),
+    (tuple(NULL, NULL, NULL)),
+    (tuple(3.0, 'orange', NULL));
