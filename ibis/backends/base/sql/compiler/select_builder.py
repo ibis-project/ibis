@@ -159,8 +159,6 @@ class SelectBuilder:
 
         self.sub_memo = {}
 
-        self.queries = []
-
         self.table_set = None
         self.select_set = None
         self.group_by = None
@@ -171,13 +169,9 @@ class SelectBuilder:
         self.subqueries = []
         self.distinct = False
 
-        # make idempotent
-        if self.queries:
-            return self._wrap_result()
-
         select_query = self._build_result_query()
 
-        self.queries.append(select_query)
+        self.queries = [select_query]
 
         return select_query
 
