@@ -72,23 +72,16 @@ success
 
 Congrats, you now have a PostgreSQL server running and are ready to run tests!
 
-#### Load Data
+#### Download Data
 
-The backend needs to be populated with test data:
+The backend needs to be populated with test data.
+The data will be loaded automatically, when the test is run, but it needs to be downloaded first.
 
-1.  Download the data
+To download the data
 
-    ```sh
-    python ci/datamgr.py download
-    ```
-
-2.  In the original terminal, run
-
-    ```sh
-    python ci/datamgr.py load postgres
-    ```
-
-    You should see a bit of logging, and the command should complete shortly thereafter.
+```sh
+python ci/datamgr.py download
+```
 
 #### Run the test suite
 
