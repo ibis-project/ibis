@@ -48,9 +48,8 @@ class ExtractSubqueries:
             self.observe(expr)
         elif isinstance(node, ops.Value):
             for arg in node.flat_args():
-                if not isinstance(arg, ir.Expr):
-                    continue
-                self.visit(arg)
+                if isinstance(arg, ir.Expr):
+                    self.visit(arg)
         else:
             raise NotImplementedError(type(node))
 
