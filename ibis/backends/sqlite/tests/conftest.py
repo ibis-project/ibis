@@ -1,10 +1,15 @@
+import itertools
 import os
+import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 
 import ibis
 import ibis.expr.types as ir
+from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
@@ -15,6 +20,53 @@ class TestConf(BackendTest, RoundAwayFromZero):
     check_dtype = False
     returned_timestamp_unit = 's'
     supports_structs = False
+
+    @staticmethod
+    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+        """Load testdata into the SQLite backend.
+
+        Parameters
+        ----------
+        data_dir : Path
+            Location of testdata
+        script_dir : Path
+            Location of scripts defining schemas
+        """
+        IBIS_TEST_SQLITE_DB = Path(
+            os.environ.get(
+                "IBIS_TEST_SQLITE_DATABASE", data_dir / "ibis_testing.db"
+            )
+        )
+        database = kwargs.get("database", IBIS_TEST_SQLITE_DB)
+
+        tables = list(TEST_TABLES.keys())
+        with open(script_dir / 'schema' / 'sqlite.sql') as schema:
+
+            init_database(
+                url=sa.engine.make_url("sqlite://"),
+                database=str(database.absolute()),
+                schema=schema,
+            )
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            for table in tables:
+                basename = f"{table}.csv"
+                with Path(tempdir).joinpath(basename).open("w") as f:
+                    with data_dir.joinpath(basename).open("r") as lines:
+                        # skip the first line
+                        f.write("".join(itertools.islice(lines, 1, None)))
+            subprocess.run(
+                ["sqlite3", database],
+                input="\n".join(
+                    [
+                        ".separator ,",
+                        *(
+                            f".import {str(path.absolute())!r} {path.stem}"
+                            for path in Path(tempdir).glob("*.csv")
+                        ),
+                    ]
+                ).encode(),
+            )
 
     @staticmethod
     def connect(data_directory: Path):

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import collections
+import concurrent.futures
+import itertools
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -9,6 +13,7 @@ import ibis
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import (
     BackendTest,
@@ -25,6 +30,101 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_divide_by_zero = True
     returned_timestamp_unit = 's'
     supports_structs = False
+
+    @staticmethod
+    def load_data(data_dir, script_dir, **kwargs):
+        """Load testdata into an impala backend.
+
+        Parameters
+        ----------
+        data_dir : Path
+            Location of testdata
+        script_dir : Path
+            Location of scripts defining schemas
+        """
+        import fsspec
+
+        # without setting the pool size
+        # connections are dropped from the urllib3
+        # connection pool when the number of workers exceeds this value.
+        # this doesn't appear to be configurable through fsspec
+        URLLIB_DEFAULT_POOL_SIZE = 10
+
+        env = IbisTestEnv()
+        try:
+            con = ibis.impala.connect(
+                host=env.impala_host,
+                port=env.impala_port,
+                hdfs_client=fsspec.filesystem(
+                    env.hdfs_protocol,
+                    host=env.nn_host,
+                    port=env.hdfs_port,
+                    user=env.hdfs_user,
+                ),
+                pool_size=URLLIB_DEFAULT_POOL_SIZE,
+            )
+        except Exception:
+            raise
+
+        fs = fsspec.filesystem("file")
+
+        data_files = {
+            data_file
+            for data_file in fs.find(data_dir)
+            # ignore sqlite databases and markdown files
+            if not data_file.endswith((".db", ".md"))
+            # ignore files in the test data .git directory
+            if (
+                # ignore .git
+                os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
+                != ".git"
+            )
+        }
+
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=int(
+                os.environ.get(
+                    "IBIS_DATA_MAX_WORKERS",
+                    URLLIB_DEFAULT_POOL_SIZE,
+                )
+            )
+        )
+
+        hdfs = con.hdfs
+        tasks = {
+            # make the database
+            executor.submit(impala_create_test_database, con, env),
+            # build and upload UDFs
+            *itertools.starmap(
+                executor.submit,
+                impala_build_and_upload_udfs(hdfs, env, fs=fs),
+            ),
+            # upload data files
+            *(
+                executor.submit(
+                    hdfs_make_dir_and_put_file,
+                    hdfs,
+                    data_file,
+                    os.path.join(
+                        env.test_data_dir,
+                        os.path.relpath(data_file, data_dir),
+                    ),
+                )
+                for data_file in data_files
+            ),
+        }
+
+        for future in concurrent.futures.as_completed(tasks):
+            future.result()
+
+        # create the tables and compute stats
+        for future in concurrent.futures.as_completed(
+            executor.submit(table_future.result().compute_stats)
+            for table_future in concurrent.futures.as_completed(
+                impala_create_tables(con, env, executor=executor)
+            )
+        ):
+            future.result()
 
     @staticmethod
     def connect(data_directory: Path):
@@ -384,3 +484,102 @@ def translate(expr, context=None, named=False):
         context = ImpalaCompiler.make_context()
     translator = ImpalaExprTranslator(expr, context=context, named=named)
     return translator.get_result()
+
+
+def impala_build_and_upload_udfs(hdfs, env, *, fs):
+    IBIS_HOME = Path(__file__).absolute().parents[4]
+    cwd = str(IBIS_HOME / "ci" / "udf")
+    subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd)
+    subprocess.run(["ninja"], cwd=cwd)
+    build_dir = IBIS_HOME / "ci" / "udf" / "build"
+    bitcode_dir = os.path.join(env.test_data_dir, "udf")
+
+    hdfs.mkdir(bitcode_dir, create_parents=True)
+
+    for file in fs.find(build_dir):
+        bitcode_path = os.path.join(
+            bitcode_dir, os.path.relpath(file, build_dir)
+        )
+        yield hdfs.put_file, file, bitcode_path
+
+
+def hdfs_make_dir_and_put_file(fs, src, target):
+    fs.mkdir(os.path.dirname(target), create_parents=True)
+    fs.put_file(src, target)
+
+
+def impala_create_test_database(con, env):
+    con.drop_database(env.test_data_db, force=True)
+    con.create_database(env.test_data_db)
+    con.create_table(
+        'alltypes',
+        schema=ibis.schema(
+            [
+                ('a', 'int8'),
+                ('b', 'int16'),
+                ('c', 'int32'),
+                ('d', 'int64'),
+                ('e', 'float'),
+                ('f', 'double'),
+                ('g', 'string'),
+                ('h', 'boolean'),
+                ('i', 'timestamp'),
+            ]
+        ),
+        database=env.test_data_db,
+    )
+
+
+PARQUET_SCHEMAS = {
+    'functional_alltypes': TEST_TABLES["functional_alltypes"].delete(
+        ["index", "Unnamed: 0"]
+    ),
+    "tpch_region": ibis.schema(
+        [
+            ("r_regionkey", "int16"),
+            ("r_name", "string"),
+            ("r_comment", "string"),
+        ]
+    ),
+}
+
+PARQUET_SCHEMAS.update(
+    (table, schema)
+    for table, schema in TEST_TABLES.items()
+    if table != "functional_alltypes"
+)
+
+AVRO_SCHEMAS = {
+    "tpch_region_avro": {
+        "type": "record",
+        "name": "a",
+        "fields": [
+            {"name": "R_REGIONKEY", "type": ["null", "int"]},
+            {"name": "R_NAME", "type": ["null", "string"]},
+            {"name": "R_COMMENT", "type": ["null", "string"]},
+        ],
+    }
+}
+
+ALL_SCHEMAS = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
+
+
+def impala_create_tables(con, env, *, executor=None):
+    test_data_dir = env.test_data_dir
+    avro_files = [
+        (con.avro_file, os.path.join(test_data_dir, 'avro', path))
+        for path in con.hdfs.ls(os.path.join(test_data_dir, 'avro'))
+    ]
+    parquet_files = [
+        (con.parquet_file, os.path.join(test_data_dir, 'parquet', path))
+        for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
+    ]
+    for method, path in itertools.chain(parquet_files, avro_files):
+        yield executor.submit(
+            method,
+            path,
+            ALL_SCHEMAS.get(os.path.basename(path)),
+            name=os.path.basename(path),
+            database=env.test_data_db,
+            persist=True,
+        )

@@ -18,8 +18,10 @@ from pathlib import Path
 from typing import Generator
 
 import pytest
+import sqlalchemy as sa
 
 import ibis
+from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 PG_USER = os.environ.get(
@@ -45,6 +47,54 @@ class TestConf(BackendTest, RoundHalfToEven):
 
     returned_timestamp_unit = 's'
     supports_structs = False
+
+    @staticmethod
+    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+        """Load testdata into the postgres backend.
+
+        Parameters
+        ----------
+        data_dir : Path
+            Location of testdata
+        script_dir : Path
+            Location of scripts defining schemas
+        """
+        user = kwargs.get("username", PG_USER)
+        password = kwargs.get("password", PG_PASS)
+        host = kwargs.get("host", PG_HOST)
+        port = kwargs.get("port", PG_PORT)
+        database = kwargs.get("database", IBIS_TEST_POSTGRES_DB)
+
+        tables = list(TEST_TABLES) + ['geo']
+        with open(script_dir / 'schema' / 'postgresql.sql') as schema:
+
+            engine = init_database(
+                url=sa.engine.make_url(
+                    f"postgresql://{user}:{password}@{host}:{port}",
+                ),
+                database=database,
+                schema=schema,
+                isolation_level='AUTOCOMMIT',
+            )
+
+        for table in tables:
+            src = data_dir / f'{table}.csv'
+            # Here we insert rows using COPY table FROM STDIN, by way of
+            # psycopg2's `copy_expert` API.
+            #
+            # We could use DataFrame.to_sql(method=callable), but that incurs
+            # an unnecessary round trip and requires more code: the `data_iter`
+            # argument would have to be turned back into a CSV before being
+            # passed to `copy_expert`.
+            sql = (
+                f"COPY {table} FROM STDIN "
+                "WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+            )
+            with src.open('r') as file:
+                with engine.begin() as con, con.connection.cursor() as cur:
+                    cur.copy_expert(sql=sql, file=file)
+
+        engine.execute('VACUUM FULL ANALYZE')
 
     @staticmethod
     def connect(data_directory: Path):

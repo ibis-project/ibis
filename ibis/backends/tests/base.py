@@ -89,6 +89,11 @@ class BackendTest(abc.ABC):
     def connect(data_directory: Path):
         """Return a connection with data loaded from `data_directory`."""
 
+    @staticmethod
+    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+        """Load testdata from `data_dir` into
+        the backend using scripts in `script_dir`."""
+
     @classmethod
     def assert_series_equal(
         cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
