@@ -200,7 +200,7 @@ class Backend(BasePandasBackend):
     def execute(self, query, params=None, limit='default', **kwargs):
         from ibis.backends.pandas.core import execute_and_reset
 
-        if limit != 'default':
+        if limit != 'default' and limit is not None:
             raise ValueError(
                 'limit parameter to execute is not yet implemented in the '
                 'pandas backend'

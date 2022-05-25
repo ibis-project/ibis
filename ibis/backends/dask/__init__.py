@@ -64,7 +64,7 @@ class Backend(BasePandasBackend):
         limit: str = 'default',
         **kwargs,
     ):
-        if limit != 'default':
+        if limit != 'default' and limit is not None:
             raise ValueError(
                 'limit parameter to execute is not yet implemented in the '
                 'dask backend'
