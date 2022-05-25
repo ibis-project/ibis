@@ -189,41 +189,6 @@ def test_aggregate_grouped(
             id='var_pop',
         ),
         param(
-            lambda t, where: t.double_col.cov(t.float_col, where=where),
-            lambda t, where: t.double_col[where].cov(t.float_col[where]),
-            id='covar',
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "dask",
-                        "duckdb",
-                        "impala",
-                        "mysql",
-                        "pandas",
-                        "sqlite",
-                    ]
-                )
-            ],
-        ),
-        param(
-            lambda t, where: t.double_col.corr(t.float_col, where=where),
-            lambda t, where: t.double_col[where].corr(t.float_col[where]),
-            id='corr',
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "dask",
-                        "duckdb",
-                        "impala",
-                        "mysql",
-                        "pandas",
-                        "sqlite",
-                    ]
-                )
-            ],
-        ),
-        param(
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id='approx_nunique',
@@ -317,6 +282,113 @@ def test_reduction_ops(
 
     expected = expected_fn(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, where: t.G.cov(t.RBI, where=where, how="pop"),
+            lambda t, where: t.G[where].cov(t.RBI[where], ddof=0),
+            id='covar_pop',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(["mysql", "impala", "sqlite"]),
+            ],
+        ),
+        param(
+            lambda t, where: t.G.cov(t.RBI, where=where, how="sample"),
+            lambda t, where: t.G[where].cov(t.RBI[where], ddof=1),
+            id='covar_samp',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(["mysql", "impala", "sqlite"]),
+            ],
+        ),
+        param(
+            lambda t, where: t.G.corr(t.RBI, where=where, how="pop"),
+            lambda t, where: t.G[where].corr(t.RBI[where]),
+            id='corr_pop',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(
+                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
+                ),
+            ],
+        ),
+        param(
+            lambda t, where: t.G.corr(t.RBI, where=where, how="sample"),
+            lambda t, where: t.G[where].corr(t.RBI[where]),
+            id='corr_samp',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(
+                    ["duckdb", "impala", "mysql", "postgres", "sqlite"]
+                ),
+            ],
+        ),
+        param(
+            lambda t, where: (t.G > 34.0).cov(
+                t.G <= 34.0,
+                where=where,
+                how="pop",
+            ),
+            lambda t, where: (t.G[where] > 34.0).cov(
+                t.G[where] <= 34.0, ddof=0
+            ),
+            id='covar_pop_bool',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(["mysql", "impala", "sqlite"]),
+            ],
+        ),
+        param(
+            lambda t, where: (t.G > 34.0).corr(
+                t.G <= 34.0,
+                where=where,
+                how="pop",
+            ),
+            lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
+            id='corr_pop_bool',
+            marks=[
+                pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+                pytest.mark.notyet(
+                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('ibis_cond', 'pandas_cond'),
+    [
+        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(
+            lambda t: t.yearID.isin([2009, 2015]),
+            lambda t: t.yearID.isin([2009, 2015]),
+            id='cond',
+        ),
+    ],
+)
+def test_corr_cov(
+    batting,
+    batting_df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
+):
+    expr = result_fn(batting, ibis_cond(batting))
+    result = expr.execute()
+
+    expected = expected_fn(batting_df, pandas_cond(batting_df))
+
+    # Backends use different algorithms for computing covariance each with
+    # different amounts of numerical stability.
+    #
+    # This makes a generic, precise and accurate comparison function incredibly
+    # fragile and tedious to write.
+    assert pytest.approx(result) == expected
 
 
 @pytest.mark.notimpl(
