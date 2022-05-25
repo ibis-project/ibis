@@ -223,27 +223,6 @@ class SelectBuilder:
                 f'Do not know how to execute: {type(expr)}'
             )
 
-    @classmethod
-    def _blocking_base(cls, expr):
-        node = expr.op()
-        if node.blocks() or isinstance(node, ops.Join):
-            return expr
-        else:
-            for arg in expr.op().flat_args():
-                if isinstance(arg, ir.Table):
-                    return cls._blocking_base(arg)
-
-    @classmethod
-    def _all_distinct_roots(cls, subtables):
-        bases = []
-        for t in subtables:
-            base = cls._blocking_base(t)
-            for x in bases:
-                if base.equals(x):
-                    return False
-            bases.append(base)
-        return True
-
     def _build_result_query(self):
         self._collect_elements()
 
@@ -561,23 +540,6 @@ class SelectBuilder:
             subbed = self._sub(expr)
             self.table_set = subbed
             self.select_set = [subbed]
-
-        subtables = [
-            op.to_expr()
-            for op in util.to_op_dag(expr)
-            if isinstance(op, ops.TableNode) and not isinstance(op, ops.Join)
-        ]
-
-        # If any of the joined tables are non-blocking modified versions of the
-        # same table, then it's not safe to continue walking down the tree (see
-        # #667), and we should instead have inline views rather than attempting
-        # to fuse things together into the same SELECT query.
-        can_substitute = self._all_distinct_roots(subtables)
-        if can_substitute:
-            for table in subtables:
-                self._collect(table, toplevel=False)
-
-        return can_substitute
 
     def _collect_PhysicalTable(self, expr, toplevel=False):
         if toplevel:
