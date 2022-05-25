@@ -108,10 +108,7 @@ EXPECTED_SCHEMA = dict(
             ("P", "STRING"),
             ("Q", "LIST<INTEGER>"),
             ("R", "MAP<STRING, BIGINT>"),
-            (
-                "S",
-                "STRUCT<a: INT, b: TEXT, c: LIST<MAP<TEXT, LIST<FLOAT8>>>>",
-            ),
+            ("S", "STRUCT(a INT, b TEXT, c LIST<MAP<TEXT, LIST<FLOAT8>>>)"),
         ]
     ],
 )

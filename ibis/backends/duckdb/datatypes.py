@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
 from ibis.expr.datatypes import (
-    COLON,
     COMMA,
     FIELD,
     LANGLE,
@@ -133,13 +132,13 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def struct():
         yield spaceless_string("struct")
-        yield LANGLE
+        yield LPAREN
         field_names_types = yield (
-            p.seq(field.skip(COLON), ty)
+            p.seq(field, ty)
             .combine(lambda field, ty: (field, ty))
             .sep_by(COMMA)
         )
-        yield RANGLE
+        yield RPAREN
         return Struct.from_tuples(field_names_types)
 
     non_pg_array_type = primitive | decimal | list_array | map | struct
