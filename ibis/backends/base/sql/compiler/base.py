@@ -1,12 +1,11 @@
 import abc
+import collections
 from itertools import chain
 
 import toolz
 
+import ibis.expr.analysis as an
 import ibis.util as util
-from ibis.backends.base.sql.compiler.extract_subqueries import (
-    ExtractSubqueries,
-)
 
 
 class DML(abc.ABC):
@@ -62,7 +61,9 @@ class SetOp(DML):
         self.filters = []
 
     def _extract_subqueries(self):
-        self.subqueries = ExtractSubqueries.extract(self)
+        self.subqueries = _extract_common_table_expressions(
+            [self.table_set, *self.filters]
+        )
         for subquery in self.subqueries:
             self.context.set_extracted(subquery)
 
@@ -106,3 +107,10 @@ class SetOp(DML):
             )
         )
         return '\n'.join(buf)
+
+
+def _extract_common_table_expressions(exprs):
+    nodes = an.find_subqueries(exprs)
+    counts = collections.Counter(nodes)
+    duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+    return list(reversed(duplicates))

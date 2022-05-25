@@ -196,7 +196,7 @@ def find_immediate_parent_tables(expr):
         else:
             return lin.proceed, None
 
-    return lin.traverse(finder, expr)
+    return toolz.unique(lin.traverse(finder, expr))
 
 
 def substitute_parents(expr, lift_memo=None, past_projection=True):
@@ -1050,6 +1050,30 @@ def find_predicates(expr, flatten=True):
             else:
                 return lin.halt, expr
         return lin.proceed, None
+
+    return list(lin.traverse(predicate, expr))
+
+
+def find_subqueries(expr):
+    def predicate(expr):
+        op = expr.op()
+
+        if isinstance(op, ops.Join):
+            return [op.left, op.right], None
+        elif isinstance(op, ops.PhysicalTable):
+            return lin.halt, None
+        elif isinstance(op, ops.SetOp):
+            return lin.proceed, op
+        elif isinstance(op, ops.SelfReference):
+            return lin.proceed, None
+        elif isinstance(op, (ops.Selection, ops.Aggregation)):
+            return [op.table], op
+        elif isinstance(op, ops.TableNode):
+            return lin.proceed, op
+        elif isinstance(op, ops.TableColumn):
+            return lin.halt, None
+        else:
+            return lin.proceed, None
 
     return list(lin.traverse(predicate, expr))
 
