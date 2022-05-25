@@ -277,6 +277,16 @@ def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
+@sch.convert.register(object, dt.Struct, pd.Series)
+def convert_struct_to_dict(_, out_dtype, column):
+    def convert_element(values, names=out_dtype.names):
+        if values is None or isinstance(values, dict) or pd.isna(values):
+            return values
+        return dict(zip(names, values))
+
+    return column.map(convert_element)
+
+
 dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
 sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
 
