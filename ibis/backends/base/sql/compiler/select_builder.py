@@ -436,8 +436,7 @@ class SelectBuilder:
 
         if isinstance(root_op, ops.TableNode):
             self._collect(source_expr, toplevel=True)
-            if self.table_set is None:
-                raise com.InternalError('no table set')
+            assert self.table_set is not None
         else:
             self.select_set = [source_expr]
 
