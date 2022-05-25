@@ -590,10 +590,7 @@ class SelectBuilder:
             self._collect(op.table, toplevel=toplevel)
 
     def _sub(self, what):
-        if isinstance(what, list):
-            return [L.substitute_parents(x, self.sub_memo) for x in what]
-        else:
-            return L.substitute_parents(what, self.sub_memo)
+        return L.substitute_parents(what, self.sub_memo)
 
     # --------------------------------------------------------------------
     # Subquery analysis / extraction
