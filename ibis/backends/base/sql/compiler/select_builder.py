@@ -223,28 +223,6 @@ class SelectBuilder:
                 f'Do not know how to execute: {type(expr)}'
             )
 
-    @staticmethod
-    def _get_subtables(expr):
-        subtables = []
-
-        stack = [expr]
-        seen = set()
-
-        while stack:
-            e = stack.pop()
-            op = e.op()
-
-            if op not in seen:
-                seen.add(op)
-
-                if isinstance(op, ops.Join):
-                    stack.append(op.right)
-                    stack.append(op.left)
-                else:
-                    subtables.append(e)
-
-        return subtables
-
     @classmethod
     def _blocking_base(cls, expr):
         node = expr.op()
@@ -585,7 +563,11 @@ class SelectBuilder:
             self.table_set = subbed
             self.select_set = [subbed]
 
-        subtables = self._get_subtables(expr)
+        subtables = [
+            op.to_expr()
+            for op in util.to_op_dag(expr)
+            if isinstance(op, ops.TableNode) and not isinstance(op, ops.Join)
+        ]
 
         # If any of the joined tables are non-blocking modified versions of the
         # same table, then it's not safe to continue walking down the tree (see
