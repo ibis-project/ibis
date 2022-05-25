@@ -98,7 +98,7 @@ https://conda.anaconda.org/conda-forge/osx-64/libopenblas-0.3.20-openmp_hb3cd9ec
 https://conda.anaconda.org/conda-forge/osx-64/libpq-14.2-hea3049e_0.tar.bz2#9255136193510925442242380c3f579e
 https://conda.anaconda.org/conda-forge/osx-64/libthrift-0.16.0-h9702cd6_1.tar.bz2#d5b6e66507bfaa85e35624ca745776af
 https://conda.anaconda.org/conda-forge/osx-64/libtiff-4.3.0-h17f2ce3_3.tar.bz2#8a2611163920a17b13a1325bb70d7293
-https://conda.anaconda.org/conda-forge/osx-64/nss-3.77-hfce436b_0.tar.bz2#a46093a99d96a15763030a61acbbcec2
+https://conda.anaconda.org/conda-forge/osx-64/nss-3.78-ha8197d3_0.tar.bz2#0927d191f392959c876b7eab924efd01
 https://conda.anaconda.org/conda-forge/osx-64/orc-1.7.3-h5ac28ee_1.tar.bz2#ad263cee496ceb202e0e0d62db97766e
 https://conda.anaconda.org/conda-forge/osx-64/python-3.10.4-h8b4d769_0_cpython.tar.bz2#62ebdb09c27c4cd4bcc84c6a283cb6cb
 https://conda.anaconda.org/conda-forge/noarch/absolufy-imports-0.3.1-pyhd8ed1ab_0.tar.bz2#6cfab7bc82c2a20549163c93c890e9d6
@@ -249,7 +249,7 @@ https://conda.anaconda.org/conda-forge/osx-64/setuptools-62.3.2-py310h2ec42d9_0.
 https://conda.anaconda.org/conda-forge/osx-64/thrift-0.16.0-py310h9d931ec_1.tar.bz2#18027fe4becffcac55bb027c3253a123
 https://conda.anaconda.org/conda-forge/osx-64/tiledb-2.8.3-hf17dc58_1.tar.bz2#060ba49e40986e7614e7a2d0de4b9da1
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
-https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.10.2-pyha770c72_0.tar.bz2#482e5775f80665a7c9f76cd72a66eae8
+https://conda.anaconda.org/conda-forge/noarch/tomlkit-0.11.0-pyha770c72_0.tar.bz2#4c3c1c8f8230bd75e69e083b113b2483
 https://conda.anaconda.org/conda-forge/osx-64/tornado-6.1-py310h1961e1f_3.tar.bz2#84d43324014a93910f008ada676ca542
 https://conda.anaconda.org/conda-forge/osx-64/typed-ast-1.5.4-py310h6c45266_0.tar.bz2#5ccc9b6b0c3168c26b4b8970f42c81a7
 https://conda.anaconda.org/conda-forge/noarch/typing-extensions-4.2.0-hd8ed1ab_1.tar.bz2#6d9d7480c5780514779967be2ee8b963
@@ -263,7 +263,7 @@ https://conda.anaconda.org/conda-forge/noarch/click-plugins-1.1.1-py_0.tar.bz2#4
 https://conda.anaconda.org/conda-forge/noarch/cligj-0.7.2-pyhd8ed1ab_1.tar.bz2#a29b7c141d6b2de4bb67788a5f107734
 https://conda.anaconda.org/conda-forge/noarch/commonmark-0.9.1-py_0.tar.bz2#6aa0173c14befcd577ded130cf6f22f5
 https://conda.anaconda.org/conda-forge/osx-64/cryptography-37.0.2-py310h52c3658_0.tar.bz2#d59b17f2f4c984ae052f05bc45ad7cea
-https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.5.0-pyhd8ed1ab_0.tar.bz2#3aef8ad6f9af56117e959a53cb9b9fd1
+https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.5.1-pyhd8ed1ab_0.tar.bz2#8aaa4107e044e68c8d8af030b9c171f6
 https://conda.anaconda.org/conda-forge/noarch/dunamai-1.12.0-pyhd8ed1ab_0.tar.bz2#54d78f5785b553075286b9121b8fff65
 https://conda.anaconda.org/conda-forge/noarch/flake8-4.0.1-pyhd8ed1ab_2.tar.bz2#a824bd55ce47e9c637427f730c651231
 https://conda.anaconda.org/conda-forge/osx-64/fonttools-4.33.3-py310h6c45266_0.tar.bz2#71ce94a99d1efe13d3ded06770d07127
@@ -319,7 +319,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-mock-3.7.0-pyhd8ed1ab_1.tar
 https://conda.anaconda.org/conda-forge/noarch/pytest-profiling-1.7.0-py_1.tar.bz2#4dc5c2917451a73cc7532fc893e2daea
 https://conda.anaconda.org/conda-forge/noarch/pytest-randomly-3.12.0-pyhd8ed1ab_0.tar.bz2#c428aad352580a0d3264740a4dd5aeae
 https://conda.anaconda.org/conda-forge/noarch/pytest-repeat-0.9.1-pyhd8ed1ab_0.tar.bz2#654827090748fa1cf4a375df7d99fcaf
-https://conda.anaconda.org/conda-forge/noarch/rich-12.4.3-pyhd8ed1ab_0.tar.bz2#3e9322a1f0707089a40c3218f60f2da6
+https://conda.anaconda.org/conda-forge/noarch/rich-12.4.4-pyhd8ed1ab_0.tar.bz2#19f5736fcf396e22c596bcbfa13770f3
 https://conda.anaconda.org/conda-forge/osx-64/scipy-1.8.1-py310h1f9c157_0.tar.bz2#9301a094c53ed53bbbc168597c39719e
 https://conda.anaconda.org/conda-forge/osx-64/shapely-1.8.1-py310h6d09efd_0.tar.bz2#11f3205345f785c0e00e6fc455127d02
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
@@ -343,7 +343,7 @@ https://conda.anaconda.org/conda-forge/noarch/pytest-clarity-1.0.1-pyhd8ed1ab_0.
 https://conda.anaconda.org/conda-forge/noarch/pytest-xdist-2.5.0-pyhd8ed1ab_0.tar.bz2#1fdd1f3baccf0deb647385c677a1a48e
 https://conda.anaconda.org/conda-forge/osx-64/scikit-learn-1.1.1-py310hfc06b38_0.tar.bz2#5214584121e8aa78ef0b4480a43d5563
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.9-pyhd8ed1ab_0.tar.bz2#0ea179ee251aa7100807c35bc0252693
-https://conda.anaconda.org/conda-forge/noarch/distributed-2022.5.0-pyhd8ed1ab_0.tar.bz2#b840d31080d26fe1f1225edfd3eb7c05
+https://conda.anaconda.org/conda-forge/noarch/distributed-2022.5.1-pyhd8ed1ab_0.tar.bz2#6c4c60188aeed887a1c6e83bc3cfacf7
 https://conda.anaconda.org/conda-forge/osx-64/fiona-1.8.21-py310h86461ec_1.tar.bz2#4589ba067e998448953cfba716a363a9
 https://conda.anaconda.org/conda-forge/osx-64/graphviz-3.0.0-h6f567cf_1.tar.bz2#00a33818fc3b296b030dd63b8fc1d416
 https://conda.anaconda.org/conda-forge/osx-64/ipython-8.3.0-py310h2ec42d9_0.tar.bz2#f38257e9d548b4ff105c20402e8de694
@@ -354,7 +354,7 @@ https://conda.anaconda.org/conda-forge/noarch/nbconvert-core-6.5.0-pyhd8ed1ab_0.
 https://conda.anaconda.org/conda-forge/noarch/prompt_toolkit-3.0.29-hd8ed1ab_0.tar.bz2#dd7205c7635ba7a44acf4f7d2b50b74d
 https://conda.anaconda.org/conda-forge/osx-64/pyarrow-8.0.0-py310hb135652_1_cpu.tar.bz2#9f09b44cee6d001e3932245eaeb0438b
 https://conda.anaconda.org/conda-forge/noarch/requests-2.27.1-pyhd8ed1ab_0.tar.bz2#7c1c427246b057b8fa97200ecdb2ed62
-https://conda.anaconda.org/conda-forge/noarch/dask-2022.5.0-pyhd8ed1ab_0.tar.bz2#4631f8090bca5eb85dbe2bb9919db226
+https://conda.anaconda.org/conda-forge/noarch/dask-2022.5.1-pyhd8ed1ab_0.tar.bz2#e692b0993b0968b16dbb29970a943b43
 https://conda.anaconda.org/conda-forge/osx-64/datafusion-0.4.0-py310hcf052fe_2.tar.bz2#7fd630ba92329933e5511ae4b74d6541
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.1.post1-pyhd8ed1ab_1.tar.bz2#44912901b45260e4338447b9d46f7058
 https://conda.anaconda.org/conda-forge/noarch/ipdb-0.13.9-pyhd8ed1ab_0.tar.bz2#43effb31fb5a933d3bbbca5c823b2729
