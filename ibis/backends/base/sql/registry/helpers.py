@@ -22,32 +22,34 @@ def quote_identifier(name, quotechar='`', force=False):
         return name
 
 
-def needs_parens(op):
-    if isinstance(op, ir.Expr):
-        op = op.op()
-    op_klass = type(op)
-    # function calls don't need parens
-    return op_klass in {
-        ops.Negate,
-        ops.IsNull,
-        ops.NotNull,
-        ops.Add,
-        ops.Subtract,
-        ops.Multiply,
-        ops.Divide,
-        ops.Power,
-        ops.Modulus,
-        ops.Equals,
-        ops.NotEquals,
-        ops.GreaterEqual,
-        ops.Greater,
-        ops.LessEqual,
-        ops.Less,
-        ops.IdenticalTo,
-        ops.And,
-        ops.Or,
-        ops.Xor,
-    }
+_NEEDS_PARENS_OPS = (
+    ops.Negate,
+    ops.IsNull,
+    ops.NotNull,
+    ops.Add,
+    ops.Subtract,
+    ops.Multiply,
+    ops.Divide,
+    ops.Power,
+    ops.Modulus,
+    ops.Equals,
+    ops.NotEquals,
+    ops.GreaterEqual,
+    ops.Greater,
+    ops.LessEqual,
+    ops.Less,
+    ops.IdenticalTo,
+    ops.And,
+    ops.Or,
+    ops.Xor,
+)
+
+
+def needs_parens(expr: ir.Expr):
+    op = expr.op()
+    if isinstance(op, ops.Alias):
+        op = op.arg.op()
+    return isinstance(op, _NEEDS_PARENS_OPS)
 
 
 parenthesize = '({})'.format

@@ -783,7 +783,8 @@ def test_filter_subquery_derived_reduction(filter_subquery_derived_reduction):
     expr3, expr4 = filter_subquery_derived_reduction
 
     result = Compiler.to_sql(expr3)
-    expected = """SELECT *
+    expected = """\
+SELECT *
 FROM star1
 WHERE `f` > ln((
   SELECT avg(`f`) AS `mean`
@@ -793,13 +794,14 @@ WHERE `f` > ln((
     assert result == expected
 
     result = Compiler.to_sql(expr4)
-    expected = """SELECT *
+    expected = """\
+SELECT *
 FROM star1
-WHERE `f` > ln((
+WHERE `f` > (ln((
   SELECT avg(`f`) AS `mean`
   FROM star1
   WHERE `foo_id` = 'foo'
-)) + 1"""
+)) + 1)"""
     assert result == expected
 
 
@@ -928,6 +930,26 @@ def test_topk_to_aggregate():
 
     result = Compiler.to_sql(top)
     expected = Compiler.to_sql(top.to_aggregation())
+    assert result == expected
+
+
+def test_bool_bool():
+    import ibis
+    from ibis.backends.base.sql.compiler import Compiler
+
+    t = ibis.table(
+        [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
+        'airlines',
+    )
+
+    x = ibis.literal(True)
+    top = t[(t.dest.cast('int64') == 0) == x]
+
+    result = Compiler.to_sql(top)
+    expected = """\
+SELECT *
+FROM airlines
+WHERE (CAST(`dest` AS bigint) = 0) = TRUE"""
     assert result == expected
 
 
