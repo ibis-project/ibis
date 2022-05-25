@@ -39,7 +39,8 @@ class ExtractSubqueries:
         elif isinstance(node, ops.Join):
             self.visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
-            self.visit_physical_table(expr)
+            # do nothing, because physical tables can be referred to by name
+            pass
         elif isinstance(node, ops.TableNode):
             for arg in node.flat_args():
                 if isinstance(arg, ir.Table):
@@ -57,9 +58,6 @@ class ExtractSubqueries:
         node = expr.op()
         self.visit(node.left)
         self.visit(node.right)
-
-    def visit_physical_table(self, _):
-        return
 
     def visit_Exists(self, expr):
         node = expr.op()
