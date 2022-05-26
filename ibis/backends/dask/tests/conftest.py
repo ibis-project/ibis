@@ -19,6 +19,8 @@ def npartitions():
 
 
 class TestConf(PandasTest):
+    supports_structs = False
+
     @staticmethod
     def connect(data_directory: Path):
         # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of

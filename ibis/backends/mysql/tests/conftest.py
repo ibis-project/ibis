@@ -22,6 +22,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     bool_is_int = True
+    supports_structs = False
 
     def __init__(self, data_directory: Path) -> None:
         super().__init__(data_directory)

@@ -44,6 +44,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     # for numeric and decimal
 
     returned_timestamp_unit = 's'
+    supports_structs = False
 
     @staticmethod
     def connect(data_directory: Path):

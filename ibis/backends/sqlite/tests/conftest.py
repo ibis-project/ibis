@@ -14,6 +14,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_window_operations = True
     check_dtype = False
     returned_timestamp_unit = 's'
+    supports_structs = False
 
     @staticmethod
     def connect(data_directory: Path):
