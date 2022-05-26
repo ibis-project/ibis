@@ -26,6 +26,10 @@ class StructType(UserDefinedType):
             (name, sa.types.to_instance(type)) for name, type in pairs
         ]
 
+    def get_col_spec(self, **_):
+        pairs = ", ".join(f"{k} {v}" for k, v in self.pairs)
+        return f"STRUCT({pairs})"
+
 
 def table_from_schema(name, meta, schema, database: Optional[str] = None):
     # Convert Ibis schema to SQLA table
