@@ -77,8 +77,8 @@ load-data *backends="all":
     python ci/datamgr.py -v load {{ backends }}
 
 # run the benchmark suite
-bench *args:
-    pytest --benchmark-only ibis/tests/benchmarks --benchmark-autosave {{ args }}
+bench +args='ibis/tests/benchmarks':
+    pytest --benchmark-only --benchmark-autosave {{ args }}
 
 # check for invalid links in a locally built version of the docs
 checklinks *args:
