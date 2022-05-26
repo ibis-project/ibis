@@ -6,11 +6,18 @@ from pytest import param
 
 import ibis
 
+pytestmark = [
+    pytest.mark.never(["mysql", "sqlite"], reason="No struct support"),
+    pytest.mark.notyet(["impala"]),
+    pytest.mark.notimpl(["datafusion", "pyspark"]),
+]
 
-@pytest.mark.never(["mysql", "sqlite"], reason="No struct support")
-@pytest.mark.notyet(["impala"])
-@pytest.mark.notimpl(["dask", "datafusion", "pyspark"])
-@pytest.mark.parametrize("field", ["a", "b", "c"])
+
+fields = pytest.mark.parametrize("field", ["a", "b", "c"])
+
+
+@pytest.mark.notimpl(["dask"])
+@fields
 def test_single_field(backend, struct, struct_df, field):
     result = struct.abc[field].execute()
     expected = struct_df.abc.map(
@@ -19,9 +26,7 @@ def test_single_field(backend, struct, struct_df, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.never(["mysql", "sqlite"], reason="No struct support")
-@pytest.mark.notyet(["impala"])
-@pytest.mark.notimpl(["dask", "datafusion", "pyspark"])
+@pytest.mark.notimpl(["dask"])
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
@@ -29,36 +34,34 @@ def test_all_fields(struct, struct_df):
 
 
 _SIMPLE_DICT = dict(a=1, b="2", c=3.0)
-
-
-@pytest.mark.never(["mysql", "sqlite"], reason="No struct support")
-@pytest.mark.notyet(["impala"])
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "pyspark", "postgres", "duckdb"]
+_STRUCT_LITERAL = ibis.struct(
+    _SIMPLE_DICT,
+    type="struct<a: int64, b: string, c: float64>",
 )
-@pytest.mark.parametrize("field", ["a", "b", "c"])
+_NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
+
+
+@pytest.mark.notimpl(["postgres"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="clickhouse doesn't support nullable nested types",
+)
 @pytest.mark.parametrize(
     ("expr_fn", "expected_fn"),
     [
         param(
-            lambda field: ibis.struct(
-                _SIMPLE_DICT,
-                type="struct<a: int64, b: string, c: float64>",
-            )[field],
+            _STRUCT_LITERAL.__getitem__,
             _SIMPLE_DICT.__getitem__,
             id="dict",
-            marks=[pytest.mark.notimpl(["postgres"])],
         ),
         param(
-            lambda field: ibis.literal(
-                None, type="struct<a: int64, b: string, c: float64>"
-            )[field],
+            _NULL_STRUCT_LITERAL.__getitem__,
             lambda _: None,
             id="null",
-            marks=[pytest.mark.notimpl(["duckdb"])],
         ),
     ],
 )
+@fields
 def test_literal(con, field, expr_fn, expected_fn):
     query = expr_fn(field)
     result = pd.Series([con.execute(query)]).replace(np.nan, None)
