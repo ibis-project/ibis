@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import functools
-from typing import Iterable, Optional
+from typing import Iterable
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql, postgresql, sqlite
@@ -31,7 +33,7 @@ class StructType(UserDefinedType):
         return f"STRUCT({pairs})"
 
 
-def table_from_schema(name, meta, schema, database: Optional[str] = None):
+def table_from_schema(name, meta, schema, database: str | None = None):
     # Convert Ibis schema to SQLA table
     columns = []
 
