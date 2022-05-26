@@ -314,35 +314,35 @@ def test_join_aliasing():
     result = ImpalaCompiler.to_sql(result)
     expected = """\
 WITH t0 AS (
-  SELECT *, `a` + 20 AS `d`
-  FROM test_table
+  SELECT `d`, `c`
+  FROM t2
 ),
 t1 AS (
-  SELECT `d`, `c`
+  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(*) AS `row_count`
   FROM t0
+  GROUP BY 1, 2, 3
 ),
 t2 AS (
-  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(*) AS `row_count`
-  FROM t1
-  GROUP BY 1, 2, 3
+  SELECT *, `a` + 20 AS `d`
+  FROM test_table
 )
 SELECT t3.*, t4.`total`
 FROM (
   SELECT `d`, `b`, count(*) AS `count`, count(DISTINCT `c`) AS `unique`
-  FROM t0
+  FROM t2
   GROUP BY 1, 2
 ) t3
   INNER JOIN (
     SELECT t5.*
     FROM (
-      SELECT t2.*, t8.`total`
-      FROM t2
+      SELECT t1.*, t8.`total`
+      FROM t1
         INNER JOIN (
           SELECT `d`, sum(`row_count`) AS `total`
-          FROM t2
+          FROM t1
           GROUP BY 1
         ) t8
-          ON t2.`d` = t8.`d`
+          ON t1.`d` = t8.`d`
     ) t5
     WHERE t5.`row_count` < (t5.`total` / 2)
   ) t4
