@@ -1081,7 +1081,13 @@ def find_subqueries(expr: ir.Expr) -> Counter:
             return lin.proceed, None
 
     counts = Counter()
-    iterator = lin.traverse(functools.partial(predicate, counts), expr)
+    iterator = lin.traverse(
+        functools.partial(predicate, counts),
+        expr,
+        # keep duplicates so we can determine where an expression is used
+        # more than once
+        dedup=False,
+    )
     # consume the iterator
     collections.deque(iterator, maxlen=0)
     return counts
