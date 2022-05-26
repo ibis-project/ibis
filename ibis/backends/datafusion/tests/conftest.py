@@ -15,6 +15,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     # supports_divide_by_zero = True
     # returned_timestamp_unit = 'ns'
     bool_is_int = True
+    supports_structs = False
 
     @staticmethod
     def connect(data_directory: Path):

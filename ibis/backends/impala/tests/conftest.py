@@ -24,6 +24,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     check_dtype = False
     supports_divide_by_zero = True
     returned_timestamp_unit = 's'
+    supports_structs = False
 
     @staticmethod
     def connect(data_directory: Path):

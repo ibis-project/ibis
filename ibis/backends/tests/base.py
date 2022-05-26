@@ -6,6 +6,7 @@ from typing import Any, Callable, Mapping, Optional
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
+import pytest
 
 import ibis.expr.types as ir
 
@@ -69,6 +70,7 @@ class BackendTest(abc.ABC):
     supported_to_timestamp_units = {'s', 'ms', 'us'}
     supports_floating_modulus = True
     bool_is_int = False
+    supports_structs = True
 
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)
@@ -140,7 +142,12 @@ class BackendTest(abc.ABC):
 
     @property
     def struct(self) -> Optional[ir.Table]:
-        return self.connection.table("struct")
+        if self.supports_structs:
+            return self.connection.table("struct")
+        else:
+            pytest.xfail(
+                f"{self.name()} backend does not support struct types"
+            )
 
     @property
     def api(self):
