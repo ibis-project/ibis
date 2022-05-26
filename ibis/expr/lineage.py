@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import collections
 import itertools
+from typing import Any, Callable, Iterable, Iterator
 
 from toolz import compose, identity
 
@@ -137,22 +140,29 @@ proceed = True
 halt = False
 
 
-def traverse(fn, expr, type=ir.Expr, container=Stack, dedup=True):
+def traverse(
+    fn: Callable[[ir.Expr], tuple[bool | Iterable, Any]],
+    expr: ir.Expr | Iterable[ir.Expr],
+    type: type = ir.Expr,
+    container: Container = Stack,
+    dedup: bool = True,
+) -> Iterator[Any]:
     """Utility for generic expression tree traversal
 
     Parameters
     ----------
-    fn : Callable[[ir.Expr], Tuple[Union[Boolean, Iterable], Any]]
-        This function will be applied on each expressions, it must
-        return a tuple. The first element of the tuple controls the
-        traversal, and the second is the result if its not None.
-    expr: ir.Expr
+    fn
+        A function applied on each expression. The first element of the tuple
+        controls the traversal, and the second is the result if its not `None`.
+    expr
         The traversable expression or a list of expressions.
-    type: Type
-        Only the instances if this expression type gets traversed.
-    container: Union[Stack, Queue], default Stack
-        Defines the traversing order. Use Stack for depth-first and
-        Queue for breadth-first search.
+    type
+        Only the instances if this type are traversed.
+    container
+        Defines the traversal order. Use `Stack` for depth-first order and
+        `Queue` for breadth-first order.
+    dedup
+        Whether to allow expression traversal more than once
     """
     args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
     todo = container(arg for arg in args if isinstance(arg, type))
