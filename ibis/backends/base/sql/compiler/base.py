@@ -1,5 +1,4 @@
 import abc
-import collections
 from itertools import chain
 
 import toolz
@@ -110,7 +109,7 @@ class SetOp(DML):
 
 
 def _extract_common_table_expressions(exprs):
-    nodes = an.find_subqueries(exprs)
-    counts = collections.Counter(nodes)
+    counts = an.find_subqueries(exprs)
     duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
-    return list(reversed(duplicates))
+    duplicates.reverse()
+    return duplicates

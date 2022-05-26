@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import collections
 import functools
 import operator
+from collections import Counter
+from typing import Sequence
 
 import toolz
 
@@ -1054,28 +1057,34 @@ def find_predicates(expr, flatten=True):
     return list(lin.traverse(predicate, expr))
 
 
-def find_subqueries(expr):
-    def predicate(expr):
+def find_subqueries(expr: ir.Expr) -> Counter:
+    def predicate(
+        counts: Counter, expr: ir.Expr
+    ) -> tuple[Sequence[ir.Table] | bool, None]:
         op = expr.op()
 
         if isinstance(op, ops.Join):
             return [op.left, op.right], None
         elif isinstance(op, ops.PhysicalTable):
             return lin.halt, None
-        elif isinstance(op, ops.SetOp):
-            return lin.proceed, op
         elif isinstance(op, ops.SelfReference):
             return lin.proceed, None
         elif isinstance(op, (ops.Selection, ops.Aggregation)):
-            return [op.table], op
+            counts[op] += 1
+            return [op.table], None
         elif isinstance(op, ops.TableNode):
-            return lin.proceed, op
+            counts[op] += 1
+            return lin.proceed, None
         elif isinstance(op, ops.TableColumn):
-            return lin.halt, None
+            return op.table.op() not in counts, None
         else:
             return lin.proceed, None
 
-    return list(lin.traverse(predicate, expr))
+    counts = Counter()
+    iterator = lin.traverse(functools.partial(predicate, counts), expr)
+    # consume the iterator
+    collections.deque(iterator, maxlen=0)
+    return counts
 
 
 def _make_any(
