@@ -60,6 +60,7 @@ ibis_type_to_sqla = {
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
     dt.Int64: sa.BigInteger,
+    dt.JSON: sa.JSON,
 }
 
 
