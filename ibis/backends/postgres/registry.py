@@ -498,6 +498,16 @@ def _string_agg(t, expr):
     return agg
 
 
+def _quantile(t, expr):
+    op = expr.op()
+    arg = t.translate(op.arg)
+    quantile = t.translate(op.quantile)
+    agg = sa.func.percentile_cont(quantile).within_group(arg)
+    if (where := op.where) is not None:
+        return sa.funcfilter(agg, t.translate(where))
+    return agg
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -578,5 +588,7 @@ operation_registry.update(
         ),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),
+        ops.Quantile: _quantile,
+        ops.MultiQuantile: _quantile,
     }
 )

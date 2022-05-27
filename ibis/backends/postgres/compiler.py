@@ -41,5 +41,10 @@ def _any_all_no_op(expr):
     return expr
 
 
+@rewrites(ops.CMSMedian)
+def _median(expr):
+    return expr.op().arg.quantile(0.5)
+
+
 class PostgreSQLCompiler(AlchemyCompiler):
     translator_class = PostgreSQLExprTranslator
