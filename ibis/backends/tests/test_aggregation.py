@@ -295,6 +295,22 @@ def test_aggregate_grouped(
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
+        param(
+            lambda t, where: t.double_col.quantile(0.5, where=where),
+            lambda t, where: t.double_col[where].quantile(0.5),
+            id='quantile',
+            marks=pytest.mark.notimpl(
+                ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
+            ),
+        ),
+        param(
+            lambda t, where: t.double_col.quantile([0.25, 0.5], where=where),
+            lambda t, where: t.double_col[where].quantile([0.25, 0.5]),
+            id='multi_quantile',
+            marks=pytest.mark.notimpl(
+                ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
+            ),
+        ),
     ],
 )
 @pytest.mark.parametrize(
