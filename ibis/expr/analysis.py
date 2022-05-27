@@ -664,6 +664,14 @@ class Projector:
                 ]
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
+            else:
+                # if any expressions aren't exactly equivalent then don't try
+                # to fuse them
+                if any(
+                    not res_root_root.equals(res_root)
+                    for res_root_root, res_root in zip(resolved, clean_exprs)
+                ):
+                    return None
         else:
             # joins cannot be used to resolve expressions, but we still may be
             # able to fuse columns from a projection off of a join. In that
