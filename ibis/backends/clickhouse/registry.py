@@ -635,6 +635,24 @@ def _clip(translator, expr):
     return arg
 
 
+def _quantile(func, *, translate_qs):
+    def translate(translator, expr):
+        op = expr.op()
+        arg = op.arg
+        if not isinstance(q_op := op.quantile.op(), ops.Literal):
+            raise TypeError(
+                "clickhouse MultiQuantile only works with a literal list of "
+                "floats"
+            )
+        quantile = translate_qs(q_op.value)
+        if (where := op.where) is not None:
+            return _call(translator, f"{func}If({quantile})", arg, where)
+        else:
+            return _call(translator, f"{func}({quantile})", arg)
+
+    return translate
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -790,6 +808,11 @@ operation_registry = {
     ops.Strftime: _fixed_arity("formatDateTime", 2),
     ops.ArrayColumn: _array_column,
     ops.Clip: _clip,
+    ops.Quantile: _quantile('quantile', translate_qs=str),
+    ops.MultiQuantile: _quantile(
+        'quantiles',
+        translate_qs=lambda qs: ", ".join(map(str, qs)),
+    ),
 }
 
 
