@@ -165,6 +165,24 @@ def _arbitrary(t, expr):
     return t._reduction(getattr(sa.func, how), expr)
 
 
+def _quantile(t, expr):
+    op = expr.op()
+    arg = t.translate(op.arg)
+    quantile_op = op.quantile.op()
+    if not isinstance(quantile_op, ops.Literal):
+        raise TypeError(
+            "quantile parameter must be a literal double or array of doubles; "
+            "arbitrary expressions are not supported by duckdb"
+        )
+    convert = list if isinstance(quantile_op.value, tuple) else str
+    quantile = convert(quantile_op.value)
+    lit_quantile = sa.text(str(quantile))
+    agg = sa.func.percentile_cont(lit_quantile).within_group(arg)
+    if (where := op.where) is not None:
+        return sa.funcfilter(agg, t.translate(where))
+    return agg
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
@@ -194,6 +212,8 @@ operation_registry.update(
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
+        ops.Quantile: _quantile,
+        ops.MultiQuantile: _quantile,
     }
 )
 
