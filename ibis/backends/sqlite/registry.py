@@ -20,7 +20,7 @@ from ibis.backends.base.sql.alchemy import (
     varargs,
     variance_reduction,
 )
-from ibis.backends.base.sql.alchemy.registry import _gen_string_find
+from ibis.backends.base.sql.alchemy.registry import _clip, _gen_string_find
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -358,5 +358,6 @@ operation_registry.update(
         ops.BitXor: reduction(sa.func._ibis_sqlite_bit_xor),
         ops.Degrees: unary(sa.func._ibis_sqlite_degrees),
         ops.Radians: unary(sa.func._ibis_sqlite_radians),
+        ops.Clip: _clip(min_func=sa.func.min, max_func=sa.func.max),
     }
 )
