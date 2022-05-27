@@ -423,7 +423,23 @@ def test_projection_filter_fuse(projection_fuse_filter):
     sql3 = Compiler.to_sql(expr3)
 
     assert sql1 == sql2
-    assert sql1 == sql3
+
+    # ideally sql1 == sql3 but the projection logic has been a mess for a long
+    # time and causes bugs like
+    #
+    # https://github.com/ibis-project/ibis/issues/4003
+    #
+    # so we're conservative in fusing projections and filters
+    #
+    # even though it may seem obvious what to do, it's not
+    expected_sql3 = """\
+SELECT `a`, `b`, `c`
+FROM (
+  SELECT *
+  FROM foo
+  WHERE `a` > 0
+) t0"""
+    assert sql3 == expected_sql3
 
 
 def test_bug_project_multiple_times(customer, nation, region):
