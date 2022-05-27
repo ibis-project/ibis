@@ -2022,3 +2022,13 @@ def compile_radians(t, expr, scope, timecontext, **kwargs):
 def compile_zero_if_null(t, expr, scope, timecontext, **kwargs):
     col = t.translate(expr.op().arg, scope, timecontext, **kwargs)
     return F.when(col.isNull() | F.isnan(col), F.lit(0)).otherwise(col)
+
+
+@compiles(ops.Where)
+def compile_where(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    return F.when(
+        t.translate(op.bool_expr, scope, timecontext, **kwargs),
+        t.translate(op.true_expr, scope, timecontext, **kwargs),
+    ).otherwise(t.translate(op.false_null_expr, scope, timecontext, **kwargs))
