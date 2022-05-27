@@ -584,8 +584,9 @@ def test_zeroifnull_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "dask"])
-def test_where(backend, alltypes, df):
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.broken(["dask"], reason="dask selection with ops.Where is broken")
+def test_where_select(backend, alltypes, df):
     table = alltypes
     table = table.select(
         [
@@ -606,3 +607,20 @@ def test_where(backend, alltypes, df):
     expected.loc[expected['int_col'] == 0, 'where_col'] = 42
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_where_column(backend, alltypes, df):
+    expr = (
+        ibis.where(alltypes["int_col"] == 0, 42, -1)
+        .cast("int64")
+        .name("where_col")
+    )
+    result = expr.execute()
+
+    expected = pd.Series(
+        np.where(df.int_col == 0, 42, -1),
+        name="where_col",
+    )
+
+    backend.assert_series_equal(result, expected)
