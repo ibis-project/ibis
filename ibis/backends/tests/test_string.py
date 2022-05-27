@@ -127,17 +127,13 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
-            marks=pytest.mark.notimpl(
-                ["datafusion", "mysql", "pyspark", "sqlite"]
-            ),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
-            marks=pytest.mark.notimpl(
-                ["datafusion", "mysql", "pyspark", "sqlite"]
-            ),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
         ),
         param(
             lambda t: t.string_col.lower(),
