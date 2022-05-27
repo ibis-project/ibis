@@ -196,12 +196,15 @@ FROM (
 WHERE t2.`movieid` IN (
   SELECT `movieid`
   FROM (
-    SELECT t1.*
-    FROM t1
-    WHERE (t1.`userid` = 118205) AND
-          (extract(t1.`datetime`, 'year') > 2001) AND
-          (t1.`userid` = 118205) AND
-          (extract(t1.`datetime`, 'year') < 2009)
+    SELECT `movieid`
+    FROM (
+      SELECT t1.*
+      FROM t1
+      WHERE (t1.`userid` = 118205) AND
+            (extract(t1.`datetime`, 'year') > 2001) AND
+            (t1.`userid` = 118205) AND
+            (extract(t1.`datetime`, 'year') < 2009)
+    ) t5
   ) t4
 )"""
     result = ImpalaCompiler.to_sql(result)
