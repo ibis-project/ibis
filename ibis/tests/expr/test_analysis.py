@@ -290,3 +290,11 @@ def test_no_filter_means_no_selection():
     t = ibis.table(dict(a="string"))
     proj = t.filter([])
     assert proj.equals(t)
+
+
+def test_mutate_overwrites_existing_column():
+    t = ibis.table(dict(a="string"))
+    mut = t.mutate(a=42).select(["a"])
+    sel = mut.op().selections[0].op().table.op().selections[0].op().arg
+    assert isinstance(sel.op(), ops.Literal)
+    assert sel.op().value == 42
