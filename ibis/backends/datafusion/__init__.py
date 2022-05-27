@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -197,12 +198,17 @@ class Backend(BaseBackend):
         return translate(expr)
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    @lru_cache
+    def _get_operations(cls):
         from ibis.backends.datafusion.compiler import translate
 
-        op_classes = translate.registry
+        return frozenset(
+            op for op in translate.registry if issubclass(op, ops.Value)
+        )
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        op_classes = cls._get_operations()
         return operation in op_classes or any(
-            issubclass(operation, op_impl)
-            for op_impl in op_classes
-            if issubclass(op_impl, ops.Value)
+            issubclass(operation, op_impl) for op_impl in op_classes
         )
