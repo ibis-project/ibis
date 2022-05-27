@@ -621,6 +621,7 @@ def test_where_column(backend, alltypes, df):
     expected = pd.Series(
         np.where(df.int_col == 0, 42, -1),
         name="where_col",
+        dtype="int64",
     )
 
     backend.assert_series_equal(result, expected)
