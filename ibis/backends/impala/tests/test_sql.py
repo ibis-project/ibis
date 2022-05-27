@@ -204,8 +204,8 @@ WHERE t2.`movieid` IN (
           (extract(t1.`datetime`, 'year') < 2009)
   ) t4
 )"""
-    compiled_result = ImpalaCompiler.to_sql(result)
-    assert compiled_result == expected
+    result = ImpalaCompiler.to_sql(result)
+    assert result == expected
 
 
 def test_logically_negate_complex_boolean_expr():
