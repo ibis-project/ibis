@@ -152,12 +152,24 @@ def _day_of_week_name(t, expr):
     return sa.func.dayname(t.translate(arg))
 
 
+def _find_in_set(t, expr):
+    op = expr.op()
+    return (
+        sa.func.find_in_set(
+            t.translate(op.needle),
+            sa.func.concat_ws(",", *map(t.translate, op.values)),
+        )
+        - 1
+    )
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         # strings
         ops.StringFind: _gen_string_find(sa.func.locate),
+        ops.FindInSet: _find_in_set,
         ops.Capitalize: _capitalize,
         ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
         # math
