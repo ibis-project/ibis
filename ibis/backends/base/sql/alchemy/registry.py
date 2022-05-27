@@ -502,6 +502,22 @@ def _nth_value(t, expr):
     return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
 
 
+def _clip(*, min_func, max_func):
+    def translate(t, expr):
+        op = expr.op()
+        arg = t.translate(op.arg)
+
+        if (upper := op.upper) is not None:
+            arg = min_func(t.translate(upper), arg)
+
+        if (lower := op.lower) is not None:
+            arg = max_func(t.translate(lower), arg)
+
+        return arg
+
+    return translate
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
@@ -616,6 +632,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.IdenticalTo: fixed_arity(
         sa.sql.expression.ColumnElement.is_not_distinct_from, 2
     ),
+    ops.Clip: _clip(min_func=sa.func.least, max_func=sa.func.greatest),
 }
 
 
