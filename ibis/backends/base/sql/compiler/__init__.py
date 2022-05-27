@@ -1,6 +1,8 @@
 from ibis.backends.base.sql.compiler.base import DDL, DML
 from ibis.backends.base.sql.compiler.query_builder import (
     Compiler,
+    Difference,
+    Intersection,
     Select,
     SelectBuilder,
     TableSetFormatter,
@@ -16,6 +18,8 @@ __all__ = (
     'Select',
     'SelectBuilder',
     'Union',
+    'Intersection',
+    'Difference',
     'TableSetFormatter',
     'ExprTranslator',
     'QueryContext',
