@@ -351,11 +351,6 @@ def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
     tm.assert_frame_equal(result_pd, expected)
 
 
-@pytest.mark.xfail(
-    reason='Issue #2453 chain mutate() for window op and'
-    'non window op throws error for pyspark backend',
-    strict=True,
-)
 def test_complex_window(client):
     """Test window with different sizes
     mix context adjustment for window op that require context
