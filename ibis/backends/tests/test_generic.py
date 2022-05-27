@@ -582,3 +582,27 @@ def test_zeroifnull_column(backend, alltypes, df):
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion", "dask"])
+def test_where(backend, alltypes, df):
+    table = alltypes
+    table = table.select(
+        [
+            "int_col",
+            (
+                ibis.where(table["int_col"] == 0, 42, -1)
+                .cast("int64")
+                .name("where_col")
+            ),
+        ]
+    )
+
+    result = table.execute()
+
+    expected = df.loc[:, ["int_col"]].copy()
+
+    expected['where_col'] = -1
+    expected.loc[expected['int_col'] == 0, 'where_col'] = 42
+
+    backend.assert_frame_equal(result, expected)
