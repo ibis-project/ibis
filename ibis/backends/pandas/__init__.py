@@ -168,8 +168,17 @@ class BasePandasBackend(BaseBackend):
         execution = importlib.import_module(
             f"ibis.backends.{cls.name}.execution"
         )
+        dispatch = importlib.import_module(
+            f"ibis.backends.{cls.name}.dispatch"
+        )
         execute_node = execution.execute_node
-        op_classes = {op for op, *_ in execute_node.funcs.keys()}
+
+        pre_execute = dispatch.pre_execute
+        pre_execute_keys = pre_execute.funcs.keys()
+
+        op_classes = {
+            op for op, *_ in execute_node.funcs.keys() | pre_execute_keys
+        }
         return operation in op_classes or any(
             issubclass(operation, op_impl)
             for op_impl in op_classes
