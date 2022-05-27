@@ -283,7 +283,6 @@ def test_case_where(backend, alltypes, df):
     expected['new_col'] = 0
     expected.loc[mask_0, 'new_col'] = 20
     expected.loc[mask_1, 'new_col'] = 10
-    expected['new_col'] = expected['new_col']
 
     backend.assert_frame_equal(result, expected)
 
