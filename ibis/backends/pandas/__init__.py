@@ -167,16 +167,15 @@ class BasePandasBackend(BaseBackend):
     @classmethod
     @lru_cache
     def _get_operations(cls):
-        execution = importlib.import_module(
-            f"ibis.backends.{cls.name}.execution"
-        )
+        backend = f"ibis.backends.{cls.name}"
+
+        execution = importlib.import_module(f"{backend}.execution")
         execute_node = execution.execute_node
 
-        importlib.import_module(f"ibis.backends.{cls.name}.udf")
+        # import UDF to pick up AnalyticVectorizedUDF and others
+        importlib.import_module(f"{backend}.udf")
 
-        dispatch = importlib.import_module(
-            f"ibis.backends.{cls.name}.dispatch"
-        )
+        dispatch = importlib.import_module(f"{backend}.dispatch")
         pre_execute = dispatch.pre_execute
 
         return frozenset(
