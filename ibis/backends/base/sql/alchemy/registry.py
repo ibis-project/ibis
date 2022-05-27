@@ -633,6 +633,13 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
         sa.sql.expression.ColumnElement.is_not_distinct_from, 2
     ),
     ops.Clip: _clip(min_func=sa.func.least, max_func=sa.func.greatest),
+    ops.Where: fixed_arity(
+        lambda predicate, value_if_true, value_if_false: sa.case(
+            [(predicate, value_if_true)],
+            else_=value_if_false,
+        ),
+        3,
+    ),
 }
 
 
