@@ -622,6 +622,19 @@ def _array_column(t, expr):
     return f"[{args}]"
 
 
+def _clip(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+
+    if (upper := op.upper) is not None:
+        arg = f"least({translator.translate(upper)}, {arg})"
+
+    if (lower := op.lower) is not None:
+        arg = f"greatest({translator.translate(lower)}, {arg})"
+
+    return arg
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -776,6 +789,7 @@ operation_registry = {
     ops.Radians: _unary("radians"),
     ops.Strftime: _fixed_arity("formatDateTime", 2),
     ops.ArrayColumn: _array_column,
+    ops.Clip: _clip,
 }
 
 

@@ -564,7 +564,6 @@ def test_random(con):
 )
 @pytest.mark.notimpl(
     [
-        "clickhouse",
         "duckdb",
         "datafusion",
         "impala",
