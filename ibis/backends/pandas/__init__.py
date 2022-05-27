@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from functools import lru_cache
 from typing import Any, MutableMapping
 
 import pandas as pd
@@ -164,25 +165,31 @@ class BasePandasBackend(BaseBackend):
         return cls.backend_table_type(obj)
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    @lru_cache
+    def _get_operations(cls):
         execution = importlib.import_module(
             f"ibis.backends.{cls.name}.execution"
         )
+        execute_node = execution.execute_node
+
+        importlib.import_module(f"ibis.backends.{cls.name}.udf")
+
         dispatch = importlib.import_module(
             f"ibis.backends.{cls.name}.dispatch"
         )
-        execute_node = execution.execute_node
-
         pre_execute = dispatch.pre_execute
-        pre_execute_keys = pre_execute.funcs.keys()
 
-        op_classes = {
-            op for op, *_ in execute_node.funcs.keys() | pre_execute_keys
-        }
+        return frozenset(
+            op
+            for op, *_ in execute_node.funcs.keys() | pre_execute.funcs.keys()
+            if issubclass(op, ops.Value)
+        )
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        op_classes = cls._get_operations()
         return operation in op_classes or any(
-            issubclass(operation, op_impl)
-            for op_impl in op_classes
-            if issubclass(op_impl, ops.Value)
+            issubclass(operation, op_impl) for op_impl in op_classes
         )
 
 

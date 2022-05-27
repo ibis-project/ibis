@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from functools import lru_cache
 from typing import Any, Mapping
 
 import ibis.expr.operations as ops
@@ -258,10 +259,14 @@ class BaseSQLBackend(BaseBackend):
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    @lru_cache
+    def _get_operations(cls):
         translator = cls.compiler.translator_class
-        op_classes = translator._registry.keys() | translator._rewrites.keys()
-        return operation in op_classes
+        return translator._registry.keys() | translator._rewrites.keys()
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        return operation in cls._get_operations()
 
     def _create_temp_view(self, view, definition):
         raise NotImplementedError(
