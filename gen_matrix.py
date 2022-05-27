@@ -25,6 +25,19 @@ def get_leaf_classes(op):
             yield from get_leaf_classes(child_class)
 
 
+EXCLUDED_OPS = {
+    # Never translates into anything
+    ops.UnresolvedExistsSubquery,
+    ops.UnresolvedNotExistsSubquery,
+    ops.ScalarParameter,
+}
+
+INCLUDED_OPS = {
+    # Parent class of MultiQuantile so it's ignored by `get_backends()`
+    ops.Quantile,
+}
+
+
 ICONS = {
     True: ":material-check-decagram:{ .verified }",
     False: ":material-cancel:{ .cancel }",
@@ -32,11 +45,11 @@ ICONS = {
 
 
 def main():
-    possible_ops = frozenset(get_leaf_classes(ops.Value))
+    possible_ops = (
+        frozenset(get_leaf_classes(ops.Value)) | INCLUDED_OPS
+    ) - EXCLUDED_OPS
 
-    support = {
-        "operation": [f"`{op.__name__}`" for op in possible_ops],
-    }
+    support = {"operation": [f"`{op.__name__}`" for op in possible_ops]}
     support.update(
         (name, list(map(backend.has_operation, possible_ops)))
         for name, backend in get_backends()
