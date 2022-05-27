@@ -617,8 +617,8 @@ def _bit_agg(func):
     return compile
 
 
-def _array_column(t, expr):
-    args = ", ".join(map(t.translate, expr.op().cols))
+def _array_column(translator, expr):
+    args = ", ".join(map(translator.translate, expr.op().cols))
     return f"[{args}]"
 
 
