@@ -501,8 +501,13 @@ def _string_agg(t, expr):
 def _quantile(t, expr):
     op = expr.op()
     arg = t.translate(op.arg)
-    quantile = t.translate(op.quantile)
-    agg = sa.func.percentile_cont(quantile).within_group(arg)
+    quantile = op.quantile
+    if not isinstance(quantile.op(), ops.Literal):
+        raise TypeError(
+            "quantile parameter must be a literal double or array of doubles; "
+            "arbitrary expressions are not supported by postgres"
+        )
+    agg = sa.func.percentile_cont(t.translate(quantile)).within_group(arg)
     if (where := op.where) is not None:
         return sa.funcfilter(agg, t.translate(where))
     return agg

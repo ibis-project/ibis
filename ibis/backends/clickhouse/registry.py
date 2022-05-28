@@ -641,8 +641,9 @@ def _quantile(func, *, translate_qs):
         arg = op.arg
         if not isinstance(q_op := op.quantile.op(), ops.Literal):
             raise TypeError(
-                "clickhouse MultiQuantile only works with a literal list of "
-                "floats"
+                "quantile parameter must be a literal double or array of "
+                "doubles; arbitrary expressions are not supported by "
+                "clickhouse"
             )
         quantile = translate_qs(q_op.value)
         if (where := op.where) is not None:

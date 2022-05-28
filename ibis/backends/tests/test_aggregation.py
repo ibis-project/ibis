@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from pytest import mark, param
 
+import ibis
 import ibis.expr.datatypes as dt
 from ibis.udf.vectorized import reduction
 
@@ -296,20 +297,46 @@ def test_aggregate_grouped(
             ],
         ),
         param(
-            lambda t, where: t.double_col.quantile(0.5, where=where),
-            lambda t, where: t.double_col[where].quantile(0.5),
+            lambda t, _: t.double_col.quantile(0.5),
+            lambda t, _: t.double_col.quantile(0.5),
             id='quantile',
             marks=pytest.mark.notimpl(
                 ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
             ),
         ),
         param(
-            lambda t, where: t.double_col.quantile([0.25, 0.5], where=where),
-            lambda t, where: t.double_col[where].quantile([0.25, 0.5]),
+            lambda t, _: t.double_col.quantile(ibis.literal(1.0) / 90.9),
+            lambda *_: None,
+            id='quantile_expr',
+            marks=[
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "pyspark", "impala"]
+                ),
+                pytest.mark.notyet(
+                    ["sqlite", "mysql", "postgres", "duckdb", "clickhouse"]
+                ),
+            ],
+        ),
+        param(
+            lambda t, _: t.double_col.quantile([0.25, 0.5]),
+            lambda t, _: t.double_col.quantile([0.25, 0.5]),
             id='multi_quantile',
             marks=pytest.mark.notimpl(
                 ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
             ),
+        ),
+        param(
+            lambda t, _: t.double_col.quantile([ibis.literal(1.0) / 90.9]),
+            lambda *_: None,
+            id='multi_quantile_expr',
+            marks=[
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "pyspark", "impala"]
+                ),
+                pytest.mark.notyet(
+                    ["sqlite", "mysql", "postgres", "duckdb", "clickhouse"]
+                ),
+            ],
         ),
     ],
 )
