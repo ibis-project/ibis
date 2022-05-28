@@ -41,7 +41,7 @@ https://conda.anaconda.org/conda-forge/win-64/libsodium-1.0.18-h8d14728_1.tar.bz
 https://conda.anaconda.org/conda-forge/win-64/libspatialindex-1.9.3-h39d44d4_4.tar.bz2#51c172496e828258d04eba9971f2af1a
 https://conda.anaconda.org/conda-forge/win-64/libutf8proc-2.7.0-hcb41399_0.tar.bz2#3e2d60bef3aaf62061fcb9e76464c32f
 https://conda.anaconda.org/conda-forge/win-64/libwebp-base-1.2.2-h8ffe710_1.tar.bz2#24e23990217d3542fb821759a41d6ec2
-https://conda.anaconda.org/conda-forge/win-64/libzlib-1.2.11-h8ffe710_1014.tar.bz2#5e57ffcf6d651d94d329a3e9ce1f8f21
+https://conda.anaconda.org/conda-forge/win-64/libzlib-1.2.12-h8ffe710_0.tar.bz2#c3d49ce531c0b5bfe1a8c464ac3c709a
 https://conda.anaconda.org/conda-forge/win-64/lz4-c-1.9.3-h8ffe710_1.tar.bz2#d12763533276560a931c1bd3df1adf63
 https://conda.anaconda.org/conda-forge/win-64/m2w64-gcc-libgfortran-5.3.0-6.tar.bz2#066552ac6b907ec6d72c0ddab29050dc
 https://conda.anaconda.org/conda-forge/win-64/openssl-1.1.1o-h8ffe710_0.tar.bz2#afd7ea72111c4cc1fe8101ae2a321bda
@@ -70,7 +70,7 @@ https://conda.anaconda.org/conda-forge/win-64/m2w64-gcc-libs-5.3.0-7.tar.bz2#fe7
 https://conda.anaconda.org/conda-forge/win-64/mkl-2022.0.0-h0e2418a_796.tar.bz2#54baa34953c02445bfd6f566c45decbb
 https://conda.anaconda.org/conda-forge/win-64/python-3.8.13-h9a09f29_0_cpython.tar.bz2#41de0ad5db009f4f829f9d415a6a4200
 https://conda.anaconda.org/conda-forge/win-64/zeromq-4.3.4-h0e60522_1.tar.bz2#e1aff0583dda5fb917eb3d2c1025aa80
-https://conda.anaconda.org/conda-forge/win-64/zlib-1.2.11-h8ffe710_1014.tar.bz2#8f3f8b243814bddb2898c314ed024e03
+https://conda.anaconda.org/conda-forge/win-64/zlib-1.2.12-h8ffe710_0.tar.bz2#d512bc564ba90eb83c4ae178d8c6fc72
 https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.2-h6255e5f_1.tar.bz2#90702967af600ea2e2c7f7968c0ce099
 https://conda.anaconda.org/conda-forge/noarch/absolufy-imports-0.3.1-pyhd8ed1ab_0.tar.bz2#6cfab7bc82c2a20549163c93c890e9d6
 https://conda.anaconda.org/conda-forge/noarch/atomicwrites-1.4.0-pyh9f0ad1d_0.tar.bz2#5e36230ffaf3b7bb599424592684ae53

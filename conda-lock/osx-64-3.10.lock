@@ -25,7 +25,7 @@ https://conda.anaconda.org/conda-forge/osx-64/libsodium-1.0.18-hbcb3906_1.tar.bz
 https://conda.anaconda.org/conda-forge/osx-64/libtool-2.4.6-he49afe7_1008.tar.bz2#9c8f39ea3499b42a833157e54bc95441
 https://conda.anaconda.org/conda-forge/osx-64/libutf8proc-2.7.0-h0d85af4_0.tar.bz2#d11cd97b8c35f9c803a1f45491d373a5
 https://conda.anaconda.org/conda-forge/osx-64/libwebp-base-1.2.2-h0d85af4_1.tar.bz2#052369eda6e13f44b308407c99857f84
-https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.2.11-h6c3fc93_1014.tar.bz2#49f20ed86f7ed34204be74fbb2868c60
+https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.2.12-h6c3fc93_0.tar.bz2#f07bbb7d382718623d13296bd6f486f3
 https://conda.anaconda.org/conda-forge/osx-64/llvm-openmp-14.0.4-ha654fa7_0.tar.bz2#5d5ab9ab83ce21422be84ecfd3142201
 https://conda.anaconda.org/conda-forge/osx-64/ncurses-6.3-h96cf925_1.tar.bz2#76217ebfbb163ff2770a261f955a5861
 https://conda.anaconda.org/conda-forge/osx-64/pandoc-2.18-h694c41f_0.tar.bz2#42f9f041e9d250ee3bc7332b8d28e0a2
@@ -64,7 +64,7 @@ https://conda.anaconda.org/conda-forge/osx-64/readline-8.1-h05e3726_0.tar.bz2#28
 https://conda.anaconda.org/conda-forge/osx-64/snappy-1.1.9-h6e38e02_1.tar.bz2#ffa92d111ec90eec8ffc09220a9c5aba
 https://conda.anaconda.org/conda-forge/osx-64/tk-8.6.12-h5dbffcc_0.tar.bz2#8e9480d9c47061db2ed1b4ecce519a7f
 https://conda.anaconda.org/conda-forge/osx-64/zeromq-4.3.4-he49afe7_1.tar.bz2#1972d732b123ed04b60fd21e94f0b178
-https://conda.anaconda.org/conda-forge/osx-64/zlib-1.2.11-h6c3fc93_1014.tar.bz2#98b82f6a8de694bc6259f2d1a69bc02b
+https://conda.anaconda.org/conda-forge/osx-64/zlib-1.2.12-h6c3fc93_0.tar.bz2#6afaa92362b47e2b058d2385b60727ea
 https://conda.anaconda.org/conda-forge/osx-64/aws-c-cal-0.5.11-hd2e2f4b_0.tar.bz2#09bd616bd04399d208dc06b909a5e1c0
 https://conda.anaconda.org/conda-forge/osx-64/brotli-bin-1.0.9-h5eb16cf_7.tar.bz2#6ae0a8419a03d0d9675f319bef66d3aa
 https://conda.anaconda.org/conda-forge/noarch/fonts-conda-ecosystem-1-0.tar.bz2#fee5683a3f04bd15cbd8318b096a27ab
