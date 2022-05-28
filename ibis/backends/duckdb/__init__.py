@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterator, NamedTuple
 
 import sqlalchemy as sa
+import toolz
 
+import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
@@ -17,6 +19,11 @@ import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
+
+
+class _ColumnMetadata(NamedTuple):
+    name: str
+    type: dt.DataType
 
 
 class Backend(BaseAlchemyBackend):
@@ -68,13 +75,19 @@ class Backend(BaseAlchemyBackend):
         df = cursor.cursor.fetch_df()
         return schema.apply_to(df)
 
+    def _metadata(self, query: str) -> Iterator[_ColumnMetadata]:
+        for name, type, null in toolz.pluck(
+            ["column_name", "column_type", "null"],
+            self.con.execute(f"DESCRIBE {query}"),
+        ):
+            yield _ColumnMetadata(
+                name=name,
+                type=parse(type)(nullable=null.lower() == "yes"),
+            )
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a SQL string."""
-        with self.con.connect() as con:
-            rel = con.connection.c.query(query)
-        return sch.Schema.from_dict(
-            {name: parse(type) for name, type in zip(rel.columns, rel.types)}
-        )
+        """Return an ibis Schema from a DuckDB SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
 
     def _get_sqla_table(
         self,
@@ -82,7 +95,6 @@ class Backend(BaseAlchemyBackend):
         schema: str | None = None,
         **kwargs: Any,
     ) -> sa.Table:
-
         with warnings.catch_warnings():
             # don't fail or warn if duckdb-engine fails to discover types
             warnings.filterwarnings(
@@ -91,32 +103,32 @@ class Backend(BaseAlchemyBackend):
                 category=sa.exc.SAWarning,
             )
 
-            t = super()._get_sqla_table(name, schema, **kwargs)
+            table = super()._get_sqla_table(name, schema, **kwargs)
 
         nulltype_cols = frozenset(
             col.name
-            for col in t.c.values()
+            for col in table.c
             if isinstance(col.type, sa.types.NullType)
         )
 
-        if nulltype_cols:
-            query = (
-                f"DESCRIBE {self.con.dialect.identifier_preparer.quote(name)}"
-            )
-            with self.con.connect() as con:
-                metadata = con.connection.c.execute(query).fetchall()
+        if not nulltype_cols:
+            return table
 
-            for colname, type, null, *_ in metadata:
-                if colname in nulltype_cols:
-                    column = sa.Column(
+        quoted_name = self.con.dialect.identifier_preparer.quote(name)
+
+        for colname, type in self._metadata(quoted_name):
+            if colname in nulltype_cols:
+                # replace null types discovered by sqlalchemy with non null
+                # types
+                table.append_column(
+                    sa.Column(
                         colname,
-                        to_sqla_type(parse(type)),
-                        nullable=null == "YES",
-                    )
-                    # replace null types discovered by sqlite with non null
-                    # types
-                    t.append_column(column, replace_existing=True)
-        return t
+                        to_sqla_type(type),
+                        nullable=type.nullable,
+                    ),
+                    replace_existing=True,
+                )
+        return table
 
     def _get_temp_view_definition(
         self,
