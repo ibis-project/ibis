@@ -82,4 +82,12 @@ self: super:
   traitlets = super.traitlets.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
   });
+
+  griffe = super.griffe.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.pdm-pep517 ];
+  });
+
+  mkdocstrings-python = super.mkdocstrings-python.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.pdm-pep517 ];
+  });
 }
