@@ -66,15 +66,6 @@ self: super:
     setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
 
-  mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
-    patches = (attrs.patches or [ ]) ++ [
-      (pkgs.fetchpatch {
-        url = "https://github.com/mkdocstrings/mkdocstrings/commit/b37722716b1e0ed6393ec71308dfb0f85e142f3b.patch";
-        sha256 = "sha256-DD1SjEvs5HBlSRLrqP3jhF/yoeWkF7F3VXCD1gyt5Fc=";
-      })
-    ];
-  });
-
   watchdog = super.watchdog.overrideAttrs (attrs: lib.optionalAttrs
     (stdenv.isDarwin && lib.versionAtLeast attrs.version "2")
     {
