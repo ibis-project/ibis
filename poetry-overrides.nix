@@ -90,4 +90,11 @@ self: super:
   mkdocstrings-python = super.mkdocstrings-python.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.pdm-pep517 ];
   });
+
+  mkdocstrings-python-legacy =
+    super.mkdocstrings-python-legacy.overridePythonAttrs (attrs: {
+      nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+        self.pdm-pep517
+      ];
+    });
 }
