@@ -373,7 +373,6 @@ def test_no_aliases_needed():
     assert not context.need_aliases()
 
 
-@pytest.mark.skip
 def test_fuse_projections():
     table = ibis.table(
         [('foo', 'int32'), ('bar', 'int64'), ('value', 'double')],
@@ -1472,3 +1471,20 @@ def test_endswith(endswith):
 SELECT `foo_id` like concat('%', 'foo') AS `tmp`
 FROM star1"""
     assert Compiler.to_sql(expr) == expected
+
+
+def test_filter_predicates():
+    table = ibis.table([("color", "string")], name="t")
+    predicates = [
+        lambda x: x.color.lower().like('%de%'),
+        lambda x: x.color.lower().contains('de'),
+        lambda x: x.color.lower().rlike('.*ge.*'),
+    ]
+
+    expr = table
+    for pred in predicates:
+        filtered = expr.filter(pred(expr))
+        projected = filtered.projection([expr])
+        expr = projected
+
+    Compiler.to_sql(expr)

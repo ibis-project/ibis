@@ -735,9 +735,13 @@ def find_first_base_table(expr):
 
 def _find_root_table(expr):
     op = expr.op()
-    if isinstance(expr, ir.Table):
-        return lin.proceed, op
-    return lin.halt if op.blocks() else lin.proceed, None
+
+    if isinstance(op, ops.Selection):
+        return lin.proceed, op.table
+    elif op.blocks():
+        return lin.halt, op
+    else:
+        return lin.proceed, None
 
 
 def fully_originate_from(exprs, parents):
