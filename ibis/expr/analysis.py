@@ -706,8 +706,11 @@ class Projector:
             elif fully_originate_from(lifted_val, root_table):
                 can_fuse = True
                 fused_exprs.append(lifted_val)
-            else:
+            elif not fully_originate_from(val, root_table):
                 can_fuse = False
+                break
+            else:
+                fused_exprs.append(val)
 
         if can_fuse:
             return ops.Selection(
