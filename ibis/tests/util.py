@@ -14,7 +14,7 @@ def assert_equal(left, right):
             left, right
         )
     else:
-        assert left.equals(right), 'Objects unequal: {}\nvs\n{}'.format(
+        assert left.equals(right), 'Objects unequal: \n{}\nvs\n{}'.format(
             repr(left), repr(right)
         )
 
