@@ -15,6 +15,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
@@ -51,7 +52,8 @@ class TableColumn(Value):
 
         super().__init__(table=table, name=name)
 
-    def parent(self):
+    @util.deprecated(version="4.0.0", instead="Use `table` property instead")
+    def parent(self):  # pragma: no cover
         return self.table
 
     def resolve_name(self):

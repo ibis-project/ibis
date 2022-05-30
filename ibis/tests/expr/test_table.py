@@ -83,11 +83,6 @@ def test_getitem_column_select(table):
         # Make sure it's the right type
         assert isinstance(col, Column)
 
-        # Ensure we have a field selection with back-reference to the table
-        parent = col.parent()
-        assert isinstance(parent, ops.TableColumn)
-        assert parent.parent() is table
-
 
 def test_getitem_attribute(table):
     result = table.a
