@@ -164,16 +164,15 @@ class QueryContext:
         self.query = query
 
     def is_foreign_expr(self, expr):
-        from ibis.expr.analysis import ExprValidator
+        from ibis.expr.analysis import fully_originate_from
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
         if self.has_ref(expr, parent_contexts=True):
             return False
 
-        exprs = [self.query.table_set] + self.query.select_set
-        validator = ExprValidator(exprs)
-        return not validator.validate(expr)
+        parents = [self.query.table_set] + self.query.select_set
+        return not fully_originate_from(expr, parents)
 
     def _get_table_key(self, table):
         if isinstance(table, ir.Table):

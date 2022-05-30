@@ -74,19 +74,6 @@ def _regular_join_method(
 
 @public
 class Table(Expr):
-    def _is_valid(self, exprs):
-        try:
-            self._assert_valid(util.promote_list(exprs))
-        except com.RelationError:
-            return False
-        else:
-            return True
-
-    def _assert_valid(self, exprs):
-        from ibis.expr.analysis import ExprValidator
-
-        ExprValidator([self]).validate_all(exprs)
-
     def __contains__(self, name):
         return name in self.schema()
 

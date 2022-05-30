@@ -12,11 +12,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.exceptions import (
-    ExpressionError,
-    IbisTypeError,
-    RelationError,
-)
+from ibis.common.exceptions import ExpressionError, IbisTypeError
 from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
@@ -423,7 +419,7 @@ def apply_filter(expr, predicates):
             for predicate in predicates
         )
 
-        if op.table._is_valid(simplified_predicates):
+        if fully_originate_from(simplified_predicates, op.table):
             result = ops.Aggregation(
                 op.table,
                 op.metrics,
@@ -466,7 +462,7 @@ def _filter_selection(expr, predicates):
             for predicate in predicates
         )
 
-        if op.table._is_valid(simplified_predicates):
+        if fully_originate_from(simplified_predicates, op.table):
             result = ops.Selection(
                 op.table,
                 [],
@@ -651,7 +647,6 @@ class Projector:
 
         root_table = root.table
         roots = root_table.op().root_tables()
-        validator = ExprValidator([root_table])
         fused_exprs = []
         can_fuse = False
         clean_exprs = self.clean_exprs
@@ -708,14 +703,11 @@ class Projector:
                 # This was a filter, so implicitly a select *
                 if not have_root and not root_selections:
                     fused_exprs = [root_table] + fused_exprs
-            elif validator.validate(lifted_val):
+            elif fully_originate_from(lifted_val, root_table):
                 can_fuse = True
                 fused_exprs.append(lifted_val)
-            elif not validator.validate(val):
-                can_fuse = False
-                break
             else:
-                fused_exprs.append(val)
+                can_fuse = False
 
         if can_fuse:
             return ops.Selection(
@@ -725,69 +717,6 @@ class Projector:
                 sort_keys=root.sort_keys,
             )
         return None
-
-
-class ExprValidator:
-    def __init__(self, exprs):
-        self.parent_exprs = exprs
-
-        self.roots = []
-        for expr in self.parent_exprs:
-            self.roots.extend(expr.op().root_tables())
-
-    def validate(self, expr):
-        op = expr.op()
-
-        if isinstance(op, ops.TableColumn):
-            if self._among_roots(op.table.op()):
-                return True
-        elif isinstance(op, ops.Selection):
-            if self._among_roots(op):
-                return True
-
-        expr_roots = expr.op().root_tables()
-        for root in expr_roots:
-            if not self._among_roots(root):
-                return False
-        return True
-
-    def _among_roots(self, node):
-        roots_shared = (
-            is_ancestor(root, node) or self.compatible_with(node, root)
-            for root in self.roots
-        )
-        return sum(roots_shared) > 0
-
-    def compatible_with(self, a, b):
-        # self and other are equivalent except for predicates, selections, or
-        # sort keys any of which is allowed to be empty. If both are not empty
-        # then they must be equal
-        if not isinstance(b, type(a)):
-            return False
-
-        if isinstance(a, ops.Selection):
-            return a.table.equals(b.table)
-
-        return False
-
-    def shares_some_roots(self, expr):
-        expr_roots = expr.op().root_tables()
-        return any(self._among_roots(root) for root in expr_roots)
-
-    def validate_all(self, exprs):
-        for expr in exprs:
-            self.assert_valid(expr)
-
-    def assert_valid(self, expr):
-        if not self.validate(expr):
-            msg = self._error_message(expr)
-            raise RelationError(msg)
-
-    def _error_message(self, expr):
-        return (
-            'The expression "%s" does not fully originate from '
-            'dependencies of the table expression.' % repr(expr)
-        )
 
 
 def find_first_base_table(expr):
@@ -804,75 +733,25 @@ def find_first_base_table(expr):
         return None
 
 
+def _find_root_table(expr):
+    op = expr.op()
+    if isinstance(expr, ir.Table):
+        return lin.proceed, op
+    return lin.halt if op.blocks() else lin.proceed, None
+
+
 def fully_originate_from(exprs, parents):
-    def finder(expr):
-        op = expr.op()
-
-        if isinstance(expr, ir.Table):
-            return lin.proceed, expr.op()
-        return lin.halt if op.blocks() else lin.proceed, None
-
     # unique table dependencies of exprs and parents
-    exprs_deps = set(lin.traverse(finder, exprs))
-    parents_deps = set(lin.traverse(finder, parents))
+    exprs_deps = set(lin.traverse(_find_root_table, exprs))
+    parents_deps = set(lin.traverse(_find_root_table, parents))
     return exprs_deps <= parents_deps
 
 
-class FilterValidator(ExprValidator):
-
-    """
-    Filters need not necessarily originate fully from the ancestors of the
-    table being filtered. The key cases for this are
-
-    - Scalar reductions involving some other tables
-    - Array expressions involving other tables only (mapping to "uncorrelated
-      subqueries" in SQL-land)
-    - Reductions or array expressions like the above, but containing some
-      predicate with a record-specific interdependency ("correlated subqueries"
-      in SQL)
-    """
-
-    def validate(self, expr):
-        op = expr.op()
-
-        if isinstance(expr, ir.BooleanColumn) and isinstance(
-            op, ops.TableColumn
-        ):
-            return True
-
-        is_valid = True
-
-        if isinstance(op, ops.Contains):
-            value_valid = super().validate(op.value)
-            is_valid = value_valid
-        elif isinstance(op, (ops.ExistsSubquery, ops.NotExistsSubquery)):
-            predicate = functools.reduce(operator.and_, op.predicates)
-            is_valid = self.shares_some_roots(predicate)
-        else:
-            roots_valid = []
-            for arg in op.flat_args():
-                if isinstance(arg, ir.Scalar):
-                    # arg_valid = True
-                    pass
-                elif isinstance(arg, ir.TopK):  # pragma: no cover
-                    # we don't cover this branch because its implementation as
-                    # a filter is automatically turned into a semi-join before
-                    # this code path is hit
-                    #
-                    # we should change its base class to Expr instead of
-                    # Analytic and then remove this branch
-                    roots_valid.append(True)
-                elif isinstance(arg, (ir.Column, ir.Analytic)):
-                    roots_valid.append(self.shares_some_roots(arg))
-                elif isinstance(arg, ir.Expr):
-                    raise NotImplementedError(repr((type(expr), type(arg))))
-                else:
-                    # arg_valid = True
-                    pass
-
-            is_valid = any(roots_valid)
-
-        return is_valid
+def partially_originate_from(exprs, parents):
+    # unique table dependencies of exprs and parents
+    exprs_deps = set(lin.traverse(_find_root_table, exprs))
+    parents_deps = set(lin.traverse(_find_root_table, parents))
+    return bool(exprs_deps & parents_deps)
 
 
 @util.deprecated(version="4.0", instead="")
