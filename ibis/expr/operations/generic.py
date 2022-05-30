@@ -85,8 +85,8 @@ class RowID(Value):
         return True
 
 
-# TODO(kszucs): deprecate then remove
 @public
+@util.deprecated(version="4.0.0", instead="")
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}
