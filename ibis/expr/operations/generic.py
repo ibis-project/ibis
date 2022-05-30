@@ -262,6 +262,7 @@ class Literal(Value):
                     decimal.Decimal,
                 )
             ),
+            rlz.is_computable_input,
         )
     )
     dtype = rlz.datatype
