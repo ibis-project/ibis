@@ -342,7 +342,6 @@ class Selection(TableNode, sch.HasSchema):
                     rlz.column_from("table"),
                     rlz.function_of("table"),
                     rlz.any,
-                    rlz.named_literal,
                 )
             )
         ),
@@ -580,7 +579,6 @@ class Aggregation(TableNode, sch.HasSchema):
                     rlz.reduction,
                     rlz.scalar(rlz.any),
                     rlz.tuple_of(rlz.scalar(rlz.any)),
-                    rlz.named_literal,
                 )
             ),
             flatten=True,
