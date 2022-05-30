@@ -15,6 +15,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
@@ -83,8 +84,8 @@ class RowID(Value):
         return True
 
 
-# TODO(kszucs): deprecate then remove
 @public
+@util.deprecated(version="4.0.0", instead="")
 def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}
