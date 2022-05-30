@@ -373,6 +373,7 @@ def test_no_aliases_needed():
     assert not context.need_aliases()
 
 
+@pytest.mark.skip
 def test_fuse_projections():
     table = ibis.table(
         [('foo', 'int32'), ('bar', 'int64'), ('value', 'double')],
