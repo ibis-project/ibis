@@ -383,17 +383,22 @@ class Selection(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, selections, predicates, sort_keys):
-        from ibis.expr.analysis import FilterValidator
+        from ibis.expr.analysis import (
+            fully_originate_from,
+            partially_originate_from,
+        )
 
-        # Need to validate that the column expressions are compatible with the
-        # input table; this means they must either be scalar expressions or
-        # array expressions originating from the same root table expression
-        dependent_exprs = selections + sort_keys
-        table._assert_valid(dependent_exprs)
+        if not fully_originate_from(selections + sort_keys, table):
+            raise com.RelationError(
+                "Selection expressions don't fully originate from "
+                "dependencies of the table expression."
+            )
 
-        # Validate predicates
-        validator = FilterValidator([table])
-        validator.validate_all(predicates)
+        for predicate in predicates:
+            if not partially_originate_from(predicate, table):
+                raise com.RelationError(
+                    "Predicate doesn't share any roots with table"
+                )
 
         super().__init__(
             table=table,
@@ -481,11 +486,13 @@ class Selection(TableNode, sch.HasSchema):
             return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
+        from ibis.expr.analysis import fully_originate_from
+
         resolved_keys = _maybe_convert_sort_keys(
             [self.table, expr], sort_exprs
         )
         if not self.blocks():
-            if self.table._is_valid(resolved_keys):
+            if fully_originate_from(resolved_keys, self.table):
                 return Selection(
                     self.table,
                     self.selections,
@@ -537,16 +544,16 @@ class AggregateSelection:
             return self._plain_subquery()
 
     def _pushdown_exprs(self, exprs):
-        import ibis.expr.analysis as L
+        from ibis.expr.analysis import fully_originate_from, sub_for
 
         subbed_exprs = []
         for expr in util.promote_list(exprs):
             expr = self.op.table._ensure_expr(expr)
-            subbed = L.sub_for(expr, [(self.parent, self.op.table)])
+            subbed = sub_for(expr, [(self.parent, self.op.table)])
             subbed_exprs.append(subbed)
 
         if subbed_exprs:
-            valid = self.op.table._is_valid(subbed_exprs)
+            valid = fully_originate_from(subbed_exprs, self.op.table)
         else:
             valid = True
 
@@ -646,15 +653,23 @@ class Aggregation(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
-        from ibis.expr.analysis import FilterValidator
+        from ibis.expr.analysis import (
+            fully_originate_from,
+            partially_originate_from,
+        )
 
         # All non-scalar refs originate from the input table
-        all_exprs = metrics + by + having + sort_keys
-        table._assert_valid(all_exprs)
+        if not fully_originate_from(metrics + by + having + sort_keys, table):
+            raise com.RelationError(
+                "Selection expressions don't fully originate from "
+                "dependencies of the table expression."
+            )
 
-        # Validate predicates
-        validator = FilterValidator([table])
-        validator.validate_all(predicates)
+        for predicate in predicates:
+            if not partially_originate_from(predicate, table):
+                raise com.RelationError(
+                    "Predicate doesn't share any roots with table"
+                )
 
         if not by:
             sort_keys = tuple()
@@ -701,10 +716,12 @@ class Aggregation(TableNode, sch.HasSchema):
         return sch.Schema(names, types)
 
     def sort_by(self, expr, sort_exprs):
+        from ibis.expr.analysis import fully_originate_from
+
         resolved_keys = _maybe_convert_sort_keys(
             [self.table, expr], sort_exprs
         )
-        if self.table._is_valid(resolved_keys):
+        if fully_originate_from(resolved_keys, self.table):
             return Aggregation(
                 self.table,
                 self.metrics,
