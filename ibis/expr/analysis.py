@@ -39,60 +39,39 @@ def sub_for(expr, substitutions):
         An Ibis expression
     """
     mapping = {k.op(): v for k, v in substitutions}
-    substitutor = Substitutor()
-    return substitutor.substitute(expr, mapping)
+    return _substitute(expr, mapping)
 
 
-class Substitutor:
-    def __init__(self):
-        """Initialize the Substitutor class.
+def _substitute(expr, mapping):
+    """Substitute expressions with other expressions.
 
-        Notes
-        -----
-        We need a new cache per substitution call, otherwise we leak state
-        across calls and end up incorrectly reusing other substitions' cache.
-        """
-        cache = toolz.memoize(key=lambda args, kwargs: args[0]._key)
-        self.substitute = cache(self._substitute)
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+    mapping : Mapping[ibis.expr.operations.Node, ibis.expr.types.Expr]
 
-    def _substitute(self, expr, mapping):
-        """Substitute expressions with other expressions.
+    Returns
+    -------
+    ibis.expr.types.Expr
+    """
+    node = expr.op()
+    try:
+        return mapping[node]
+    except KeyError:
+        pass
 
-        Parameters
-        ----------
-        expr : ibis.expr.types.Expr
-        mapping : Mapping[ibis.expr.operations.Node, ibis.expr.types.Expr]
+    new_args = []
+    for arg in node.args:
+        if isinstance(arg, ir.Expr):
+            arg = _substitute(arg, mapping)
+        new_args.append(arg)
 
-        Returns
-        -------
-        ibis.expr.types.Expr
-        """
-        node = expr.op()
-        try:
-            return mapping[node]
-        except KeyError:
-            if node.blocks():
-                return expr
-
-            new_args = list(node.args)
-            unchanged = True
-            for i, arg in enumerate(new_args):
-                if isinstance(arg, ir.Expr):
-                    new_arg = self.substitute(arg, mapping)
-                    unchanged = unchanged and new_arg is arg
-                    new_args[i] = new_arg
-            if unchanged:
-                return expr
-            try:
-                new_node = type(node)(*new_args)
-            except IbisTypeError:
-                return expr
-
-            new_expr = type(expr)(new_node)
-            if expr.has_name():
-                new_expr = new_expr.name(expr.get_name())
-
-            return new_expr
+    try:
+        new_node = type(node)(*new_args)
+    except IbisTypeError:
+        return expr
+    else:
+        return new_node.to_expr()
 
 
 class ScalarAggregate:
