@@ -46,14 +46,11 @@ class TableNode(Node):
             ),
         )
 
-    @util.deprecated(
-        version="4.0.0",
-        instead="Use ibis.expr.analysis.is_ancestor() instead",
-    )
+    @util.deprecated(version="4.0.0", instead="")
     def is_ancestor(self, other):  # pragma: no cover
-        from ibis.expr.analysis import is_ancestor
+        from ibis.expr.analysis import _is_ancestor
 
-        return is_ancestor(self, other)
+        return _is_ancestor(self, other)
 
 
 @public

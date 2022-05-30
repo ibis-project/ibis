@@ -80,10 +80,7 @@ class Node(Annotable, Comparable):
     def compatible_with(self, other):  # pragma: no cover
         return self.equals(other)
 
-    @util.deprecated(
-        version="4.0.0",
-        instead="Use ibis.expr.analysis.is_ancestor() instead",
-    )
+    @util.deprecated(version="4.0.0", instead="")
     def is_ancestor(self, other):
         try:
             other = other.op()
