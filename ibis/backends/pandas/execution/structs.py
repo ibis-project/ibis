@@ -15,9 +15,12 @@ def execute_node_struct_field_dict(op, data, **kwargs):
     return data[op.field]
 
 
-@execute_node.register(ops.StructField, type(None))
-def execute_node_struct_field_none(op, data, **kwargs):
-    return None
+@execute_node.register(ops.StructField, (type(None), type(pd.NA), float))
+def execute_node_struct_field_none(op, data, **_):
+    assert (isinstance(data, float) and pd.isna(data)) or not isinstance(
+        data, float
+    )
+    return pd.NA
 
 
 @execute_node.register(ops.StructField, pd.Series)
