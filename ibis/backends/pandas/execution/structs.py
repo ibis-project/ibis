@@ -27,10 +27,10 @@ def execute_node_struct_field_series(op, data, **kwargs):
 
 
 def _safe_getter(value, field: str):
-    try:
+    if pd.isna(value):
+        return pd.NA
+    else:
         return value[field]
-    except TypeError:
-        return value
 
 
 @execute_node.register(ops.StructField, SeriesGroupBy)
