@@ -466,6 +466,7 @@ def is_computable_input(value, **kwargs):
 
 
 @validator
+@util.deprecated(version="4.0.0", instead="")
 def named_literal(value, **kwargs):
     import ibis.expr.operations as ops
 
