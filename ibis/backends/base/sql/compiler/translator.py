@@ -164,7 +164,7 @@ class QueryContext:
         self.query = query
 
     def is_foreign_expr(self, expr):
-        from ibis.expr.analysis import fully_originate_from
+        from ibis.expr.analysis import shares_all_roots
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
@@ -172,7 +172,7 @@ class QueryContext:
             return False
 
         parents = [self.query.table_set] + self.query.select_set
-        return not fully_originate_from(expr, parents)
+        return not shares_all_roots(expr, parents)
 
     def _get_table_key(self, table):
         if isinstance(table, ir.Table):

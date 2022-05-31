@@ -419,7 +419,7 @@ def apply_filter(expr, predicates):
             for predicate in predicates
         )
 
-        if fully_originate_from(simplified_predicates, op.table):
+        if shares_all_roots(simplified_predicates, op.table):
             result = ops.Aggregation(
                 op.table,
                 op.metrics,
@@ -462,7 +462,7 @@ def _filter_selection(expr, predicates):
             for predicate in predicates
         )
 
-        if fully_originate_from(simplified_predicates, op.table):
+        if shares_all_roots(simplified_predicates, op.table):
             result = ops.Selection(
                 op.table,
                 [],
@@ -703,10 +703,10 @@ class Projector:
                 # This was a filter, so implicitly a select *
                 if not have_root and not root_selections:
                     fused_exprs = [root_table] + fused_exprs
-            elif fully_originate_from(lifted_val, root_table):
+            elif shares_all_roots(lifted_val, root_table):
                 can_fuse = True
                 fused_exprs.append(lifted_val)
-            elif not fully_originate_from(val, root_table):
+            elif not shares_all_roots(val, root_table):
                 can_fuse = False
                 break
             else:
@@ -752,14 +752,14 @@ def _find_root_table(expr):
         return lin.proceed, None
 
 
-def fully_originate_from(exprs, parents):
+def shares_all_roots(exprs, parents):
     # unique table dependencies of exprs and parents
     exprs_deps = set(lin.traverse(_find_root_table, exprs))
     parents_deps = set(lin.traverse(_find_root_table, parents))
     return exprs_deps <= parents_deps
 
 
-def partially_originate_from(exprs, parents):
+def shares_some_roots(exprs, parents):
     # unique table dependencies of exprs and parents
     exprs_deps = set(lin.traverse(_find_root_table, exprs))
     parents_deps = set(lin.traverse(_find_root_table, parents))
