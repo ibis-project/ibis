@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import abc
+import functools
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 
 if TYPE_CHECKING:
@@ -15,10 +17,11 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.common.dispatch import RegexDispatcher
 from ibis.common.exceptions import TranslationError
 from ibis.util import deprecated
 
-__all__ = ('BaseBackend', 'Database')
+__all__ = ('BaseBackend', 'Database', 'connect')
 
 
 class Database:
@@ -593,3 +596,93 @@ class BaseBackend(abc.ABC):
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
         )
+
+
+_connect = RegexDispatcher("_connect")
+
+
+@_connect.register(r"(?P<backend>.+)://(?P<path>.*)", priority=10)
+def _(_: str, *, backend: str, path: str, **kwargs: Any) -> BaseBackend:
+    """Connect to given `backend` with `path`.
+
+    Examples
+    --------
+    >>> con = ibis.connect("duckdb://relative/path/to/data.db")
+    >>> con = ibis.connect("postgres://user:pass@hostname:port/database")
+    """
+    instance = getattr(ibis, backend)
+    backend += (backend == "postgres") * "ql"
+    try:
+        return instance.connect(url=f"{backend}://{path}", **kwargs)
+    except TypeError:
+        return instance.connect(path, **kwargs)
+
+
+@_connect.register(r"file://(?P<path>.*)", priority=10)
+def _(_: str, *, path: str, **kwargs: Any) -> BaseBackend:
+    """Connect to file located at `path`."""
+    return _connect(path, **kwargs)
+
+
+@_connect.register(r".+\.(?P<backend>.+)", priority=1)
+def _(path: str, *, backend: str, **kwargs: Any) -> BaseBackend:
+    """Connect to given path.
+
+    The extension is assumed to be the name of an ibis backend.
+
+    Examples
+    --------
+    >>> con = ibis.connect("file://relative/path/to/data.duckdb")
+    """
+    return getattr(ibis, backend).connect(path, **kwargs)
+
+
+@functools.singledispatch
+def connect(resource: Path | str, **_: Any) -> BaseBackend:
+    """Connect to `resource`.
+
+    `resource` can be a `pathlib.Path` or a `str` specifying a URL or path.
+
+    Examples
+    --------
+    >>> con = ibis.connect("duckdb://relative/path/to/data.db")
+    >>> con = ibis.connect("relative/path/to/data.duckdb")
+    """
+    raise NotImplementedError(type(resource))
+
+
+@connect.register
+def _(path: Path, **kwargs: Any) -> BaseBackend:
+    return _connect(str(path), **kwargs)
+
+
+@connect.register
+def _(url: str, **kwargs: Any) -> BaseBackend:
+    return _connect(url, **kwargs)
+
+
+@_connect.register(
+    r"(?P<backend>.+)://(?P<filename>.+\.(?P<extension>.+))",
+    priority=11,
+)
+def _(
+    _: str,
+    *,
+    backend: str,
+    filename: str,
+    extension: str,
+    **kwargs: Any,
+) -> BaseBackend:
+    """Connect to `backend` and register a file.
+
+    The extension of the file will be used to register the file with
+    the backend.
+
+    Examples
+    --------
+    >>> con = ibis.connect("duckdb://relative/path/to/data.csv")
+    >>> con = ibis.connect("duckdb://relative/path/to/more/data.parquet")
+    """
+    con = getattr(ibis, backend).connect(**kwargs)
+    con.register(f"{extension}://{filename}")
+    return con
