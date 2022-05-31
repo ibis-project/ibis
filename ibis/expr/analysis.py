@@ -203,9 +203,13 @@ def substitute(fn, expr):
     """
     node = expr.op()
 
-    new_node = fn(node)
-    if new_node is not None:
-        return new_node.to_expr()
+    result = fn(node)
+    if result is lin.proceed:
+        pass
+    elif result is lin.halt:
+        return expr
+    else:
+        return result.to_expr()
 
     new_args = []
     for arg in node.args:
@@ -229,7 +233,8 @@ def substitute_parents(expr):
 
     def fn(node):
         if isinstance(node, ops.Selection):
-            return node
+            # stop substituting child nodes
+            return lin.halt
         elif isinstance(node, ops.TableColumn):
             # For table column references, in the event that we're on top of a
             # projection, we need to check whether the ref comes from the base
@@ -245,9 +250,9 @@ def substitute_parents(expr):
                         and node.name in val.schema()
                     ):
                         return ops.TableColumn(val, node.name)
-        else:
-            # stop substituting child nodes
-            return None
+
+        # keep looking for nodes to substitute
+        return lin.proceed
 
     return substitute(fn, expr)
 
