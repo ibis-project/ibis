@@ -740,7 +740,12 @@ def _find_root_table(expr):
     op = expr.op()
 
     if isinstance(op, ops.Selection):
-        return lin.proceed, op.table
+        # remove predicates and sort_keys, so that child tables are considered
+        # equivalent even if their predicates and sort_keys are not
+        return lin.proceed, op.__class__(
+            table=op.table,
+            selections=op.selections,
+        )
     elif op.blocks():
         return lin.halt, op
     else:
