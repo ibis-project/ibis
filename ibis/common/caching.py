@@ -30,8 +30,8 @@ class WeakCache(MutableMapping):
             return self._data.pop(identifiers, None)
 
         # create weak references for the key's components with the callback
-        # to remove the cache antry if any of the key's components gets
-        # garbase collected
+        # to remove the cache entry if any of the key's components gets
+        # garbage collected
         refs = tuple(weakref.ref(item, callback) for item in key)
 
         self._data[identifiers] = (value, refs)

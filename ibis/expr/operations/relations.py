@@ -147,12 +147,12 @@ def _clean_join_predicates(left, right, predicates):
 
 
 def _validate_join_predicates(left, right, predicates):
-    from ibis.expr.analysis import fully_originate_from
+    from ibis.expr.analysis import shares_all_roots
 
     # Validate join predicates. Each predicate must be valid jointly when
     # considering the roots of each input table
     for predicate in predicates:
-        if not fully_originate_from(predicate, [left, right]):
+        if not shares_all_roots(predicate, [left, right]):
             raise com.RelationError(
                 'The expression {!r} does not fully '
                 'originate from dependencies of the table '
@@ -380,19 +380,16 @@ class Selection(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, selections, predicates, sort_keys):
-        from ibis.expr.analysis import (
-            fully_originate_from,
-            partially_originate_from,
-        )
+        from ibis.expr.analysis import shares_all_roots, shares_some_roots
 
-        if not fully_originate_from(selections + sort_keys, table):
+        if not shares_all_roots(selections + sort_keys, table):
             raise com.RelationError(
                 "Selection expressions don't fully originate from "
                 "dependencies of the table expression."
             )
 
         for predicate in predicates:
-            if not partially_originate_from(predicate, table):
+            if not shares_some_roots(predicate, table):
                 raise com.RelationError(
                     "Predicate doesn't share any roots with table"
                 )
@@ -483,13 +480,13 @@ class Selection(TableNode, sch.HasSchema):
             return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
-        from ibis.expr.analysis import fully_originate_from
+        from ibis.expr.analysis import shares_all_roots
 
         resolved_keys = _maybe_convert_sort_keys(
             [self.table, expr], sort_exprs
         )
         if not self.blocks():
-            if fully_originate_from(resolved_keys, self.table):
+            if shares_all_roots(resolved_keys, self.table):
                 return Selection(
                     self.table,
                     self.selections,
@@ -541,7 +538,7 @@ class AggregateSelection:
             return self._plain_subquery()
 
     def _pushdown_exprs(self, exprs):
-        from ibis.expr.analysis import fully_originate_from, sub_for
+        from ibis.expr.analysis import shares_all_roots, sub_for
 
         subbed_exprs = []
         for expr in util.promote_list(exprs):
@@ -550,7 +547,7 @@ class AggregateSelection:
             subbed_exprs.append(subbed)
 
         if subbed_exprs:
-            valid = fully_originate_from(subbed_exprs, self.op.table)
+            valid = shares_all_roots(subbed_exprs, self.op.table)
         else:
             valid = True
 
@@ -650,20 +647,17 @@ class Aggregation(TableNode, sch.HasSchema):
     )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
-        from ibis.expr.analysis import (
-            fully_originate_from,
-            partially_originate_from,
-        )
+        from ibis.expr.analysis import shares_all_roots, shares_some_roots
 
         # All non-scalar refs originate from the input table
-        if not fully_originate_from(metrics + by + having + sort_keys, table):
+        if not shares_all_roots(metrics + by + having + sort_keys, table):
             raise com.RelationError(
                 "Selection expressions don't fully originate from "
                 "dependencies of the table expression."
             )
 
         for predicate in predicates:
-            if not partially_originate_from(predicate, table):
+            if not shares_some_roots(predicate, table):
                 raise com.RelationError(
                     "Predicate doesn't share any roots with table"
                 )
@@ -713,12 +707,12 @@ class Aggregation(TableNode, sch.HasSchema):
         return sch.Schema(names, types)
 
     def sort_by(self, expr, sort_exprs):
-        from ibis.expr.analysis import fully_originate_from
+        from ibis.expr.analysis import shares_all_roots
 
         resolved_keys = _maybe_convert_sort_keys(
             [self.table, expr], sort_exprs
         )
-        if fully_originate_from(resolved_keys, self.table):
+        if shares_all_roots(resolved_keys, self.table):
             return Aggregation(
                 self.table,
                 self.metrics,
