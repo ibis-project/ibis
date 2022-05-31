@@ -13,7 +13,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import ExpressionError, IbisTypeError
-from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
 # ---------------------------------------------------------------------
@@ -198,13 +197,29 @@ def find_immediate_parent_tables(expr):
     return toolz.unique(lin.traverse(finder, expr))
 
 
-def substitute_parents(expr, lift_memo=None, past_projection=True):
-    rewriter = ExprSimplifier(expr, block_projection=not past_projection)
-    return rewriter.get_result()
+def substitute(fn, expr):
+    """
+    Substitute expressions with other expressions.
+    """
+    node = expr.op()
+
+    new_node = fn(node)
+    if new_node is not None:
+        return new_node.to_expr()
+
+    new_args = []
+    for arg in node.args:
+        if isinstance(arg, tuple):
+            arg = tuple(substitute(fn, expr) for expr in arg)
+        elif isinstance(arg, ir.Expr):
+            arg = substitute(fn, arg)
+        new_args.append(arg)
+
+    new_node = type(node)(*new_args)
+    return new_node.to_expr()
 
 
-class ExprSimplifier:
-
+def substitute_parents(expr):
     """
     Rewrite the input expression by replacing any table expressions part of a
     "commutative table operation unit" (for lack of scientific term, a set of
@@ -212,113 +227,29 @@ class ExprSimplifier:
     semantic result)
     """
 
-    def __init__(self, expr, block_projection=False):
-        self.expr = expr
-        self.block_projection = block_projection
+    def fn(node):
+        if isinstance(node, ops.Selection):
+            return node
+        elif isinstance(node, ops.TableColumn):
+            # For table column references, in the event that we're on top of a
+            # projection, we need to check whether the ref comes from the base
+            # table schema or is a derived field. If we've projected out of
+            # something other than a physical table, then lifting should not
+            # occur
+            table = node.table.op()
 
-    def get_result(self):
-        expr = self.expr
-        node = expr.op()
-        if isinstance(node, ops.Literal):
-            return expr
-
-        # For table column references, in the event that we're on top of a
-        # projection, we need to check whether the ref comes from the base
-        # table schema or is a derived field. If we've projected out of
-        # something other than a physical table, then lifting should not occur
-        if isinstance(node, ops.TableColumn):
-            result = self._lift_TableColumn(expr, block=self.block_projection)
-            if result is not expr:
-                return result
-        # Temporary hacks around issues addressed in #109
-        elif isinstance(node, ops.Selection):
-            return expr
-
-        unchanged = True
-
-        lifted_args = []
-        for arg in node.args:
-            lifted_arg, unch_arg = self._lift_arg(
-                arg, block=self.block_projection
-            )
-            lifted_args.append(lifted_arg)
-
-            unchanged = unchanged and unch_arg
-
-        # Do not modify unnecessarily
-        if unchanged:
-            return expr
-
-        lifted_node = type(node)(*lifted_args)
-
-        result = type(expr)(lifted_node)
-        if isinstance(expr, ir.Value) and expr.has_name():
-            result = result.name(expr.get_name())
-
-        return result
-
-    def _lift_arg(self, arg, block):
-        changed = 0
-
-        def _lift(expr):
-            nonlocal changed
-
-            if isinstance(expr, ir.Expr):
-                lifted_arg = self.lift(expr, block=block)
-                changed += lifted_arg is not expr
-            else:
-                # a string or some other thing
-                lifted_arg = expr
-            return lifted_arg
-
-        if arg is None:
-            return arg, True
-
-        if util.is_iterable(arg):
-            result = list(map(_lift, arg))
+            if isinstance(table, ops.Selection):
+                for val in table.selections:
+                    if (
+                        isinstance(val.op(), ops.PhysicalTable)
+                        and node.name in val.schema()
+                    ):
+                        return ops.TableColumn(val, node.name)
         else:
-            result = _lift(arg)
+            # stop substituting child nodes
+            return None
 
-        return result, not changed
-
-    def lift(self, expr, block):
-        op = expr.op()
-
-        if isinstance(op, ops.Value):
-            return self._sub(expr, block=block)
-        elif isinstance(op, ops.Selection):
-            return expr
-        elif isinstance(op, (ops.TableNode, HasSchema)):
-            return expr
-        else:
-            return self._sub(expr, block=block)
-
-    def _lift_TableColumn(self, expr, block):
-        node = expr.op()
-        root = node.table.op()
-        result = expr
-
-        if isinstance(root, ops.Selection):
-            can_lift = False
-            for val in root.selections:
-                value_op = val.op()
-                if (
-                    isinstance(value_op, ops.PhysicalTable)
-                    and node.name in val.schema()
-                ):
-                    can_lift = True
-                    lifted_root = self.lift(val, block=False)
-
-            if can_lift and not block:
-                lifted_node = ops.TableColumn(lifted_root, node.name)
-                result = type(expr)(lifted_node)
-
-        return result
-
-    def _sub(self, expr, block):
-        # catchall recursive rewriter
-        helper = ExprSimplifier(expr, block_projection=block)
-        return helper.get_result()
+    return substitute(fn, expr)
 
 
 def get_mutation_exprs(
@@ -545,15 +476,7 @@ class _PushdownValidate:
             ):
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
-
-                lifted_node = substitute_parents(
-                    expr,
-                    past_projection=False,
-                ).op()
-
-                is_valid = col_table.equals(
-                    node.table.op()
-                ) or col_table.equals(lifted_node.table.op())
+                is_valid = col_table.equals(node.table.op())
 
         return is_valid
 
@@ -680,8 +603,6 @@ class Projector:
         root_selections = root.selections
         parent_op = self.parent.op()
         for val in resolved:
-            lifted_val = substitute_parents(val, past_projection=False)
-
             # a * projection
             if isinstance(val, ir.Table) and (
                 parent_op.equals(val.op())
@@ -703,9 +624,9 @@ class Projector:
                 # This was a filter, so implicitly a select *
                 if not have_root and not root_selections:
                     fused_exprs = [root_table] + fused_exprs
-            elif shares_all_roots(lifted_val, root_table):
+            elif shares_all_roots(val, root_table):
                 can_fuse = True
-                fused_exprs.append(lifted_val)
+                fused_exprs.append(val)
             elif not shares_all_roots(val, root_table):
                 can_fuse = False
                 break
