@@ -860,7 +860,7 @@ def flatten_predicate(expr):
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
 
 
-def _is_ancestor(parent, child):
+def _is_ancestor(parent, child):  # pragma: no cover
     """
     Check whether an operation is an ancestor node of another.
 
