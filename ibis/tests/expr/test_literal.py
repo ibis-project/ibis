@@ -151,5 +151,5 @@ def test_map_literal(value):
 )
 def test_map_literal_non_castable(value):
     typestr = "map<string, string>"
-    with pytest.raises(ibis.common.exceptions.IbisTypeError):
+    with pytest.raises(TypeError):
         ibis.map(value, type=typestr)
