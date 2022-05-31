@@ -204,11 +204,9 @@ def substitute(fn, expr):
     node = expr.op()
 
     result = fn(node)
-    if result is lin.proceed:
-        pass
-    elif result is lin.halt:
+    if result is lin.halt:
         return expr
-    else:
+    elif result is not lin.proceed:
         return result.to_expr()
 
     new_args = []
