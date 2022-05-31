@@ -7,7 +7,6 @@ import pandas as pd
 import toolz
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -142,16 +141,9 @@ def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
         if inferred_dtype == 'mixed':
             # We need to inspect an element to determine the Ibis dtype
             value = s.iloc[0]
-            if isinstance(value, (np.ndarray, pd.Series, Sequence)):
+            if isinstance(value, (np.ndarray, pd.Series, Sequence, Mapping)):
                 # Defer to individual `infer` functions for these
                 return dt.infer(value)
-            elif isinstance(value, Mapping):
-                try:
-                    return dt.infer(value)
-                except com.IbisTypeError:
-                    return dt.Struct.from_tuples(
-                        (k, dt.infer(v)) for k, v in value.items()
-                    )
             else:
                 return dt.dtype('binary')
         else:
