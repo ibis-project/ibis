@@ -656,11 +656,11 @@ class Aggregation(TableNode, sch.HasSchema):
                 "dependencies of the table expression."
             )
 
-        for predicate in predicates:
-            if not shares_some_roots(predicate, table):
-                raise com.RelationError(
-                    "Predicate doesn't share any roots with table"
-                )
+        # invariant due to Aggregation and AggregateSelection requiring a valid
+        # Selection
+        assert all(
+            shares_some_roots(predicate, table) for predicate in predicates
+        )
 
         if not by:
             sort_keys = tuple()
