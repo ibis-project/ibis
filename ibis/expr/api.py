@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import connect
 from ibis.expr.deferred import Deferred
 from ibis.expr.random import random
 from ibis.expr.schema import Schema
@@ -115,6 +116,7 @@ __all__ = (
     'array',
     'case',
     'coalesce',
+    'connect',
     'cross_join',
     'cumulative_window',
     'date',
