@@ -298,3 +298,13 @@ def test_mutate_overwrites_existing_column():
     sel = mut.op().selections[0].op().table.op().selections[0].op().arg
     assert isinstance(sel.op(), ops.Literal)
     assert sel.op().value == 42
+
+
+def test_agg_selection_does_not_share_roots():
+    t = ibis.table(dict(a="string"), name="t")
+    s = ibis.table(dict(b="float64"), name="s")
+    gb = t.group_by("a")
+    n = s.count()
+
+    with pytest.raises(com.RelationError, match="Selection expressions"):
+        gb.aggregate(n=n)
