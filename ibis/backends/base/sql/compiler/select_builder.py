@@ -153,8 +153,6 @@ class SelectBuilder:
 
         self.query_expr, self.result_handler = self._adapt_expr(self.expr)
 
-        self.sub_memo = {}
-
         self.table_set = None
         self.select_set = None
         self.group_by = None
@@ -521,7 +519,7 @@ class SelectBuilder:
             self._collect(op.table, toplevel=toplevel)
 
     def _sub(self, what):
-        return L.substitute_parents(what, self.sub_memo)
+        return L.substitute_parents(what)
 
     # --------------------------------------------------------------------
     # Subquery analysis / extraction
