@@ -23,6 +23,7 @@ from typing import (
 import numpy as np
 import pandas as pd
 import parsy as p
+import toolz
 from multipledispatch import Dispatcher
 from public import public
 
@@ -1267,10 +1268,15 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
     """Infer the [`Map`][ibis.expr.datatypes.Map] type of `value`."""
     if not value:
         return Map(null, null)
-    return Map(
-        highest_precedence(map(infer, value.keys())),
-        highest_precedence(map(infer, value.values())),
-    )
+    try:
+        return Map(
+            highest_precedence(map(infer, value.keys())),
+            highest_precedence(map(infer, value.values())),
+        )
+    except IbisTypeError:
+        return Struct.from_dict(
+            toolz.valmap(infer, value, factory=type(value))
+        )
 
 
 @infer.register((list, tuple))
