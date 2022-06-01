@@ -177,9 +177,7 @@ def find_immediate_parent_tables(expr):
 
 
 def substitute(fn, expr):
-    """
-    Substitute expressions with other expressions.
-    """
+    """Substitute expressions with other expressions."""
     node = expr.op()
 
     result = fn(node)
