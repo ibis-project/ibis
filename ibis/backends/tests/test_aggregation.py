@@ -301,7 +301,7 @@ def test_aggregate_grouped(
             lambda t, _: t.double_col.quantile(0.5),
             id='quantile',
             marks=pytest.mark.notimpl(
-                ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
+                ["dask", "impala", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
@@ -322,7 +322,7 @@ def test_aggregate_grouped(
             lambda t, _: t.double_col.quantile([0.25, 0.5]),
             id='multi_quantile',
             marks=pytest.mark.notimpl(
-                ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite"]
+                ["dask", "impala", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
