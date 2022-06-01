@@ -367,16 +367,7 @@ def test_reduction_ops(
     np.testing.assert_allclose(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "mysql",
-        "pandas",
-        "postgres",
-        "sqlite",
-    ]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "mysql", "pandas", "sqlite"])
 def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
