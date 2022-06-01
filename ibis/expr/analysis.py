@@ -38,41 +38,16 @@ def sub_for(expr, substitutions):
     ibis.expr.types.Expr
         An Ibis expression
     """
-    mapping = {k.op(): v for k, v in substitutions}
-    return _substitute(expr, mapping)
 
+    def fn(node, mapping={k.op(): v for k, v in substitutions}):
+        try:
+            return mapping[node]
+        except KeyError:
+            if node.blocks():
+                return node.to_expr()
+            return lin.proceed
 
-def _substitute(expr, mapping):
-    """Substitute expressions with other expressions.
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-    mapping : Mapping[ibis.expr.operations.Node, ibis.expr.types.Expr]
-
-    Returns
-    -------
-    ibis.expr.types.Expr
-    """
-    node = expr.op()
-    try:
-        return mapping[node]
-    except KeyError:
-        if node.blocks():
-            return expr
-
-    new_args = []
-    for arg in node.args:
-        if isinstance(arg, ir.Expr):
-            arg = _substitute(arg, mapping)
-        new_args.append(arg)
-
-    try:
-        new_node = type(node)(*new_args)
-    except IbisTypeError:
-        return expr
-    else:
-        return new_node.to_expr()
+    return substitute(fn, expr)
 
 
 class ScalarAggregate:
@@ -185,18 +160,26 @@ def substitute(fn, expr):
     if result is lin.halt:
         return expr
     elif result is not lin.proceed:
-        return result.to_expr()
+        assert isinstance(result, ir.Expr), type(result)
+        return result
 
     new_args = []
     for arg in node.args:
         if isinstance(arg, tuple):
-            arg = tuple(substitute(fn, expr) for expr in arg)
+            arg = tuple(
+                substitute(fn, expr) if isinstance(arg, ir.Expr) else expr
+                for expr in arg
+            )
         elif isinstance(arg, ir.Expr):
             arg = substitute(fn, arg)
         new_args.append(arg)
 
-    new_node = type(node)(*new_args)
-    return new_node.to_expr()
+    try:
+        new_node = node.__class__(*new_args)
+    except IbisTypeError:
+        return expr
+    else:
+        return new_node.to_expr()
 
 
 def substitute_parents(expr):
@@ -225,7 +208,7 @@ def substitute_parents(expr):
                         isinstance(val.op(), ops.PhysicalTable)
                         and node.name in val.schema()
                     ):
-                        return ops.TableColumn(val, node.name)
+                        return ops.TableColumn(val, node.name).to_expr()
 
         # keep looking for nodes to substitute
         return lin.proceed
