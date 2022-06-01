@@ -395,6 +395,15 @@ def compile_aggregation(t, expr, scope, timecontext, **kwargs):
 
     src_table = t.translate(op.table, scope, timecontext)
 
+    if op.predicates:
+        src_table = src_table.filter(
+            t.translate(
+                functools.reduce(operator.and_, op.predicates),
+                scope,
+                timecontext,
+            )
+        )
+
     if op.by:
         context = AggregationContext.GROUP
         aggs = [
