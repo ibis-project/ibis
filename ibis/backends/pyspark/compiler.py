@@ -406,19 +406,16 @@ def compile_aggregation(t, expr, scope, timecontext, **kwargs):
 
     if op.by:
         context = AggregationContext.GROUP
-        aggs = [
-            _compile_agg(t, m, scope, timecontext, context=context)
-            for m in op.metrics
-        ]
         bys = [t.translate(b, scope, timecontext) for b in op.by]
-        return src_table.groupby(*bys).agg(*aggs)
+        src_table = src_table.groupby(*bys)
     else:
         context = AggregationContext.ENTIRE
-        aggs = [
-            _compile_agg(t, m, scope, timecontext, context=context)
-            for m in op.metrics
-        ]
-        return src_table.agg(*aggs)
+
+    aggs = [
+        _compile_agg(t, m, scope, timecontext, context=context)
+        for m in op.metrics
+    ]
+    return src_table.agg(*aggs)
 
 
 @compiles(ops.Union)
