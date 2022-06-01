@@ -39,7 +39,9 @@ def sub_for(expr, substitutions):
         An Ibis expression
     """
 
-    def fn(node, mapping={k.op(): v for k, v in substitutions}):
+    mapping = {k.op(): v for k, v in substitutions}
+
+    def fn(node):
         try:
             return mapping[node]
         except KeyError:
