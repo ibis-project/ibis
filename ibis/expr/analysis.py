@@ -58,7 +58,8 @@ def _substitute(expr, mapping):
     try:
         return mapping[node]
     except KeyError:
-        pass
+        if node.blocks():
+            return expr
 
     new_args = []
     for arg in node.args:
