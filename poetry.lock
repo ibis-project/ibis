@@ -338,7 +338,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "dask"
-version = "2022.5.0"
+version = "2022.5.2"
 description = "Parallel PyData with Task Scheduling"
 category = "main"
 optional = true
@@ -356,10 +356,10 @@ toolz = ">=0.8.2"
 
 [package.extras]
 array = ["numpy (>=1.18)"]
-complete = ["bokeh (>=2.4.2)", "distributed (==2022.05.0)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
+complete = ["bokeh (>=2.4.2)", "distributed (==2022.05.2)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
 dataframe = ["numpy (>=1.18)", "pandas (>=1.0)"]
 diagnostics = ["bokeh (>=2.4.2)", "jinja2"]
-distributed = ["distributed (==2022.05.0)"]
+distributed = ["distributed (==2022.05.2)"]
 test = ["pytest", "pytest-rerunfailures", "pytest-xdist", "pre-commit"]
 
 [[package]]
@@ -2851,8 +2851,8 @@ coverage = [
     {file = "coverage-6.4.tar.gz", hash = "sha256:727dafd7f67a6e1cad808dc884bd9c5a2f6ef1f8f6d2f22b37b96cb0080d4f49"},
 ]
 dask = [
-    {file = "dask-2022.5.0-py3-none-any.whl", hash = "sha256:1b168877673a3d12778e319a1a406bb33b5abe942d8b6fae70ed02cb6019868a"},
-    {file = "dask-2022.5.0.tar.gz", hash = "sha256:0afd69dd0cd9f838fc0710eda1f3e3333d6603b37e93ded7fac4a51d77566a0f"},
+    {file = "dask-2022.5.2-py3-none-any.whl", hash = "sha256:ecd0e8cd00802c2f684369f907e5ab9fbdc3ea0c0b4ebc1239da899f8d79cefb"},
+    {file = "dask-2022.5.2.tar.gz", hash = "sha256:d57061ccf37194907e65d62816c0fa6c1adaf2dcbc5785c6754bbdd3073f8898"},
 ]
 datafusion = [
     {file = "datafusion-0.5.2-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:7bc19fbc01d42690b4698f1a8207b110a0e51bd8de2a5725fc86431b7c4ed8cd"},
