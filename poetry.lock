@@ -489,6 +489,18 @@ python-versions = "*"
 devel = ["colorama", "jsonschema", "json-spec", "pylint", "pytest", "pytest-benchmark", "pytest-cache", "validictory"]
 
 [[package]]
+name = "filelock"
+version = "3.7.1"
+description = "A platform independent file lock."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+docs = ["furo (>=2021.8.17b43)", "sphinx (>=4.1)", "sphinx-autodoc-typehints (>=1.12)"]
+testing = ["covdefaults (>=1.2.0)", "coverage (>=4)", "pytest (>=4)", "pytest-cov", "pytest-timeout (>=1.4.2)"]
+
+[[package]]
 name = "fiona"
 version = "1.8.21"
 description = "Fiona reads and writes spatial data files"
@@ -2373,7 +2385,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "3a3a53a75e3e72de1e7c7fd8f265f3c2ef524e82c226e6124a05a5c27de2908f"
+content-hash = "72ea7719d303a92dcd2230606d48a4da6c2c0c5f87cb30254235207d21cdf740"
 
 [metadata.files]
 absolufy-imports = [
@@ -2959,6 +2971,10 @@ executing = [
 fastjsonschema = [
     {file = "fastjsonschema-2.15.3-py3-none-any.whl", hash = "sha256:ddb0b1d8243e6e3abb822bd14e447a89f4ab7439342912d590444831fa00b6a0"},
     {file = "fastjsonschema-2.15.3.tar.gz", hash = "sha256:0a572f0836962d844c1fc435e200b2e4f4677e4e6611a2e3bdd01ba697c275ec"},
+]
+filelock = [
+    {file = "filelock-3.7.1-py3-none-any.whl", hash = "sha256:37def7b658813cda163b56fc564cdc75e86d338246458c4c28ae84cabefa2404"},
+    {file = "filelock-3.7.1.tar.gz", hash = "sha256:3a0fd85166ad9dbab54c9aec96737b744106dc5f15c0b09a6744a445299fcf04"},
 ]
 fiona = [
     {file = "Fiona-1.8.21-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:39c656421e25b4d0d73d0b6acdcbf9848e71f3d9b74f44c27d2d516d463409ae"},

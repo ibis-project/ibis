@@ -102,6 +102,7 @@ pytest-randomly = ">=3.10.1,<4"
 pytest-repeat = ">=0.9.1,<0.10"
 docstring_parser = ">=0.13,<0.14"
 pytest-xdist = ">=2.3.0,<3"
+filelock = ">=3.7.0,<4"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
 pyupgrade = ">=2.26.0,<3"
 requests = ">=2,<3"
