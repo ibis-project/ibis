@@ -8,8 +8,11 @@ from ibis.expr.operations.core import Value, distinct_roots
 from ibis.expr.operations.reductions import Reduction
 
 
+@public
 class VectorizedUDF(Value):
     func = rlz.instance_of((FunctionType, LambdaType))
+    func_summary = rlz.optional(rlz.string)
+    func_desc = rlz.optional(rlz.string)
     func_args = rlz.tuple_of(rlz.column(rlz.any))
     # TODO(kszucs): should rename these arguments to
     # input_dtypes and return_dtype
