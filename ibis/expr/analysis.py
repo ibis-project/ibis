@@ -179,7 +179,11 @@ def substitute(fn, expr):
     except IbisTypeError:
         return expr
     else:
-        return new_node.to_expr()
+        # unfortunately we can't use `.to_expr()` here because it's not backend
+        # aware, and some backends have their own ir.Table subclasses, like
+        # impala. There's probably a design flaw in the modeling of
+        # backend-specific expressions.
+        return type(expr)(new_node)
 
 
 def substitute_parents(expr):
