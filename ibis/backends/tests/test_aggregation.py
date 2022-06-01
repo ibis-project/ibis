@@ -367,16 +367,18 @@ def test_reduction_ops(
     np.testing.assert_allclose(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "mysql", "pandas", "sqlite"])
-@pytest.mark.parametrize(
-    'cond',
+@pytest.mark.notimpl(
     [
-        param(lambda _: None, id='no_cond'),
-        param(lambda t: t.string_col.isin(['1', '7']), id='is_in'),
-    ],
+        "dask",
+        "datafusion",
+        "mysql",
+        "pandas",
+        "postgres",
+        "sqlite",
+    ]
 )
-def test_approx_median(alltypes, cond):
-    expr = alltypes.double_col.approx_median(where=cond(alltypes))
+def test_approx_median(alltypes):
+    expr = alltypes.double_col.approx_median()
     result = expr.execute()
     assert isinstance(result, float)
 

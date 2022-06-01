@@ -507,10 +507,7 @@ def _quantile(t, expr):
             "quantile parameter must be a literal double or array of doubles; "
             "arbitrary expressions are not supported by postgres"
         )
-    agg = sa.func.percentile_cont(t.translate(quantile)).within_group(arg)
-    if (where := op.where) is not None:
-        return sa.funcfilter(agg, t.translate(where))
-    return agg
+    return sa.func.percentile_cont(t.translate(quantile)).within_group(arg)
 
 
 operation_registry.update(

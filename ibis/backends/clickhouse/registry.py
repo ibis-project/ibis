@@ -646,10 +646,7 @@ def _quantile(func, *, translate_qs):
                 "clickhouse"
             )
         quantile = translate_qs(q_op.value)
-        if (where := op.where) is not None:
-            return _call(translator, f"{func}If({quantile})", arg, where)
-        else:
-            return _call(translator, f"{func}({quantile})", arg)
+        return _call(translator, f"{func}({quantile})", arg)
 
     return translate
 

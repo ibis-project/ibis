@@ -177,10 +177,7 @@ def _quantile(t, expr):
     convert = list if isinstance(quantile_op.value, tuple) else str
     quantile = convert(quantile_op.value)
     lit_quantile = sa.text(str(quantile))
-    agg = sa.func.percentile_cont(lit_quantile).within_group(arg)
-    if (where := op.where) is not None:
-        return sa.funcfilter(agg, t.translate(where))
-    return agg
+    return sa.func.percentile_cont(lit_quantile).within_group(arg)
 
 
 operation_registry.update(
