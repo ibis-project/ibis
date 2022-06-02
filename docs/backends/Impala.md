@@ -132,13 +132,6 @@ The best way to interact with a single table is through the
 Ibis delegates all HDFS interaction to the
 [`fsspec`](https://filesystem-spec.readthedocs.io/en/latest/) library.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.hdfs_connect
-    rendering:
-      heading_level: 3
-
-<!-- prettier-ignore-end -->
-
 ## The Impala client object
 
 To use Ibis with Impala, you first must connect to a cluster using the
