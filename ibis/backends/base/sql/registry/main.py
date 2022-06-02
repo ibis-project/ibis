@@ -292,6 +292,8 @@ operation_registry = {
     # Unary aggregates
     ops.CMSMedian: aggregate.reduction('appx_median'),
     ops.HLLCardinality: aggregate.reduction('ndv'),
+    ops.ApproxMedian: aggregate.reduction('appx_median'),
+    ops.ApproxCountDistinct: aggregate.reduction('ndv'),
     ops.Mean: aggregate.reduction('avg'),
     ops.Sum: aggregate.reduction('sum'),
     ops.Max: aggregate.reduction('max'),

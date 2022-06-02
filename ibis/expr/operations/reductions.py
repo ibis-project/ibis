@@ -8,6 +8,7 @@ from ibis.expr import rules as rlz
 from ibis.expr import types as ir
 from ibis.expr.operations.core import Value, distinct_roots
 from ibis.expr.operations.generic import _Negatable
+from ibis.util import deprecated
 
 
 @public
@@ -191,7 +192,7 @@ class Min(Filterable, Reduction):
 
 
 @public
-class HLLCardinality(Filterable, Reduction):
+class ApproxCountDistinct(Filterable, Reduction):
     """Approximate number of unique values using HyperLogLog algorithm.
 
     Impala offers the NDV built-in function for this.
@@ -204,6 +205,12 @@ class HLLCardinality(Filterable, Reduction):
 
 
 @public
+@deprecated(version='4.0', instead='use ApproxCountDistinct')
+class HLLCardinality(ApproxCountDistinct):
+    pass
+
+
+@public
 class GroupConcat(Filterable, Reduction):
     arg = rlz.column(rlz.any)
     sep = rlz.string
@@ -212,7 +219,7 @@ class GroupConcat(Filterable, Reduction):
 
 
 @public
-class CMSMedian(Filterable, Reduction):
+class ApproxMedian(Filterable, Reduction):
     """
     Compute the approximate median of a set of comparable values using the
     Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
@@ -220,6 +227,12 @@ class CMSMedian(Filterable, Reduction):
 
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like('arg')
+
+
+@public
+@deprecated(version="4.0", instead="use ApproxMedian")
+class CMSMedian(ApproxMedian):
+    pass
 
 
 @public

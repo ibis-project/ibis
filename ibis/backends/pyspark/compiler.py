@@ -608,7 +608,7 @@ def compile_sum(t, expr, scope, timecontext, context=None, **kwargs):
     )
 
 
-@compiles(ops.HLLCardinality)
+@compiles(ops.ApproxCountDistinct)
 def compile_approx_count_distinct(
     t, expr, scope, timecontext, context=None, **kwargs
 ):
@@ -623,7 +623,7 @@ def compile_approx_count_distinct(
     )
 
 
-@compiles(ops.CMSMedian)
+@compiles(ops.ApproxMedian)
 def compile_approx_median(t, expr, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
         t,

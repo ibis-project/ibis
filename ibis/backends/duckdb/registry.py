@@ -187,11 +187,15 @@ operation_registry.update(
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
         ops.CMSMedian: reduction(
+            lambda arg: sa.func.approx_quantile(arg, sa.text(str(0.5)))
+        ),
+        ops.ApproxMedian: reduction(
             # without inline text, duckdb fails with
             # RuntimeError: INTERNAL Error: Invalid PhysicalType for GetTypeIdSize # noqa: E501
             lambda arg: sa.func.approx_quantile(arg, sa.text(str(0.5)))
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
+        ops.ApproxCountDistinct: reduction(sa.func.approx_count_distinct),
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
     }
