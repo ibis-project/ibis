@@ -44,7 +44,6 @@ from ibis.backends.impala.client import (
 )
 from ibis.backends.impala.compat import HS2Error, ImpylaError
 from ibis.backends.impala.compiler import ImpalaCompiler
-from ibis.backends.impala.hdfs import hdfs_connect  # noqa: F401
 from ibis.backends.impala.pandas_interop import DataFrameWriter
 from ibis.backends.impala.udf import (  # noqa F408
     aggregate_function,
@@ -188,9 +187,10 @@ class Backend(BaseSQLBackend):
     @staticmethod
     def hdfs_connect(
         *args: Any,
+        protocol: str = "webhdfs",
         **kwargs: Any,
     ) -> fsspec.spec.AbstractFileSystem:
-        return hdfs_connect(*args, **kwargs)
+        return fsspec.filesystem(protocol, *args, **kwargs)
 
     def do_connect(
         self,
