@@ -94,7 +94,9 @@ def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), ddgb.SeriesGroupBy, type(None)
+    (ops.CountDistinct, ops.ApproxCountDistinct),
+    ddgb.SeriesGroupBy,
+    type(None),
 )
 def execute_count_distinct_series_groupby(
     op, data, _, aggcontext=None, **kwargs
@@ -103,7 +105,7 @@ def execute_count_distinct_series_groupby(
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality),
+    (ops.CountDistinct, ops.ApproxCountDistinct),
     ddgb.SeriesGroupBy,
     ddgb.SeriesGroupBy,
 )
@@ -115,7 +117,9 @@ def execute_count_distinct_series_groupby_mask(
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), dd.Series, (dd.Series, type(None))
+    (ops.CountDistinct, ops.ApproxCountDistinct),
+    dd.Series,
+    (dd.Series, type(None)),
 )
 def execute_count_distinct_series_mask(
     op, data, mask, aggcontext=None, **kwargs

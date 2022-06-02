@@ -561,7 +561,9 @@ def execute_reduction_series_groupby_std(
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), SeriesGroupBy, type(None)
+    (ops.CountDistinct, ops.ApproxCountDistinct),
+    SeriesGroupBy,
+    type(None),
 )
 def execute_count_distinct_series_groupby(
     op, data, _, aggcontext=None, **kwargs
@@ -597,7 +599,9 @@ def execute_reduction_series_gb_mask(
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), SeriesGroupBy, SeriesGroupBy
+    (ops.CountDistinct, ops.ApproxCountDistinct),
+    SeriesGroupBy,
+    SeriesGroupBy,
 )
 def execute_count_distinct_series_groupby_mask(
     op, data, mask, aggcontext=None, **kwargs
@@ -643,7 +647,9 @@ def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
 
 
 @execute_node.register(
-    (ops.CountDistinct, ops.HLLCardinality), pd.Series, (pd.Series, type(None))
+    (ops.CountDistinct, ops.ApproxCountDistinct),
+    pd.Series,
+    (pd.Series, type(None)),
 )
 def execute_count_distinct_series_mask(
     op, data, mask, aggcontext=None, **kwargs

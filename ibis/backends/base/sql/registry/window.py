@@ -254,9 +254,9 @@ def window(translator, expr):
     )
 
     _unsupported_reductions = (
-        ops.CMSMedian,
+        ops.ApproxMedian,
         ops.GroupConcat,
-        ops.HLLCardinality,
+        ops.ApproxCountDistinct,
     )
 
     if isinstance(window_op, _unsupported_reductions):

@@ -697,9 +697,11 @@ operation_registry = {
     ops.E: _fixed_arity("e", 0),
     # Unary aggregates
     ops.CMSMedian: _agg('median'),
+    ops.ApproxMedian: _agg('median'),
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
     ops.HLLCardinality: _agg('uniqHLL12'),
+    ops.ApproxCountDistinct: _agg('uniqHLL12'),
     ops.Mean: _agg('avg'),
     ops.Sum: _agg('sum'),
     ops.Max: _agg('max'),

@@ -598,7 +598,11 @@ class Column(Value):
         """
         import ibis.expr.operations as ops
 
-        return ops.HLLCardinality(self, where).to_expr().name("approx_nunique")
+        return (
+            ops.ApproxCountDistinct(self, where)
+            .to_expr()
+            .name("approx_nunique")
+        )
 
     def approx_median(
         self,
@@ -624,7 +628,7 @@ class Column(Value):
         """
         import ibis.expr.operations as ops
 
-        return ops.CMSMedian(self, where).to_expr().name("approx_median")
+        return ops.ApproxMedian(self, where).to_expr().name("approx_median")
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         import ibis.expr.operations as ops
