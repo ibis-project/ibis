@@ -4,17 +4,16 @@ import collections
 import itertools
 from typing import Any, Callable, Iterable, Iterator
 
-from toolz import compose, identity
-
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 
 class Container:
 
-    __slots__ = ('data',)
+    __slots__ = "data", "visitor"
 
-    def __init__(self, data):
+    def __init__(self, data, visitor: Callable | None = None) -> None:
+        self.visitor = (lambda val: val) if visitor is None else visitor
         self.data = collections.deque(self.visitor(data))
 
     def append(self, item):
@@ -26,10 +25,6 @@ class Container:
     def get(self):
         raise NotImplementedError('Child classes must implement get')
 
-    @property
-    def visitor(self):
-        raise NotImplementedError('Child classes must implement visitor')
-
     def extend(self, items):
         return self.data.extend(items)
 
@@ -40,14 +35,13 @@ class Stack(Container):
     Implements the `Container` API for depth-first graph traversal.
     """
 
-    __slots__ = ('data',)
+    __slots__ = ()
+
+    def __init__(self, data):
+        super().__init__(data, visitor=lambda data: reversed(list(data)))
 
     def get(self):
         return self.data.pop()
-
-    @property
-    def visitor(self):
-        return compose(reversed, list)
 
 
 class Queue(Container):
@@ -56,14 +50,10 @@ class Queue(Container):
     Implements the `Container` API for breadth-first graph traversal.
     """
 
-    __slots__ = ('data',)
+    __slots__ = ()
 
     def get(self):
         return self.data.popleft()
-
-    @property
-    def visitor(self):
-        return identity
 
 
 def _get_args(op, name):
