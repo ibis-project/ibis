@@ -201,10 +201,7 @@ def substitute(fn, expr):
     """
     Substitute expressions with other expressions.
     """
-    try:
-        node = expr.op()
-    except AttributeError:
-        return expr
+    node = expr.op()
 
     result = fn(node)
     if result is lin.halt:
