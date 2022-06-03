@@ -574,7 +574,6 @@ class Projector:
         root_table = root.table
         roots = root_table.op().root_tables()
         fused_exprs = []
-        can_fuse = False
         clean_exprs = self.clean_exprs
 
         if not isinstance(root_table.op(), ops.Join):
@@ -600,9 +599,6 @@ class Projector:
             # which to attempt fusion
             resolved = clean_exprs
 
-        if not resolved:
-            return None
-
         root_selections = root.selections
         parent_op = self.parent.op()
         for val in resolved:
@@ -614,7 +610,6 @@ class Projector:
                 or len(roots) == 1
                 and val.op().root_tables()[0] is roots[0]
             ):
-                can_fuse = True
                 have_root = False
                 for root_sel in root_selections:
                     # Don't add the * projection twice
@@ -626,24 +621,18 @@ class Projector:
 
                 # This was a filter, so implicitly a select *
                 if not have_root and not root_selections:
-                    fused_exprs = [root_table] + fused_exprs
+                    fused_exprs = [root_table, *fused_exprs]
             elif shares_all_roots(val, root_table):
-                can_fuse = True
                 fused_exprs.append(val)
-            elif not shares_all_roots(val, root_table):
-                can_fuse = False
-                break
             else:
-                fused_exprs.append(val)
+                return None
 
-        if can_fuse:
-            return ops.Selection(
-                root_table,
-                fused_exprs,
-                predicates=root.predicates,
-                sort_keys=root.sort_keys,
-            )
-        return None
+        return ops.Selection(
+            root_table,
+            fused_exprs,
+            predicates=root.predicates,
+            sort_keys=root.sort_keys,
+        )
 
 
 def find_first_base_table(expr):
