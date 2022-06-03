@@ -405,6 +405,10 @@ class Selection(TableNode, sch.HasSchema):
         assert self.schema
 
     @cached_property
+    def _projection(self):
+        return self.__class__(table=self.table, selections=self.selections)
+
+    @cached_property
     def schema(self):
         # Resolve schema and initialize
         if not self.selections:
