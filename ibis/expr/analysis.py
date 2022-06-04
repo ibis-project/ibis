@@ -79,16 +79,7 @@ class ScalarAggregate:
             return expr
 
         node = expr.op()
-        subbed_args = []
-        for arg in node.args:
-            if isinstance(arg, (tuple, list)):
-                subbed_arg = [self._visit(x) for x in arg]
-            else:
-                subbed_arg = self._visit(arg)
-            subbed_args.append(subbed_arg)
-
-        new_op = type(node)(*subbed_args)
-        new_expr = new_op.to_expr()
+        new_expr = node.__class__(*map(self._visit, node.args)).to_expr()
         if expr.has_name():
             new_expr = new_expr.name(name=expr.get_name())
 
