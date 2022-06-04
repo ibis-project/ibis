@@ -201,7 +201,7 @@ https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-2.1.0-pyhd8ed1ab_0.
 https://conda.anaconda.org/conda-forge/win-64/markupsafe-2.1.1-py310he2412df_1.tar.bz2#c33fd016ec3b4c3cb0e676fbd0b18953
 https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.3-pyhd8ed1ab_0.tar.bz2#be3bfd435802d2c768c6b2439f325f3d
 https://conda.anaconda.org/conda-forge/win-64/mistune-0.8.4-py310he2412df_1005.tar.bz2#b845e34a59732681cdd63f5c5d3456b4
-https://conda.anaconda.org/conda-forge/win-64/msgpack-python-1.0.3-py310h476a331_1.tar.bz2#bb1894acab7024fc82aa4779998bda8a
+https://conda.anaconda.org/conda-forge/win-64/msgpack-python-1.0.4-py310h476a331_0.tar.bz2#8c94755311b5226733b6f5069eb48632
 https://conda.anaconda.org/conda-forge/noarch/multipledispatch-0.6.0-py_0.tar.bz2#1073dc92c8f247d94ac14dd79ca0bbec
 https://conda.anaconda.org/conda-forge/win-64/mypy_extensions-0.4.3-py310h5588dad_5.tar.bz2#9d953469ad8d474380618f571be84e8c
 https://conda.anaconda.org/conda-forge/win-64/openjpeg-2.4.0-hb211442_1.tar.bz2#0991d2e943e5ba7ec9b7b32eec14e2e3
@@ -219,7 +219,7 @@ https://conda.anaconda.org/conda-forge/noarch/pyupgrade-2.32.1-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/win-64/pywin32-303-py310he2412df_0.tar.bz2#e034f495e69b266fc082c92f75398f22
 https://conda.anaconda.org/conda-forge/win-64/pyyaml-6.0-py310he2412df_4.tar.bz2#e1386e64a5e6d3ef30860a233ce8b371
 https://conda.anaconda.org/conda-forge/win-64/pyzmq-23.1.0-py310h73ada01_0.tar.bz2#523ff92f4cec696b4a4554530d118f94
-https://conda.anaconda.org/conda-forge/win-64/regex-2022.4.24-py310he2412df_0.tar.bz2#88acce18d5f2ccce391407a1f41c0e0d
+https://conda.anaconda.org/conda-forge/win-64/regex-2022.6.2-py310he2412df_0.tar.bz2#df3d42913ba26887f30e3833be0d5588
 https://conda.anaconda.org/conda-forge/win-64/rtree-1.0.0-py310h1cbd46b_1.tar.bz2#580179d00304dd869b14779b62130bb1
 https://conda.anaconda.org/conda-forge/win-64/setuptools-62.3.2-py310h5588dad_0.tar.bz2#a5a86f2dae26872e69e085256b14486e
 https://conda.anaconda.org/conda-forge/win-64/thrift-0.16.0-py310h8a704f9_1.tar.bz2#039c2bad94a097e7ba9594192eca5489
@@ -253,7 +253,7 @@ https://conda.anaconda.org/conda-forge/noarch/gitpython-3.1.27-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/win-64/hdf5-1.12.1-nompi_h2a0e4a3_104.tar.bz2#709e87acdf50633bd823c4467a9b50a1
 https://conda.anaconda.org/conda-forge/noarch/importlib_metadata-4.11.4-hd8ed1ab_0.tar.bz2#9a1925fdb91c81437b8012e48ede6851
 https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#83df9ffefe1cc01d9e60405bf871bfdb
-https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_0.tar.bz2#2d307d13155817b5f5da36cc69358fe6
+https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_1.tar.bz2#c8490ed5c70966d232fdd389d0dbed37
 https://conda.anaconda.org/conda-forge/noarch/joblib-1.1.0-pyhd8ed1ab_0.tar.bz2#07d1b5c8cde14d95998fd4767e1e62d2
 https://conda.anaconda.org/conda-forge/noarch/jsonschema-4.6.0-pyhd8ed1ab_0.tar.bz2#5ac91a7eac2a10e636e71b3ddab2e015
 https://conda.anaconda.org/conda-forge/win-64/jupyter_core-4.10.0-py310h5588dad_0.tar.bz2#44d03fb0f961ae345bcdea603b9edd65
@@ -320,7 +320,7 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-exclude-1.0.2-pyhd8ed1ab_0.
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-gen-files-0.3.4-pyhd8ed1ab_0.tar.bz2#264fad2940ecc5976263107baae197f2
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-git-revision-date-localized-plugin-1.0.1-pyhd8ed1ab_0.tar.bz2#9e7dd31f4dd47f0b25252ee711a7d522
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-literate-nav-0.4.1-pyhd8ed1ab_0.tar.bz2#93e0ddb91f9fb615fa3f9cda31434447
-https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.2.16-pyhd8ed1ab_0.tar.bz2#e13dad2022bf1f78f5e4b12379e12f59
+https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.3.0-pyhd8ed1ab_0.tar.bz2#1d8d201149ef171352a313ded738dc74
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-table-reader-plugin-1.0.0-pyhd8ed1ab_0.tar.bz2#e4a9e7019d3d1b8a52d792b86c6fc082
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.4-pyhd8ed1ab_1.tar.bz2#3c7bdd38f81daf5dbf8dd1fba0b4ad12
 https://conda.anaconda.org/conda-forge/noarch/parquet-cpp-1.5.1-2.tar.bz2#79a5f78c42817594ae016a7896521a97
