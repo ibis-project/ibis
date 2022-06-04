@@ -416,9 +416,6 @@ class _PushdownValidate:
                 return lin.proceed, self._validate_projection(expr)
             return lin.proceed, None
 
-        if is_reduction(self.pred):
-            return False
-
         return all(lin.traverse(validate, self.pred, type=ir.Value))
 
     def _validate_projection(self, expr):
