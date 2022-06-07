@@ -51,9 +51,9 @@ def _millisecond(t, expr):
     # we get total number of milliseconds including seconds with extract so we
     # mod 1000
     (sa_arg,) = map(t.translate, expr.op().args)
-    return (
-        sa.cast(sa.func.floor(sa.extract('millisecond', sa_arg)), sa.SMALLINT)
-        % 1000
+    return sa.cast(
+        sa.func.floor(sa.extract('millisecond', sa_arg)) % 1000,
+        sa.SMALLINT,
     )
 
 
