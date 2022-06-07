@@ -66,7 +66,7 @@ class WeakCache(MutableMapping):
 
 def memoize(fn):
     """
-    Cache function calls and keep results until all of the arguments are no longer alive.
+    Cache function call results until all of the arguments are no longer alive.
     """
 
     memo = WeakCache()
