@@ -718,3 +718,13 @@ def test_date_column_from_iso(con, alltypes, df):
     )
     actual = result.dt.strftime('%Y-%m-%d')
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["clickhouse"])
+@pytest.mark.broken(["mysql"])
+def test_timestamp_extract_milliseconds_with_big_value(con):
+    timestamp = ibis.timestamp("2021-01-01 01:30:59.333")
+    millis = timestamp.millisecond()
+    result = con.execute(millis)
+    assert result == 333
