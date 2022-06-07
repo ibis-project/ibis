@@ -74,7 +74,7 @@ extras_require = {
         'duckdb>=0.3.2,<0.4.0',
         'duckdb-engine>=0.1.8,<0.2.0',
         'fsspec>=2022.1.0',
-        'GeoAlchemy2>=0.6.3,<0.12',
+        'GeoAlchemy2>=0.6.3,<0.13',
         'geopandas>=0.6,<0.11',
         'graphviz>=0.16,<0.21',
         'impyla[kerberos]>=0.17,<0.19',
@@ -100,7 +100,7 @@ extras_require = {
         'sqlalchemy>=1.4,<2.0',
     ],
     'geospatial': [
-        'GeoAlchemy2>=0.6.3,<0.12',
+        'GeoAlchemy2>=0.6.3,<0.13',
         'geopandas>=0.6,<0.11',
         'Shapely>=1.6,<1.8.2',
     ],
