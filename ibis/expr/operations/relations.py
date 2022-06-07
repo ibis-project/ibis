@@ -379,31 +379,6 @@ class Selection(TableNode, sch.HasSchema):
         default=(),
     )
 
-    def __init__(self, table, selections, predicates, sort_keys):
-        from ibis.expr.analysis import shares_all_roots, shares_some_roots
-
-        if not shares_all_roots(selections + sort_keys, table):
-            raise com.RelationError(
-                "Selection expressions don't fully originate from "
-                "dependencies of the table expression."
-            )
-
-        for predicate in predicates:
-            if not shares_some_roots(predicate, table):
-                raise com.RelationError(
-                    "Predicate doesn't share any roots with table"
-                )
-
-        super().__init__(
-            table=table,
-            selections=selections,
-            predicates=predicates,
-            sort_keys=sort_keys,
-        )
-
-        # Validate no overlapping columns in schema
-        assert self.schema
-
     @cached_property
     def schema(self):
         # Resolve schema and initialize
