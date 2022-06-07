@@ -12,6 +12,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+from ibis.common.caching import memoize
 from ibis.common.exceptions import ExpressionError, IbisTypeError
 from ibis.expr.window import window
 
@@ -138,6 +139,7 @@ class ScalarAggregate:
         return new_expr
 
 
+@memoize
 def has_multiple_bases(expr):
     return toolz.count(find_immediate_parent_tables(expr)) > 1
 
@@ -793,6 +795,7 @@ def _is_ancestor(parent, child):  # pragma: no cover
     return any(lin.traverse(predicate, parent.to_expr()))
 
 
+@memoize
 def is_analytic(expr):
     def predicate(expr):
         if isinstance(expr.op(), (ops.Reduction, ops.Analytic)):
@@ -803,6 +806,7 @@ def is_analytic(expr):
     return any(lin.traverse(predicate, expr))
 
 
+@memoize
 def is_reduction(expr):
     """
     Check whether an expression contains a reduction or not
