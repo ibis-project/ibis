@@ -14,9 +14,11 @@
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pandas as pd
 import sqlalchemy as sa
 
 if TYPE_CHECKING:
@@ -69,6 +71,8 @@ class Backend(BaseAlchemyBackend):
         engine = sa.create_engine(
             f"sqlite:///{path if path is not None else ':memory:'}"
         )
+
+        sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
