@@ -254,15 +254,16 @@ def client(data_directory):
     df = df.withColumn("str_col", F.lit('value'))
     df.createTempView('basic_table')
 
-    df_nans = client._session.createDataFrame(
+    df_nulls = client._session.createDataFrame(
         [
-            [np.NaN, 'Alfred', None],
-            [27.0, 'Batman', 'motocycle'],
-            [3.0, None, 'joker'],
+            ['k1', np.NaN, 'Alfred', None],
+            ['k1', 3.0, None, 'joker'],
+            ['k2', 27.0, 'Batman', 'batmobile'],
+            ['k2', None, 'Catwoman', 'motorcycle'],
         ],
-        ['age', 'user', 'toy'],
+        ['key', 'age', 'user', 'toy'],
     )
-    df_nans.createTempView('nan_table')
+    df_nulls.createTempView('null_table')
 
     df_dates = client._session.createDataFrame(
         [['2018-01-02'], ['2018-01-03'], ['2018-01-04']], ['date_str']

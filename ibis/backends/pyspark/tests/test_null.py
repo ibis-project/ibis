@@ -5,7 +5,7 @@ pytest.importorskip("pyspark")
 
 
 def test_isnull(client):
-    table = client.table('nan_table')
+    table = client.table('null_table')
     table_pandas = table.compile().toPandas()
 
     for (col, _) in table_pandas.iteritems():
@@ -22,7 +22,7 @@ def test_isnull(client):
 
 
 def test_notnull(client):
-    table = client.table('nan_table')
+    table = client.table('null_table')
     table_pandas = table.compile().toPandas()
 
     for (col, _) in table_pandas.iteritems():
