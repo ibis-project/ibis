@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sqlalchemy as sa
+
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -45,6 +47,8 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _bool_aggs_need_cast_to_int32 = True
     _has_reduction_filter_syntax = False
+
+    integer_to_timestamp = sa.func.to_timestamp
 
     def name(self, translated, name, force=True):
         return translated.label(name)
