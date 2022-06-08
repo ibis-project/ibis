@@ -251,9 +251,9 @@ def test_where_analyze_scalar_op(functional_alltypes):
     expected = """\
 SELECT count(*) AS `count`
 FROM functional_alltypes
-WHERE (`timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH)) AND
+WHERE (`timestamp_col` < date_add(cast({!r} as timestamp), INTERVAL 3 MONTH)) AND
       (`timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY))"""  # noqa: E501
-    assert result == expected.format("'2010-01-01 00:00:00'")
+    assert result == expected.format("2010-01-01T00:00:00")
 
 
 def test_bug_duplicated_where(airlines):
