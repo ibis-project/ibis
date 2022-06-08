@@ -294,14 +294,14 @@ SELECT t0.*
 FROM (
   SELECT t2.`a`
   FROM (
-    SELECT `a`, `b`, '2018-01-01 00:00:00' AS `the_date`
+    SELECT `a`, `b`, '2018-01-01T00:00:00' AS `the_date`
     FROM (
       SELECT *
       FROM (
         SELECT `a`, `b`, `c` AS `C`
         FROM t
       ) t5
-      WHERE `C` = '2018-01-01 00:00:00'
+      WHERE `C` = '2018-01-01T00:00:00'
     ) t4
   ) t2
     INNER JOIN s t1
