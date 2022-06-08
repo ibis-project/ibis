@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -137,7 +137,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -182,7 +182,7 @@ jobs:
         run: docker compose up --build -d postgres
 
       - name: install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         id: install_python
         with:
           python-version: "3.8"
@@ -246,7 +246,7 @@ jobs:
         run: docker compose up -d impala kudu
 
       - name: install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -330,7 +330,7 @@ jobs:
         run: docker compose up --build -d ${{ matrix.backend.name }}
 
       - name: install python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         id: install_python
         with:
           python-version: ${{ matrix.python-version }}
