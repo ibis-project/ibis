@@ -257,12 +257,12 @@ https://conda.anaconda.org/conda-forge/noarch/pydocstyle-6.1.1-pyhd8ed1ab_0.tar.
 https://conda.anaconda.org/conda-forge/linux-64/pyrsistent-0.18.1-py38h0a891b7_1.tar.bz2#baf653aaed8aa675798cbf810c01434e
 https://conda.anaconda.org/conda-forge/linux-64/pysocks-1.7.1-py38h578d9bd_5.tar.bz2#11113c7e50bb81f30762fe8325f305e1
 https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.8.2-pyhd8ed1ab_0.tar.bz2#dd999d1cc9f79e67dbb855c8924c7984
-https://conda.anaconda.org/conda-forge/noarch/pyupgrade-2.33.0-pyhd8ed1ab_0.tar.bz2#954c513cce6c362df1fe1d1edc769381
+https://conda.anaconda.org/conda-forge/noarch/pyupgrade-2.34.0-pyhd8ed1ab_0.tar.bz2#9fd006e123aa6507bbfdfe64f654b146
 https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py38h0a891b7_4.tar.bz2#ba24ff01bb38c5cd5be54b45ef685db3
 https://conda.anaconda.org/conda-forge/linux-64/pyzmq-23.1.0-py38hfc09fa9_0.tar.bz2#d7ef874221d1452dbd55b16811ead456
 https://conda.anaconda.org/conda-forge/linux-64/regex-2022.6.2-py38h0a891b7_0.tar.bz2#2fab5b2d66ac0382253c2c799cc160c8
 https://conda.anaconda.org/conda-forge/linux-64/rtree-1.0.0-py38h02d302b_1.tar.bz2#e6a1c04dcbe9879756abe86e2003790b
-https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.3.2-py38h578d9bd_0.tar.bz2#8b04fc38afd584d2531e630e1a59abd9
+https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.3.3-py38h578d9bd_0.tar.bz2#7303cb52774a5b51ace1977f6889a622
 https://conda.anaconda.org/conda-forge/linux-64/thrift-0.16.0-py38hfa26641_1.tar.bz2#b73b0e2545a38da3b51a08eff4bfd949
 https://conda.anaconda.org/conda-forge/linux-64/tiledb-2.9.3-h1e4a385_0.tar.bz2#385219d6be4cbea18f8c372aae057465
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
@@ -293,7 +293,7 @@ https://conda.anaconda.org/conda-forge/noarch/isort-5.10.1-pyhd8ed1ab_0.tar.bz2#
 https://conda.anaconda.org/conda-forge/noarch/jinja2-3.1.2-pyhd8ed1ab_1.tar.bz2#c8490ed5c70966d232fdd389d0dbed37
 https://conda.anaconda.org/conda-forge/noarch/joblib-1.1.0-pyhd8ed1ab_0.tar.bz2#07d1b5c8cde14d95998fd4767e1e62d2
 https://conda.anaconda.org/conda-forge/noarch/jsonschema-4.6.0-pyhd8ed1ab_0.tar.bz2#5ac91a7eac2a10e636e71b3ddab2e015
-https://conda.anaconda.org/conda-forge/noarch/jupyter_client-7.3.2-pyhd8ed1ab_1.tar.bz2#50ec2315efdb65b26d42c7d86fcef5fb
+https://conda.anaconda.org/conda-forge/noarch/jupyter_client-7.3.3-pyhd8ed1ab_0.tar.bz2#9929bd15010df15ef9e949af3f3f95ba
 https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.7-pyhd8ed1ab_0.tar.bz2#0a0bed31742342688a8570b3b8a50f36
 https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.3.0-pyhd8ed1ab_0.tar.bz2#adf9129f76ca651869acf2219fac2050
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
@@ -377,7 +377,7 @@ https://conda.anaconda.org/conda-forge/noarch/dask-2022.5.2-pyhd8ed1ab_0.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/duckdb-engine-0.1.8-py38h578d9bd_1.tar.bz2#10a55705f9adcf0dc0b59ed67c92f80c
 https://conda.anaconda.org/conda-forge/noarch/folium-0.12.1.post1-pyhd8ed1ab_1.tar.bz2#44912901b45260e4338447b9d46f7058
 https://conda.anaconda.org/conda-forge/noarch/ipdb-0.13.9-pyhd8ed1ab_0.tar.bz2#43effb31fb5a933d3bbbca5c823b2729
-https://conda.anaconda.org/conda-forge/linux-64/ipykernel-6.13.0-py38h7f3c49e_0.tar.bz2#a12e393611b0046327f8b6398d7c0e77
+https://conda.anaconda.org/conda-forge/linux-64/ipykernel-6.13.1-py38h7f3c49e_0.tar.bz2#40da02a2653616800b74c40d7c0e1fdb
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-pandoc-6.5.0-pyhd8ed1ab_0.tar.bz2#d7421adfc67100021d87032447066129
 https://conda.anaconda.org/conda-forge/noarch/python-graphviz-0.20-pyhaef67bd_0.tar.bz2#1ad62524f66312181161a935485c277b
 https://conda.anaconda.org/conda-forge/noarch/questionary-1.10.0-pyhd8ed1ab_1.tar.bz2#c48bf69327994b33a7036fa835b8989e
