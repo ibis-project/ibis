@@ -21,7 +21,7 @@ let
     cmake
     ninja
   ];
-  backendTestDeps = [ pkgs.docker-compose_2 ];
+  backendTestDeps = [ pkgs.docker-compose ];
   vizDeps = [ pkgs.graphviz-nox ];
   duckdbDeps = [ pkgs.duckdb ];
   mysqlDeps = [ pkgs.mariadb-client ];
