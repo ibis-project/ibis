@@ -728,3 +728,15 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     millis = timestamp.millisecond()
     result = con.execute(millis)
     assert result == 333
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.broken(
+    ["dask", "pandas"],
+    reason="Pandas and Dask interpret integers as nanoseconds since epoch",
+)
+def test_integer_cast_to_timestamp(backend, alltypes, df):
+    expr = alltypes.int_col.cast("timestamp")
+    expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
+    result = expr.execute()
+    backend.assert_series_equal(result, expected)
