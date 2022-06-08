@@ -60,7 +60,7 @@ def _date_literal_format(translator, expr):
 def _timestamp_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
-        value = value.strftime('%Y-%m-%d %H:%M:%S')
+        value = value.isoformat()
 
     return repr(value)
 
