@@ -329,17 +329,17 @@ def test_timestamp_deltas(table, unit, compiled_unit):
     [
         pytest.param(
             lambda v: L(pd.Timestamp(v)),
-            "'2015-01-01 12:34:56'",
+            "'2015-01-01T12:34:56'",
             id="literal_pd_timestamp",
         ),
         pytest.param(
             lambda v: L(pd.Timestamp(v).to_pydatetime()),
-            "'2015-01-01 12:34:56'",
+            "'2015-01-01T12:34:56'",
             id="literal_pydatetime",
         ),
         pytest.param(
             lambda v: ibis.timestamp(v),
-            "'2015-01-01 12:34:56'",
+            "'2015-01-01T12:34:56'",
             id="ibis_timestamp_function",
         ),
     ],
@@ -355,18 +355,18 @@ def test_timestamp_literals(expr_fn, expected):
     [
         pytest.param(
             lambda v: v.day_of_week.index(),
-            "pmod(dayofweek('2015-09-01 01:00:23') - 2, 7)",
+            "pmod(dayofweek('2015-09-01T01:00:23') - 2, 7)",
             id="index",
         ),
         pytest.param(
             lambda v: v.day_of_week.full_name(),
-            "dayname('2015-09-01 01:00:23')",
+            "dayname('2015-09-01T01:00:23')",
             id="full_name",
         ),
     ],
 )
 def test_timestamp_day_of_week(expr_fn, expected):
-    expr = expr_fn(ibis.timestamp('2015-09-01 01:00:23'))
+    expr = expr_fn(ibis.timestamp('2015-09-01T01:00:23'))
     result = translate(expr)
     assert result == expected
 
