@@ -175,7 +175,7 @@ def _cast(t, expr):
 
     # specialize going from an integer type to a timestamp
     if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
-        return sa.func.to_timestamp(sa_arg)
+        return t.integer_to_timestamp(sa_arg)
 
     if arg.type().equals(dt.binary) and typ.equals(dt.string):
         return sa.func.encode(sa_arg, 'escape')
