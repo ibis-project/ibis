@@ -9,13 +9,6 @@ hide:
 
 - [`git`](https://git-scm.com/)
 
-!!! note "Python 3.10 is supported on a best-effort basis"
-
-    As of 2022-02-17 there is support for Python 3.10 when using `nix` for development.
-
-    `conda-forge` is still in [the process of migrating packages to Python
-    3.10](https://conda-forge.org/status/#python310).
-
 === "Nix"
 
     #### Support Matrix
@@ -72,12 +65,12 @@ hide:
 
     #### Support Matrix
 
-    |      Python Version :material-arrow-right: |                      Python 3.8                      |                      Python 3.9                  |                  Python 3.10                   |
-    | -----------------------------------------: | :--------------------------------------------------: | :----------------------------------------------: | :--------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                      |                                                  |                                                |
-    |                                  **Linux** | {{ config.extra.support_levels.supported.icon }}[^1] | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.bug.icon }}[^2] |
-    |                                  **macOS** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} |   {{ config.extra.support_levels.bug.icon }}   |
-    |                                **Windows** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} |   {{ config.extra.support_levels.bug.icon }}   |
+    |      Python Version :material-arrow-right: |                      Python 3.8                      |                      Python 3.9                  |                  Python 3.10                     |
+    | -----------------------------------------: | :--------------------------------------------------: | :----------------------------------------------: | :----------------------------------------------: |
+    | **Operating System** :material-arrow-down: |                                                      |                                                  |                                                  |
+    |                                  **Linux** | {{ config.extra.support_levels.supported.icon }}[^1] | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |                                  **macOS** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |                                **Windows** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
 
     {% set managers = {"conda": {"name": "Miniconda", "url": "https://docs.conda.io/en/latest/miniconda.html"}, "mamba": {"name": "Mamba", "url": "https://github.com/mamba-org/mamba"}} %}
     {% for manager, params in managers.items() %}
