@@ -721,7 +721,7 @@ def test_date_column_from_iso(con, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["clickhouse"])
+@pytest.mark.notyet(["clickhouse", "pyspark"])
 @pytest.mark.broken(["mysql"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333")
