@@ -437,7 +437,10 @@ def _timestamp_from_str(
         value = pd.Timestamp(value, tz=timezone)
     except pd.errors.OutOfBoundsDatetime:
         value = dateutil.parser.parse(value)
-    return literal(value, type=dt.Timestamp(timezone=timezone))
+    dtype = dt.Timestamp(
+        timezone=timezone if timezone is not None else value.tzname()
+    )
+    return literal(value, type=dtype)
 
 
 @functools.singledispatch
