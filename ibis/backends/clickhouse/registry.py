@@ -370,15 +370,30 @@ def _literal(translator, expr):
     elif isinstance(expr, ir.IntervalValue):
         return _interval_format(translator, expr)
     elif isinstance(expr, ir.TimestampValue):
-        if isinstance(value, datetime):
-            micros = value.microsecond
-            value = repr(value.isoformat())
+        func = "toDateTime"
+        args = []
 
+        if isinstance(value, datetime):
+            fmt = "%Y-%m-%dT%H:%M:%S"
+
+            if micros := value.microsecond:
+                func = "toDateTime64"
+                fmt += ".%f"
+
+            args.append(value.strftime(fmt))
             if micros % 1000:
-                return f"toDateTime64({value}, 6)"
+                args.append(6)
             elif micros // 1000:
-                return f"toDateTime64({value}, 3)"
-        return f"toDateTime({value})"
+                args.append(3)
+        else:
+            args.append(str(value))
+
+        if (timezone := expr.type().timezone) is not None:
+            args.append(timezone)
+
+        joined_args = ", ".join(map(repr, args))
+        return f"{func}({joined_args})"
+
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
@@ -894,3 +909,4 @@ operation_registry.update(_undocumented_operations)
 operation_registry.update(_unsupported_ops)
 operation_registry.update(_unary_ops)
 operation_registry.update(_binary_infix_ops)
+
