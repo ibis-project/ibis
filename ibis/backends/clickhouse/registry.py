@@ -357,11 +357,14 @@ def _literal(translator, expr):
         return _interval_format(translator, expr)
     elif isinstance(expr, ir.TimestampValue):
         if isinstance(value, datetime):
-            if value.microsecond != 0:
-                msg = 'Unsupported subsecond accuracy {}'
-                raise ValueError(msg.format(value))
-            value = value.strftime('%Y-%m-%d %H:%M:%S')
-        return f"toDateTime('{value!s}')"
+            micros = value.microsecond
+            value = repr(value.isoformat())
+
+            if micros % 1000:
+                return f"toDateTime64({value}, 6)"
+            elif micros // 1000:
+                return f"toDateTime64({value}, 3)"
+        return f"toDateTime({value})"
     elif isinstance(expr, ir.DateValue):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
