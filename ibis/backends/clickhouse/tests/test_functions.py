@@ -124,26 +124,6 @@ def test_timestamp_truncate(con, unit, expected):
     assert con.execute(expr) == pd.Timestamp(expected)
 
 
-@pytest.mark.parametrize(
-    ('func', 'expected'),
-    [
-        (methodcaller('year'), 2015),
-        (methodcaller('month'), 9),
-        (methodcaller('day'), 1),
-        (methodcaller('hour'), 14),
-        (methodcaller('minute'), 48),
-        (methodcaller('second'), 5),
-    ],
-)
-def test_simple_datetime_operations(con, func, expected):
-    value = ibis.timestamp('2015-09-01 14:48:05.359')
-    with pytest.raises(ValueError):
-        con.execute(func(value))
-
-    value = ibis.timestamp('2015-09-01 14:48:05')
-    con.execute(func(value)) == expected
-
-
 @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
 def test_nullifzero(con, value, expected):
     result = con.execute(L(value).nullifzero())
