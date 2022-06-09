@@ -132,29 +132,6 @@ def test_timestamp_cast_noop(alltypes, at, translate):
 
 
 @pytest.mark.parametrize(
-    ('func', 'expected'),
-    [
-        param(operator.methodcaller('year'), 2015, id='year'),
-        param(operator.methodcaller('month'), 9, id='month'),
-        param(operator.methodcaller('day'), 1, id='day'),
-        param(operator.methodcaller('hour'), 14, id='hour'),
-        param(operator.methodcaller('minute'), 48, id='minute'),
-        param(operator.methodcaller('second'), 5, id='second'),
-        param(operator.methodcaller('millisecond'), 359, id='millisecond'),
-        param(lambda x: x.day_of_week.index(), 1, id='day_of_week_index'),
-        param(
-            lambda x: x.day_of_week.full_name(),
-            'Tuesday',
-            id='day_of_week_full_name',
-        ),
-    ],
-)
-def test_simple_datetime_operations(con, func, expected, translate):
-    value = ibis.timestamp('2015-09-01 14:48:05.359')
-    assert con.execute(func(value)) == expected
-
-
-@pytest.mark.parametrize(
     'pattern',
     [
         # there could be pathological failure at midnight somewhere, but
