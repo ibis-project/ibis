@@ -1,5 +1,6 @@
 import operator
 import warnings
+from operator import methodcaller
 
 import numpy as np
 import pandas as pd
@@ -56,6 +57,41 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         getattr(df.timestamp_col.dt, attr.replace('_', '')).astype('int32')
     ).rename(attr)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected'),
+    [
+        param(methodcaller('year'), 2015, id='year'),
+        param(methodcaller('month'), 9, id='month'),
+        param(methodcaller('day'), 1, id='day'),
+        param(methodcaller('hour'), 14, id='hour'),
+        param(methodcaller('minute'), 48, id='minute'),
+        param(methodcaller('second'), 5, id='second'),
+        param(
+            methodcaller('millisecond'),
+            359,
+            id='millisecond',
+            marks=[
+                pytest.mark.notimpl(["clickhouse"]),
+                pytest.mark.broken(
+                    ["mysql"],
+                    reason="MySQL implementation of milliseconds is broken",
+                ),
+            ],
+        ),
+        param(lambda x: x.day_of_week.index(), 1, id='day_of_week_index'),
+        param(
+            lambda x: x.day_of_week.full_name(),
+            'Tuesday',
+            id='day_of_week_full_name',
+        ),
+    ],
+)
+@pytest.mark.notimpl(["datafusion"])
+def test_timestamp_extract_literal(con, func, expected):
+    value = ibis.timestamp('2015-09-01 14:48:05.359')
+    assert con.execute(func(value)) == expected
 
 
 @pytest.mark.notimpl(["datafusion", "clickhouse"])
