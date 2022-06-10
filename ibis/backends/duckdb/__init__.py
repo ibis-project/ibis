@@ -67,6 +67,51 @@ class Backend(BaseAlchemyBackend):
         )
         self._meta = sa.MetaData(bind=self.con)
 
+    def register(
+        self,
+        file_name: str | Path,
+        table_name: str | None = None,
+    ) -> None:
+        """Register an external file (csv or parquet) as a table in the current
+        connection database
+
+        Parameters
+        ----------
+        file_name
+            Name of the parquet or CSV file
+        table_name
+            Name for the created table.  Defaults to filename if not given
+        """
+        file_name = Path(file_name)
+        suffix = "".join(file_name.suffixes).strip(".")  # handles .csv.gz
+        if file_name.parts[0].endswith(":"):
+            prefix, *fname = file_name.parts
+        else:
+            prefix = "file:"
+            fname = file_name.parts
+
+        file_name = Path(*fname).absolute()
+
+        # Use prefix for file_type.  If omitted, infer from file extension
+        file_type = prefix.strip(":") if prefix != "file:" else suffix
+        table_name = table_name or file_name.stem.replace("-", "_")
+        if file_type == "parquet":
+            view = f"""
+            CREATE VIEW {table_name} as SELECT * from
+            read_parquet('{file_name}')
+            """
+        elif file_type.startswith("csv"):
+            view = f"""
+            CREATE VIEW {table_name} as SELECT * from
+            read_csv_auto('{file_name}')
+            """
+        else:
+            raise TypeError(
+                "Only csv and parquet files can be registered with DuckDB."
+            )
+
+        self.con.execute(view)
+
     def fetch_from_cursor(
         self,
         cursor: duckdb.DuckDBPyConnection,
