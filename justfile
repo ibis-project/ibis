@@ -70,8 +70,6 @@ up *backends:
 # stop and remove containers; clean up networks and volumes
 down:
     docker compose down --volumes --remove-orphans
-    nix-shell -p bash --run 'rm -rf "$TEMPDIR/pytest-of-$USER"'
-    rm -rf "$TEMPDIR/pytest-of-$USER"
 
 # run the benchmark suite
 bench +args='ibis/tests/benchmarks':

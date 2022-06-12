@@ -229,6 +229,8 @@ filterwarnings = [
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
   # findspec
   "ignore: _SixMetaPathImporter.find_spec()",
+  # pytest
+  "ignore:A private pytest class or function was used:",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = ["site-packages", "dist-packages"]

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import getpass
 import importlib
+import itertools
 import os
 import platform
+import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
@@ -459,6 +462,31 @@ def lock_load_data(
             cls.load_data(data_directory, script_directory, **kwargs)
             fn.touch()
     return cls(data_directory)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Run some code after the pytest session is finished.
+
+    Notes
+    -----
+    This runs **once** at the end of the global session, not at then end of
+    every per-process session. `scope="session"` and the session referred to by
+    this hook are different sessions.
+    """
+    # Constructing TempPathFactory generates a warning about using a private
+    # API, but it's not clear if there's a public way to access the value of
+    # the tmp_path_factory fixture outside of a test case
+    tmp_path_factory = pytest.TempPathFactory(
+        given_basetemp=session.config.option.basetemp,
+        trace=session.trace,
+    )
+    pytest_dir = tmp_path_factory.getbasetemp().parent
+
+    # remove lockfiles so that data loading is rerun
+    for path in itertools.chain(
+        pytest_dir.glob("lockfile_*"), pytest_dir.glob("*.lock")
+    ):
+        path.unlink()
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
