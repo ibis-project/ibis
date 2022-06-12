@@ -262,7 +262,7 @@ https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py310h5764c6d_4.tar.b
 https://conda.anaconda.org/conda-forge/linux-64/pyzmq-23.1.0-py310h330234f_0.tar.bz2#1ca521ec5b4b7e9a95f0a22d3cbb5896
 https://conda.anaconda.org/conda-forge/linux-64/regex-2022.6.2-py310h5764c6d_0.tar.bz2#23955df1d3298c1d3221d03302b2ebac
 https://conda.anaconda.org/conda-forge/linux-64/rtree-1.0.0-py310hbdcdc62_1.tar.bz2#4441c8711a22542d5a16806423caab12
-https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.3.3-py310hff52083_0.tar.bz2#931d52e7c381263ff387daa4eb7a3f3d
+https://conda.anaconda.org/conda-forge/linux-64/setuptools-62.3.4-py310hff52083_0.tar.bz2#e7d47d081116625e1731380786a9d535
 https://conda.anaconda.org/conda-forge/linux-64/thrift-0.16.0-py310hd8f1fbe_1.tar.bz2#170f3066374d36e617cfb6930ee0ea64
 https://conda.anaconda.org/conda-forge/linux-64/tiledb-2.9.4-h1e4a385_0.tar.bz2#885008dc57cab9a90ce672bdd870a740
 https://conda.anaconda.org/conda-forge/noarch/tinycss2-1.1.1-pyhd8ed1ab_0.tar.bz2#5d280406501e79dc7aa9c9ac31d25a80
@@ -352,7 +352,7 @@ https://conda.anaconda.org/conda-forge/noarch/mkdocs-exclude-1.0.2-pyhd8ed1ab_0.
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-gen-files-0.3.4-pyhd8ed1ab_0.tar.bz2#264fad2940ecc5976263107baae197f2
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-git-revision-date-localized-plugin-1.0.1-pyhd8ed1ab_0.tar.bz2#9e7dd31f4dd47f0b25252ee711a7d522
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-literate-nav-0.4.1-pyhd8ed1ab_0.tar.bz2#93e0ddb91f9fb615fa3f9cda31434447
-https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.3.3-pyhd8ed1ab_0.tar.bz2#dfbeb5ac3a60d6aeb529d1480a31b41f
+https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-8.3.4-pyhd8ed1ab_0.tar.bz2#562cac00a76213c7129a0e6870077801
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-table-reader-plugin-1.0.0-pyhd8ed1ab_0.tar.bz2#e4a9e7019d3d1b8a52d792b86c6fc082
 https://conda.anaconda.org/conda-forge/noarch/nbclient-0.6.4-pyhd8ed1ab_1.tar.bz2#3c7bdd38f81daf5dbf8dd1fba0b4ad12
 https://conda.anaconda.org/conda-forge/noarch/prompt-toolkit-3.0.29-pyha770c72_0.tar.bz2#9e720b57b22ef3032b4fb081697819dd
