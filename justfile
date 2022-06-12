@@ -66,15 +66,12 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
 # start backends using docker compose and load data; no arguments starts all backends
 up *backends:
     docker compose up --wait {{ backends }}
-    just load-data {{ backends }}
 
 # stop and remove containers; clean up networks and volumes
 down:
     docker compose down --volumes --remove-orphans
-
-# load data into running backends; requires a running backend
-load-data *backends="all":
-    python ci/datamgr.py -v load {{ backends }}
+    nix-shell -p bash --run 'rm -rf "$TEMPDIR/pytest-of-$USER"'
+    rm -rf "$TEMPDIR/pytest-of-$USER"
 
 # run the benchmark suite
 bench +args='ibis/tests/benchmarks':

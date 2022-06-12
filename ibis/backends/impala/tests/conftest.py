@@ -13,7 +13,7 @@ import ibis
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
-from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.conftest import TEST_TABLES, lock_load_data
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import (
     BackendTest,
@@ -32,7 +32,13 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = False
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
+    def load_data(
+        data_dir,
+        script_dir,
+        with_hdfs: bool = True,
+        database: str | None = None,
+        **kwargs,
+    ):
         """Load testdata into an impala backend.
 
         Parameters
@@ -51,20 +57,20 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         URLLIB_DEFAULT_POOL_SIZE = 10
 
         env = IbisTestEnv()
-        try:
-            con = ibis.impala.connect(
-                host=env.impala_host,
-                port=env.impala_port,
-                hdfs_client=fsspec.filesystem(
-                    env.hdfs_protocol,
-                    host=env.nn_host,
-                    port=env.hdfs_port,
-                    user=env.hdfs_user,
-                ),
-                pool_size=URLLIB_DEFAULT_POOL_SIZE,
+        con = ibis.impala.connect(
+            host=env.impala_host,
+            port=env.impala_port,
+            database=database,
+            hdfs_client=fsspec.filesystem(
+                env.hdfs_protocol,
+                host=env.nn_host,
+                port=env.hdfs_port,
+                user=env.hdfs_user,
             )
-        except Exception:
-            raise
+            if with_hdfs
+            else None,
+            pool_size=URLLIB_DEFAULT_POOL_SIZE,
+        )
 
         fs = fsspec.filesystem("file")
 
@@ -274,12 +280,20 @@ def hdfs(env, tmp_dir):
 
 
 @pytest.fixture
-def con_no_hdfs(env, test_data_db):
-    con = ibis.impala.connect(
-        host=env.impala_host,
+def con_no_hdfs(
+    env,
+    test_data_db,
+    tmp_path_factory,
+    data_directory,
+    script_directory,
+):
+    con = lock_load_data(
+        TestConf,
+        tmp_path_factory,
+        data_directory,
+        script_directory,
+        with_hdfs=False,
         database=test_data_db,
-        port=env.impala_port,
-        auth_mechanism=env.auth_mechanism,
     )
     if not env.use_codegen:
         con.disable_codegen()
@@ -291,13 +305,19 @@ def con_no_hdfs(env, test_data_db):
 
 
 @pytest.fixture
-def con(env, hdfs, test_data_db):
-    con = ibis.impala.connect(
-        host=env.impala_host,
+def con(
+    env,
+    test_data_db,
+    tmp_path_factory,
+    data_directory,
+    script_directory,
+):
+    con = lock_load_data(
+        TestConf,
+        tmp_path_factory,
+        data_directory,
+        script_directory,
         database=test_data_db,
-        port=env.impala_port,
-        auth_mechanism=env.auth_mechanism,
-        hdfs_client=hdfs,
     )
     if not env.use_codegen:
         con.disable_codegen()
@@ -350,13 +370,12 @@ def tmp_db(env, con, test_data_db):
 
 
 @pytest.fixture
-def con_no_db(env, hdfs):
-    con = ibis.impala.connect(
-        host=env.impala_host,
-        database=None,
-        port=env.impala_port,
-        auth_mechanism=env.auth_mechanism,
-        hdfs_client=hdfs,
+def con_no_db(env, tmp_path_factory, data_directory, script_directory):
+    con = lock_load_data(
+        TestConf,
+        tmp_path_factory,
+        data_directory,
+        script_directory,
     )
     if not env.use_codegen:
         con.disable_codegen()
@@ -368,7 +387,7 @@ def con_no_db(env, hdfs):
 
 
 @pytest.fixture
-def alltypes(con, test_data_db):
+def alltypes(con):
     return con.table("functional_alltypes")
 
 

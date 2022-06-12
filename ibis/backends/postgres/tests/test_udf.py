@@ -19,10 +19,6 @@ from ibis.backends.postgres.udf import (  # noqa: E402
 
 @pytest.fixture(scope='session')
 def next_serial(con):
-    # `test_sequence` SEQUENCE is created in database in the
-    # load-data.sh --> datamgr.py#postgres step
-    # to avoid parallel attempts to create the same sequence (when testing
-    # run in parallel
     serial_proxy = con.con.execute("SELECT nextval('test_sequence') as value;")
     return serial_proxy.fetchone()['value']
 

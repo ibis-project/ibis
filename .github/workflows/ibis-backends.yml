@@ -96,9 +96,6 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - name: install backend data
-        run: poetry run python ci/datamgr.py load ${{ matrix.backend.name }}
-
       - name: run non-pyspark tests
         if: ${{ matrix.backend.name != 'pyspark' }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
@@ -203,9 +200,6 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - name: install backend data
-        run: poetry run python ci/datamgr.py load postgres
-
       - name: run tests
         run: just ci-check -m postgres --numprocesses auto
 
@@ -276,9 +270,6 @@ jobs:
 
       - name: download backend data
         run: just download-data
-
-      - name: install backend data
-        run: poetry run python ci/datamgr.py load impala
 
       - name: run tests
         run: just ci-check -m impala
@@ -363,9 +354,6 @@ jobs:
 
       - name: download backend data
         run: just download-data
-
-      - name: install backend data
-        run: poetry run python ci/datamgr.py load ${{ matrix.backend.name }}
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
