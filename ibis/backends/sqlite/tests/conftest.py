@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.conftest import TEST_TABLES, init_database
+from ibis.backends.conftest import TEST_TABLES, init_database, lock_load_data
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
@@ -90,8 +90,13 @@ def dbpath(data_directory):
 
 
 @pytest.fixture(scope="session")
-def con(dbpath):
-    return ibis.sqlite.connect(dbpath)
+def con(tmp_path_factory, data_directory, script_directory):
+    return lock_load_data(
+        TestConf,
+        tmp_path_factory,
+        data_directory,
+        script_directory,
+    ).connect(data_directory)
 
 
 @pytest.fixture(scope="session")

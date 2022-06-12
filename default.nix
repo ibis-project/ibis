@@ -52,10 +52,6 @@ let
         find "$tempdir" -type d -exec chmod u+rwx {} +
 
         ln -s "$tempdir" ci/ibis-testing-data
-
-        for backend in ${backendsString}; do
-          python ci/datamgr.py load "$backend"
-        done
       '';
 
       checkPhase = ''
