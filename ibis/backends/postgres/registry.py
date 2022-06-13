@@ -498,6 +498,43 @@ def _string_agg(t, expr):
     return agg
 
 
+def _corr(t, expr):
+    if expr.op().how == "sample":
+        raise ValueError(
+            "PostgreSQL only implements population correlation coefficient"
+        )
+    return _binary_variance_reduction(sa.func.corr)(t, expr)
+
+
+def _covar(t, expr):
+    suffix = {"sample": "samp", "pop": "pop"}
+    how = suffix.get(expr.op().how, "samp")
+    func = getattr(sa.func, f"covar_{how}")
+    return _binary_variance_reduction(func)(t, expr)
+
+
+def _binary_variance_reduction(func):
+    def variance_compiler(t, expr):
+        op = expr.op()
+
+        x = op.left
+        if isinstance(x_type := x.type(), dt.Boolean):
+            x = x.cast(dt.Int32(nullable=x_type.nullable))
+
+        y = op.right
+        if isinstance(y_type := y.type(), dt.Boolean):
+            y = y.cast(dt.Int32(nullable=y_type.nullable))
+
+        result = func(t.translate(x), t.translate(y))
+
+        if (where := op.where) is not None:
+            result = result.filter(t.translate(where))
+
+        return result
+
+    return variance_compiler
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -578,5 +615,7 @@ operation_registry.update(
         ),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),
+        ops.Covariance: _covar,
+        ops.Correlation: _corr,
     }
 )
