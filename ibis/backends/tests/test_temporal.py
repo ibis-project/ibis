@@ -73,7 +73,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             359,
             id='millisecond',
             marks=[
-                pytest.mark.notimpl(["clickhouse"]),
+                pytest.mark.notimpl(["clickhouse", "pyspark"]),
                 pytest.mark.broken(
                     ["mysql"],
                     reason="MySQL implementation of milliseconds is broken",
