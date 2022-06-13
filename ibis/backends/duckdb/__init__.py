@@ -20,6 +20,21 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
 
+DUCKDB_INTERNAL_TABLES = [
+    "duckdb_columns",
+    "duckdb_constraints",
+    "duckdb_indexes",
+    "duckdb_schemas",
+    "duckdb_tables",
+    "duckdb_types",
+    "duckdb_views",
+    "pragma_database_list",
+    "sqlite_master",
+    "sqlite_schema",
+    "sqlite_temp_master",
+    "sqlite_temp_schema",
+]
+
 
 class _ColumnMetadata(NamedTuple):
     name: str
@@ -66,6 +81,19 @@ class Backend(BaseAlchemyBackend):
             )
         )
         self._meta = sa.MetaData(bind=self.con)
+
+    def list_tables(self, show_all: bool = False, **kwargs) -> list[str]:
+        """List tables in current connection.
+
+        Parameters
+        ----------
+        show_all
+            Whether to show DuckDB internal tables
+        """
+        tables = super().list_tables(**kwargs)
+        if show_all:
+            return tables
+        return list(set(tables).difference(DUCKDB_INTERNAL_TABLES))
 
     def fetch_from_cursor(
         self,
