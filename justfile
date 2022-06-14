@@ -63,7 +63,7 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
     args+=("$outdir")
     git clone "${args[@]}"
 
-# start backends using docker compose and load data; no arguments starts all backends
+# start backends using docker compose; no arguments starts all backends
 up *backends:
     docker compose up --wait {{ backends }}
 
