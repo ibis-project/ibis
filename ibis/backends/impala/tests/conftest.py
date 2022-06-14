@@ -278,18 +278,17 @@ def hdfs(env, tmp_dir):
 
 
 @pytest.fixture
-def con_no_hdfs(
-    env,
-    test_data_db,
-    tmp_path_factory,
-    data_directory,
-    script_directory,
-):
-    con = TestConf.load_data(
+def backend(tmp_path_factory, data_directory, script_directory):
+    return TestConf.load_data(
         data_directory,
         script_directory,
         tmp_path_factory,
-    ).connect(data_directory, with_hdfs=False)
+    )
+
+
+@pytest.fixture
+def con_no_hdfs(env, test_data_db, data_directory, backend):
+    con = backend.connect(data_directory, with_hdfs=False)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -303,15 +302,10 @@ def con_no_hdfs(
 def con(
     env,
     test_data_db,
-    tmp_path_factory,
     data_directory,
-    script_directory,
+    backend
 ):
-    con = TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-    ).connect(data_directory)
+    con = backend.connect(data_directory)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -363,12 +357,8 @@ def tmp_db(env, con, test_data_db):
 
 
 @pytest.fixture
-def con_no_db(env, tmp_path_factory, data_directory, script_directory):
-    con = TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-    ).connect(data_directory, database=None)
+def con_no_db(env, data_directory, backend):
+    con = backend.connect(data_directory, database=None)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
