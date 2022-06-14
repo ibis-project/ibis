@@ -69,10 +69,10 @@ extras_require = {
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',
         'clickhouse-driver[numpy]>=0.1,<0.3',
-        'dask[array,dataframe]>=2021.10.0',
+        'dask[dataframe,array]>=2021.10.0',
         'datafusion>=0.4,<0.6',
         'duckdb>=0.3.2,<0.4.0',
-        'duckdb-engine>=0.1.8,<0.2.0',
+        'duckdb-engine>=0.1.9,<0.2.0',
         'fsspec>=2022.1.0',
         'GeoAlchemy2>=0.6.3,<0.13',
         'geopandas>=0.6,<0.11',
@@ -92,11 +92,11 @@ extras_require = {
         'clickhouse-driver[numpy]>=0.1,<0.3',
         'lz4>=3.1.10,<5',
     ],
-    'dask': ['dask[array,dataframe]>=2021.10.0', 'pyarrow>=1,<9'],
+    'dask': ['dask[dataframe,array]>=2021.10.0', 'pyarrow>=1,<9'],
     'datafusion': ['datafusion>=0.4,<0.6'],
     'duckdb': [
         'duckdb>=0.3.2,<0.4.0',
-        'duckdb-engine>=0.1.8,<0.2.0',
+        'duckdb-engine>=0.1.9,<0.2.0',
         'sqlalchemy>=1.4,<2.0',
     ],
     'geospatial': [
