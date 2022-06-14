@@ -18,10 +18,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_structs = False
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
-        """No-op to allow pytest -m datafusion"""
-
-    @staticmethod
     def connect(data_directory: Path):
         # can be various types:
         #   pyarrow.RecordBatch

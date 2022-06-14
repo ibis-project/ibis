@@ -227,10 +227,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supported_to_timestamp_units = {'s'}
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
-        """No-op to allow pytest -m pyspark"""
-
-    @staticmethod
     def connect(data_directory):
         return get_pyspark_testing_client(data_directory)
 
