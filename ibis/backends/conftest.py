@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import getpass
 import importlib
 import itertools
 import os
 import platform
-import tempfile
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
