@@ -19,10 +19,6 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 'ns'
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
-        '''No-op to allow pytest -m pandas'''
-
-    @staticmethod
     def connect(data_directory: Path):
         return ibis.pandas.connect(
             dictionary={
