@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from filelock import FileLock
 
 import ibis.expr.types as ir
 
@@ -90,9 +91,32 @@ class BackendTest(abc.ABC):
         """Return a connection with data loaded from `data_directory`."""
 
     @staticmethod
-    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
-        """Load testdata from `data_dir` into
-        the backend using scripts in `script_dir`."""
+    def _load_data(
+        data_directory: Path, script_directory: Path, **kwargs
+    ) -> None:
+        ...
+
+    @classmethod
+    def load_data(
+        cls,
+        data_dir: Path,
+        script_dir: Path,
+        tmpdir: Path,
+        **kwargs,
+    ) -> None:
+        """Load testdata from `data_directory` into
+        the backend using scripts in `script_directory`."""
+        # handling for multi-processes pytest
+
+        # get the temp directory shared by all workers
+        root_tmp_dir = tmpdir.getbasetemp().parent
+
+        fn = root_tmp_dir / f"lockfile_{cls.name()}"
+        with FileLock(f"{fn}.lock"):
+            if not fn.exists():
+                cls._load_data(data_dir, script_dir, **kwargs)
+                fn.touch()
+        return cls(data_dir)
 
     @classmethod
     def assert_series_equal(

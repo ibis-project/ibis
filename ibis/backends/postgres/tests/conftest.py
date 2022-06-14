@@ -21,7 +21,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, init_database, lock_load_data
+from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 PG_USER = os.environ.get(
@@ -49,7 +49,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     supports_structs = False
 
     @staticmethod
-    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+    def _load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
         """Load testdata into the postgres backend.
 
         Parameters
@@ -129,11 +129,10 @@ def _random_identifier(suffix):
 
 @pytest.fixture(scope='session')
 def con(tmp_path_factory, data_directory, script_directory):
-    return lock_load_data(
-        TestConf,
-        tmp_path_factory,
+    return TestConf.load_data(
         data_directory,
         script_directory,
+        tmp_path_factory,
     ).connect(data_directory)
 
 

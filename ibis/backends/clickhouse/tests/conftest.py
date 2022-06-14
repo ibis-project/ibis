@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.conftest import TEST_TABLES, lock_load_data, read_tables
+from ibis.backends.conftest import TEST_TABLES, read_tables
 from ibis.backends.tests.base import (
     BackendTest,
     RoundHalfToEven,
@@ -29,7 +29,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     bool_is_int = True
 
     @staticmethod
-    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+    def _load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
         """Load testdata into a clikhouse backend.
 
         Parameters
@@ -108,11 +108,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
 
 @pytest.fixture(scope='module')
 def con(tmp_path_factory, data_directory, script_directory):
-    return lock_load_data(
-        TestConf,
-        tmp_path_factory,
+    return TestConf.load_data(
         data_directory,
         script_directory,
+        tmp_path_factory,
     ).connect(data_directory)
 
 
