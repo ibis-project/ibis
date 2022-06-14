@@ -43,6 +43,13 @@ let
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
   pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+  updateLockFiles = pkgs.writeShellApplication {
+    name = "update-lock-files";
+    text = ''
+      poetry export --dev --without-hashes --no-ansi --extras all > requirements.txt
+      poetry lock --no-update
+    '';
+  };
 in
 pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
@@ -64,6 +71,7 @@ pkgs.mkShell {
     pkgs.changelog
     pkgs.mic
     pythonEnv
+    updateLockFiles
   ] ++ pkgs.preCommitShell.buildInputs;
 
   PYTHONPATH = builtins.toPath ./.;
