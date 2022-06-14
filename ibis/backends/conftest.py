@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
 import _pytest
 import pandas as pd
 import sqlalchemy as sa
-from filelock import FileLock
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -442,26 +441,6 @@ def pytest_runtest_call(item):
             )
 
 
-def lock_load_data(
-    cls,
-    tmp_path_factory,
-    data_directory,
-    script_directory,
-    **kwargs,
-):
-    # handling for multi-processes pytest
-
-    # get the temp directory shared by all workers
-    root_tmp_dir = tmp_path_factory.getbasetemp().parent
-
-    fn = root_tmp_dir / f"lockfile_{cls.name()}"
-    with FileLock(f"{fn}.lock"):
-        if not fn.exists():
-            cls.load_data(data_directory, script_directory, **kwargs)
-            fn.touch()
-    return cls(data_directory)
-
-
 def pytest_sessionfinish(session, exitstatus):  # pragma: no cover
     """Run some code after the pytest session is finished.
 
@@ -492,9 +471,7 @@ def backend(request, data_directory, script_directory, tmp_path_factory):
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
-    return lock_load_data(
-        cls, tmp_path_factory, data_directory, script_directory
-    )
+    return cls.load_data(data_directory, script_directory, tmp_path_factory)
 
 
 @pytest.fixture(scope='session')

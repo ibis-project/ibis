@@ -11,7 +11,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         self.connection = self.connect(data_directory)
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
+    def _load_data(data_dir, script_dir, **kwargs):
         """Load testdata into an impala backend.
 
         Parameters

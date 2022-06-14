@@ -53,7 +53,7 @@ class TestConf(BackendTest, RoundHalfToEven):
             self.__class__.supports_window_operations = True
 
     @staticmethod
-    def load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
+    def _load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
         """Load testdata into a mysql backend.
 
         Parameters

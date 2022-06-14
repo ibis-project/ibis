@@ -13,7 +13,7 @@ import ibis
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
-from ibis.backends.conftest import TEST_TABLES, lock_load_data
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import (
     BackendTest,
@@ -32,7 +32,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = False
 
     @staticmethod
-    def load_data(data_dir, script_dir, **kwargs):
+    def _load_data(data_dir, script_dir, **kwargs):
         """Load testdata into an impala backend.
 
         Parameters
@@ -285,11 +285,10 @@ def con_no_hdfs(
     data_directory,
     script_directory,
 ):
-    con = lock_load_data(
-        TestConf,
-        tmp_path_factory,
+    con = TestConf.load_data(
         data_directory,
         script_directory,
+        tmp_path_factory,
     ).connect(data_directory, with_hdfs=False)
     if not env.use_codegen:
         con.disable_codegen()
@@ -308,11 +307,10 @@ def con(
     data_directory,
     script_directory,
 ):
-    con = lock_load_data(
-        TestConf,
-        tmp_path_factory,
+    con = TestConf.load_data(
         data_directory,
         script_directory,
+        tmp_path_factory,
     ).connect(data_directory)
     if not env.use_codegen:
         con.disable_codegen()
@@ -366,11 +364,10 @@ def tmp_db(env, con, test_data_db):
 
 @pytest.fixture
 def con_no_db(env, tmp_path_factory, data_directory, script_directory):
-    con = lock_load_data(
-        TestConf,
-        tmp_path_factory,
+    con = TestConf.load_data(
         data_directory,
         script_directory,
+        tmp_path_factory,
     ).connect(data_directory, database=None)
     if not env.use_codegen:
         con.disable_codegen()
