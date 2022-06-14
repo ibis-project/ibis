@@ -462,7 +462,7 @@ def lock_load_data(
     return cls(data_directory)
 
 
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(session, exitstatus):  # pragma: no cover
     """Run some code after the pytest session is finished.
 
     Notes
