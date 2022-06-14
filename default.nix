@@ -18,7 +18,6 @@ let
         "sqlite"
       ];
 
-      backendsString = lib.concatStringsSep " " backends;
       buildInputs = with pkgs; [ gdal_2 graphviz-nox proj sqlite ];
       checkInputs = buildInputs;
     in
