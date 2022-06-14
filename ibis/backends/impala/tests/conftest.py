@@ -299,12 +299,7 @@ def con_no_hdfs(env, test_data_db, data_directory, backend):
 
 
 @pytest.fixture
-def con(
-    env,
-    test_data_db,
-    data_directory,
-    backend
-):
+def con(env, test_data_db, data_directory, backend):
     con = backend.connect(data_directory)
     if not env.use_codegen:
         con.disable_codegen()
