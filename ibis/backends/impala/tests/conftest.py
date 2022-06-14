@@ -32,13 +32,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = False
 
     @staticmethod
-    def load_data(
-        data_dir,
-        script_dir,
-        with_hdfs: bool = True,
-        database: str | None = None,
-        **kwargs,
-    ):
+    def load_data(data_dir, script_dir, **kwargs):
         """Load testdata into an impala backend.
 
         Parameters
@@ -60,15 +54,12 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         con = ibis.impala.connect(
             host=env.impala_host,
             port=env.impala_port,
-            database=database,
             hdfs_client=fsspec.filesystem(
                 env.hdfs_protocol,
                 host=env.nn_host,
                 port=env.hdfs_port,
                 user=env.hdfs_user,
-            )
-            if with_hdfs
-            else None,
+            ),
             pool_size=URLLIB_DEFAULT_POOL_SIZE,
         )
 
@@ -133,7 +124,12 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             future.result()
 
     @staticmethod
-    def connect(data_directory: Path):
+    def connect(
+        data_directory: Path,
+        database: str
+        | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),
+        with_hdfs: bool = True,
+    ):
         fsspec = pytest.importorskip("fsspec")
 
         env = IbisTestEnv()
@@ -146,8 +142,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                 host=env.nn_host,
                 port=env.hdfs_port,
                 user=env.hdfs_user,
-            ),
-            database=env.test_data_db,
+            )
+            if with_hdfs
+            else None,
+            database=database,
         )
 
     def _get_original_column_names(self, tablename: str) -> list[str]:
@@ -292,9 +290,7 @@ def con_no_hdfs(
         tmp_path_factory,
         data_directory,
         script_directory,
-        with_hdfs=False,
-        database=test_data_db,
-    )
+    ).connect(data_directory, with_hdfs=False)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -317,8 +313,7 @@ def con(
         tmp_path_factory,
         data_directory,
         script_directory,
-        database=test_data_db,
-    )
+    ).connect(data_directory)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
@@ -376,7 +371,7 @@ def con_no_db(env, tmp_path_factory, data_directory, script_directory):
         tmp_path_factory,
         data_directory,
         script_directory,
-    )
+    ).connect(data_directory, database=None)
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
