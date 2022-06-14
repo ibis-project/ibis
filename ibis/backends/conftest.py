@@ -469,7 +469,7 @@ def pytest_sessionfinish(session, exitstatus):
 
     Notes
     -----
-    This runs **once** at the end of the global session, not at then end of
+    This runs **once** at the end of the global session, not at the end of
     every per-process session. `scope="session"` and the session referred to by
     this hook are different sessions.
     """
