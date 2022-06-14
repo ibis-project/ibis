@@ -38,7 +38,7 @@ https://conda.anaconda.org/conda-forge/linux-64/keyutils-1.6.1-h166bdaf_0.tar.bz
 https://conda.anaconda.org/conda-forge/linux-64/lerc-3.0-h9c3ff4c_0.tar.bz2#7fcefde484980d23f0ec24c11e314d2e
 https://conda.anaconda.org/conda-forge/linux-64/libbrotlicommon-1.0.9-h166bdaf_7.tar.bz2#f82dc1c78bcf73583f2656433ce2933c
 https://conda.anaconda.org/conda-forge/linux-64/libcrc32c-1.1.2-h9c3ff4c_0.tar.bz2#c965a5aa0d5c1c37ffc62dff36e28400
-https://conda.anaconda.org/conda-forge/linux-64/libdeflate-1.10-h7f98852_0.tar.bz2#ffa3a757a97e851293909b49f49f28fb
+https://conda.anaconda.org/conda-forge/linux-64/libdeflate-1.12-h166bdaf_0.tar.bz2#d56e3db8fa642fb383f18f5be35eeef2
 https://conda.anaconda.org/conda-forge/linux-64/libev-4.33-h516909a_1.tar.bz2#6f8720dff19e17ce5d48cfe7f3d2f0a3
 https://conda.anaconda.org/conda-forge/linux-64/libffi-3.4.2-h7f98852_5.tar.bz2#d645c6d2ac96843a2bfaccd2d62b3ac3
 https://conda.anaconda.org/conda-forge/linux-64/libiconv-1.16-h516909a_0.tar.bz2#5c0f338a513a2943c659ae619fca9211
@@ -103,7 +103,7 @@ https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.37-h21135ba_2.tar.bz2
 https://conda.anaconda.org/conda-forge/linux-64/libprotobuf-3.20.1-h6239696_0.tar.bz2#21c9de21934a18e094fc6534d787581e
 https://conda.anaconda.org/conda-forge/linux-64/libssh2-1.10.0-ha56f1ee_2.tar.bz2#6ab4eaa11ff01801cffca0a27489dc04
 https://conda.anaconda.org/conda-forge/linux-64/libthrift-0.16.0-h519c5ea_1.tar.bz2#f1eede77e2dab7a4392dabc746913d52
-https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.4.0-h0fcbabc_0.tar.bz2#3c343938f969d6434bb648119d576c0f
+https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.4.0-hc85c160_1.tar.bz2#151f9fae3ab50f039c8735e47770aa2d
 https://conda.anaconda.org/conda-forge/linux-64/libxml2-2.9.14-h22db469_0.tar.bz2#7d623237b73d93dd856b5dd0f5fedd6b
 https://conda.anaconda.org/conda-forge/linux-64/libzip-1.8.0-h4de3113_1.tar.bz2#175a746a43d42c053b91aa765fbc197d
 https://conda.anaconda.org/conda-forge/linux-64/sqlite-3.38.5-h4ff8645_0.tar.bz2#a1448f0c31baec3946d2dcf09f905c9e
@@ -230,7 +230,7 @@ https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.7.1-pyhd8ed1
 https://conda.anaconda.org/conda-forge/linux-64/jedi-0.18.1-py39hf3d152e_1.tar.bz2#941922f60b68bc6768c9360afb94d138
 https://conda.anaconda.org/conda-forge/linux-64/jupyter_core-4.10.0-py39hf3d152e_0.tar.bz2#11b172b21d557081dc622fc0c4f9cfa2
 https://conda.anaconda.org/conda-forge/linux-64/kealib-1.4.14-hfe1a663_4.tar.bz2#892f8efd00c78f388500e32fdb53705a
-https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.4.2-py39hf939315_1.tar.bz2#93232e4148e28b2665c16e573747a874
+https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.4.3-py39hf939315_0.tar.bz2#d8bdd7cb2f0e571665bbf0ec09c94da9
 https://conda.anaconda.org/conda-forge/linux-64/libdap4-3.20.6-hd7c4107_2.tar.bz2#c265ae57e3acdc891f3e2b93cf6784f5
 https://conda.anaconda.org/conda-forge/linux-64/libgd-2.3.3-h18fbbfe_3.tar.bz2#ea9758cf553476ddf75c789fdd239dc5
 https://conda.anaconda.org/conda-forge/linux-64/libnetcdf-4.8.1-nompi_h329d8a1_102.tar.bz2#a857af323c5edbd8e9e45fb9facb6f5f
@@ -317,7 +317,7 @@ https://conda.anaconda.org/conda-forge/linux-64/watchdog-2.1.9-py39hf3d152e_0.ta
 https://conda.anaconda.org/conda-forge/noarch/argcomplete-1.12.3-pyhd8ed1ab_2.tar.bz2#b8152341fc3fc9880c6e1b9d188974e5
 https://conda.anaconda.org/conda-forge/linux-64/bokeh-2.4.3-py39hf3d152e_0.tar.bz2#33a8e1a528dea8afa1f3ecf0a42122cf
 https://conda.anaconda.org/conda-forge/noarch/branca-0.5.0-pyhd8ed1ab_0.tar.bz2#d96c4ccb1e66b1c1f507dd12c226749a
-https://conda.anaconda.org/conda-forge/linux-64/clickhouse-driver-0.2.3-py39h3811e60_0.tar.bz2#37003c5995c90e18fb38bc9d4b62cbd4
+https://conda.anaconda.org/conda-forge/linux-64/clickhouse-driver-0.2.4-py39hb9d737c_0.tar.bz2#4f82a65c40baddd1ecfd834d347a95e4
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea49d7c1392265e007a8b2f8de0713b
 https://conda.anaconda.org/conda-forge/noarch/geopandas-base-0.10.2-pyha770c72_1.tar.bz2#10584badfcd9fa04e6fc9a4d5dad1513
 https://conda.anaconda.org/conda-forge/noarch/impyla-0.17.0-pyhd8ed1ab_2.tar.bz2#6c2b6b92dacfa3e9fb974849c16b6e80
