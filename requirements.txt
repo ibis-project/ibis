@@ -20,14 +20,14 @@ charset-normalizer==2.0.12; python_full_version >= "3.6.0" and python_version >=
 click-plugins==1.1.1; python_version >= "3.7"
 click==8.1.3; python_version >= "3.7"
 clickhouse-cityhash==1.0.2.3
-clickhouse-driver==0.2.3; python_version >= "3.4" and python_version < "4"
+clickhouse-driver==0.2.4; python_version >= "3.4" and python_version < "4"
 cligj==0.7.2; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version < "4" and python_version >= "3.7"
 cloudpickle==2.0.0; python_version >= "3.8"
 colorama==0.4.4; platform_system == "Windows" and python_version >= "3.7" and python_full_version >= "3.6.2" and python_full_version < "4.0.0" and (python_version >= "3.8" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.8" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7") or sys_platform == "win32" and python_version >= "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7") and python_full_version >= "3.5.0")
 commitizen==2.26.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 coverage==6.4.1; python_version >= "3.7"
-dask==2022.5.2; python_version >= "3.8"
+dask==2022.6.0; python_version >= "3.8"
 datafusion==0.5.2; python_version >= "3.6"
 debugpy==1.6.0; python_version >= "3.7"
 decli==0.5.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.6"
