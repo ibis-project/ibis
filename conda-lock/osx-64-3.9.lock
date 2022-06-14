@@ -17,7 +17,7 @@ https://conda.anaconda.org/conda-forge/osx-64/jpeg-9e-h5eb16cf_1.tar.bz2#9d52137
 https://conda.anaconda.org/conda-forge/osx-64/json-c-0.16-h01d06f9_0.tar.bz2#6696477dbfcb5b7ea8559865e7f9dbef
 https://conda.anaconda.org/conda-forge/osx-64/libbrotlicommon-1.0.9-h5eb16cf_7.tar.bz2#898a296a93b36e42a065963bb4504f2b
 https://conda.anaconda.org/conda-forge/osx-64/libcxx-14.0.5-hce7ea42_1.tar.bz2#563442fea31753e46dd74aca8688abd6
-https://conda.anaconda.org/conda-forge/osx-64/libdeflate-1.10-h0d85af4_0.tar.bz2#98a4bf0073c56678453dd86845d3bcc9
+https://conda.anaconda.org/conda-forge/osx-64/libdeflate-1.12-hac89ed1_0.tar.bz2#3e2e03ff8bcdd49315541a80e4e9023d
 https://conda.anaconda.org/conda-forge/osx-64/libev-4.33-haf1e3a3_1.tar.bz2#79dc2be110b2a3d1e97ec21f691c50ad
 https://conda.anaconda.org/conda-forge/osx-64/libffi-3.4.2-h0d85af4_5.tar.bz2#ccb34fb14960ad8b125962d3d79b31a9
 https://conda.anaconda.org/conda-forge/osx-64/libiconv-1.16-haf1e3a3_0.tar.bz2#c5fab167412a52e491c8e11453ae016f
@@ -96,7 +96,7 @@ https://conda.anaconda.org/conda-forge/osx-64/libcurl-7.83.1-h372c54d_0.tar.bz2#
 https://conda.anaconda.org/conda-forge/osx-64/libopenblas-0.3.20-openmp_hb3cd9ec_0.tar.bz2#d862e4a5c6e7bf0bc9d66a38f5c73142
 https://conda.anaconda.org/conda-forge/osx-64/libpq-14.3-hf6bb32a_0.tar.bz2#dd8616bab156c5b0a4c8a9126e12b5db
 https://conda.anaconda.org/conda-forge/osx-64/libthrift-0.16.0-h9702cd6_1.tar.bz2#d5b6e66507bfaa85e35624ca745776af
-https://conda.anaconda.org/conda-forge/osx-64/libtiff-4.4.0-hfca7e8f_0.tar.bz2#7b6d99d80fa5cbd448d84cbafa026425
+https://conda.anaconda.org/conda-forge/osx-64/libtiff-4.4.0-h9847915_1.tar.bz2#18372b55ad60d8f0ed1ca4bca9eb2d0d
 https://conda.anaconda.org/conda-forge/osx-64/nss-3.78-ha8197d3_0.tar.bz2#0927d191f392959c876b7eab924efd01
 https://conda.anaconda.org/conda-forge/osx-64/orc-1.7.3-h5ac28ee_1.tar.bz2#ad263cee496ceb202e0e0d62db97766e
 https://conda.anaconda.org/conda-forge/osx-64/python-3.9.13-h57e37ff_0_cpython.tar.bz2#0fced1dc8919c66139c45d1e2d8dc6a6
@@ -212,7 +212,7 @@ https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.7.1-pyhd8ed1
 https://conda.anaconda.org/conda-forge/osx-64/jedi-0.18.1-py39h6e9494a_1.tar.bz2#17fd05dd01cc6e30715af4a5703cf0ef
 https://conda.anaconda.org/conda-forge/osx-64/jupyter_core-4.10.0-py39h6e9494a_0.tar.bz2#a056bc8146dd6e6a71f46ed3e64bce64
 https://conda.anaconda.org/conda-forge/osx-64/kealib-1.4.14-h4dab1bc_4.tar.bz2#0c2b30d162e068a16109244b033c4ac0
-https://conda.anaconda.org/conda-forge/osx-64/kiwisolver-1.4.2-py39h7248d28_1.tar.bz2#c3fbe4ffe5521b307d1db243a8018394
+https://conda.anaconda.org/conda-forge/osx-64/kiwisolver-1.4.3-py39h7c694c3_0.tar.bz2#d6de0fd1a09303cade4eb0afa4024d0e
 https://conda.anaconda.org/conda-forge/osx-64/libcblas-3.9.0-15_osx64_openblas.tar.bz2#2d26f8ba1e89bcc2704ac7a38d4cc74c
 https://conda.anaconda.org/conda-forge/osx-64/libdap4-3.20.6-h3e144a0_2.tar.bz2#55e0706347eb18f3616808366236bcaa
 https://conda.anaconda.org/conda-forge/osx-64/libgd-2.3.3-h1e214de_3.tar.bz2#350af2b75c58dc16985fa97298469143
@@ -298,7 +298,7 @@ https://conda.anaconda.org/conda-forge/noarch/argcomplete-1.12.3-pyhd8ed1ab_2.ta
 https://conda.anaconda.org/conda-forge/osx-64/arrow-cpp-8.0.0-py39h2da71d5_2_cpu.tar.bz2#a1d7398fd453632322ceff421ad8b950
 https://conda.anaconda.org/conda-forge/osx-64/bokeh-2.4.3-py39h6e9494a_0.tar.bz2#3f941b07d6d1fd04f9048f3bc2537d3f
 https://conda.anaconda.org/conda-forge/noarch/branca-0.5.0-pyhd8ed1ab_0.tar.bz2#d96c4ccb1e66b1c1f507dd12c226749a
-https://conda.anaconda.org/conda-forge/osx-64/clickhouse-driver-0.2.3-py39h89e85a6_0.tar.bz2#2442c0bd7fbf27add0ab7a20669b60c9
+https://conda.anaconda.org/conda-forge/osx-64/clickhouse-driver-0.2.4-py39h701faf5_0.tar.bz2#31e3ef8bdcf4bb1f5c2330c53c3f7b87
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.6.3-py_0.tar.bz2#1ea49d7c1392265e007a8b2f8de0713b
 https://conda.anaconda.org/conda-forge/noarch/impyla-0.17.0-pyhd8ed1ab_2.tar.bz2#6c2b6b92dacfa3e9fb974849c16b6e80
 https://conda.anaconda.org/conda-forge/noarch/jupyterlab_pygments-0.2.2-pyhd8ed1ab_0.tar.bz2#243f63592c8e449f40cd42eb5cf32f40
