@@ -379,6 +379,8 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
     elif isinstance(value, tuple):
         return F.array(*map(F.lit, value))
     else:
+        if isinstance(value, pd.Timestamp) and value.tz is None:
+            value = value.tz_localize("UTC").to_pydatetime()
         return F.lit(value)
 
 
