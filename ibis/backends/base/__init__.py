@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 
 if TYPE_CHECKING:
@@ -15,6 +16,7 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base.regex import RegexDispatcher
 from ibis.common.exceptions import TranslationError
 from ibis.util import deprecated
 
@@ -593,3 +595,24 @@ class BaseBackend(abc.ABC):
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
         )
+
+
+connect = RegexDispatcher("connect")
+
+
+@connect.register(r"(?P<backend>.+)://(?P<path>.*)", priority=10)
+def _(_: str, backend: str, path: str) -> BaseBackend:
+    """Connect to given *url*."""
+    instance = getattr(ibis, backend)
+    try:
+        return instance.connect(url=path)
+    except TypeError:
+        return instance.connect(path)
+
+
+@connect.register(r".+", priority=1)
+def _(path: str) -> BaseBackend:
+    """Connect to given path."""
+    path = Path(path)
+    ext = path.suffix[1:]
+    return getattr(ibis, ext).connect(path)
