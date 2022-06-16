@@ -379,7 +379,7 @@ class Selection(TableNode, sch.HasSchema):
         default=(),
     )
 
-    def __init__(self, table, selections, predicates, sort_keys):
+    def __init__(self, table, selections, predicates, sort_keys, **kwargs):
         from ibis.expr.analysis import shares_all_roots, shares_some_roots
 
         if not shares_all_roots(selections + sort_keys, table):
@@ -399,6 +399,7 @@ class Selection(TableNode, sch.HasSchema):
             selections=selections,
             predicates=predicates,
             sort_keys=sort_keys,
+            **kwargs,
         )
 
         # Validate no overlapping columns in schema
