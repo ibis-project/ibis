@@ -21,7 +21,13 @@ class Filterable(Value):
 
 @public
 class Count(Filterable, Reduction):
-    arg = rlz.one_of((rlz.column(rlz.any), rlz.table))
+    arg = rlz.column(rlz.any)
+    output_dtype = dt.int64
+
+
+@public
+class CountStar(Filterable, Reduction):
+    arg = rlz.table
     output_dtype = dt.int64
 
 

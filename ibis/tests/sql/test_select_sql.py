@@ -249,7 +249,7 @@ def test_where_analyze_scalar_op(functional_alltypes):
 
     result = Compiler.to_sql(expr)
     expected = """\
-SELECT count(*) AS `count`
+SELECT count(1) AS `count`
 FROM functional_alltypes
 WHERE (`timestamp_col` < date_add(cast({!r} as timestamp), INTERVAL 3 MONTH)) AND
       (`timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY))"""  # noqa: E501
@@ -331,7 +331,7 @@ HAVING sum(`f`) > 10"""
     expected = """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1
-HAVING count(*) > 100"""
+HAVING count(1) > 100"""
     assert result == expected
 
 
@@ -339,7 +339,7 @@ def test_aggregate_table_count_metric(star1):
     expr = star1.count()
 
     result = Compiler.to_sql(expr)
-    expected = """SELECT count(*) AS `count`
+    expected = """SELECT count(1) AS `count`
 FROM star1"""
     assert result == expected
 
@@ -349,7 +349,7 @@ def test_aggregate_count_joined(aggregate_count_joined):
 
     result = Compiler.to_sql(expr)
     expected = """\
-SELECT count(*) AS `count`
+SELECT count(1) AS `count`
 FROM (
   SELECT t2.*, t1.`r_name` AS `region`
   FROM tpch_region t1
@@ -721,7 +721,7 @@ def test_limit_with_self_join(functional_alltypes):
     # it works
     result = Compiler.to_sql(expr)
     expected = """\
-SELECT count(*) AS `count`
+SELECT count(1) AS `count`
 FROM (
   SELECT t1.`id` AS `id_x`, t1.`bool_col` AS `bool_col_x`,
          t1.`tinyint_col` AS `tinyint_col_x`,
@@ -911,7 +911,7 @@ def test_topk_analysis_bug():
 
     result = Compiler.to_sql(expr)
     expected = f"""\
-SELECT `origin`, count(*) AS `count`
+SELECT `origin`, count(1) AS `count`
 FROM (
   SELECT t1.*
   FROM (
@@ -1320,7 +1320,7 @@ def test_sort_by_on_limit_yield_subquery(functional_alltypes):
     result = Compiler.to_sql(expr)
     expected = """SELECT *
 FROM (
-  SELECT `string_col`, count(*) AS `nrows`
+  SELECT `string_col`, count(1) AS `nrows`
   FROM functional_alltypes
   GROUP BY 1
   LIMIT 5

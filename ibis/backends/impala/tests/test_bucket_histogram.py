@@ -209,7 +209,7 @@ FROM (
       WHEN (10 <= `f`) AND (`f` < 25) THEN 2
       WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
       ELSE CAST(NULL AS tinyint)
-    END AS `tier`, count(*) AS `count`
+    END AS `tier`, count(1) AS `count`
   FROM alltypes
   GROUP BY 1
 ) t0"""

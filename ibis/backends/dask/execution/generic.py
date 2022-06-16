@@ -39,8 +39,9 @@ from ibis.backends.pandas.execution.generic import (
     execute_between,
     execute_cast_series_array,
     execute_cast_series_generic,
-    execute_count_frame,
-    execute_count_frame_groupby,
+    execute_count_star_frame,
+    execute_count_star_frame_filter,
+    execute_count_star_frame_groupby,
     execute_database_table_client,
     execute_difference_dataframe_dataframe,
     execute_distinct_dataframe,
@@ -90,9 +91,13 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             execute_table_column_df_or_df_groupby,
         ),
     ],
-    ops.Count: [
-        ((ddgb.DataFrameGroupBy, type(None)), execute_count_frame_groupby),
-        ((dd.DataFrame, type(None)), execute_count_frame),
+    ops.CountStar: [
+        (
+            (ddgb.DataFrameGroupBy, type(None)),
+            execute_count_star_frame_groupby,
+        ),
+        ((dd.DataFrame, type(None)), execute_count_star_frame),
+        ((dd.DataFrame, dd.Series), execute_count_star_frame_filter),
     ],
     ops.NullIfZero: [((dd.Series,), execute_null_if_zero_series)],
     ops.Between: [

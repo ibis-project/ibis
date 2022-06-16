@@ -342,6 +342,11 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
+        param(
+            lambda t, where: t.count(where=where),
+            lambda t, where: len(t[where]),
+            id='count_star',
+        ),
     ],
 )
 @pytest.mark.parametrize(
