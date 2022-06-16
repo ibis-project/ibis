@@ -344,12 +344,12 @@ def mod(op):
 
 @translate.register(ops.Count)
 def count(op):
-    op_arg = op.arg
-    if isinstance(op_arg, ops.TableNode):
-        arg = df.literal(1)
-    else:
-        arg = translate(op_arg)
-    return df.functions.count(arg)
+    return df.functions.count(translate(op.arg))
+
+
+@translate.register(ops.CountStar)
+def count_star(_):
+    return df.functions.count(df.literal(1))
 
 
 @translate.register(ops.Sum)

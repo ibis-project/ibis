@@ -227,6 +227,15 @@ def sort_key(translator, op):
     return f"{translator.translate(op.expr)}{sort_direction}"
 
 
+def count_star(translator, op):
+    return aggregate._reduction_format(
+        translator,
+        "count",
+        op.where,
+        ops.Literal(value=1, dtype=dt.int64),
+    )
+
+
 binary_infix_ops = {
     # Binary operations
     ops.Add: binary_infix.binary_infix_op('+'),
@@ -309,6 +318,7 @@ operation_registry = {
     ops.Variance: aggregate.variance_like('var'),
     ops.GroupConcat: aggregate.reduction('group_concat'),
     ops.Count: aggregate.reduction('count'),
+    ops.CountStar: count_star,
     ops.CountDistinct: aggregate.count_distinct,
     # string operations
     ops.StringConcat: concat,

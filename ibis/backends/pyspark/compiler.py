@@ -502,7 +502,7 @@ def compile_any(t, op, *, aggcontext=None, **kwargs):
 
 
 @compiles(ops.NotAny)
-def compile_notany(t, op, *, aggcontext=None, **kwargs):
+def compile_notany(t, op, *args, aggcontext=None, **kwargs):
     # The code here is a little ugly because the translation are different
     # with different context.
     # When translating col.notany() (context is None), we returns the dataframe
@@ -516,15 +516,15 @@ def compile_notany(t, op, *, aggcontext=None, **kwargs):
             return ~(F.max(col))
 
         return compile_aggregator(
-            t, op, fn=fn, aggcontext=aggcontext, **kwargs
+            t, op, *args, fn=fn, aggcontext=aggcontext, **kwargs
         )
     else:
-        return ~compile_any(t, op, aggcontext=aggcontext, **kwargs)
+        return ~compile_any(t, op, *args, aggcontext=aggcontext, **kwargs)
 
 
 @compiles(ops.All)
-def compile_all(t, op, **kwargs):
-    return compile_aggregator(t, op, fn=F.min, **kwargs)
+def compile_all(t, op, *args, **kwargs):
+    return compile_aggregator(t, op, *args, fn=F.min, **kwargs)
 
 
 @compiles(ops.NotAll)
@@ -542,17 +542,25 @@ def compile_notall(t, op, *, aggcontext=None, **kwargs):
         return ~compile_all(t, op, aggcontext=aggcontext, **kwargs)
 
 
-def _count_star(_):
-    return F.count(F.lit(1))
-
-
 @compiles(ops.Count)
 def compile_count(t, op, **kwargs):
-    if _is_table(op):
-        fn = _count_star
+    return compile_aggregator(t, op, fn=F.count, **kwargs)
+
+
+@compiles(ops.CountStar)
+def compile_count_star(t, op, aggcontext=None, **kwargs):
+    src_table = t.translate(op.arg, **kwargs)
+
+    src_col = F.lit(1)
+
+    if (where := op.where) is not None:
+        src_col = F.when(t.translate(where, **kwargs), src_col)
+
+    col = F.count(src_col)
+    if aggcontext is not None:
+        return col
     else:
-        fn = F.count
-    return compile_aggregator(t, op, fn=fn, **kwargs)
+        return src_table.select(col)
 
 
 @compiles(ops.Max)
@@ -1057,7 +1065,7 @@ def compile_string_like(t, op, **kwargs):
     return src_column.like(pattern)
 
 
-@compiles(ops.NodeList)
+@compiles(ops.ValueList)
 def compile_value_list(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
     return [t.translate(col, **kwargs) for col in op.values]

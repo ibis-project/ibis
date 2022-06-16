@@ -194,7 +194,7 @@ def test_complex_array_expr_projection(db, alltypes):
     name = expr2.get_name()
     expected = f"""SELECT CAST(`string_col` AS Nullable(Float64)) AS `{name}`
 FROM (
-  SELECT `string_col`, count(*) AS `count`
+  SELECT `string_col`, count() AS `count`
   FROM {db.name}.`functional_alltypes`
   GROUP BY `string_col`
 ) t0"""
