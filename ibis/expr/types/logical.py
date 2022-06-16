@@ -42,8 +42,6 @@ class BooleanValue(NumericValue):
         SELECT CASE WHEN `is_person` THEN 'yes' ELSE 'no' END AS `tmp`
         FROM t
         """
-        import ibis.expr.operations as ops
-
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
         # must be used.

@@ -506,6 +506,16 @@ def _bitwise_not(t, op):
     )
 
 
+def _count_star(t, op):
+    if (where := op.where) is None:
+        return sa.func.count()
+
+    if t._has_reduction_filter_syntax:
+        return sa.func.count().filter(t.translate(where))
+
+    return sa.func.count(t.translate(ops.Where(where, 1, None)))
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
@@ -519,6 +529,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Contains: _contains(lambda left, right: left.in_(right)),
     ops.NotContains: _contains(lambda left, right: left.notin_(right)),
     ops.Count: reduction(sa.func.count),
+    ops.CountStar: _count_star,
     ops.Sum: reduction(sa.func.sum),
     ops.Mean: reduction(sa.func.avg),
     ops.Min: reduction(sa.func.min),

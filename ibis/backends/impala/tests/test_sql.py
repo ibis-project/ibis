@@ -84,7 +84,7 @@ def test_nested_join_base():
 
     expected = """\
 WITH t0 AS (
-  SELECT `uuid`, count(*) AS `count`
+  SELECT `uuid`, count(1) AS `count`
   FROM t
   GROUP BY 1
 )
@@ -120,7 +120,7 @@ def test_nested_joins_single_cte():
 
     expected = """\
 WITH t0 AS (
-  SELECT `uuid`, count(*) AS `count`
+  SELECT `uuid`, count(1) AS `count`
   FROM t
   GROUP BY 1
 )
@@ -321,7 +321,7 @@ WITH t0 AS (
   FROM t2
 ),
 t1 AS (
-  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(*) AS `row_count`
+  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(1) AS `row_count`
   FROM t0
   GROUP BY 1, 2, 3
 ),
@@ -331,7 +331,7 @@ t2 AS (
 )
 SELECT t3.*, t4.`total`
 FROM (
-  SELECT `d`, `b`, count(*) AS `count`, count(DISTINCT `c`) AS `unique`
+  SELECT `d`, `b`, count(1) AS `count`, count(DISTINCT `c`) AS `unique`
   FROM t2
   GROUP BY 1, 2
 ) t3
@@ -508,12 +508,12 @@ WITH t0 AS (
 SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`,
        t2.`count` / CAST(t1.`count` AS double) AS `fraction`
 FROM (
-  SELECT extract(`odate`, 'year') AS `year`, count(*) AS `count`
+  SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   GROUP BY 1
 ) t1
   INNER JOIN (
-    SELECT extract(t0.`odate`, 'year') AS `year`, count(*) AS `count`
+    SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
     FROM t0
     WHERE t0.`o_totalprice` > (
       SELECT avg(t7.`o_totalprice`) AS `mean`
@@ -551,7 +551,7 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT extract(`odate`, 'year') AS `year`, count(*) AS `count`
+  SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   GROUP BY 1
 )

@@ -743,15 +743,37 @@ class Table(Expr):
         ]
         return an.apply_filter(table.op(), predicates).to_expr()
 
-    def count(self) -> ir.IntegerScalar:
+    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
+
+        Parameters
+        ----------
+        where
+            Optional boolean expression to filter rows when counting.
 
         Returns
         -------
         IntegerScalar
             Number of rows in the table
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> t = ibis.table(dict(a="int"), name="t")
+        >>> t.count()
+        r0 := UnboundTable: t
+          a int64
+        count: CountStar(t)
+        >>> t.aggregate(n=_.count(_.a > 1), total=_.sum())
+        r0 := UnboundTable: t
+          a int64
+        Aggregation[r0]
+          metrics:
+            n:     CountStar(t, where=r0.a > 1)
+            total: Sum(r0.a)
         """
-        return ops.Count(self).to_expr().name("count")
+        return ops.CountStar(self, where).to_expr().name("count")
 
     def dropna(
         self,
