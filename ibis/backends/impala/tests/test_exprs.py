@@ -723,7 +723,7 @@ def test_filter_with_analytic():
     expected = """\
 SELECT `col`, `analytic`
 FROM (
-  SELECT `col`, count(*) OVER () AS `analytic`
+  SELECT `col`, count(1) OVER () AS `analytic`
   FROM (
     SELECT `col`, `filter`
     FROM (

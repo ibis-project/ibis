@@ -409,7 +409,7 @@ def test_where_simple_comparisons(sa_star1, where_simple_comparisons):
             lambda st: (
                 sa.select([st.c.foo_id, F.sum(st.c.f).label("total")])
                 .group_by(st.c.foo_id)
-                .having(F.count("*") > L(100))
+                .having(F.count() > L(100))
             ),
         ),
     ],
