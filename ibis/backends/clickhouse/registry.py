@@ -119,6 +119,11 @@ def _agg(func):
     return formatter
 
 
+def _count_star(translator, op):
+    # zero argument count == count(*), countIf when `where` is not None
+    return _aggregate(translator, "count", where=op.where)
+
+
 def _agg_variance_like(func):
     variants = {'sample': f'{func}Samp', 'pop': f'{func}Pop'}
 
@@ -709,6 +714,7 @@ operation_registry = {
     ops.Correlation: _corr,
     ops.GroupConcat: _group_concat,
     ops.Count: _agg('count'),
+    ops.CountStar: _count_star,
     ops.CountDistinct: _agg('uniq'),
     ops.Arbitrary: _arbitrary,
     # string operations
