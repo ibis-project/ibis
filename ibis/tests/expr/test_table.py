@@ -418,7 +418,7 @@ def test_table_count(table):
     result = table.count()
     assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Count)
+    assert isinstance(result.op().arg, ops.CountStar)
     assert result.get_name() == 'count'
 
 

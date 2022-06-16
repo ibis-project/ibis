@@ -629,8 +629,8 @@ def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register(ops.Count, DataFrameGroupBy, type(None))
-def execute_count_frame_groupby(op, data, _, **kwargs):
+@execute_node.register(ops.CountStar, DataFrameGroupBy, type(None))
+def execute_count_star_frame_groupby(op, data, _, **kwargs):
     result = data.size()
     # FIXME(phillipc): We should not hard code this column name
     result.name = 'count'
@@ -725,9 +725,14 @@ def execute_notall_series(op, data, aggcontext=None, **kwargs):
         return result
 
 
-@execute_node.register(ops.Count, pd.DataFrame, type(None))
-def execute_count_frame(op, data, _, **kwargs):
+@execute_node.register(ops.CountStar, pd.DataFrame, type(None))
+def execute_count_star_frame(op, data, _, **kwargs):
     return len(data)
+
+
+@execute_node.register(ops.CountStar, pd.DataFrame, pd.Series)
+def execute_count_star_frame_filter(op, data, where, **kwargs):
+    return len(data) - (len(where) - where.sum())
 
 
 @execute_node.register(ops.BitAnd, pd.Series, (pd.Series, type(None)))
