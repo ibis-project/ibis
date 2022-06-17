@@ -486,7 +486,9 @@ def ddl_con(ddl_backend):
     ),
     scope='session',
 )
-def alchemy_backend(request, data_directory, tmp_path_factory):
+def alchemy_backend(
+    request, data_directory, script_directory, tmp_path_factory
+):
     """
     Runs the SQLAlchemy-based backends
     (sqlite, mysql, postgres)
@@ -515,7 +517,7 @@ def alchemy_con(alchemy_backend):
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
     scope='session',
 )
-def udf_backend(request, data_directory, tmp_path_factory):
+def udf_backend(request, data_directory, script_directory, tmp_path_factory):
     """
     Runs the UDF-supporting backends
     """
