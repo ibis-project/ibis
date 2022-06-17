@@ -37,8 +37,14 @@ def test_register_csv(data_directory, fname, in_table_name, out_table_name):
 @pytest.mark.parametrize(
     "fname, in_table_name, out_table_name",
     [
-        ("parquet://functional_alltypes.parquet", None, "functional_alltypes"),
+        (
+            "parquet://functional_alltypes.parquet",
+            None,
+            "functional_alltypes",
+        ),
         ("functional_alltypes.parquet", "funk_all", "funk_all"),
+        ("parquet://functional_alltypes.parq", "funk_all", "funk_all"),
+        ("parquet://functional_alltypes", None, "functional_alltypes"),
     ],
 )
 def test_register_parquet(
@@ -53,7 +59,7 @@ def test_register_parquet(
 
     con = ibis.duckdb.connect()
     with pushd(tmp_path):
-        con.register(fname, table_name=in_table_name)
+        con.register("parquet://" + str(fname.name), table_name=in_table_name)
 
     assert out_table_name in con.list_tables()
 
