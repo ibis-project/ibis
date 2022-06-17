@@ -364,7 +364,7 @@ test = ["pytest", "pytest-rerunfailures", "pytest-xdist", "pre-commit"]
 
 [[package]]
 name = "datafusion"
-version = "0.5.2"
+version = "0.6.0"
 description = "Build and run queries against data"
 category = "main"
 optional = true
@@ -2385,7 +2385,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "72ea7719d303a92dcd2230606d48a4da6c2c0c5f87cb30254235207d21cdf740"
+content-hash = "b6e29fb34c35fdbbf92dccd5703c00444314bc4d2dd08bc9e0554d8a4583ad00"
 
 [metadata.files]
 absolufy-imports = [
@@ -2867,11 +2867,11 @@ dask = [
     {file = "dask-2022.6.0.tar.gz", hash = "sha256:9f30f0652588140c2a345b72b35a400e59c44fff9ae14dd5097c7633d994d9cc"},
 ]
 datafusion = [
-    {file = "datafusion-0.5.2-cp36-abi3-macosx_10_7_x86_64.whl", hash = "sha256:7bc19fbc01d42690b4698f1a8207b110a0e51bd8de2a5725fc86431b7c4ed8cd"},
-    {file = "datafusion-0.5.2-cp36-abi3-macosx_11_0_arm64.whl", hash = "sha256:3a888707fcfdb4a4f7412f05a7c68e8d884db3bae1e5218916452cba07658e9a"},
-    {file = "datafusion-0.5.2-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:8b96d50651c73f50ecc59198158b9a773dd1a37c346fa262cfcb1988c13d1fcf"},
-    {file = "datafusion-0.5.2-cp36-abi3-win_amd64.whl", hash = "sha256:e664456e76409def5cf18fcb2c2710b244690bb1e13057770a69dd77e9efa2a9"},
-    {file = "datafusion-0.5.2.tar.gz", hash = "sha256:2f10e3fc61367a8017907cc0a9e0aa18dc80fd04b8b3413a90147c37a9e40bab"},
+    {file = "datafusion-0.6.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:74c6bb54453e800c7cfdd93dc7f0b41ca20ef92f07012bdf92db02759b2eb695"},
+    {file = "datafusion-0.6.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:7fdebba1a723a548bae54c452958477c7a102155555a83905a6f114f69be3bed"},
+    {file = "datafusion-0.6.0-cp37-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:8c591aef3e0ffc6a5f043d429af1d1db903ef31892531582569ef61d48d1ff5e"},
+    {file = "datafusion-0.6.0-cp37-abi3-win_amd64.whl", hash = "sha256:acb3881d2af7b876d09e594c26f4fe7158a94524ce2dca86809194bc3a671b23"},
+    {file = "datafusion-0.6.0.tar.gz", hash = "sha256:c622c0fa1965a16ca09537a31fd1c7ed2b2fc6d15225eeff66331a44db975579"},
 ]
 debugpy = [
     {file = "debugpy-1.6.0-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:eb1946efac0c0c3d411cea0b5ac772fbde744109fd9520fb0c5a51979faf05ad"},
