@@ -38,7 +38,7 @@ self: super:
       inherit src patches;
       sha256 =
         if stdenv.isDarwin
-        then "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        then "sha256-rGXSmn3MF2wFyMqzF15gB9DK5f9W4Gk08J7tOsZ7IH0="
         else "sha256-iLcEM5YYTcYZe3PQx/C4V0LU5p85R9LE+ba991J6HQE=";
     };
   });
