@@ -92,13 +92,13 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     ],
 )
 @mark.notimpl(["datafusion", "duckdb", "mysql", "postgres", "sqlite"])
-def test_sql(ddl_backend, ddl_con, sql):
+def test_sql(ddl_con, sql):
     # execute the expression using SQL query
     ddl_con.sql(sql).execute()
 
 
 @mark.notimpl(["clickhouse", "datafusion"])
-def test_create_table_from_schema(con, backend, new_schema, temp_table):
+def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
     t = con.table(temp_table)
@@ -157,7 +157,7 @@ def test_nullable_input_output(con, temp_table):
     ["clickhouse", "datafusion", "duckdb", "mysql", "postgres", "sqlite"]
 )
 @mark.notyet(["pyspark"])
-def test_create_drop_view(ddl_con, ddl_backend, temp_view):
+def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = 'functional_alltypes'
     expr = ddl_con.table(table_name).limit(1)
@@ -239,7 +239,6 @@ def employee_data_2_temp_table(
 
 
 def test_insert_no_overwrite_from_dataframe(
-    alchemy_backend,
     alchemy_con,
     test_employee_data_2,
     employee_empty_temp_table,
@@ -256,7 +255,6 @@ def test_insert_no_overwrite_from_dataframe(
 
 
 def test_insert_overwrite_from_dataframe(
-    alchemy_backend,
     alchemy_con,
     employee_data_1_temp_table,
     test_employee_data_2,
@@ -274,7 +272,6 @@ def test_insert_overwrite_from_dataframe(
 
 
 def test_insert_no_overwite_from_expr(
-    alchemy_backend,
     alchemy_con,
     employee_empty_temp_table,
     employee_data_2_temp_table,
@@ -293,7 +290,6 @@ def test_insert_no_overwite_from_expr(
 
 
 def test_insert_overwrite_from_expr(
-    alchemy_backend,
     alchemy_con,
     employee_data_1_temp_table,
     employee_data_2_temp_table,
@@ -311,7 +307,7 @@ def test_insert_overwrite_from_expr(
     tm.assert_frame_equal(result, from_table.execute())
 
 
-def test_list_databases(alchemy_backend, alchemy_con):
+def test_list_databases(alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
         'sqlite': ['main'],
@@ -322,7 +318,7 @@ def test_list_databases(alchemy_backend, alchemy_con):
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
-def test_list_schemas(alchemy_backend, alchemy_con):
+def test_list_schemas(alchemy_con):
     with pytest.warns(FutureWarning):
         alchemy_con.list_schemas()
 
