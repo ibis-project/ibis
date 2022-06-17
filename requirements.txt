@@ -1,4 +1,3 @@
-Warning: The lock file is not up to date with the latest changes in pyproject.toml. You may be getting outdated dependencies. Run update to update them.
 absolufy-imports==0.3.1; python_full_version >= "3.6.1"
 appnope==0.1.3; platform_system == "Darwin" and python_version >= "3.8" and sys_platform == "darwin"
 argcomplete==1.12.3; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
@@ -29,7 +28,7 @@ commitizen==2.26.0; python_full_version >= "3.6.2" and python_full_version < "4.
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 coverage==6.4.1; python_version >= "3.7"
 dask==2022.6.0; python_version >= "3.8"
-datafusion==0.5.2; python_version >= "3.6"
+datafusion==0.6.0; python_version >= "3.6"
 debugpy==1.6.0; python_version >= "3.7"
 decli==0.5.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.6"
 decorator==5.1.1; python_version >= "3.8"
