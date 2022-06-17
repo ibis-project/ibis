@@ -24,7 +24,7 @@ check *args:
 
 # run pytest for ci; additional arguments are forwarded to pytest
 ci-check *args:
-    poetry run pytest --durations=25 -ra --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
+    poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
 
 # lint code
 lint:
