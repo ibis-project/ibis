@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     import duckdb
 
 import ibis.expr.schema as sch
+from ibis.backends.base.regex import RegexDispatcher
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
@@ -24,6 +25,50 @@ from ibis.backends.duckdb.datatypes import parse
 class _ColumnMetadata(NamedTuple):
     name: str
     type: dt.DataType
+
+
+_register = RegexDispatcher("register")
+
+
+@_register.register(r"parquet://(?P<path>.*)", priority=10)
+def _parquet(filename, path, table_name=None):
+    path = Path(path).absolute()
+    table_name = table_name or path.stem.replace("-", "_")
+    return f"CREATE VIEW {table_name} as SELECT * from read_parquet('{path}')"
+
+
+@_register.register(r"csv://(?P<path>.*)", priority=10)
+def _csv(filename, path, table_name=None):
+    path = Path(path).absolute()
+    table_name = table_name or path.stem.replace("-", "_")
+    return f"CREATE VIEW {table_name} as SELECT * from read_csv_auto('{path}')"  # noqa: E501
+
+
+@_register.register(r"file://(?P<path>\w+)\.(?P<extension>\w+)", priority=10)
+def _file(filename, path, extension, table_name=None):
+    return _register(
+        f"{extension}://{path}.{extension}", table_name=table_name
+    )
+
+
+@_register.register(r"(?P<path>\w+)\.(?P<extension>\w+)", priority=9)
+def _noprefix(filename, path, extension, table_name=None):
+    prefix = extension
+    if prefix == "csv.gz":
+        prefix = "csv"
+    return _register(f"{prefix}://{path}.{extension}", table_name=table_name)
+
+
+@_register.register(r".*", priority=1)
+def _default(filename, **kwargs):
+    raise ValueError(
+        """
+Unrecognized filetype or extension.
+Valid prefixes are parquet://, csv://, or file://
+
+Supported filetypes are parquet, csv, and csv.gz
+    """
+    )
 
 
 class Backend(BaseAlchemyBackend):
@@ -82,34 +127,7 @@ class Backend(BaseAlchemyBackend):
         table_name
             Name for the created table.  Defaults to filename if not given
         """
-        file_name = Path(file_name)
-        suffix = "".join(file_name.suffixes).strip(".")  # handles .csv.gz
-        if file_name.parts[0].endswith(":"):
-            prefix, *fname = file_name.parts
-        else:
-            prefix = "file:"
-            fname = file_name.parts
-
-        file_name = Path(*fname).absolute()
-
-        # Use prefix for file_type.  If omitted, infer from file extension
-        file_type = prefix.strip(":") if prefix != "file:" else suffix
-        table_name = table_name or file_name.stem.replace("-", "_")
-        if file_type == "parquet":
-            view = f"""
-            CREATE VIEW {table_name} as SELECT * from
-            read_parquet('{file_name}')
-            """
-        elif file_type.startswith("csv"):
-            view = f"""
-            CREATE VIEW {table_name} as SELECT * from
-            read_csv_auto('{file_name}')
-            """
-        else:
-            raise TypeError(
-                "Only csv and parquet files can be registered with DuckDB."
-            )
-
+        view = _register(file_name, table_name=table_name)
         self.con.execute(view)
 
     def fetch_from_cursor(
