@@ -241,28 +241,28 @@ class IbisTestEnv:
         return os.environ.get("IBIS_TEST_HDFS_PROTOCOL", "webhdfs")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def env():
     return IbisTestEnv()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def tmp_dir(env):
     options.impala.temp_hdfs_path = tmp_dir = env.tmp_dir
     return tmp_dir
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_data_db(env):
     return env.test_data_db
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_data_dir(env):
     return env.test_data_dir
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def hdfs(env, tmp_dir):
     fsspec = pytest.importorskip("fsspec")
     client = fsspec.filesystem(
@@ -277,7 +277,7 @@ def hdfs(env, tmp_dir):
     return client
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def backend(tmp_path_factory, data_directory, script_directory):
     return TestConf.load_data(
         data_directory,
@@ -286,7 +286,7 @@ def backend(tmp_path_factory, data_directory, script_directory):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def con_no_hdfs(env, test_data_db, data_directory, backend):
     con = backend.connect(data_directory, with_hdfs=False)
     if not env.use_codegen:
@@ -298,7 +298,7 @@ def con_no_hdfs(env, test_data_db, data_directory, backend):
         con.set_database(test_data_db)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def con(env, test_data_db, data_directory, backend):
     con = backend.connect(data_directory)
     if not env.use_codegen:
@@ -310,15 +310,14 @@ def con(env, test_data_db, data_directory, backend):
         con.set_database(test_data_db)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def temp_char_table(con):
-    statement = """\
-CREATE TABLE IF NOT EXISTS {} (
+    name = "testing_varchar_support"
+    sql = f"""\
+CREATE TABLE IF NOT EXISTS {name} (
   `group1` varchar(10),
   `group2` char(10)
 )"""
-    name = 'testing_varchar_support'
-    sql = statement.format(name)
     con.con.execute(sql)
     try:
         yield con.table(name)
@@ -351,7 +350,7 @@ def tmp_db(env, con, test_data_db):
             pass
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def con_no_db(env, data_directory, backend):
     con = backend.connect(data_directory, database=None)
     if not env.use_codegen:
@@ -363,12 +362,12 @@ def con_no_db(env, data_directory, backend):
         con.set_database(None)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def alltypes_df(alltypes):
     return alltypes.execute()
 
@@ -452,7 +451,7 @@ def mockcon():
     return MockBackend()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def kudu_table(con, test_data_db):
     name = 'kudu_backed_table'
     con.raw_sql(
