@@ -463,13 +463,13 @@ def con(backend):
     params=_get_backends_to_test(discard=("dask", "pandas")),
     scope='session',
 )
-def ddl_backend(request, data_directory):
+def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
     """
     Runs the SQL-ish backends
     (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
     """
     cls = _get_backend_conf(request.param)
-    return cls(data_directory)
+    return cls.load_data(data_directory, script_directory, tmp_path_factory)
 
 
 @pytest.fixture(scope='session')
@@ -486,7 +486,7 @@ def ddl_con(ddl_backend):
     ),
     scope='session',
 )
-def alchemy_backend(request, data_directory):
+def alchemy_backend(request, data_directory, tmp_path_factory):
     """
     Runs the SQLAlchemy-based backends
     (sqlite, mysql, postgres)
@@ -498,7 +498,9 @@ def alchemy_backend(request, data_directory):
         )
     else:
         cls = _get_backend_conf(request.param)
-        return cls(data_directory)
+        return cls.load_data(
+            data_directory, script_directory, tmp_path_factory
+        )
 
 
 @pytest.fixture(scope='session')
@@ -513,12 +515,12 @@ def alchemy_con(alchemy_backend):
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
     scope='session',
 )
-def udf_backend(request, data_directory):
+def udf_backend(request, data_directory, tmp_path_factory):
     """
     Runs the UDF-supporting backends
     """
     cls = _get_backend_conf(request.param)
-    return cls(data_directory)
+    return cls.load_data(data_directory, script_directory, tmp_path_factory)
 
 
 @pytest.fixture(scope='session')
