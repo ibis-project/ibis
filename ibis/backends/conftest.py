@@ -468,8 +468,16 @@ def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
     Runs the SQL-ish backends
     (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
     """
-    cls = _get_backend_conf(request.param)
-    return cls.load_data(data_directory, script_directory, tmp_path_factory)
+    if request.param == "duckdb" and platform.system() == "Windows":
+        pytest.xfail(
+            "windows prevents two connections to the same duckdb file "
+            "even in the same process"
+        )
+    else:
+        cls = _get_backend_conf(request.param)
+        return cls.load_data(
+            data_directory, script_directory, tmp_path_factory
+        )
 
 
 @pytest.fixture(scope='session')
