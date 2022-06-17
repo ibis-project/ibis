@@ -22,7 +22,7 @@ self: super:
       owner = "datafusion-contrib";
       repo = "datafusion-python";
       rev = attrs.version;
-      sha256 = "sha256-IWqlY4Cfil3cyQqXm+X9ViRYLzmNaiM3+i/7EyV5CK4=";
+      sha256 = "sha256-9muPSFb4RjxP7X+qtUQ41rypgn0s9yWgmkyTA+edehU=";
     };
 
     patches = (attrs.patches or [ ])
@@ -38,8 +38,8 @@ self: super:
       inherit src patches;
       sha256 =
         if stdenv.isDarwin
-        then "sha256-qDXfSisgQ4qr8Sky0aNns8LldiHYs/N1cNatNlwEE18="
-        else "sha256-bDuCbQYNai/mNrS2BqoW4qe7eLZcBhb7GhsFKn08G/U=";
+        then "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        else "sha256-iLcEM5YYTcYZe3PQx/C4V0LU5p85R9LE+ba991J6HQE=";
     };
   });
 
