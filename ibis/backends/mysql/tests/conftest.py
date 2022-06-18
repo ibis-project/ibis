@@ -1,10 +1,10 @@
 import os
-import textwrap
 from pathlib import Path
+from typing import Any
 
 import pytest
 import sqlalchemy as sa
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES, init_database
@@ -13,7 +13,7 @@ from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
 MYSQL_PASS = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
 MYSQL_HOST = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
-MYSQL_PORT = os.environ.get('IBIS_TEST_MYSQL_PORT', 3306)
+MYSQL_PORT = int(os.environ.get('IBIS_TEST_MYSQL_PORT', 3306))
 IBIS_TEST_MYSQL_DB = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
 
 
@@ -53,47 +53,46 @@ class TestConf(BackendTest, RoundHalfToEven):
             self.__class__.supports_window_operations = True
 
     @staticmethod
-    def _load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
-        """Load testdata into a mysql backend.
+    def _load_data(
+        data_dir: Path,
+        script_dir: Path,
+        user: str = MYSQL_USER,
+        password: str = MYSQL_PASS,
+        host: str = MYSQL_HOST,
+        port: int = MYSQL_PORT,
+        database: str = IBIS_TEST_MYSQL_DB,
+        **_: Any,
+    ) -> None:
+        """Load test data into a MySql backend instance.
 
         Parameters
         ----------
-        data_dir : Path
+        data_dir
             Location of testdata
-        script_dir : Path
+        script_dir
             Location of scripts defining schemas
         """
-        user = kwargs.get("username", MYSQL_USER)
-        password = kwargs.get("password", MYSQL_PASS)
-        host = kwargs.get("host", MYSQL_HOST)
-        port = kwargs.get("port", MYSQL_PORT)
-        database = kwargs.get("database", IBIS_TEST_MYSQL_DB)
-
-        tables = list(TEST_TABLES.keys())
         with open(script_dir / 'schema' / 'mysql.sql') as schema:
-
             engine = init_database(
                 url=sa.engine.make_url(
-                    f"mysql+pymysql://{user}:{password}@{host}:{port}?local_infile=1",  # noqa: E501
+                    f"mysql+pymysql://{user}:{password}@{host}:{port:d}?local_infile=1",  # noqa: E501
                 ),
                 database=database,
                 schema=schema,
                 isolation_level="AUTOCOMMIT",
             )
-            with engine.connect() as con:
-                for table in tables:
-                    con.execute(
-                        textwrap.dedent(
-                            f"""\
-                        LOAD DATA LOCAL INFILE\
-                        '{data_dir / f"{table}.csv"}'
-                        INTO TABLE {table}
-                        COLUMNS TERMINATED BY ','
-                        OPTIONALLY ENCLOSED BY '"'
-                        LINES TERMINATED BY '\\n'
-                        IGNORE 1 LINES"""
-                        )
-                    )
+            with engine.begin() as con:
+                for table in TEST_TABLES:
+                    csv_path = data_dir / f"{table}.csv"
+                    lines = [
+                        f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
+                        f"INTO TABLE {table}",
+                        "COLUMNS TERMINATED BY ','",
+                        """OPTIONALLY ENCLOSED BY '"'""",
+                        "LINES TERMINATED BY '\\n'",
+                        "IGNORE 1 LINES",
+                    ]
+                    con.execute("\n".join(lines))
 
     @staticmethod
     def connect(_: Path):

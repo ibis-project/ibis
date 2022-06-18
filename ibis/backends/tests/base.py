@@ -92,7 +92,7 @@ class BackendTest(abc.ABC):
 
     @staticmethod
     def _load_data(
-        data_directory: Path, script_directory: Path, **kwargs
+        data_directory: Path, script_directory: Path, **kwargs: Any
     ) -> None:
         ...
 
@@ -102,7 +102,7 @@ class BackendTest(abc.ABC):
         data_dir: Path,
         script_dir: Path,
         tmpdir: Path,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Load testdata from `data_directory` into
         the backend using scripts in `script_directory`."""
