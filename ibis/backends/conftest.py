@@ -553,7 +553,7 @@ def struct(backend):
 
 
 @pytest.fixture(scope='session')
-def sorted_alltypes(backend, alltypes):
+def sorted_alltypes(alltypes):
     return alltypes.sort_by('id')
 
 
@@ -593,7 +593,7 @@ def udf_df(udf_alltypes):
 
 
 @pytest.fixture(scope='session')
-def sorted_df(backend, df):
+def sorted_df(df):
     return df.sort_values('id').reset_index(drop=True)
 
 
@@ -686,7 +686,7 @@ def temp_view(ddl_con) -> str:
 
 
 @pytest.fixture(scope='session')
-def current_data_db(ddl_con, ddl_backend) -> str:
+def current_data_db(ddl_con) -> str:
     """Return current database name."""
     return ddl_con.current_database
 
