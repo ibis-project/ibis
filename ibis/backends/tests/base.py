@@ -102,6 +102,7 @@ class BackendTest(abc.ABC):
         data_dir: Path,
         script_dir: Path,
         tmpdir: Path,
+        worker_id: str,
         **kwargs: Any,
     ) -> None:
         """Load testdata from `data_directory` into
@@ -109,7 +110,9 @@ class BackendTest(abc.ABC):
         # handling for multi-processes pytest
 
         # get the temp directory shared by all workers
-        root_tmp_dir = tmpdir.getbasetemp().parent
+        root_tmp_dir = tmpdir.getbasetemp()
+        if worker_id != "master":
+            root_tmp_dir = root_tmp_dir.parent
 
         fn = root_tmp_dir / f"lockfile_{cls.name()}"
         with FileLock(f"{fn}.lock"):
