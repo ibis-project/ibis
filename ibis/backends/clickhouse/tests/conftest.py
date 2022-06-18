@@ -102,11 +102,12 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
 
 
 @pytest.fixture(scope='module')
-def con(tmp_path_factory, data_directory, script_directory):
+def con(tmp_path_factory, data_directory, script_directory, worker_id):
     return TestConf.load_data(
         data_directory,
         script_directory,
         tmp_path_factory,
+        worker_id,
     ).connect(data_directory)
 
 

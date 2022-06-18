@@ -441,11 +441,15 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
-def backend(request, data_directory, script_directory, tmp_path_factory):
+def backend(
+    request, data_directory, script_directory, tmp_path_factory, worker_id
+):
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_directory, script_directory, tmp_path_factory)
+    return cls.load_data(
+        data_directory, script_directory, tmp_path_factory, worker_id
+    )
 
 
 @pytest.fixture(scope='session')
@@ -460,7 +464,7 @@ def con(backend):
 
 
 def _setup_backend(
-    request, data_directory, script_directory, tmp_path_factory
+    request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
     if (
         backend := request.param
@@ -472,7 +476,7 @@ def _setup_backend(
     else:
         cls = _get_backend_conf(backend)
         return cls.load_data(
-            data_directory, script_directory, tmp_path_factory
+            data_directory, script_directory, tmp_path_factory, worker_id
         )
 
 
@@ -480,13 +484,15 @@ def _setup_backend(
     params=_get_backends_to_test(discard=("dask", "pandas")),
     scope='session',
 )
-def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
+def ddl_backend(
+    request, data_directory, script_directory, tmp_path_factory, worker_id
+):
     """Set up the backends that are SQL-based.
 
     (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark, impala)
     """
     return _setup_backend(
-        request, data_directory, script_directory, tmp_path_factory
+        request, data_directory, script_directory, tmp_path_factory, worker_id
     )
 
 
@@ -505,14 +511,14 @@ def ddl_con(ddl_backend):
     scope='session',
 )
 def alchemy_backend(
-    request, data_directory, script_directory, tmp_path_factory
+    request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
     """Set up the SQLAlchemy-based backends.
 
     (sqlite, mysql, postgres, duckdb)
     """
     return _setup_backend(
-        request, data_directory, script_directory, tmp_path_factory
+        request, data_directory, script_directory, tmp_path_factory, worker_id
     )
 
 
@@ -528,12 +534,16 @@ def alchemy_con(alchemy_backend):
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
     scope='session',
 )
-def udf_backend(request, data_directory, script_directory, tmp_path_factory):
+def udf_backend(
+    request, data_directory, script_directory, tmp_path_factory, worker_id
+):
     """
     Runs the UDF-supporting backends
     """
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_directory, script_directory, tmp_path_factory)
+    return cls.load_data(
+        data_directory, script_directory, tmp_path_factory, worker_id
+    )
 
 
 @pytest.fixture(scope='session')
