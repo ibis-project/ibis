@@ -205,9 +205,9 @@ filterwarnings = [
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
   # sqlalchemy: most of these can be removed once we have a lower bound of sqlalchemy 1.4
-  'ignore:Dialect (postgresql\+psycopg2|sqlite\+pysqlite) does \*not\* support Decimal:',
+  'ignore:Dialect .+ does \*not\* support Decimal:',
   "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
-  'ignore:Dialect postgresql.psycopg2 will not make use of SQL compilation caching:',
+  'ignore:Dialect .+ will not make use of SQL compilation caching:',
   "ignore:UserDefinedType .* will not produce a cache key because:",
   # duckdb-engine
   'ignore:The URL\.__to_string__ method is deprecated:',
