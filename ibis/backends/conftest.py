@@ -459,15 +459,9 @@ def con(backend):
     return backend.connection
 
 
-@pytest.fixture(
-    params=_get_backends_to_test(discard=("dask", "pandas")),
-    scope='session',
-)
-def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
-    """
-    Runs the SQL-ish backends
-    (sqlite, postgres, mysql, datafusion, clickhouse, pyspark, impala)
-    """
+def _setup_backend(
+    request, data_directory, script_directory, tmp_path_factory
+):
     if request.param == "duckdb" and platform.system() == "Windows":
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
@@ -478,6 +472,20 @@ def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
         return cls.load_data(
             data_directory, script_directory, tmp_path_factory
         )
+
+
+@pytest.fixture(
+    params=_get_backends_to_test(discard=("dask", "pandas")),
+    scope='session',
+)
+def ddl_backend(request, data_directory, script_directory, tmp_path_factory):
+    """Set up the backends that are SQL-based.
+
+    (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark, impala)
+    """
+    return _setup_backend(
+        request, data_directory, script_directory, tmp_path_factory
+    )
 
 
 @pytest.fixture(scope='session')
@@ -497,20 +505,13 @@ def ddl_con(ddl_backend):
 def alchemy_backend(
     request, data_directory, script_directory, tmp_path_factory
 ):
+    """Set up the SQLAlchemy-based backends.
+
+    (sqlite, mysql, postgres, duckdb)
     """
-    Runs the SQLAlchemy-based backends
-    (sqlite, mysql, postgres)
-    """
-    if request.param == "duckdb" and platform.system() == "Windows":
-        pytest.xfail(
-            "windows prevents two connections to the same duckdb file "
-            "even in the same process"
-        )
-    else:
-        cls = _get_backend_conf(request.param)
-        return cls.load_data(
-            data_directory, script_directory, tmp_path_factory
-        )
+    return _setup_backend(
+        request, data_directory, script_directory, tmp_path_factory
+    )
 
 
 @pytest.fixture(scope='session')
