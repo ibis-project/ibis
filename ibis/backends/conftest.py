@@ -462,13 +462,15 @@ def con(backend):
 def _setup_backend(
     request, data_directory, script_directory, tmp_path_factory
 ):
-    if request.param == "duckdb" and platform.system() == "Windows":
+    if (
+        backend := request.param
+    ) == "duckdb" and platform.system() == "Windows":
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"
         )
     else:
-        cls = _get_backend_conf(request.param)
+        cls = _get_backend_conf(backend)
         return cls.load_data(
             data_directory, script_directory, tmp_path_factory
         )
