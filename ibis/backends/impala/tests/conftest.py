@@ -6,6 +6,7 @@ import itertools
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -32,17 +33,17 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = False
 
     @staticmethod
-    def _load_data(data_dir, script_dir, **kwargs):
-        """Load testdata into an impala backend.
+    def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:
+        """Load test data into an Impala backend instance.
 
         Parameters
         ----------
-        data_dir : Path
+        data_dir
             Location of testdata
-        script_dir : Path
+        script_dir
             Location of scripts defining schemas
         """
-        import fsspec
+        fsspec = pytest.importorskip("fsspec")
 
         # without setting the pool size
         # connections are dropped from the urllib3

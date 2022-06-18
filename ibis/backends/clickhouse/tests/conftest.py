@@ -29,25 +29,27 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     bool_is_int = True
 
     @staticmethod
-    def _load_data(data_dir: Path, script_dir: Path, **kwargs) -> None:
-        """Load testdata into a clikhouse backend.
+    def _load_data(
+        data_dir: Path,
+        script_dir: Path,
+        host: str = CLICKHOUSE_HOST,
+        port: int = CLICKHOUSE_PORT,
+        user: str = CLICKHOUSE_USER,
+        password: str = CLICKHOUSE_PASS,
+        database: str = IBIS_TEST_CLICKHOUSE_DB,
+        **_,
+    ) -> None:
+        """Load test data into a ClickHouse backend instance.
 
         Parameters
         ----------
-        data_dir : Path
-            Location of testdata
-        script_dir : Path
+        data_dir
+            Location of test data
+        script_dir
             Location of scripts defining schemas
         """
-        import clickhouse_driver
+        clickhouse_driver = pytest.importorskip("clickhouse_driver")
 
-        host = kwargs.get("host", CLICKHOUSE_HOST)
-        port = kwargs.get("port", CLICKHOUSE_PORT)
-        user = kwargs.get("user", CLICKHOUSE_USER)
-        password = kwargs.get("password", CLICKHOUSE_PASS)
-        database = kwargs.get("database", IBIS_TEST_CLICKHOUSE_DB)
-
-        tables = list(TEST_TABLES.keys())
         client = clickhouse_driver.Client(
             host=host,
             port=port,
@@ -63,7 +65,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
             for stmt in filter(None, map(str.strip, schema.read().split(";"))):
                 client.execute(stmt)
 
-        for table, df in read_tables(tables, data_dir):
+        for table, df in read_tables(TEST_TABLES, data_dir):
             query = f"INSERT INTO {table} VALUES"
             client.insert_dataframe(
                 query,
@@ -74,19 +76,12 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     @staticmethod
     def connect(data_directory: Path):
         pytest.importorskip("clickhouse_driver")
-        host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
-        port = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
-        user = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
-        password = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
-        database = os.environ.get(
-            'IBIS_TEST_CLICKHOUSE_DATABASE', 'ibis_testing'
-        )
         return ibis.clickhouse.connect(
-            host=host,
-            port=port,
-            password=password,
-            database=database,
-            user=user,
+            host=CLICKHOUSE_HOST,
+            port=CLICKHOUSE_PORT,
+            password=CLICKHOUSE_PASS,
+            database=IBIS_TEST_CLICKHOUSE_DB,
+            user=CLICKHOUSE_USER,
         )
 
     @staticmethod
