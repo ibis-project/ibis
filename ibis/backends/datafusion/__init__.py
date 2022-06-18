@@ -5,7 +5,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
-import datafusion as df
 import pyarrow as pa
 
 import ibis.common.exceptions as com
@@ -14,6 +13,11 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.datafusion.compiler import translate
+
+try:
+    from datafusion import ExecutionContext as SessionContext
+except ImportError:
+    from datafusion import SessionContext
 
 
 def _to_pyarrow_table(frame):
@@ -42,7 +46,7 @@ class Backend(BaseBackend):
 
     def do_connect(
         self,
-        config: Mapping[str, str | Path] | df.ExecutionContext,
+        config: Mapping[str, str | Path] | SessionContext,
     ) -> None:
         """Create a Datafusion backend for use with Ibis.
 
@@ -57,10 +61,10 @@ class Backend(BaseBackend):
         >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
         >>> ibis.datafusion.connect(config)
         """
-        if isinstance(config, df.ExecutionContext):
+        if isinstance(config, SessionContext):
             self._context = config
         else:
-            self._context = df.ExecutionContext()
+            self._context = SessionContext()
 
         for name, path in config.items():
             strpath = str(path)
