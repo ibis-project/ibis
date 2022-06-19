@@ -29,7 +29,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable-small
 
       - name: lint commits
-        run: nix shell -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
+        run: nix run 'nixpkgs#commitlint' -- --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
 
   lint:
     runs-on: ubuntu-latest
