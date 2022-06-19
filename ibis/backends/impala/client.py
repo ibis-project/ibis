@@ -80,11 +80,14 @@ class ImpalaConnection:
             cursor.close()
             raise
 
-        return cursor.connection
+        return cursor
 
     def fetchall(self, query):
-        with self.execute(query) as cur:
+        cur = self.execute(query)
+        try:
             results = cur.fetchall()
+        finally:
+            cur.close()
         return results
 
     def _new_cursor(self):
@@ -138,12 +141,6 @@ class ImpalaCursor:
                 raise
 
     close = _close_cursor
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, tb):
-        self.release()
 
     def set_options(self):
         for k, v in self.options.items():
