@@ -2,6 +2,8 @@
 let
   pkgs = import ./nix;
 
+  pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+
   devDeps = with pkgs; [
     # terminal markdown rendering
     glow
@@ -13,7 +15,7 @@ let
     lychee
     # packaging
     niv
-    poetry
+    pythonEnv.pkgs.poetry
   ];
 
   impalaUdfDeps = with pkgs; [
@@ -42,9 +44,10 @@ let
     ++ mysqlDeps;
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
-  pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+
   updateLockFiles = pkgs.writeShellApplication {
     name = "update-lock-files";
+    runtimeInputs = [ pythonEnv.pkgs.poetry ];
     text = ''
       poetry export --dev --without-hashes --no-ansi --extras all > requirements.txt
       poetry lock --no-update
