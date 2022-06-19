@@ -59,11 +59,12 @@ pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
 
   shellHook = ''
-    data_dir="$PWD/ci/ibis-testing-data"
+    export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
 
-    rsync --chmod=Du+rwx,Fu+rw --archive --delete ${pkgs.ibisTestingData}/ "$data_dir"
-
-    export IBIS_TEST_DATA_DIRECTORY="$data_dir"
+    rsync \
+      --chmod=Du+rwx,Fu+rw --archive --delete \
+      "${pkgs.ibisTestingData}/" \
+      "$IBIS_TEST_DATA_DIRECTORY"
 
     export TEMPDIR
     TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
