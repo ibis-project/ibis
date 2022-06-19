@@ -2374,7 +2374,7 @@ dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
 duckdb = ["duckdb", "duckdb-engine", "sqlalchemy"]
 geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
-impala = ["fsspec", "impyla", "requests"]
+impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mysql = ["sqlalchemy", "pymysql"]
 pandas = []
 postgres = ["psycopg2", "sqlalchemy"]
@@ -2385,7 +2385,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "b6e29fb34c35fdbbf92dccd5703c00444314bc4d2dd08bc9e0554d8a4583ad00"
+content-hash = "bde1ab203be4402e444ff45e5ea78973b43359af12d8fa9ed05b143f75dab43d"
 
 [metadata.files]
 absolufy-imports = [
