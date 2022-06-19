@@ -1,10 +1,8 @@
-import threading
 import time
 import traceback
-import weakref
-from collections import deque
 
 import pandas as pd
+import sqlalchemy as sa
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
@@ -40,101 +38,58 @@ class ImpalaDatabase(Database):
 
 
 class ImpalaConnection:
-
-    """
-    Database connection wrapper
-    """
+    """Database connection wrapper."""
 
     def __init__(self, pool_size=8, database='default', **params):
         self.params = params
         self.database = database
-
-        self.lock = threading.Lock()
-
         self.options = {}
+        self.pool = sa.pool.QueuePool(self._new_cursor, pool_size=pool_size)
 
-        self.max_pool_size = pool_size
-        self._connections = weakref.WeakSet()
-
-        self.connection_pool = deque(maxlen=pool_size)
-        with self.lock:
-            self.connection_pool_size = 0
+        @sa.event.listens_for(self.pool, "checkout")
+        def _(dbapi_connection, *_):
+            """Update `dbapi_connection` options if they don't match `self`."""
+            if (options := self.options) != dbapi_connection.options:
+                dbapi_connection.options = options.copy()
+                dbapi_connection.set_options()
 
     def set_options(self, options):
         self.options.update(options)
 
     def close(self):
-        """
-        Close all open Impyla sessions
-        """
-        for impyla_connection in self._connections:
-            impyla_connection.close()
-
-        self._connections.clear()
-        self.connection_pool.clear()
+        """Close all open Impyla sessions."""
+        self.pool.dispose()
 
     def set_database(self, name):
         self.database = name
 
     def disable_codegen(self, disabled=True):
-        key = 'DISABLE_CODEGEN'
-        if disabled:
-            self.options[key] = '1'
-        elif key in self.options:
-            del self.options[key]
+        self.options["DISABLE_CODEGEN"] = str(int(disabled))
 
     def execute(self, query):
         if isinstance(query, (DDL, DML)):
             query = query.compile()
 
-        cursor = self._get_cursor()
         util.log(query)
 
+        cursor = self.pool.connect()
         try:
             cursor.execute(query)
         except Exception:
-            cursor.release()
-            util.log(
-                'Exception caused by {}: {}'.format(
-                    query, traceback.format_exc()
-                )
-            )
+            util.log(f'Exception caused by {query}: {traceback.format_exc()}')
+            cursor.close()
             raise
 
-        return cursor
+        return cursor.connection
 
     def fetchall(self, query):
         with self.execute(query) as cur:
             results = cur.fetchall()
         return results
 
-    def _get_cursor(self):
-        try:
-            cursor = self.connection_pool.popleft()
-        except IndexError:  # deque is empty
-            with self.lock:
-                # NB: Do not put a lock around the entire if statement.
-                # This will cause a deadlock because _new_cursor calls the
-                # ImpalaCursor constructor which takes a lock to increment the
-                # connection pool size.
-                connection_pool_size = self.connection_pool_size
-            if connection_pool_size < self.max_pool_size:
-                return self._new_cursor()
-            raise com.InternalError('Too many concurrent / hung queries')
-        else:
-            if (
-                cursor.database != self.database
-                or cursor.options != self.options
-            ):
-                return self._new_cursor()
-            cursor.released = False
-            return cursor
-
     def _new_cursor(self):
         params = self.params.copy()
         con = impyla.connect(database=self.database, **params)
-
-        self._connections.add(con)
 
         # make sure the connection works
         cursor = con.cursor(user=params.get('user'), convert_types=True)
@@ -147,10 +102,10 @@ class ImpalaConnection:
         return wrapper
 
     def ping(self):
-        self._get_cursor()._cursor.ping()
+        self.pool.connect()._cursor.ping()
 
     def release(self, cur):
-        self.connection_pool.append(cur)
+        pass
 
 
 class ImpalaCursor:
@@ -160,18 +115,15 @@ class ImpalaCursor:
         self.impyla_con = impyla_con
         self.database = database
         self.options = options
-        self.released = False
-        with self.con.lock:
-            self.con.connection_pool_size += 1
+
+    def rollback(self):
+        pass
 
     def __del__(self):
         try:
             self._close_cursor()
         except Exception:
             pass
-
-        with self.con.lock:
-            self.con.connection_pool_size -= 1
 
     def _close_cursor(self):
         try:
@@ -187,6 +139,8 @@ class ImpalaCursor:
                     break
             else:
                 raise
+
+    close = _close_cursor
 
     def __enter__(self):
         return self
@@ -204,9 +158,7 @@ class ImpalaCursor:
         return self._cursor.description
 
     def release(self):
-        if not self.released:
-            self.con.release(self)
-            self.released = True
+        pass
 
     def execute(self, stmt):
         self._cursor.execute_async(stmt)
