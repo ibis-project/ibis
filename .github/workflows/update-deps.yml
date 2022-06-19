@@ -46,7 +46,7 @@ jobs:
           dependency: ${{ matrix.dep }}
 
       - name: update ${{ matrix.dep }}
-        run: nix shell -f '<nixpkgs>' niv -c niv update ${{ matrix.dep }}
+        run: nix run 'nixpkgs#niv' -- update ${{ matrix.dep }}
 
       - uses: cpcloud/niv-dep-info-action@v2.0.6
         id: get_new_commit
