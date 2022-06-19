@@ -51,6 +51,7 @@ let
     text = ''
       poetry export --dev --without-hashes --no-ansi --extras all > requirements.txt
       poetry lock --no-update
+      ./dev/poetry2setup -o setup.py
     '';
   };
 in
