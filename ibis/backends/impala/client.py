@@ -95,9 +95,7 @@ class ImpalaConnection:
         cursor = con.cursor(user=params.get('user'), convert_types=True)
         cursor.ping()
 
-        wrapper = ImpalaCursor(
-            cursor, self, con, self.database, self.options.copy()
-        )
+        wrapper = ImpalaCursor(cursor, con, self.database, self.options.copy())
         wrapper.set_options()
         return wrapper
 
@@ -109,9 +107,8 @@ class ImpalaConnection:
 
 
 class ImpalaCursor:
-    def __init__(self, cursor, con, impyla_con, database, options):
+    def __init__(self, cursor, impyla_con, database, options):
         self._cursor = cursor
-        self.con = con
         self.impyla_con = impyla_con
         self.database = database
         self.options = options
