@@ -27,7 +27,7 @@ let
   mysqlDeps = [ pkgs.mariadb-client ];
   pysparkDeps = [ pkgs.openjdk11_headless ];
 
-  postgresDeps = [ pkgs.postgresql ];  # postgres client dependencies
+  postgresDeps = [ pkgs.postgresql ]; # postgres client dependencies
   geospatialDeps = with pkgs; [ gdal_2 proj ];
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
