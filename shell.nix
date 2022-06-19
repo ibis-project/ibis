@@ -60,10 +60,8 @@ pkgs.mkShell {
 
   shellHook = ''
     data_dir="$PWD/ci/ibis-testing-data"
-    mkdir -p "$data_dir"
-    chmod u+rwx "$data_dir"
-    cp -rf ${pkgs.ibisTestingData}/* "$data_dir"
-    chmod --recursive u+rw "$data_dir"
+
+    rsync --chmod=Du+rwx,Fu+rw --archive --delete ${pkgs.ibisTestingData}/ "$data_dir"
 
     export IBIS_TEST_DATA_DIRECTORY="$data_dir"
 
@@ -72,11 +70,13 @@ pkgs.mkShell {
   '';
 
   buildInputs = devDeps ++ libraryDevDeps ++ [
-    pkgs.changelog
-    pkgs.mic
     pythonEnv
     updateLockFiles
-  ] ++ pkgs.preCommitShell.buildInputs;
+  ] ++ pkgs.preCommitShell.buildInputs ++ (with pkgs; [
+    changelog
+    mic
+    rsync
+  ]);
 
   PYTHONPATH = builtins.toPath ./.;
 }
