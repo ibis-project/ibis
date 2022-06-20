@@ -65,7 +65,7 @@ class ImpalaConnection:
         self.options.update(options)
 
     def close(self):
-        """Close all open Impyla sessions."""
+        """Close all idle Impyla connections."""
         self.pool.dispose()
 
     def set_database(self, name):
