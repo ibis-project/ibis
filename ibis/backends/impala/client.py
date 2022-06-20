@@ -84,8 +84,8 @@ class ImpalaConnection:
         try:
             cursor.execute(query)
         except Exception:
-            util.log(f'Exception caused by {query}: {traceback.format_exc()}')
             cursor.close()
+            util.log(f'Exception caused by {query}: {traceback.format_exc()}')
             raise
 
         return cursor
