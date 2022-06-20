@@ -1,4 +1,4 @@
-name: Update Dependencies
+name: Update Release Branches
 on:
   schedule:
     # run every 24 hours at 1 AM
@@ -7,6 +7,7 @@ on:
 
 jobs:
   generate_branches:
+    name: Query Release Branches
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -20,12 +21,13 @@ jobs:
               | sed -e 's#\t# #g' -e 's#refs/heads/##g' \
               | cut -d ' ' -f2 \
               | grep -P '\d+\.x\.x' \
-              | xargs -I {} printf '"%s"' \
+              | xargs printf '"%s"' \
               | jq -s '{branch: .}')
 
           echo "::set-output name=matrix::$branches"
 
-  niv_update:
+  rebase_branch:
+    name: Rebase ${{ matrix.branch }}
     runs-on: ubuntu-latest
     needs:
       - generate_branches
