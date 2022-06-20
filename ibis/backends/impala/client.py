@@ -47,7 +47,6 @@ class ImpalaConnection:
         self.pool = sa.pool.QueuePool(
             self._new_cursor,
             pool_size=pool_size,
-            max_overflow=0,
             # disable invoking rollback, because any transactions in impala are
             # automatic:
             # https://impala.apache.org/docs/build/html/topics/impala_transactions.html
