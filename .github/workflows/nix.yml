@@ -10,6 +10,7 @@ on:
       - "nix/**"
     branches:
       - master
+      - "*.x.x"
   pull_request:
     paths:
       - "**/*.nix"
@@ -18,6 +19,7 @@ on:
       - "nix/**"
     branches:
       - master
+      - "*.x.x"
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}

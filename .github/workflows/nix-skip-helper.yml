@@ -12,6 +12,7 @@ on:
       - "nix/**"
     branches:
       - master
+      - "*.x.x"
   pull_request:
     paths-ignore:
       - "**/*.nix"
@@ -20,6 +21,7 @@ on:
       - "nix/**"
     branches:
       - master
+      - "*.x.x"
 
 jobs:
   nix:

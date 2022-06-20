@@ -6,6 +6,7 @@ on:
       - completed
     branches-ignore:
       - master
+      - "*.x.x"
 
 concurrency: report
 
