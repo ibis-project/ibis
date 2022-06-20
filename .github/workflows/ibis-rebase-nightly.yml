@@ -51,7 +51,7 @@ jobs:
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
       - name: fetch and rebase on top of upstream
-        run: git pull --rebase origin master
+        run: git pull --rebase https://github.com/ibis-project/ibis master
 
       - uses: peter-evans/create-pull-request@v4
         id: create_pr
