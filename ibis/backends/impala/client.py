@@ -44,7 +44,15 @@ class ImpalaConnection:
         self.params = params
         self.database = database
         self.options = {}
-        self.pool = sa.pool.QueuePool(self._new_cursor, pool_size=pool_size)
+        self.pool = sa.pool.QueuePool(
+            self._new_cursor,
+            pool_size=pool_size,
+            max_overflow=0,
+            # disable invoking rollback, because any transactions in impala are
+            # automatic:
+            # https://impala.apache.org/docs/build/html/topics/impala_transactions.html
+            reset_on_return=False,
+        )
 
         @sa.event.listens_for(self.pool, "checkout")
         def _(dbapi_connection, *_):
@@ -115,9 +123,6 @@ class ImpalaCursor:
         self.impyla_con = impyla_con
         self.database = database
         self.options = options
-
-    def rollback(self):  # pragma: no cover
-        pass
 
     def __del__(self):
         try:
