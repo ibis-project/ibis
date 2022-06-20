@@ -127,11 +127,11 @@ class ImpalaCursor:
 
     def __del__(self):
         try:
-            self._close_cursor()
+            self.close()
         except Exception:
             pass
 
-    def _close_cursor(self):
+    def close(self):
         try:
             self._cursor.close()
         except HS2Error as e:
@@ -145,8 +145,6 @@ class ImpalaCursor:
                     break
             else:
                 raise
-
-    close = _close_cursor
 
     def set_options(self):
         for k, v in self.options.items():
