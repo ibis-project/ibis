@@ -114,12 +114,3 @@ def test_topk_function_late_bind(airlines):
     expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
 
     assert_equal(expr1.to_aggregation(), expr2.to_aggregation())
-
-
-def test_summary_filter_warns(airlines):
-    dests = ['ORD', 'JFK', 'SFO']
-    t = airlines[airlines.dest.isin(dests)]
-    delay_filter = t.origin.topk(10, by=t.arrdelay.mean())
-
-    with pytest.warns(FutureWarning):
-        delay_filter.to_filter()
