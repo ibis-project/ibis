@@ -8,11 +8,13 @@ on:
       - "docs/**"
     branches:
       - master
+      - "*.x.x"
   pull_request:
     paths:
       - "docs/**"
     branches:
       - master
+      - "*.x.x"
 jobs:
   backends:
     runs-on: ubuntu-latest
