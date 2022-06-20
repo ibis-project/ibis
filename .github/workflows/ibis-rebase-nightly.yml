@@ -22,7 +22,7 @@ jobs:
               | cut -d ' ' -f2 \
               | grep -P '\d+\.x\.x' \
               | xargs printf '"%s"' \
-              | jq -s '{branch: .}')
+              | jq -rcMs '{branch: .}')
 
           echo "::set-output name=matrix::$branches"
 
