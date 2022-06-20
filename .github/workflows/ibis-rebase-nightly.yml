@@ -35,6 +35,8 @@ jobs:
       matrix: ${{ fromJSON(needs.generate_branches.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ matrix.branch }}
 
       - uses: tibdex/github-app-token@v1
         id: generate_pr_token
@@ -48,17 +50,18 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
+      - name: fetch and rebase on top of upstream
+        run: git pull --rebase origin master
+
       - uses: peter-evans/create-pull-request@v4
         id: create_pr
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
           commit-message: "chore(${{ matrix.branch }}): rebase onto upstream"
           branch: "create-pull-request/rebase-${{ matrix.branch }}"
-          base: ${{ matrix.branch }}
           delete-branch: true
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           title: "chore(${{ matrix.branch }}): rebase onto upstream"
-          body: ""
           labels: dependencies
 
       - uses: juliangruber/approve-pull-request-action@v1.1.1
