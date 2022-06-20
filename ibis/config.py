@@ -113,6 +113,7 @@ class Options(BaseSettings):
     dask: Optional[BaseModel] = None
     impala: Optional[BaseModel] = None
     pandas: Optional[BaseModel] = None
+    pyspark: Optional[BaseModel] = None
 
     class Config:
         validate_assignment = True

@@ -25,6 +25,7 @@ from ibis.backends.pyspark.timecontext import (
     combine_time_context,
     filter_by_time_context,
 )
+from ibis.config import options
 from ibis.expr.timecontext import adjust_context
 from ibis.util import frozendict, guid
 
@@ -215,7 +216,22 @@ def compile_sort_key(t, expr, scope, timecontext, **kwargs):
         return col.desc()
 
 
+def compile_nan_as_null(compile_func):
+    @functools.wraps(compile_func)
+    def wrapper(t, expr, *args, **kwargs):
+        compiled = compile_func(t, expr, *args, **kwargs)
+        if options.pyspark.treat_nan_as_null and isinstance(
+            expr.type(), dtypes.Floating
+        ):
+            return F.nanvl(compiled, F.lit(None))
+        else:
+            return compiled
+
+    return wrapper
+
+
 @compiles(ops.TableColumn)
+@compile_nan_as_null
 def compile_column(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     table = t.translate(op.table, scope, timecontext)
@@ -357,6 +373,7 @@ def compile_subtract(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Literal)
+@compile_nan_as_null
 def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
     """If raw is True, don't wrap the result with F.lit()"""
     value = expr.op().value
