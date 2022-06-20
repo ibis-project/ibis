@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fdb531e995876debe015712fe4b96464196def58",
-        "sha256": "1wimw9533i7w0rpk9hg0dbhy7k26inj1gm9va7lk9h67lhn3abmx",
+        "rev": "f4b359f751dada1c26ec3b8d62b7fe52ca44b2a6",
+        "sha256": "16757wwgl9442nl1g05p1gwyp1s91vbjwfpcd3b2yz58zs92kz22",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/fdb531e995876debe015712fe4b96464196def58.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f4b359f751dada1c26ec3b8d62b7fe52ca44b2a6.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
