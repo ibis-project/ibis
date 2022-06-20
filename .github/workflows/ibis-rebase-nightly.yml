@@ -48,15 +48,6 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
-      - uses: cpcloud/compare-commits-action@v5.0.19
-        id: compare_commits
-        with:
-          token: ${{ steps.generate_pr_token.outputs.token }}
-          owner: ibis-project
-          repo: ibis
-          basehead: ${{ github.sha }}...${{ steps.get_current_commit.outputs.rev }}
-          include-merge-commits: false
-
       - uses: peter-evans/create-pull-request@v4
         id: create_pr
         with:
@@ -67,7 +58,7 @@ jobs:
           delete-branch: true
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           title: "chore(${{ matrix.branch }}): rebase onto upstream"
-          body: ${{ steps.compare_commits.outputs.differences }}
+          body: ""
           labels: dependencies
 
       - uses: juliangruber/approve-pull-request-action@v1.1.1
