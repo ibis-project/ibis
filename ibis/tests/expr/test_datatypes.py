@@ -502,8 +502,3 @@ def test_struct_datatype_subclass_from_tuples():
 
     dtype = MyStruct.from_tuples([('a', 'int64')])
     assert isinstance(dtype, MyStruct)
-
-
-def test_parse_type_warns():
-    with pytest.warns(FutureWarning):
-        dt.parse_type("int64")

@@ -1510,11 +1510,3 @@ def test_join_suffixes(how):
     method = getattr(left, f"{how}_join")
     expr = method(right, suffixes=("_left", "_right"))
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
-
-
-def test_materialize_no_op():
-    left = ibis.table([("id", "int64")])
-    right = ibis.table([("id", "int64")])
-    expr = left.inner_join(right, "id")
-    with pytest.warns(FutureWarning):
-        expr.materialize()
