@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 import pyspark
+from pydantic import Field
 from pyspark.sql import DataFrame
 from pyspark.sql.column import Column
 
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 import ibis.common.exceptions as com
+import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as types
 import ibis.util as util
@@ -87,6 +89,12 @@ class Backend(BaseSQLBackend):
     name = 'pyspark'
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
+
+    class Options(ibis.config.BaseModel):
+        treat_nan_as_null: bool = Field(
+            default=False,
+            description="Treat NaNs in floating point expressions as NULL.",
+        )
 
     def do_connect(self, session: pyspark.sql.SparkSession) -> None:
         """Create a PySpark `Backend` for use with Ibis.

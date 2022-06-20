@@ -233,8 +233,7 @@ def get_common_spark_testing_client(data_directory, connect):
 
 def get_pyspark_testing_client(data_directory):
     return get_common_spark_testing_client(
-        data_directory,
-        lambda session: ibis.backends.pyspark.Backend().connect(session),
+        data_directory, ibis.pyspark.connect
     )
 
 
