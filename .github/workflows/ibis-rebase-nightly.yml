@@ -4,6 +4,8 @@ on:
     # run every 24 hours at 1 AM
     - cron: "1 */24 * * *"
   workflow_dispatch:
+    branches:
+      - "*.x.x"
 
 jobs:
   generate_branches:
