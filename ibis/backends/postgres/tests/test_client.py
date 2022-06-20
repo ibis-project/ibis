@@ -85,14 +85,6 @@ def test_list_databases(con):
     assert POSTGRES_TEST_DB in con.list_databases()
 
 
-@pytest.mark.filterwarnings(
-    "ignore:`list_schemas` is deprecated:FutureWarning"
-)
-def test_list_schemas(con):
-    assert 'public' in con.list_schemas()
-    assert 'information_schema' in con.list_schemas()
-
-
 def test_metadata_is_per_table():
     con = ibis.postgres.connect(
         host=IBIS_POSTGRES_HOST,

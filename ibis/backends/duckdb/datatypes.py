@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING
 
 import parsy as p
 
-from ibis import util
-
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
@@ -144,11 +142,3 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     non_pg_array_type = primitive | decimal | list_array | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
-
-
-@util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}",
-    version="4.0",
-)
-def parse_type(*args, **kwargs):
-    return parse(*args, **kwargs)
