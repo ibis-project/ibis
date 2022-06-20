@@ -39,6 +39,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: ${{ matrix.branch }}
+          fetch-depth: 0
+
+      - name: fetch and rebase on top of upstream
+        run: git pull --rebase https://github.com/ibis-project/ibis master
 
       - uses: tibdex/github-app-token@v1
         id: generate_pr_token
@@ -51,9 +55,6 @@ jobs:
         with:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
-
-      - name: fetch and rebase on top of upstream
-        run: git pull --rebase https://github.com/ibis-project/ibis master
 
       - uses: peter-evans/create-pull-request@v4
         id: create_pr
