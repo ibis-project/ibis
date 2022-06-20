@@ -1079,31 +1079,6 @@ class Table(Expr):
             suffixes=suffixes,
         )
 
-    @util.deprecated(version="4.0", instead="")
-    def prevent_rewrite(self, client=None) -> Table:  # pragma: no cover
-        """Prevent optimization from happening below this expression.
-
-        Only valid on SQL-string generating backends.
-
-        Parameters
-        ----------
-        client
-            A client to use to create the SQLQueryResult operation. This can be
-            useful if you're compiling an expression that derives from an
-            `UnboundTable` operation.
-
-        Returns
-        -------
-        Table
-            An opaque SQL query
-        """
-        from ibis.expr import operations as ops
-
-        if client is None:
-            client = self._find_backend()
-        query = client.compile(self)
-        return ops.SQLQueryResult(query, self.schema(), client).to_expr()
-
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
     outer_join = _regular_join_method("outer_join", "outer")
@@ -1112,13 +1087,6 @@ class Table(Expr):
     anti_join = _regular_join_method("anti_join", "anti")
     any_inner_join = _regular_join_method("any_inner_join", "any_inner")
     any_left_join = _regular_join_method("any_left_join", "any_left")
-
-    @util.deprecated(
-        version="3.0",
-        instead="remove the `.materialize()` call, it has no effect",
-    )
-    def materialize(self) -> Table:
-        return self
 
     def alias(self, alias: str) -> ir.Table:
         """Create a table expression with a specific name `alias`.
@@ -1252,16 +1220,6 @@ def bind_expr(table, expr):
         return [bind_expr(table, x) for x in expr]
 
     return table._ensure_expr(expr)
-
-
-@util.deprecated(
-    version="4.0",
-    instead="Use ibis.expr.analysis.find_first_base_table() instead",
-)
-def find_base_table(expr):  # pragma: no cover
-    from ibis.expr.analysis import find_first_base_table
-
-    return find_first_base_table(expr)
 
 
 public(TableExpr=Table)
