@@ -110,7 +110,8 @@ class ImpalaConnection:
         wrapper.set_options()
         return wrapper
 
-    def ping(self):
+    @util.deprecated(instead="", version="4.0")
+    def ping(self):  # pragma: no cover
         self.pool.connect()._cursor.ping()
 
     def release(self, cur):  # pragma: no cover
