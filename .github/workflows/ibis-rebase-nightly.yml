@@ -78,4 +78,4 @@ jobs:
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
           pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
-          merge-method: rebase
+          merge-method: merge
