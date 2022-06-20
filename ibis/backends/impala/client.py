@@ -105,7 +105,7 @@ class ImpalaConnection:
     def ping(self):
         self.pool.connect()._cursor.ping()
 
-    def release(self, cur):
+    def release(self, cur):  # pragma: no cover
         pass
 
 
@@ -116,7 +116,7 @@ class ImpalaCursor:
         self.database = database
         self.options = options
 
-    def rollback(self):
+    def rollback(self):  # pragma: no cover
         pass
 
     def __del__(self):
