@@ -16,10 +16,10 @@ if TYPE_CHECKING:
     import duckdb
 
 import ibis.expr.schema as sch
-from ibis.backends.base.regex import RegexDispatcher
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
+from ibis.common.dispatch import RegexDispatcher
 
 
 class _ColumnMetadata(NamedTuple):
