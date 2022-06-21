@@ -70,7 +70,7 @@ extras_require = {
         'clickhouse-cityhash>=1.0.2,<2',
         'clickhouse-driver[numpy]>=0.1,<0.3',
         'dask[array,dataframe]>=2021.10.0',
-        'datafusion>=0.4,<0.7',
+        'datafusion>=0.6,<0.7',
         'duckdb>=0.3.2,<0.5.0',
         'duckdb-engine>=0.1.8,<0.3.0',
         'fsspec>=2022.1.0',
@@ -93,7 +93,7 @@ extras_require = {
         'lz4>=3.1.10,<5',
     ],
     'dask': ['dask[array,dataframe]>=2021.10.0', 'pyarrow>=1,<9'],
-    'datafusion': ['datafusion>=0.4,<0.7'],
+    'datafusion': ['datafusion>=0.6,<0.7'],
     'duckdb': [
         'duckdb>=0.3.2,<0.5.0',
         'duckdb-engine>=0.1.8,<0.3.0',
@@ -135,7 +135,7 @@ entry_points = {
 
 setup_kwargs = {
     'name': 'ibis-framework',
-    'version': '3.0.2',
+    'version': '3.0.2.post670+fb0532b9.dirty',
     'description': 'Productivity-centric Python Big Data Framework',
     'long_description': '# Ibis: Expressive analytics in Python at any scale\n\n|        Service | Status                                                                                                                                                                                                |\n| -------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |\n|  Documentation | [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)                                                                                 |\n| Conda packages | [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)                                                       |\n|           PyPI | [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework)                                                                                                  |\n|        Ibis CI | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amaster)         |\n|     Backend CI | [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amaster) |\n|       Coverage | [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis)                                                                    |\n\nIbis is a Python library to help you write expressive analytics at any scale,\nsmall to large. Its goal is to simplify analytical workflows and make you more\nproductive.\n\nInstall Ibis from PyPI with:\n\n```sh\npip install ibis-framework\n```\n\nor from conda-forge with\n\n```sh\nconda install ibis-framework -c conda-forge\n```\n\nIbis provides tools for interacting with the following systems:\n\n- [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)\n- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)\n- [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)\n- [Dask](https://ibis-project.org/docs/latest/backends/Dask/)\n- [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)\n- [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)\n- [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)\n- [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)\n- [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)\n- [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)\n\nLearn more about using the library at https://ibis-project.org.\n',
     'author': 'Ibis Contributors',
