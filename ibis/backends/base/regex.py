@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 
 def normalize(r):
@@ -47,23 +48,23 @@ class RegexDispatcher:
     float
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
         self.funcs = {}
         self.priorities = {}
 
-    def add(self, regex, func, priority=10):
+    def add(self, regex: str, func: Any, priority: int = 10) -> None:
         self.funcs[normalize(regex)] = func
         self.priorities[func] = priority
 
-    def register(self, regex, priority=10):
+    def register(self, regex: str, priority: int = 10) -> Any:
         """Register a new handler in this regex dispatcher.
 
         Parameters
         ----------
-        regex : str or Pattern
+        regex
             The pattern to match against.
-        priority : int, optional
+        priority
             The priority for this pattern. This is used to resolve ambigious
             matches. The highest priority match wins.
 
@@ -80,7 +81,7 @@ class RegexDispatcher:
 
         return _
 
-    def dispatch(self, s):
+    def dispatch(self, s: str) -> Any:
         funcs = (
             (func, match)
             for r, func in self.funcs.items()
@@ -88,11 +89,11 @@ class RegexDispatcher:
         )
         return max(funcs, key=lambda pair: self.priorities.get(pair[0]))
 
-    def __call__(self, s, *args, **kwargs):
+    def __call__(self, s: str, *args: Any, **kwargs: Any) -> Any:
         func, match = self.dispatch(s)
         return func(s, *args, **kwargs, **match.groupdict())
 
     @property
-    def __doc__(self):
+    def __doc__(self) -> Any:
         # take the min to give the docstring of the last fallback function
         return min(self.priorities.items(), key=lambda x: x[1])[0].__doc__

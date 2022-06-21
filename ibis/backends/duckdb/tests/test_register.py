@@ -12,8 +12,10 @@ from ibis.backends.conftest import read_tables
 def pushd(new_dir):
     previous_dir = os.getcwd()
     os.chdir(new_dir)
-    yield
-    os.chdir(previous_dir)
+    try:
+        yield
+    finally:
+        os.chdir(previous_dir)
 
 
 @pytest.mark.parametrize(
@@ -50,7 +52,7 @@ def test_register_csv(data_directory, fname, in_table_name, out_table_name):
 def test_register_parquet(
     tmp_path, data_directory, fname, in_table_name, out_table_name
 ):
-    import pyarrow.parquet as pq
+    pq = pytest.importorskip("pyarrow.parquet")
 
     fname = Path(fname)
     _, table = next(read_tables([fname.stem], data_directory))
@@ -59,7 +61,7 @@ def test_register_parquet(
 
     con = ibis.duckdb.connect()
     with pushd(tmp_path):
-        con.register("parquet://" + str(fname.name), table_name=in_table_name)
+        con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
     assert out_table_name in con.list_tables()
 

@@ -27,7 +27,7 @@ class _ColumnMetadata(NamedTuple):
     type: dt.DataType
 
 
-_register = RegexDispatcher("register")
+_register = RegexDispatcher("_register")
 
 
 @_register.register(r"parquet://(?P<path>.*)", priority=10)
@@ -114,20 +114,22 @@ class Backend(BaseAlchemyBackend):
 
     def register(
         self,
-        file_name: str | Path,
+        path: str | Path,
         table_name: str | None = None,
     ) -> None:
-        """Register an external file (csv or parquet) as a table in the current
-        connection database
+        """Register an external file as a table in the current connection
+        database
 
         Parameters
         ----------
-        file_name
+        path
             Name of the parquet or CSV file
         table_name
-            Name for the created table.  Defaults to filename if not given
+            Name for the created table.  Defaults to filename if not given.
+            Any dashes in a user-provided or generated name will be
+            replaced with underscores.
         """
-        view = _register(file_name, table_name=table_name)
+        view = _register(path, table_name=table_name)
         self.con.execute(view)
 
     def fetch_from_cursor(
