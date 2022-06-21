@@ -39,14 +39,12 @@ class TableColumn(Value):
     output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, table, name):
-        schema = table.schema()
-
         if isinstance(name, int):
-            name = schema.name_at_position(name)
+            name = table.schema.name_at_position(name)
 
-        if name not in schema:
+        if name not in table.schema:
             raise com.IbisTypeError(
-                f"value {name!r} is not a field in {table.columns}"
+                f"value {name!r} is not a field in {table.schema}"
             )
 
         super().__init__(table=table, name=name)
@@ -59,8 +57,7 @@ class TableColumn(Value):
 
     @property
     def output_dtype(self):
-        schema = self.table.schema()
-        return schema[self.name]
+        return self.table.schema[self.name]
 
 
 @public
@@ -91,12 +88,11 @@ class TableArrayView(Value):
 
     @property
     def output_dtype(self):
-        schema = self.table.schema()
-        return schema[self.name]
+        return self.table.schema[self.name]
 
     @property
     def name(self):
-        return self.table.schema().names[0]
+        return self.table.schema.names[0]
 
 
 @public
@@ -187,8 +183,12 @@ class CoalesceLike(Value):
 
     @immutable_property
     def output_dtype(self):
+        # TODO(kszucs): revisit
+        return rlz.highest_precedence_dtype(self.arg.values)
         # filter out null types
-        non_null_exprs = [arg for arg in self.arg if arg.type() != dt.null]
+        non_null_exprs = [
+            arg for arg in self.arg if arg.output_dtype != dt.null
+        ]
         if non_null_exprs:
             return rlz.highest_precedence_dtype(non_null_exprs)
         else:
@@ -320,7 +320,7 @@ class StructField(Value):
 
     @immutable_property
     def output_dtype(self):
-        struct_dtype = self.arg.type()
+        struct_dtype = self.arg.output_dtype
         value_dtype = struct_dtype[self.field]
         return value_dtype
 
@@ -387,7 +387,7 @@ class SimpleCase(Value):
     output_shape = rlz.shape_like("base")
 
     def __init__(self, cases, results, **kwargs):
-        assert len(cases) == len(results)
+        assert len(cases.values) == len(results.values)
         super().__init__(cases=cases, results=results, **kwargs)
 
     @immutable_property
@@ -395,7 +395,7 @@ class SimpleCase(Value):
         # TODO(kszucs): we could extend the functionality of
         # rlz.shape_like to support varargs with .flat_args()
         # to define a subset of input arguments
-        values = [*self.results, self.default]
+        values = [*self.results.values, self.default]
         return rlz.highest_precedence_dtype(values)
 
 
@@ -408,12 +408,12 @@ class SearchedCase(Value):
     output_shape = rlz.shape_like("cases")
 
     def __init__(self, cases, results, default):
-        assert len(cases) == len(results)
+        assert len(cases.values) == len(results.values)
         super().__init__(cases=cases, results=results, default=default)
 
     @immutable_property
     def output_dtype(self):
-        exprs = [*self.results, self.default]
+        exprs = [*self.results.values, self.default]
         return rlz.highest_precedence_dtype(exprs)
 
 

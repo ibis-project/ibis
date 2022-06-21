@@ -23,7 +23,7 @@ class ArrayColumn(Value):
 
     @immutable_property
     def output_dtype(self):
-        first_dtype = self.cols[0].type()
+        first_dtype = self.cols[0].output_dtype
         return dt.Array(first_dtype)
 
 
@@ -54,7 +54,7 @@ class ArrayIndex(Value):
 
     @immutable_property
     def output_dtype(self):
-        return self.arg.type().value_type
+        return self.arg.output_dtype.value_type
 
 
 @public
@@ -66,12 +66,11 @@ class ArrayConcat(Value):
     output_shape = rlz.shape_like("args")
 
     def __init__(self, left, right):
-        left_dtype, right_dtype = left.type(), right.type()
-        if left_dtype != right_dtype:
+        if left.output_dtype != right.output_dtype:
             raise com.IbisTypeError(
                 'Array types must match exactly in a {} operation. '
                 'Left type {} != Right type {}'.format(
-                    type(self).__name__, left_dtype, right_dtype
+                    type(self).__name__, left.output_dtype, right.output_dtype
                 )
             )
         super().__init__(left=left, right=right)
@@ -92,6 +91,6 @@ class Unnest(Value):
 
     @immutable_property
     def output_dtype(self):
-        return self.arg.type().value_type
+        return self.arg.output_dtype.value_type
 
     output_shape = rlz.Shape.COLUMNAR

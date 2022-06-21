@@ -78,7 +78,7 @@ def fmt_truncated(
     return sep.join([*pieces[:first_n], ellipsis, *pieces[-last_m:]])
 
 
-def selection_maxlen(expressions: Iterable[ir.Value]) -> int:
+def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
     """Compute the length of the longest name of input expressions.
 
     Parameters
@@ -94,8 +94,8 @@ def selection_maxlen(expressions: Iterable[ir.Value]) -> int:
     try:
         return max(
             len(name)
-            for expr in expressions
-            if (name := expr._safe_name) is not None
+            for node in nodes
+            if (name := node.resolve_name()) is not None
         )
     except ValueError:
         return 0
@@ -228,8 +228,8 @@ def fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
 @fmt_join.register(ops.Join)
 def _fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
     # format the operator and its relation inputs
-    left = aliases[op.left.op()]
-    right = aliases[op.right.op()]
+    left = aliases[op.left]
+    right = aliases[op.right]
     top = f"{op.__class__.__name__}[{left}, {right}]"
 
     # format the join predicates
@@ -342,7 +342,7 @@ def _fmt_table_op_self_reference_distinct(
 
 @fmt_table_op.register
 def _fmt_table_op_fillna(op: ops.FillNa, *, aliases: Aliases, **_: Any) -> str:
-    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    top = f"{op.__class__.__name__}[{aliases[op.table]}]"
     raw_parts = fmt_fields(op, dict(replacements=fmt_value), aliases=aliases)
     return f"{top}\n{raw_parts}"
 
@@ -381,7 +381,7 @@ def fmt_fields(
 def _fmt_table_op_selection(
     op: ops.Selection, *, aliases: Aliases, **_: Any
 ) -> str:
-    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    top = f"{op.__class__.__name__}[{aliases[op.table]}]"
     raw_parts = fmt_fields(
         op,
         dict(
@@ -401,7 +401,7 @@ def _fmt_table_op_selection(
 def _fmt_table_op_aggregation(
     op: ops.Aggregation, *, aliases: Aliases, **_: Any
 ) -> str:
-    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    top = f"{op.__class__.__name__}[{aliases[op.table]}]"
     raw_parts = fmt_fields(
         op,
         dict(
@@ -424,7 +424,7 @@ def _fmt_table_op_aggregation(
 
 @fmt_table_op.register
 def _fmt_table_op_limit(op: ops.Limit, *, aliases: Aliases, **_: Any) -> str:
-    params = [str(aliases[op.table.op()]), f"n={op.n:d}"]
+    params = [str(aliases[op.table]), f"n={op.n:d}"]
     if offset := op.offset:
         params.append(f"offset={offset:d}")
     return f"{op.__class__.__name__}[{', '.join(params)}]"
@@ -602,7 +602,7 @@ def _fmt_value_alias(op: ops.Alias, *, aliases: Aliases) -> str:
 
 @fmt_value.register
 def _fmt_value_table_column(op: ops.TableColumn, *, aliases: Aliases) -> str:
-    return f"{aliases[op.table.op()]}.{op.name}"
+    return f"{aliases[op.table]}.{op.name}"
 
 
 @fmt_value.register

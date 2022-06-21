@@ -1,9 +1,10 @@
 from public import public
 
+import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis import util
 from ibis.common import exceptions as com
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Node
 
 
@@ -15,8 +16,12 @@ def _to_sort_key(key, *, table=None):
             )
         key = key.resolve(table)
 
+    # TODO(kszucs): refactor to only work with operation classes
     if isinstance(key, ir.SortExpr):
         return key
+
+    if isinstance(key, ops.SortKey):
+        return key.to_expr()
 
     if isinstance(key, (tuple, list)):
         key, sort_order = key

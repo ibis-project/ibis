@@ -7,16 +7,17 @@ import enum
 import functools
 import numbers
 import re
-import typing
 import uuid as _uuid
 from decimal import Decimal as PythonDecimal
 from typing import (
     AbstractSet,
+    Any,
     Iterable,
     Iterator,
     Mapping,
     NamedTuple,
     Sequence,
+    SupportsFloat,
     TypeVar,
 )
 
@@ -68,7 +69,7 @@ def from_string(value: str) -> DataType:
 
 
 @dtype.register(list)
-def from_list(values: list[typing.Any]) -> Array:
+def from_list(values: list[Any]) -> Array:
     if not values:
         return Array(null)
     return Array(highest_precedence(map(dtype, values)))
@@ -96,6 +97,7 @@ class DataType(Annotable, Comparable):
 
     nullable = optional(instance_of(bool), default=True)
 
+    # TODO(kszucs): remove it
     def __call__(self, nullable: bool = True) -> DataType:
         if nullable is not True and nullable is not False:
             raise TypeError(
@@ -120,10 +122,7 @@ class DataType(Annotable, Comparable):
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
-    def __equals__(
-        self,
-        other: typing.Any,
-    ) -> bool:
+    def __equals__(self, other: Any) -> bool:
         return self.args == other.args
 
     def equals(self, other):
@@ -146,11 +145,6 @@ class DataType(Annotable, Comparable):
 @dtype.register(DataType)
 def from_ibis_dtype(value: DataType) -> DataType:
     return value
-
-
-@public
-class Any(DataType):
-    """Values of any type."""
 
 
 @public
@@ -854,7 +848,6 @@ castable = Dispatcher('castable')
 
 # ---------------------------------------------------------------------
 
-any = Any()
 null = Null()
 boolean = Boolean()
 int8 = Int8()
@@ -894,7 +887,6 @@ inet = INET()
 decimal = Decimal()
 
 public(
-    any=any,
     null=null,
     boolean=boolean,
     int8=int8,
@@ -1223,6 +1215,7 @@ def _get_timedelta_units(
     return [field for field in unit_fields if getattr(base_object, field) > 0]
 
 
+@public
 def higher_precedence(left: DataType, right: DataType) -> DataType:
     nullable = left.nullable or right.nullable
 
@@ -1239,17 +1232,20 @@ def higher_precedence(left: DataType, right: DataType) -> DataType:
 @public
 def highest_precedence(dtypes: Iterator[DataType]) -> DataType:
     """Compute the highest precedence of `dtypes`."""
-    return functools.reduce(higher_precedence, dtypes)
+    e = list(dtypes)
+    if not e:
+        return null
+    return functools.reduce(higher_precedence, e)  # , null)
 
 
 @infer.register(object)
-def infer_dtype_default(value: typing.Any) -> DataType:
+def infer_dtype_default(value: Any) -> DataType:
     """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
     raise InputTypeError(value)
 
 
 @infer.register(collections.OrderedDict)
-def infer_struct(value: Mapping[str, typing.Any]) -> Struct:
+def infer_struct(value: Mapping[str, Any]) -> Struct:
     """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
@@ -1257,7 +1253,7 @@ def infer_struct(value: Mapping[str, typing.Any]) -> Struct:
 
 
 @infer.register(collections.abc.Mapping)
-def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
+def infer_map(value: Mapping[Any, Any]) -> Map:
     """Infer the [`Map`][ibis.expr.datatypes.Map] type of `value`."""
     if not value:
         return Map(null, null)
@@ -1273,7 +1269,7 @@ def infer_map(value: Mapping[typing.Any, typing.Any]) -> Map:
 
 
 @infer.register((list, tuple))
-def infer_list(values: typing.Sequence[typing.Any]) -> Array:
+def infer_list(values: Sequence[Any]) -> Array:
     """Infer the [`Array`][ibis.expr.datatypes.Array] type of `value`."""
     if not values:
         return Array(null)
@@ -1399,10 +1395,6 @@ def can_cast_subtype(source: DataType, target: DataType, **kwargs) -> bool:
     return isinstance(target, source.__class__)
 
 
-@castable.register(Any, DataType)
-@castable.register(DataType, Any)
-@castable.register(Any, Any)
-@castable.register(Null, Any)
 @castable.register(Integer, Category)
 @castable.register(Integer, (Floating, Decimal))
 @castable.register(Floating, Decimal)
@@ -1673,7 +1665,7 @@ def _int(typ: Integer, value: float) -> float:
 
 
 @_normalize.register(
-    Floating, (int, float, np.integer, np.floating, typing.SupportsFloat)
+    Floating, (int, float, np.integer, np.floating, SupportsFloat)
 )
 def _float(typ: Floating, value: float) -> float:
     return float(value)

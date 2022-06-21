@@ -145,10 +145,11 @@ class CumulativeSum(CumulativeOp):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.BooleanValue):
-            return dt.int64
-        else:
-            return self.arg.type().largest
+        return dt.higher_precedence(self.arg.output_dtype.largest, dt.int64)
+        # if isinstance(self.arg, ir.BooleanValue):
+        #     return dt.int64
+        # else:
+        #     return self.arg.type().largest
 
 
 @public
@@ -159,10 +160,11 @@ class CumulativeMean(CumulativeOp):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type().largest
-        else:
-            return dt.float64
+        return dt.higher_precedence(self.arg.output_dtype.largest, dt.float64)
+        # if isinstance(self.arg, ir.DecimalValue):
+        #     return self.arg.type().largest
+        # else:
+        #     return dt.float64
 
 
 @public

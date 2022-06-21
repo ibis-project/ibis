@@ -10,9 +10,10 @@ import pandas as pd
 import toolz
 from cached_property import cached_property
 
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Comparable
-from ibis.expr import types as ir
 from ibis.util import is_iterable, promote_list
 
 
@@ -490,18 +491,17 @@ def trailing_range_window(preceding, order_by, group_by=None) -> Window:
     )
 
 
-def propagate_down_window(expr: ir.Value, window: Window):
+# TODO(kszucs): use analytic substitute instead
+def propagate_down_window(node: ops.Node, window: Window):
     import ibis.expr.operations as ops
-
-    op = expr.op()
 
     clean_args = []
     unchanged = True
-    for arg in op.args:
-        if isinstance(arg, ir.Expr) and not isinstance(op, ops.Window):
+    for arg in node.args:
+        if isinstance(arg, ir.Expr) and not isinstance(node, ops.Window):
             new_arg = propagate_down_window(arg, window)
             if isinstance(new_arg.op(), ops.Analytic):
-                new_arg = ops.Window(new_arg, window).to_expr()
+                new_arg = ops.Window(new_arg, window)
             if arg is not new_arg:
                 unchanged = False
             arg = new_arg
@@ -509,6 +509,6 @@ def propagate_down_window(expr: ir.Value, window: Window):
         clean_args.append(arg)
 
     if unchanged:
-        return expr
+        return node
     else:
-        return type(op)(*clean_args).to_expr()
+        return type(node)(*clean_args)

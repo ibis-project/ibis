@@ -32,12 +32,9 @@ def _compare_tuples(a, b):
 
 @public
 class Node(Annotable, Comparable):
-    @immutable_property
-    def _flat_ops(self):
-        return tuple(
-            arg.op() for arg in self.flat_args() if isinstance(arg, ir.Expr)
-        )
 
+    # TODO(kszucs): no need to call _compare_tuples, just use the default
+    # implementation
     def __equals__(self, other):
         return self._hash == other._hash and _compare_tuples(
             self.args, other.args
@@ -141,7 +138,7 @@ class Unary(Value):
 
     @property
     def output_shape(self):
-        return self.arg.op().output_shape
+        return self.arg.output_shape
 
 
 @public
@@ -153,7 +150,7 @@ class Binary(Value):
 
     @property
     def output_shape(self):
-        return max(self.left.op().output_shape, self.right.op().output_shape)
+        return max(self.left.output_shape, self.right.output_shape)
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

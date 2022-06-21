@@ -265,7 +265,7 @@ def test_mixed_arity(table):
     expr = api.sequence(what)
 
     values = expr.op().values
-    assert isinstance(values[1], ir.StringColumn)
+    assert isinstance(values[1], ops.TableColumn)
 
     # it works!
     repr(expr)
@@ -323,7 +323,7 @@ def test_distinct_table(functional_alltypes):
 def test_nunique(functional_alltypes):
     expr = functional_alltypes.string_col.nunique()
     assert isinstance(expr.op(), ops.Alias)
-    assert isinstance(expr.op().arg.op(), ops.CountDistinct)
+    assert isinstance(expr.op().arg, ops.CountDistinct)
 
 
 def test_isnull(table):
@@ -498,7 +498,7 @@ def test_arbitrary(table, column, how, condition_fn):
     expr = col.arbitrary(how=how, where=where)
     assert expr.type() == col.type()
     assert isinstance(expr, ir.Scalar)
-    assert L.is_reduction(expr)
+    assert L.is_reduction(expr.op())
 
 
 @pytest.mark.parametrize(
@@ -514,7 +514,7 @@ def test_arbitrary(table, column, how, condition_fn):
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
     assert isinstance(expr, ir.BooleanScalar)
-    assert L.is_reduction(expr)
+    assert L.is_reduction(expr.op())
 
 
 @pytest.mark.parametrize(
@@ -1060,10 +1060,10 @@ def test_empty_array_as_argument():
 
     node = FooNode([])
     value = node.value
-    expected = literal([]).cast(dt.Array(dt.int64))
+    expected = literal([]).cast(dt.Array(dt.int64)).op()
 
-    assert value.type().equals(dt.Array(dt.null))
-    assert value.cast(dt.Array(dt.int64)).equals(expected)
+    assert value.output_dtype.equals(dt.Array(dt.null))
+    assert ops.Cast(value, dt.Array(dt.int64)).equals(expected)
 
 
 def test_nullable_column_propagated():
@@ -1502,7 +1502,7 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
     op = getattr(operator, op_name)
     expr = t[op(left, right).name("b")]
 
-    op = expr.op().selections[0].op().arg.op()
+    op = expr.op().selections[0].arg
     assert op.left.equals(expected_left(t))
     assert op.right.equals(expected_right(t))
 
@@ -1557,7 +1557,7 @@ def test_struct_names_types_fields(name, expected):
 )
 def test_array_literal(arg, typestr, type):
     x = ibis.literal(arg, type=typestr)
-    assert x._arg.value == tuple(arg)
+    assert x.op().value == tuple(arg)
     assert x.type() == type
 
 

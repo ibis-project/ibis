@@ -447,12 +447,19 @@ def to_op_dag(expr: ir.Expr) -> Graph:
     Graph
         A directed acyclic graph of ibis operations
     """
+    import ibis.expr.operations as ops
+
     stack = [expr.op()]
     dag = {}
 
     while stack:
         if (node := stack.pop()) not in dag:
-            dag[node] = children = node._flat_ops
+            # TODO(kszucs): use a more generic approach without filtering out
+            # node instances
+            children = [
+                arg for arg in node.flat_args() if isinstance(arg, ops.Node)
+            ]
+            dag[node] = children
             stack.extend(children)
     return dag
 

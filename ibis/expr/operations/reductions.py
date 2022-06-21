@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
@@ -91,10 +94,10 @@ class Sum(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.BooleanValue):
+        if self.arg.output_dtype is dt.bool:
             return dt.int64
         else:
-            return self.arg.type().largest
+            return self.arg.output_dtype.largest
 
 
 @public
@@ -103,10 +106,10 @@ class Mean(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type()
-        else:
+        if self.arg.output_dtype is dt.bool:
             return dt.float64
+        else:
+            return dt.higher_precedence(self.arg.output_dtype, dt.float64)
 
 
 @public
@@ -139,7 +142,7 @@ class VarianceBase(Filterable, Reduction):
     @immutable_property
     def output_dtype(self):
         if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type().largest
+            return self.arg.output_dtype.largest
         else:
             return dt.float64
 
@@ -260,7 +263,7 @@ class ArrayCollect(Reduction):
 
     @immutable_property
     def output_dtype(self):
-        return dt.Array(self.arg.type())
+        return dt.Array(self.arg.output_dtype)
 
 
 @public

@@ -352,7 +352,7 @@ class Value(Expr):
 
         # TODO(kszucs): fix this ugly hack
         if isinstance(prior_op, ops.Alias):
-            return prior_op.arg.over(window).name(prior_op.name)
+            return prior_op.arg.to_expr().over(window).name(prior_op.name)
 
         if isinstance(prior_op, ops.Window):
             op = prior_op.over(window)
@@ -405,7 +405,7 @@ class Value(Expr):
         """  # noqa: E501
         import ibis.expr.builders as bl
 
-        return bl.SimpleCaseBuilder(self)
+        return bl.SimpleCaseBuilder(self.op())
 
     def cases(
         self,
@@ -761,8 +761,8 @@ class Column(Value):
         """
         from ibis.expr.analysis import find_first_base_table
 
-        base = find_first_base_table(self).to_expr()
-        metric = base.count().name(metric_name)
+        base = find_first_base_table(self.op())
+        metric = base.to_expr().count().name(metric_name)
 
         if not self.has_name():
             expr = self.name("unnamed")

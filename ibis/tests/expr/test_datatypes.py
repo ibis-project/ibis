@@ -440,11 +440,9 @@ def test_infer_dtype(value, expected_dtype):
 @pytest.mark.parametrize(
     ('source', 'target'),
     [
-        (dt.any, dt.string),
         (dt.string, dt.uuid),
         (dt.uuid, dt.string),
         (dt.null, dt.date),
-        (dt.null, dt.any),
         (dt.int8, dt.int64),
         (dt.int8, dt.Decimal(12, 2)),
         (dt.int32, dt.int32),

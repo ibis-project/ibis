@@ -63,8 +63,8 @@ class Comparison(Binary):
         """
         if not rlz.comparable(left, right):
             raise TypeError(
-                'Arguments with datatype {} and {} are '
-                'not comparable'.format(left.type(), right.type())
+                f'Arguments with datatype {left.output_dtype} and '
+                f'{right.output_dtype} are not comparable'
             )
         super().__init__(left=left, right=right)
 
@@ -116,13 +116,13 @@ class Between(Value):
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
             raise TypeError(
-                f'Argument with datatype {arg.type()} and lower bound '
-                f'with datatype {lower_bound.type()} are not comparable'
+                f'Argument with datatype {arg.output_dtype} and lower bound '
+                f'with datatype {lower_bound.output_dtype} are not comparable'
             )
         if not rlz.comparable(arg, upper_bound):
             raise TypeError(
-                f'Argument with datatype {arg.type()} and upper bound '
-                f'with datatype {upper_bound.type()} are not comparable'
+                f'Argument with datatype {arg.output_dtype} and upper bound '
+                f'with datatype {upper_bound.output_dtype} are not comparable'
             )
         super().__init__(
             arg=arg, lower_bound=lower_bound, upper_bound=upper_bound
@@ -135,9 +135,9 @@ class Contains(Value):
     options = rlz.one_of(
         [
             rlz.value_list_of(rlz.any),
-            rlz.set_,
             rlz.column(rlz.any),
-            rlz.array_of(rlz.any),
+            rlz.array,
+            rlz.set_,
         ]
     )
 

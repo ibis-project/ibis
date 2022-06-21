@@ -12,5 +12,7 @@ from ibis.expr.types.generic import Expr
 
 @public
 class SortExpr(Expr):
+
+    # TODO(kszucs): remove it!
     def type(self) -> dt.DataType:
-        return self.op().expr.type()
+        return self.op().expr.output_dtype

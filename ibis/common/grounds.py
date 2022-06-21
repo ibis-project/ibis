@@ -124,6 +124,7 @@ class AnnotableMeta(BaseMeta):
         attribs["__slots__"] = tuple(slots)
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
+        # TODO(kszucs): rename to __argnames__
         attribs["argnames"] = tuple(signature.parameters.keys())
         return super().__new__(metacls, clsname, bases, attribs)
 
@@ -158,6 +159,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
 
         # optimizations to store frequently accessed generic properties
         args = tuple(kwargs[name] for name in self.argnames)
+        # TODO(kszucs): rename to __args__
         object.__setattr__(self, "args", args)
         object.__setattr__(self, "_hash", hash((self.__class__, args)))
 
@@ -201,6 +203,12 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
     def __reduce__(self):
         kwargs = dict(zip(self.argnames, self.args))
         return (self._reconstruct, (kwargs,))
+
+    # TODO(kszucs): consider to make a separate mixin class for this
+    def copy(self, **overrides):
+        kwargs = dict(zip(self.argnames, self.args))
+        newargs = {**kwargs, **overrides}
+        return self.__class__(**newargs)
 
 
 class Singleton(Base):
