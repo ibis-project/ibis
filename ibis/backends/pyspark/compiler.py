@@ -501,7 +501,7 @@ def compile_aggregator(
         if _is_table(expr):
             (src_col,) = src_cols
             return src_col.select(col)
-        table_op = an.find_immediate_parent_table(expr)
+        table_op = an.find_first_base_table(expr)
         return t.translate(table_op.to_expr(), scope, timecontext).select(col)
 
 
