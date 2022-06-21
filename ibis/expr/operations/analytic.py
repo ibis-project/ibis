@@ -6,7 +6,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Value, distinct_roots
+from ibis.expr.operations.core import Value
 from ibis.expr.window import propagate_down_window
 
 
@@ -29,11 +29,6 @@ class Window(Value):
     @property
     def inputs(self):
         return self.expr.op().inputs[0], self.window
-
-    def root_tables(self):
-        return distinct_roots(
-            self.expr, *self.window._order_by, *self.window._group_by
-        )
 
 
 @public

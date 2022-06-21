@@ -627,11 +627,8 @@ class Table(Expr):
         """
         import ibis.expr.analysis as an
 
-        if isinstance(exprs, (Expr, str)):
-            exprs = [exprs]
+        op = an.Projector(self, exprs).get_result()
 
-        projector = an.Projector(self, exprs)
-        op = projector.get_result()
         return op.to_expr()
 
     projection = select
@@ -712,16 +709,14 @@ class Table(Expr):
         from ibis.expr import analysis as an
 
         resolved_predicates, top_ks = _resolve_predicates(self, predicates)
-        child = self
+        table = self
         for predicate, right in top_ks:
-            child = child.semi_join(right, predicate)[child]
-        return an.apply_filter(
-            child,
-            [
-                an._rewrite_filter(pred.op(), pred)
-                for pred in resolved_predicates
-            ],
-        )
+            table = table.semi_join(right, predicate)[table]
+
+        predicates = [
+            an._rewrite_filter(pred.op(), pred) for pred in resolved_predicates
+        ]
+        return an.apply_filter(table, predicates)
 
     def count(self) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
@@ -1194,13 +1189,11 @@ def _resolve_predicates(
     from ibis.expr import operations as ops
     from ibis.expr import types as ir
 
-    if isinstance(predicates, Expr):
-        predicates = an.flatten_predicate(predicates)
-
     predicates = [
         ir.relations.bind_expr(table, pred)
         for pred in util.promote_list(predicates)
     ]
+    predicates = an.flatten_predicate(predicates)
 
     resolved_predicates = []
     top_ks = []

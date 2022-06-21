@@ -2,24 +2,16 @@ from __future__ import annotations
 
 from abc import abstractmethod
 
-import toolz
 from public import public
 
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Annotable, Comparable
 from ibis.common.validators import immutable_property
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.rules import Shape
 from ibis.expr.schema import Schema
 from ibis.util import UnnamedMarker, is_iterable
-
-
-@public
-def distinct_roots(*expressions):
-    # TODO: move to analysis
-    roots = toolz.concat(expr.op().root_tables() for expr in expressions)
-    return list(toolz.unique(roots))
 
 
 def _compare_items(a, b):
@@ -42,8 +34,6 @@ def _compare_tuples(a, b):
 class Node(Annotable, Comparable):
     @immutable_property
     def _flat_ops(self):
-        import ibis.expr.types as ir
-
         return tuple(
             arg.op() for arg in self.flat_args() if isinstance(arg, ir.Expr)
         )
@@ -64,10 +54,6 @@ class Node(Annotable, Comparable):
     @property
     def inputs(self):
         return self.args
-
-    @property
-    def exprs(self):
-        return [arg for arg in self.args if isinstance(arg, ir.Expr)]
 
     def blocks(self):
         # The contents of this node at referentially distinct and may not be
@@ -100,9 +86,6 @@ class Node(Annotable, Comparable):
 
 @public
 class Value(Node):
-    def root_tables(self):
-        return distinct_roots(*self.exprs)
-
     @property
     @abstractmethod
     def output_dtype(self):

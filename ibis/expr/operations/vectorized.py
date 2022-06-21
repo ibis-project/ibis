@@ -4,7 +4,7 @@ from public import public
 
 from ibis.expr import rules as rlz
 from ibis.expr.operations.analytic import Analytic
-from ibis.expr.operations.core import Value, distinct_roots
+from ibis.expr.operations.core import Value
 from ibis.expr.operations.reductions import Reduction
 
 
@@ -23,9 +23,6 @@ class VectorizedUDF(Value):
     @property
     def output_dtype(self):
         return self.return_type
-
-    def root_tables(self):
-        return distinct_roots(*self.func_args)
 
 
 @public

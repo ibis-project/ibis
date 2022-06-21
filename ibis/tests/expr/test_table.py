@@ -71,7 +71,7 @@ def test_view_new_relation(table):
     # meaning when it comes to execution
     tview = table.view()
 
-    roots = tview.op().root_tables()
+    roots = L.find_immediate_parent_tables(tview)
     assert len(roots) == 1
     assert roots[0] is tview.op()
 
