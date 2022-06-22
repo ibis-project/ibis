@@ -47,7 +47,10 @@ jobs:
           git config --global user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
 
       - name: fetch and rebase on top of upstream
-        run: git pull --rebase -X ours https://github.com/ibis-project/ibis master
+        run: |
+          git remote add upstream https://github.com/ibis-project/ibis
+          git fetch upstream
+          git rebase -X ours upstream/master
 
       - uses: tibdex/github-app-token@v1
         id: generate_pr_token
