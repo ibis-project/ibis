@@ -39,6 +39,13 @@ jobs:
           ref: ${{ matrix.branch }}
           fetch-depth: 0
 
+      - name: configure git info
+        run: |
+          set -euo pipefail
+
+          git config --global user.name 'ibis-squawk-bot[bot]'
+          git config --global user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
+
       - name: fetch and rebase on top of upstream
         run: git pull --rebase https://github.com/ibis-project/ibis master
 
