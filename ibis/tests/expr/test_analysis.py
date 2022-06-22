@@ -273,15 +273,13 @@ def test_select_filter_mutate_fusion():
     result = result[result['col'].isnan()]
     result = result.mutate(col=result['col'].cast('int32'))
 
-    second_selection = result
-    first_selection = second_selection.op().table
+    second_selection = result.op()
+    first_selection = second_selection.table
 
-    assert len(second_selection.op().selections) == 1
-    assert (
-        second_selection.op()
-        .selections[0]
-        .equals(first_selection['col'].cast('int32').name('col'))
-    )
+    assert len(second_selection.selections) == 1
+
+    col = first_selection.to_expr()['col'].cast('int32').name('col').op()
+    assert second_selection.selections[0] == col
 
     # we don't look past the projection when a filter is encountered, so the
     # number of selections in the first projection (`first_selection`) is 0
@@ -291,8 +289,8 @@ def test_select_filter_mutate_fusion():
     #
     # eventually we will bring this back, but we're trading off the ability
     # to remove materialize for some performance in the short term
-    assert len(first_selection.op().selections) == 0
-    assert len(first_selection.op().predicates) == 1
+    assert len(first_selection.selections) == 0
+    assert len(first_selection.predicates) == 1
 
 
 def test_no_filter_means_no_selection():

@@ -24,19 +24,17 @@ def substring(translator, expr):
         )
 
 
-def string_find(translator, expr):
-    op = expr.op()
-    arg, substr, start, _ = op.args
-    arg_formatted = translator.translate(arg)
-    substr_formatted = translator.translate(substr)
+def string_find(translator, op):
+    arg_formatted = translator.translate(op.arg)
+    substr_formatted = translator.translate(op.substr)
 
-    if start is not None and not isinstance(start.op(), ops.Literal):
-        start_fmt = translator.translate(start)
+    if op.start is not None and not isinstance(op.start, ops.Literal):
+        start_fmt = translator.translate(op.start)
         return 'locate({}, {}, {} + 1) - 1'.format(
             substr_formatted, arg_formatted, start_fmt
         )
-    elif start is not None and start.op().value:
-        sval = start.op().value
+    elif op.start is not None and start.value:
+        sval = op.start.value
         return 'locate({}, {}, {}) - 1'.format(
             substr_formatted, arg_formatted, sval + 1
         )
@@ -59,11 +57,10 @@ def string_join(translator, expr):
     return helpers.format_call(translator, 'concat_ws', arg, *strings)
 
 
-def string_like(translator, expr):
-    arg, pattern, _ = expr.op().args
-    return '{} LIKE {}'.format(
-        translator.translate(arg), translator.translate(pattern)
-    )
+def string_like(translator, op):
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    return f'{arg} LIKE {pattern}'
 
 
 def parse_url(translator, expr):
@@ -81,19 +78,15 @@ def parse_url(translator, expr):
         )
 
 
-def startswith(translator, expr):
-    arg, start = expr.op().args
-
-    arg_formatted = translator.translate(arg)
-    start_formatted = translator.translate(start)
+def startswith(translator, op):
+    arg_formatted = translator.translate(op.arg)
+    start_formatted = translator.translate(op.start)
 
     return f"{arg_formatted} like concat({start_formatted}, '%')"
 
 
-def endswith(translator, expr):
-    arg, end = expr.op().args
-
-    arg_formatted = translator.translate(arg)
-    end_formatted = translator.translate(end)
+def endswith(translator, op):
+    arg_formatted = translator.translate(op.arg)
+    end_formatted = translator.translate(op.end)
 
     return f"{arg_formatted} like concat('%', {end_formatted})"

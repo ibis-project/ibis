@@ -146,7 +146,7 @@ def literal(dtype, value, **kwargs):
     elif has_inferred:
         dtype = inferred_dtype
     else:
-        raise TypeError(
+        raise com.IbisTypeError(
             'The datatype of value {!r} cannot be inferred, try '
             'passing it explicitly with the `type` keyword.'.format(value)
         )
@@ -435,7 +435,8 @@ def column_from(name, column, *, this):
     )
 
 
-@validator
+# TODO(kszucs): consider to remove since it's only used by TopK op
+@rule
 def base_table_of(name, *, this):
     from ibis.expr.analysis import find_first_base_table
 
@@ -443,8 +444,8 @@ def base_table_of(name, *, this):
     base = find_first_base_table(arg)
     if base is None:
         raise com.IbisTypeError(f"`{arg}` doesn't have a base table")
-    else:
-        return base.to_expr()
+
+    return base
 
 
 @rule
@@ -465,7 +466,9 @@ def function_of(
     elif callable(arg):
         arg = arg(this=this)
 
-    return output_rule(fn(arg), this=this)
+    # TODO(kszucs): revisit this since the lambda usually must receive a table
+    # expression
+    return output_rule(fn(arg.to_expr()), this=this)
 
 
 @rule

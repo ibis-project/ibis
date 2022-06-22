@@ -14,8 +14,7 @@ def _reduction_format(translator, func_name, where, arg, *args):
 
 
 def reduction(func_name):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         *args, where = op.args
         return _reduction_format(translator, func_name, where, *args)
 
@@ -35,11 +34,9 @@ def variance_like(func_name):
     return formatter
 
 
-def count_distinct(translator, expr):
-    arg, where = expr.op().args
-
-    if where is not None:
-        arg_formatted = translator.translate(where.ifelse(arg, None))
+def count_distinct(translator, op):
+    if op.where is not None:
+        arg_formatted = translator.translate(op.where.ifelse(op.arg, None))
     else:
-        arg_formatted = translator.translate(arg)
+        arg_formatted = translator.translate(op.arg)
     return f'count(DISTINCT {arg_formatted})'

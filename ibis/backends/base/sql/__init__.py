@@ -184,8 +184,10 @@ class BaseSQLBackend(BaseBackend):
         dml = getattr(query_ast, 'dml', query_ast)
         expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
 
-        if isinstance(expr, (ir.Table, sch.HasSchema)):
+        if isinstance(expr, ir.Table):  # , sch.HasSchema)):
             return expr.schema()
+        if isinstance(expr, ops.TableNode):
+            return expr.schema
         elif isinstance(expr, ir.Value):
             return sch.schema([(expr.get_name(), expr.type())])
         else:

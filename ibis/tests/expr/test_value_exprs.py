@@ -317,7 +317,7 @@ def test_distinct_table(functional_alltypes):
     expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
     assert isinstance(expr, ir.Table)
-    assert expr.op().table is functional_alltypes
+    assert expr.op().table == functional_alltypes.op()
 
 
 def test_nunique(functional_alltypes):

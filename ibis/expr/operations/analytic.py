@@ -6,7 +6,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Value
+from ibis.expr.operations.core import Node, Value
 from ibis.expr.window import propagate_down_window
 
 
@@ -231,6 +231,18 @@ class NthValue(Analytic):
     arg = rlz.column(rlz.any)
     nth = rlz.integer
     output_dtype = rlz.dtype_like("arg")
+
+
+# TODO(kszucs): should inherit from analytic base
+@public
+class TopK(Node):
+    arg = rlz.column(rlz.any)
+    k = rlz.non_negative_integer
+    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
+    output_type = ir.TopK
+
+    def blocks(self):  # pragma: no cover
+        return True
 
 
 public(WindowOp=Window, AnalyticOp=Analytic)

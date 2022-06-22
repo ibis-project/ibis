@@ -33,11 +33,10 @@ def test_ast_with_projection_join_filter(con):
     assert len(stmt.where) == 0
 
     # Check that the joined tables are not altered
-    tbl = stmt.table_set
-    tbl_node = tbl.op()
+    tbl_node = stmt.table_set
     assert isinstance(tbl_node, ops.InnerJoin)
-    assert tbl_node.left is table2
-    assert tbl_node.right is table3
+    assert tbl_node.left == table2.op()
+    assert tbl_node.right == table3.op()
 
 
 def test_ast_with_aggregation_join_filter(con):
@@ -61,7 +60,7 @@ def test_ast_with_aggregation_join_filter(con):
     # #790, this behavior was different before
     ex_pred = [table3['g'] == table2['key']]
     expected_table_set = table2.inner_join(table3, ex_pred)
-    assert stmt.table_set.equals(expected_table_set)
+    assert stmt.table_set == expected_table_set.op()
 
     # Check various exprs
     ex_metrics = [
@@ -70,10 +69,10 @@ def test_ast_with_aggregation_join_filter(con):
     ]
     ex_by = [table3['g'], table2['key']]
     for res, ex in zip(stmt.select_set, ex_by + ex_metrics):
-        assert res.equals(ex)
+        assert res == ex.op()
 
     for res, ex in zip(stmt.group_by, ex_by):
-        assert stmt.select_set[res].equals(ex)
+        assert stmt.select_set[res] == ex.op()
 
     # The filter is in the joined subtable
     assert len(stmt.where) == 0

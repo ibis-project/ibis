@@ -73,7 +73,10 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
         ops.AnyLeftJoin: 'ANY LEFT OUTER JOIN',
     }
 
-    _non_equijoin_supported = False
+    # TODO(kszucs): removed this validation from the base compiler, so we need
+    # to check non-equijoin conditions during the compilation (or perhaps) we
+    # could let clickhouse to fail executing the query
+    # _non_equijoin_supported = False
 
 
 class ClickhouseExprTranslator(ExprTranslator):

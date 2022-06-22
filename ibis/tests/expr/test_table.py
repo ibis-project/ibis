@@ -416,7 +416,7 @@ def test_table_count(table):
     result = table.count()
     assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), ops.Count)
+    assert isinstance(result.op().arg, ops.Count)
     assert result.get_name() == 'count'
 
 
@@ -735,8 +735,8 @@ def test_asof_join():
         "time_y",
         "value2",
     ]
-    pred = joined.op().table.op().predicates[0].op()
-    assert pred.left.op().name == pred.right.op().name == 'time'
+    pred = joined.op().table.predicates[0]
+    assert pred.left.name == pred.right.name == 'time'
 
 
 def test_asof_join_with_by():
@@ -755,8 +755,8 @@ def test_asof_join_with_by():
         "key_y",
         "value2",
     ]
-    by = joined.op().table.op().by[0].op()
-    assert by.left.op().name == by.right.op().name == 'key'
+    by = joined.op().table.by[0]
+    assert by.left.name == by.right.name == 'key'
 
 
 @pytest.mark.parametrize(
@@ -785,14 +785,16 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
         [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
     )
 
-    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval)
-    tolerance = joined.op().table.op().tolerance
-    assert_equal(tolerance, ibis_interval)
+    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval).op()
+    tolerance = joined.table.tolerance
+    assert_equal(tolerance, ibis_interval.op())
 
-    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval)
-    tolerance = joined.op().table.op().tolerance
-    assert isinstance(tolerance, ir.IntervalScalar)
-    assert isinstance(tolerance.op(), ops.Literal)
+    joined = api.asof_join(
+        left, right, 'time', tolerance=timedelta_interval
+    ).op()
+    tolerance = joined.table.tolerance
+    assert isinstance(tolerance.to_expr(), ir.IntervalScalar)
+    assert isinstance(tolerance, ops.Literal)
 
 
 def test_equijoin_schema_merge():
@@ -1203,7 +1205,7 @@ def test_resolve_existence_predicate(
     op = expr.op()
     assert isinstance(op, ops.Selection)
 
-    pred = op.predicates[0]
+    pred = op.predicates[0].to_expr()
     assert isinstance(pred.op(), expected_type)
     assert isinstance((-pred).op(), expected_negated_type)
 
@@ -1412,6 +1414,8 @@ def test_mutate_chain():
     assert isinstance(expr.arg, ops.IfNull)
 
 
+# TODO(kszucs): move this test case to ibis/tests/sql since it requires the
+# sql backend to be executed
 def test_multiple_dbcon():
     """
     Expr from multiple connections to same DB should be compatible.

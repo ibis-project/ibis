@@ -15,16 +15,14 @@ from ibis.backends.base.sql.registry import (
 from ibis.backends.base.sql.registry.literal import literal, null_literal
 
 
-def alias(translator, expr):
+def alias(translator, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
-    op = expr.op()
     return translator.translate(op.arg)
 
 
 def fixed_arity(func_name, arity):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         if arity != len(op.args):
             raise com.IbisError('incorrect number of args')
         return helpers.format_call(translator, func_name, *op.args)
@@ -36,13 +34,13 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
+def not_null(translator, op):
+    formatted_arg = translator.translate(op.arg)
     return f'{formatted_arg} IS NOT NULL'
 
 
-def is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
+def is_null(translator, op):
+    formatted_arg = translator.translate(op.arg)
     return f'{formatted_arg} IS NULL'
 
 
@@ -103,35 +101,33 @@ def hashbytes(translator, expr):
         raise NotImplementedError(how)
 
 
-def log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-    arg_formatted = translator.translate(arg)
+def log(translator, op):
+    arg_formatted = translator.translate(op.arg)
 
-    if base is None:
+    if op.base is None:
         return f'ln({arg_formatted})'
 
-    base_formatted = translator.translate(base)
+    base_formatted = translator.translate(op.base)
     return f'log({base_formatted}, {arg_formatted})'
 
 
-def value_list(translator, expr):
-    op = expr.op()
+def value_list(translator, op):
     formatted = [translator.translate(x) for x in op.values]
     return helpers.parenthesize(', '.join(formatted))
 
 
-def cast(translator, expr):
-    op = expr.op()
-    arg, target_type = op.args
-    arg_formatted = translator.translate(arg)
+def cast(translator, op):
+    arg_formatted = translator.translate(op.arg)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
+    if isinstance(op.arg.output_dtype, dt.Category) and op.to == dt.int32:
         return arg_formatted
-    if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
+    if (
+        isinstance(op.arg.output_dtype, (dt.Timestamp, dt.Date, dt.Time))
+        and op.to == dt.int64
+    ):
         return f'1000000 * unix_timestamp({arg_formatted})'
     else:
-        sql_type = helpers.type_to_sql_string(target_type)
+        sql_type = helpers.type_to_sql_string(op.to)
         return f'CAST({arg_formatted} AS {sql_type})'
 
 
@@ -143,48 +139,48 @@ def varargs(func_name):
     return varargs_formatter
 
 
-def between(translator, expr):
-    op = expr.op()
-    comp, lower, upper = (translator.translate(x) for x in op.args)
+def between(translator, op):
+    comp = translator.translate(op.arg)
+    lower = translator.translate(op.lower_bound)
+    upper = translator.translate(op.upper_bound)
     return f'{comp} BETWEEN {lower} AND {upper}'
 
 
-def table_array_view(translator, expr):
+def table_array_view(translator, op):
     ctx = translator.context
-    table = expr.op().table
-    query = ctx.get_compiled_expr(table)
+    query = ctx.get_compiled_expr(op.table)
     return f'(\n{util.indent(query, ctx.indent)}\n)'
 
 
-def table_column(translator, expr):
-    op = expr.op()
-    field_name = op.name
-    quoted_name = helpers.quote_identifier(field_name, force=True)
+def table_column(translator, op):
+    quoted_name = helpers.quote_identifier(op.name, force=True)
 
-    table = op.table
     ctx = translator.context
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
-    if translator.permit_subquery and ctx.is_foreign_expr(table):
-        proj_expr = table.projection([field_name]).to_array()
+    if translator.permit_subquery and ctx.is_foreign_expr(op.table):
+        # TODO(kszucs): do the projection by directly constructing nodes
+        # (without the to_expr() -> op() roundtrip)
+        proj_expr = op.table.to_expr().projection([op.name]).to_array().op()
         return table_array_view(translator, proj_expr)
 
     if ctx.need_aliases():
-        alias = ctx.get_ref(table)
+        alias = ctx.get_ref(op.table)
         if alias is not None:
             quoted_name = f'{alias}.{quoted_name}'
 
     return quoted_name
 
 
-def exists_subquery(translator, expr):
-    op = expr.op()
+def exists_subquery(translator, op):
     ctx = translator.context
 
     dummy = ir.literal(1).name(ir.core.unnamed)
 
-    filtered = op.foreign_table.filter(op.predicates)
+    filtered = op.foreign_table.to_expr().filter(
+        [pred.to_expr() for pred in op.predicates]
+    )
     expr = filtered.projection([dummy])
 
     subquery = ctx.get_compiled_expr(expr)

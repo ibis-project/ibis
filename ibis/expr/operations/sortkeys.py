@@ -8,6 +8,7 @@ from ibis.common import exceptions as com
 from ibis.expr.operations.core import Node
 
 
+# TODO(kszucs): rewrite to both receive operations and return with operations
 def _to_sort_key(key, *, table=None):
     if isinstance(key, DeferredSortKey):
         if table is None:
@@ -44,6 +45,7 @@ def _to_sort_key(key, *, table=None):
     return SortKey(key, ascending=sort_order).to_expr()
 
 
+# TODO(kszucs): rewrite to both receive operations and return with operations
 def _maybe_convert_sort_keys(tables, exprs):
     exprs = util.promote_list(exprs)
     keys = exprs[:]
@@ -57,7 +59,8 @@ def _maybe_convert_sort_keys(tables, exprs):
             else:
                 keys[i] = sort_key
                 break
-    return keys
+
+    return [k.op() for k in keys]
 
 
 @public

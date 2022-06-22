@@ -361,19 +361,6 @@ class HashBytes(Value):
     output_shape = rlz.shape_like("arg")
 
 
-# TODO(kszucs): shouldn't we move this operation to either
-# analytic.py or reductions.py?
-@public
-class TopK(Node):
-    arg = rlz.column(rlz.any)
-    k = rlz.non_negative_integer
-    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
-    output_type = ir.TopK
-
-    def blocks(self):  # pragma: no cover
-        return True
-
-
 # TODO(kszucs): we should merge the case operations by making the
 # cases, results and default optional arguments like they are in
 # api.py

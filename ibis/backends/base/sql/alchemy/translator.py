@@ -56,18 +56,14 @@ class AlchemyExprTranslator(ExprTranslator):
     def get_sqla_type(self, data_type):
         return to_sqla_type(data_type, type_map=self._type_map)
 
-    def _reduction(self, sa_func, expr):
-        op = expr.op()
+    def _reduction(self, sa_func, op):
         arg = op.arg
         if (
             self._bool_aggs_need_cast_to_int32
             and isinstance(op, (ops.Sum, ops.Mean, ops.Min, ops.Max))
-            and isinstance(
-                type := arg.type(),
-                dt.Boolean,
-            )
+            and arg.output_dtype is dt.bool
         ):
-            arg = arg.cast(dt.Int32(nullable=type.nullable))
+            arg = ops.Cast(arg, dt.Int32(nullable=arg.output_dtype.nullable))
 
         if (where := op.where) is not None:
             if self._has_reduction_filter_syntax:

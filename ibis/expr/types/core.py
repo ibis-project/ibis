@@ -4,9 +4,11 @@ import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
+import toolz
 from cached_property import cached_property
 from public import public
 
+import ibis.expr.lineage as lin
 from ibis import config
 from ibis.common.exceptions import (
     ExpressionError,
@@ -14,6 +16,7 @@ from ibis.common.exceptions import (
     IbisTypeError,
     TranslationError,
 )
+from ibis.common.grounds import Base
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
 
@@ -190,6 +193,8 @@ class Expr:
     def op(self) -> ops.Node:
         return self._arg
 
+    # TODO(kszucs): reimplement this using lin.traverse and move out somewhere
+    # but feels odd attached directly to the Expr instances
     def _find_backends(self) -> list[BaseBackend]:
         """Return the possible backends for an expression.
 
@@ -199,6 +204,18 @@ class Expr:
             A list of the backends found.
         """
         from ibis.backends.base import BaseBackend
+
+        def finder(node):
+            # BaseBackend objects are not operation instances, so they don't
+            # get traversed, this is why we need to select backends out from
+            # the node's arguments
+            backends = [
+                arg for arg in node.args if isinstance(arg, BaseBackend)
+            ]
+            return lin.proceed, backends or None
+
+        results = lin.traverse(finder, self.op())
+        return list(toolz.unique(toolz.concat(results)))
 
         seen_backends: dict[
             str, BaseBackend

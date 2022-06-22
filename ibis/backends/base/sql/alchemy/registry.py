@@ -52,11 +52,11 @@ def fixed_arity(sa_func, arity):
     if isinstance(sa_func, str):
         sa_func = getattr(sa.func, sa_func)
 
-    def formatter(t, expr):
-        if arity != len(expr.op().args):
+    def formatter(t, op):
+        if arity != len(op.args):
             raise com.IbisError('incorrect number of args')
 
-        return _varargs_call(sa_func, t, expr.op().args)
+        return _varargs_call(sa_func, t, op.args)
 
     return formatter
 
@@ -74,8 +74,8 @@ def _varargs_call(sa_func, t, args):
 
 
 def varargs(sa_func):
-    def formatter(t, expr):
-        return _varargs_call(sa_func, t, expr.op().arg)
+    def formatter(t, op):
+        return _varargs_call(sa_func, t, op.arg)
 
     return formatter
 
@@ -88,9 +88,8 @@ def get_sqla_table(ctx, table):
             ctx_level = ctx_level.parent
             sa_table = ctx_level.get_ref(table)
     else:
-        op = table.op()
-        if isinstance(op, AlchemyTable):
-            sa_table = op.sqla_table
+        if isinstance(table, AlchemyTable):
+            sa_table = table.sqla_table
         else:
             sa_table = ctx.get_compiled_expr(table)
 
@@ -118,8 +117,7 @@ def get_col_or_deferred_col(sa_table, colname):
         return sa.column(colname)
 
 
-def _table_column(t, expr):
-    op = expr.op()
+def _table_column(t, op):
     ctx = t.context
     table = op.table
 
@@ -139,20 +137,21 @@ def _table_column(t, expr):
     return out_expr
 
 
-def _table_array_view(t, expr):
+def _table_array_view(t, op):
     ctx = t.context
-    table = ctx.get_compiled_expr(expr.op().table)
+    table = ctx.get_compiled_expr(op.table)
     return table
 
 
-def _exists_subquery(t, expr):
+def _exists_subquery(t, op):
     from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 
-    op = expr.op()
     ctx = t.context
 
-    filtered = op.foreign_table.filter(op.predicates).projection(
-        [ir.literal(1).name(ir.core.unnamed)]
+    filtered = (
+        op.foreign_table.to_expr()
+        .filter(op.predicates)
+        .projection([ir.literal(1).name(ir.core.unnamed)])
     )
 
     sub_ctx = ctx.subcontext()
@@ -164,8 +163,9 @@ def _exists_subquery(t, expr):
     return clause
 
 
-def _cast(t, expr):
-    arg, typ = expr.op().args
+def _cast(t, op):
+    arg = op.arg
+    typ = op.to
 
     sa_arg = t.translate(arg)
     sa_type = t.get_sqla_type(typ)
@@ -174,13 +174,15 @@ def _cast(t, expr):
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
+    if isinstance(arg.output_dtype, dt.Integer) and isinstance(
+        sa_type, sa.DateTime
+    ):
         return t.integer_to_timestamp(sa_arg)
 
-    if arg.type().equals(dt.binary) and typ.equals(dt.string):
+    if arg.output_dtype is dt.binary and typ.equals(dt.string):
         return sa.func.encode(sa_arg, 'escape')
 
-    if typ.equals(dt.binary):
+    if typ is dt.binary:
         #  decode yields a column of memoryview which is annoying to deal with
         # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
         return sa.cast(sa_arg, sa.LargeBinary())
@@ -189,9 +191,7 @@ def _cast(t, expr):
 
 
 def _contains(func):
-    def translate(t, expr):
-        op = expr.op()
-
+    def translate(t, op):
         left = t.translate(op.value)
         right = t.translate(op.options)
 
@@ -222,16 +222,15 @@ def _group_concat(t, expr):
     return sa.func.group_concat(arg, sep)
 
 
-def _alias(t, expr):
+def _alias(t, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
-    op = expr.op()
     return t.translate(op.arg)
 
 
-def _literal(_, expr):
-    dtype = expr.type()
-    value = expr.op().value
+def _literal(_, op):
+    dtype = op.output_dtype
+    value = op.value
 
     if isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
@@ -243,13 +242,13 @@ def _value_list(t, expr):
     return [t.translate(x) for x in expr.op().values]
 
 
-def _is_null(t, expr):
-    arg = t.translate(expr.op().args[0])
+def _is_null(t, op):
+    arg = t.translate(op.arg)
     return arg.is_(sa.null())
 
 
-def _not_null(t, expr):
-    arg = t.translate(expr.op().args[0])
+def _not_null(t, op):
+    arg = t.translate(op.arg)
     return arg.isnot(sa.null())
 
 
@@ -272,16 +271,13 @@ def _floor_divide(t, expr):
     return sa.func.floor(left / right)
 
 
-def _simple_case(t, expr):
-    op = expr.op()
-
-    cases = [op.base == case for case in op.cases]
-    return _translate_case(t, cases, op.results, op.default)
+def _simple_case(t, op):
+    cases = [ops.Equals(op.base, case) for case in op.cases.values]
+    return _translate_case(t, cases, op.results.values, op.default)
 
 
-def _searched_case(t, expr):
-    op = expr.op()
-    return _translate_case(t, op.cases, op.results, op.default)
+def _searched_case(t, op):
+    return _translate_case(t, op.cases.values, op.results.values, op.default)
 
 
 def _translate_case(t, cases, results, default):

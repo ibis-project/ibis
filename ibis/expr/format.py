@@ -93,9 +93,9 @@ def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
     """
     try:
         return max(
-            len(name)
+            len(node.resolve_name())
             for node in nodes
-            if (name := node.resolve_name()) is not None
+            if node.has_resolved_name()
         )
     except ValueError:
         return 0
@@ -193,7 +193,7 @@ def _fmt_table_op_view(op: ops.View, *, aliases: Aliases, **_: Any) -> str:
     top = op.__class__.__name__
     formatted_schema = fmt_schema(op.schema)
     schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
-    return f"{top}[{aliases[op.child.op()]}]: {op.name}\n{schema_field}"
+    return f"{top}[{aliases[op.child]}]: {op.name}\n{schema_field}"
 
 
 @fmt_table_op.register
@@ -213,7 +213,7 @@ def _fmt_table_op_sql_view(
     formatted_schema = fmt_schema(op.schema)
     schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
     components = [
-        f"{top}[{aliases[op.child.op()]}]: {op.name}",
+        f"{top}[{aliases[op.child]}]: {op.name}",
         util.indent(query, spaces=2),
         schema_field,
     ]
@@ -249,8 +249,8 @@ def _fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
 
 @fmt_join.register(ops.AsOfJoin)
 def _fmt_asof_join(op: ops.AsOfJoin, *, aliases: Aliases) -> tuple[str, str]:
-    left = aliases[op.left.op()]
-    right = aliases[op.right.op()]
+    left = aliases[op.left]
+    right = aliases[op.right]
     top = f"{op.__class__.__name__}[{left}, {right}]"
     raw_parts = fmt_fields(
         op,
@@ -302,8 +302,8 @@ def _fmt_table_op_join(
 
 @fmt_table_op.register
 def _(op: ops.CrossJoin, *, aliases: Aliases, **_: Any) -> str:
-    left = aliases[op.left.op()]
-    right = aliases[op.right.op()]
+    left = aliases[op.left]
+    right = aliases[op.right]
     return f"{op.__class__.__name__}[{left}, {right}]"
 
 
@@ -313,7 +313,7 @@ def _fmt_set_op(
     aliases: Aliases,
     distinct: bool | None = None,
 ) -> str:
-    args = [str(aliases[op.left.op()]), str(aliases[op.right.op()])]
+    args = [str(aliases[op.left]), str(aliases[op.right])]
     if distinct is not None:
         args.append(f"distinct={distinct}")
     return f"{op.__class__.__name__}[{', '.join(args)}]"
@@ -337,7 +337,7 @@ def _fmt_table_op_self_reference_distinct(
     aliases: Aliases,
     **_: Any,
 ) -> str:
-    return f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    return f"{op.__class__.__name__}[{aliases[op.table]}]"
 
 
 @fmt_table_op.register
@@ -349,7 +349,7 @@ def _fmt_table_op_fillna(op: ops.FillNa, *, aliases: Aliases, **_: Any) -> str:
 
 @fmt_table_op.register
 def _fmt_table_op_dropna(op: ops.DropNa, *, aliases: Aliases, **_: Any) -> str:
-    top = f"{op.__class__.__name__}[{aliases[op.table.op()]}]"
+    top = f"{op.__class__.__name__}[{aliases[op.table]}]"
     how = f"how: {op.how!r}"
     raw_parts = fmt_fields(op, dict(subset=fmt_value), aliases=aliases)
     return f"{top}\n{util.indent(how, spaces=2)}\n{raw_parts}"
@@ -431,7 +431,7 @@ def _fmt_table_op_limit(op: ops.Limit, *, aliases: Aliases, **_: Any) -> str:
 
 
 @functools.singledispatch
-def fmt_selection_column(value_expr: ir.Value, **_: Any) -> str:
+def fmt_selection_column(value_expr: object, **_: Any) -> str:
     assert False, (
         "expression type not implemented for "
         f"fmt_selection_column: {type(value_expr)}"
@@ -445,9 +445,9 @@ def type_info(datatype: dt.DataType) -> str:
 
 @fmt_selection_column.register
 def _fmt_selection_column_value_expr(
-    expr: ir.Value, *, aliases: Aliases, maxlen: int = 0
+    node: ops.Value, *, aliases: Aliases, maxlen: int = 0
 ) -> str:
-    raw_name = expr._safe_name
+    raw_name = node.resolve_name()
     assert raw_name is not None, (
         "`_safe_name` property should never be None when formatting a "
         "selection column expression"
@@ -455,15 +455,16 @@ def _fmt_selection_column_value_expr(
     name = f"{raw_name}:"
     # the additional 1 is for the colon
     aligned_name = f"{name:<{maxlen + 1}}"
-    value = fmt_value(expr, aliases=aliases)
-    return f"{aligned_name} {value}{type_info(expr.type())}"
+    value = fmt_value(node, aliases=aliases)
+    dtype = type_info(node.output_dtype)
+    return f"{aligned_name} {value}{dtype}"
 
 
 @fmt_selection_column.register
 def _fmt_selection_column_table_expr(
-    expr: ir.Table, *, aliases: Aliases, **_: Any
+    node: ops.TableNode, *, aliases: Aliases, **_: Any
 ) -> str:
-    return str(aliases[expr.op()])
+    return str(aliases[node])
 
 
 _BIN_OP_CHARS = {
@@ -519,17 +520,17 @@ def _fmt_value_function_type(func: types.FunctionType, **_: Any) -> str:
 
 
 @fmt_value.register
-def _fmt_value_expr(expr: ir.Expr, *, aliases: Aliases) -> str:
+def _fmt_value_node(op: ops.Node, **_: Any) -> str:
+    assert False, f"`fmt_value` not implemented for operation: {type(op)}"
+
+
+@fmt_value.register
+def _fmt_value_expr(op: ops.Value, *, aliases: Aliases) -> str:
     """Format a value expression.
 
     Forwards the call on to the specific operation dispatch rule.
     """
-    return fmt_value(expr.op(), aliases=aliases)
-
-
-@fmt_value.register
-def _fmt_value_node(op: ops.Node, **_: Any) -> str:
-    assert False, f"`fmt_value` not implemented for operation: {type(op)}"
+    return fmt_value(op, aliases=aliases)
 
 
 @fmt_value.register
@@ -636,7 +637,7 @@ def _fmt_value_table_node(
     This function is called when a table is used in a value expression. An
     example is `table.count()`.
     """
-    return f"{aliases[op.table.op()]}"
+    return f"{aliases[op.table]}"
 
 
 @fmt_value.register

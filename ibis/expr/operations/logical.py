@@ -9,8 +9,8 @@ if TYPE_CHECKING:
 from public import public
 
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import _Negatable
 
@@ -257,8 +257,12 @@ class UnresolvedExistsSubquery(_UnresolvedSubquery):
     def negate(self) -> UnresolvedNotExistsSubquery:
         return UnresolvedNotExistsSubquery(*self.args)
 
-    def _resolve(self, table: ir.Table) -> ExistsSubquery:
-        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+    def _resolve(self, table) -> ExistsSubquery:
+        from ibis.expr.operations.relations import TableNode
+
+        assert isinstance(table, TableNode)
+
+        (foreign_table,) = (t for t in self.tables if not t == table)
         return ExistsSubquery(foreign_table, self.predicates).to_expr()
 
 
@@ -268,5 +272,9 @@ class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
         return UnresolvedExistsSubquery(*self.args)
 
     def _resolve(self, table: ir.Table) -> NotExistsSubquery:
-        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+        from ibis.expr.operations.relations import TableNode
+
+        assert isinstance(table, TableNode)
+
+        (foreign_table,) = (t for t in self.tables if not t == table)
         return NotExistsSubquery(foreign_table, self.predicates).to_expr()

@@ -85,6 +85,8 @@ class SQLQueryResult(TableNode, sch.HasSchema):
         return True
 
 
+# TODO(kszucs): desperately need to clean this up, the majority of this
+# functionality should be handled by input rules for the Join class
 def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
     from ibis.expr.analysis import shares_all_roots
@@ -101,6 +103,8 @@ def _clean_join_predicates(left, right, predicates):
             pred = lk == rk
         elif isinstance(pred, str):
             pred = left.to_expr()[pred] == right.to_expr()[pred]
+        elif isinstance(pred, Value):
+            pred = pred.to_expr()
         elif not isinstance(pred, ir.Expr):
             raise NotImplementedError
 
@@ -156,7 +160,7 @@ class Join(TableNode):
             old = right
             new = right = ops.SelfReference(right)
             predicates = [
-                L.sub_for(pred, [(old, new)])
+                L.sub_for(pred, {old: new})
                 if isinstance(pred, ops.Node)
                 else pred
                 for pred in util.promote_list(predicates)

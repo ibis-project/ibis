@@ -33,12 +33,12 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
         # and predicates onto a flat list, then format them
-        op = self.expr.op()
+        op = self.node
 
         if isinstance(op, ops.Join):
             self._walk_join_tree(op)
         else:
-            self.join_tables.append(self._format_table(self.expr))
+            self.join_tables.append(self._format_table(op))
 
         result = self.join_tables[0]
         for jtype, table, preds in zip(
@@ -71,22 +71,20 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             else:
                 raise NotImplementedError(jtype)
 
-        self.context.set_ref(self.expr, result)
+        self.context.set_ref(op, result)
         return result
 
     def _get_join_type(self, op):
         return type(op)
 
-    def _format_table(self, expr):
+    def _format_table(self, op):
         ctx = self.context
-        ref_expr = expr
-        op = ref_op = expr.op()
+        ref_op = op
 
         if isinstance(op, ops.SelfReference):
-            ref_expr = op.table
-            ref_op = ref_expr.op()
+            ref_op = op.table
 
-        alias = ctx.get_ref(expr)
+        alias = ctx.get_ref(op)
 
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
@@ -110,26 +108,26 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             backend._create_temp_view(view=result, definition=definition)
         else:
             # A subquery
-            if ctx.is_extracted(ref_expr):
+            if ctx.is_extracted(ref_op):
                 # Was put elsewhere, e.g. WITH block, we just need to grab
                 # its alias
-                alias = ctx.get_ref(expr)
+                alias = ctx.get_ref(op)
 
                 # hack
                 if isinstance(op, ops.SelfReference):
-                    table = ctx.get_ref(ref_expr)
+                    table = ctx.get_ref(ref_op)
                     self_ref = (
                         alias if hasattr(alias, "name") else table.alias(alias)
                     )
-                    ctx.set_ref(expr, self_ref)
+                    ctx.set_ref(op, self_ref)
                     return self_ref
                 return alias
 
-            alias = ctx.get_ref(expr)
-            result = ctx.get_compiled_expr(expr)
+            alias = ctx.get_ref(op)
+            result = ctx.get_compiled_expr(op)
 
         result = alias if hasattr(alias, "name") else result.alias(alias)
-        ctx.set_ref(expr, result)
+        ctx.set_ref(op, result)
         return result
 
 
@@ -152,7 +150,7 @@ def _can_lower_sort_column(table_set, expr):
     if isinstance(base, ops.Aggregation):
         return base.table.equals(table_set)
     elif isinstance(base, ops.Selection):
-        return base.equals(table_set.op())
+        return base.equals(table_set)
     else:
         return False
 
@@ -206,21 +204,21 @@ class AlchemySelect(Select):
         to_select = []
 
         has_select_star = False
-        for expr in self.select_set:
-            if isinstance(expr, ir.Value):
-                arg = self._translate(expr, named=True)
-            elif isinstance(expr, ir.Table):
-                if expr.equals(self.table_set):
-                    cached_table = self.context.get_ref(expr)
+        for op in self.select_set:
+            if isinstance(op, ops.Value):
+                arg = self._translate(op, named=True)
+            elif isinstance(op, ops.TableNode):
+                if op.equals(self.table_set):
+                    cached_table = self.context.get_ref(op)
                     if cached_table is None:
                         has_select_star = True
                         continue
                     else:
                         arg = table_set
                 else:
-                    arg = self.context.get_ref(expr)
+                    arg = self.context.get_ref(op)
                     if arg is None:
-                        raise ValueError(expr)
+                        raise ValueError(op)
 
             to_select.append(arg)
 
@@ -302,14 +300,13 @@ class AlchemySelect(Select):
             return fragment
 
         clauses = []
-        for expr in self.order_by:
-            key = expr.op()
+        for key in self.order_by:
             sort_expr = key.expr
 
             # here we have to determine if key.expr is in the select set (as it
             # will be in the case of order_by fused with an aggregation
             if _can_lower_sort_column(self.table_set, sort_expr):
-                arg = sort_expr.get_name()
+                arg = sort_expr.resolve_name()
             else:
                 arg = self._translate(sort_expr)
 

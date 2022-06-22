@@ -713,7 +713,11 @@ class Table(Expr):
         for predicate, right in top_ks:
             table = table.semi_join(right, predicate)[table]
 
-        predicates = [an._rewrite_filter(pred) for pred in resolved_predicates]
+        # FIXME(kszucs): handle operations here only
+        predicates = [
+            an._rewrite_filter(pred.op() if isinstance(pred, Expr) else pred)
+            for pred in resolved_predicates
+        ]
         return an.apply_filter(table, predicates)
 
     def count(self) -> ir.IntegerScalar:
@@ -1198,9 +1202,9 @@ def _resolve_predicates(
     for pred in predicates:
         if isinstance(pred, ops.TopK):
             # TODO(kszucs): fixme
-            top_ks.append(pred._semi_join_components())
+            top_ks.append(pred.to_expr()._semi_join_components())
         elif isinstance(pred, ops.logical._UnresolvedSubquery):
-            resolved_predicates.append(pred._resolve(table))
+            resolved_predicates.append(pred._resolve(table.op()))
         else:
             resolved_predicates.append(pred)
 

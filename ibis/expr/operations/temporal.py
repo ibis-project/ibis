@@ -345,9 +345,11 @@ class ToIntervalUnit(Value):
 
     def __init__(self, arg, unit):
         dtype = arg.output_dtype
-        # FIXME(kszucs)
-        # if dtype.unit != unit:
-        #     arg = util.convert_unit(arg, dtype.unit, unit)
+
+        # TODO(kszucs): remove the expression wrapping required for arithmetic
+        # overloads
+        if dtype.unit != unit:
+            arg = util.convert_unit(arg.to_expr(), dtype.unit, unit).op()
         super().__init__(arg=arg, unit=unit)
 
     @immutable_property
