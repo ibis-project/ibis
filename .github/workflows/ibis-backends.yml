@@ -192,7 +192,16 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - name: install minimum postgres dependencies
-        run: poetry add --lock --optional "psycopg2@2.8.4" --optional "GeoAlchemy2@0.6.3" --optional "geopandas@0.6" --optional "Shapely@1.6"
+        run: poetry add --lock --optional "psycopg2@2.8.4" "GeoAlchemy2@0.6.3" "geopandas@0.6" "Shapely@1.6"
+
+      - name: install exactly the mininmum deps
+        run: |
+          set -euo pipefail
+          # poetry add is aggressive and will update other dependencies like
+          # numpy and pandas so we keep the pyproject.toml edits and then
+          # relock without updating anything except the requested versions
+          git checkout poetry.lock
+          poetry lock --no-update
 
       - name: install ibis
         run: poetry install --extras postgres --extras geospatial
