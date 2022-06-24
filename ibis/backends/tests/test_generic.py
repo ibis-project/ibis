@@ -283,7 +283,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
+@pytest.mark.notimpl(["datafusion", "mysql", "sqlite"])
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -291,7 +291,7 @@ def test_case_where(backend, alltypes, df):
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
-    Before Pr 2635, try_fusion in analysis.py would fuse these operations
+    Before PR #2635, try_fusion in analysis.py would fuse these operations
     together in a way that the order of the operations were wrong. (mutate
     was executed before filter).
     """
@@ -309,15 +309,17 @@ def test_select_filter_mutate(backend, alltypes, df):
     # Actual test
     t = t[t.columns]
     t = t[~t['float_col'].isnan()]
-    t = t.mutate(float_col=t['float_col'].cast('int32'))
+    t = t.mutate(float_col=t['float_col'].cast('float64'))
     result = t.execute()
 
     expected = df.copy()
     expected.loc[~df['bool_col'], 'float_col'] = None
-    expected = expected[~expected['float_col'].isna()]
-    expected = expected.assign(float_col=expected['float_col'].astype('int32'))
+    expected = expected[~expected['float_col'].isna()].reset_index(drop=True)
+    expected = expected.assign(
+        float_col=expected['float_col'].astype('float64')
+    )
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_series_equal(result.float_col, expected.float_col)
 
 
 def test_fillna_invalid(alltypes):
