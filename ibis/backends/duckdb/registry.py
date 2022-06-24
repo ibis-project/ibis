@@ -165,6 +165,18 @@ def _arbitrary(t, expr):
     return t._reduction(getattr(sa.func, how), expr)
 
 
+def _string_agg(t, expr):
+    op = expr.op()
+    if not isinstance(lit := op.sep.op(), ops.Literal):
+        raise TypeError(
+            "Separator argument to group_concat operation must be a constant"
+        )
+    agg = sa.func.string_agg(t.translate(op.arg), sa.text(repr(lit.value)))
+    if (where := op.where) is not None:
+        return agg.filter(t.translate(where))
+    return agg
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
@@ -199,6 +211,7 @@ operation_registry.update(
         ops.ApproxCountDistinct: reduction(sa.func.approx_count_distinct),
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
+        ops.GroupConcat: _string_agg,
     }
 )
 
