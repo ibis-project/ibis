@@ -174,6 +174,7 @@ operation_registry.update(
         ops.Log2: unary(sa.func.log2),
         ops.Ln: unary(sa.func.ln),
         ops.Log: _log,
+        ops.IsNan: unary(sa.func.isnan),
         # TODO: map operations, but DuckDB's maps are multimaps
         ops.Modulus: fixed_arity(operator.mod, 2),
         ops.Round: _round,
