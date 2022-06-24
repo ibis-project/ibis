@@ -230,7 +230,7 @@ https://conda.anaconda.org/conda-forge/linux-64/importlib-metadata-4.11.4-py310h
 https://conda.anaconda.org/conda-forge/noarch/importlib_resources-5.8.0-pyhd8ed1ab_0.tar.bz2#fd5c189cea9267b81d97d1b2306dd202
 https://conda.anaconda.org/conda-forge/linux-64/jedi-0.18.1-py310hff52083_1.tar.bz2#50282bcc5bdda427342ebdbf216d8d2f
 https://conda.anaconda.org/conda-forge/linux-64/jupyter_core-4.10.0-py310hff52083_0.tar.bz2#c3b2ddcd2541c2f41bf9fb56d184da56
-https://conda.anaconda.org/conda-forge/linux-64/kealib-1.4.14-hfe1a663_4.tar.bz2#892f8efd00c78f388500e32fdb53705a
+https://conda.anaconda.org/conda-forge/linux-64/kealib-1.4.15-hfe1a663_0.tar.bz2#32fda93b8db4b6be630d1ee6a94f23b9
 https://conda.anaconda.org/conda-forge/linux-64/kiwisolver-1.4.3-py310hbf28c38_0.tar.bz2#93b57192dd2e93b6d5ed00be96e8ae55
 https://conda.anaconda.org/conda-forge/linux-64/libdap4-3.20.6-hd7c4107_2.tar.bz2#c265ae57e3acdc891f3e2b93cf6784f5
 https://conda.anaconda.org/conda-forge/linux-64/libgd-2.3.3-h18fbbfe_3.tar.bz2#ea9758cf553476ddf75c789fdd239dc5
@@ -244,7 +244,7 @@ https://conda.anaconda.org/conda-forge/linux-64/mistune-0.8.4-py310h6acc77f_1005
 https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.0.4-py310hbf28c38_0.tar.bz2#ff1a239031213d72a4b8ef3281445320
 https://conda.anaconda.org/conda-forge/noarch/multipledispatch-0.6.0-py_0.tar.bz2#1073dc92c8f247d94ac14dd79ca0bbec
 https://conda.anaconda.org/conda-forge/linux-64/mypy_extensions-0.4.3-py310hff52083_5.tar.bz2#0a7cbd730f99dbb89316631f8bd8b7a5
-https://conda.anaconda.org/conda-forge/linux-64/numpy-1.22.4-py310h4ef5377_0.tar.bz2#a97b04c2d88d24d4a25fd9c069189281
+https://conda.anaconda.org/conda-forge/linux-64/numpy-1.23.0-py310h53a5b5f_0.tar.bz2#16493af3907dbd772904e15bf24948d8
 https://conda.anaconda.org/conda-forge/noarch/packaging-21.3-pyhd8ed1ab_0.tar.bz2#71f1ab2de48613876becddd496371c85
 https://conda.anaconda.org/conda-forge/noarch/partd-1.2.0-pyhd8ed1ab_0.tar.bz2#0c32f563d7f22e3a34c95cad8cc95651
 https://conda.anaconda.org/conda-forge/noarch/pexpect-4.8.0-pyh9f0ad1d_2.tar.bz2#5909e7b978141dd80d28dbf9de627827
@@ -299,7 +299,7 @@ https://conda.anaconda.org/conda-forge/noarch/markdown-3.3.7-pyhd8ed1ab_0.tar.bz
 https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.3.0-pyhd8ed1ab_0.tar.bz2#adf9129f76ca651869acf2219fac2050
 https://conda.anaconda.org/conda-forge/noarch/munch-2.5.0-py_0.tar.bz2#31d9e9be500e25ff0050bc9f57a6bcd7
 https://conda.anaconda.org/conda-forge/linux-64/mypy-0.961-py310h5764c6d_0.tar.bz2#6748ea6103719f7b1822f2adebcf3787
-https://conda.anaconda.org/conda-forge/linux-64/pandas-1.4.2-py310h769672d_2.tar.bz2#be849b172f511db2ea7d3357f7b07d28
+https://conda.anaconda.org/conda-forge/linux-64/pandas-1.4.3-py310h769672d_0.tar.bz2#e48c810453df0f03bb8fcdff5e1d9e9d
 https://conda.anaconda.org/conda-forge/linux-64/poppler-22.04.0-h1434ded_1.tar.bz2#cccf97896845c6b3e4a7d77f0b16e47a
 https://conda.anaconda.org/conda-forge/noarch/pyaml-21.10.1-pyhd8ed1ab_0.tar.bz2#dd38ba892254ba8f8594c34be6198d27
 https://conda.anaconda.org/conda-forge/linux-64/pydantic-1.9.1-py310h5764c6d_0.tar.bz2#f8efec1d3f81afde48e001ae8e1bdfdf
