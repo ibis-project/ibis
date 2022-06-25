@@ -1,8 +1,8 @@
 name: Update Dependencies
 on:
   schedule:
-    # run every 24 hours at midnight
-    - cron: "0 */24 * * *"
+    # run every 3 days at midnight
+    - cron: "0 * * * */3"
   workflow_dispatch:
 
 jobs:
