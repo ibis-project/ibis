@@ -23,7 +23,7 @@ def test_union(backend, alltypes, df, distinct):
         param(
             True,
             marks=pytest.mark.notimpl(
-                ["duckdb", "postgres", "pyspark"],
+                ["duckdb", "postgres"],
                 reason="Result order not guaranteed when distinct=True",
             ),
         ),
