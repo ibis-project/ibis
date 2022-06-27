@@ -12,31 +12,10 @@ from ibis.expr.schema import Schema
 from ibis.util import UnnamedMarker, is_iterable
 
 
-def _compare_items(a, b):
-    try:
-        return a.equals(b)
-    except AttributeError:
-        if isinstance(a, tuple):
-            return _compare_tuples(a, b)
-        else:
-            return a == b
-
-
-def _compare_tuples(a, b):
-    if len(a) != len(b):
-        return False
-    return all(map(_compare_items, a, b))
-
-
 @public
 class Node(Annotable, Comparable):
-
-    # TODO(kszucs): no need to call _compare_tuples, just use the default
-    # implementation
     def __equals__(self, other):
-        return self._hash == other._hash and _compare_tuples(
-            self.args, other.args
-        )
+        return self.args == other.args
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -58,7 +37,8 @@ class Node(Annotable, Comparable):
     def to_expr(self):
         return self.output_type(self)
 
-    # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name prop
+    # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name
+    # abstractproperty
     def resolve_name(self):
         raise ExpressionError(f'Expression is not named: {type(self)}')
 

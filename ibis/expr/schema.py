@@ -102,11 +102,7 @@ class Schema(Annotable, Comparable):
         return self.types[self._name_locs[name]]
 
     def __equals__(self, other):
-        return (
-            self._hash == other._hash
-            and self.names == other.names
-            and self.types == other.types
-        )
+        return self.args == other.args
 
     def equals(self, other):
         if not isinstance(other, Schema):
