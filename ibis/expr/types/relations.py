@@ -128,9 +128,6 @@ class Table(Expr):
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
 
-    def __setstate__(self, instance_dictionary):
-        self.__dict__ = instance_dictionary
-
     def __getattr__(self, key):
         try:
             schema = self.schema()

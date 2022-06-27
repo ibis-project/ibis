@@ -16,7 +16,7 @@ from ibis.common.exceptions import (
     IbisTypeError,
     TranslationError,
 )
-from ibis.common.grounds import Base
+from ibis.common.grounds import Immutable
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
 
@@ -27,13 +27,17 @@ if TYPE_CHECKING:
     from ibis.expr.types.generic import Value
 
 
+# TODO(kszucs): consider to subclass from Annotable with a single _arg field
 @public
-class Expr:
+class Expr(Immutable, Hashable):
     """Base expression class"""
 
+    __slots__ = ("_arg",)
+
+    # TODO(kszucs): cover with tests
     def __init__(self, arg: ops.Node) -> None:
         # TODO: all inputs must inherit from a common table API
-        self._arg = arg
+        object.__setattr__(self, "_arg", arg)
 
     def __repr__(self) -> str:
         if not config.options.interactive:
@@ -51,6 +55,13 @@ class Expr:
             return "\n".join(lines)
         return repr(result)
 
+    # TODO(kszucs): cover with unittests
+    def __reduce__(self):
+        return (self.__class__, (self._arg,))
+
+    def __hash__(self):
+        return hash((self.__class__, self._arg))
+
     def _repr(self) -> str:
         from ibis.expr.format import fmt
 
@@ -63,9 +74,6 @@ class Expr:
                 f"{type(other)}"
             )
         return self._arg.equals(other._arg)
-
-    def __hash__(self) -> int:
-        return hash(self._key)
 
     def __bool__(self) -> bool:
         raise ValueError(
@@ -94,17 +102,6 @@ class Expr:
             return self.get_name()
         except (ExpressionError, AttributeError):
             return None
-
-    @property
-    def _key(self) -> tuple[Hashable, ...]:
-        """Key suitable for hashing an expression.
-
-        Returns
-        -------
-        tuple[Hashable, ...]
-            A tuple of hashable objects uniquely identifying this expression.
-        """
-        return type(self), self._safe_name, self.op()
 
     def _repr_png_(self) -> bytes | None:
         if config.options.interactive or not config.options.graphviz_repr:

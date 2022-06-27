@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Any, Hashable
 from weakref import WeakValueDictionary
 
@@ -27,6 +27,17 @@ class Base(metaclass=BaseMeta):
     @classmethod
     def __create__(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
+
+
+class Immutable:
+
+    __slots__ = ()
+
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(
+            f"Attribute {name!r} cannot be assigned to immutable instance of "
+            f"type {type(self)}"
+        )
 
 
 class Parameter(inspect.Parameter):
@@ -129,7 +140,7 @@ class AnnotableMeta(BaseMeta):
         return super().__new__(metacls, clsname, bases, attribs)
 
 
-class Annotable(Base, Hashable, metaclass=AnnotableMeta):
+class Annotable(Base, Hashable, Immutable, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
     __slots__ = ("args", "_hash")
@@ -161,6 +172,7 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
         args = tuple(kwargs[name] for name in self.argnames)
         # TODO(kszucs): rename to __args__
         object.__setattr__(self, "args", args)
+        # TODO(kszucs): rename to __precomputed_hash__
         object.__setattr__(self, "_hash", hash((self.__class__, args)))
 
         # calculate special property-like objects only once due to the
@@ -179,12 +191,6 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
 
     def __eq__(self, other):
         return super().__eq__(other)
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(
-            f"Attribute {name!r} cannot be assigned to immutable instance of "
-            f"type {type(self)}"
-        )
 
     def __repr__(self) -> str:
         args = ", ".join(
@@ -211,11 +217,16 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
         return self.__class__(**newargs)
 
 
-class Singleton(Base):
+class Weakrefable(Base):
+
+    __slots__ = ('__weakref__',)
+
+
+class Singleton(Weakrefable):
     # NOTE: this only considers the input arguments, when combined with
     # Annotable base class Singleton must come after in the MRO
 
-    __slots__ = ('__weakref__',)
+    __slots__ = ()
     __instances__ = WeakValueDictionary()
 
     @classmethod
@@ -229,9 +240,9 @@ class Singleton(Base):
             return instance
 
 
-class Comparable(ABC):
+class Comparable(Weakrefable):
 
-    __slots__ = ('__weakref__',)
+    __slots__ = ()
     __cache__ = WeakCache()
 
     def __hash__(self):
