@@ -52,6 +52,7 @@ class Node(Annotable, Comparable):
             f"output_type not implemented for {type(self)}"
         )
 
+    # TODO(kszucs): remove this method entirely
     def flat_args(self):
         for arg in self.args:
             if not isinstance(arg, Schema) and is_iterable(arg):
