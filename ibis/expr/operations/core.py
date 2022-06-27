@@ -5,10 +5,8 @@ from abc import abstractmethod
 from public import public
 
 import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Annotable, Comparable
-from ibis.common.validators import immutable_property
 from ibis.expr.rules import Shape
 from ibis.expr.schema import Schema
 from ibis.util import UnnamedMarker, is_iterable
@@ -60,6 +58,7 @@ class Node(Annotable, Comparable):
     def to_expr(self):
         return self.output_type(self)
 
+    # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name prop
     def resolve_name(self):
         raise ExpressionError(f'Expression is not named: {type(self)}')
 

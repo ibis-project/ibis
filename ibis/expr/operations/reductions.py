@@ -4,11 +4,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import _Negatable
 from ibis.util import deprecated
@@ -94,7 +90,7 @@ class Sum(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if self.arg.output_dtype is dt.bool:
+        if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.int64
         else:
             return self.arg.output_dtype.largest
@@ -106,7 +102,7 @@ class Mean(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if self.arg.output_dtype is dt.bool:
+        if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.float64
         else:
             return dt.higher_precedence(self.arg.output_dtype, dt.float64)
@@ -141,7 +137,7 @@ class VarianceBase(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
+        if isinstance(self.arg.output_dtype, dt.Decimal):
             return self.arg.output_dtype.largest
         else:
             return dt.float64

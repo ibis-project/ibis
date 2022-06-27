@@ -528,6 +528,7 @@ class Scalar(Value):
     def to_projection(self) -> ir.Table:
         """Promote this scalar expression to a projection."""
         from ibis.expr.analysis import find_immediate_parent_tables
+        from ibis.expr.types.relations import Table
 
         roots = find_immediate_parent_tables(self.op())
         if len(roots) > 1:
@@ -985,7 +986,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
             'passing it explicitly with the `type` keyword.'.format(value)
         )
 
-    if dtype is dt.null:
+    if isinstance(dtype, dt.Null):
         return null().cast(dtype)
     else:
         value = dt._normalize(dtype, value)

@@ -216,6 +216,15 @@ def test_primitive_from_string(spec, expected):
     assert dt.dtype(spec) == expected
 
 
+def test_singleton_classes():
+    assert dt.Boolean() is dt.boolean
+    assert dt.Boolean(nullable=True) is dt.boolean
+    assert dt.Boolean(nullable=False) is not dt.boolean
+    assert dt.Boolean(nullable=False) is dt.Boolean(nullable=False)
+    assert dt.Boolean(nullable=True) is dt.Boolean(nullable=True)
+    assert dt.Boolean(nullable=True) is not dt.Boolean(nullable=False)
+
+
 def test_literal_mixed_type_fails():
     data = [1, 'a']
     with pytest.raises(TypeError):

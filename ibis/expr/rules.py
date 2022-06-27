@@ -1,6 +1,5 @@
 import enum
 from itertools import product, starmap
-from typing import Any
 
 import toolz
 
@@ -90,7 +89,13 @@ def value_list_of(inner, arg, **kwargs):
     # the dispatcher in pandas requires operation objects
     import ibis.expr.operations as ops
 
-    values = tuple_of(inner, arg, **kwargs)
+    # TODO(kszucs): should jut probably make ValueList iterable
+    if isinstance(arg, ops.ValueList):
+        values = arg.values
+    else:
+        values = arg
+
+    values = tuple_of(inner, values, **kwargs)
     return ops.ValueList(values)
 
 
@@ -151,7 +156,7 @@ def literal(dtype, value, **kwargs):
             'passing it explicitly with the `type` keyword.'.format(value)
         )
 
-    if dtype is dt.null:
+    if isinstance(dtype, dt.Null):
         return ops.NullLiteral()
 
     value = dt._normalize(dtype, value)
@@ -399,8 +404,6 @@ def column_from(name, column, *, this):
     checks if the column in the table is equal to the column being
     passed.
     """
-    import ibis.expr.operations as ops
-
     if name not in this:
         raise com.IbisTypeError(f"Could not get table {name} from {this}")
 
@@ -409,33 +412,33 @@ def column_from(name, column, *, this):
 
     if isinstance(column, (str, int)):
         return table[column].op()
-    elif isinstance(column, ops.Value):  # ir.Column):
-        # TODO(kszucs): should avoid converting to a ColumnExpr
-        column = column.to_expr()
 
-        if not column.has_name():
-            raise com.IbisTypeError(f"Passed column {column} has no name")
+    # TODO(kszucs): should avoid converting to a ColumnExpr
+    column = column.to_expr()
+    if not isinstance(column, ir.Column):
+        raise com.IbisTypeError(
+            "value must be an int or str or Column, got "
+            f"{type(column).__name__}"
+        )
 
-        maybe_column = column.get_name()
-        try:
-            if column.equals(table[maybe_column]):
-                return column.op()
-            else:
-                raise com.IbisTypeError(
-                    f"Passed column is not a column in {type(table)}"
-                )
-        except com.IbisError:
+    if not column.has_name():
+        raise com.IbisTypeError(f"Passed column {column} has no name")
+
+    maybe_column = column.get_name()
+    try:
+        if column.equals(table[maybe_column]):
+            return column.op()
+        else:
             raise com.IbisTypeError(
-                f"Cannot get column {maybe_column} from {type(table)}"
+                f"Passed column is not a column in {type(table)}"
             )
+    except com.IbisError:
+        raise com.IbisTypeError(
+            f"Cannot get column {maybe_column} from {type(table)}"
+        )
 
-    raise com.IbisTypeError(
-        "value must be an int or str or Column, got "
-        f"{type(column).__name__}"
-    )
 
-
-# TODO(kszucs): consider to remove since it's only used by TopK op
+# TODO(kszucs): consider to remove since it's only used by TopK
 @rule
 def base_table_of(name, *, this):
     from ibis.expr.analysis import find_first_base_table

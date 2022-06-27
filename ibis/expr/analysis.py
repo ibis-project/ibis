@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import collections
 import functools
 import operator
 from collections import Counter
-from typing import Sequence
 
 import toolz
 
@@ -70,26 +68,38 @@ class ScalarAggregate:
         return table.projection([subbed_expr])
 
     def _visit(self, expr):
-        if is_scalar_reduction(expr) and not has_multiple_bases(expr):
+        assert isinstance(expr, ir.Expr), type(expr)
+
+        if is_scalar_reduction(expr.op()) and not has_multiple_bases(
+            expr.op()
+        ):
             # An aggregation unit
             if not expr.has_name():
                 expr = expr.name('tmp')
-            agg_expr = reduction_to_aggregation(expr)
+            agg_expr = reduction_to_aggregation(expr.op())
             self.tables.append(agg_expr)
             return agg_expr[expr.get_name()]
         elif not isinstance(expr, ir.Expr):
             return expr
 
         node = expr.op()
-        new_expr = node.__class__(*map(self._visit, node.args)).to_expr()
+        # TODO(kszucs): use the substitute() utility instead
+        new_args = (
+            self._visit(arg.to_expr()) if isinstance(arg, ops.Node) else arg
+            for arg in node.args
+        )
+        new_node = node.__class__(*new_args)
+        new_expr = new_node.to_expr()
+
         if expr.has_name():
             new_expr = new_expr.name(name=expr.get_name())
 
         return new_expr
 
 
-def has_multiple_bases(expr):
-    return len(find_immediate_parent_tables(expr)) > 1
+def has_multiple_bases(node):
+    assert isinstance(node, ops.Node), type(node)
+    return len(find_immediate_parent_tables(node)) > 1
 
 
 def reduction_to_aggregation(node):
@@ -439,57 +449,48 @@ class _PushdownValidate:
         return is_valid
 
 
+# TODO(kszucs): rewrite to receive and return an ops.Node
 def windowize_function(expr, w=None):
-    def _windowize(x, w):
-        if not isinstance(x.op(), ops.Window):
-            walked = _walk(x, w)
+    assert isinstance(expr, ir.Expr), type(expr)
+
+    def _windowize(op, w):
+        if not isinstance(op, ops.Window):
+            walked = _walk(op, w)
         else:
-            window_arg, window_w = x.op().args
+            window_arg, window_w = op.args
             walked_child = _walk(window_arg, w)
 
             if walked_child is not window_arg:
-                op = ops.Window(walked_child, window_w)
-                walked = op.to_expr().name(x.get_name())
+                walked = ops.Window(walked_child, window_w)
             else:
-                walked = x
+                walked = op
 
-        op = walked.op()
         if isinstance(op, (ops.Analytic, ops.Reduction)):
             if w is None:
                 w = window()
-            return walked.over(w)
+            return walked.to_expr().over(w).op()
         elif isinstance(op, ops.Window):
             if w is not None:
-                return walked.over(w.combine(op.window))
+                return walked.to_expr().over(w.combine(op.window)).op()
             else:
                 return walked
         else:
             return walked
 
-    def _walk(x, w):
-        op = x.op()
-
-        unchanged = True
+    def _walk(op, w):
+        # TODO(kszucs): rewrite to use the substitute utility
         windowed_args = []
         for arg in op.args:
-            if not isinstance(arg, ir.Value):
+            if not isinstance(arg, ops.Value):
                 windowed_args.append(arg)
                 continue
 
             new_arg = _windowize(arg, w)
-            unchanged = unchanged and arg is new_arg
             windowed_args.append(new_arg)
 
-        if not unchanged:
-            new_op = type(op)(*windowed_args)
-            expr = new_op.to_expr()
-            if x.has_name():
-                expr = expr.name(x.get_name())
-            return expr
-        else:
-            return x
+        return type(op)(*windowed_args)
 
-    return _windowize(expr, w)
+    return _windowize(expr.op(), w).to_expr()
 
 
 class Projector:
@@ -737,10 +738,15 @@ _ANY_OP_MAPPING = {
 
 
 def find_predicates(node, flatten=True):
+    # TODO(kszucs): consider to remove flatten argument and compose with
+    # flatten_predicates instead
     assert isinstance(node, ops.Node), type(node)
 
     def predicate(node):
-        if node.output_dtype is dt.bool:
+        assert isinstance(node, ops.Node), type(node)
+        if isinstance(node, ops.Value) and isinstance(
+            node.output_dtype, dt.Boolean
+        ):
             if flatten and isinstance(node, ops.And):
                 return lin.proceed, None
             else:
@@ -754,9 +760,9 @@ def find_subqueries(node: ops.Node) -> Counter:
     for n in util.promote_list(node):
         assert isinstance(n, ops.Node), type(n)
 
-    def finder(
-        counts: Counter, node: ops.Node
-    ) -> tuple[Sequence[ir.Table] | bool, None]:
+    counts = Counter()
+
+    def finder(node: ops.Node):
         if isinstance(node, ops.Join):
             return [node.left, node.right], None
         elif isinstance(node, ops.PhysicalTable):
@@ -774,16 +780,10 @@ def find_subqueries(node: ops.Node) -> Counter:
         else:
             return lin.proceed, None
 
-    counts = Counter()
-    iterator = lin.traverse(
-        functools.partial(finder, counts),
-        node,
-        # keep duplicates so we can determine where an expression is used
-        # more than once
-        dedup=False,
-    )
-    # consume the iterator
-    collections.deque(iterator, maxlen=0)
+    # keep duplicates so we can determine where an expression is used
+    # more than once
+    list(lin.traverse(finder, node, dedup=False))
+
     return counts
 
 

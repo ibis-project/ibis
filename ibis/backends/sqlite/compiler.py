@@ -41,17 +41,19 @@ rewrites = SQLiteExprTranslator.rewrites
 
 
 @rewrites(ops.DayOfWeekIndex)
-def day_of_week_index(expr):
-    return ((expr.op().arg.strftime('%w').cast(dt.int16) + 6) % 7).cast(
-        dt.int16
-    )
+def day_of_week_index(op):
+    # TODO(kszucs): avoid expr roundtrip
+    expr = op.arg.to_expr()
+    new_expr = ((expr.strftime('%w').cast(dt.int16) + 6) % 7).cast(dt.int16)
+    return new_expr.op()
 
 
 @rewrites(ops.DayOfWeekName)
-def day_of_week_name(expr):
-    return (
-        expr.op()
-        .arg.day_of_week.index()
+def day_of_week_name(op):
+    # TODO(kszucs): avoid expr roundtrip
+    expr = op.arg.to_expr()
+    new_expr = (
+        expr.day_of_week.index()
         .case()
         .when(0, 'Monday')
         .when(1, 'Tuesday')
@@ -63,6 +65,7 @@ def day_of_week_name(expr):
         .else_(ibis.NA)
         .end()
     )
+    return new_expr.op()
 
 
 class SQLiteCompiler(AlchemyCompiler):

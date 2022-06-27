@@ -78,11 +78,11 @@ def literal(translator, op):
 
     dtype = op.output_dtype
 
-    if dtype is dt.bool:
+    if isinstance(dtype, dt.Boolean):
         typeclass = 'boolean'
-    elif dtype is dt.string:
+    elif isinstance(dtype, dt.String):
         typeclass = 'string'
-    elif dtype is dt.date:
+    elif isinstance(dtype, dt.Date):
         typeclass = 'date'
     elif isinstance(dtype, (dt.Integer, dt.Floating, dt.Decimal)):
         typeclass = 'number'

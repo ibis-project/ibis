@@ -128,6 +128,7 @@ def test_memoize_insert_sort_key(con):
     worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
 
     result = repr(worst)
+
     assert result.count('airlines') == 1
 
 
@@ -283,6 +284,7 @@ def test_window_no_group_by():
 def test_window_group_by():
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = t.a.mean().over(ibis.window(group_by=t.b))
+
     result = repr(expr)
     assert "preceding=0" not in result
     assert "group_by=[r0.b]" in result

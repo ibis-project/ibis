@@ -109,7 +109,10 @@ class SetOp(DML):
 
 
 def _extract_common_table_expressions(nodes):
+    # filter out None values
+    nodes = list(filter(None, nodes))
     counts = an.find_subqueries(nodes)
-    duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+    # duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+    duplicates = [op for op, count in counts.items() if count > 1]
     duplicates.reverse()
     return duplicates

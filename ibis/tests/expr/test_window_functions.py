@@ -354,5 +354,3 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.output_shape == rlz.Shape.COLUMNAR
-
-    assert isinstance(b1, ir.Column)

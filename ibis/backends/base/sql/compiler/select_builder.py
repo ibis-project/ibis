@@ -3,7 +3,6 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import (
     _extract_common_table_expressions,
@@ -183,6 +182,8 @@ class SelectBuilder:
         # Canonical case is scalar values or arrays produced by some reductions
         # (simple reductions, or distinct, say)
 
+        assert isinstance(node, ops.Node), type(node)
+
         if isinstance(node, ops.TableNode):
             return node, toolz.identity
 
@@ -301,27 +302,21 @@ class SelectBuilder:
             f = getattr(self, method)
             return f(op)
 
-        unchanged = True
-
+        # TODO(kszucs): perhaps should check ops.Node instead
         if isinstance(op, ops.Value):
             new_args = []
+
             for arg in op.args:
                 if isinstance(arg, ops.Node):
-                    new_arg = self._visit_select_expr(arg)
-                    if arg is not new_arg:
-                        unchanged = False
-                    new_args.append(new_arg)
-                else:
-                    new_args.append(arg)
+                    arg = self._visit_select_expr(arg)
+                new_args.append(arg)
 
-            if not unchanged:
-                return type(op)(*new_args)
-            else:
-                return op
+            return type(op)(*new_args)
         else:
             return op
 
     # TODO(kszucs): revisit, partially rewritten
+    # TODO(kszucs): avoid roundtripping between extpressions and operations
     def _visit_select_Histogram(self, op):
         EPS = 1e-13
 
@@ -331,13 +326,13 @@ class SelectBuilder:
             min_name = 'min_%s' % aux_hash
             max_name = 'max_%s' % aux_hash
 
-            minmax = self.table_set.aggregate(
+            minmax = self.table_set.to_expr().aggregate(
                 [
                     ops.Alias(ops.Min(op.arg), name=min_name),
                     ops.Alias(ops.Max(op.arg), name=max_name),
                 ]
             )
-            self.table_set = self.table_set.cross_join(minmax)
+            self.table_set = self.table_set.to_expr().cross_join(minmax).op()
 
             if op.base is None:
                 base = minmax[min_name] - EPS
@@ -350,9 +345,9 @@ class SelectBuilder:
             binwidth = op.binwidth
             base = op.base
 
-        bucket = ((op.arg - base) / binwidth).floor()
-        if expr.has_name():
-            bucket = bucket.name(expr.get_name())
+        bucket = ((op.arg.to_expr() - base) / binwidth).floor()
+        if op.has_resolved_name():
+            bucket = bucket.name(op.resolve_name())
 
         return bucket
 

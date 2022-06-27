@@ -12,8 +12,8 @@ from cached_property import cached_property
 from public import public
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import util
-from ibis.common import exceptions as com
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
 
@@ -156,6 +156,8 @@ class Table(Expr):
             return self[self.schema().name_at_position(expr)]
         elif isinstance(expr, Deferred):
             return expr.resolve(self)
+        # elif isinstance(expr, ops.Node):
+        #     return expr.to_expr()
         elif not isinstance(expr, Expr):
             return expr(self)
         else:
@@ -923,9 +925,8 @@ class Table(Expr):
             Left and right suffixes that will be used to rename overlapping
             columns.
         """
-        from ibis.expr import analysis as an
+
         from ibis.expr import operations as ops
-        from ibis.expr import types as ir
 
         _join_classes = {
             'inner': ops.InnerJoin,

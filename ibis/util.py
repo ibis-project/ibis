@@ -434,7 +434,7 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
-def to_op_dag(expr: ir.Expr) -> Graph:
+def to_op_dag(node: ops.Node) -> Graph:
     """Convert `expr` into a directed acyclic graph.
 
     Parameters
@@ -449,7 +449,9 @@ def to_op_dag(expr: ir.Expr) -> Graph:
     """
     import ibis.expr.operations as ops
 
-    stack = [expr.op()]
+    assert isinstance(node, ops.Node), type(node)
+
+    stack = [node]
     dag = {}
 
     while stack:

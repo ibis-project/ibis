@@ -38,7 +38,7 @@ def fmt(expr: ir.Expr) -> str:
     str
         Formatted expression
     """
-    *deps, root = util.toposort(util.to_op_dag(expr))
+    *deps, root = util.toposort(util.to_op_dag(expr.op()))
     deps = collections.deque(
         (Alias(alias), dep)
         for alias, dep in enumerate(
@@ -668,7 +668,11 @@ def _fmt_value_window(win: win.Window, *, aliases: Aliases) -> str:
                 if not value:
                     continue
                 elements = ", ".join(
-                    fmt_value(val, aliases=aliases) for val in value
+                    fmt_value(
+                        arg.op() if isinstance(arg, ir.Expr) else arg,
+                        aliases=aliases,
+                    )
+                    for arg in value
                 )
                 formatted = f"[{elements}]"
             else:

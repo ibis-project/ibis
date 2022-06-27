@@ -34,9 +34,9 @@ class QueryContext:
         self.query = None
         self.params = params if params is not None else {}
 
-    def _compile_subquery(self, expr):
+    def _compile_subquery(self, op):
         sub_ctx = self.subcontext()
-        return self._to_sql(expr, sub_ctx)
+        return self._to_sql(op, sub_ctx)
 
     def _to_sql(self, expr, ctx):
         return self.compiler.to_sql(expr, ctx)
@@ -237,6 +237,8 @@ class ExprTranslator:
         cls._registry[operation] = translate_function
 
     def translate(self, op):
+        assert isinstance(op, ops.Node), type(op)
+
         if type(op) in self._rewrites:  # even if type(op) is in self._registry
             op = self._rewrites[type(op)](op)
 
@@ -279,8 +281,9 @@ rewrites = ExprTranslator.rewrites
 
 # TODO(kszucs): use analysis.substitute() instead of a custom rewriter
 @rewrites(ops.Bucket)
-def _bucket(expr):
-    op = expr.op()
+def _bucket(op):
+    # TODO(kszucs): avoid doing the expr roundtrip
+    expr = op.arg.to_expr()
     stmt = ibis.case()
 
     if op.closed == 'left':
@@ -298,7 +301,7 @@ def _bucket(expr):
             cmp = operator.lt if op.close_extreme else r_cmp
         else:
             cmp = operator.le if op.closed == 'right' else operator.lt
-        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
+        stmt = stmt.when(cmp(expr, op.buckets[0]), bucket_id)
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
@@ -306,10 +309,10 @@ def _bucket(expr):
             (op.closed == 'right' and j == 0)
             or (op.closed == 'left' and j == (user_num_buckets - 1))
         ):
-            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper), bucket_id)
+            stmt = stmt.when((lower <= expr) & (expr <= upper), bucket_id)
         else:
             stmt = stmt.when(
-                l_cmp(lower, op.arg) & r_cmp(op.arg, upper), bucket_id
+                l_cmp(lower, expr) & r_cmp(expr, upper), bucket_id
             )
         bucket_id += 1
 
@@ -319,21 +322,21 @@ def _bucket(expr):
         else:
             cmp = operator.lt if op.closed == 'right' else operator.le
 
-        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
+        stmt = stmt.when(cmp(op.buckets[-1], expr), bucket_id)
         bucket_id += 1
 
     result = stmt.end()
     if expr.has_name():
         result = result.name(expr.get_name())
 
-    return result
+    return result.op()
 
 
 @rewrites(ops.CategoryLabel)
-def _category_label(expr):
-    op = expr.op()
-
-    stmt = op.args[0].case()
+def _category_label(op):
+    # TODO(kszucs): avoid doing the expr roundtrip
+    expr = op.to_expr()
+    stmt = op.args[0].to_expr().case()
     for i, label in enumerate(op.labels):
         stmt = stmt.when(i, label)
 
@@ -344,31 +347,38 @@ def _category_label(expr):
     if expr.has_name():
         result = result.name(expr.get_name())
 
-    return result
+    return result.op()
 
 
 @rewrites(ops.Any)
-def _any_expand(expr):
-    arg = expr.op().args[0]
-    return arg.max()
+def _any_expand(op):
+    # TODO(kszucs): avoid doing the expr->op roundtrip
+    arg = op.arg.to_expr()
+    return arg.max().op()
 
 
 @rewrites(ops.NotAny)
-def _notany_expand(expr):
-    arg = expr.op().args[0]
-    return arg.max() == ibis.literal(0, type=arg.type())
+def _notany_expand(op):
+    # TODO(kszucs): avoid doing the expr->op roundtrip
+    arg = op.arg.to_expr()
+    new_expr = arg.max() == ibis.literal(0, type=arg.type())
+    return new_expr.op()
 
 
 @rewrites(ops.All)
-def _all_expand(expr):
-    arg = expr.op().args[0]
-    return arg.min()
+def _all_expand(op):
+    # TODO(kszucs): avoid doing the expr->op roundtrip
+    arg = op.arg.to_expr()
+    return arg.min().op()
 
 
 @rewrites(ops.NotAll)
-def _notall_expand(expr):
-    arg = expr.op().args[0]
-    return arg.min() == ibis.literal(0, type=arg.type())
+def _notall_expand(op):
+    # TODO(kszucs): avoid doing the expr->op roundtrip
+    arg = op.arg.to_expr()
+    dtype = op.arg.output_dtype
+    new_expr = arg.min() == ibis.literal(0, type=dtype)
+    return new_expr.op()
 
 
 @rewrites(ops.Cast)
@@ -376,7 +386,7 @@ def _rewrite_cast(op):
     if isinstance(op.to, dt.Interval) and isinstance(
         op.arg.output_dtype, dt.Integer
     ):
-        return op.arg.to_interval(unit=to.unit)
+        return op.arg.to_interval(unit=op.to.unit).op()
     return op
 
 

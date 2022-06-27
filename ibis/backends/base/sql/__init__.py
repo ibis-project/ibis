@@ -182,14 +182,12 @@ class BaseSQLBackend(BaseBackend):
             if `self.expr` doesn't have a schema.
         """
         dml = getattr(query_ast, 'dml', query_ast)
-        expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
+        op = getattr(dml, 'parent_op', getattr(dml, 'table_set', None))
 
-        if isinstance(expr, ir.Table):  # , sch.HasSchema)):
-            return expr.schema()
-        if isinstance(expr, ops.TableNode):
-            return expr.schema
-        elif isinstance(expr, ir.Value):
-            return sch.schema([(expr.get_name(), expr.type())])
+        if isinstance(op, ops.TableNode):  # , sch.HasSchema)):
+            return op.schema
+        elif isinstance(op, ops.Value):
+            return sch.schema({op.resolve_name(): op.output_dtype})
         else:
             raise ValueError(
                 'Expression with type {} does not have a '

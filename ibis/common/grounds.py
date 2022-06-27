@@ -212,6 +212,8 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
 
 
 class Singleton(Base):
+    # NOTE: this only considers the input arguments, when combined with
+    # Annotable base class Singleton must come after in the MRO
 
     __slots__ = ('__weakref__',)
     __instances__ = WeakValueDictionary()

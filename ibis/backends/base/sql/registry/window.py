@@ -103,7 +103,7 @@ def cumulative_to_window(translator, expr, window):
         new_expr = translator._rewrites[type(new_op)](new_expr)
 
     new_expr = L.windowize_function(new_expr, win)
-    return new_expr
+    return new_expr.op()
 
 
 def time_range_to_range_window(translator, window):
@@ -137,7 +137,9 @@ def format_window(translator, op, window):
         )
 
     if len(window._group_by) > 0:
-        partition_args = [translator.translate(x) for x in window._group_by]
+        partition_args = [
+            translator.translate(x.op()) for x in window._group_by
+        ]
         components.append('PARTITION BY {}'.format(', '.join(partition_args)))
 
     if len(window._order_by) > 0:
@@ -186,7 +188,7 @@ def format_window(translator, op, window):
         ops.RowNumber,
     )
 
-    if isinstance(op.expr.op(), frame_clause_not_allowed):
+    if isinstance(op.expr, frame_clause_not_allowed):
         frame = None
     elif p is not None and f is not None:
         frame = '{} BETWEEN {} AND {}'.format(
@@ -236,11 +238,8 @@ _expr_transforms = {
 }
 
 
-def window(translator, expr):
-    op = expr.op()
-
+def window(translator, op):
     arg, window = op.args
-    window_op = arg.op()
 
     _require_order_by = (
         ops.Lag,
@@ -259,21 +258,22 @@ def window(translator, expr):
         ops.ApproxCountDistinct,
     )
 
-    if isinstance(window_op, _unsupported_reductions):
+    if isinstance(arg, _unsupported_reductions):
         raise com.UnsupportedOperationError(
-            f'{type(window_op)} is not supported in window functions'
+            f'{type(arg)} is not supported in window functions'
         )
 
-    if isinstance(window_op, ops.CumulativeOp):
+    if isinstance(arg, ops.CumulativeOp):
         arg = cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if isinstance(window_op, _require_order_by) and len(window._order_by) == 0:
-        window = window.order_by(window_op.args[0])
+    if isinstance(arg, _require_order_by) and len(window._order_by) == 0:
+        window = window.order_by(arg.args[0])
 
     # Time ranges need to be converted to microseconds.
+    # FIXME(kszucs): need to rewrite to use operations instead of expressions
     if window.how == 'range':
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
         time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
@@ -285,8 +285,8 @@ def window(translator, expr):
     arg_formatted = translator.translate(arg)
     result = f'{arg_formatted} {window_formatted}'
 
-    if type(window_op) in _expr_transforms:
-        return _expr_transforms[type(window_op)](result)
+    if type(arg) in _expr_transforms:
+        return _expr_transforms[type(arg)](result)
     else:
         return result
 

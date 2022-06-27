@@ -148,14 +148,16 @@ def from_ibis_dtype(value: DataType) -> DataType:
 
 
 @public
-class Primitive(Singleton, DataType):
+class Primitive(DataType, Singleton):
     """Values with known size."""
 
 
 @public
-class Null(Singleton, DataType):
+class Null(DataType, Singleton):
     """Null values."""
 
+    # TODO(kszucs): in order to remove circular imports move these references
+    # to rules
     scalar = ir.NullScalar
     column = ir.NullColumn
 
@@ -197,7 +199,7 @@ class Integer(Primitive):
 
 
 @public
-class String(Singleton, Variadic):
+class String(Variadic, Singleton):
     """A type representing a string.
 
     Notes
@@ -211,7 +213,7 @@ class String(Singleton, Variadic):
 
 
 @public
-class Binary(Singleton, Variadic):
+class Binary(Variadic, Singleton):
     """A type representing a sequence of bytes.
 
     Notes

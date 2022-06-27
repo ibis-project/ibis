@@ -109,12 +109,11 @@ class SearchedCaseBuilder(TypedCaseBuilder):
         -------
         builder : CaseBuilder
         """
-
         # TODO(kszucs): update the rule to accept boolean predicate
         case_expr = rlz.any(case_expr)
         result_expr = rlz.any(result_expr)
 
-        if case_expr.output_dtype is not dt.bool:
+        if not isinstance(case_expr.output_dtype, dt.Boolean):
             raise TypeError(case_expr)
 
         cases = list(self.cases)

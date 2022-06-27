@@ -251,7 +251,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if other.output_dtype is dt.time:
+        if isinstance(other.output_dtype, dt.Time):
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -270,7 +270,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if other.output_dtype is dt.time:
+        if isinstance(other.output_dtype, dt.Time):
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -334,7 +334,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if other.output_dtype is dt.date:
+        if isinstance(other.output_dtype, dt.Date):
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -357,7 +357,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if other.output_dtype is dt.date:
+        if isinstance(other.output_dtype, dt.Date):
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
