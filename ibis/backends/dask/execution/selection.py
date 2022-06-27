@@ -202,7 +202,7 @@ def execute_selection_dataframe(
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"
             )
-        result = compute_sorted_frame(
+        result, _ = compute_sorted_frame(
             result,
             order_by=sort_key,
             scope=scope,

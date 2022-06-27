@@ -458,7 +458,7 @@ def test_grouped_unbounded_window(
             lambda df: df.float_col.shift(1),
             False,
             id='unordered-lag',
-            marks=pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -472,7 +472,7 @@ def test_grouped_unbounded_window(
             lambda df: df.float_col.shift(-1),
             False,
             id='unordered-lead',
-            marks=pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
         ),
         param(
             lambda t, win: calc_zscore(t.double_col).over(win),

@@ -235,8 +235,10 @@ norecursedirs = ["site-packages", "dist-packages"]
 markers = [
   "backend: tests specific to a backend",
   "core: tests that do not required a backend",
+  "csv: ???",
   "geospatial: tests for geospatial functionality",
   "hdfs: Hadoop file system tests",
+  "hdf5: ???",
   "min_spark_version: backends tests that require a specific version of pyspark to pass",
   "skip_backends: skip tests on the provided backends",
   "notimpl: functionality that isn't implemented in ibis",
@@ -254,6 +256,7 @@ markers = [
   "postgres: PostgreSQL tests",
   "pyspark: PySpark tests",
   "sqlite: SQLite tests",
+  "parquet: ???"
 ]
 
 [tool.black]

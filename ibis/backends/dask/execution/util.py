@@ -287,7 +287,7 @@ def compute_sort_key(
     timecontext: Optional[TimeContext] = None,
     scope: Scope = None,
     **kwargs,
-):
+) -> Tuple[str, dd.Series, str]:
     """
     Note - we use this function instead of the pandas.execution.util so that we
     use the dask `execute` method
@@ -300,8 +300,8 @@ def compute_sort_key(
     name = ibis.util.guid()
     try:
         if isinstance(by, str):
-            return name, data[by]
-        return name, data[by.get_name()]
+            return name, data[by], by
+        return name, data[by.get_name()], by.get_name()
     except com.ExpressionError:
         if scope is None:
             scope = Scope()
@@ -309,8 +309,9 @@ def compute_sort_key(
             Scope({t: data}, timecontext) for t in by.op().root_tables()
         )
         new_column = execute(by, scope=scope, **kwargs)
+        sort_by_col_name = new_column.name
         new_column.name = name
-        return name, new_column
+        return name, new_column, sort_by_col_name
 
 
 def compute_sorted_frame(
@@ -319,12 +320,12 @@ def compute_sorted_frame(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ) -> dd.DataFrame:
-    sort_col_name, temporary_column = compute_sort_key(
+    sort_col_name, temporary_column, sort_by_col_name = compute_sort_key(
         order_by.op(), df, timecontext, **kwargs
     )
     result = df.assign(**{sort_col_name: temporary_column})
     result = result.set_index(sort_col_name).reset_index(drop=True)
-    return result
+    return result, sort_by_col_name
 
 
 def assert_identical_grouping_keys(*args):
