@@ -271,8 +271,9 @@ def _round(t, op):
         return f(sa_arg)
 
 
-def _floor_divide(t, expr):
-    left, right = map(t.translate, expr.op().args)
+def _floor_divide(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
     return sa.func.floor(left / right)
 
 
@@ -448,9 +449,10 @@ def _sort_key(t, op):
     return sort_direction(t.translate(by))
 
 
-def _string_join(t, expr):
-    sep, elements = expr.op().args
-    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+def _string_join(t, op):
+    return sa.func.concat_ws(
+        t.translate(op.sep), *map(t.translate, op.arg.values)
+    )
 
 
 def reduction(sa_func):

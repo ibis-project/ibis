@@ -8,7 +8,6 @@ import sqlalchemy.sql as sql
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.translator import (
@@ -99,12 +98,14 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             columns = _schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
         elif isinstance(ref_op, ops.View):
-            definition = ref_op.child.compile()
+            # TODO(kszucs): avoid converting to expression
+            child_expr = ref_op.child.to_expr()
+            definition = child_expr.compile()
             result = sa.table(
                 ref_op.name,
                 *_schema_to_sqlalchemy_columns(ref_op.schema),
             )
-            backend = ref_op.child._find_backend()
+            backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
         else:
             # A subquery

@@ -383,10 +383,11 @@ def _notall_expand(op):
 
 @rewrites(ops.Cast)
 def _rewrite_cast(op):
+    # TODO(kszucs): avoid doing the expr->op roundtrip
     if isinstance(op.to, dt.Interval) and isinstance(
         op.arg.output_dtype, dt.Integer
     ):
-        return op.arg.to_interval(unit=op.to.unit).op()
+        return op.arg.to_expr().to_interval(unit=op.to.unit).op()
     return op
 
 

@@ -135,7 +135,8 @@ class Join(TableNode):
     predicates = rlz.optional(lambda x, this: x, default=())
     # predicates = rlz.one_of(
     #     rlz.pair(rlz.column_from("left"), rlz.column_from("right")),
-    #     rlz.instance_of(str), # + a lambda which retrieves the column from both sides
+    #     rlz.instance_of(str), # + a lambda which retrieves the column from
+    #                           # both sides
     #     rlz.boolean
     # )
 
@@ -150,13 +151,13 @@ class Join(TableNode):
 
         if left.equals(right):
             # GH #667: If left and right table have a common parent expression,
-            # e.g. they have different filters, we need to add a self-reference and
-            # make the appropriate substitution in the join predicates
+            # e.g. they have different filters, we need to add a self-reference
+            # and make the appropriate substitution in the join predicates
             right = ops.SelfReference(right)
         elif isinstance(right, Join):
-            # for joins with joins on the right side we turn the right side into a
-            # view, otherwise the join tree is incorrectly flattened and tables on
-            # the right are incorrectly scoped
+            # for joins with joins on the right side we turn the right side
+            # into a view, otherwise the join tree is incorrectly flattened
+            # and tables on the right are incorrectly scoped
             old = right
             new = right = ops.SelfReference(right)
             predicates = [
@@ -757,7 +758,8 @@ class SQLStringView(PhysicalTable):
 
     @cached_property
     def schema(self):
-        backend = self.child._find_backend()
+        # TODO(kszucs): avoid converting to expression
+        backend = self.child.to_expr()._find_backend()
         return backend._get_schema_using_query(self.query)
 
 
