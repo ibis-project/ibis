@@ -603,10 +603,18 @@ def find_first_base_table(node):
 
 
 def _find_projections(node):
+    assert isinstance(node, ops.Node), type(node)
+
     if isinstance(node, ops.Selection):
         # remove predicates and sort_keys, so that child tables are considered
         # equivalent even if their predicates and sort_keys are not
+
+        # FIXME(kszucs): may not need to restrict the selection
+        # return lin.proceed, node
         return lin.proceed, node._projection
+
+    elif isinstance(node, ops.SelfReference):
+        return lin.proceed, node
     elif node.blocks():
         return lin.halt, node
     else:
@@ -620,6 +628,7 @@ def shares_all_roots(exprs, parents):
     # unique table dependencies of exprs and parents
     exprs_deps = set(lin.traverse(_find_projections, exprs))
     parents_deps = set(lin.traverse(_find_projections, parents))
+
     return exprs_deps <= parents_deps
 
 
@@ -663,7 +672,7 @@ def flatten_predicate(node):
       b string
     r0.b == 'foo'
     """
-    assert isinstance(node, (list, ops.Node)), type(node)
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
 
     def predicate(node):
         if isinstance(node, ops.And):
@@ -675,6 +684,8 @@ def flatten_predicate(node):
 
 
 def is_analytic(node):
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
+
     def predicate(node):
         if isinstance(node, (ops.Reduction, ops.Analytic)):
             return lin.halt, True
@@ -712,7 +723,7 @@ def is_reduction(node):
     -------
     check output : bool
     """
-    assert isinstance(node, ops.Node), type(node)
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
 
     def predicate(node):
         if isinstance(node, ops.Reduction):
@@ -757,8 +768,7 @@ def find_predicates(node, flatten=True):
 
 
 def find_subqueries(node: ops.Node) -> Counter:
-    for n in util.promote_list(node):
-        assert isinstance(n, ops.Node), type(n)
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
 
     counts = Counter()
 
