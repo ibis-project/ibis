@@ -50,7 +50,7 @@ class PySparkExprTranslator:
 
         return decorator
 
-    def translate(self, expr, scope, timecontext, **kwargs):
+    def translate(self, op, scope, timecontext, **kwargs):
         """
         Translate Ibis expression into a PySpark object.
 
@@ -64,15 +64,12 @@ class PySparkExprTranslator:
         :param kwargs: parameters passed as keyword args (e.g. window)
         :return: translated PySpark DataFrame or Column object
         """
-        # The operation node type the typed expression wraps
-        op = expr.op()
-
         result = scope.get_value(op, timecontext)
         if result is not None:
             return result
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
-            result = formatter(self, expr, scope, timecontext, **kwargs)
+            result = formatter(self, op, scope, timecontext, **kwargs)
             scope.set_value(op, timecontext, result)
             return result
         else:
@@ -84,21 +81,23 @@ class PySparkExprTranslator:
 compiles = PySparkExprTranslator.compiles
 
 
+# TODO(kszucs): there are plenty of repetitions in this file which should be
+# reduced at some point
+
+
 @compiles(PySparkDatabaseTable)
-def compile_datasource(t, expr, scope, timecontext):
-    op = expr.op()
+def compile_datasource(t, op, scope, timecontext):
     name, _, client = op.args
     return filter_by_time_context(client._session.table(name), timecontext)
 
 
 @compiles(ops.SQLQueryResult)
-def compile_sql_query_result(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_sql_query_result(t, op, scope, timecontext, **kwargs):
     query, _, client = op.args
     return client._session.sql(query)
 
 
-def _can_be_replaced_by_column_name(column_expr, table):
+def _can_be_replaced_by_column_name(column, table):
     """
     Return whether the given column_expr can be replaced by its literal
     name, which is True when column_expr and table[column_expr.get_name()]
@@ -108,30 +107,29 @@ def _can_be_replaced_by_column_name(column_expr, table):
     # other valid selections, such as a mutation that assigns a new column
     # or changes the value of an existing column.
     return (
-        isinstance(column_expr.op(), ops.TableColumn)
-        and column_expr.op().table == table
-        and column_expr.get_name() in table.schema()
-        and column_expr.op() == table[column_expr.get_name()].op()
+        isinstance(column, ops.TableColumn)
+        and column.table == table
+        and column.resolve_name() in table.schema
+        # TODO(kszucs): do we really need this condition?
+        and column == table.to_expr()[column.resolve_name()].op()
     )
 
 
 @compiles(ops.Alias)
-def compile_alias(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_alias(t, op, scope, timecontext, **kwargs):
     arg = t.translate(op.arg, scope, timecontext, **kwargs)
     return arg.alias(op.name)
 
 
 @compiles(ops.Selection)
-def compile_selection(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_selection(t, op, scope, timecontext, **kwargs):
     # In selection, there could be multiple children that point to the
     # same root table. e.g. window with different sizes on a table.
     # We need to get the 'combined' time range that is a superset of every
     # time context among child nodes, and pass this as context to
     # source table to get all data within time context loaded.
     arg_timecontexts = [
-        adjust_context(node.op(), scope, timecontext)
+        adjust_context(node, scope, timecontext)
         for node in op.selections
         if timecontext
     ]
@@ -146,31 +144,35 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     col_to_drop = []
     result_table = src_table
     for selection in op.selections:
-        if isinstance(selection, ir.Table):
-            col_in_selection_order.extend(selection.columns)
-        elif isinstance(selection, ir.DestructColumn):
-            struct_col = t.translate(selection, scope, adjusted_timecontext)
-            # assign struct col and drop it later
-            # This is a work around to ensure that the struct_col
-            # is only executed once
-            struct_col_name = f"destruct_col_{guid()}"
-            result_table = result_table.withColumn(struct_col_name, struct_col)
-            col_to_drop.append(struct_col_name)
-            cols = [
-                result_table[struct_col_name][name].alias(name)
-                for name in selection.type().names
-            ]
-            col_in_selection_order.extend(cols)
-        elif isinstance(selection, (ir.Column, ir.Scalar)):
+        if isinstance(selection, ops.TableNode):
+            # TODO(kszucs): avoid converting to expr
+            col_in_selection_order.extend(selection.to_expr().columns)
+        # TODO(kszucs): destruct column causes trouble here since there is no
+        # specific operation for it
+        # elif isinstance(selection, ir.DestructColumn):
+        #     struct_col = t.translate(selection, scope, adjusted_timecontext)
+        #     # assign struct col and drop it later
+        #     # This is a work around to ensure that the struct_col
+        #     # is only executed once
+        #     struct_col_name = f"destruct_col_{guid()}"
+        #     result_table = result_table.withColumn(
+        #         struct_col_name, struct_col
+        #     )
+        #     col_to_drop.append(struct_col_name)
+        #     cols = [
+        #         result_table[struct_col_name][name].alias(name)
+        #         for name in selection.type().names
+        #     ]
+        #     col_in_selection_order.extend(cols)
+        elif isinstance(selection, ops.Value):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
             # renames), we can get the selection name directly.
             if _can_be_replaced_by_column_name(selection, op.table):
-                col_in_selection_order.append(selection.get_name())
+                col_in_selection_order.append(selection.resolve_name())
             else:
-                col = t.translate(
-                    selection, scope, adjusted_timecontext
-                ).alias(selection.get_name())
+                col = t.translate(selection, scope, adjusted_timecontext)
+                col = col.alias(selection.resolve_name())
                 col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
@@ -205,8 +207,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.SortKey)
-def compile_sort_key(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_sort_key(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.expr, scope, timecontext)
 
     if op.ascending:
@@ -216,25 +217,21 @@ def compile_sort_key(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TableColumn)
-def compile_column(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_column(t, op, scope, timecontext, **kwargs):
     table = t.translate(op.table, scope, timecontext)
     return table[op.name]
 
 
 @compiles(ops.SelfReference)
-def compile_self_reference(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_self_reference(t, op, scope, timecontext, **kwargs):
     return t.translate(op.table, scope, timecontext)
 
 
 @compiles(ops.Cast)
-def compile_cast(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_cast(t, op, scope, timecontext, **kwargs):
     if isinstance(op.to, dt.Interval):
-        if isinstance(op.arg.op(), ops.Literal):
-            return interval(op.arg.op().value, op.to.unit)
+        if isinstance(op.arg, ops.Literal):
+            return interval(op.arg.value, op.to.unit).op()
         else:
             raise com.UnsupportedArgumentError(
                 'Casting to intervals is only supported for literals '
@@ -251,8 +248,7 @@ def compile_cast(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Limit)
-def compile_limit(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_limit(t, op, scope, timecontext, **kwargs):
     if op.offset != 0:
         raise com.UnsupportedArgumentError(
             'PySpark backend does not support non-zero offset is for '
@@ -263,111 +259,99 @@ def compile_limit(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.And)
-def compile_and(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_and(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) & t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Or)
-def compile_or(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_or(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) | t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Xor)
-def compile_xor(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_xor(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return (left | right) & ~(left & right)
 
 
 @compiles(ops.Equals)
-def compile_equals(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_equals(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) == t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Not)
-def compile_not(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_not(t, op, scope, timecontext, **kwargs):
     return ~t.translate(op.arg, scope, timecontext)
 
 
 @compiles(ops.NotEquals)
-def compile_not_equals(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_not_equals(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) != t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Greater)
-def compile_greater(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_greater(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) > t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.GreaterEqual)
-def compile_greater_equal(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_greater_equal(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) >= t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Less)
-def compile_less(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_less(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) < t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.LessEqual)
-def compile_less_equal(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_less_equal(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) <= t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Multiply)
-def compile_multiply(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_multiply(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) * t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Subtract)
-def compile_subtract(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_subtract(t, op, scope, timecontext, **kwargs):
     return t.translate(op.left, scope, timecontext) - t.translate(
         op.right, scope, timecontext
     )
 
 
 @compiles(ops.Literal)
-def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
+def compile_literal(t, op, scope, timecontext, raw=False, **kwargs):
     """If raw is True, don't wrap the result with F.lit()"""
-    value = expr.op().value
-    dtype = expr.op().dtype
+    value = op.value
+    dtype = op.dtype
 
     if raw:
         return value
 
     if isinstance(dtype, dt.Interval):
         # execute returns a Timedelta and value is nanoseconds
-        return execute(expr).value
+        return execute(op.to_expr()).value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
@@ -384,17 +368,16 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
         return F.lit(value)
 
 
-def _compile_agg(t, agg_expr, scope, timecontext, *, context, **kwargs):
-    agg = t.translate(agg_expr, scope, timecontext, context=context)
-    if agg_expr.has_name():
-        return agg.alias(agg_expr.get_name())
-    return agg
+def _compile_agg(t, agg, scope, timecontext, *, context, **kwargs):
+    return t.translate(agg, scope, timecontext, context=context)
+    # TODO(kszucs): may not need the naming below
+    # if agg.has_resolved_name():
+    #     return ops.Alias(agg, name=agg.resolve_name())
+    # return agg
 
 
 @compiles(ops.Aggregation)
-def compile_aggregation(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_aggregation(t, op, scope, timecontext, **kwargs):
     src_table = t.translate(op.table, scope, timecontext)
 
     if op.predicates:
@@ -421,8 +404,7 @@ def compile_aggregation(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Union)
-def compile_union(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_union(t, op, scope, timecontext, **kwargs):
     result = t.translate(op.left, scope, timecontext).union(
         t.translate(op.right, scope, timecontext)
     )
@@ -430,46 +412,42 @@ def compile_union(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Contains)
-def compile_contains(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_contains(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.value, scope, timecontext)
     return col.isin(t.translate(op.options, scope, timecontext))
 
 
 @compiles(ops.NotContains)
-def compile_not_contains(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_not_contains(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.value, scope, timecontext)
     return ~(col.isin(t.translate(op.options, scope, timecontext)))
 
 
 @compiles(ops.StartsWith)
-def compile_startswith(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_startswith(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     start = t.translate(op.start, scope, timecontext)
     return col.startswith(start)
 
 
 @compiles(ops.EndsWith)
-def compile_endswith(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_endswith(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     end = t.translate(op.end, scope, timecontext)
     return col.startswith(end)
 
 
 def _is_table(table):
+    # TODO(kszucs): is has a pretty misleading name, should be removed
     try:
-        return isinstance(table.op().arg, ir.Table)
+        return isinstance(table.arg, ops.TableNode)
     except AttributeError:
         return False
 
 
 def compile_aggregator(
-    t, expr, scope, timecontext, *, fn, context=None, **kwargs
+    t, op, scope, timecontext, *, fn, context=None, **kwargs
 ):
-    op = expr.op()
     if (where := getattr(op, 'where', None)) is not None:
         condition = t.translate(where, scope, timecontext)
     else:
@@ -486,7 +464,7 @@ def compile_aggregator(
         arg for arg in op.args if arg is not getattr(op, "where", None)
     )
     src_cols = tuple(
-        translate_arg(arg) for arg in src_inputs if isinstance(arg, ir.Expr)
+        translate_arg(arg) for arg in src_inputs if isinstance(arg, ops.Node)
     )
 
     col = fn(*src_cols)
@@ -498,16 +476,16 @@ def compile_aggregator(
         # Here we get the root table df of that column and compile
         # the expr to:
         # df.select(max(some_col))
-        if _is_table(expr):
+        if _is_table(op):
             (src_col,) = src_cols
             return src_col.select(col)
-        table_op = an.find_first_base_table(expr)
-        return t.translate(table_op.to_expr(), scope, timecontext).select(col)
+        table_op = an.find_first_base_table(op)
+        return t.translate(table_op, scope, timecontext).select(col)
 
 
 @compiles(ops.GroupConcat)
-def compile_group_concat(t, expr, scope, timecontext, context=None, **kwargs):
-    sep = t.translate(expr.op().sep, scope, timecontext, raw=True)
+def compile_group_concat(t, op, scope, timecontext, context=None, **kwargs):
+    sep = t.translate(op.sep, scope, timecontext, raw=True)
 
     def fn(col, _):
         collected = F.collect_list(col)
@@ -517,19 +495,19 @@ def compile_group_concat(t, expr, scope, timecontext, context=None, **kwargs):
         )
 
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context
+        t, op, scope, timecontext, fn=fn, context=context
     )
 
 
 @compiles(ops.Any)
-def compile_any(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_any(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.max, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.max, context=context, **kwargs
     )
 
 
 @compiles(ops.NotAny)
-def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
+def compile_notany(t, op, scope, timecontext, *, context=None, **kwargs):
     # The code here is a little ugly because the translation are different
     # with different context.
     # When translating col.notany() (context is None), we returns the dataframe
@@ -543,12 +521,12 @@ def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
             return ~(F.max(col))
 
         return compile_aggregator(
-            t, expr, scope, timecontext, fn=fn, context=context, **kwargs
+            t, op, scope, timecontext, fn=fn, context=context, **kwargs
         )
     else:
         return ~compile_any(
             t,
-            expr,
+            op,
             scope,
             timecontext,
             context=context,
@@ -557,14 +535,14 @@ def compile_notany(t, expr, scope, timecontext, *, context=None, **kwargs):
 
 
 @compiles(ops.All)
-def compile_all(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_all(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.min, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.min, context=context, **kwargs
     )
 
 
 @compiles(ops.NotAll)
-def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
+def compile_notall(t, op, scope, timecontext, *, context=None, **kwargs):
     # See comments for opts.NotAny for reasoning for the if/else
     if context is None:
 
@@ -572,12 +550,12 @@ def compile_notall(t, expr, scope, timecontext, *, context=None, **kwargs):
             return ~(F.min(col))
 
         return compile_aggregator(
-            t, expr, scope, timecontext, fn=fn, context=context, **kwargs
+            t, op, scope, timecontext, fn=fn, context=context, **kwargs
         )
     else:
         return ~compile_all(
             t,
-            expr,
+            op,
             scope,
             timecontext,
             context=context,
@@ -590,55 +568,55 @@ def _count_star(_):
 
 
 @compiles(ops.Count)
-def compile_count(t, expr, scope, timecontext, context=None, **kwargs):
-    if _is_table(expr):
+def compile_count(t, op, scope, timecontext, context=None, **kwargs):
+    if _is_table(op):
         fn = _count_star
     else:
         fn = F.count
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context, **kwargs
+        t, op, scope, timecontext, fn=fn, context=context, **kwargs
     )
 
 
 @compiles(ops.Max)
 @compiles(ops.CumulativeMax)
-def compile_max(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_max(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.max, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.max, context=context, **kwargs
     )
 
 
 @compiles(ops.Min)
 @compiles(ops.CumulativeMin)
-def compile_min(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_min(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.min, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.min, context=context, **kwargs
     )
 
 
 @compiles(ops.Mean)
 @compiles(ops.CumulativeMean)
-def compile_mean(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_mean(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.mean, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.mean, context=context, **kwargs
     )
 
 
 @compiles(ops.Sum)
 @compiles(ops.CumulativeSum)
-def compile_sum(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_sum(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.sum, context=context, **kwargs
+        t, op, scope, timecontext, fn=F.sum, context=context, **kwargs
     )
 
 
 @compiles(ops.ApproxCountDistinct)
 def compile_approx_count_distinct(
-    t, expr, scope, timecontext, context=None, **kwargs
+    t, op, scope, timecontext, context=None, **kwargs
 ):
     return compile_aggregator(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=F.approx_count_distinct,
@@ -648,10 +626,10 @@ def compile_approx_count_distinct(
 
 
 @compiles(ops.ApproxMedian)
-def compile_approx_median(t, expr, scope, timecontext, context=None, **kwargs):
+def compile_approx_median(t, op, scope, timecontext, context=None, **kwargs):
     return compile_aggregator(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=lambda arg: F.percentile_approx(arg, 0.5),
@@ -661,8 +639,8 @@ def compile_approx_median(t, expr, scope, timecontext, context=None, **kwargs):
 
 
 @compiles(ops.StandardDev)
-def compile_std(t, expr, scope, timecontext, context=None, **kwargs):
-    how = expr.op().how
+def compile_std(t, op, scope, timecontext, context=None, **kwargs):
+    how = op.how
 
     if how == 'sample':
         fn = F.stddev_samp
@@ -672,13 +650,13 @@ def compile_std(t, expr, scope, timecontext, context=None, **kwargs):
         raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
 
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context
+        t, op, scope, timecontext, fn=fn, context=context
     )
 
 
 @compiles(ops.Variance)
-def compile_variance(t, expr, scope, timecontext, context=None, **kwargs):
-    how = expr.op().how
+def compile_variance(t, op, scope, timecontext, context=None, **kwargs):
+    how = op.how
 
     if how == 'sample':
         fn = F.var_samp
@@ -688,51 +666,48 @@ def compile_variance(t, expr, scope, timecontext, context=None, **kwargs):
         raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
 
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context
+        t, op, scope, timecontext, fn=fn, context=context
     )
 
 
 @compiles(ops.Covariance)
-def compile_covariance(t, expr, scope, timecontext, context=None, **kwargs):
-    op = expr.op()
+def compile_covariance(t, op, scope, timecontext, context=None, **kwargs):
     how = op.how
 
     fn = {"sample": F.covar_samp, "pop": F.covar_pop}[how]
 
     pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
-    expr = op.__class__(
-        left=op.left.cast(pyspark_double_type),
-        right=op.right.cast(pyspark_double_type),
+    new_op = op.__class__(
+        left=ops.Cast(op.left, to=pyspark_double_type),
+        right=ops.Cast(op.right, to=pyspark_double_type),
         how=how,
         where=op.where,
-    ).to_expr()
+    )
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context
+        t, new_op, scope, timecontext, fn=fn, context=context
     )
 
 
 @compiles(ops.Correlation)
-def compile_correlation(t, expr, scope, timecontext, context=None, **kwargs):
-    op = expr.op()
-
+def compile_correlation(t, op, scope, timecontext, context=None, **kwargs):
     if (how := op.how) == "pop":
         raise ValueError("PySpark only implements sample correlation")
 
     pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
-    expr = op.__class__(
-        left=op.left.cast(pyspark_double_type),
-        right=op.right.cast(pyspark_double_type),
+    new_op = op.__class__(
+        left=ops.Cast(op.left, to=pyspark_double_type),
+        right=ops.Cast(op.right, to=pyspark_double_type),
         how=how,
         where=op.where,
-    ).to_expr()
+    )
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=F.corr, context=context
+        t, new_op, scope, timecontext, fn=F.corr, context=context
     )
 
 
 @compiles(ops.Arbitrary)
-def compile_arbitrary(t, expr, scope, timecontext, context=None, **kwargs):
-    how = expr.op().how
+def compile_arbitrary(t, op, scope, timecontext, context=None, **kwargs):
+    how = op.how
 
     if how == 'first':
         fn = functools.partial(F.first, ignorenulls=True)
@@ -742,14 +717,12 @@ def compile_arbitrary(t, expr, scope, timecontext, context=None, **kwargs):
         raise NotImplementedError(f"Does not support 'how': {how}")
 
     return compile_aggregator(
-        t, expr, scope, timecontext, fn=fn, context=context
+        t, op, scope, timecontext, fn=fn, context=context
     )
 
 
 @compiles(ops.Coalesce)
-def compile_coalesce(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_coalesce(t, op, scope, timecontext, **kwargs):
     src_columns = t.translate(op.arg, scope, timecontext)
     if len(src_columns) == 1:
         return src_columns[0]
@@ -758,9 +731,7 @@ def compile_coalesce(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Greatest)
-def compile_greatest(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_greatest(t, op, scope, timecontext, **kwargs):
     src_columns = t.translate(op.arg, scope, timecontext)
     if len(src_columns) == 1:
         return src_columns[0]
@@ -769,9 +740,7 @@ def compile_greatest(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Least)
-def compile_least(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_least(t, op, scope, timecontext, **kwargs):
     src_columns = t.translate(op.arg, scope, timecontext)
     if len(src_columns) == 1:
         return src_columns[0]
@@ -780,17 +749,14 @@ def compile_least(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Abs)
-def compile_abs(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_abs(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.abs(src_column)
 
 
 @compiles(ops.Clip)
-def compile_clip(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    spark_dtype = ibis_dtype_to_spark_dtype(expr.type())
+def compile_clip(t, op, scope, timecontext, **kwargs):
+    spark_dtype = ibis_dtype_to_spark_dtype(op.output_dtype)
     col = t.translate(op.arg, scope, timecontext)
     upper = (
         t.translate(op.upper, scope, timecontext)
@@ -822,9 +788,7 @@ def compile_clip(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Round)
-def compile_round(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_round(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     scale = (
         t.translate(op.digits, scope, timecontext, raw=True)
@@ -838,33 +802,25 @@ def compile_round(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Ceil)
-def compile_ceil(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_ceil(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.ceil(src_column)
 
 
 @compiles(ops.Floor)
-def compile_floor(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_floor(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.floor(src_column)
 
 
 @compiles(ops.Exp)
-def compile_exp(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_exp(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.exp(src_column)
 
 
 @compiles(ops.Sign)
-def compile_sign(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_sign(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
 
     return F.when(src_column == 0, F.lit(0.0)).otherwise(
@@ -873,17 +829,13 @@ def compile_sign(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Sqrt)
-def compile_sqrt(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_sqrt(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.sqrt(src_column)
 
 
 @compiles(ops.Log)
-def compile_log(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_log(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     raw_base = t.translate(op.base, scope, timecontext, raw=True)
     try:
@@ -895,159 +847,122 @@ def compile_log(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Ln)
-def compile_ln(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_ln(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.log(src_column)
 
 
 @compiles(ops.Log2)
-def compile_log2(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_log2(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.log2(src_column)
 
 
 @compiles(ops.Log10)
-def compile_log10(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_log10(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.log10(src_column)
 
 
 @compiles(ops.Modulus)
-def compile_modulus(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_modulus(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return left % right
 
 
 @compiles(ops.Negate)
-def compile_negate(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_negate(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    if expr.type() == dt.boolean:
+    if isinstance(op.output_dtype, dt.Boolean):
         return ~src_column
     return -src_column
 
 
 @compiles(ops.Add)
-def compile_add(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_add(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return left + right
 
 
 @compiles(ops.Divide)
-def compile_divide(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_divide(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return left / right
 
 
 @compiles(ops.FloorDivide)
-def compile_floor_divide(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_floor_divide(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return F.floor(left / right)
 
 
 @compiles(ops.Power)
-def compile_power(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_power(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return F.pow(left, right)
 
 
 @compiles(ops.IsNan)
-def compile_isnan(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_isnan(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.isnan(src_column) | F.isnull(src_column)
 
 
 @compiles(ops.IsInf)
-def compile_isinf(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_isinf(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return (src_column == float('inf')) | (src_column == float('-inf'))
 
 
 @compiles(ops.Uppercase)
-def compile_uppercase(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_uppercase(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.upper(src_column)
 
 
 @compiles(ops.Lowercase)
-def compile_lowercase(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_lowercase(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.lower(src_column)
 
 
 @compiles(ops.Reverse)
-def compile_reverse(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_reverse(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.reverse(src_column)
 
 
 @compiles(ops.Strip)
-def compile_strip(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_strip(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.trim(src_column)
 
 
 @compiles(ops.LStrip)
-def compile_lstrip(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_lstrip(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.ltrim(src_column)
 
 
 @compiles(ops.RStrip)
-def compile_rstrip(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_rstrip(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.rtrim(src_column)
 
 
 @compiles(ops.Capitalize)
-def compile_capitalize(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_capitalize(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.initcap(src_column)
 
 
 @compiles(ops.Substring)
-def compile_substring(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_substring(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     start = t.translate(op.start, scope, timecontext, raw=True) + 1
     length = t.translate(op.length, scope, timecontext, raw=True)
@@ -1064,17 +979,13 @@ def compile_substring(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.StringLength)
-def compile_string_length(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_length(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.length(src_column)
 
 
 @compiles(ops.StrRight)
-def compile_str_right(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_str_right(t, op, scope, timecontext, **kwargs):
     @F.udf('string')
     def str_right(s, nchars):
         return s[-nchars:]
@@ -1085,9 +996,7 @@ def compile_str_right(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Repeat)
-def compile_repeat(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_repeat(t, op, scope, timecontext, **kwargs):
     @F.udf('string')
     def repeat(s, times):
         return s * times
@@ -1098,9 +1007,7 @@ def compile_repeat(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.StringFind)
-def compile_string_find(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_find(t, op, scope, timecontext, **kwargs):
     @F.udf('long')
     def str_find(s, substr, start, end):
         return s.find(substr, start, end)
@@ -1117,39 +1024,31 @@ def compile_string_find(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Translate)
-def compile_translate(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_translate(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    from_str = op.from_str.op().value
-    to_str = op.to_str.op().value
+    from_str = op.from_str.value
+    to_str = op.to_str.value
     return F.translate(src_column, from_str, to_str)
 
 
 @compiles(ops.LPad)
-def compile_lpad(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_lpad(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    length = op.length.op().value
-    pad = op.pad.op().value
+    length = op.length.value
+    pad = op.pad.value
     return F.lpad(src_column, length, pad)
 
 
 @compiles(ops.RPad)
-def compile_rpad(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_rpad(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    length = op.length.op().value
-    pad = op.pad.op().value
+    length = op.length.value
+    pad = op.pad.value
     return F.rpad(src_column, length, pad)
 
 
 @compiles(ops.StringJoin)
-def compile_string_join(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_join(t, op, scope, timecontext, **kwargs):
     @F.udf('string')
     def join(sep, arr):
         return sep.join(arr)
@@ -1160,10 +1059,8 @@ def compile_string_join(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.RegexSearch)
-def compile_regex_search(t, expr, scope, timecontext, **kwargs):
+def compile_regex_search(t, op, scope, timecontext, **kwargs):
     import re
-
-    op = expr.op()
 
     @F.udf('boolean')
     def regex_search(s, pattern):
@@ -1175,123 +1072,106 @@ def compile_regex_search(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.RegexExtract)
-def compile_regex_extract(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_regex_extract(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    pattern = op.pattern.op().value
-    idx = op.index.op().value
+    pattern = op.pattern.value
+    idx = op.index.value
     return F.regexp_extract(src_column, pattern, idx)
 
 
 @compiles(ops.RegexReplace)
-def compile_regex_replace(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_regex_replace(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    pattern = op.pattern.op().value
-    replacement = op.replacement.op().value
+    pattern = op.pattern.value
+    replacement = op.replacement.value
     return F.regexp_replace(src_column, pattern, replacement)
 
 
 @compiles(ops.StringReplace)
-def compile_string_replace(t, expr, scope, timecontext, **kwargs):
-    return compile_regex_replace(t, expr)
+def compile_string_replace(t, op, scope, timecontext, **kwargs):
+    return compile_regex_replace(t, op)
 
 
 @compiles(ops.StringSplit)
-def compile_string_split(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_split(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    delimiter = op.delimiter.op().value
+    delimiter = op.delimiter.value
     return F.split(src_column, delimiter)
 
 
 @compiles(ops.StringConcat)
-def compile_string_concat(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_concat(t, op, scope, timecontext, **kwargs):
     src_columns = t.translate(op.arg, scope, timecontext)
     return F.concat(*src_columns)
 
 
 @compiles(ops.StringAscii)
-def compile_string_ascii(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_ascii(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.ascii(src_column)
 
 
 @compiles(ops.StringSQLLike)
-def compile_string_like(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_like(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    pattern = op.pattern.op().value
+    pattern = op.pattern.value
     return src_column.like(pattern)
 
 
 @compiles(ops.ValueList)
-def compile_value_list(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_value_list(t, op, scope, timecontext, **kwargs):
     return [t.translate(col, scope, timecontext) for col in op.values]
 
 
 @compiles(ops.InnerJoin)
-def compile_inner_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='inner')
+def compile_inner_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='inner')
 
 
 @compiles(ops.LeftJoin)
-def compile_left_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='left')
+def compile_left_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='left')
 
 
 @compiles(ops.RightJoin)
-def compile_right_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='right')
+def compile_right_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='right')
 
 
 @compiles(ops.OuterJoin)
-def compile_outer_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='outer')
+def compile_outer_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='outer')
 
 
 @compiles(ops.LeftSemiJoin)
-def compile_left_semi_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='leftsemi')
+def compile_left_semi_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='leftsemi')
 
 
 @compiles(ops.LeftAntiJoin)
-def compile_left_anti_join(t, expr, scope, timecontext, **kwargs):
-    return compile_join(t, expr, scope, timecontext, how='leftanti')
+def compile_left_anti_join(t, op, scope, timecontext, **kwargs):
+    return compile_join(t, op, scope, timecontext, how='leftanti')
 
 
-def compile_join(t, expr, scope, timecontext, *, how):
-    op = expr.op()
-
+def compile_join(t, op, scope, timecontext, *, how):
     left_df = t.translate(op.left, scope, timecontext)
     right_df = t.translate(op.right, scope, timecontext)
 
     pred_columns = []
     for pred in op.predicates:
-        pred_op = pred.op()
-        if not isinstance(pred_op, ops.Equals):
+        if not isinstance(pred, ops.Equals):
             raise NotImplementedError(
                 "Only equality predicate is supported, but got {}".format(
-                    type(pred_op)
+                    type(pred)
                 )
             )
-        pred_columns.append(pred_op.left.get_name())
+        pred_columns.append(pred.left.resolve_name())
 
     return left_df.join(right_df, pred_columns, how)
 
 
 @compiles(ops.Distinct)
-def compile_distinct(t, expr, scope, timecontext):
-    op = expr.op()
+def compile_distinct(t, op, scope, timecontext):
     return t.translate(op.table, scope, timecontext).distinct()
 
 
@@ -1302,7 +1182,7 @@ def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
     since epoch. Therefore, we need cast ibis interval correspondingly.
     """
     if isinstance(interval, ir.IntervalScalar):
-        value = t.translate(interval, scope, timecontext, **kwargs)
+        value = t.translate(interval.op(), scope, timecontext, **kwargs)
         # value is in nanoseconds and spark uses seconds since epoch
         return int(value / 1e9)
     elif isinstance(interval, int):
@@ -1314,35 +1194,32 @@ def _canonicalize_interval(t, interval, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Window)
-def compile_window_op(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_window_op(t, op, scope, timecontext, **kwargs):
     window = op.window
     operand = op.expr
 
-    group_by = window._group_by
+    group_by = [arg.op() for arg in window._group_by]
     grouping_keys = [
-        key_op.name
-        if isinstance(key_op, ops.TableColumn)
+        key.name
+        if isinstance(key, ops.TableColumn)
         else t.translate(key, scope, timecontext)
-        for key, key_op in zip(
-            group_by, map(operator.methodcaller('op'), group_by)
-        )
+        for key in group_by
     ]
 
-    order_by = window._order_by
+    order_by = [arg.op() for arg in window._order_by]
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(sort_expr.get_name()).cast('long')
-        if isinstance(sort_expr.op().expr, ir.TimestampColumn)
-        else sort_expr.get_name()
-        for sort_expr in order_by
+        F.col(sort.resolve_name()).cast('long')
+        if isinstance(sort.expr.output_dtype, dt.Timestamp)
+        else sort.resolve_name()
+        for sort in order_by
     ]
     context = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
     # bounds. Only set window bounds here if not a shift operation.
-    if not isinstance(operand.op(), ops.ShiftBase):
+    if not isinstance(operand, ops.ShiftBase):
         if window.preceding is None:
             start = Window.unboundedPreceding
         else:
@@ -1365,31 +1242,29 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
         else:
             pyspark_window = pyspark_window.rowsBetween(start, end)
 
-    res_op = operand.op()
-    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+    res = operand
+    if isinstance(operand, (ops.NotAll, ops.NotAny)):
         # For NotAll and NotAny, negation must be applied after .over(window)
         # Here we rewrite node to be its negation, and negate it back after
         # translation and window operation
-        operand = res_op.negate().to_expr()
+        operand = ops.Negate(operand)
     result = t.translate(operand, scope, timecontext, context=context).over(
         pyspark_window
     )
 
-    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+    if isinstance(res, (ops.NotAll, ops.NotAny)):
         return ~result
-    elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
+    elif isinstance(res, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
         # result must be cast to long type for Rank / RowNumber
         return result.astype('long') - 1
     else:
         return result
 
 
-def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
-    op = expr.op()
-
+def _handle_shift_operation(t, op, scope, timecontext, *, fn, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    default = op.default.op().value if op.default is not None else op.default
-    offset = op.offset.op().value if op.offset is not None else op.offset
+    default = op.default.value if op.default is not None else op.default
+    offset = op.offset.value if op.offset is not None else op.offset
 
     if offset:
         return fn(src_column, count=offset, default=default)
@@ -1398,65 +1273,61 @@ def _handle_shift_operation(t, expr, scope, timecontext, *, fn, **kwargs):
 
 
 @compiles(ops.Lag)
-def compile_lag(t, expr, scope, timecontext, **kwargs):
+def compile_lag(t, op, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lag, **kwargs
+        t, op, scope, timecontext, fn=F.lag, **kwargs
     )
 
 
 @compiles(ops.Lead)
-def compile_lead(t, expr, scope, timecontext, **kwargs):
+def compile_lead(t, op, scope, timecontext, **kwargs):
     return _handle_shift_operation(
-        t, expr, scope, timecontext, fn=F.lead, **kwargs
+        t, op, scope, timecontext, fn=F.lead, **kwargs
     )
 
 
 @compiles(ops.MinRank)
-def compile_rank(t, expr, scope, timecontext, **kwargs):
+def compile_rank(t, op, scope, timecontext, **kwargs):
     return F.rank()
 
 
 @compiles(ops.DenseRank)
-def compile_dense_rank(t, expr, scope, timecontext, **kwargs):
+def compile_dense_rank(t, op, scope, timecontext, **kwargs):
     return F.dense_rank()
 
 
 @compiles(ops.PercentRank)
-def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
+def compile_percent_rank(t, op, scope, timecontext, **kwargs):
     return F.percent_rank()
 
 
 @compiles(ops.NTile)
-def compile_ntile(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    buckets = op.buckets.op().value
+def compile_ntile(t, op, scope, timecontext, **kwargs):
+    buckets = op.buckets.value
     return F.ntile(buckets)
 
 
 @compiles(ops.FirstValue)
-def compile_first_value(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_first_value(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.first(src_column)
 
 
 @compiles(ops.LastValue)
-def compile_last_value(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_last_value(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.last(src_column)
 
 
 @compiles(ops.NthValue)
-def compile_nth_value(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_nth_value(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     nth = t.translate(op.nth, scope, timecontext, raw=True)
     return F.nth_value(src_column, nth + 1)
 
 
 @compiles(ops.RowNumber)
-def compile_row_number(t, expr, scope, timecontext, **kwargs):
+def compile_row_number(t, op, scope, timecontext, **kwargs):
     return F.row_number()
 
 
@@ -1476,101 +1347,97 @@ _time_unit_mapping = {
 
 
 @compiles(ops.Date)
-def compile_date(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_date(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.to_date(src_column).cast('timestamp')
 
 
 def _extract_component_from_datetime(
-    t, expr, scope, timecontext, *, extract_fn, **kwargs
+    t, op, scope, timecontext, *, extract_fn, **kwargs
 ):
-    op = expr.op()
     date_col = t.translate(op.arg, scope, timecontext)
     return extract_fn(date_col).cast('integer')
 
 
 @compiles(ops.ExtractYear)
-def compile_extract_year(t, expr, scope, timecontext, **kwargs):
+def compile_extract_year(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.year, **kwargs
+        t, op, scope, timecontext, extract_fn=F.year, **kwargs
     )
 
 
 @compiles(ops.ExtractMonth)
-def compile_extract_month(t, expr, scope, timecontext, **kwargs):
+def compile_extract_month(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.month, **kwargs
+        t, op, scope, timecontext, extract_fn=F.month, **kwargs
     )
 
 
 @compiles(ops.ExtractDay)
-def compile_extract_day(t, expr, scope, timecontext, **kwargs):
+def compile_extract_day(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.dayofmonth, **kwargs
+        t, op, scope, timecontext, extract_fn=F.dayofmonth, **kwargs
     )
 
 
 @compiles(ops.ExtractDayOfYear)
-def compile_extract_day_of_year(t, expr, scope, timecontext, **kwargs):
+def compile_extract_day_of_year(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.dayofyear, **kwargs
+        t, op, scope, timecontext, extract_fn=F.dayofyear, **kwargs
     )
 
 
 @compiles(ops.ExtractQuarter)
-def compile_extract_quarter(t, expr, scope, timecontext, **kwargs):
+def compile_extract_quarter(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.quarter, **kwargs
+        t, op, scope, timecontext, extract_fn=F.quarter, **kwargs
     )
 
 
 @compiles(ops.ExtractEpochSeconds)
-def compile_extract_epoch_seconds(t, expr, scope, timecontext, **kwargs):
+def compile_extract_epoch_seconds(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.unix_timestamp, **kwargs
+        t, op, scope, timecontext, extract_fn=F.unix_timestamp, **kwargs
     )
 
 
 @compiles(ops.ExtractWeekOfYear)
-def compile_extract_week_of_year(t, expr, scope, timecontext, **kwargs):
+def compile_extract_week_of_year(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.weekofyear, **kwargs
+        t, op, scope, timecontext, extract_fn=F.weekofyear, **kwargs
     )
 
 
 @compiles(ops.ExtractHour)
-def compile_extract_hour(t, expr, scope, timecontext, **kwargs):
+def compile_extract_hour(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.hour, **kwargs
+        t, op, scope, timecontext, extract_fn=F.hour, **kwargs
     )
 
 
 @compiles(ops.ExtractMinute)
-def compile_extract_minute(t, expr, scope, timecontext, **kwargs):
+def compile_extract_minute(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.minute, **kwargs
+        t, op, scope, timecontext, extract_fn=F.minute, **kwargs
     )
 
 
 @compiles(ops.ExtractSecond)
-def compile_extract_second(t, expr, scope, timecontext, **kwargs):
+def compile_extract_second(t, op, scope, timecontext, **kwargs):
     return _extract_component_from_datetime(
-        t, expr, scope, timecontext, extract_fn=F.second, **kwargs
+        t, op, scope, timecontext, extract_fn=F.second, **kwargs
     )
 
 
 @compiles(ops.ExtractMillisecond)
-def compile_extract_millisecond(t, expr, scope, timecontext, **kwargs):
+def compile_extract_millisecond(t, op, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'PySpark backend does not support extracting milliseconds.'
     )
 
 
 @compiles(ops.DateTruncate)
-def compile_date_truncate(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_date_truncate(t, op, scope, timecontext, **kwargs):
     try:
         unit = _time_unit_mapping[op.unit]
     except KeyError:
@@ -1583,14 +1450,13 @@ def compile_date_truncate(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampTruncate)
-def compile_timestamp_truncate(t, expr, scope, timecontext, **kwargs):
-    return compile_date_truncate(t, expr, scope, timecontext, **kwargs)
+def compile_timestamp_truncate(t, op, scope, timecontext, **kwargs):
+    return compile_date_truncate(t, op, scope, timecontext, **kwargs)
 
 
 @compiles(ops.Strftime)
-def compile_strftime(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    format_str = op.format_str.op().value
+def compile_strftime(t, op, scope, timecontext, **kwargs):
+    format_str = op.format_str.value
 
     @pandas_udf('string', PandasUDFType.SCALAR)
     def strftime(timestamps):
@@ -1601,8 +1467,7 @@ def compile_strftime(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampFromUNIX)
-def compile_timestamp_from_unix(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_timestamp_from_unix(t, op, scope, timecontext, **kwargs):
     unixtime = t.translate(op.arg, scope, timecontext)
     if not op.unit:
         return F.to_timestamp(F.from_unixtime(unixtime))
@@ -1617,18 +1482,16 @@ def compile_timestamp_from_unix(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampNow)
-def compile_timestamp_now(t, expr, scope, timecontext, **kwargs):
+def compile_timestamp_now(t, op, scope, timecontext, **kwargs):
     return F.current_timestamp()
 
 
 @compiles(ops.StringToTimestamp)
-def compile_string_to_timestamp(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_string_to_timestamp(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    fmt = op.format_str.op().value
+    fmt = op.format_str.value
 
-    if op.timezone is not None and op.timezone.op().value != "UTC":
+    if op.timezone is not None and op.timezone.value != "UTC":
         raise com.UnsupportedArgumentError(
             'PySpark backend only supports timezone UTC for converting string '
             'to timestamp.'
@@ -1638,9 +1501,7 @@ def compile_string_to_timestamp(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.DayOfWeekIndex)
-def compile_day_of_week_index(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_day_of_week_index(t, op, scope, timecontext, **kwargs):
     @pandas_udf('short', PandasUDFType.SCALAR)
     def day_of_week(s):
         return s.dt.dayofweek
@@ -1650,9 +1511,7 @@ def compile_day_of_week_index(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.DayOfWeekName)
-def compiles_day_of_week_name(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compiles_day_of_week_name(t, op, scope, timecontext, **kwargs):
     @pandas_udf('string', PandasUDFType.SCALAR)
     def day_name(s):
         return s.dt.day_name()
@@ -1661,21 +1520,18 @@ def compiles_day_of_week_name(t, expr, scope, timecontext, **kwargs):
     return day_name(src_column.cast('timestamp'))
 
 
-def _get_interval_col(
-    t, interval_ibis_expr, scope, timecontext, allowed_units=None
-):
+def _get_interval_col(t, op, scope, timecontext, allowed_units=None):
+    print(type(op))
     # if interval expression is a binary op, translate expression into
     # an interval column and return
-    if isinstance(interval_ibis_expr.op(), ops.IntervalBinary):
-        return t.translate(interval_ibis_expr, scope, timecontext)
+    if isinstance(op, ops.IntervalBinary):
+        return t.translate(op, scope, timecontext)
 
     # otherwise, translate expression into a literal op and construct
     # interval column from literal value and dtype
-    if isinstance(interval_ibis_expr.op(), ops.Literal):
-        op = interval_ibis_expr.op()
-    else:
-        op = t.translate(interval_ibis_expr, scope, timecontext).op()
-
+    if not isinstance(op, ops.Literal):
+        op = t.translate(op, scope, timecontext)
+    print(type(op))
     dtype = op.dtype
     if not isinstance(dtype, dt.Interval):
         raise com.UnsupportedArgumentError(
@@ -1702,10 +1558,8 @@ def _get_interval_col(
 
 
 def _compile_datetime_binop(
-    t, expr, scope, timecontext, *, fn, allowed_units, **kwargs
+    t, op, scope, timecontext, *, fn, allowed_units, **kwargs
 ):
-    op = expr.op()
-
     left = t.translate(op.left, scope, timecontext)
     right = _get_interval_col(t, op.right, scope, timecontext, allowed_units)
 
@@ -1713,11 +1567,11 @@ def _compile_datetime_binop(
 
 
 @compiles(ops.DateAdd)
-def compile_date_add(t, expr, scope, timecontext, **kwargs):
+def compile_date_add(t, op, scope, timecontext, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D']
     return _compile_datetime_binop(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=(lambda l, r: (l + r).cast('timestamp')),
@@ -1727,11 +1581,11 @@ def compile_date_add(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.DateSub)
-def compile_date_sub(t, expr, scope, timecontext, **kwargs):
+def compile_date_sub(t, op, scope, timecontext, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D']
     return _compile_datetime_binop(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=(lambda l, r: (l - r).cast('timestamp')),
@@ -1741,7 +1595,7 @@ def compile_date_sub(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.DateDiff)
-def compile_date_diff(t, expr, scope, timecontext, **kwargs):
+def compile_date_diff(t, op, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'PySpark backend does not support DateDiff as there is no '
         'timedelta type.'
@@ -1749,11 +1603,11 @@ def compile_date_diff(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampAdd)
-def compile_timestamp_add(t, expr, scope, timecontext, **kwargs):
+def compile_timestamp_add(t, op, scope, timecontext, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
     return _compile_datetime_binop(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=(lambda l, r: (l + r).cast('timestamp')),
@@ -1763,11 +1617,11 @@ def compile_timestamp_add(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampSub)
-def compile_timestamp_sub(t, expr, scope, timecontext, **kwargs):
+def compile_timestamp_sub(t, op, scope, timecontext, **kwargs):
     allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
     return _compile_datetime_binop(
         t,
-        expr,
+        op,
         scope,
         timecontext,
         fn=(lambda l, r: (l - r).cast('timestamp')),
@@ -1777,16 +1631,14 @@ def compile_timestamp_sub(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.TimestampDiff)
-def compile_timestamp_diff(t, expr, scope, timecontext, **kwargs):
+def compile_timestamp_diff(t, op, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'PySpark backend does not support TimestampDiff as there is no '
         'timedelta type.'
     )
 
 
-def _compile_interval_binop(t, expr, scope, timecontext, *, fn, **kwargs):
-    op = expr.op()
-
+def _compile_interval_binop(t, op, scope, timecontext, *, fn, **kwargs):
     left = _get_interval_col(t, op.left, scope, timecontext)
     right = _get_interval_col(t, op.right, scope, timecontext)
 
@@ -1794,21 +1646,21 @@ def _compile_interval_binop(t, expr, scope, timecontext, *, fn, **kwargs):
 
 
 @compiles(ops.IntervalAdd)
-def compile_interval_add(t, expr, scope, timecontext, **kwargs):
+def compile_interval_add(t, op, scope, timecontext, **kwargs):
     return _compile_interval_binop(
-        t, expr, scope, timecontext, fn=(lambda l, r: l + r), **kwargs
+        t, op, scope, timecontext, fn=(lambda l, r: l + r), **kwargs
     )
 
 
 @compiles(ops.IntervalSubtract)
-def compile_interval_subtract(t, expr, scope, timecontext, **kwargs):
+def compile_interval_subtract(t, op, scope, timecontext, **kwargs):
     return _compile_interval_binop(
-        t, expr, scope, timecontext, fn=(lambda l, r: l - r), **kwargs
+        t, op, scope, timecontext, fn=(lambda l, r: l - r), **kwargs
     )
 
 
 @compiles(ops.IntervalFromInteger)
-def compile_interval_from_integer(t, expr, scope, timecontext, **kwargs):
+def compile_interval_from_integer(t, op, scope, timecontext, **kwargs):
     raise com.UnsupportedOperationError(
         'Interval from integer column is unsupported for the PySpark backend.'
     )
@@ -1818,27 +1670,22 @@ def compile_interval_from_integer(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.ArrayColumn)
-def compile_array_column(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_column(t, op, scope, timecontext, **kwargs):
     cols = t.translate(op.cols, scope, timecontext)
     return F.array(cols)
 
 
 @compiles(ops.ArrayLength)
-def compile_array_length(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_length(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.size(src_column)
 
 
 @compiles(ops.ArraySlice)
-def compile_array_slice(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    start = op.start.op().value if op.start is not None else op.start
-    stop = op.stop.op().value if op.stop is not None else op.stop
-    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.type())
+def compile_array_slice(t, op, scope, timecontext, **kwargs):
+    start = op.start.value if op.start is not None else op.start
+    stop = op.stop.value if op.stop is not None else op.stop
+    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.output_dtype)
 
     @F.udf(spark_type)
     def array_slice(array):
@@ -1849,36 +1696,28 @@ def compile_array_slice(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.ArrayIndex)
-def compile_array_index(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_index(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    index = op.index.op().value + 1
+    index = op.index.value + 1
     return F.element_at(src_column, index)
 
 
 @compiles(ops.ArrayConcat)
-def compile_array_concat(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_concat(t, op, scope, timecontext, **kwargs):
     left = t.translate(op.left, scope, timecontext)
     right = t.translate(op.right, scope, timecontext)
     return F.concat(left, right)
 
 
 @compiles(ops.ArrayRepeat)
-def compile_array_repeat(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_repeat(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
-    times = op.times.op().value
+    times = op.times.value
     return F.flatten(F.array_repeat(src_column, times))
 
 
 @compiles(ops.ArrayCollect)
-def compile_array_collect(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_array_collect(t, op, scope, timecontext, **kwargs):
     src_column = t.translate(op.arg, scope, timecontext)
     return F.collect_list(src_column)
 
@@ -1887,57 +1726,51 @@ def compile_array_collect(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.NullLiteral)
-def compile_null_literal(t, expr, scope, timecontext, **kwargs):
+def compile_null_literal(t, op, scope, timecontext, **kwargs):
     return F.lit(None)
 
 
 @compiles(ops.IfNull)
-def compile_if_null(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_if_null(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     ifnull_col = t.translate(op.ifnull_expr, scope, timecontext)
     return F.when(col.isNull() | F.isnan(col), ifnull_col).otherwise(col)
 
 
 @compiles(ops.NullIf)
-def compile_null_if(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_null_if(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     nullif_col = t.translate(op.null_if_expr, scope, timecontext)
     return F.when(col == nullif_col, F.lit(None)).otherwise(col)
 
 
 @compiles(ops.IsNull)
-def compile_is_null(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_is_null(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     return F.isnull(col) | F.isnan(col)
 
 
 @compiles(ops.NotNull)
-def compile_not_null(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_not_null(t, op, scope, timecontext, **kwargs):
     col = t.translate(op.arg, scope, timecontext)
     return ~F.isnull(col) & ~F.isnan(col)
 
 
 @compiles(ops.DropNa)
-def compile_dropna_table(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_dropna_table(t, op, scope, timecontext, **kwargs):
     table = t.translate(op.table, scope, timecontext)
-    subset = [col.get_name() for col in op.subset] if op.subset else None
+    subset = [col.resolve_name() for col in op.subset] if op.subset else None
     return table.dropna(how=op.how, subset=subset)
 
 
 @compiles(ops.FillNa)
-def compile_fillna_table(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_fillna_table(t, op, scope, timecontext, **kwargs):
     table = t.translate(op.table, scope, timecontext)
     raw_replacements = op.replacements
     replacements = (
         dict(raw_replacements)
         if isinstance(raw_replacements, frozendict)
-        else raw_replacements.op().value
+        else raw_replacements.value
     )
     return table.fillna(replacements)
 
@@ -1946,8 +1779,7 @@ def compile_fillna_table(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.ElementWiseVectorizedUDF)
-def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_elementwise_udf(t, op, scope, timecontext, **kwargs):
     spark_output_type = spark_dtype(op.return_type)
     func = op.func
     spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
@@ -1956,9 +1788,7 @@ def compile_elementwise_udf(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.ReductionVectorizedUDF)
-def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
-    op = expr.op()
-
+def compile_reduction_udf(t, op, scope, timecontext, context=None, **kwargs):
     spark_output_type = spark_dtype(op.return_type)
     spark_udf = pandas_udf(
         op.func, spark_output_type, PandasUDFType.GROUPED_AGG
@@ -1969,16 +1799,15 @@ def compile_reduction_udf(t, expr, scope, timecontext, context=None, **kwargs):
     if context:
         return col
     else:
-        src_table = t.translate(op.func_args[0].op().table, scope, timecontext)
+        src_table = t.translate(op.func_args[0].table, scope, timecontext)
         return src_table.agg(col)
 
 
 @compiles(ops.SearchedCase)
-def compile_searched_case(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_searched_case(t, op, scope, timecontext, **kwargs):
     existing_when = None
 
-    for case, result in zip(op.cases, op.results):
+    for case, result in zip(op.cases.values, op.results.values):
         if existing_when is not None:
             # Spark allowed chained when statement
             when = existing_when.when
@@ -1996,11 +1825,11 @@ def compile_searched_case(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.View)
-def compile_view(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_view(t, op, scope, timecontext, **kwargs):
     name = op.name
     child = op.child
-    backend = child._find_backend()
+    # TODO(kszucs): avoid converting to expr
+    backend = child.to_expr()._find_backend()
     tables = backend._session.catalog.listTables()
     if any(name == table.name and not table.isTemporary for table in tables):
         raise ValueError(
@@ -2012,32 +1841,29 @@ def compile_view(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.SQLStringView)
-def compile_sql_view(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-    backend = op.child._find_backend()
+def compile_sql_view(t, op, scope, timecontext, **kwargs):
+    # TODO(kszucs): avoid converting to expr
+    backend = op.child.to_expr()._find_backend()
     result = backend._session.sql(op.query)
     result.createOrReplaceTempView(op.name)
     return result
 
 
 @compiles(ops.StringContains)
-def compile_string_contains(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_string_contains(t, op, scope, timecontext, **kwargs):
     haystack = t.translate(op.haystack, scope, timecontext, **kwargs)
     needle = t.translate(op.needle, scope, timecontext, **kwargs)
     return haystack.contains(needle)
 
 
 @compiles(ops.Unnest)
-def compile_unnest(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_unnest(t, op, scope, timecontext, **kwargs):
     column = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.explode(column)
 
 
 @compiles(ops.NullIfZero)
-def compile_null_if_zero(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_null_if_zero(t, op, scope, timecontext, **kwargs):
     arg = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.when(arg == 0, F.lit(None)).otherwise(arg)
 
@@ -2048,8 +1874,7 @@ def compile_null_if_zero(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Cos)
 @compiles(ops.Sin)
 @compiles(ops.Tan)
-def compile_trig(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_trig(t, op, scope, timecontext, **kwargs):
     arg = t.translate(op.arg, scope, timecontext, **kwargs)
     func_name = op.__class__.__name__.lower()
     func = getattr(F, func_name)
@@ -2057,39 +1882,35 @@ def compile_trig(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.Cot)
-def compile_cot(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_cot(t, op, scope, timecontext, **kwargs):
     arg = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.cos(arg) / F.sin(arg)
 
 
 @compiles(ops.Atan2)
-def compile_atan2(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
+def compile_atan2(t, op, scope, timecontext, **kwargs):
     y, x = (t.translate(arg, scope, timecontext, **kwargs) for arg in op.args)
     return F.atan2(y, x)
 
 
 @compiles(ops.Degrees)
-def compile_degrees(t, expr, scope, timecontext, **kwargs):
-    return F.degrees(t.translate(expr.op().arg, scope, timecontext, **kwargs))
+def compile_degrees(t, op, scope, timecontext, **kwargs):
+    return F.degrees(t.translate(op.arg, scope, timecontext, **kwargs))
 
 
 @compiles(ops.Radians)
-def compile_radians(t, expr, scope, timecontext, **kwargs):
-    return F.radians(t.translate(expr.op().arg, scope, timecontext, **kwargs))
+def compile_radians(t, op, scope, timecontext, **kwargs):
+    return F.radians(t.translate(op.arg, scope, timecontext, **kwargs))
 
 
 @compiles(ops.ZeroIfNull)
-def compile_zero_if_null(t, expr, scope, timecontext, **kwargs):
-    col = t.translate(expr.op().arg, scope, timecontext, **kwargs)
+def compile_zero_if_null(t, op, scope, timecontext, **kwargs):
+    col = t.translate(op.arg, scope, timecontext, **kwargs)
     return F.when(col.isNull() | F.isnan(col), F.lit(0)).otherwise(col)
 
 
 @compiles(ops.Where)
-def compile_where(t, expr, scope, timecontext, **kwargs):
-    op = expr.op()
-
+def compile_where(t, op, scope, timecontext, **kwargs):
     return F.when(
         t.translate(op.bool_expr, scope, timecontext, **kwargs),
         t.translate(op.true_expr, scope, timecontext, **kwargs),

@@ -81,7 +81,7 @@ class SortKey(Node):
     output_type = ir.SortExpr
 
     def resolve_name(self):
-        return self.expr.get_name()
+        return self.expr.resolve_name()
 
 
 @public
