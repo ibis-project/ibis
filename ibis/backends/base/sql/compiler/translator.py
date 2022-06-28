@@ -162,16 +162,16 @@ class QueryContext:
     def set_query(self, query):
         self.query = query
 
-    def is_foreign_expr(self, expr):
+    def is_foreign_expr(self, op):
         from ibis.expr.analysis import shares_all_roots
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
-        if self.has_ref(expr, parent_contexts=True):
+        if self.has_ref(op, parent_contexts=True):
             return False
 
         parents = [self.query.table_set] + self.query.select_set
-        return not shares_all_roots(expr, parents)
+        return not shares_all_roots(op, parents)
 
     def _get_table_key(self, table):
         if isinstance(table, ir.Table):
