@@ -24,7 +24,7 @@ def variance_reduction(func_name):
         arg, how, where = op.args
 
         if isinstance(op.arg.output_dtype, dt.Boolean):
-            arg = op.arg.cast('int32')
+            arg = ops.Cast(op.arg, to=dt.int32)
         else:
             arg = op.arg
 
@@ -435,11 +435,8 @@ def _lead(t, op):
     return sa.func.lead(sa_arg, sa_offset)
 
 
-def _ntile(t, expr):
-    op = expr.op()
-    args = op.args
-    _, buckets = map(t.translate, args)
-    return sa.func.ntile(buckets)
+def _ntile(t, op):
+    return sa.func.ntile(t.translate(op.buckets))
 
 
 def _sort_key(t, op):
@@ -605,8 +602,8 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Date: unary(lambda arg: sa.cast(arg, sa.DATE)),
     ops.DateFromYMD: fixed_arity(sa.func.date, 3),
     ops.TimeFromHMS: fixed_arity(sa.func.time, 3),
-    ops.TimestampFromYMDHMS: lambda t, expr: sa.func.make_timestamp(
-        *map(t.translate, expr.op().args[:6])  # ignore timezone
+    ops.TimestampFromYMDHMS: lambda t, op: sa.func.make_timestamp(
+        *map(t.translate, op.args[:6])  # ignore timezone
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),
