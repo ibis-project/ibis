@@ -31,7 +31,7 @@ class ClickhouseSelect(Select):
 
         lines = []
         if len(self.group_by) > 0:
-            columns = [f'`{expr.get_name()}`' for expr in self.group_by]
+            columns = [f'`{op.resolve_name()}`' for op in self.group_by]
             clause = 'GROUP BY {}'.format(', '.join(columns))
             lines.append(clause)
 
@@ -87,13 +87,16 @@ rewrites = ClickhouseExprTranslator.rewrites
 
 
 @rewrites(ops.FloorDivide)
-def _floor_divide(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
+def _floor_divide(op):
+    # TODO(kszucs): avoid to_expr() roundtrip
+    left = op.left.to_expr()
+    right = op.right.to_expr()
+    new_expr = left.div(right).floor()
+    return new_expr.op()
 
 
 @rewrites(ops.DayOfWeekName)
-def day_of_week_name(expr):
+def day_of_week_name(op):
     # ClickHouse 20 doesn't support dateName
     #
     # ClickHouse 21 supports dateName is broken for regexen:
@@ -104,8 +107,8 @@ def day_of_week_name(expr):
     #
     # We test against 20 in CI, so we implement day_of_week_name as follows
     return (
-        expr.op()
-        .arg.day_of_week.index()
+        op.arg.to_expr()
+        .day_of_week.index()
         .case()
         .when(0, "Monday")
         .when(1, "Tuesday")
@@ -117,6 +120,7 @@ def day_of_week_name(expr):
         .else_("")
         .end()
         .nullif("")
+        .op()
     )
 
 

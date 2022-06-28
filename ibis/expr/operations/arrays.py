@@ -14,7 +14,8 @@ class ArrayColumn(Value):
     output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, cols):
-        if len({col.type() for col in cols}) > 1:
+        unique_dtypes = {col.output_dtype for col in cols.values}
+        if len(unique_dtypes) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
                 f'{type(self).__name__} operation.'
@@ -23,7 +24,7 @@ class ArrayColumn(Value):
 
     @immutable_property
     def output_dtype(self):
-        first_dtype = self.cols[0].output_dtype
+        first_dtype = self.cols.values[0].output_dtype
         return dt.Array(first_dtype)
 
 

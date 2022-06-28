@@ -345,7 +345,7 @@ def test_where_use_if(con, alltypes, translate):
         alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col
     )
 
-    result = translate(expr)
+    result = translate(expr.op())
     expected = "if(`float_col` > 0, `int_col`, `bigint_col`)"
     assert result == expected
     con.execute(expr)
