@@ -1017,6 +1017,7 @@ def compile_string_like(t, op, **kwargs):
 
 @compiles(ops.ValueList)
 def compile_value_list(t, op, **kwargs):
+    kwargs["raw"] = False  # override to force column literals
     return [t.translate(col, **kwargs) for col in op.values]
 
 
