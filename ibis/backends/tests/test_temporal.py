@@ -10,6 +10,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
 
@@ -563,7 +564,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
     ],
 )
 @pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
-def test_to_timestamp(backend, con, unit):
+def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
 
@@ -577,6 +578,75 @@ def test_to_timestamp(backend, con, unit):
     expected = pd.Timestamp(pandas_ts, unit='ns').floor(backend_unit)
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    'fmt, timezone',
+    [
+        # "11/01/10" - "month/day/year"
+        param(
+            '%m/%d/%y',
+            "UTC",
+            id="mysql_format",
+            marks=pytest.mark.never(
+                ["pyspark"], reason="datetime formatting style not supported"
+            ),
+        ),
+        param(
+            'MM/dd/yy',
+            "UTC",
+            id="pyspark_format",
+            marks=pytest.mark.never(
+                ["mysql"], reason="datetime formatting style not supported"
+            ),
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    [
+        'dask',
+        'pandas',
+        'postgres',
+        'duckdb',
+        'clickhouse',
+        'sqlite',
+        'impala',
+        'datafusion',
+    ]
+)
+def test_string_to_timestamp(backend, con, fmt, timezone):
+    table = con.table('functional_alltypes')
+    result = table.mutate(
+        date=table.date_string_col.to_timestamp(fmt, timezone)
+    ).execute()
+
+    # TEST: do we get the same date out, that we put in?
+    # format string assumes that we are using pandas' strftime
+    for i, val in enumerate(result["date"]):
+        assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
+
+@pytest.mark.notimpl(
+    [
+        'dask',
+        'pandas',
+        'postgres',
+        'duckdb',
+        'clickhouse',
+        'sqlite',
+        'impala',
+        'datafusion',
+    ]
+)
+def test_string_to_timestamp_tz_error(backend, con):
+    table = con.table('functional_alltypes')
+
+    with pytest.raises(com.UnsupportedArgumentError):
+        table.mutate(
+            date=table.date_string_col.to_timestamp(
+                "%m/%d/%y", 'non-utc-timezone'
+            )
+        ).compile()
 
 
 @pytest.mark.parametrize(

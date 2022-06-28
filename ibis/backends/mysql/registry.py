@@ -112,6 +112,18 @@ def _timestamp_diff(t, expr):
     return sa.func.timestampdiff(sa.text('SECOND'), sa_right, sa_left)
 
 
+def _string_to_timestamp(t, expr):
+    op = expr.op()
+    sa_arg = t.translate(op.arg)
+    sa_format_str = t.translate(op.format_str)
+    if (op.timezone is not None) and op.timezone.op().value != "UTC":
+        raise com.UnsupportedArgumentError(
+            'MySQL backend only supports timezone UTC for converting'
+            'string to timestamp.'
+        )
+    return sa.func.str_to_date(sa_arg, sa_format_str)
+
+
 def _literal(_, expr):
     if isinstance(expr, ir.IntervalScalar):
         if expr.type().unit in {'ms', 'ns'}:
@@ -190,6 +202,7 @@ operation_registry.update(
         ops.TimestampAdd: fixed_arity(operator.add, 2),
         ops.TimestampSub: fixed_arity(operator.sub, 2),
         ops.TimestampDiff: _timestamp_diff,
+        ops.StringToTimestamp: _string_to_timestamp,
         ops.DateTruncate: _truncate,
         ops.TimestampTruncate: _truncate,
         ops.IntervalFromInteger: _interval_from_integer,
