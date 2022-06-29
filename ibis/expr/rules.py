@@ -104,7 +104,8 @@ def sort_key(key, *, from_=None, this):
     import ibis.expr.operations as ops
 
     table = this[from_] if from_ is not None else None
-    return ops.sortkeys._to_sort_key(key, table=table).op()
+    key = ops.sortkeys._to_sort_key(key, table=table)
+    return key.op()
 
 
 @rule
@@ -532,7 +533,7 @@ def window(win, *, from_base_table_of, this):
         )
         if len(win._order_by) != 1:
             raise com.IbisInputError(error_msg)
-        order_var = win._order_by[0].op().args[0]
+        order_var = win._order_by[0].args[0]
         if not isinstance(order_var.output_dtype, dt.Timestamp):
             raise com.IbisInputError(error_msg)
     return win

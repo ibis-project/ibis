@@ -2,16 +2,14 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import helpers
 
 
-def substring(translator, expr):
-    op = expr.op()
+def substring(translator, op):
     arg, start, length = op.args
     arg_formatted = translator.translate(arg)
     start_formatted = translator.translate(start)
 
     # Impala is 1-indexed
-    if length is None or isinstance(length.op(), ops.Literal):
-        lvalue = length.op().value if length is not None else None
-        if lvalue:
+    if length is None or isinstance(length, ops.Literal):
+        if lvalue := getattr(length, "value", None):
             return 'substr({}, {} + 1, {})'.format(
                 arg_formatted, start_formatted, lvalue
             )
@@ -28,33 +26,30 @@ def string_find(translator, op):
     arg_formatted = translator.translate(op.arg)
     substr_formatted = translator.translate(op.substr)
 
-    if op.start is not None and not isinstance(op.start, ops.Literal):
-        start_fmt = translator.translate(op.start)
-        return 'locate({}, {}, {} + 1) - 1'.format(
-            substr_formatted, arg_formatted, start_fmt
-        )
-    elif op.start is not None and start.value:
-        sval = op.start.value
-        return 'locate({}, {}, {}) - 1'.format(
-            substr_formatted, arg_formatted, sval + 1
-        )
+    if (start := op.start) is not None:
+        if not isinstance(start, ops.Literal):
+            start_fmt = translator.translate(start)
+            return 'locate({}, {}, {} + 1) - 1'.format(
+                substr_formatted, arg_formatted, start_fmt
+            )
+        elif sval := start.value:
+            return 'locate({}, {}, {}) - 1'.format(
+                substr_formatted, arg_formatted, sval + 1
+            )
     else:
         return f'locate({substr_formatted}, {arg_formatted}) - 1'
 
 
-def find_in_set(translator, expr):
-    op = expr.op()
-
+def find_in_set(translator, op):
     arg, str_list = op.args
     arg_formatted = translator.translate(arg)
-    str_formatted = ','.join([x._arg.value for x in str_list])
+    str_formatted = ','.join([x.value for x in str_list.values])
     return f"find_in_set({arg_formatted}, '{str_formatted}') - 1"
 
 
-def string_join(translator, expr):
-    op = expr.op()
+def string_join(translator, op):
     arg, strings = op.args
-    return helpers.format_call(translator, 'concat_ws', arg, *strings)
+    return helpers.format_call(translator, 'concat_ws', arg, *strings.values)
 
 
 def string_like(translator, op):
@@ -63,9 +58,7 @@ def string_like(translator, op):
     return f'{arg} LIKE {pattern}'
 
 
-def parse_url(translator, expr):
-    op = expr.op()
-
+def parse_url(translator, op):
     arg, extract, key = op.args
     arg_formatted = translator.translate(arg)
 

@@ -108,12 +108,12 @@ def test_nullif_ifnull(tpch_lineitem, expr_fn, expected):
     [
         pytest.param(
             lambda t: t.l_quantity.fillna(0),
-            'isnull(`l_quantity`, CAST(0 AS decimal(12, 2)))',
+            'isnull(`l_quantity`, 0)',
             id="fillna_l_quantity",
         ),
         pytest.param(
             lambda t: t.l_extendedprice.fillna(0),
-            'isnull(`l_extendedprice`, CAST(0 AS decimal(12, 2)))',
+            'isnull(`l_extendedprice`, 0)',
             id="fillna_l_extendedprice",
         ),
         pytest.param(

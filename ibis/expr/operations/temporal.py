@@ -349,7 +349,7 @@ class ToIntervalUnit(Value):
         # TODO(kszucs): remove the expression wrapping required for arithmetic
         # overloads
         if dtype.unit != unit:
-            arg = util.convert_unit(arg.to_expr(), dtype.unit, unit).op()
+            arg = util.convert_unit(arg, dtype.unit, unit)
         super().__init__(arg=arg, unit=unit)
 
     @immutable_property

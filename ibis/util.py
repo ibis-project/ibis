@@ -308,13 +308,11 @@ def convert_unit(value, unit, to, floor=True):
     assert factor > 1
 
     if i < j:
-        return value * factor
-
-    assert i > j
-    if floor:
-        return value // factor
+        op = operator.mul
     else:
-        return value / factor
+        assert i > j
+        op = operator.floordiv if floor else operator.truediv
+    return op(value.to_expr(), factor).op()
 
 
 def get_logger(

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-import operator
 from typing import Callable, Iterable, Iterator
 
 import ibis
@@ -287,21 +286,21 @@ def _bucket(op):
     stmt = ibis.case()
 
     if op.closed == 'left':
-        l_cmp = operator.le
-        r_cmp = operator.lt
+        l_cmp = ops.LessEqual
+        r_cmp = ops.Less
     else:
-        l_cmp = operator.lt
-        r_cmp = operator.le
+        l_cmp = ops.Less
+        r_cmp = ops.LessEqual
 
     user_num_buckets = len(op.buckets) - 1
 
     bucket_id = 0
     if op.include_under:
         if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else r_cmp
+            cmp = ops.Less if op.close_extreme else r_cmp
         else:
-            cmp = operator.le if op.closed == 'right' else operator.lt
-        stmt = stmt.when(cmp(expr, op.buckets[0]), bucket_id)
+            cmp = ops.LessEqual if op.closed == 'right' else ops.Less
+        stmt = stmt.when(cmp(op.arg, op.buckets[0]).to_expr(), bucket_id)
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
@@ -309,20 +308,26 @@ def _bucket(op):
             (op.closed == 'right' and j == 0)
             or (op.closed == 'left' and j == (user_num_buckets - 1))
         ):
-            stmt = stmt.when((lower <= expr) & (expr <= upper), bucket_id)
+            stmt = stmt.when(
+                ops.And(
+                    ops.LessEqual(lower, op.arg), ops.LessEqual(op.arg, upper)
+                ).to_expr(),
+                bucket_id,
+            )
         else:
             stmt = stmt.when(
-                l_cmp(lower, expr) & r_cmp(expr, upper), bucket_id
+                ops.And(l_cmp(lower, op.arg), r_cmp(op.arg, upper)).to_expr(),
+                bucket_id,
             )
         bucket_id += 1
 
     if op.include_over:
         if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else l_cmp
+            cmp = ops.Less if op.close_extreme else l_cmp
         else:
-            cmp = operator.lt if op.closed == 'right' else operator.le
+            cmp = ops.Less if op.closed == 'right' else ops.LessEqual
 
-        stmt = stmt.when(cmp(op.buckets[-1], expr), bucket_id)
+        stmt = stmt.when(cmp(op.buckets[-1], op.arg).to_expr(), bucket_id)
         bucket_id += 1
 
     result = stmt.end()
@@ -352,33 +357,26 @@ def _category_label(op):
 
 @rewrites(ops.Any)
 def _any_expand(op):
-    # TODO(kszucs): avoid doing the expr->op roundtrip
-    arg = op.arg.to_expr()
-    return arg.max().op()
+    return ops.Max(op.arg)
 
 
 @rewrites(ops.NotAny)
 def _notany_expand(op):
-    # TODO(kszucs): avoid doing the expr->op roundtrip
-    arg = op.arg.to_expr()
-    new_expr = arg.max() == ibis.literal(0, type=arg.type())
-    return new_expr.op()
+    return ops.Equals(
+        ops.Max(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
+    )
 
 
 @rewrites(ops.All)
 def _all_expand(op):
-    # TODO(kszucs): avoid doing the expr->op roundtrip
-    arg = op.arg.to_expr()
-    return arg.min().op()
+    return ops.Min(op.arg)
 
 
 @rewrites(ops.NotAll)
 def _notall_expand(op):
-    # TODO(kszucs): avoid doing the expr->op roundtrip
-    arg = op.arg.to_expr()
-    dtype = op.arg.output_dtype
-    new_expr = arg.min() == ibis.literal(0, type=dtype)
-    return new_expr.op()
+    return ops.Equals(
+        ops.Min(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
+    )
 
 
 @rewrites(ops.Cast)

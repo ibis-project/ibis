@@ -87,26 +87,27 @@ def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
         raise TypeError(f'expr has unknown type {type(expr).__name__}')
 
 
-def cumulative_to_window(translator, expr, window):
-    win = ibis.cumulative_window()
-    win = win.group_by(window._group_by).order_by(window._order_by)
-
-    op = expr.op()
-
+def cumulative_to_window(translator, op, window):
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
-    new_expr = new_op.to_expr()
-    if expr.has_name():
-        new_expr = new_expr.name(expr.get_name())
 
-    if type(new_op) in translator._rewrites:
-        new_expr = translator._rewrites[type(new_op)](new_expr)
+    try:
+        rule = translator._rewrites[type(new_op)]
+    except KeyError:
+        pass
+    else:
+        new_op = rule(new_op)
 
-    new_expr = L.windowize_function(new_expr, win)
+    win = (
+        ibis.cumulative_window()
+        .group_by(window._group_by)
+        .order_by(window._order_by)
+    )
+    new_expr = L.windowize_function(new_op.to_expr(), win)
     return new_expr.op()
 
 
-def time_range_to_range_window(translator, window):
+def time_range_to_range_window(_, window):
     # Check that ORDER BY column is a single time column:
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
@@ -136,22 +137,13 @@ def format_window(translator, op, window):
             'for Impala-based backends.'
         )
 
-    if len(window._group_by) > 0:
-        partition_args = [
-            translator.translate(x.op()) for x in window._group_by
-        ]
-        components.append('PARTITION BY {}'.format(', '.join(partition_args)))
+    if window._group_by:
+        partition_args = ', '.join(map(translator.translate, window._group_by))
+        components.append(f'PARTITION BY {partition_args}')
 
-    if len(window._order_by) > 0:
-        order_args = []
-        for expr in window._order_by:
-            key = expr.op()
-            translated = translator.translate(key.expr)
-            if not key.ascending:
-                translated += ' DESC'
-            order_args.append(translated)
-
-        components.append('ORDER BY {}'.format(', '.join(order_args)))
+    if window._order_by:
+        order_args = ', '.join(map(translator.translate, window._order_by))
+        components.append(f'ORDER BY {order_args}')
 
     p, f = window.preceding, window.following
 
@@ -269,7 +261,7 @@ def window(translator, op):
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if isinstance(arg, _require_order_by) and len(window._order_by) == 0:
+    if isinstance(arg, _require_order_by) and not window._order_by:
         window = window.order_by(arg.args[0])
 
     # Time ranges need to be converted to microseconds.
@@ -292,8 +284,7 @@ def window(translator, op):
 
 
 def shift_like(name):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         arg, offset, default = op.args
 
         arg_formatted = translator.translate(arg)
@@ -318,7 +309,5 @@ def shift_like(name):
     return formatter
 
 
-def ntile(translator, expr):
-    op = expr.op()
-    arg, buckets = map(translator.translate, op.args)
-    return f'ntile({buckets})'
+def ntile(translator, op):
+    return f'ntile({translator.translate(op.buckets)})'
