@@ -1096,7 +1096,7 @@ def compile_window_op(t, op, **kwargs):
     window = op.window
     operand = op.expr
 
-    group_by = [arg.op() for arg in window._group_by]
+    group_by = window._group_by
     grouping_keys = [
         key.name
         if isinstance(key, ops.TableColumn)
@@ -1104,7 +1104,7 @@ def compile_window_op(t, op, **kwargs):
         for key in group_by
     ]
 
-    order_by = [arg.op() for arg in window._order_by]
+    order_by = window._order_by
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
         F.col(sort.resolve_name()).cast('long')
