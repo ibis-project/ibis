@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import datetime
 import functools
-from typing import Iterable, Mapping, Sequence, TypeVar
+from typing import Iterable, Mapping, Sequence
+from typing import Tuple as _Tuple
+from typing import TypeVar
+from typing import Union as _Union
 
 import dateutil.parser
 import numpy as np
@@ -216,6 +219,13 @@ T = TypeVar("T")
 
 negate = ir.NumericValue.negate
 
+SupportsSchema = TypeVar(
+    "SupportsSchema",
+    Iterable[_Tuple[str, _Union[str, dt.DataType]]],
+    Mapping[str, dt.DataType],
+    sch.Schema,
+)
+
 
 def param(type: dt.DataType) -> ir.Scalar:
     """Create a deferred parameter of a given type.
@@ -261,9 +271,7 @@ def sequence(values: Sequence[T | None]) -> ir.ValueList:
 
 
 def schema(
-    pairs: Iterable[tuple[str, dt.DataType]]
-    | Mapping[str, dt.DataType]
-    | None = None,
+    pairs: SupportsSchema | None = None,
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
@@ -273,7 +281,7 @@ def schema(
     ----------
     pairs
         List or dictionary of name, type pairs. Mutually exclusive with `names`
-        and `types`.
+        and `types` arguments.
     names
         Field names. Mutually exclusive with `pairs`.
     types
@@ -281,12 +289,14 @@ def schema(
 
     Examples
     --------
-    >>> from ibis import schema
+    >>> from ibis import schema, Schema
     >>> sc = schema([('foo', 'string'),
     ...              ('bar', 'int64'),
     ...              ('baz', 'boolean')])
-    >>> sc2 = schema(names=['foo', 'bar', 'baz'],
-    ...              types=['string', 'int64', 'boolean'])
+    >>> sc = schema(names=['foo', 'bar', 'baz'],
+    ...             types=['string', 'int64', 'boolean'])
+    >>> sc = schema(dict(foo="string"))
+    >>> sc = schema(Schema(['foo'], ['string']))  # no-op
 
     Returns
     -------
@@ -294,34 +304,30 @@ def schema(
         An ibis schema
     """  # noqa: E501
     if pairs is not None:
-        return Schema.from_dict(dict(pairs))
+        return sch.schema(pairs)
     else:
-        return Schema(names, types)
+        return sch.schema(names, types)
 
 
-_schema = schema
-
-
-def table(schema: sch.Schema, name: str | None = None) -> ir.Table:
-    """Create an unbound table for build expressions without data.
-
+def table(
+    schema: SupportsSchema,
+    name: str | None = None,
+) -> ir.Table:
+    """Create an unbound table for building expressions without data.
 
     Parameters
     ----------
     schema
         A schema for the table
     name
-        Name for the table
+        Name for the table. One is generated if this value is `None`.
 
     Returns
     -------
     Table
         An unbound table expression
     """
-    if not isinstance(schema, Schema):
-        schema = _schema(pairs=schema)
-
-    node = ops.UnboundTable(schema, name=name)
+    node = ops.UnboundTable(sch.schema(schema), name=name)
     return node.to_expr()
 
 
