@@ -376,9 +376,9 @@ def _window(t, op):
     if isinstance(window_op, _require_order_by) and not window._order_by:
         order_by = t.translate(window_op.args[0])
     else:
-        order_by = [t.translate(arg.op()) for arg in window._order_by]
+        order_by = [t.translate(arg) for arg in window._order_by]
 
-    partition_by = [t.translate(arg.op()) for arg in window._group_by]
+    partition_by = [t.translate(arg) for arg in window._group_by]
 
     frame_clause_not_allowed = (
         ops.Lag,
