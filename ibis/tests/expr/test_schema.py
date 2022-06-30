@@ -188,3 +188,9 @@ def test_apply_to_column_order(df):
     expected = df.rename({"A": "a"}, axis=1)
     new_df = schema.apply_to(df.copy())
     tm.assert_frame_equal(new_df, expected)
+
+
+def test_api_accepts_schema_objects():
+    s1 = ibis.schema(dict(a="int", b="str"))
+    s2 = ibis.schema(s1)
+    assert s1 == s2
