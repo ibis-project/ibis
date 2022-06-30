@@ -264,10 +264,15 @@ class Window(Comparable):
         import ibis.expr.operations as ops
 
         groups = [
-            table._ensure_expr(arg.to_expr()).op() for arg in self._group_by
+            table._ensure_expr(
+                arg.to_expr() if isinstance(arg, ops.Node) else arg
+            ).op()
+            for arg in self._group_by
         ]
         sorts = [
-            ops.sortkeys._to_sort_key(k.to_expr(), table=table).op()
+            ops.sortkeys._to_sort_key(
+                k.to_expr() if isinstance(k, ops.Node) else k, table=table
+            ).op()
             for k in self._order_by
         ]
         return self._replace(group_by=groups, order_by=sorts)
