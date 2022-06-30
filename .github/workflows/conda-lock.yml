@@ -60,7 +60,6 @@ jobs:
             --file "${python_version_file}" \
             --platform linux-64 \
             --platform osx-64 \
-            --platform osx-arm64 \
             --filename-template "${template}" \
             --extras all \
             --mamba
@@ -77,6 +76,38 @@ jobs:
             -e datafusion \
             -e geospatial \
             -e impala \
+            -e mysql \
+            -e pandas \
+            -e postgres \
+            -e pyspark \
+            -e sqlite \
+            -e visualization \
+            --mamba
+
+      - name: generate lock file for osx-arm64
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+
+          python_version_file="$(mktemp --suffix=.yml)"
+
+          {
+            echo 'name: conda-lock'
+            echo 'dependencies:'
+            echo '  - python=${{ matrix.python-version }}'
+          } > "${python_version_file}"
+
+          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
+
+          conda lock \
+            --kind explicit \
+            --file pyproject.toml \
+            --file "${python_version_file}" \
+            --platform osx-arm64 \
+            --filename-template "${template}" \
+            -e dask \
+            -e datafusion \
+            -e geospatial \
             -e mysql \
             -e pandas \
             -e postgres \
