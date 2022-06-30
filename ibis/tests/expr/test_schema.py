@@ -194,3 +194,8 @@ def test_api_accepts_schema_objects():
     s1 = ibis.schema(dict(a="int", b="str"))
     s2 = ibis.schema(s1)
     assert s1 == s2
+
+
+def test_names_types():
+    s = ibis.schema(names=["a"], types=["array<float64>"])
+    assert s == ibis.schema(dict(a="array<float64>"))
