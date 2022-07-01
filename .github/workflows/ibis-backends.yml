@@ -125,7 +125,7 @@ jobs:
 
       - name: start services
         if: ${{ matrix.backend.services != null }}
-        run: docker compose up -d ${{ join(matrix.backend.services, ' ') }}
+        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
         uses: actions/setup-python@v4
@@ -228,7 +228,7 @@ jobs:
 
       - name: start services
         if: ${{ matrix.backend.services != null }}
-        run: docker compose up -d ${{ join(matrix.backend.services, ' ') }}
+        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
         uses: actions/setup-python@v4
