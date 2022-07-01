@@ -507,3 +507,7 @@ def test_struct_datatype_subclass_from_tuples():
 def test_parse_type_warns():
     with pytest.warns(FutureWarning):
         dt.parse_type("int64")
+
+
+def test_parse_null():
+    assert dt.parse("null") == dt.null
