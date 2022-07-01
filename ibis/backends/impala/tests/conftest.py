@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import concurrent.futures
 import itertools
+import multiprocessing
 import os
 import subprocess
 from pathlib import Path
@@ -149,6 +150,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             if with_hdfs
             else None,
             database=database,
+            pool_size=min(8, multiprocessing.cpu_count()),
         )
 
     def _get_original_column_names(self, tablename: str) -> list[str]:
