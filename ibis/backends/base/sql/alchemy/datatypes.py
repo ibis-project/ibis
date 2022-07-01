@@ -96,8 +96,6 @@ def _(itype, **kwargs):
 @to_sqla_type.register(dt.Array)
 def _(itype, **kwargs):
     ibis_type = itype.value_type
-    if not isinstance(ibis_type, (dt.Primitive, dt.String)):
-        raise TypeError(f'Type {ibis_type} is not a primitive or string type')
     return sa.ARRAY(to_sqla_type(ibis_type, **kwargs))
 
 
