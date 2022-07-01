@@ -208,6 +208,7 @@ class Backend(BaseSQLBackend):
         kerberos_service_name: str = "impala",
         pool_size: int = 8,
         hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
+        retries: int = 3,
     ):
         """Create an Impala Backend for use with Ibis.
 
@@ -240,6 +241,9 @@ class Backend(BaseSQLBackend):
             | `'GSSAPI'` | Kerberos-secured clusters      |
         kerberos_service_name
             Specify a particular `impalad` service principal.
+        retries
+            Number of times to try connecting with HiveServer2 before
+            failing
 
         Examples
         --------
@@ -261,19 +265,20 @@ class Backend(BaseSQLBackend):
         self._temp_objects = set()
         self._hdfs = hdfs_client
 
-        params = {
-            'host': host,
-            'port': port,
-            'database': database,
-            'timeout': timeout,
-            'use_ssl': use_ssl,
-            'ca_cert': str(ca_cert),
-            'user': user,
-            'password': password,
-            'auth_mechanism': auth_mechanism,
-            'kerberos_service_name': kerberos_service_name,
-        }
-        self.con = ImpalaConnection(pool_size=pool_size, **params)
+        self.con = ImpalaConnection(
+            pool_size=pool_size,
+            host=host,
+            port=port,
+            database=database,
+            timeout=timeout,
+            use_ssl=use_ssl,
+            ca_cert=str(ca_cert),
+            user=user,
+            password=password,
+            auth_mechanism=auth_mechanism,
+            kerberos_service_name=kerberos_service_name,
+            retries=retries,
+        )
 
         self._ensure_temp_db_exists()
 

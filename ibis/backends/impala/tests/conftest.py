@@ -55,6 +55,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         con = ibis.impala.connect(
             host=env.impala_host,
             port=env.impala_port,
+            retries=env.retries,
             hdfs_client=fsspec.filesystem(
                 env.hdfs_protocol,
                 host=env.nn_host,
@@ -137,6 +138,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         return ibis.impala.connect(
             host=env.impala_host,
             port=env.impala_port,
+            retries=env.retries,
             auth_mechanism=env.auth_mechanism,
             hdfs_client=fsspec.filesystem(
                 env.hdfs_protocol,
@@ -178,6 +180,10 @@ class IbisTestEnv:
     def __init__(self):
         if options.impala is None:
             ibis.backends.impala.Backend.register_options()
+
+    @property
+    def retries(self):
+        return 10
 
     @property
     def impala_host(self):
