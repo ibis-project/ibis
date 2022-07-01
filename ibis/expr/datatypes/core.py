@@ -1084,6 +1084,7 @@ def parse(text: str) -> DataType:
         | spaceless_string("category").result(category)
         | spaceless_string("geometry").result(GeoSpatial(geotype='geometry'))
         | spaceless_string("geography").result(GeoSpatial(geotype='geography'))
+        | spaceless_string("null").result(null)
         | geotype_parser("linestring", LineString)
         | geotype_parser("polygon", Polygon)
         | geotype_parser("point", Point)
