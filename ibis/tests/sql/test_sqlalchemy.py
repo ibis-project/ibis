@@ -25,6 +25,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyContext,
     schema_from_table,
+    to_sqla_type,
 )
 from ibis.tests.expr.mocks import MockAlchemyBackend
 from ibis.tests.util import assert_equal
@@ -1131,3 +1132,13 @@ def test_tpc_h11(h11):
 
     ex = sa.select(t0.c.ps_partkey, t0.c.value).order_by(t0.c.value.desc())
     _check(h11, ex)
+
+
+def test_to_sqla_type_array_of_non_primitive():
+    result = to_sqla_type(dt.Array(dt.Struct.from_dict(dict(a="int"))))
+    [(result_name, result_type)] = result.item_type.pairs
+    expected_name = "a"
+    expected_type = sa.BigInteger()
+    assert result_name == expected_name
+    assert type(result_type) == type(expected_type)
+    assert isinstance(result, sa.ARRAY)
