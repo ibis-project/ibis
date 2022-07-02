@@ -1,83 +1,62 @@
-from unittest import mock
-
 import pandas as pd
+import pytest
+
+metadata = pytest.importorskip("ibis.backends.impala.metadata")
 
 
-def patch_execute(con):
-    return mock.patch.object(con, 'raw_sql', wraps=con.raw_sql)
+@pytest.fixture
+def spy(con, mocker):
+    return mocker.spy(con, "raw_sql")
 
 
-def test_invalidate_metadata(con, test_data_db):
-    with patch_execute(con) as ex_mock:
-        con.invalidate_metadata()
-        ex_mock.assert_called_with('INVALIDATE METADATA')
+@pytest.fixture
+def qname(test_data_db):
+    return f"{test_data_db}.`functional_alltypes`"
+
+
+def test_invalidate_metadata(con, spy, test_data_db, qname):
+    con.invalidate_metadata()
+    spy.assert_called_with('INVALIDATE METADATA')
 
     con.invalidate_metadata('functional_alltypes')
     t = con.table('functional_alltypes')
     t.invalidate_metadata()
 
-    with patch_execute(con) as ex_mock:
-        con.invalidate_metadata('functional_alltypes', database=test_data_db)
-        ex_mock.assert_called_with(
-            'INVALIDATE METADATA {}.`{}`'.format(
-                test_data_db, 'functional_alltypes'
-            )
-        )
+    con.invalidate_metadata('functional_alltypes', database=test_data_db)
+    spy.assert_called_with(f'INVALIDATE METADATA {qname}')
 
 
-def test_refresh(con, test_data_db):
+def test_refresh(con, spy, qname):
     tname = 'functional_alltypes'
-    with patch_execute(con) as ex_mock:
-        con.refresh(tname)
-        ex_cmd = f'REFRESH {test_data_db}.`{tname}`'
-        ex_mock.assert_called_with(ex_cmd)
+    con.refresh(tname)
+    spy.assert_called_with(f'REFRESH {qname}')
 
     t = con.table(tname)
-    with patch_execute(con) as ex_mock:
-        t.refresh()
-        ex_cmd = f'REFRESH {test_data_db}.`{tname}`'
-        ex_mock.assert_called_with(ex_cmd)
+    t.refresh()
+    spy.assert_called_with(f'REFRESH {qname}')
 
 
-def test_describe_formatted(con, test_data_db):
-    from ibis.backends.impala.metadata import TableMetadata
-
+def test_describe_formatted(con, spy, qname):
     t = con.table('functional_alltypes')
-    with patch_execute(con) as ex_mock:
-        desc = t.describe_formatted()
-        ex_mock.assert_called_with(
-            'DESCRIBE FORMATTED '
-            '{}.`{}`'.format(test_data_db, 'functional_alltypes'),
-            results=True,
-        )
-        assert isinstance(desc, TableMetadata)
+    desc = t.describe_formatted()
+    spy.assert_called_with(f'DESCRIBE FORMATTED {qname}', results=True)
+    assert isinstance(desc, metadata.TableMetadata)
 
 
-def test_show_files(con, test_data_db):
+def test_show_files(con, spy, qname):
     t = con.table('functional_alltypes')
-    qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')
-    with patch_execute(con) as ex_mock:
-        desc = t.files()
-        ex_mock.assert_called_with(
-            f'SHOW FILES IN {qualified_name}', results=True
-        )
-        assert isinstance(desc, pd.DataFrame)
+    desc = t.files()
+    spy.assert_called_with(f'SHOW FILES IN {qname}', results=True)
+    assert isinstance(desc, pd.DataFrame)
 
 
-def test_table_column_stats(con, test_data_db):
+def test_table_column_stats(con, spy, qname):
     t = con.table('functional_alltypes')
 
-    qualified_name = '{}.`{}`'.format(test_data_db, 'functional_alltypes')
-    with patch_execute(con) as ex_mock:
-        desc = t.stats()
-        ex_mock.assert_called_with(
-            f'SHOW TABLE STATS {qualified_name}', results=True
-        )
-        assert isinstance(desc, pd.DataFrame)
+    desc = t.stats()
+    spy.assert_called_with(f'SHOW TABLE STATS {qname}', results=True)
+    assert isinstance(desc, pd.DataFrame)
 
-    with patch_execute(con) as ex_mock:
-        desc = t.column_stats()
-        ex_mock.assert_called_with(
-            f'SHOW COLUMN STATS {qualified_name}', results=True
-        )
-        assert isinstance(desc, pd.DataFrame)
+    desc = t.column_stats()
+    spy.assert_called_with(f'SHOW COLUMN STATS {qname}', results=True)
+    assert isinstance(desc, pd.DataFrame)
