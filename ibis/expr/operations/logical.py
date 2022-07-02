@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 from public import public
 
+from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Binary, Unary, Value
@@ -164,7 +165,15 @@ class Where(Value):
     true_expr = rlz.any
     false_null_expr = rlz.any
 
-    output_dtype = rlz.dtype_like("true_expr")
+    @immutable_property
+    def output_dtype(self):
+        return rlz.highest_precedence_dtype(
+            [
+                self.true_expr,
+                self.false_null_expr,
+            ]
+        )
+
     output_shape = rlz.shape_like("bool_expr")
 
 
