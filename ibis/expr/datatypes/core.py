@@ -1234,13 +1234,15 @@ def _get_timedelta_units(
 
 
 def higher_precedence(left: DataType, right: DataType) -> DataType:
+    nullable = left.nullable or right.nullable
+
     if castable(left, right, upcast=True):
-        return right
+        return right(nullable=nullable)
     elif castable(right, left, upcast=True):
-        return left
+        return left(nullable=nullable)
 
     raise IbisTypeError(
-        f'Cannot compute precedence for {left} and {right} types'
+        f'Cannot compute precedence for `{left}` and `{right}` types'
     )
 
 
@@ -1421,7 +1423,17 @@ def can_cast_any(source: DataType, target: DataType, **kwargs) -> bool:
 
 @castable.register(Null, DataType)
 def can_cast_null(source: DataType, target: DataType, **kwargs) -> bool:
-    return target.nullable
+    # The null type is castable to any type, even if the target type is *not*
+    # nullable.
+    #
+    # We handle the promotion of `null + !T -> T` at the `castable` call site.
+    #
+    # It might be possible to build a system with a single function that tries
+    # to promote types and use the exception to indicate castability, but that
+    # is a deeper refactor to be tackled later.
+    #
+    # See https://github.com/ibis-project/ibis/issues/2891 for the bug report
+    return True
 
 
 Integral = TypeVar('Integral', SignedInteger, UnsignedInteger)
