@@ -1505,3 +1505,22 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
     op = expr.op().selections[0].op().arg.op()
     assert op.left.equals(expected_left(t))
     assert op.right.equals(expected_right(t))
+
+
+@pytest.mark.parametrize(
+    ("expr_fn", "expected_type"),
+    [
+        (lambda t: ibis.where(t.a == 1, t.b, ibis.NA), dt.string),
+        (lambda t: ibis.where(t.a == 1, t.b, t.a.cast("string")), dt.string),
+        (
+            lambda t: ibis.where(t.a == 1, t.b, t.a.cast("!string")),
+            dt.string(nullable=False),
+        ),
+        (lambda _: ibis.where(True, ibis.NA, ibis.NA), dt.null),
+        (lambda _: ibis.where(False, ibis.NA, ibis.NA), dt.null),
+    ],
+)
+def test_non_null_with_null_precedence(expr_fn, expected_type):
+    t = ibis.table(dict(a="int64", b="!string"), name="t")
+    expr = expr_fn(t)
+    assert expr.type() == expected_type
