@@ -1,6 +1,11 @@
 { lib, pkgs, stdenv, ... }:
 let
   numpyVersion = self: self.numpy.version;
+  parallelizeSetupPy = drv: drv.overridePythonAttrs (attrs: {
+    format = "setuptools";
+    enableParallelBuilding = true;
+    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
+  });
 in
 self: super:
 {
@@ -25,28 +30,35 @@ self: super:
       sha256 = "sha256-9muPSFb4RjxP7X+qtUQ41rypgn0s9yWgmkyTA+edehU=";
     };
 
-    patches = (attrs.patches or [ ])
-      ++ lib.optionals stdenv.isDarwin [ ./patches/datafusion-macos.patch ];
+    patches = [
+      (pkgs.fetchpatch {
+        name = "optional-mimalloc.patch";
+        url = "https://github.com/datafusion-contrib/datafusion-python/commit/a5b10e8ef19514361fc6062a8ad63d7a793c2111.patch";
+        sha256 = "sha256-vmB1FKb2VeecrQt91J+pDp+2jvdtOrGd4w4wjhDMJK8=";
+      })
+    ];
 
-    nativeBuildInputs = (attrs.nativeBuildInputs or [ ])
+    cargoBuildNoDefaultFeatures = stdenv.isDarwin;
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ]
       ++ (with pkgs.rustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
-    buildInputs = (attrs.buildInputs or [ ])
+    buildInputs = attrs.buildInputs or [ ]
       ++ lib.optionals stdenv.isDarwin [ pkgs.libiconv ];
 
     cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
       inherit src patches;
-      sha256 =
-        if stdenv.isDarwin
-        then "sha256-rGXSmn3MF2wFyMqzF15gB9DK5f9W4Gk08J7tOsZ7IH0="
-        else "sha256-iLcEM5YYTcYZe3PQx/C4V0LU5p85R9LE+ba991J6HQE=";
+      sha256 = "sha256-rGXSmn3MF2wFyMqzF15gB9DK5f9W4Gk08J7tOsZ7IH0=";
     };
   });
 
-  nbconvert = super.nbconvert.overridePythonAttrs (attrs: {
-    patches = (attrs.patches or [ ]) ++ [ ./patches/templates.patch ];
+  nbconvert = super.nbconvert.overridePythonAttrs (_: {
     postPatch = ''
-      substituteAllInPlace ./nbconvert/exporters/templateexporter.py
+      substituteInPlace \
+        ./nbconvert/exporters/templateexporter.py \
+        --replace \
+        'root_dirs.extend(jupyter_path())' \
+        'root_dirs.extend(jupyter_path() + [os.path.join("@out@", "share", "jupyter")])' \
+        --subst-var out
     '';
   });
 
@@ -54,21 +66,13 @@ self: super:
     TABULATE_INSTALL = "lib-only";
   });
 
-  pandas = super.pandas.overridePythonAttrs (attrs: {
-    format = "setuptools";
-    enableParallelBuilding = true;
-    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
-  });
-
-  pydantic = super.pydantic.overridePythonAttrs (attrs: {
-    format = "setuptools";
-    enableParallelBuilding = true;
-    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
-  });
+  pandas = parallelizeSetupPy super.pandas;
+  pydantic = parallelizeSetupPy super.pydantic;
 
   mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
-    patches = (attrs.patches or [ ]) ++ [
+    patches = attrs.patches or [ ] ++ [
       (pkgs.fetchpatch {
+        name = "fix-jinja2-imports.patch";
         url = "https://github.com/mkdocstrings/mkdocstrings/commit/b37722716b1e0ed6393ec71308dfb0f85e142f3b.patch";
         sha256 = "sha256-DD1SjEvs5HBlSRLrqP3jhF/yoeWkF7F3VXCD1gyt5Fc=";
       })
@@ -78,19 +82,11 @@ self: super:
   watchdog = super.watchdog.overrideAttrs (attrs: lib.optionalAttrs
     (stdenv.isDarwin && lib.versionAtLeast attrs.version "2")
     {
-      patches = (attrs.patches or [ ]) ++ [ ./patches/watchdog-force-kqueue.patch ];
+      postPatch = ''
+        substituteInPlace setup.py \
+          --replace "if is_macos or os.getenv('FORCE_MACOS_MACHINE', '0') == '1':" 'if False:'
+      '';
     });
-
-  pybind11 = super.pybind11.overridePythonAttrs (_: {
-    postBuild = ''
-      # build tests
-      make -j $NIX_BUILD_CORES -l $NIX_BUILD_CORES
-    '';
-  });
-
-  traitlets = super.traitlets.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
-  });
 
   jupyter-client = super.jupyter-client.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
