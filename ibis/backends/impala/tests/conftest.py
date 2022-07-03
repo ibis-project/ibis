@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import ast
 import collections
 import concurrent.futures
 import itertools
 import os
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import pytest
 
@@ -14,6 +15,7 @@ import ibis
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
+from ibis.backends.base import BaseBackend
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import (
@@ -64,65 +66,67 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             pool_size=URLLIB_DEFAULT_POOL_SIZE,
         )
 
-        fs = fsspec.filesystem("file")
+        try:
+            fs = fsspec.filesystem("file")
 
-        data_files = {
-            data_file
-            for data_file in fs.find(data_dir)
-            # ignore sqlite databases and markdown files
-            if not data_file.endswith((".db", ".md"))
-            # ignore files in the test data .git directory
-            if (
-                # ignore .git
-                os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
-                != ".git"
-            )
-        }
-
-        executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=int(
-                os.environ.get(
-                    "IBIS_DATA_MAX_WORKERS",
-                    URLLIB_DEFAULT_POOL_SIZE,
+            data_files = {
+                data_file
+                for data_file in fs.find(data_dir)
+                # ignore sqlite databases and markdown files
+                if not data_file.endswith((".db", ".md"))
+                # ignore files in the test data .git directory
+                if (
+                    # ignore .git
+                    os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
+                    != ".git"
                 )
-            )
-        )
+            }
 
-        hdfs = con.hdfs
-        tasks = {
-            # make the database
-            executor.submit(impala_create_test_database, con, env),
-            # build and upload UDFs
-            *itertools.starmap(
-                executor.submit,
-                impala_build_and_upload_udfs(hdfs, env, fs=fs),
-            ),
-            # upload data files
-            *(
-                executor.submit(
-                    hdfs_make_dir_and_put_file,
-                    hdfs,
-                    data_file,
-                    os.path.join(
-                        env.test_data_dir,
-                        os.path.relpath(data_file, data_dir),
+            hdfs = con.hdfs
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=int(
+                    os.environ.get(
+                        "IBIS_DATA_MAX_WORKERS",
+                        URLLIB_DEFAULT_POOL_SIZE,
+                    )
+                )
+            ) as executor:
+                tasks = {
+                    # make the database
+                    executor.submit(impala_create_test_database, con, env),
+                    # build and upload UDFs
+                    *itertools.starmap(
+                        executor.submit,
+                        impala_build_and_upload_udfs(hdfs, env, fs=fs),
                     ),
-                )
-                for data_file in data_files
-            ),
-        }
+                    # upload data files
+                    *(
+                        executor.submit(
+                            hdfs_make_dir_and_put_file,
+                            hdfs,
+                            data_file,
+                            os.path.join(
+                                env.test_data_dir,
+                                os.path.relpath(data_file, data_dir),
+                            ),
+                        )
+                        for data_file in data_files
+                    ),
+                }
 
-        for future in concurrent.futures.as_completed(tasks):
-            future.result()
+                for future in concurrent.futures.as_completed(tasks):
+                    future.result()
 
-        # create the tables and compute stats
-        for future in concurrent.futures.as_completed(
-            executor.submit(table_future.result().compute_stats)
-            for table_future in concurrent.futures.as_completed(
-                impala_create_tables(con, env, executor=executor)
-            )
-        ):
-            future.result()
+                # create the tables and compute stats
+                for future in concurrent.futures.as_completed(
+                    executor.submit(table_future.result().compute_stats)
+                    for table_future in concurrent.futures.as_completed(
+                        impala_create_tables(con, env, executor=executor)
+                    )
+                ):
+                    future.result()
+        finally:
+            con.close()
 
     @staticmethod
     def connect(
@@ -225,8 +229,10 @@ class IbisTestEnv:
 
     @property
     def use_codegen(self):
-        return (
-            os.environ.get('IBIS_TEST_USE_CODEGEN', 'False').lower() == 'true'
+        return ast.literal_eval(
+            os.environ.get('IBIS_TEST_USE_CODEGEN', 'False')
+            .lower()
+            .capitalize()
         )
 
     @property
@@ -288,44 +294,30 @@ def backend(tmp_path_factory, data_directory, script_directory, worker_id):
     )
 
 
-@pytest.fixture(scope="session")
-def con_no_hdfs(env, test_data_db, data_directory, backend):
+@pytest.fixture(scope="module")
+def con_no_hdfs(env, data_directory, backend):
     con = backend.connect(data_directory, with_hdfs=False)
-    if not env.use_codegen:
-        con.disable_codegen()
-    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+    con.disable_codegen(disabled=not env.use_codegen)
+    assert con.get_options()['DISABLE_CODEGEN'] == str(
+        int(not env.use_codegen)
+    )
     try:
         yield con
     finally:
-        con.set_database(test_data_db)
+        con.close()
 
 
-@pytest.fixture(scope="session")
-def con(env, test_data_db, data_directory, backend):
+@pytest.fixture(scope="module")
+def con(env, data_directory, backend):
     con = backend.connect(data_directory)
-    if not env.use_codegen:
-        con.disable_codegen()
-    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+    con.disable_codegen(disabled=not env.use_codegen)
+    assert con.get_options()['DISABLE_CODEGEN'] == str(
+        int(not env.use_codegen)
+    )
     try:
         yield con
     finally:
-        con.set_database(test_data_db)
-
-
-@pytest.fixture(scope="session")
-def temp_char_table(con):
-    name = "testing_varchar_support"
-    sql = f"""\
-CREATE TABLE IF NOT EXISTS {name} (
-  `group1` varchar(10),
-  `group2` char(10)
-)"""
-    con.con.execute(sql)
-    try:
-        yield con.table(name)
-    finally:
-        assert name in con.list_tables(), name
-        con.drop_table(name)
+        con.close()
 
 
 @pytest.fixture
@@ -352,7 +344,7 @@ def tmp_db(env, con, test_data_db):
             pass
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def con_no_db(env, data_directory, backend):
     con = backend.connect(data_directory, database=None)
     if not env.use_codegen:
@@ -361,15 +353,15 @@ def con_no_db(env, data_directory, backend):
     try:
         yield con
     finally:
-        con.set_database(None)
+        con.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def alltypes(con):
     return con.table("functional_alltypes")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def alltypes_df(alltypes):
     return alltypes.execute()
 
@@ -453,11 +445,11 @@ def mockcon():
     return MockBackend()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def kudu_table(con, test_data_db):
     name = 'kudu_backed_table'
     con.raw_sql(
-        f"""
+        f"""\
 CREATE TABLE {test_data_db}.{name} (
   a STRING,
   PRIMARY KEY(a)
@@ -469,11 +461,10 @@ TBLPROPERTIES (
   'kudu.num_tablet_replicas' = '1'
 )"""
     )
-    drop_sql = f'DROP TABLE {test_data_db}.{name}'
     try:
         yield con.table(name)
     finally:
-        con.raw_sql(drop_sql)
+        con.drop_table(name, database=test_data_db)
 
 
 def translate(expr, context=None, named=False):
@@ -561,7 +552,12 @@ AVRO_SCHEMAS = {
 ALL_SCHEMAS = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
 
 
-def impala_create_tables(con, env, *, executor=None):
+def impala_create_tables(
+    con: BaseBackend,
+    env: IbisTestEnv,
+    *,
+    executor: concurrent.futures.Executor,
+) -> Iterator[concurrent.futures.Future]:
     test_data_dir = env.test_data_dir
     avro_files = [
         (con.avro_file, os.path.join(test_data_dir, 'avro', path))
