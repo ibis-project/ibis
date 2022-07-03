@@ -1,5 +1,12 @@
 { python ? "3.10"
 , doCheck ? true
+, backends ? [
+    "dask"
+    "datafusion"
+    "duckdb"
+    "pandas"
+    "sqlite"
+  ]
 }:
 let
   pkgs = import ./nix;
@@ -10,14 +17,6 @@ let
     }:
 
     let
-      backends = [
-        "dask"
-        "datafusion"
-        "duckdb"
-        "pandas"
-        "sqlite"
-      ];
-
       buildInputs = with pkgs; [ gdal_2 graphviz-nox proj sqlite ];
       checkInputs = buildInputs;
     in
