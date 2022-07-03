@@ -4,6 +4,7 @@ import pytest
 from pytest import mark, param
 
 import ibis.expr.datatypes as dt
+from ibis import literal as L
 from ibis.udf.vectorized import reduction
 
 
@@ -407,27 +408,27 @@ def test_approx_median(alltypes):
     assert isinstance(result, float)
 
 
-@pytest.mark.parametrize(
+@mark.parametrize(
     ('result_fn', 'expected_fn'),
     [
         param(
-            lambda t, where: (
+            lambda t, where, sep: (
                 t.groupby('bigint_col')
                 .aggregate(
-                    tmp=lambda t: t.string_col.group_concat(',', where=where)
+                    tmp=lambda t: t.string_col.group_concat(sep, where=where)
                 )
                 .sort_by('bigint_col')
             ),
-            lambda t, where: (
+            lambda t, where, sep: (
                 (
-                    t.assign(string_col=t.string_col.where(where))
-                    if not isinstance(where, slice)
-                    else t
+                    t
+                    if isinstance(where, slice)
+                    else t.assign(string_col=t.string_col.where(where))
                 )
                 .groupby('bigint_col')
                 .string_col.agg(
                     lambda s: (
-                        np.nan if pd.isna(s).all() else ','.join(s.values)
+                        np.nan if pd.isna(s).all() else sep.join(s.values)
                     )
                 )
                 .rename('tmp')
@@ -438,14 +439,26 @@ def test_approx_median(alltypes):
         )
     ],
 )
-@pytest.mark.parametrize(
+@mark.parametrize(
+    ("ibis_sep", "pandas_sep"),
+    [
+        param(":", ":", id="const"),
+        param(
+            L(":") + ":",
+            "::",
+            id="expr",
+            marks=mark.notyet(["duckdb", "impala", "mysql", "pyspark"]),
+        ),
+    ],
+)
+@mark.parametrize(
     ('ibis_cond', 'pandas_cond'),
     [
         param(lambda _: None, lambda _: slice(None), id='no_cond'),
         param(
             lambda t: t.string_col.isin(['1', '7']),
             lambda t: t.string_col.isin(['1', '7']),
-            marks=pytest.mark.notimpl(["dask", "pandas"]),
+            marks=mark.notimpl(["dask", "pandas"]),
             id='is_in',
         ),
     ],
@@ -459,10 +472,12 @@ def test_group_concat(
     expected_fn,
     ibis_cond,
     pandas_cond,
+    ibis_sep,
+    pandas_sep,
 ):
-    expr = result_fn(alltypes, ibis_cond(alltypes))
+    expr = result_fn(alltypes, ibis_cond(alltypes), ibis_sep)
     result = expr.execute()
-    expected = expected_fn(df, pandas_cond(df))
+    expected = expected_fn(df, pandas_cond(df), pandas_sep)
 
     backend.assert_frame_equal(result, expected)
 
