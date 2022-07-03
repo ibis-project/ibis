@@ -3,8 +3,8 @@ name: Generate Conda Lockfiles
 
 on:
   schedule:
-    # At minute 30 on Sunday
-    - cron: "30 * * * SUN"
+    # At minute 00:30 on Sunday
+    - cron: "30 0 * * SUN"
   workflow_dispatch:
   repository_dispatch:
     types:
