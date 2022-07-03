@@ -353,6 +353,25 @@ def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
     assert expr.execute() is not None
 
 
+@pytest.fixture
+def temp_char_table(con):
+    name = "testing_varchar_support"
+    con.raw_sql(
+        f"""\
+CREATE TABLE IF NOT EXISTS {name} (
+  group1 VARCHAR(10),
+  group2 CHAR(10)
+)"""
+    )
+    try:
+        yield con.table(name)
+    finally:
+        try:
+            assert name in con.list_tables(), name
+        finally:
+            con.drop_table(name, force=True)
+
+
 def test_varchar_char_support(temp_char_table):
     assert isinstance(temp_char_table['group1'], ir.StringValue)
     assert isinstance(temp_char_table['group2'], ir.StringValue)
