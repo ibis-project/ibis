@@ -87,12 +87,4 @@ self: super:
           --replace "if is_macos or os.getenv('FORCE_MACOS_MACHINE', '0') == '1':" 'if False:'
       '';
     });
-
-  jupyter-client = super.jupyter-client.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
-
-  ipykernel = super.ipykernel.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
 }
