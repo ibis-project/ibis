@@ -49,7 +49,7 @@ dask = { version = ">=2021.10.0", optional = true, extras = [
 ] }
 datafusion = { version = ">=0.4,<0.7", optional = true }
 duckdb = { version = ">=0.3.2,<0.4.0", optional = true }
-duckdb-engine = { version = ">=0.1.8,<0.2.0", optional = true }
+duckdb-engine = { version = ">=0.1.8,<0.3.0", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 GeoAlchemy2 = { version = ">=0.6.3,<0.13", optional = true }
 geopandas = { version = ">=0.6,<0.12", optional = true }
