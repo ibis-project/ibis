@@ -2,12 +2,24 @@ import numpy as np
 import pandas.testing as tm
 import pytest
 import toolz
+from packaging.version import parse as parse_version
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
-pytestmark = pytest.mark.never(["sqlite", "mysql"], reason="No array support")
+try:
+    import duckdb
+except ImportError:
+    duckdb = None
+
+pytestmark = [
+    pytest.mark.never(["sqlite", "mysql"], reason="No array support"),
+    pytest.mark.xfail(
+        duckdb and parse_version(duckdb.__version__) == parse_version("0.4.0"),
+        reason="DuckDB array support is broken in 0.4.0",
+    ),
+]
 
 
 @pytest.mark.notimpl(["impala", "datafusion"])
