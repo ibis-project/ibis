@@ -1524,3 +1524,23 @@ def test_non_null_with_null_precedence(expr_fn, expected_type):
     t = ibis.table(dict(a="int64", b="!string"), name="t")
     expr = expr_fn(t)
     assert expr.type() == expected_type
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("names", ("a", "b", "c")),
+        ("types", (dt.int8, dt.string, dt.Array(dt.Array(dt.float64)))),
+        (
+            "fields",
+            ibis.util.frozendict(
+                a=dt.int8,
+                b=dt.string,
+                c=dt.Array(dt.Array(dt.float64)),
+            ),
+        ),
+    ],
+)
+def test_struct_names_types_fields(name, expected):
+    s = ibis.struct(dict(a=1, b="2", c=[[1.0], [], [None]]))
+    assert getattr(s, name) == expected
