@@ -80,4 +80,6 @@ pkgs.mkShell {
   ]);
 
   PYTHONPATH = builtins.toPath ./.;
+  PGPASSWORD = "postgres";
+  MYSQL_PWD = "ibis";
 }
