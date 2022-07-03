@@ -4,7 +4,7 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from pytest import param
 
 import ibis

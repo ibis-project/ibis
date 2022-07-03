@@ -1,5 +1,5 @@
-from pkg_resources import parse_version
-from pkg_resources.extern.packaging.version import Version
+from packaging.version import Version
+from packaging.version import parse as parse_version
 
 import ibis
 
