@@ -87,4 +87,13 @@ self: super:
           --replace "if is_macos or os.getenv('FORCE_MACOS_MACHINE', '0') == '1':" 'if False:'
       '';
     });
+
+  duckdb = super.duckdb.overrideAttrs (_: rec {
+    inherit (pkgs.duckdb) version src patches;
+    format = "setuptools";
+    preConfigure = ''
+      cd tools/pythonpkg
+    '';
+    SETUPTOOLS_SCM_PRETEND_VERSION = version;
+  });
 }
