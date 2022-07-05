@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+import pytest
+
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -18,6 +20,14 @@ def test_struct_operations():
     assert isinstance(expr, ir.StructValue)
     assert isinstance(expr['b'], ir.ArrayValue)
     assert isinstance(expr['a'].op(), ops.StructField)
+
+
+def test_struct_getattr():
+    expr = ibis.struct({"a": 1, "b": 2})
+    assert isinstance(expr.a, ir.IntegerValue)
+    assert expr.a.get_name() == "a"
+    with pytest.raises(AttributeError, match="bad"):
+        expr.bad
 
 
 def test_struct_field_dir():
