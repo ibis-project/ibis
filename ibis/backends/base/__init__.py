@@ -686,3 +686,24 @@ def _(
     con = getattr(ibis, backend).connect(**kwargs)
     con.register(f"{extension}://{filename}")
     return con
+
+
+@_connect.register(
+    r"(?P<filename>.+\.(?P<extension>parquet|csv))",
+    priority=8,
+)
+def _(
+    _: str,
+    *,
+    filename: str,
+    extension: str,
+    **kwargs: Any,
+) -> BaseBackend:
+    """Connect to `duckdb` and register a parquet or csv file.
+
+    Examples
+    --------
+    >>> con = ibis.connect("relative/path/to/data.csv")
+    >>> con = ibis.connect("relative/path/to/more/data.parquet")
+    """
+    return _connect(f"duckdb://{filename}", **kwargs)
