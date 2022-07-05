@@ -80,6 +80,15 @@ class StructValue(Value):
 
         return ops.StructField(self, name).to_expr().name(name)
 
+    def __setstate__(self, instance_dictionary):
+        self.__dict__ = instance_dictionary
+
+    def __getattr__(self, name: str) -> ir.Value:
+        """Extract the `name` field from this struct."""
+        if name in self.names:
+            return self.__getitem__(name)
+        raise AttributeError(name)
+
     @cached_property
     def names(self) -> Sequence[str]:
         """Return the field names of the struct."""
