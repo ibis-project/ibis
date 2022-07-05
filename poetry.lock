@@ -2388,7 +2388,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "0e6dec58266a3941e5d816e169127f9052dca0c71b27e417b0a4c9538ff24f6e"
+content-hash = "436242da1bd25d5ef5d9ad578c6847851fa9649548b0ee333b4607d2df8523b8"
 
 [metadata.files]
 absolufy-imports = [
