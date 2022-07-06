@@ -5,12 +5,14 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
+    to_sqla_type,
     unary,
 )
 from ibis.backends.base.sql.alchemy.registry import _gen_string_find
@@ -126,7 +128,11 @@ def _literal(_, expr):
         value = expr.op().value
         if isinstance(value, pd.Timestamp):
             value = value.to_pydatetime()
-        return sa.literal(value)
+
+        lit = sa.literal(value)
+        if isinstance(dtype := expr.type(), dt.Timestamp):
+            return sa.cast(lit, to_sqla_type(dtype))
+        return lit
 
 
 def _group_concat(t, expr):
