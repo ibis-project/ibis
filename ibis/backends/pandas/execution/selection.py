@@ -185,6 +185,16 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
         left_root: constants.LEFT_JOIN_SUFFIX,
         right_root: constants.RIGHT_JOIN_SUFFIX,
     }
+
+    # if we're selecting from the root table and that's not the left or right
+    # child, don't add a suffix
+    #
+    # this can happen when selecting directly from a join as opposed to
+    # explicitly referencing the left or right tables
+    #
+    # we use setdefault here because the root_table can be the left/right table
+    # which we may have already put into `suffixes`
+    suffixes.setdefault(root_table, "")
     column_names = [
         ({name, name + suffixes[root_table]} & data_columns, name)
         for name in root_table.schema.names
