@@ -1,3 +1,4 @@
+import datetime
 import operator
 import warnings
 from operator import methodcaller
@@ -776,3 +777,26 @@ def test_integer_cast_to_timestamp(backend, alltypes, df):
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
     result = expr.execute()
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.broken(
+    ["clickhouse", "impala"],
+    reason=(
+        "Impala returns a string; "
+        "the clickhouse driver returns invalid results for big timestamps"
+    ),
+)
+@pytest.mark.notimpl(
+    ["datafusion", "duckdb"],
+    reason="DataFusion and DuckDB backends assume ns resolution timestamps",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="PySpark doesn't handle big timestamps",
+)
+def test_big_timestamp(con):
+    # TODO: test with a timezone
+    value = ibis.timestamp("2419-10-11 10:10:25")
+    result = con.execute(value)
+    expected = datetime.datetime(2419, 10, 11, 10, 10, 25)
+    assert result == expected
