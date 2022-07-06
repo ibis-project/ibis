@@ -3,6 +3,7 @@ import logging
 import traceback
 from datetime import datetime
 
+import ibis
 from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
 from ibis.config import options
 from ibis.expr import types as ir
@@ -82,6 +83,9 @@ _trace_funcs = set()
 
 def enable():
     """Enable tracing."""
+    if options.pandas is None:
+        # pandas options haven't been registered yet - force module __getattr__
+        ibis.pandas
     options.pandas.enable_trace = True
     logging.getLogger('ibis.backends.pandas.trace').setLevel(logging.DEBUG)
 
