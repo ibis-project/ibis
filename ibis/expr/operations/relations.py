@@ -11,7 +11,7 @@ from ibis.common import exceptions as com
 from ibis.expr import rules as rlz
 from ibis.expr import schema as sch
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Node, distinct_roots
+from ibis.expr.operations.core import Node
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
 
@@ -51,6 +51,9 @@ class TableNode(Node):
         from ibis.expr.analysis import _is_ancestor
 
         return _is_ancestor(self, other)
+
+    def root_tables(self):
+        return [self]
 
 
 @public
@@ -184,13 +187,6 @@ class Join(TableNode):
     def has_schema(self):
         return not set(self.left.columns) & set(self.right.columns)
 
-    def root_tables(self):
-        if util.all_of([self.left.op(), self.right.op()], (Join, Selection)):
-            # Unraveling is not possible
-            return [self.left.op(), self.right.op()]
-        else:
-            return distinct_roots(self.left, self.right)
-
 
 @public
 class InnerJoin(Join):
@@ -306,9 +302,6 @@ class Limit(TableNode):
     def has_schema(self):
         return self.table.op().has_schema()
 
-    def root_tables(self):
-        return [self]
-
 
 @public
 class SelfReference(TableNode, sch.HasSchema):
@@ -317,12 +310,6 @@ class SelfReference(TableNode, sch.HasSchema):
     @property
     def schema(self):
         return self.table.schema()
-
-    def root_tables(self):
-        # The dependencies of this operation are not walked, which makes the
-        # table expression holding this relationally distinct from other
-        # expressions, so things like self-joins are possible
-        return [self]
 
     def blocks(self):
         return True
@@ -442,9 +429,6 @@ class Selection(TableNode, sch.HasSchema):
     @util.deprecated(instead="instantiate Selection directly", version="4.0.0")
     def substitute_table(self, table_expr):  # pragma: no cover
         return Selection(table_expr, self.selections)
-
-    def root_tables(self):
-        return [self]
 
     @util.deprecated(instead="", version="4.0.0")
     def can_add_filters(self, wrapped_expr, predicates):  # pragma: no cover
