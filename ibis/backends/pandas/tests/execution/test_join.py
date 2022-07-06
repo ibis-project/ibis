@@ -92,7 +92,7 @@ def test_join_with_invalid_predicates(how, left, right):
 
 @mutating_join_type
 @pytest.mark.xfail(reason='Hard to detect this case')
-def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
+def test_join_with_duplicate_non_key_columns(how, left, right):
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
     expr = left.join(right, left.key == right.key, how=how)
@@ -463,4 +463,126 @@ def test_mutate_after_join():
         }
     )
     result = joined.execute()
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.fixture
+def tracts_df():
+    return pd.DataFrame(
+        [[1, 1], [2, 1], [3, 2], [4, 2], [5, 3], [6, 4]],
+        columns=["tract_id", "tract_farm_id"],
+    )
+
+
+@pytest.fixture
+def fields_df():
+    vals = [
+        [1, 1, "[(0, 2), (1, 3), (2, 0), (3, 1)]"],
+        [2, 1, "[(2, 2), (3, 2), (3, 1)]"],
+        [3, 2, "[(0, 1), (-1, 0), (-2, 0), (-2, 1)]"],
+        [4, 3, "[(0, 1), (1, 1), (1, 2), (0, 2)]"],
+        [5, 3, "[(1, 0), (2, 0), (2, 3), (1, 3)]"],
+        [6, 3, "[(2, 0), (3, 0), (3, 2), (2, 2)]"],
+        [7, 4, "[(-1, -1), (0, -1), (0, -2)]"],
+        [8, 4, "[(1, 0), (1, -2), (0, -2), (0, -1)]"],
+        [
+            9,
+            5,
+            str(
+                [
+                    (1, 0),
+                    (2, 0),
+                    (1, -1),
+                    (1, -2),
+                    (-1, -2),
+                    (-1, -1),
+                    (-2, 0),
+                    (-1, 0),
+                    (0, -1),
+                ]
+            ),
+        ],
+        [10, 6, "[(-1, 2), (0, 2), (0, 0), (-1, 0)]"],
+        [11, 6, "[(0, 2), (1, 2), (1, 1), (0, 1)]"],
+    ]
+    return pd.DataFrame(
+        vals,
+        columns=["field_id", "field_tract_id", "field_vertices"],
+    )
+
+
+@pytest.fixture
+def harvest_df():
+    vals = [
+        [1, 1, 1, 1, 1, 65.80],
+        [2, 2, 1, 2, 2, 5750.00],
+        [3, 3, 1, 1, 1, 59.85],
+        [4, 4, 2, 2, 2, 10100.00],
+        [5, 5, 2, 1, 1, 90.30],
+        [6, 6, 2, 2, 2, 21000.00],
+        [7, 7, 2, 2, 2, 5150.00],
+        [8, 8, 2, 1, 1, 53.55],
+        [9, 9, 3, 1, 1, 147.00],
+        [10, 10, 4, 1, 1, 70.70],
+        [11, 11, 4, 2, 2, 9600.00],
+        [12, 1, 1, 2, 4, 22800.00],
+        [13, 2, 1, 1, 3, 19.25],
+        [14, 3, 1, 2, 4, 13050.00],
+        [15, 4, 2, 1, 3, 31.15],
+        [16, 5, 2, 2, 4, 33000.00],
+        [17, 6, 2, 1, 3, 64.40],
+        [18, 7, 2, 1, 3, 16.45],
+        [19, 8, 2, 2, 4, 15000.00],
+        [20, 9, 3, 2, 4, 38400.00],
+        [21, 10, 4, 2, 4, 19800.00],
+        [22, 11, 4, 1, 3, 34.30],
+    ]
+
+    return pd.DataFrame(
+        vals,
+        columns=[
+            "harvest_id",
+            "harvest_field_id",
+            "harvest_farmer_group_id",
+            "harvest_crop_id",
+            "harvest_date_id",
+            "harvest_value",
+        ],
+    )
+
+
+def test_multijoin(tracts_df, fields_df, harvest_df):
+    conn = ibis.pandas.connect(
+        dict(
+            tracts=tracts_df,
+            fields=fields_df,
+            harvest=harvest_df,
+        )
+    )
+
+    tracts, fields, harvest = map(conn.table, "tracts fields harvest".split())
+
+    fielded = harvest.inner_join(
+        fields,
+        harvest.harvest_field_id == fields.field_id,
+    )
+    tracted = fielded.inner_join(
+        tracts,
+        fielded.field_tract_id == tracts.tract_id,
+    )
+    result = tracted.execute()
+
+    fielded_df = pd.merge(
+        harvest_df,
+        fields_df,
+        left_on="harvest_field_id",
+        right_on="field_id",
+    )
+    expected = pd.merge(
+        fielded_df,
+        tracts_df,
+        left_on="field_tract_id",
+        right_on="tract_id",
+    )
+
     tm.assert_frame_equal(result, expected)
