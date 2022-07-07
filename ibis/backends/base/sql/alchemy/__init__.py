@@ -116,6 +116,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self._inspector.info_cache.clear()
         return self._inspector
 
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        with self.begin() as con:
+            yield con.execute(*args, **kwargs)
+
     @staticmethod
     def _to_geodataframe(df, schema):
         """Convert `df` to a `GeoDataFrame`.

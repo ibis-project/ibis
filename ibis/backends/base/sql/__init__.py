@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import contextlib
 from functools import lru_cache
 from typing import Any, Mapping
 
@@ -98,6 +99,10 @@ class BaseSQLBackend(BaseBackend):
             return cursor
         cursor.release()
 
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        yield self.raw_sql(*args, **kwargs)
+
     def execute(
         self,
         expr: ir.Expr,
@@ -141,9 +146,11 @@ class BaseSQLBackend(BaseBackend):
         )
         sql = query_ast.compile()
         self._log(sql)
-        cursor = self.raw_sql(sql, **kwargs)
+
         schema = self.ast_schema(query_ast, **kwargs)
-        result = self.fetch_from_cursor(cursor, schema)
+
+        with self._safe_raw_sql(sql, **kwargs) as cursor:
+            result = self.fetch_from_cursor(cursor, schema)
 
         if hasattr(getattr(query_ast, 'dml', query_ast), 'result_handler'):
             result = query_ast.dml.result_handler(result)
@@ -252,9 +259,8 @@ class BaseSQLBackend(BaseBackend):
 
         statement = f'EXPLAIN {query}'
 
-        cur = self.raw_sql(statement)
-        result = self._get_list(cur)
-        cur.release()
+        with self._safe_raw_sql(statement) as cur:
+            result = self._get_list(cur)
 
         return '\n'.join(['Query:', util.indent(query, 2), '', *result])
 
