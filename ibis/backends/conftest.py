@@ -452,14 +452,9 @@ def backend(
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(backend):
-    """
-    Instance of Client, already connected to the db (if applies).
-    """
-    # See #3021
-    # TODO Rename this to `backend` when the existing `backend` is renamed to
-    # `backend_test`, and when `connect` returns `Backend` and not `Client`
+    """Instance of a backend client."""
     return backend.connection
 
 
