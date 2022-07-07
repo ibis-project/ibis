@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import abc
 import functools
+import glob
+import itertools
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
+
+import bracex
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -659,19 +663,24 @@ def _(url: str, **kwargs: Any) -> BaseBackend:
     return _connect(url, **kwargs)
 
 
-@_connect.register(
-    r"(?P<backend>.+)://(?P<filename>.+\.(?P<extension>.+))",
-    priority=11,
-)
-def _(
-    _: str,
-    *,
-    backend: str,
-    filename: str,
-    extension: str,
-    **kwargs: Any,
-) -> BaseBackend:
-    """Connect to `backend` and register a file.
+@_connect.register(r"sqlite://(?P<path>.*)", priority=12)
+def _(_: str, **kwargs: Any) -> BaseBackend:
+    """Connect to the SQLite backend.
+
+    Examples
+    --------
+    >>> con = ibis.connect("sqlite://relative/path/to/sqlite.db")
+    >>> con = ibis.connect("sqlite://:memory:")
+    >>> con = ibis.connect("sqlite://")
+    """
+    return ibis.sqlite.connect(**kwargs)
+
+
+@_connect.register(r"duckdb://(?P<filename>.+)", priority=11)
+def _(_: str, *, filename: str, **kwargs: Any) -> BaseBackend:
+    """Connect to the DuckDB backend and register one or more files.
+
+    Supports globs and Bash-style brace expansion.
 
     The extension of the file will be used to register the file with
     the backend.
@@ -681,22 +690,16 @@ def _(
     >>> con = ibis.connect("duckdb://relative/path/to/data.csv")
     >>> con = ibis.connect("duckdb://relative/path/to/more/data.parquet")
     """
-    con = getattr(ibis, backend).connect(**kwargs)
-    con.register(f"{extension}://{filename}")
+    con = ibis.duckdb.connect(**kwargs)
+    for path in itertools.chain.from_iterable(
+        map(glob.glob, bracex.iexpand(filename))
+    ):
+        con.register(f"file://{path}")
     return con
 
 
-@_connect.register(
-    r"(?P<filename>.+\.(?P<extension>parquet|csv))",
-    priority=8,
-)
-def _(
-    _: str,
-    *,
-    filename: str,
-    extension: str,
-    **kwargs: Any,
-) -> BaseBackend:
+@_connect.register(r"(?P<filename>.+\.(?:parquet|csv))", priority=8)
+def _(_: str, *, filename: str, **kwargs: Any) -> BaseBackend:
     """Connect to `duckdb` and register a parquet or csv file.
 
     Examples

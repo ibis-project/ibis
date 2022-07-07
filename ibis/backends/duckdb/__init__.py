@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import glob
+import itertools
 import os
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, NamedTuple
 
+import bracex
 import sqlalchemy as sa
 import toolz
 
@@ -41,18 +44,43 @@ def _quote(name: str):
     return _dialect.identifier_preparer.quote(name)
 
 
+def _expand_glob_for_table(path: str, table_name: str | None) -> list[str]:
+    """Check whether a glob pattern returns more than one item."""
+    paths = bracex.expand(path)
+    if table_name is None:
+        if len(paths) > 1:
+            raise ValueError(
+                f"More than one path found with pattern {path!r}. "
+                "Pass the `table_name` argument to name the union'd tables."
+            )
+        if toolz.count(itertools.islice(glob.iglob(path), 2)) > 1:
+            raise ValueError(
+                f"Pattern {path!r} matches multiple files and cannot be used "
+                "to name the view. Pass the `table_name` argument to "
+                "`register`."
+            )
+    return paths
+
+
 @_register.register(r"parquet://(?P<path>.+)", priority=10)
 def _parquet(_, path, table_name=None):
     path = Path(path).absolute()
+    paths = _expand_glob_for_table(str(path), table_name)
     table_name = _quote(table_name or _name_from_path(path))
-    return f"CREATE VIEW {table_name} as SELECT * from read_parquet('{path}')"
+    return f"CREATE VIEW {table_name} as SELECT * from read_parquet({paths!r})"
 
 
 @_register.register(r"csv(?:\.gz)?://(?P<path>.+)", priority=10)
 def _csv(_, path, table_name=None):
     path = Path(path).absolute()
+    paths = _expand_glob_for_table(str(path), table_name)
     table_name = _quote(table_name or _name_from_path(path))
-    return f"CREATE VIEW {table_name} as SELECT * from read_csv_auto('{path}')"  # noqa: E501
+    # DuckDB doesn't support a list of CSV files, so we manually create the
+    # union here
+    unions = "\nUNION ALL\n".join(
+        f"SELECT * FROM read_csv_auto('{path}')" for path in paths
+    )
+    return f"CREATE VIEW {table_name} as\n{unions}"
 
 
 @_register.register(r"(?:file://)?(?P<path>.+)", priority=9)
@@ -120,16 +148,17 @@ class Backend(BaseAlchemyBackend):
         path: str | Path,
         table_name: str | None = None,
     ) -> None:
-        """Register an external file as a table in the current connection
-        database
+        """Register an external file as a view in the current connection.
 
         Parameters
         ----------
         path
-            Name of the parquet or CSV file
+            Path to the parquet or CSV file. Supports globbing and Bash-style
+            brace expansion. All files matching a glob or brace expansion
+            pattern are assumed to have the same schema.
         table_name
-            Name for the created table.  Defaults to filename if not given.
-            Any dashes in a user-provided or generated name will be
+            Name for the created table.  Defaults to the files basename if not
+            given. Any dashes in a user-provided or generated name will be
             replaced with underscores.
         """
         view = _register(path, table_name=table_name)
