@@ -30,28 +30,28 @@ class _ColumnMetadata(NamedTuple):
 _register = RegexDispatcher("_register")
 
 
-@_register.register(r"parquet://(?P<path>.*)", priority=10)
+@_register.register(r"parquet://(?P<path>.+)", priority=10)
 def _parquet(filename, path, table_name=None):
     path = Path(path).absolute()
     table_name = table_name or path.stem.replace("-", "_")
     return f"CREATE VIEW {table_name} as SELECT * from read_parquet('{path}')"
 
 
-@_register.register(r"csv://(?P<path>.*)", priority=10)
+@_register.register(r"csv://(?P<path>.+)", priority=10)
 def _csv(filename, path, table_name=None):
     path = Path(path).absolute()
     table_name = table_name or path.stem.replace("-", "_")
     return f"CREATE VIEW {table_name} as SELECT * from read_csv_auto('{path}')"  # noqa: E501
 
 
-@_register.register(r"file://(?P<path>\w+)\.(?P<extension>\w+)", priority=10)
+@_register.register(r"file://(?P<path>.+)\.(?P<extension>.+)", priority=10)
 def _file(filename, path, extension, table_name=None):
     return _register(
         f"{extension}://{path}.{extension}", table_name=table_name
     )
 
 
-@_register.register(r"(?P<path>\w+)\.(?P<extension>\w+)", priority=9)
+@_register.register(r"(?P<path>.+)\.(?P<extension>.+)", priority=9)
 def _noprefix(filename, path, extension, table_name=None):
     prefix = extension
     if prefix == "csv.gz":
