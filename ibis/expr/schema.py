@@ -389,7 +389,7 @@ class Schema(Annotable, Comparable):
                 # assume not equal
                 not_equal = True
 
-            if not_equal or isinstance(dtype, (dt.String, dt.Struct)):
+            if not_equal or not isinstance(dtype, dt.Primitive):
                 new_col = convert(col_dtype, dtype, col)
             else:
                 new_col = col

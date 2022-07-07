@@ -857,8 +857,8 @@ def test_integer_cast_to_timestamp(backend, alltypes, df):
     ),
 )
 @pytest.mark.notimpl(
-    ["datafusion", "duckdb"],
-    reason="DataFusion and DuckDB backends assume ns resolution timestamps",
+    ["datafusion"],
+    reason="DataFusion backend assumes ns resolution timestamps",
 )
 @pytest.mark.notyet(
     ["pyspark"],

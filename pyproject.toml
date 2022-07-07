@@ -46,8 +46,8 @@ dask = { version = ">=2021.10.0,<2022.8.0", optional = true, extras = [
   "dataframe"
 ] }
 datafusion = { version = ">=0.4,<0.7", optional = true }
-duckdb = { version = ">=0.3.2,<0.5.0", optional = true }
-duckdb-engine = { version = ">=0.1.8,<0.5.0", optional = true }
+duckdb = { version = ">=0.3.2,<1", optional = true }
+duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 GeoAlchemy2 = { version = ">=0.6.3,<0.13", optional = true }
 geopandas = { version = ">=0.6,<0.12", optional = true }
@@ -61,7 +61,7 @@ pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8.3", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
-sqlglot = { version = "^4.3.0", optional = true }
+sqlglot = { version = ">=4.3.0,<5", optional = true }
 
 [tool.poetry.dev-dependencies]
 absolufy-imports = ">=0.3.1,<1"
@@ -131,7 +131,7 @@ all = [
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine", "sqlalchemy"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests"]
 mysql = ["sqlalchemy", "pymysql"]
@@ -224,7 +224,20 @@ filterwarnings = [
   "ignore: _SixMetaPathImporter.find_spec()",
 ]
 empty_parameter_set_mark = "fail_at_collect"
-norecursedirs = ["site-packages", "dist-packages"]
+norecursedirs = [
+  ".benchmarks",
+  ".direnv",
+  ".git",
+  ".github",
+  "LICENSES",
+  "ci",
+  "conda-lock",
+  "dev",
+  "docker",
+  "nix",
+  "result",
+  "result-*",
+]
 markers = [
   "backend: tests specific to a backend",
   "core: tests that do not required a backend",
