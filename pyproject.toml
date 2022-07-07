@@ -28,6 +28,7 @@ pattern = "^(?P<base>\\d+(\\.\\d+)*)"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 atpublic = ">=2.3,<4"
+bracex = ">=2.3.post1,<3"
 cached_property = ">=1,<2"
 importlib-metadata = { version = ">=4,<5", python = "<3.10" }
 multipledispatch = ">=0.6,<0.7"

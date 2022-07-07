@@ -3,9 +3,12 @@ from __future__ import annotations
 import abc
 import functools
 import glob
+import itertools
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
+
+import bracex
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -691,8 +694,10 @@ def _(_: str, *, filename: str, extension: str, **kwargs: Any) -> BaseBackend:
     >>> con = ibis.connect("duckdb://relative/path/to/more/data.parquet")
     """
     con = ibis.duckdb.connect(**kwargs)
-    for path in glob.glob(filename):
-        con.register(f"{extension}://{path}")
+    for path in itertools.chain.from_iterable(
+        map(glob.glob, bracex.iexpand(filename))
+    ):
+        con.register(f"file://{path}")
     return con
 
 
