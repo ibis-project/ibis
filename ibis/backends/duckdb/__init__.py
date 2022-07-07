@@ -153,7 +153,8 @@ class Backend(BaseAlchemyBackend):
         cursor: duckdb.DuckDBPyConnection,
         schema: sch.Schema,
     ):
-        df = cursor.cursor.fetch_df()
+        table = cursor.cursor.fetch_arrow_table()
+        df = table.to_pandas(timestamp_as_object=True)
         return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterator[_ColumnMetadata]:

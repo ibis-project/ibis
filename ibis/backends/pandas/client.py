@@ -289,6 +289,11 @@ def convert_struct_to_dict(_, out_dtype, column):
     return column.map(convert_element)
 
 
+@sch.convert.register(np.dtype, dt.Array, pd.Series)
+def convert_array_to_series(in_dtype, out_dtype, column):
+    return column.map(lambda x: x if x is None else list(x))
+
+
 dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
 sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
 
