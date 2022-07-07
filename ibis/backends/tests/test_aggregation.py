@@ -112,6 +112,53 @@ def test_aggregate_grouped(
     backend.assert_frame_equal(result2, expected)
 
 
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "duckdb",
+        "impala",
+        "mysql",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ]
+)
+def test_aggregate_multikey_group_reduction(backend, alltypes, df):
+    """Tests .aggregate() on a multi-key groupby with a reduction operation"""
+
+    @reduction(
+        input_type=[dt.double],
+        output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double]),
+    )
+    def mean_and_std(v):
+        return v.mean(), v.std()
+
+    grouping_key_cols = ['bigint_col', 'int_col']
+
+    expr1 = alltypes.groupby(grouping_key_cols).aggregate(
+        mean_and_std(alltypes['double_col']).destructure()
+    )
+
+    result1 = expr1.execute()
+
+    # Note: Using `reset_index` to get the grouping key as a column
+    expected = (
+        df.groupby(grouping_key_cols)['double_col']
+        .agg(['mean', 'std'])
+        .reset_index()
+    )
+
+    # Row ordering may differ depending on backend, so sort on the
+    # grouping key
+    result1 = result1.sort_values(by=grouping_key_cols).reset_index(drop=True)
+    expected = expected.sort_values(by=grouping_key_cols).reset_index(
+        drop=True
+    )
+
+    backend.assert_frame_equal(result1, expected)
+
+
 @pytest.mark.parametrize(
     ('result_fn', 'expected_fn'),
     [

@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import dask.dataframe as dd
 import dask.delayed
+import numpy as np
 import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
@@ -37,10 +38,26 @@ def register_types_to_dispatcher(
             dispatcher.register(ibis_op, *types_to_register)(fn)
 
 
-def make_meta_series(dtype, name=None, index_name=None):
+def make_meta_series(
+    dtype: np.dtype,
+    name: Optional[str] = None,
+    meta_index: Optional[pd.Index] = None,
+):
+    if isinstance(meta_index, pd.MultiIndex):
+        index_names = meta_index.names
+        series_index = pd.MultiIndex(
+            levels=[[]] * len(index_names),
+            codes=[[]] * len(index_names),
+            names=index_names,
+        )
+    elif isinstance(meta_index, pd.Index):
+        series_index = pd.Index([], name=meta_index.name)
+    else:
+        series_index = pd.Index([])
+
     return pd.Series(
         [],
-        index=pd.Index([], name=index_name),
+        index=series_index,
         dtype=dtype,
         name=name,
     )
@@ -209,15 +226,17 @@ def _coerce_to_dataframe(
         # NOTE - We add a detailed meta here so we do not drop the key index
         # downstream. This seems to be fixed in versions of dask > 2020.12.0
         dtypes = map(ibis_dtype_to_pandas, types)
-
         series = [
             data.apply(
                 _select_item_in_iter,
                 selection=i,
-                meta=make_meta_series(dtype, index_name=data.index.name),
+                meta=make_meta_series(
+                    dtype, meta_index=data._meta_nonempty.index
+                ),
             )
             for i, dtype in enumerate(dtypes)
         ]
+
         result = dd.concat(series, axis=1)
 
     elif isinstance(data, (tuple, list)):
