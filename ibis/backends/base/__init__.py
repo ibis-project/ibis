@@ -678,12 +678,11 @@ def _(_: str, **kwargs: Any) -> BaseBackend:
     return ibis.sqlite.connect(**kwargs)
 
 
-@_connect.register(
-    r"duckdb://(?P<filename>.+\.(?P<extension>.+))",
-    priority=11,
-)
-def _(_: str, *, filename: str, extension: str, **kwargs: Any) -> BaseBackend:
-    """Connect to `backend` and register a file.
+@_connect.register(r"duckdb://(?P<filename>.+)", priority=11)
+def _(_: str, *, filename: str, **kwargs: Any) -> BaseBackend:
+    """Connect to the DuckDB backend and register one or more files.
+
+    Supports globs and Bash-style brace expansion.
 
     The extension of the file will be used to register the file with
     the backend.
