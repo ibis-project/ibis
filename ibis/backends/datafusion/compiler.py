@@ -123,6 +123,14 @@ def aggregation(op, expr):
         agg = translate(expr)
         metrics.append(agg)
 
+    if op.predicates:
+        table = table.filter(
+            functools.reduce(
+                operator.and_,
+                map(translate, op.predicates),
+            )
+        )
+
     return table.aggregate(group_by, metrics)
 
 
