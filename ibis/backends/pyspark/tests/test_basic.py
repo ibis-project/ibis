@@ -4,7 +4,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 
 pyspark = pytest.importorskip("pyspark")
 
@@ -172,37 +171,6 @@ def test_cast(client):
     df = df.withColumn('id_string', df.id.cast('string'))
 
     tm.assert_frame_equal(result.toPandas(), df.toPandas())
-
-
-@pytest.mark.parametrize(
-    'fn',
-    [
-        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd')),
-        param(lambda t: t.date_str.to_timestamp('yyyy-MM-dd', timezone='UTC')),
-    ],
-)
-def test_string_to_timestamp(client, fn):
-    table = client.table('date_table')
-
-    result = table.mutate(date=fn(table)).compile()
-
-    df = table.compile()
-    expected = df.withColumn(
-        'date', F.to_date(df.date_str, 'yyyy-MM-dd').alias('date')
-    )
-    expected_pdf = expected.toPandas()
-    expected_pdf['date'] = pd.to_datetime(expected_pdf['date'])
-
-    tm.assert_frame_equal(result.toPandas(), expected_pdf)
-
-
-def test_string_to_timestamp_tz_error(client):
-    table = client.table('date_table')
-
-    with pytest.raises(com.UnsupportedArgumentError):
-        table.mutate(
-            date=table.date_str.to_timestamp('yyyy-MM-dd', 'non-utc-timezone')
-        ).compile()
 
 
 def test_alias_after_select(client):
