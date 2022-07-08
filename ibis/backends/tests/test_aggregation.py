@@ -4,6 +4,7 @@ import pytest
 from pytest import mark, param
 
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis import literal as L
 from ibis.udf.vectorized import reduction
 
@@ -630,3 +631,21 @@ def test_agg_sort(alltypes):
     query = alltypes.aggregate(count=alltypes.count())
     query = query.sort_by(alltypes.year)
     query.execute()
+
+
+def test_filter(backend, alltypes, df):
+    expr = (
+        alltypes[_.string_col == "1"]
+        .group_by(_.bigint_col)
+        .aggregate(_.double_col.sum())
+    )
+
+    result = expr.execute()
+    expected = (
+        df.loc[df.string_col == "1", :]
+        .groupby("bigint_col")
+        .double_col.sum()
+        .rename("sum")
+        .reset_index()
+    )
+    backend.assert_frame_equal(result, expected, check_like=True)
