@@ -1,6 +1,9 @@
+import sqlite3
+
 import numpy as np
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 
@@ -71,19 +74,26 @@ def check_eq(left, right, how, **kwargs):
 @pytest.mark.parametrize(
     "how",
     [
-        param("inner", marks=pytest.mark.notimpl(["datafusion"])),
-        param("left", marks=pytest.mark.notimpl(["datafusion"])),
-        param("right", marks=pytest.mark.notimpl(["datafusion"])),
+        "inner",
+        "left",
+        "right",
         param(
             "outer",
-            # TODO: mysql and sqlite will likely never support full outer join
+            # TODO: mysql will likely never support full outer join
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["mysql"]
+                + (
+                    ["sqlite"]
+                    * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
+                )
+            ),
         ),
     ],
 )
-def test_mutating_join(backend, con, batting, awards_players, how):
+@pytest.mark.notimpl(["datafusion"])
+def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop(
         ['yearID', 'lgID']
