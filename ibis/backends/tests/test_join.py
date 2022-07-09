@@ -7,26 +7,14 @@ from packaging.version import parse as vparse
 from pytest import param
 
 
-def _pandas_semi_join(
-    left,
-    right,
-    on,
-    how="semi",
-    suffixes=("", "_y"),
-):
+def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)
     inner = pd.merge(left, right, how="inner", on=on)
     filt = left.loc[:, on[0]].isin(inner.loc[:, on[0]])
     return left.loc[filt, :]
 
 
-def _pandas_anti_join(
-    left,
-    right,
-    on,
-    how="anti",
-    suffixes=("", "_y"),
-):
+def _pandas_anti_join(left, right, on, **_):
     assert len(on) == 1, str(on)
     inner = pd.merge(left, right, how="inner", on=on)
     filt = left.loc[:, on[0]].isin(inner.loc[:, on[0]])
@@ -147,7 +135,7 @@ def test_mutating_join(backend, batting, awards_players, how):
         ),
     ],
 )
-def test_filtering_join(backend, con, batting, awards_players, how):
+def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop(
         ['yearID', 'lgID']
