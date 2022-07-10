@@ -21,6 +21,7 @@ from ibis.common.validators import (  # noqa: F401
 )
 
 
+# TODO(kszucs): consider to rename to datashape
 class Shape(enum.IntEnum):
     SCALAR = 0
     COLUMNAR = 1

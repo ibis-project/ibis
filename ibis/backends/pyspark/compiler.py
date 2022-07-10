@@ -327,7 +327,7 @@ def compile_literal(t, op, raw=False, **kwargs):
 
     if isinstance(dtype, dt.Interval):
         # execute returns a Timedelta and value is nanoseconds
-        return execute(op.to_expr()).value
+        return execute(op).value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
