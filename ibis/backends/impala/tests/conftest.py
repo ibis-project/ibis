@@ -41,7 +41,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         Parameters
         ----------
         data_dir
-            Location of testdata
+            Location of test data
         script_dir
             Location of scripts defining schemas
         """
