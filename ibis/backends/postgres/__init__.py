@@ -115,13 +115,6 @@ class Backend(BaseAlchemyBackend):
         ]
         return self._filter_with_like(databases, like)
 
-    @util.deprecated(version='2.0', instead='use `list_databases`')
-    def list_schemas(self, like=None):
-        """List all the schemas in the current database."""
-        # In Postgres we support schemas, which in other engines (e.g. MySQL)
-        # are databases
-        return super().list_databases(like)
-
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:

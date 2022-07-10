@@ -1,5 +1,4 @@
 import enum
-import functools
 import operator
 from itertools import product, starmap
 
@@ -226,20 +225,6 @@ def client(arg, **kwargs):
 
 # ---------------------------------------------------------------------
 # Ouput type functions
-
-
-@util.deprecated(version="4.0", instead="")
-def promoter(fn):  # pragma: no cover
-    @functools.wraps(fn)
-    def wrapper(name_or_value, *args, **kwargs):
-        if isinstance(name_or_value, str):
-            return lambda self: fn(
-                getattr(self, name_or_value), *args, **kwargs
-            )
-        else:
-            return fn(name_or_value, *args, **kwargs)
-
-    return wrapper
 
 
 def dtype_like(name):
@@ -489,46 +474,6 @@ def python_literal(value, arg, **kwargs):
             f"{value} with type {type(value)}, got `arg` with type {type(arg)}"
         )
     return arg
-
-
-@validator
-@util.deprecated(version="4.0", instead="")
-def is_computable_input(value, **kwargs):  # pragma: no cover
-    from ibis.backends.pandas.core import (
-        is_computable_input as _is_computable_input,
-    )
-
-    if not _is_computable_input(value):
-        raise com.IbisTypeError(
-            f"object {value} is not a computable input; "
-            "did you register the type with "
-            "ibis.backends.pandas.core.is_computable_input?"
-        )
-    return value
-
-
-@validator
-@util.deprecated(version="4.0.0", instead="")
-def named_literal(value, **kwargs):
-    import ibis.expr.operations as ops
-
-    if not isinstance(value, ir.Scalar):
-        raise com.IbisTypeError(
-            "`value` must be a scalar expression; "
-            f"got value of type {type(value).__name__}"
-        )
-
-    if not isinstance(value.op(), ops.Literal):
-        raise com.IbisTypeError(
-            "`value` must map to an ibis literal; "
-            f"got expr with op {type(value.op()).__name__}"
-        )
-
-    # check that the literal has a name
-    if not value.has_name():
-        raise com.IbisTypeError("`value` literal is not named")
-
-    return value
 
 
 @validator

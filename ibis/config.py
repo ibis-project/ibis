@@ -156,27 +156,3 @@ def option_context(key: str, new_value: Any) -> Iterator[None]:
         yield
     finally:
         setattr(namespace, field, value)
-
-
-def get_option(key: str) -> Any:
-    from ibis import util
-
-    util.warn_deprecated(
-        "get_option",
-        instead="get options directly: ibis.config.options.foo_option",  # noqa: E501
-        version="4.0",
-    )
-    namespace, field = _get_namespace(key)
-    return getattr(namespace, field)
-
-
-def set_option(key: str, value: Any) -> None:
-    from ibis import util
-
-    util.warn_deprecated(
-        "set_option",
-        instead="set options directly: ibis.config.options.foo_option = 'some_value'",  # noqa: E501
-        version="4.0",
-    )
-    namespace, field = _get_namespace(key)
-    setattr(namespace, field, value)
