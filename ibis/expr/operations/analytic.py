@@ -28,7 +28,7 @@ class Window(Value):
 
     @property
     def inputs(self):
-        return self.expr.op().inputs[0], self.window
+        return self.expr.inputs[0], self.window
 
 
 @public

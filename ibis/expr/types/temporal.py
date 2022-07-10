@@ -195,7 +195,7 @@ class _TimeComponentMixin:
             # triggered when creating expressions like
             # t.column.distinct().count(), which is turned into
             # t.column.nunique().
-            arg = op.arg
+            arg = op.arg.to_expr()
             if timezone is not None:
                 arg = arg.cast(dt.Timestamp(timezone=timezone))
             op_cls = ops.BetweenTime

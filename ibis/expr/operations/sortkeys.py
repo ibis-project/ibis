@@ -5,7 +5,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common import exceptions as com
-from ibis.expr.operations.core import Node
+from ibis.expr.operations.core import Value
 
 
 # TODO(kszucs): rewrite to both receive operations and return with operations
@@ -64,7 +64,7 @@ def _maybe_convert_sort_keys(tables, exprs):
 
 
 @public
-class SortKey(Node):
+class SortKey(Value):
     expr = rlz.column(rlz.any)
     ascending = rlz.optional(
         rlz.map_to(
@@ -79,9 +79,14 @@ class SortKey(Node):
     )
 
     output_type = ir.SortExpr
+    output_shape = rlz.Shape.COLUMNAR
 
     def resolve_name(self):
         return self.expr.resolve_name()
+
+    @property
+    def output_dtype(self):
+        return self.expr.output_dtype
 
 
 @public

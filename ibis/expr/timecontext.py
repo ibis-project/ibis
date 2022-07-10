@@ -311,12 +311,15 @@ def adjust_context_window(
     # adjust time context by preceding and following
     begin, end = timecontext
 
+    # TODO(kszucs): rewrite op.window.preceding to be an ops.Node
     preceding = op.window.preceding
     if preceding is not None:
         if isinstance(preceding, ir.IntervalScalar):
+            # TODO(kszucs): this file should be really moved to the pandas
+            # backend instead of the current central placement
             from ibis.backends.pandas.execution import execute
 
-            preceding = execute(preceding)
+            preceding = execute(preceding.op())
         if preceding and not isinstance(preceding, (int, np.integer)):
             begin = begin - preceding
 
@@ -325,7 +328,7 @@ def adjust_context_window(
         if isinstance(following, ir.IntervalScalar):
             from ibis.backends.pandas.execution import execute
 
-            following = execute(following)
+            following = execute(following.op())
         if following and not isinstance(following, (int, np.integer)):
             end = end + following
 

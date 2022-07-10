@@ -148,7 +148,7 @@ def find_immediate_parent_tables(node):
         r0
         foo: r0.a + 1
     """
-    assert isinstance(node, ops.Node), type(node)
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
 
     def finder(node):
         if isinstance(node, ops.TableNode):

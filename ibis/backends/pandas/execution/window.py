@@ -154,14 +154,14 @@ def get_aggcontext_window(
     # expand or roll.
     #
     # otherwise we're transforming
-    output_type = operand.type()
+    output_type = operand.output_dtype
 
     aggcontext: agg_ctx.AggregationContext
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif (
         isinstance(
-            operand.op(), (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
+            operand, (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
         )
         and order_by
     ):
@@ -169,7 +169,7 @@ def get_aggcontext_window(
         preceding = window.preceding
         if preceding is not None:
             max_lookback = window.max_lookback
-            assert not isinstance(operand.op(), ops.CumulativeOp)
+            assert not isinstance(operand, ops.CumulativeOp)
             aggcontext = agg_ctx.Moving(
                 preceding,
                 max_lookback,
@@ -266,7 +266,7 @@ def execute_window_op(
     **kwargs,
 ):
     if window.how == "range" and any(
-        not isinstance(ob.type(), (dt.Time, dt.Date, dt.Timestamp))
+        not isinstance(ob.output_dtype, (dt.Time, dt.Date, dt.Timestamp))
         for ob in window._order_by
     ):
         raise NotImplementedError(
@@ -277,7 +277,6 @@ def execute_window_op(
     # pre execute "manually" here because otherwise we wouldn't pickup
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
-    operand_op = operand.op()
 
     adjusted_timecontext = None
     if timecontext:
@@ -291,7 +290,7 @@ def execute_window_op(
         adjusted_timecontext = arg_timecontexts[0]
 
     pre_executed_scope = pre_execute(
-        operand_op,
+        operand,
         *clients,
         scope=scope,
         timecontext=adjusted_timecontext,
@@ -302,10 +301,10 @@ def execute_window_op(
         scope = pre_executed_scope
     else:
         scope = scope.merge_scope(pre_executed_scope)
-    root_expr = an.find_first_base_table(op.to_expr()).to_expr()
 
+    root_table = an.find_first_base_table(op)
     data = execute(
-        root_expr,
+        root_table,
         scope=scope,
         timecontext=adjusted_timecontext,
         clients=clients,
@@ -315,11 +314,7 @@ def execute_window_op(
     following = window.following
     order_by = window._order_by
 
-    if (
-        order_by
-        and following != 0
-        and not isinstance(operand_op, ops.ShiftBase)
-    ):
+    if order_by and following != 0 and not isinstance(operand, ops.ShiftBase):
         raise com.OperationNotDefinedError(
             'Window functions affected by following with order_by are not '
             'implemented'
@@ -327,8 +322,8 @@ def execute_window_op(
 
     group_by = window._group_by
     grouping_keys = [
-        key_op.name
-        if isinstance(key_op, ops.TableColumn)
+        key.name
+        if isinstance(key, ops.TableColumn)
         else execute(
             key,
             scope=scope,
@@ -337,9 +332,7 @@ def execute_window_op(
             aggcontext=aggcontext,
             **kwargs,
         )
-        for key, key_op in zip(
-            group_by, map(operator.methodcaller('op'), group_by)
-        )
+        for key in group_by
     ]
 
     order_by = window._order_by

@@ -25,6 +25,7 @@ class Node(Annotable, Comparable):
             )
         return self.__cached_equals__(other)
 
+    # TODO(kszucs): remove this property
     @property
     def inputs(self):
         return self.args
