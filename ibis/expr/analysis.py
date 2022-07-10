@@ -603,22 +603,6 @@ def find_first_base_table(expr):
         return None
 
 
-def find_root_tables(expr, consider_projections_only=False):
-    # more restrictive version of find_immediate_parent_tables()
-
-    def finder(expr):
-        op = expr.op()
-
-        if isinstance(op, ops.Selection):
-            return lin.halt, op
-        elif op.blocks():
-            return lin.halt, op
-        else:
-            return lin.proceed, None
-
-    return list(toolz.unique(lin.traverse(finder, expr)))
-
-
 def _find_projections(expr):
     op = expr.op()
 

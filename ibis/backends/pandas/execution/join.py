@@ -17,7 +17,7 @@ def _compute_join_column(column_expr, **kwargs):
         new_column = column_op.name
     else:
         new_column = execute(column_expr, **kwargs)
-    root_table, *_ = an.find_root_tables(column_expr)
+    root_table, *_ = an.find_immediate_parent_tables(column_expr)
     return new_column, root_table
 
 

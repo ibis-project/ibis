@@ -60,7 +60,7 @@ def compute_projection_scalar_expr(
             },
             timecontext,
         )
-        for t in an.find_root_tables(expr)
+        for t in an.find_immediate_parent_tables(expr)
     )
     scalar = execute(expr, scope=scope, **kwargs)
     return data.assign(**{name: scalar})[name]
@@ -105,7 +105,7 @@ def compute_projection_column_expr(
             },
             timecontext,
         )
-        for t in an.find_root_tables(expr)
+        for t in an.find_immediate_parent_tables(expr)
     )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)

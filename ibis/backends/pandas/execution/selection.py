@@ -126,7 +126,7 @@ def compute_projection_column_expr(
             },
             timecontext,
         )
-        for t in an.find_root_tables(expr)
+        for t in an.find_immediate_parent_tables(expr)
     )
 
     result = coerce_to_output(
