@@ -41,9 +41,6 @@ class TableNode(Node):
             ),
         )
 
-    def root_tables(self):
-        return [self]
-
 
 @public
 class PhysicalTable(TableNode, sch.HasSchema):

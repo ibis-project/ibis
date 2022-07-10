@@ -71,9 +71,6 @@ class SortKey(Node):
 
     output_type = ir.SortExpr
 
-    def root_tables(self):
-        return self.expr.op().root_tables()
-
     def resolve_name(self):
         return self.expr.get_name()
 

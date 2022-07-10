@@ -217,13 +217,11 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t.bool_col & t.bool_col,
             lambda df: df.bool_col & df.bool_col,
             id="and",
-            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.bool_col | t.bool_col,
             lambda df: df.bool_col | df.bool_col,
             id="or",
-            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.bool_col ^ t.bool_col,

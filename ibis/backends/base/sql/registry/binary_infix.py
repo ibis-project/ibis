@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+import ibis.expr.analysis as an
 import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import helpers
 
@@ -81,7 +82,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             # TableColumn compilation
             and not any(
                 ctx.is_foreign_expr(leaf.to_expr())
-                for leaf in right.op().root_tables()
+                for leaf in an.find_immediate_parent_tables(right)
             )
         ):
             if not right.has_name():

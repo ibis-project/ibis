@@ -11,10 +11,10 @@ from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
 
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dtypes
+import ibis.expr.analysis as an
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.types as types
 from ibis import interval
 from ibis.backends.pandas.client import PandasInMemoryTable
 from ibis.backends.pandas.execution import execute
@@ -161,9 +161,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
         result_table = result_table.drop(filter_column)
 
     for selection in op.selections:
-        if isinstance(selection, types.Table):
+        if isinstance(selection, ir.Table):
             col_in_selection_order.extend(selection.columns)
-        elif isinstance(selection, types.DestructColumn):
+        elif isinstance(selection, ir.DestructColumn):
             struct_col = t.translate(
                 selection, scope, adjusted_timecontext, **kwargs
             )
@@ -178,7 +178,7 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
                 for name in selection.type().names
             ]
             col_in_selection_order.extend(cols)
-        elif isinstance(selection, (types.Column, types.Scalar)):
+        elif isinstance(selection, (ir.Column, ir.Scalar)):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
             # renames), we can get the selection name directly.
@@ -254,7 +254,7 @@ def compile_self_reference(t, expr, scope, timecontext, **kwargs):
 def compile_cast(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
 
-    if isinstance(op.to, dtypes.Interval):
+    if isinstance(op.to, dt.Interval):
         if isinstance(op.arg.op(), ops.Literal):
             return interval(op.arg.op().value, op.to.unit)
         else:
@@ -263,7 +263,7 @@ def compile_cast(t, expr, scope, timecontext, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
-    if isinstance(op.to, dtypes.Array):
+    if isinstance(op.to, dt.Array):
         cast_type = ibis_array_dtype_to_spark_dtype(op.to)
     else:
         cast_type = ibis_dtype_to_spark_dtype(op.to)
@@ -388,7 +388,7 @@ def compile_literal(t, expr, scope, timecontext, raw=False, **kwargs):
     if raw:
         return value
 
-    if isinstance(dtype, dtypes.Interval):
+    if isinstance(dtype, dt.Interval):
         # execute returns a Timedelta and value is nanoseconds
         return execute(expr).value
 
@@ -541,7 +541,7 @@ def compile_aggregator(
         if _is_table(expr):
             (src_col,) = src_cols
             return src_col.select(col)
-        (table_op,) = op.root_tables()
+        table_op = an.find_first_base_table(expr)
         return t.translate(
             table_op.to_expr(), scope, timecontext, **kwargs
         ).select(col)
@@ -741,7 +741,7 @@ def compile_covariance(t, expr, scope, timecontext, context=None, **kwargs):
 
     fn = {"sample": F.covar_samp, "pop": F.covar_pop}[how]
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dtypes.double)
+    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
     expr = op.__class__(
         left=op.left.cast(pyspark_double_type),
         right=op.right.cast(pyspark_double_type),
@@ -760,7 +760,7 @@ def compile_correlation(t, expr, scope, timecontext, context=None, **kwargs):
     if (how := op.how) == "pop":
         raise ValueError("PySpark only implements sample correlation")
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dtypes.double)
+    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
     expr = op.__class__(
         left=op.left.cast(pyspark_double_type),
         right=op.right.cast(pyspark_double_type),
@@ -974,7 +974,7 @@ def compile_negate(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
 
     src_column = t.translate(op.arg, scope, timecontext, **kwargs)
-    if expr.type() == dtypes.boolean:
+    if expr.type() == dt.boolean:
         return ~src_column
     return -src_column
 
@@ -1385,7 +1385,7 @@ def compile_window_op(t, expr, scope, timecontext, **kwargs):
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
         F.col(sort_expr.get_name()).cast('long')
-        if isinstance(sort_expr.op().expr, types.TimestampColumn)
+        if isinstance(sort_expr.op().expr, ir.TimestampColumn)
         else sort_expr.get_name()
         for sort_expr in order_by
     ]
@@ -1736,7 +1736,7 @@ def _get_interval_col(
         op = t.translate(interval_ibis_expr, scope, timecontext, **kwargs).op()
 
     dtype = op.dtype
-    if not isinstance(dtype, dtypes.Interval):
+    if not isinstance(dtype, dt.Interval):
         raise com.UnsupportedArgumentError(
             f'{dtype} expression cannot be converted to interval column. '
             'Must be Interval dtype.'

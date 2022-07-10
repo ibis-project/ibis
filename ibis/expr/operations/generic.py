@@ -19,7 +19,7 @@ import ibis.expr.types as ir
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Node, Unary, Value, distinct_roots
+from ibis.expr.operations.core import Node, Unary, Value
 from ibis.util import frozendict
 
 try:
@@ -57,9 +57,6 @@ class TableColumn(Value):
 
     def has_resolved_name(self):
         return True
-
-    def root_tables(self):
-        return self.table.op().root_tables()
 
     @property
     def output_dtype(self):
@@ -247,9 +244,6 @@ class Literal(Value):
     output_shape = rlz.Shape.SCALAR
     output_dtype = property(attrgetter("dtype"))
 
-    def root_tables(self):
-        return []
-
 
 @public
 class NullLiteral(Literal, Singleton):
@@ -281,9 +275,6 @@ class ScalarParameter(Value):
     def inputs(self):
         return ()
 
-    def root_tables(self):
-        return []
-
 
 @public
 class ValueList(Value):
@@ -296,9 +287,6 @@ class ValueList(Value):
     output_type = ir.ValueList
     output_dtype = rlz.dtype_like("values")
     output_shape = rlz.shape_like("values")
-
-    def root_tables(self):
-        return distinct_roots(*self.values)
 
 
 @public
@@ -368,10 +356,6 @@ class TopK(Node):
     def blocks(self):  # pragma: no cover
         return True
 
-    def root_tables(self):  # pragma: no cover
-        args = (arg for arg in self.flat_args() if isinstance(arg, ir.Expr))
-        return distinct_roots(*args)
-
 
 # TODO(kszucs): we should merge the case operations by making the
 # cases, results and default optional arguments like they are in
@@ -388,9 +372,6 @@ class SimpleCase(Value):
     def __init__(self, cases, results, **kwargs):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, **kwargs)
-
-    def root_tables(self):
-        return distinct_roots(*self.flat_args())
 
     @immutable_property
     def output_dtype(self):
@@ -412,9 +393,6 @@ class SearchedCase(Value):
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)
-
-    def root_tables(self):
-        return distinct_roots(*self.flat_args())
 
     @immutable_property
     def output_dtype(self):

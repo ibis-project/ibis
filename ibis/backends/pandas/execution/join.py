@@ -2,6 +2,7 @@ import operator
 
 import pandas as pd
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
@@ -15,7 +16,7 @@ def _compute_join_column(column_expr, **kwargs):
         new_column = column_op.name
     else:
         new_column = execute(column_expr, **kwargs)
-    (root_table,) = column_op.root_tables()
+    root_table, *_ = an.find_immediate_parent_tables(column_expr)
     return new_column, root_table
 
 
