@@ -27,7 +27,7 @@ colorama==0.4.5; platform_system == "Windows" and python_version >= "3.8" and py
 commitizen==2.27.1; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 coverage==6.4.1; python_version >= "3.7"
-dask==2022.6.1; python_version >= "3.8"
+dask==2022.7.0; python_version >= "3.8"
 datafusion==0.6.0; python_version >= "3.6"
 debugpy==1.6.0; python_version >= "3.7"
 decli==0.5.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.6"
@@ -178,7 +178,7 @@ tokenize-rt==4.2.1; python_full_version >= "3.6.1" and python_version >= "3.7"
 toml==0.10.2; python_full_version >= "3.7.1" and python_version > "3.6" and python_version < "4.0"
 tomli==2.0.1; python_version >= "3.7"
 tomlkit==0.11.0; python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.6.2" and python_full_version < "4.0.0"
-toolz==0.11.2; python_version >= "3.5"
+toolz==0.12.0; python_version >= "3.5"
 tornado==6.1; python_version >= "3.7"
 traitlets==5.3.0; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.8"
 typing-extensions==4.2.0; python_version >= "3.7" and python_full_version >= "3.6.3" and python_version < "3.9" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
