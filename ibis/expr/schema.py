@@ -404,9 +404,6 @@ class Schema(Annotable, Comparable):
 class HasSchema(abc.ABC):
     """Mixin representing a structured dataset with a schema."""
 
-    def root_tables(self):
-        return [self]
-
     @property
     @abc.abstractmethod
     def schema(self) -> Schema:
