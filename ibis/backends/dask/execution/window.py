@@ -5,6 +5,7 @@ from typing import Any, Optional, Union
 
 import dask.dataframe as dd
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.backends.dask.core import execute, execute_with_scope
@@ -111,7 +112,7 @@ def execute_grouped_window_op(
     **kwargs,
 ):
     # extract the parent
-    (root,) = op.root_tables()
+    root = an.find_first_base_table(op.to_expr())
     root_expr = root.to_expr()
 
     root_data = execute(
@@ -132,7 +133,7 @@ def execute_grouped_window_op(
     scope = scope.merge_scopes(
         [
             Scope({t: grouped_root_data}, timecontext)
-            for t in op.expr.op().root_tables()
+            for t in an.find_immediate_parent_tables(op.expr)
         ],
         overwrite=True,
     )

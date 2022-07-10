@@ -8,6 +8,7 @@ from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.backends.pandas.execution.util as pd_util
 import ibis.common.exceptions as com
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.util
 from ibis.backends.dask.core import execute
@@ -325,7 +326,8 @@ def compute_sort_key(
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
-            Scope({t: data}, timecontext) for t in by.op().root_tables()
+            Scope({t: data}, timecontext)
+            for t in an.find_immediate_parent_tables(by)
         )
         new_column = execute(by, scope=scope, **kwargs)
         new_column.name = name
