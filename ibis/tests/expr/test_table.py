@@ -1512,14 +1512,6 @@ def test_join_suffixes(how):
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
 
 
-def test_materialize_no_op():
-    left = ibis.table([("id", "int64")])
-    right = ibis.table([("id", "int64")])
-    expr = left.inner_join(right, "id")
-    with pytest.warns(FutureWarning):
-        expr.materialize()
-
-
 def test_exprs_to_select():
     t = ibis.table(dict(a="string"))
     exprs = [t.a.length().name("len")]

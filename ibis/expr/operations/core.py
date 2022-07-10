@@ -5,15 +5,13 @@ from abc import abstractmethod
 import toolz
 from public import public
 
-from ibis import util
 from ibis.common.exceptions import ExpressionError
-from ibis.common.grounds import Comparable
+from ibis.common.grounds import Annotable, Comparable
 from ibis.common.validators import immutable_property
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
 from ibis.expr.rules import Shape
 from ibis.expr.schema import Schema
-from ibis.expr.signature import Annotable
 from ibis.util import UnnamedMarker, is_iterable
 
 
@@ -75,19 +73,6 @@ class Node(Annotable, Comparable):
         # The contents of this node at referentially distinct and may not be
         # analyzed deeper
         return False
-
-    @util.deprecated(instead="", version="4.0.0")
-    def compatible_with(self, other):  # pragma: no cover
-        return self.equals(other)
-
-    @util.deprecated(version="4.0.0", instead="")
-    def is_ancestor(self, other):
-        try:
-            other = other.op()
-        except AttributeError:
-            pass
-
-        return self.equals(other)
 
     def to_expr(self):
         return self.output_type(self)
