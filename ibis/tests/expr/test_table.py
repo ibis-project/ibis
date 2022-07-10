@@ -1064,15 +1064,6 @@ def test_unravel_compound_equijoin(table):
     assert_equal(joined, expected)
 
 
-@pytest.mark.parametrize("op", ["union", "intersect", "difference"])
-def test_setops_deprecated_right_kwarg(op, setops_table_foo, setops_table_bar):
-    # TODO: remove in 4.0
-    with pytest.warns(FutureWarning):
-        a = getattr(setops_table_foo, op)(right=setops_table_bar)
-    b = getattr(setops_table_foo, op)(setops_table_bar)
-    assert_equal(a, b)
-
-
 def test_union(
     setops_table_foo,
     setops_table_bar,
@@ -1519,14 +1510,6 @@ def test_join_suffixes(how):
     method = getattr(left, f"{how}_join")
     expr = method(right, suffixes=("_left", "_right"))
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
-
-
-def test_materialize_no_op():
-    left = ibis.table([("id", "int64")])
-    right = ibis.table([("id", "int64")])
-    expr = left.inner_join(right, "id")
-    with pytest.warns(FutureWarning):
-        expr.materialize()
 
 
 def test_exprs_to_select():

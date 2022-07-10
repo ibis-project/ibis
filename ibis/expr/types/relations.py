@@ -76,25 +76,6 @@ def _regular_join_method(
     return f
 
 
-def _set_op_handle_deprecated_right_kwarg(
-    tables: tuple[Table], **kwargs: Any
-) -> tuple[Table]:
-    """Handle the deprecated `right` argument in union/intersect/difference
-
-    In 4.0 this can be deleted along with the kwargs argument in these methods.
-    """
-    if (right := kwargs.pop("right", None)) is not None:
-        warnings.warn(
-            "The `right` keyword argument has been deprecated and will "
-            "removed in 4.0. Pass tables in as positional arguments",
-            FutureWarning,
-        )
-        tables = (right, *tables)
-    if kwargs:
-        raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs)!r}")
-    return tables
-
-
 @public
 class Table(Expr):
     def __contains__(self, name):
@@ -346,7 +327,6 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
-        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Difference(left, right, distinct=distinct).to_expr()
         return left
@@ -488,7 +468,7 @@ class Table(Expr):
             sort_exprs = util.promote_list(sort_exprs)
         return self.op().sort_by(self, sort_exprs).to_expr()
 
-    def union(self, *tables: Table, distinct: bool = False, **kwargs) -> Table:
+    def union(self, *tables: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -508,14 +488,11 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
-        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Union(left, right, distinct=distinct).to_expr()
         return left
 
-    def intersect(
-        self, *tables: Table, distinct: bool = True, **kwargs
-    ) -> Table:
+    def intersect(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -535,7 +512,6 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
-        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Intersection(left, right, distinct=distinct).to_expr()
         return left
@@ -1242,31 +1218,6 @@ class Table(Expr):
             suffixes=suffixes,
         )
 
-    @util.deprecated(version="4.0", instead="")
-    def prevent_rewrite(self, client=None) -> Table:  # pragma: no cover
-        """Prevent optimization from happening below this expression.
-
-        Only valid on SQL-string generating backends.
-
-        Parameters
-        ----------
-        client
-            A client to use to create the SQLQueryResult operation. This can be
-            useful if you're compiling an expression that derives from an
-            `UnboundTable` operation.
-
-        Returns
-        -------
-        Table
-            An opaque SQL query
-        """
-        from ibis.expr import operations as ops
-
-        if client is None:
-            client = self._find_backend()
-        query = client.compile(self)
-        return ops.SQLQueryResult(query, self.schema(), client).to_expr()
-
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
     outer_join = _regular_join_method("outer_join", "outer")
@@ -1275,13 +1226,6 @@ class Table(Expr):
     anti_join = _regular_join_method("anti_join", "anti")
     any_inner_join = _regular_join_method("any_inner_join", "any_inner")
     any_left_join = _regular_join_method("any_left_join", "any_left")
-
-    @util.deprecated(
-        version="3.0",
-        instead="remove the `.materialize()` call, it has no effect",
-    )
-    def materialize(self) -> Table:
-        return self
 
     def alias(self, alias: str) -> ir.Table:
         """Create a table expression with a specific name `alias`.
@@ -1415,16 +1359,6 @@ def bind_expr(table, expr):
         return [bind_expr(table, x) for x in expr]
 
     return table._ensure_expr(expr)
-
-
-@util.deprecated(
-    version="4.0",
-    instead="Use ibis.expr.analysis.find_first_base_table() instead",
-)
-def find_base_table(expr):  # pragma: no cover
-    from ibis.expr.analysis import find_first_base_table
-
-    return find_first_base_table(expr)
 
 
 public(TableExpr=Table)
