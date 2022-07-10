@@ -295,26 +295,6 @@ def con2(env):
     return con
 
 
-def test_rerelease_cursor(con2):
-    # we use a separate `con2` fixture here because any connection pool
-    # manipulation we want to happen independently of `con`
-    with con2.raw_sql('select 1') as cur1:
-        pass
-
-    cur1.release()
-
-    with con2.raw_sql('select 1') as cur2:
-        pass
-
-    cur2.release()
-
-    with con2.raw_sql('select 1') as cur3:
-        pass
-
-    assert cur1 == cur2
-    assert cur2 == cur3
-
-
 def test_day_of_week(con):
     date_var = ibis.literal(datetime.date(2017, 1, 1), type=dt.date)
     expr_index = date_var.day_of_week.index()
@@ -368,27 +348,3 @@ def test_tables_robust_to_set_database(con, test_data_db, temp_database):
     n = 10
     df = table.limit(n).execute()
     assert len(df) == n
-
-
-def test_connection_pool_size(hdfs, env, test_data_db):
-    client = ibis.impala.connect(
-        port=env.impala_port,
-        hdfs_client=hdfs,
-        host=env.impala_host,
-        database=test_data_db,
-    )
-
-    # the client cursor may or may not be GC'd, so the connection
-    # pool will contain either zero or one cursor
-    assert len(client.con.connection_pool) in (0, 1)
-
-
-def test_connection_pool_size_after_close(hdfs, env, test_data_db):
-    client = ibis.impala.connect(
-        port=env.impala_port,
-        hdfs_client=hdfs,
-        host=env.impala_host,
-        database=test_data_db,
-    )
-    client.close()
-    assert not client.con.connection_pool
