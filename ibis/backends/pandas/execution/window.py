@@ -10,6 +10,7 @@ from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as win
@@ -301,8 +302,7 @@ def execute_window_op(
         scope = pre_executed_scope
     else:
         scope = scope.merge_scope(pre_executed_scope)
-    (root,) = op.root_tables()
-    root_expr = root.to_expr()
+    root_expr = an.find_first_base_table(op.to_expr()).to_expr()
 
     data = execute(
         root_expr,
@@ -384,7 +384,7 @@ def execute_window_op(
     new_scope = scope.merge_scopes(
         [
             Scope({t: source}, adjusted_timecontext)
-            for t in operand.op().root_tables()
+            for t in an.find_immediate_parent_tables(operand)
         ],
         overwrite=True,
     )
