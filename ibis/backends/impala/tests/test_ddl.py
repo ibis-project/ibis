@@ -1,4 +1,5 @@
 import concurrent.futures
+import multiprocessing
 from posixpath import join as pjoin
 
 import pytest
@@ -378,16 +379,24 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_temp_table_concurrency(con, test_data_dir):
-    def limit_10(i, hdfs_path):
+    def limit(con, hdfs_path, offset):
         t = con.parquet_file(hdfs_path)
-        return t.sort_by(t.r_regionkey).limit(1, offset=i).execute()
+        return t.sort_by(t.r_regionkey).limit(1, offset=offset).execute()
 
-    nthreads = 4
+    nthreads = multiprocessing.cpu_count()
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
 
+    num_rows = int(con.parquet_file(hdfs_path).count().execute())
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
-        futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
-    assert all(len(future.result()) for future in futures)
+        futures = [
+            e.submit(limit, con, hdfs_path, offset=offset % (num_rows - 1) + 1)
+            for offset in range(nthreads)
+        ]
+        results = [
+            future.result()
+            for future in concurrent.futures.as_completed(futures)
+        ]
+    assert all(map(len, results))
 
 
 def test_access_kudu_table(kudu_table):
