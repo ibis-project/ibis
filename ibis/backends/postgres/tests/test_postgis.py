@@ -1,10 +1,13 @@
+import functools
+
+import pandas as pd
 import pandas.testing as tm
 import pytest
 from numpy import testing
 
 pytest.importorskip("psycopg2")
 pytest.importorskip("geoalchemy2")
-pytest.importorskip("geopandas")
+gpd = pytest.importorskip("geopandas")
 pytest.importorskip("shapely")
 
 sa = pytest.importorskip("sqlalchemy")
@@ -13,11 +16,9 @@ pytestmark = pytest.mark.geospatial
 
 
 def test_load_geodata(con):
-    import geopandas
-
     t = con.table('geo')
     result = t.execute()
-    assert isinstance(result, geopandas.GeoDataFrame)
+    assert isinstance(result, gpd.GeoDataFrame)
 
 
 def test_empty_select(geotable):
@@ -75,22 +76,20 @@ def test_select_multipolygon_geodata(geotable):
 
 
 def test_geo_area(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_multipolygon.area()
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_multipolygon).area
+    expected = pd.Series([mp.area for mp in gdf.geo_multipolygon])
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 def test_geo_buffer(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_linestring.buffer(1.0)
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_linestring).buffer(1.0)
+    expected = pd.Series(
+        [linestring.buffer(1.0).area for linestring in gdf.geo_linestring]
+    )
     tm.assert_series_equal(
-        result.area, expected.area, check_names=False, check_less_precise=2
+        result.area, expected, check_names=False, check_less_precise=2
     )
 
 
@@ -137,12 +136,15 @@ def test_geo_end_point(geotable, gdf):
 
 
 def test_geo_envelope(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_linestring.buffer(1.0).envelope()
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_linestring).buffer(1.0).envelope
-    tm.assert_series_equal(result.area, expected.area, check_names=False)
+    expected = pd.Series(
+        [
+            linestring.buffer(1.0).envelope.area
+            for linestring in gdf.geo_linestring
+        ]
+    )
+    tm.assert_series_equal(result.area, expected, check_names=False)
 
 
 def test_geo_within(geotable):
@@ -170,7 +172,7 @@ def test_geo_equals(geotable):
 def test_geo_geometry_n(geotable, gdf):
     expr = geotable.geo_multipolygon.geometry_n(1)  # PostGIS is one-indexed.
     result = expr.execute()
-    first_polygon = gdf.apply(lambda x: list(x.geo_multipolygon)[0], axis=1)
+    first_polygon = [mp.geoms[0] for mp in gdf.geo_multipolygon]
     for a, b in zip(result, first_polygon):
         assert a.equals(b)
 
@@ -198,19 +200,15 @@ def test_geo_line_locate_point(geotable):
 
 
 def test_geo_line_merge(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_linestring.line_merge()
-    expected = geopandas.GeoSeries(gdf.geo_linestring)
+    expected = gpd.GeoSeries(gdf.geo_linestring)
     tm.assert_series_equal(expr.execute().length, expected.length)
 
 
 def test_geo_line_substring(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_linestring.line_substring(0.25, 0.75)
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_linestring)
+    expected = gpd.GeoSeries(gdf.geo_linestring)
     tm.assert_series_equal(expected.length / 2.0, result.length)
 
 
@@ -230,22 +228,21 @@ def test_geo_touches(geotable):
 
 
 def test_geo_distance(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_point.distance(geotable.geo_multipolygon.centroid())
     result = expr.execute()
-    expected = gdf.geo_point.distance(
-        geopandas.GeoSeries(gdf.geo_multipolygon).centroid
+    expected = pd.Series(
+        [
+            point.distance(mp.centroid)
+            for point, mp in zip(gdf.geo_point, gdf.geo_multipolygon)
+        ]
     )
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 def test_geo_length(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_linestring.length()
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_linestring).length
+    expected = gpd.GeoSeries(gdf.geo_linestring).length
     tm.assert_series_equal(result, expected, check_names=False)
 
 
@@ -279,19 +276,17 @@ def test_geo_start_point(geotable, gdf):
 
 
 def test_geo_difference(geotable, gdf):
-    import geopandas
-
     expr = (
         geotable.geo_linestring.buffer(1.0)
         .difference(geotable.geo_point.buffer(0.5))
         .area()
     )
     result = expr.execute()
-    expected = (
-        geopandas.GeoSeries(gdf.geo_linestring)
-        .buffer(1.0)
-        .difference(geopandas.GeoSeries(gdf.geo_point).buffer(0.5))
-        .area
+    expected = pd.Series(
+        [
+            linestring.buffer(1.0).difference(point.buffer(0.5)).area
+            for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
+        ]
     )
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
@@ -299,19 +294,17 @@ def test_geo_difference(geotable, gdf):
 
 
 def test_geo_intersection(geotable, gdf):
-    import geopandas
-
     expr = (
         geotable.geo_linestring.buffer(1.0)
         .intersection(geotable.geo_point.buffer(0.5))
         .area()
     )
     result = expr.execute()
-    expected = (
-        geopandas.GeoSeries(gdf.geo_linestring)
-        .buffer(1.0)
-        .intersection(geopandas.GeoSeries(gdf.geo_point).buffer(0.5))
-        .area
+    expected = pd.Series(
+        [
+            linestring.buffer(1.0).intersection(point.buffer(0.5)).area
+            for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
+        ]
     )
     tm.assert_series_equal(
         result, expected, check_names=False, check_less_precise=2
@@ -319,38 +312,31 @@ def test_geo_intersection(geotable, gdf):
 
 
 def test_geo_unary_union(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_polygon.unary_union().area()
-    expected = geopandas.GeoSeries(gdf.geo_polygon).unary_union.area
+    expected = functools.reduce(lambda x, y: x.union(y), gdf.geo_polygon).area
     testing.assert_almost_equal(expr.execute(), expected, decimal=2)
 
 
 def test_geo_union(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_polygon.union(geotable.geo_multipolygon).area()
-    expected = (
-        geopandas.GeoSeries(gdf.geo_polygon)
-        .union(geopandas.GeoSeries(gdf.geo_multipolygon))
-        .area
+    expected = pd.Series(
+        [
+            p.union(mp).area
+            for p, mp in zip(gdf.geo_polygon, gdf.geo_multipolygon)
+        ]
     )
     tm.assert_series_equal(expr.execute(), expected, check_names=False)
 
 
 def test_geo_x(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_point.x()
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_point).x
+    expected = gpd.GeoSeries(gdf.geo_point).x
     tm.assert_series_equal(result, expected, check_names=False)
 
 
 def test_geo_y(geotable, gdf):
-    import geopandas
-
     expr = geotable.geo_point.y()
     result = expr.execute()
-    expected = geopandas.GeoSeries(gdf.geo_point).y
+    expected = gpd.GeoSeries(gdf.geo_point).y
     tm.assert_series_equal(result, expected, check_names=False)

@@ -128,19 +128,19 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Required libraries for geospatial support must be installed and a
         geospatial column is present in the dataframe.
         """
-        import geopandas
+        import geopandas as gpd
         from geoalchemy2 import shape
-
-        def to_shapely(row, name):
-            return shape.to_shape(row[name]) if row[name] is not None else None
 
         geom_col = None
         for name, dtype in schema.items():
             if isinstance(dtype, dt.GeoSpatial):
                 geom_col = geom_col or name
-                df[name] = df.apply(lambda x: to_shapely(x, name), axis=1)
+                df[name] = df[name].map(
+                    lambda row: None if row is None else shape.to_shape(row)
+                )
         if geom_col:
-            df = geopandas.GeoDataFrame(df, geometry=geom_col)
+            df[geom_col] = gpd.array.GeometryArray(df[geom_col].values)
+            df = gpd.GeoDataFrame(df, geometry=geom_col)
         return df
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
