@@ -146,7 +146,7 @@ class StructValue(Value):
         """
         import ibis.expr.analysis as an
 
-        table = an.find_first_base_table(self)
+        table = an.find_first_base_table(self).to_expr()
         return table[[self[name] for name in self.names]]
 
     def destructure(self) -> DestructValue:
