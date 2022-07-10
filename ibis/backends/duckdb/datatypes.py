@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 
 import parsy as p
 
-from ibis import util
-
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
+
+import ibis.util as util
 from ibis.expr.datatypes import (
     COMMA,
     FIELD,
