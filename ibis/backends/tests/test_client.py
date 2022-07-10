@@ -321,33 +321,6 @@ def test_list_databases(alchemy_con):
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
-def test_list_schemas(alchemy_con):
-    with pytest.warns(FutureWarning):
-        alchemy_con.list_schemas()
-
-
-def test_verify(ddl_backend, ddl_con):
-    expr = ddl_con.table('functional_alltypes').double_col.sum()
-
-    with pytest.warns(FutureWarning):
-        assert expr.verify()
-
-    with pytest.warns(FutureWarning):
-        assert ddl_backend.api.verify(expr)
-
-
-@pytest.mark.never(["duckdb"], reason="duckdb supports approximate median")
-def test_not_verify(alchemy_con, alchemy_backend):
-    # There is no expression that can't be compiled to any backend
-    # Testing `not verify()` only for an expression not supported in postgres
-    expr = alchemy_con.table('functional_alltypes').double_col.approx_median()
-    with pytest.warns(FutureWarning):
-        assert not expr.verify()
-
-    with pytest.warns(FutureWarning):
-        assert not alchemy_backend.api.verify(expr)
-
-
 @pytest.mark.never(
     ["postgres", "mysql"],
     reason="postgres and mysql do not support in-memory tables",

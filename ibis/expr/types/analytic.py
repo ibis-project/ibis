@@ -4,7 +4,6 @@ from public import public
 
 import ibis.common.exceptions as com
 from ibis.expr.types.core import Expr
-from ibis.util import deprecated
 
 
 @public
@@ -13,17 +12,6 @@ class Analytic(Expr):
     # TODO(kszucs): should be removed
     def type(self):
         return 'analytic'
-
-
-@public
-@deprecated(
-    instead="remove usage of Exists/ExistsExpr, it will be removed",
-    version="4.0.0",
-)
-class Exists(Analytic):
-    # TODO(kszucs): should be removed
-    def type(self):
-        return 'exists'
 
 
 @public
@@ -50,18 +38,6 @@ class TopK(Analytic):
         # same relation, so we leave this alone.
         arg = op.arg
         return arg == getattr(rank_set, arg.get_name())
-
-    @deprecated(
-        instead=(
-            "use __getitem__ on the relevant child table to produce a "
-            "semi-join"
-        ),
-        version="4.0.0",
-    )
-    def to_filter(self):
-        import ibis.expr.operations as ops
-
-        return ops.SummaryFilter(self).to_expr()
 
     def to_aggregation(
         self, metric_name=None, parent_table=None, backup_metric_name=None
@@ -100,4 +76,4 @@ class TopK(Analytic):
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
-public(AnalyticExpr=Analytic, ExistsExpr=Exists, TopKExpr=TopK)
+public(AnalyticExpr=Analytic, TopKExpr=TopK)

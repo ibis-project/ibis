@@ -14,16 +14,6 @@ def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
-@pytest.mark.parametrize('table_name', ['functional_alltypes', 'unexisting'])
-def test_exists_table(con, table_name):
-    expected = table_name in con.list_tables()
-
-    with pytest.warns(FutureWarning):
-        actual = con.exists_table(table_name)
-
-    assert actual == expected
-
-
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 # 2. list_databases() returns directories which don't make sense as HDF5
 #    databases
