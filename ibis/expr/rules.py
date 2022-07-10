@@ -417,7 +417,7 @@ def base_table_of(name, *, this):
     if base is None:
         raise com.IbisTypeError(f"`{arg}` doesn't have a base table")
     else:
-        return base
+        return base.to_expr()
 
 
 @validator
@@ -505,7 +505,7 @@ def window(win, *, from_base_table_of, this):
 
     table = find_first_base_table(this[from_base_table_of])
     if table is not None:
-        win = win.bind(table)
+        win = win.bind(table.to_expr())
 
     if win.max_lookback is not None:
         error_msg = (

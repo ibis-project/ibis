@@ -548,9 +548,10 @@ class Value(Expr):
 class Scalar(Value):
     def to_projection(self) -> ir.Table:
         """Promote this scalar expression to a projection."""
+        from ibis.expr.analysis import find_immediate_parent_tables
         from ibis.expr.types.relations import Table
 
-        roots = self.op().root_tables()
+        roots = find_immediate_parent_tables(self)
         if len(roots) > 1:
             raise com.RelationError(
                 'Cannot convert scalar expression '
@@ -569,9 +570,10 @@ class Scalar(Value):
 class Column(Value):
     def to_projection(self) -> ir.Table:
         """Promote this column expression to a projection."""
+        from ibis.expr.analysis import find_immediate_parent_tables
         from ibis.expr.types.relations import Table
 
-        roots = self.op().root_tables()
+        roots = find_immediate_parent_tables(self)
         if len(roots) > 1:
             raise com.RelationError(
                 'Cannot convert array expression involving multiple base '
@@ -798,7 +800,7 @@ class Column(Value):
         """
         from ibis.expr.analysis import find_first_base_table
 
-        base = find_first_base_table(self)
+        base = find_first_base_table(self).to_expr()
         metric = base.count().name(metric_name)
 
         if not self.has_name():
