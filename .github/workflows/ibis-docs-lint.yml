@@ -74,7 +74,7 @@ jobs:
           python-version: "3.10"
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential krb5-config libkrb5-dev
+        run: sudo apt-get install -qq -y build-essential krb5-config libkrb5-dev libgeos-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
