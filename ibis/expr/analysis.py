@@ -91,15 +91,15 @@ class ScalarAggregate:
 
 
 def has_multiple_bases(expr):
-    return toolz.count(find_immediate_parent_tables(expr)) > 1
+    return len(find_immediate_parent_tables(expr)) > 1
 
 
 def reduction_to_aggregation(expr):
-    tables = list(find_immediate_parent_tables(expr))
+    tables = find_immediate_parent_tables(expr)
 
     if len(tables) == 1:
         (table,) = tables
-        agg = table.aggregate([expr])
+        agg = table.to_expr().aggregate([expr])
     else:
         agg = ScalarAggregate(expr).get_result()
 
@@ -128,7 +128,7 @@ def find_immediate_parent_tables(expr):
     >>> import ibis, toolz
     >>> t = ibis.table([('a', 'int64')], name='t')
     >>> expr = t.mutate(foo=t.a + 1)
-    >>> result = list(find_immediate_parent_tables(expr))
+    >>> result = find_immediate_parent_tables(expr)
     >>> len(result)
     1
     >>> result[0]
@@ -141,12 +141,13 @@ def find_immediate_parent_tables(expr):
     """
 
     def finder(expr):
-        if isinstance(expr, ir.Table):
-            return lin.halt, expr
+        op = expr.op()
+        if isinstance(op, ops.TableNode):
+            return lin.halt, op
         else:
             return lin.proceed, None
 
-    return toolz.unique(lin.traverse(finder, expr))
+    return list(toolz.unique(lin.traverse(finder, expr)))
 
 
 def substitute(fn, expr):
@@ -522,17 +523,14 @@ class Projector:
     """
 
     def __init__(self, parent, proj_exprs):
+        proj_exprs = util.promote_list(proj_exprs)
         self.parent = parent
         self.input_exprs = proj_exprs
         self.resolved_exprs = [parent._ensure_expr(e) for e in proj_exprs]
-        node = parent.op()
-        self.parent_roots = (
-            [node] if isinstance(node, ops.Selection) else node.root_tables()
-        )
         self.clean_exprs = list(map(windowize_function, self.resolved_exprs))
 
     def get_result(self):
-        roots = self.parent_roots
+        roots = find_immediate_parent_tables(self.parent)
         first_root = roots[0]
 
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
@@ -546,7 +544,7 @@ class Projector:
         assert self.parent.op() == root
 
         root_table = root.table
-        roots = root_table.op().root_tables()
+        roots = find_immediate_parent_tables(root_table)
         fused_exprs = []
         clean_exprs = self.clean_exprs
 
@@ -582,7 +580,7 @@ class Projector:
                 # gross we share the same table root. Better way to
                 # detect?
                 or len(roots) == 1
-                and val.op().root_tables()[0] is roots[0]
+                and find_immediate_parent_tables(val)[0] is roots[0]
             ):
                 have_root = False
                 for root_sel in root_selections:
@@ -613,7 +611,7 @@ def find_first_base_table(expr):
     def predicate(expr):
         op = expr.op()
         if isinstance(op, ops.TableNode):
-            return lin.halt, expr
+            return lin.halt, op
         else:
             return lin.proceed, None
 
@@ -623,7 +621,7 @@ def find_first_base_table(expr):
         return None
 
 
-def _find_root_table(expr):
+def _find_projections(expr):
     op = expr.op()
 
     if isinstance(op, ops.Selection):
@@ -638,15 +636,15 @@ def _find_root_table(expr):
 
 def shares_all_roots(exprs, parents):
     # unique table dependencies of exprs and parents
-    exprs_deps = set(lin.traverse(_find_root_table, exprs))
-    parents_deps = set(lin.traverse(_find_root_table, parents))
+    exprs_deps = set(lin.traverse(_find_projections, exprs))
+    parents_deps = set(lin.traverse(_find_projections, parents))
     return exprs_deps <= parents_deps
 
 
 def shares_some_roots(exprs, parents):
     # unique table dependencies of exprs and parents
-    exprs_deps = set(lin.traverse(_find_root_table, exprs))
-    parents_deps = set(lin.traverse(_find_root_table, parents))
+    exprs_deps = set(lin.traverse(_find_projections, exprs))
+    parents_deps = set(lin.traverse(_find_projections, parents))
     return bool(exprs_deps & parents_deps)
 
 
@@ -687,7 +685,7 @@ def flatten_predicate(expr):
         else:
             return lin.halt, expr
 
-    return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
+    return list(lin.traverse(predicate, expr))
 
 
 def _is_ancestor(parent, child):  # pragma: no cover
@@ -826,12 +824,12 @@ def _make_any(
     expr,
     any_op_class: type[ops.Any] | type[ops.NotAny],
 ):
-    tables = list(find_immediate_parent_tables(expr))
+    tables = find_immediate_parent_tables(expr)
     predicates = find_predicates(expr, flatten=True)
 
     if len(tables) > 1:
         op = _ANY_OP_MAPPING[any_op_class](
-            tables=tables,
+            tables=[t.to_expr() for t in tables],
             predicates=predicates,
         )
     else:

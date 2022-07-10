@@ -10,6 +10,7 @@ import dask.dataframe as dd
 import pandas
 from toolz import concatv
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.dask.core import execute
@@ -44,7 +45,6 @@ def compute_projection_scalar_expr(
     name = expr.get_name()
     assert name is not None, 'Scalar selection name is None'
 
-    op = expr.op()
     parent_table_op = parent.table.op()
 
     data_columns = frozenset(data.columns)
@@ -60,7 +60,7 @@ def compute_projection_scalar_expr(
             },
             timecontext,
         )
-        for t in op.root_tables()
+        for t in an.find_immediate_parent_tables(expr)
     )
     scalar = execute(expr, scope=scope, **kwargs)
     return data.assign(**{name: scalar})[name]
@@ -105,7 +105,7 @@ def compute_projection_column_expr(
             },
             timecontext,
         )
-        for t in op.root_tables()
+        for t in an.find_immediate_parent_tables(expr)
     )
 
     result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
@@ -266,7 +266,7 @@ def _compute_predicates(
         # predicates on the result instead of any left or right tables if the
         # Selection is on a Join. Project data to only inlude columns from
         # the root table.
-        root_tables = predicate.op().root_tables()
+        root_tables = an.find_immediate_parent_tables(predicate)
 
         # handle suffixes
         data_columns = frozenset(data.columns)

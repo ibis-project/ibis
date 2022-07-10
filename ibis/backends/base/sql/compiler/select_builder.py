@@ -27,7 +27,9 @@ class _CorrelatedRefCheck:
         self.query = query
         self.ctx = query.context
         self.expr = expr
-        self.query_roots = frozenset(self.query.table_set.op().root_tables())
+        self.query_roots = frozenset(
+            L.find_immediate_parent_tables(self.query.table_set)
+        )
         self.has_foreign_root = False
         self.has_query_root = False
 

@@ -71,7 +71,7 @@ def test_view_new_relation(table):
     # meaning when it comes to execution
     tview = table.view()
 
-    roots = tview.op().root_tables()
+    roots = L.find_immediate_parent_tables(tview)
     assert len(roots) == 1
     assert roots[0] is tview.op()
 
@@ -1510,14 +1510,6 @@ def test_join_suffixes(how):
     method = getattr(left, f"{how}_join")
     expr = method(right, suffixes=("_left", "_right"))
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
-
-
-def test_exprs_to_select():
-    t = ibis.table(dict(a="string"))
-    exprs = [t.a.length().name("len")]
-    with pytest.warns(FutureWarning, match="Passing `exprs`"):
-        result = t.select(exprs=exprs)
-    assert result.equals(t.select(len=t.a.length()))
 
 
 def test_python_table_ambiguous():
