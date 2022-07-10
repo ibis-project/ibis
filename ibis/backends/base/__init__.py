@@ -27,11 +27,9 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
+import ibis.util as util
 from ibis.common.dispatch import RegexDispatcher
-from ibis.common.exceptions import TranslationError
-from ibis.util import deprecated
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -298,7 +296,7 @@ class BaseBackend(abc.ABC):
     def do_connect(self, *args, **kwargs) -> None:
         """Connect to database specified by `args` and `kwargs`."""
 
-    @deprecated(instead='use equivalent methods in the backend')
+    @util.deprecated(instead='use equivalent methods in the backend')
     def database(self, name: str | None = None) -> Database:
         """Return a `Database` object for the `name` database.
 
@@ -345,22 +343,6 @@ class BaseBackend(abc.ABC):
             The database names that exist in the current connection, that match
             the `like` pattern if provided.
         """
-
-    @deprecated(version='2.0', instead='use `name in client.list_databases()`')
-    def exists_database(self, name: str) -> bool:
-        """Return whether a database name exists in the current connection.
-
-        Parameters
-        ----------
-        name
-            Database to check for existence
-
-        Returns
-        -------
-        bool
-            Whether `name` exists
-        """
-        return name in self.list_databases()
 
     @staticmethod
     def _filter_with_like(
@@ -416,31 +398,6 @@ class BaseBackend(abc.ABC):
             The list of the table names that match the pattern `like`.
         """
 
-    @deprecated(version='2.0', instead='use `name in client.list_tables()`')
-    def exists_table(self, name: str, database: str | None = None) -> bool:
-        """Return whether a table name exists in the database.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database to check if given
-
-        Returns
-        -------
-        bool
-            Whether `name` is a table
-        """
-        return len(self.list_tables(like=name, database=database)) > 0
-
-    @deprecated(
-        version='2.0',
-        instead='change the current database before calling `.table()`',
-    )
-    def table(self, name: str, database: str | None = None) -> ir.Table:
-        """Return a table expression from the database."""
-
     @functools.cached_property
     def tables(self):
         """An accessor for tables in the database.
@@ -454,11 +411,6 @@ class BaseBackend(abc.ABC):
         >>> people = con.tables.people  # access via attribute
         """
         return TablesAccessor(self)
-
-    @deprecated(version='2.0', instead='use `.table(name).schema()`')
-    def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
-        """Return the schema of `table_name`."""
-        return self.table(name=table_name, database=database).schema()
 
     @property
     @abc.abstractmethod
@@ -503,22 +455,6 @@ class BaseBackend(abc.ABC):
 
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""
-
-    @deprecated(
-        version='2.0',
-        instead='`compile` and capture `TranslationError` instead',
-    )
-    def verify(
-        self,
-        expr: ir.Expr,
-        params: Mapping[ir.Expr, Any] | None = None,
-    ) -> bool:
-        """Verify `expr` is an expression that can be compiled."""
-        try:
-            self.compile(expr, params=params)
-            return True
-        except TranslationError:
-            return False
 
     def add_operation(self, operation: ops.Node) -> Callable:
         """Add a translation function to the backend for a specific operation.
