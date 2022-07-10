@@ -10,7 +10,6 @@ from public import public
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.util as util
 from ibis.expr import datatypes as dt
 from ibis.expr.types.core import Expr, _binop
 
@@ -568,10 +567,6 @@ class Scalar(Value):
 
 @public
 class Column(Value):
-    @util.deprecated(version="4.0.0", instead="")
-    def parent(self):  # pragma: no cover
-        return self._arg
-
     def to_projection(self) -> ir.Table:
         """Promote this column expression to a projection."""
         from ibis.expr.types.relations import Table

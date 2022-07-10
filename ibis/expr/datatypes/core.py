@@ -27,7 +27,6 @@ import toolz
 from multipledispatch import Dispatcher
 from public import public
 
-from ibis import util
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.common.grounds import Annotable, Comparable, Singleton
 from ibis.common.validators import (
@@ -1207,15 +1206,6 @@ def parse(text: str) -> DataType:
     )
 
     return ty.parse(text)
-
-
-@util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}",
-    version="4.0",
-)
-@public
-def parse_type(*args, **kwargs):
-    return parse(*args, **kwargs)
 
 
 def _get_timedelta_units(

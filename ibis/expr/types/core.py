@@ -15,7 +15,7 @@ from ibis.common.exceptions import (
     TranslationError,
 )
 from ibis.expr.typing import TimeContext
-from ibis.util import UnnamedMarker, deprecated
+from ibis.util import UnnamedMarker
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
@@ -293,22 +293,6 @@ class Expr:
         return self._find_backend().compile(
             self, limit=limit, timecontext=timecontext, params=params
         )
-
-    @deprecated(
-        version='2.0',
-        instead=(
-            "call [`Expr.compile`][ibis.expr.types.core.Expr.compile] and "
-            "catch TranslationError"
-        ),
-    )
-    def verify(self):
-        """Return True if expression can be compiled to its attached client."""
-        try:
-            self.compile()
-        except Exception:
-            return False
-        else:
-            return True
 
 
 unnamed = UnnamedMarker()
