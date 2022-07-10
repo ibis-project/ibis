@@ -7,7 +7,7 @@ from public import public
 from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
-from ibis.expr.operations.core import Value, distinct_roots
+from ibis.expr.operations.core import Value
 
 if TYPE_CHECKING:
     import ibis.expr.operations as ops
@@ -45,6 +45,3 @@ class StructColumn(Value):
         return dt.Struct.from_tuples(
             zip(self.names, (value.type() for value in self.values))
         )
-
-    def root_tables(self) -> Sequence[ops.TableNode]:
-        return distinct_roots(*self.values)

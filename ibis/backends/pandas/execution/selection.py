@@ -4,13 +4,13 @@
 import functools
 import operator
 from collections import defaultdict
-from operator import methodcaller
 from typing import List, Optional
 
 import pandas as pd
 from multipledispatch import Dispatcher
-from toolz import compose, concat, concatv, unique
+from toolz import concatv, first
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas.core import execute
@@ -58,7 +58,6 @@ def compute_projection_scalar_expr(
     name = expr.get_name()
     assert name is not None, 'Scalar selection name is None'
 
-    op = expr.op()
     parent_table_op = parent.table.op()
 
     data_columns = frozenset(data.columns)
@@ -78,7 +77,7 @@ def compute_projection_scalar_expr(
             },
             timecontext,
         )
-        for t in op.root_tables()
+        for t in an.find_immediate_parent_tables(expr)
     )
     scalar = execute(expr, scope=scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
@@ -127,7 +126,7 @@ def compute_projection_column_expr(
             },
             timecontext,
         )
-        for t in op.root_tables()
+        for t in an.find_immediate_parent_tables(expr)
     )
 
     result = coerce_to_output(
@@ -179,7 +178,9 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
     if not isinstance(table_op, ops.Join):
         return None
 
-    left_root, right_root = ops.distinct_roots(table_op.left, table_op.right)
+    left_root, right_root = an.find_immediate_parent_tables(
+        [table_op.left, table_op.right]
+    )
     suffixes = {
         left_root: constants.LEFT_JOIN_SUFFIX,
         right_root: constants.RIGHT_JOIN_SUFFIX,
@@ -201,12 +202,12 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
         ({name, f"{name}{suffix}"} & data_columns, name)
         for name in root_table.schema.names
     ]
-
-    return {
-        col_names.pop(): final_name
-        for col_names, final_name in column_names
-        if col_names
+    mapping = {
+        first(col_name): final_name
+        for col_name, final_name in column_names
+        if col_name
     }
+    return mapping
 
 
 def map_new_column_names_to_data(mapping, df):
@@ -249,7 +250,7 @@ def _compute_predicates(
         # predicates on the result instead of any left or right tables if the
         # Selection is on a Join. Project data to only inlude columns from
         # the root table.
-        root_tables = predicate.op().root_tables()
+        root_tables = an.find_immediate_parent_tables(predicate)
 
         # handle suffixes
         data_columns = frozenset(data.columns)
@@ -266,49 +267,6 @@ def _compute_predicates(
 
         scope = scope.merge_scope(additional_scope)
         yield execute(predicate, scope=scope, **kwargs)
-
-
-physical_tables = Dispatcher(
-    'physical_tables',
-    doc="""\
-Return the underlying physical tables nodes of a
-:class:`~ibis.expr.types.Node`.
-
-Parameters
-----------
-op : ops.Node
-
-Returns
--------
-tables : List[ops.Node]
-""",
-)
-
-
-@physical_tables.register(ops.Selection)
-def physical_tables_selection(sel):
-    return physical_tables(sel.table.op())
-
-
-@physical_tables.register(ops.PhysicalTable)
-def physical_tables_physical_table(t):
-    # Base case. PhysicalTable nodes are their own root physical tables.
-    return [t]
-
-
-@physical_tables.register(ops.Join)
-def physical_tables_join(join):
-    # Physical roots of Join nodes are the unique physical roots of their
-    # left and right TableNodes.
-    func = compose(physical_tables, methodcaller('op'))
-    return list(unique(concat(map(func, (join.left, join.right)))))
-
-
-@physical_tables.register(ops.Node)
-def physical_tables_node(node):
-    # Iterative case. Any other Node's physical roots are the unique physical
-    # roots of that Node's root tables.
-    return list(unique(concat(map(physical_tables, node.root_tables()))))
 
 
 def build_df_from_selection(
