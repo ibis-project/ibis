@@ -16,12 +16,11 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-import ibis.util as util
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
 from ibis.expr.operations.core import Node, Unary, Value, distinct_roots
-from ibis.util import deprecated, frozendict
+from ibis.util import frozendict
 
 try:
     import shapely
@@ -53,10 +52,6 @@ class TableColumn(Value):
 
         super().__init__(table=table, name=name)
 
-    @util.deprecated(version="4.0.0", instead="Use `table` property instead")
-    def parent(self):  # pragma: no cover
-        return self.table
-
     def resolve_name(self):
         return self.name
 
@@ -84,26 +79,6 @@ class RowID(Value):
 
     def has_resolved_name(self):
         return True
-
-
-@public
-@util.deprecated(version="4.0.0", instead="")
-def find_all_base_tables(expr, memo=None):
-    if memo is None:
-        memo = {}
-
-    node = expr.op()
-
-    if isinstance(expr, ir.Table) and node.blocks():
-        if expr not in memo:
-            memo[node] = expr
-        return memo
-
-    for arg in expr.op().flat_args():
-        if isinstance(arg, ir.Expr):
-            find_all_base_tables(arg, memo)
-
-    return memo
 
 
 @public
@@ -241,35 +216,30 @@ class Least(CoalesceLike):
 
 @public
 class Literal(Value):
-    value = rlz.one_of(
+    value = rlz.instance_of(
         (
-            rlz.instance_of(
-                (
-                    BaseGeometry,
-                    bytes,
-                    datetime.date,
-                    datetime.datetime,
-                    datetime.time,
-                    datetime.timedelta,
-                    enum.Enum,
-                    float,
-                    frozenset,
-                    int,
-                    frozendict,
-                    ipaddress.IPv4Address,
-                    ipaddress.IPv6Address,
-                    np.generic,
-                    np.ndarray,
-                    pd.Timedelta,
-                    pd.Timestamp,
-                    str,
-                    tuple,
-                    type(None),
-                    uuid.UUID,
-                    decimal.Decimal,
-                )
-            ),
-            rlz.is_computable_input,
+            BaseGeometry,
+            bytes,
+            datetime.date,
+            datetime.datetime,
+            datetime.time,
+            datetime.timedelta,
+            decimal.Decimal,
+            enum.Enum,
+            float,
+            frozendict,
+            frozenset,
+            int,
+            ipaddress.IPv4Address,
+            ipaddress.IPv6Address,
+            np.generic,
+            np.ndarray,
+            pd.Timedelta,
+            pd.Timestamp,
+            str,
+            tuple,
+            type(None),
+            uuid.UUID,
         )
     )
     dtype = rlz.datatype
@@ -384,18 +354,6 @@ class HashBytes(Value):
 
     output_dtype = dt.binary
     output_shape = rlz.shape_like("arg")
-
-
-@deprecated(
-    instead="do nothing; SummaryFilter is no longer used internally",
-    version="4.0.0",
-)
-@public
-class SummaryFilter(Value):
-    expr = rlz.instance_of(ir.TopK)
-
-    output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
 
 
 # TODO(kszucs): shouldn't we move this operation to either

@@ -182,7 +182,6 @@ class Backend(BaseSQLBackend):
         ]
         return self._filter_with_like(tables, like)
 
-    #
     def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
         """Compile an ibis expression to a PySpark DataFrame object."""
 

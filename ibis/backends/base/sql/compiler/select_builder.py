@@ -366,43 +366,6 @@ class SelectBuilder:
 
         return bucket
 
-    @util.deprecated(
-        instead=(
-            "do nothing; Any/NotAny is transformed into "
-            "ExistsSubquery/NotExistsSubquery at expression construction time"
-        ),
-        version="4.0.0",
-    )
-    def _visit_filter_Any(self, expr):  # pragma: no cover
-        return expr
-
-    _visit_filter_NotAny = _visit_filter_Any
-
-    @util.deprecated(
-        instead="do nothing; SummaryFilter will be removed",
-        version="4.0.0",
-    )
-    def _visit_filter_SummaryFilter(self, expr):  # pragma: no cover
-        # Top K is rewritten as an
-        # - aggregation
-        # - sort by
-        # - limit
-        # - left semi join with table set
-        parent_op = expr.op()
-        summary_expr = parent_op.args[0]
-        op = summary_expr.op()
-
-        rank_set = summary_expr.to_aggregation(
-            backup_metric_name='__tmp__', parent_table=self.table_set
-        )
-
-        # GH 1393: previously because of GH667 we were substituting parents,
-        # but that introduced a bug when comparing reductions to columns on the
-        # same relation, so we leave this alone.
-        arg = op.arg
-        pred = arg == getattr(rank_set, arg.get_name())
-        self.table_set = self.table_set.semi_join(rank_set, [pred])
-
     # ---------------------------------------------------------------------
     # Analysis of table set
 
