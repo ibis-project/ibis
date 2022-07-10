@@ -49,11 +49,11 @@ class TopK(Analytic):
 
         op = self.op()
 
-        arg_table = find_first_base_table(op.arg)
+        arg_table = find_first_base_table(op.arg).to_expr()
 
         by = op.by
         if isinstance(by, Expr):
-            by_table = find_first_base_table(op.by)
+            by_table = find_first_base_table(op.by).to_expr()
         else:
             by = by(arg_table)
             by_table = arg_table

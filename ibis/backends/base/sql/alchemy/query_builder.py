@@ -5,6 +5,7 @@ import functools
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -154,17 +155,16 @@ def _can_lower_sort_column(table_set, expr):
     # in the generic SQL compiler that "fuses" the sort with the
     # aggregation so they appear in same query. It's generally for
     # cosmetics and doesn't really affect query semantics.
-    bases = {op: op.to_expr() for op in expr.op().root_tables()}
+    bases = an.find_immediate_parent_tables(expr)
     if len(bases) != 1:
         return False
 
-    base = list(bases.values())[0]
-    base_op = base.op()
+    base = bases[0]
 
-    if isinstance(base_op, ops.Aggregation):
-        return base_op.table.equals(table_set)
-    elif isinstance(base_op, ops.Selection):
-        return base.equals(table_set)
+    if isinstance(base, ops.Aggregation):
+        return base.table.equals(table_set)
+    elif isinstance(base, ops.Selection):
+        return base.equals(table_set.op())
     else:
         return False
 
