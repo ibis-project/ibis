@@ -28,12 +28,6 @@ def genname():
 class TableNode(Node):
     output_type = ir.Table
 
-    @util.deprecated(
-        instead="Use table.schema()[name] instead", version="4.0.0"
-    )
-    def get_type(self, name):  # pragma: no cover
-        return self.schema[name]
-
     def aggregate(self, this, metrics, by=None, having=None):
         return Aggregation(this, metrics, by=by, having=having)
 
@@ -46,12 +40,6 @@ class TableNode(Node):
                 sort_exprs,
             ),
         )
-
-    @util.deprecated(version="4.0.0", instead="")
-    def is_ancestor(self, other):  # pragma: no cover
-        from ibis.expr.analysis import _is_ancestor
-
-        return _is_ancestor(self, other)
 
     def root_tables(self):
         return [self]
@@ -201,10 +189,6 @@ class Join(TableNode):
         # For joins retaining both table schemas, merge them together here
         return self.left.schema().append(self.right.schema())
 
-    @util.deprecated(version="4.0", instead="")
-    def has_schema(self):
-        return not set(self.left.columns) & set(self.right.columns)
-
 
 @public
 class InnerJoin(Join):
@@ -316,10 +300,6 @@ class Limit(TableNode):
     @property
     def schema(self):
         return self.table.schema()
-
-    @util.deprecated(version="4.0", instead="")
-    def has_schema(self):
-        return self.table.op().has_schema()
 
 
 @public
@@ -444,41 +424,6 @@ class Selection(TableNode, sch.HasSchema):
 
     def blocks(self):
         return bool(self.selections)
-
-    @util.deprecated(instead="instantiate Selection directly", version="4.0.0")
-    def substitute_table(self, table_expr):  # pragma: no cover
-        return Selection(table_expr, self.selections)
-
-    @util.deprecated(instead="", version="4.0.0")
-    def can_add_filters(self, wrapped_expr, predicates):  # pragma: no cover
-        pass
-
-    @util.deprecated(instead="", version="4.0.0")
-    def empty_or_equal(self, other) -> bool:  # pragma: no cover
-        for field in "selections", "sort_keys", "predicates":
-            selfs = getattr(self, field)
-            others = getattr(other, field)
-            valid = (
-                not selfs
-                or not others
-                or (a.equals(b) for a, b in zip(selfs, others))
-            )
-            if not valid:
-                return False
-        return True
-
-    @util.deprecated(instead="", version="4.0.0")
-    def compatible_with(self, other):  # pragma: no cover
-        # self and other are equivalent except for predicates, selections, or
-        # sort keys any of which is allowed to be empty. If both are not empty
-        # then they must be equal
-        if self.equals(other):
-            return True
-
-        if not isinstance(other, type(self)):
-            return False
-
-        return self.table.equals(other.table) and self.empty_or_equal(other)
 
     def aggregate(self, this, metrics, by=None, having=None):
         if len(self.selections) > 0:
@@ -686,14 +631,6 @@ class Aggregation(TableNode, sch.HasSchema):
 
     def blocks(self):
         return True
-
-    @util.deprecated(
-        instead="instantiate Aggregation directly", version="4.0.0"
-    )
-    def substitute_table(self, table_expr):  # pragma: no cover
-        return Aggregation(
-            table_expr, self.metrics, by=self.by, having=self.having
-        )
 
     @cached_property
     def schema(self):

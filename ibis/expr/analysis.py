@@ -650,60 +650,6 @@ def shares_some_roots(exprs, parents):
     return bool(exprs_deps & parents_deps)
 
 
-@util.deprecated(version="4.0", instead="")
-def find_source_table(expr):  # pragma: no cover
-    """Find the first table expression observed for each argument that the
-    expression depends on
-
-    Parameters
-    ----------
-    expr : ir.Expr
-
-    Returns
-    -------
-    table_expr : ir.Table
-
-    Examples
-    --------
-    >>> import ibis
-    >>> t = ibis.table([('a', 'double'), ('b', 'string')], name='t')
-    >>> expr = t.mutate(c=t.a + 42.0)
-    >>> expr
-    r0 := UnboundTable[t]
-      a float64
-      b string
-    Selection[r0]
-      selections:
-        r0
-        c: r0.a + 42.0
-    >>> find_source_table(expr)
-    UnboundTable[t]
-      a float64
-      b string
-    >>> left = ibis.table([('a', 'int64'), ('b', 'string')])
-    >>> right = ibis.table([('c', 'int64'), ('d', 'string')])
-    >>> result = left.inner_join(right, left.a == right.c)
-    >>> find_source_table(result)  # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-    ...
-    NotImplementedError: More than one base table not implemented
-    """
-
-    def finder(expr):
-        if isinstance(expr, ir.Table):
-            return lin.halt, expr
-        else:
-            return lin.proceed, None
-
-    first_tables = lin.traverse(finder, expr.op().flat_args())
-    options = list(toolz.unique(first_tables, key=operator.methodcaller('op')))
-
-    if len(options) > 1:
-        raise NotImplementedError('More than one base table not implemented')
-
-    return options[0]
-
-
 def flatten_predicate(expr):
     """Yield the expressions corresponding to the `And` nodes of a predicate.
 

@@ -199,7 +199,6 @@ __all__ = (
     'or_',
     'param',
     'pi',
-    'prevent_rewrite',
     'random',
     'range_window',
     'row_number',
@@ -967,7 +966,6 @@ _category_value_methods = {'label': category_label}
 
 _add_methods(ir.CategoryValue, _category_value_methods)
 
-prevent_rewrite = ir.Table.prevent_rewrite
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
 join = ir.Table.join
