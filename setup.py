@@ -61,7 +61,7 @@ install_requires = [
     'pydantic>=1.9.0,<2',
     'regex>=2021.7.6',
     'tabulate>=0.8.9,<1',
-    'toolz>=0.11,<0.12',
+    'toolz>=0.11,<0.13',
 ]
 
 extras_require = {
