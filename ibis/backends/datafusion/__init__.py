@@ -8,6 +8,7 @@ from typing import Any, Mapping
 import pyarrow as pa
 
 import ibis.common.exceptions as com
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -172,7 +173,7 @@ class Backend(BaseBackend):
             table = _to_pyarrow_table(frame)
             return table['tmp'].to_pandas()
         elif isinstance(expr, ir.Scalar):
-            if expr.op().root_tables():
+            if an.find_immediate_parent_tables(expr):
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
                 # plan

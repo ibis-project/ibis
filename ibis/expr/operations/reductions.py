@@ -6,7 +6,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Value, distinct_roots
+from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import _Negatable
 from ibis.util import deprecated
 
@@ -107,9 +107,6 @@ class Mean(Filterable, Reduction):
             return self.arg.type()
         else:
             return dt.float64
-
-    def root_tables(self):
-        return distinct_roots(self.arg)
 
 
 @public
