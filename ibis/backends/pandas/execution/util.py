@@ -6,6 +6,7 @@ import pandas as pd
 import toolz
 
 import ibis.common.exceptions as com
+import ibis.expr.analysis as an
 import ibis.util
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.execution import constants
@@ -16,8 +17,10 @@ from ibis.udf.vectorized import _coerce_to_dataframe
 
 
 def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
-    (root_table,) = op.root_tables()
-    left_root, right_root = ops.distinct_roots(join_op.left, join_op.right)
+    (root_table,) = an.find_immediate_parent_tables(op.to_expr())
+    left_root, right_root = an.find_immediate_parent_tables(
+        [join_op.left, join_op.right]
+    )
     return {
         left_root: constants.LEFT_JOIN_SUFFIX,
         right_root: constants.RIGHT_JOIN_SUFFIX,
@@ -34,7 +37,8 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
-            Scope({t: data}, timecontext) for t in by.op().root_tables()
+            Scope({t: data}, timecontext)
+            for t in an.find_immediate_parent_tables(by)
         )
         new_column = execute(by, scope=scope, **kwargs)
         name = ibis.util.guid()

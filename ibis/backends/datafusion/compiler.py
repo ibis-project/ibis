@@ -140,6 +140,20 @@ def invert(op, _):
     return ~arg
 
 
+@translate.register(ops.And)
+def and_(op, _):
+    left = translate(op.left)
+    right = translate(op.right)
+    return left & right
+
+
+@translate.register(ops.Or)
+def or_(op, _):
+    left = translate(op.left)
+    right = translate(op.right)
+    return left | right
+
+
 @translate.register(ops.Abs)
 def abs(op, _):
     arg = translate(op.arg)
