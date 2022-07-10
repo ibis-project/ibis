@@ -22,8 +22,8 @@ operation_registry = {
 }
 
 
-def _round(t, expr):
-    arg, digits = expr.op().args
+def _round(t, op):
+    arg, digits = op.args
     sa_arg = t.translate(arg)
 
     if digits is None:
@@ -42,8 +42,8 @@ def _generic_log(arg, base):
     return sa.func.ln(arg) / sa.func.ln(base)
 
 
-def _log(t, expr):
-    arg, base = expr.op().args
+def _log(t, op):
+    arg, base = op.args
     sa_arg = t.translate(arg)
     if base is not None:
         sa_base = t.translate(base)
@@ -57,8 +57,7 @@ def _log(t, expr):
     return sa.func.ln(sa_arg)
 
 
-def _timestamp_from_unix(t, expr):
-    op = expr.op()
+def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
 
@@ -71,10 +70,9 @@ def _timestamp_from_unix(t, expr):
         return sa.func.to_timestamp(arg)
 
 
-def _literal(_, expr):
-    dtype = expr.type()
+def _literal(_, op):
+    dtype = op.output_dtype
     sqla_type = to_sqla_type(dtype)
-    op = expr.op()
     value = op.value
 
     if isinstance(dtype, dt.Interval):
@@ -109,23 +107,24 @@ def _literal(_, expr):
     return sa.cast(sa.literal(value), sqla_type)
 
 
-def _array_column(t, expr):
-    (arg,) = expr.op().args
-    sqla_type = to_sqla_type(expr.type())
-    return sa.cast(sa.func.list_value(*map(t.translate, arg)), sqla_type)
-
-
-def _struct_field(t, expr):
-    op = expr.op()
-    return sa.func.struct_extract(
-        t.translate(op.arg),
-        sa.text(repr(op.field)),
-        type_=to_sqla_type(expr.type()),
+def _array_column(t, op):
+    (arg,) = op.args
+    sqla_type = to_sqla_type(op.output_dtype)
+    return sa.cast(
+        sa.func.list_value(*map(t.translate, arg.values)), sqla_type
     )
 
 
-def _regex_extract(t, expr):
-    string, pattern, index = map(t.translate, expr.op().args)
+def _struct_field(t, op):
+    return sa.func.struct_extract(
+        t.translate(op.arg),
+        sa.text(repr(op.field)),
+        type_=to_sqla_type(op.output_dtype),
+    )
+
+
+def _regex_extract(t, op):
+    string, pattern, index = map(t.translate, op.args)
     result = sa.case(
         [
             (
@@ -150,10 +149,9 @@ def _regex_extract(t, expr):
     return result
 
 
-def _strftime(t, expr):
-    op = expr.op()
+def _strftime(t, op):
     format_str = op.format_str
-    if not isinstance(format_str_op := format_str.op(), ops.Literal):
+    if not isinstance(format_str_op := format_str, ops.Literal):
         raise TypeError(
             "DuckDB format_str must be a literal `str`; "
             f"got {type(format_str)}"
@@ -163,26 +161,24 @@ def _strftime(t, expr):
     )
 
 
-def _arbitrary(t, expr):
-    if (how := expr.op().how) == "heavy":
+def _arbitrary(t, op):
+    if (how := op.how) == "heavy":
         raise ValueError(f"how={how!r} not supported in the DuckDB backend")
-    return t._reduction(getattr(sa.func, how), expr)
+    return t._reduction(getattr(sa.func, how), op)
 
 
-def _string_agg(t, expr):
-    op = expr.op()
-    if not isinstance(lit := op.sep.op(), ops.Literal):
+def _string_agg(t, op):
+    if not isinstance(op.sep, ops.Literal):
         raise TypeError(
             "Separator argument to group_concat operation must be a constant"
         )
-    agg = sa.func.string_agg(t.translate(op.arg), sa.text(repr(lit.value)))
+    agg = sa.func.string_agg(t.translate(op.arg), sa.text(repr(op.sep.value)))
     if (where := op.where) is not None:
         return agg.filter(t.translate(where))
     return agg
 
 
-def _struct_column(t, expr):
-    op = expr.op()
+def _struct_column(t, op):
     compile_kwargs = dict(literal_binds=True)
     translated_pairs = (
         (name, t.translate(value).compile(compile_kwargs=compile_kwargs))

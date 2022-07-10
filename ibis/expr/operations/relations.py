@@ -11,7 +11,7 @@ from ibis.common import exceptions as com
 from ibis.expr import rules as rlz
 from ibis.expr import schema as sch
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Node
+from ibis.expr.operations.core import Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
 
@@ -21,6 +21,10 @@ _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 @public
 def genname():
     return next(_table_names)
+
+
+# TODO(kszucs): move the HasSchema trait from schema.py to here and reorganize
+# the Table classes to extend HasSchema (which may not be necessary at all)
 
 
 @public
@@ -81,33 +85,11 @@ class SQLQueryResult(TableNode, sch.HasSchema):
         return True
 
 
-def _make_distinct_join_predicates(left, right, predicates):
-    import ibis.expr.analysis as L
-
-    if left.equals(right):
-        # GH #667: If left and right table have a common parent expression,
-        # e.g. they have different filters, we need to add a self-reference and
-        # make the appropriate substitution in the join predicates
-        right = right.view()
-    elif isinstance(right.op(), Join):
-        # for joins with joins on the right side we turn the right side into a
-        # view, otherwise the join tree is incorrectly flattened and tables on
-        # the right are incorrectly scoped
-        old = right
-        new = right = right.view()
-        predicates = [
-            L.sub_for(pred, [(old, new)])
-            if isinstance(pred, ir.Expr)
-            else pred
-            for pred in predicates
-        ]
-
-    predicates = _clean_join_predicates(left, right, predicates)
-    return left, right, predicates
-
-
+# TODO(kszucs): desperately need to clean this up, the majority of this
+# functionality should be handled by input rules for the Join class
 def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
+    from ibis.expr.analysis import shares_all_roots
 
     result = []
 
@@ -116,36 +98,33 @@ def _clean_join_predicates(left, right, predicates):
             if len(pred) != 2:
                 raise com.ExpressionError('Join key tuple must be ' 'length 2')
             lk, rk = pred
-            lk = left._ensure_expr(lk)
-            rk = right._ensure_expr(rk)
+            lk = left.to_expr()._ensure_expr(lk)
+            rk = right.to_expr()._ensure_expr(rk)
             pred = lk == rk
         elif isinstance(pred, str):
-            pred = left[pred] == right[pred]
+            pred = left.to_expr()[pred] == right.to_expr()[pred]
+        elif isinstance(pred, Value):
+            pred = pred.to_expr()
         elif not isinstance(pred, ir.Expr):
             raise NotImplementedError
 
         if not isinstance(pred, ir.BooleanColumn):
             raise com.ExpressionError('Join predicate must be comparison')
 
-        preds = L.flatten_predicate(pred)
+        preds = L.flatten_predicate(pred.op())
         result.extend(preds)
-
-    _validate_join_predicates(left, right, result)
-    return tuple(result)
-
-
-def _validate_join_predicates(left, right, predicates):
-    from ibis.expr.analysis import shares_all_roots
 
     # Validate join predicates. Each predicate must be valid jointly when
     # considering the roots of each input table
-    for predicate in predicates:
+    for predicate in result:
         if not shares_all_roots(predicate, [left, right]):
             raise com.RelationError(
                 'The expression {!r} does not fully '
                 'originate from dependencies of the table '
                 'expression.'.format(predicate)
             )
+
+    return tuple(result)
 
 
 @public
@@ -154,11 +133,44 @@ class Join(TableNode):
     right = rlz.table
     # TODO(kszucs): convert to proper predicate rules
     predicates = rlz.optional(lambda x, this: x, default=())
+    # predicates = rlz.one_of(
+    #     rlz.pair(rlz.column_from("left"), rlz.column_from("right")),
+    #     rlz.instance_of(str), # + a lambda which retrieves the column from
+    #                           # both sides
+    #     rlz.boolean
+    # )
 
     def __init__(self, left, right, predicates, **kwargs):
-        left, right, predicates = _make_distinct_join_predicates(
+
+        # TODO(kszucs): predicates should be already a list of operations, need
+        # to update the validation rule for the Join classes which is a noop
+        # currently
+
+        import ibis.expr.analysis as L
+        import ibis.expr.operations as ops
+
+        if left.equals(right):
+            # GH #667: If left and right table have a common parent expression,
+            # e.g. they have different filters, we need to add a self-reference
+            # and make the appropriate substitution in the join predicates
+            right = ops.SelfReference(right)
+        elif isinstance(right, Join):
+            # for joins with joins on the right side we turn the right side
+            # into a view, otherwise the join tree is incorrectly flattened
+            # and tables on the right are incorrectly scoped
+            old = right
+            new = right = ops.SelfReference(right)
+            predicates = [
+                L.sub_for(pred, {old: new})
+                if isinstance(pred, ops.Node)
+                else pred
+                for pred in util.promote_list(predicates)
+            ]
+
+        predicates = _clean_join_predicates(
             left, right, util.promote_list(predicates)
         )
+
         super().__init__(
             left=left, right=right, predicates=predicates, **kwargs
         )
@@ -166,7 +178,7 @@ class Join(TableNode):
     @property
     def schema(self):
         # For joins retaining both table schemas, merge them together here
-        return self.left.schema().append(self.right.schema())
+        return self.left.schema.append(self.right.schema)
 
 
 @public
@@ -203,14 +215,14 @@ class AnyLeftJoin(Join):
 class LeftSemiJoin(Join):
     @property
     def schema(self):
-        return self.left.schema()
+        return self.left.schema
 
 
 @public
 class LeftAntiJoin(Join):
     @property
     def schema(self):
-        return self.left.schema()
+        return self.left.schema
 
 
 @public
@@ -237,16 +249,16 @@ class SetOp(TableNode, sch.HasSchema):
     right = rlz.table
     distinct = rlz.optional(rlz.instance_of(bool), default=False)
 
-    def __init__(self, left, right, distinct: bool, **kwargs):
-        if not left.schema().equals(right.schema()):
+    def __init__(self, left, right, **kwargs):
+        if not left.schema == right.schema:
             raise com.RelationError(
                 'Table schemas must be equal for set operations'
             )
-        super().__init__(left=left, right=right, distinct=distinct, **kwargs)
+        super().__init__(left=left, right=right, **kwargs)
 
     @property
     def schema(self):
-        return self.left.schema()
+        return self.left.schema
 
     def blocks(self):
         return True
@@ -278,7 +290,7 @@ class Limit(TableNode):
 
     @property
     def schema(self):
-        return self.table.schema()
+        return self.table.schema
 
 
 @public
@@ -287,7 +299,7 @@ class SelfReference(TableNode, sch.HasSchema):
 
     @property
     def schema(self):
-        return self.table.schema()
+        return self.table.schema
 
     def blocks(self):
         return True
@@ -377,18 +389,19 @@ class Selection(TableNode, sch.HasSchema):
     @cached_property
     def schema(self):
         # Resolve schema and initialize
+
         if not self.selections:
-            return self.table.schema()
+            return self.table.schema
 
         types = []
         names = []
 
         for projection in self.selections:
-            if isinstance(projection, ir.Value):
-                names.append(projection.get_name())
-                types.append(projection.type())
-            elif isinstance(projection, ir.Table):
-                schema = projection.schema()
+            if isinstance(projection, Value):
+                names.append(projection.resolve_name())
+                types.append(projection.output_dtype)
+            elif isinstance(projection, TableNode):
+                schema = projection.schema
                 names.extend(schema.names)
                 types.extend(schema.types)
 
@@ -467,12 +480,14 @@ class AggregateSelection:
 
         subbed_exprs = []
         for expr in util.promote_list(exprs):
-            expr = self.op.table._ensure_expr(expr)
-            subbed = sub_for(expr, [(self.parent, self.op.table)])
-            subbed_exprs.append(subbed)
+            # TODO(kszucs): factor out _ensure_expr to bind_expr
+            expr = self.op.table.to_expr()._ensure_expr(expr)
+            subbed = sub_for(expr.op(), {self.op: self.op.table})
+            subbed_exprs.append(subbed.to_expr())
 
         if subbed_exprs:
-            valid = shares_all_roots(subbed_exprs, self.op.table)
+            subbed_ops = [expr.op() for expr in subbed_exprs]
+            valid = shares_all_roots(subbed_ops, self.op.table)
         else:
             valid = True
 
@@ -610,8 +625,8 @@ class Aggregation(TableNode, sch.HasSchema):
         types = []
 
         for e in self.by + self.metrics:
-            names.append(e.get_name())
-            types.append(e.type())
+            names.append(e.resolve_name())
+            types.append(e.output_dtype)
 
         return sch.Schema(names, types)
 
@@ -652,12 +667,12 @@ class Distinct(TableNode, sch.HasSchema):
 
     def __init__(self, table):
         # check whether schema has overlapping columns or not
-        assert table.schema()
+        assert table.schema
         super().__init__(table=table)
 
     @property
     def schema(self):
-        return self.table.schema()
+        return self.table.schema
 
     def blocks(self):
         return True
@@ -689,7 +704,7 @@ class FillNa(TableNode, sch.HasSchema):
 
     @property
     def schema(self):
-        return self.table.schema()
+        return self.table.schema
 
 
 @public
@@ -702,7 +717,7 @@ class DropNa(TableNode, sch.HasSchema):
 
     @property
     def schema(self):
-        return self.table.schema()
+        return self.table.schema
 
 
 @public
@@ -714,7 +729,7 @@ class View(PhysicalTable):
 
     @property
     def schema(self):
-        return self.child.schema()
+        return self.child.schema
 
 
 @public
@@ -727,7 +742,8 @@ class SQLStringView(PhysicalTable):
 
     @cached_property
     def schema(self):
-        backend = self.child._find_backend()
+        # TODO(kszucs): avoid converting to expression
+        backend = self.child.to_expr()._find_backend()
         return backend._get_schema_using_query(self.query)
 
 

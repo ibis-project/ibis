@@ -19,7 +19,7 @@ pytest.importorskip("clickhouse_driver")
 def test_timestamp_literals(con, translate, expr):
     expected = "toDateTime('2015-01-01T12:34:56')"
 
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert con.execute(expr) == Timestamp('2015-01-01 12:34:56')
 
 
@@ -49,7 +49,7 @@ def test_timestamp_literals(con, translate, expr):
     ],
 )
 def test_subsecond_timestamp_literals(con, translate, expr, expected):
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert con.execute(expr) == expr.op().value
 
 
@@ -63,7 +63,7 @@ def test_subsecond_timestamp_literals(con, translate, expr, expected):
 )
 def test_string_literals(con, translate, value, expected):
     expr = ibis.literal(value)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     # TODO clickhouse-driver escaping problem
     # assert con.execute(expr) == expected
 
@@ -71,12 +71,12 @@ def test_string_literals(con, translate, value, expected):
 @pytest.mark.parametrize(('value', 'expected'), [(5, '5'), (1.5, '1.5')])
 def test_number_literals(con, translate, value, expected):
     expr = ibis.literal(value)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert con.execute(expr) == value
 
 
 @pytest.mark.parametrize(('value', 'expected'), [(True, '1'), (False, '0')])
 def test_boolean_literals(con, translate, value, expected):
     expr = ibis.literal(value)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert con.execute(expr) == value

@@ -113,8 +113,11 @@ class SetOp(DML):
         return '\n'.join(buf)
 
 
-def _extract_common_table_expressions(exprs):
-    counts = an.find_subqueries(exprs)
-    duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+def _extract_common_table_expressions(nodes):
+    # filter out None values
+    nodes = list(filter(None, nodes))
+    counts = an.find_subqueries(nodes)
+    # duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+    duplicates = [op for op, count in counts.items() if count > 1]
     duplicates.reverse()
     return duplicates

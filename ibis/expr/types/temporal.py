@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import pandas as pd
     from ibis.expr import types as ir
 
+import ibis.expr.datatypes as dt
 from ibis.expr.types.core import Expr, _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -194,7 +195,7 @@ class _TimeComponentMixin:
             # triggered when creating expressions like
             # t.column.distinct().count(), which is turned into
             # t.column.nunique().
-            arg = op.arg
+            arg = op.arg.to_expr()
             if timezone is not None:
                 arg = arg.cast(dt.Timestamp(timezone=timezone))
             op_cls = ops.BetweenTime
@@ -250,7 +251,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if isinstance(other, TimeValue):
+        if isinstance(other.output_dtype, dt.Time):
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -269,7 +270,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if isinstance(other, TimeValue):
+        if isinstance(other.output_dtype, dt.Time):
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -333,7 +334,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if isinstance(other, DateValue):
+        if isinstance(other.output_dtype, dt.Date):
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -356,7 +357,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if isinstance(other, DateValue):
+        if isinstance(other.output_dtype, dt.Date):
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -438,7 +439,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
         right = rlz.any(other)
 
-        if isinstance(right, TimestampValue):
+        if isinstance(right.output_dtype, dt.Timestamp):
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate
@@ -462,7 +463,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
         right = rlz.any(other)
 
-        if isinstance(right, TimestampValue):
+        if isinstance(right.output_dtype, dt.Timestamp):
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate

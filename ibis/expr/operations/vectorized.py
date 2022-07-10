@@ -16,6 +16,7 @@ class VectorizedUDF(Value):
     input_type = rlz.tuple_of(rlz.datatype)
     return_type = rlz.datatype
 
+    # TODO(kszucs): remove this property
     @property
     def inputs(self):
         return self.func_args

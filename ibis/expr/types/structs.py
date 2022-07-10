@@ -146,7 +146,8 @@ class StructValue(Value):
         """
         import ibis.expr.analysis as an
 
-        table = an.find_first_base_table(self).to_expr()
+        # TODO(kszucs): avoid expression roundtripping
+        table = an.find_first_base_table(self.op()).to_expr()
         return table[[self[name] for name in self.names]]
 
     def destructure(self) -> list[ir.ValueExpr]:

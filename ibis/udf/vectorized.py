@@ -5,6 +5,7 @@ Warning: This is an experimental module and API here can change without notice.
 DO NOT USE DIRECTLY.
 """
 
+import collections
 import functools
 from typing import Any, List, Optional, Tuple, Union
 
@@ -13,6 +14,7 @@ import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
+import ibis.util as util
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,

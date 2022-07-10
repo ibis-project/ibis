@@ -39,6 +39,8 @@ def test_repr_png_is_none_in_interactive(con):
         assert table._repr_png_() is None
 
 
+# FIXME(kszucs): re-enable once the visualization submodule gets updated
+@pytest.mark.skip
 def test_repr_png_is_not_none_in_not_interactive(con):
     pytest.importorskip('ibis.expr.visualize')
 

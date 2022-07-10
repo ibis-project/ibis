@@ -7,7 +7,6 @@ from collections import defaultdict
 from typing import List, Optional
 
 import pandas as pd
-from multipledispatch import Dispatcher
 from toolz import concatv, first
 
 import ibis.expr.analysis as an
@@ -17,154 +16,125 @@ from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import constants, util
 from ibis.backends.pandas.execution.util import coerce_to_output
+from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
-compute_projection = Dispatcher(
-    'compute_projection',
-    doc="""\
-Compute a projection, dispatching on whether we're computing a scalar, column,
-or table expression.
 
-Parameters
-----------
-expr : Union[ir.Scalar, ir.Column, ir.Table]
-parent : ops.Selection
-data : pd.DataFrame
-scope : Scope
-timecontext:Optional[TimeContext]
-
-Returns
--------
-value : scalar, pd.Series, pd.DataFrame
-
-Notes
------
-:class:`~ibis.expr.types.Scalar` instances occur when a specific column
-projection is a window operation.
-""",
-)
-
-
-@compute_projection.register(ir.Scalar, ops.Selection, pd.DataFrame)
-def compute_projection_scalar_expr(
-    expr,
+def compute_projection(
+    node,
     parent,
     data,
     scope: Scope = None,
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    name = expr.get_name()
-    assert name is not None, 'Scalar selection name is None'
+    """
+    Compute a projection.
 
-    parent_table_op = parent.table.op()
+    Parameters
+    ----------
+    node : Union[ops.Scalar, ops.Column, ops.TableNode]
+    parent : ops.Selection
+    data : pd.DataFrame
+    scope : Scope
+    timecontext:Optional[TimeContext]
 
-    data_columns = frozenset(data.columns)
+    Returns
+    -------
+    value : scalar, pd.Series, pd.DataFrame
 
-    if scope is None:
-        scope = Scope()
+    Notes
+    -----
+    :class:`~ibis.expr.types.Scalar` instances occur when a specific column
+    projection is a window operation.
+    """
+    if isinstance(node, ops.TableNode):
+        if node == parent.table:
+            return data
 
-    scope = scope.merge_scopes(
-        Scope(
-            {
-                t: map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
-                )
-            },
-            timecontext,
+        assert isinstance(parent.table, ops.Join)
+        assert node == parent.table.left or node == parent.table.right
+
+        mapping = remap_overlapping_column_names(
+            parent.table,
+            root_table=node,
+            data_columns=frozenset(data.columns),
         )
-        for t in an.find_immediate_parent_tables(expr)
-    )
-    scalar = execute(expr, scope=scope, **kwargs)
-    result = pd.Series([scalar], name=name).repeat(len(data.index))
-    result.index = data.index
-    return result
+        return map_new_column_names_to_data(mapping, data)
+    elif isinstance(node, ops.Value):
+        name = node.resolve_name()
+        assert name is not None, 'Value selection name is None'
 
+        if node.output_shape is Shape.SCALAR:
+            data_columns = frozenset(data.columns)
 
-@compute_projection.register(ir.Column, ops.Selection, pd.DataFrame)
-def compute_projection_column_expr(
-    expr,
-    parent,
-    data,
-    scope: Scope,
-    timecontext: Optional[TimeContext],
-    **kwargs,
-):
-    result_name = expr._safe_name
-    op = expr.op()
-    parent_table_op = parent.table.op()
+            if scope is None:
+                scope = Scope()
 
-    if isinstance(op, ops.TableColumn):
-        # slightly faster path for simple column selection
-        name = op.name
-        assert isinstance(name, str)
-
-        if name in data:
-            return data[name].rename(result_name or name)
-
-        if not isinstance(parent_table_op, ops.Join):
-            raise KeyError(name)
-
-        suffix = util.get_join_suffix_for_op(op, parent_table_op)
-        return data.loc[:, name + suffix].rename(result_name or name)
-
-    data_columns = frozenset(data.columns)
-
-    scope = scope.merge_scopes(
-        Scope(
-            {
-                t: map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
+            scope = scope.merge_scopes(
+                Scope(
+                    {
+                        t: map_new_column_names_to_data(
+                            remap_overlapping_column_names(
+                                parent.table, t, data_columns
+                            ),
+                            data,
+                        )
+                    },
+                    timecontext,
                 )
-            },
-            timecontext,
-        )
-        for t in an.find_immediate_parent_tables(expr)
-    )
+                for t in an.find_immediate_parent_tables(node)
+            )
+            scalar = execute(node, scope=scope, **kwargs)
+            result = pd.Series([scalar], name=name).repeat(len(data.index))
+            result.index = data.index
+            return result
+        else:
+            if isinstance(node, ops.TableColumn):
+                if name in data:
+                    return data[name].rename(name)
 
-    result = coerce_to_output(
-        execute(expr, scope=scope, timecontext=timecontext, **kwargs),
-        expr,
-        data.index,
-    )
-    return result
+                if not isinstance(parent.table, ops.Join):
+                    raise KeyError(name)
+
+                suffix = util.get_join_suffix_for_op(node, parent.table)
+                return data.loc[:, name + suffix].rename(name)
+
+            data_columns = frozenset(data.columns)
+
+            scope = scope.merge_scopes(
+                Scope(
+                    {
+                        t: map_new_column_names_to_data(
+                            remap_overlapping_column_names(
+                                parent.table, t, data_columns
+                            ),
+                            data,
+                        )
+                    },
+                    timecontext,
+                )
+                for t in an.find_immediate_parent_tables(node)
+            )
+
+            result = execute(
+                node, scope=scope, timecontext=timecontext, **kwargs
+            )
+            return coerce_to_output(result, node, data.index)
+    else:
+        raise TypeError(node)
 
 
-@compute_projection.register(ir.Table, ops.Selection, pd.DataFrame)
-def compute_projection_table_expr(expr, parent, data, **_):
-    if expr.equals(parent.table):
-        return data
-
-    parent_table_op = parent.table.op()
-    assert isinstance(parent_table_op, ops.Join)
-    assert expr.equals(parent_table_op.left) or expr.equals(
-        parent_table_op.right
-    )
-
-    mapping = remap_overlapping_column_names(
-        parent_table_op,
-        root_table=expr.op(),
-        data_columns=frozenset(data.columns),
-    )
-    return map_new_column_names_to_data(mapping, data)
-
-
-def remap_overlapping_column_names(table_op, root_table, data_columns):
+def remap_overlapping_column_names(table, root_table, data_columns):
     """Return a mapping of possibly-suffixed column names to
     column names without suffixes.
 
     Parameters
     ----------
-    table_op
-        The `TableNode` we're selecting from.
-    root_table
+    table : TableNode
+        The ``TableNode`` we're selecting from.
+    root_table : TableNode
         The root table of the expression we're selecting from.
     data_columns
         The available columns to select from
@@ -175,11 +145,11 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
         A mapping from possibly-suffixed column names to column names without
         suffixes.
     """
-    if not isinstance(table_op, ops.Join):
+    if not isinstance(table, ops.Join):
         return None
 
     left_root, right_root = an.find_immediate_parent_tables(
-        [table_op.left, table_op.right]
+        [table.left, table.right]
     )
     suffixes = {
         left_root: constants.LEFT_JOIN_SUFFIX,
@@ -270,9 +240,9 @@ def _compute_predicates(
 
 
 def build_df_from_selection(
-    selection_exprs: List[ir.Column],
+    selections: List[ops.Value],
     data: pd.DataFrame,
-    table_op: ops.Node,
+    table: ops.Node,
 ) -> pd.DataFrame:
     """Build up a df by doing direct selections, renaming if necessary.
 
@@ -282,18 +252,16 @@ def build_df_from_selection(
     """
     cols = defaultdict(list)
 
-    for expr in selection_exprs:
-        selection = expr.op().name
+    for node in selections:
+        selection = node.resolve_name()
         if selection not in data:
-            if not isinstance(table_op, ops.Join):
+            if not isinstance(table, ops.Join):
                 raise KeyError(selection)
-            join_suffix = util.get_join_suffix_for_op(expr.op(), table_op)
+            join_suffix = util.get_join_suffix_for_op(node, table)
             if selection + join_suffix not in data:
                 raise KeyError(selection)
             selection += join_suffix
-        cols[selection].append(
-            expr.get_name() if expr.has_name() else selection
-        )
+        cols[selection].append(node.resolve_name())
 
     result = data[list(cols.keys())]
 
@@ -319,8 +287,8 @@ def build_df_from_projection(
     **kwargs,
 ) -> pd.DataFrame:
     data_pieces = [
-        compute_projection(expr, op, data, **kwargs)
-        for expr in selection_exprs
+        compute_projection(node, op, data, **kwargs)
+        for node in selection_exprs
     ]
 
     new_pieces = [
@@ -355,8 +323,8 @@ def execute_selection_dataframe(
 
     # Build up the individual pandas structures from column expressions
     if selections:
-        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
-            result = build_df_from_selection(selections, data, op.table.op())
+        if all(isinstance(s, ops.TableColumn) for s in selections):
+            result = build_df_from_selection(selections, data, op.table)
         else:
             result = build_df_from_projection(
                 selections,
@@ -369,7 +337,7 @@ def execute_selection_dataframe(
 
     if predicates:
         predicates = _compute_predicates(
-            op.table.op(), predicates, data, scope, timecontext, **kwargs
+            op.table, predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         assert len(predicate) == len(

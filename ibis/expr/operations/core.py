@@ -5,43 +5,17 @@ from abc import abstractmethod
 from public import public
 
 import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Annotable, Comparable
-from ibis.common.validators import immutable_property
 from ibis.expr.rules import Shape
 from ibis.expr.schema import Schema
 from ibis.util import UnnamedMarker, is_iterable
 
 
-def _compare_items(a, b):
-    try:
-        return a.equals(b)
-    except AttributeError:
-        if isinstance(a, tuple):
-            return _compare_tuples(a, b)
-        else:
-            return a == b
-
-
-def _compare_tuples(a, b):
-    if len(a) != len(b):
-        return False
-    return all(map(_compare_items, a, b))
-
-
 @public
 class Node(Annotable, Comparable):
-    @immutable_property
-    def _flat_ops(self):
-        return tuple(
-            arg.op() for arg in self.flat_args() if isinstance(arg, ir.Expr)
-        )
-
     def __equals__(self, other):
-        return self._hash == other._hash and _compare_tuples(
-            self.args, other.args
-        )
+        return self.args == other.args
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -51,6 +25,7 @@ class Node(Annotable, Comparable):
             )
         return self.__cached_equals__(other)
 
+    # TODO(kszucs): remove this property
     @property
     def inputs(self):
         return self.args
@@ -63,6 +38,8 @@ class Node(Annotable, Comparable):
     def to_expr(self):
         return self.output_type(self)
 
+    # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name
+    # abstractproperty
     def resolve_name(self):
         raise ExpressionError(f'Expression is not named: {type(self)}')
 
@@ -76,6 +53,7 @@ class Node(Annotable, Comparable):
             f"output_type not implemented for {type(self)}"
         )
 
+    # TODO(kszucs): remove this method entirely
     def flat_args(self):
         for arg in self.args:
             if not isinstance(arg, Schema) and is_iterable(arg):
@@ -141,7 +119,7 @@ class Unary(Value):
 
     @property
     def output_shape(self):
-        return self.arg.op().output_shape
+        return self.arg.output_shape
 
 
 @public
@@ -153,7 +131,7 @@ class Binary(Value):
 
     @property
     def output_shape(self):
-        return max(self.left.op().output_shape, self.right.op().output_shape)
+        return max(self.left.output_shape, self.right.output_shape)
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

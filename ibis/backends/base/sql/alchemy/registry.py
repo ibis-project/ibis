@@ -14,35 +14,39 @@ import ibis.expr.window as W
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.expr.rules import Shape
 
 
 def variance_reduction(func_name):
     suffix = {'sample': 'samp', 'pop': 'pop'}
 
-    def variance_compiler(t, expr):
-        arg, how, where = expr.op().args
+    def variance_compiler(t, op):
+        arg, how, where = op.args
 
-        if arg.type().equals(dt.boolean):
-            arg = arg.cast('int32')
+        if isinstance(op.arg.output_dtype, dt.Boolean):
+            arg = ops.Cast(op.arg, to=dt.int32)
+        else:
+            arg = op.arg
 
+        # TODO(kszucs): the default value for `how` could be handled by the op
         func = getattr(
-            sa.func, '{}_{}'.format(func_name, suffix.get(how, 'samp'))
+            sa.func, '{}_{}'.format(func_name, suffix.get(op.how, 'samp'))
         )
 
-        if where is not None:
-            arg = where.ifelse(arg, None)
+        if op.where is not None:
+            # TODO(kszucs): avoid converting to ifelse
+            # (prefer rewrite before compilation?)
+            arg = op.where.to_expr().ifelse(arg, None).op()
+
         return func(t.translate(arg))
 
     return variance_compiler
 
 
 def infix_op(infix_sym):
-    def formatter(t, expr):
-        op = expr.op()
-        left, right = op.args
-
-        left_arg = t.translate(left)
-        right_arg = t.translate(right)
+    def formatter(t, op):
+        left_arg = t.translate(op.left)
+        right_arg = t.translate(op.right)
         return left_arg.op(infix_sym)(right_arg)
 
     return formatter
@@ -52,11 +56,11 @@ def fixed_arity(sa_func, arity):
     if isinstance(sa_func, str):
         sa_func = getattr(sa.func, sa_func)
 
-    def formatter(t, expr):
-        if arity != len(expr.op().args):
+    def formatter(t, op):
+        if arity != len(op.args):
             raise com.IbisError('incorrect number of args')
 
-        return _varargs_call(sa_func, t, expr.op().args)
+        return _varargs_call(sa_func, t, op.args)
 
     return formatter
 
@@ -74,8 +78,8 @@ def _varargs_call(sa_func, t, args):
 
 
 def varargs(sa_func):
-    def formatter(t, expr):
-        return _varargs_call(sa_func, t, expr.op().arg)
+    def formatter(t, op):
+        return _varargs_call(sa_func, t, op.arg.values)
 
     return formatter
 
@@ -88,9 +92,8 @@ def get_sqla_table(ctx, table):
             ctx_level = ctx_level.parent
             sa_table = ctx_level.get_ref(table)
     else:
-        op = table.op()
-        if isinstance(op, AlchemyTable):
-            sa_table = op.sqla_table
+        if isinstance(table, AlchemyTable):
+            sa_table = table.sqla_table
         else:
             sa_table = ctx.get_compiled_expr(table)
 
@@ -118,8 +121,7 @@ def get_col_or_deferred_col(sa_table, colname):
         return sa.column(colname)
 
 
-def _table_column(t, expr):
-    op = expr.op()
+def _table_column(t, op):
     ctx = t.context
     table = op.table
 
@@ -139,20 +141,23 @@ def _table_column(t, expr):
     return out_expr
 
 
-def _table_array_view(t, expr):
+def _table_array_view(t, op):
     ctx = t.context
-    table = ctx.get_compiled_expr(expr.op().table)
+    table = ctx.get_compiled_expr(op.table)
     return table
 
 
-def _exists_subquery(t, expr):
+def _exists_subquery(t, op):
     from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 
-    op = expr.op()
     ctx = t.context
 
-    filtered = op.foreign_table.filter(op.predicates).projection(
-        [ir.literal(1).name(ir.core.unnamed)]
+    # TODO(kszucs): avoid converting the predicates to expressions
+    # this should be done by the rewrite step before compilation
+    filtered = (
+        op.foreign_table.to_expr()
+        .filter([pred.to_expr() for pred in op.predicates])
+        .projection([ir.literal(1).name(ir.core.unnamed)])
     )
 
     sub_ctx = ctx.subcontext()
@@ -164,8 +169,9 @@ def _exists_subquery(t, expr):
     return clause
 
 
-def _cast(t, expr):
-    arg, typ = expr.op().args
+def _cast(t, op):
+    arg = op.arg
+    typ = op.to
 
     sa_arg = t.translate(arg)
     sa_type = t.get_sqla_type(typ)
@@ -174,13 +180,15 @@ def _cast(t, expr):
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
+    if isinstance(arg.output_dtype, dt.Integer) and isinstance(
+        sa_type, sa.DateTime
+    ):
         return t.integer_to_timestamp(sa_arg)
 
-    if arg.type().equals(dt.binary) and typ.equals(dt.string):
+    if isinstance(arg.output_dtype, dt.Binary) and isinstance(typ, dt.String):
         return sa.func.encode(sa_arg, 'escape')
 
-    if typ.equals(dt.binary):
+    if isinstance(typ, dt.Binary):
         #  decode yields a column of memoryview which is annoying to deal with
         # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
         return sa.cast(sa_arg, sa.LargeBinary())
@@ -189,17 +197,15 @@ def _cast(t, expr):
 
 
 def _contains(func):
-    def translate(t, expr):
-        op = expr.op()
-
+    def translate(t, op):
         left = t.translate(op.value)
         right = t.translate(op.options)
 
         if (
             # not a list expr
-            not isinstance(op.options, ir.ValueList)
+            not isinstance(op.options, ops.ValueList)
             # but still a column expr
-            and isinstance(op.options, ir.ColumnExpr)
+            and op.options.output_shape is Shape.COLUMNAR
             # wasn't already compiled into a select statement
             and not isinstance(right, sa.sql.Selectable)
         ):
@@ -212,26 +218,26 @@ def _contains(func):
     return translate
 
 
-def _group_concat(t, expr):
-    op = expr.op()
+def _group_concat(t, op):
     sep = t.translate(op.sep)
     if op.where is not None:
-        arg = t.translate(op.where.ifelse(op.arg, ibis.NA))
+        # TODO(kszucs): avoid to_expr() reoundtrip by rewriting it prior
+        # actual compilation
+        arg = t.translate(op.where.to_expr().ifelse(op.arg, ibis.NA).op())
     else:
         arg = t.translate(op.arg)
     return sa.func.group_concat(arg, sep)
 
 
-def _alias(t, expr):
+def _alias(t, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
-    op = expr.op()
     return t.translate(op.arg)
 
 
-def _literal(_, expr):
-    dtype = expr.type()
-    value = expr.op().value
+def _literal(_, op):
+    dtype = op.output_dtype
+    value = op.value
 
     if isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
@@ -239,49 +245,45 @@ def _literal(_, expr):
     return sa.literal(value)
 
 
-def _value_list(t, expr):
-    return [t.translate(x) for x in expr.op().values]
+def _value_list(t, op):
+    return [t.translate(x) for x in op.values]
 
 
-def _is_null(t, expr):
-    arg = t.translate(expr.op().args[0])
+def _is_null(t, op):
+    arg = t.translate(op.arg)
     return arg.is_(sa.null())
 
 
-def _not_null(t, expr):
-    arg = t.translate(expr.op().args[0])
+def _not_null(t, op):
+    arg = t.translate(op.arg)
     return arg.isnot(sa.null())
 
 
-def _round(t, expr):
-    op = expr.op()
-    arg, digits = op.args
-    sa_arg = t.translate(arg)
+def _round(t, op):
+    sa_arg = t.translate(op.arg)
 
     f = sa.func.round
 
-    if digits is not None:
-        sa_digits = t.translate(digits)
+    if op.digits is not None:
+        sa_digits = t.translate(op.digits)
         return f(sa_arg, sa_digits)
     else:
         return f(sa_arg)
 
 
-def _floor_divide(t, expr):
-    left, right = map(t.translate, expr.op().args)
+def _floor_divide(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
     return sa.func.floor(left / right)
 
 
-def _simple_case(t, expr):
-    op = expr.op()
-
-    cases = [op.base == case for case in op.cases]
-    return _translate_case(t, cases, op.results, op.default)
+def _simple_case(t, op):
+    cases = [ops.Equals(op.base, case) for case in op.cases.values]
+    return _translate_case(t, cases, op.results.values, op.default)
 
 
-def _searched_case(t, expr):
-    op = expr.op()
-    return _translate_case(t, op.cases, op.results, op.default)
+def _searched_case(t, op):
+    return _translate_case(t, op.cases.values, op.results.values, op.default)
 
 
 def _translate_case(t, cases, results, default):
@@ -294,30 +296,28 @@ def _translate_case(t, cases, results, default):
     return sa.case(list(whens), else_=default)
 
 
-def _negate(t, expr):
-    op = expr.op()
-    (arg,) = map(t.translate, op.args)
-    return sa.not_(arg) if isinstance(expr, ir.BooleanValue) else -arg
+def _negate(t, op):
+    arg = t.translate(op.arg)
+    return (
+        sa.not_(arg) if isinstance(op.arg.output_dtype, dt.Boolean) else -arg
+    )
 
 
 def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
-def _string_like(method_name, t, expr):
-    op = expr.op()
+def _string_like(method_name, t, op):
     method = getattr(t.translate(op.arg), method_name)
     return method(t.translate(op.pattern), escape=op.escape)
 
 
-def _startswith(t, expr):
-    arg, start = expr.op().args
-    return t.translate(arg).startswith(t.translate(start))
+def _startswith(t, op):
+    return t.translate(op.arg).startswith(t.translate(op.start))
 
 
-def _endswith(t, expr):
-    arg, start = expr.op().args
-    return t.translate(arg).endswith(t.translate(start))
+def _endswith(t, op):
+    return t.translate(op.arg).endswith(t.translate(op.end))
 
 
 _cumulative_to_reduction = {
@@ -330,31 +330,29 @@ _cumulative_to_reduction = {
 }
 
 
-def _cumulative_to_window(translator, expr, window):
+def _cumulative_to_window(translator, op, window):
     win = W.cumulative_window()
     win = win.group_by(window._group_by).order_by(window._order_by)
-
-    op = expr.op()
 
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
     new_expr = new_op.to_expr()
-    if expr.has_name():
-        new_expr = new_expr.name(expr.get_name())
+    if op.has_resolved_name():
+        new_expr = new_expr.name(op.resolve_name())
 
     if type(new_op) in translator._rewrites:
         new_expr = translator._rewrites[type(new_op)](new_expr)
 
+    # TODO(kszucs): rewrite to receive and return an ops.Node
     return L.windowize_function(new_expr, win)
 
 
-def _window(t, expr):
-    op = expr.op()
+def _window(t, op):
 
     arg, window = op.args
     reduction = t.translate(arg)
 
-    window_op = arg.op()
+    window_op = arg
 
     _require_order_by = (
         ops.DenseRank,
@@ -365,7 +363,7 @@ def _window(t, expr):
     )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(t, arg, window)
+        arg = _cumulative_to_window(t, arg, window).op()
         return t.translate(arg)
 
     if window.max_lookback is not None:
@@ -379,9 +377,9 @@ def _window(t, expr):
     if isinstance(window_op, _require_order_by) and not window._order_by:
         order_by = t.translate(window_op.args[0])
     else:
-        order_by = list(map(t.translate, window._order_by))
+        order_by = [t.translate(arg) for arg in window._order_by]
 
-    partition_by = list(map(t.translate, window._group_by))
+    partition_by = [t.translate(arg) for arg in window._group_by]
 
     frame_clause_not_allowed = (
         ops.Lag,
@@ -418,8 +416,9 @@ def _window(t, expr):
         return result
 
 
-def _lag(t, expr):
-    arg, offset, default = expr.op().args
+def _lag(t, op):
+    # TODO(kszucs): use argnames explicitly
+    arg, offset, default = op.args
     if default is not None:
         raise NotImplementedError()
 
@@ -428,8 +427,9 @@ def _lag(t, expr):
     return sa.func.lag(sa_arg, sa_offset)
 
 
-def _lead(t, expr):
-    arg, offset, default = expr.op().args
+def _lead(t, op):
+    # TODO(kszucs): use argnames explicitly
+    arg, offset, default = op.args
     if default is not None:
         raise NotImplementedError()
     sa_arg = t.translate(arg)
@@ -437,23 +437,21 @@ def _lead(t, expr):
     return sa.func.lead(sa_arg, sa_offset)
 
 
-def _ntile(t, expr):
-    op = expr.op()
-    args = op.args
-    _, buckets = map(t.translate, args)
-    return sa.func.ntile(buckets)
+def _ntile(t, op):
+    return sa.func.ntile(t.translate(op.buckets))
 
 
-def _sort_key(t, expr):
+def _sort_key(t, op):
     # We need to define this for window functions that have an order by
-    by, ascending = expr.op().args
+    by, ascending = op.args
     sort_direction = sa.asc if ascending else sa.desc
     return sort_direction(t.translate(by))
 
 
-def _string_join(t, expr):
-    sep, elements = expr.op().args
-    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+def _string_join(t, op):
+    return sa.func.concat_ws(
+        t.translate(op.sep), *map(t.translate, op.arg.values)
+    )
 
 
 def reduction(sa_func):
@@ -463,19 +461,17 @@ def reduction(sa_func):
     return compile_expr
 
 
-def _zero_if_null(t, expr):
-    op = expr.op()
+def _zero_if_null(t, op):
     arg = op.arg
+    dtype = arg.output_dtype
     sa_arg = t.translate(op.arg)
     return sa.case(
-        [(sa_arg.is_(None), sa.cast(0, to_sqla_type(arg.type())))],
+        [(sa_arg.is_(None), sa.cast(0, to_sqla_type(dtype)))],
         else_=sa_arg,
     )
 
 
-def _substring(t, expr):
-    op = expr.op()
-
+def _substring(t, op):
     args = t.translate(op.arg), t.translate(op.start) + 1
 
     if (length := op.length) is not None:
@@ -485,9 +481,7 @@ def _substring(t, expr):
 
 
 def _gen_string_find(func):
-    def string_find(t, expr):
-        op = expr.op()
-
+    def string_find(t, op):
         if op.start is not None:
             raise NotImplementedError("`start` not yet implemented")
 
@@ -499,14 +493,12 @@ def _gen_string_find(func):
     return string_find
 
 
-def _nth_value(t, expr):
-    op = expr.op()
+def _nth_value(t, op):
     return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
 
 
 def _clip(*, min_func, max_func):
-    def translate(t, expr):
-        op = expr.op()
+    def translate(t, op):
         arg = t.translate(op.arg)
 
         if (upper := op.upper) is not None:
@@ -612,8 +604,8 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Date: unary(lambda arg: sa.cast(arg, sa.DATE)),
     ops.DateFromYMD: fixed_arity(sa.func.date, 3),
     ops.TimeFromHMS: fixed_arity(sa.func.time, 3),
-    ops.TimestampFromYMDHMS: lambda t, expr: sa.func.make_timestamp(
-        *map(t.translate, expr.op().args[:6])  # ignore timezone
+    ops.TimestampFromYMDHMS: lambda t, op: sa.func.make_timestamp(
+        *map(t.translate, op.args[:6])  # ignore timezone
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),

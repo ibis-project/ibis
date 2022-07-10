@@ -305,13 +305,11 @@ def convert_unit(value, unit, to, floor=True):
     assert factor > 1
 
     if i < j:
-        return value * factor
-
-    assert i > j
-    if floor:
-        return value // factor
+        op = operator.mul
     else:
-        return value / factor
+        assert i > j
+        op = operator.floordiv if floor else operator.truediv
+    return op(value.to_expr(), factor).op()
 
 
 def get_logger(
@@ -431,7 +429,7 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
-def to_op_dag(expr: ir.Expr) -> Graph:
+def to_op_dag(node: ops.Node) -> Graph:
     """Convert `expr` into a directed acyclic graph.
 
     Parameters
@@ -444,12 +442,21 @@ def to_op_dag(expr: ir.Expr) -> Graph:
     Graph
         A directed acyclic graph of ibis operations
     """
-    stack = [expr.op()]
+    import ibis.expr.operations as ops
+
+    assert isinstance(node, ops.Node), type(node)
+
+    stack = [node]
     dag = {}
 
     while stack:
         if (node := stack.pop()) not in dag:
-            dag[node] = children = node._flat_ops
+            # TODO(kszucs): use a more generic approach without filtering out
+            # node instances
+            children = [
+                arg for arg in node.flat_args() if isinstance(arg, ops.Node)
+            ]
+            dag[node] = children
             stack.extend(children)
     return dag
 

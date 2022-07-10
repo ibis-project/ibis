@@ -67,27 +67,24 @@ def execute_aggregation_dataframe(
     columns = {}
 
     if by:
-        grouping_key_pairs = list(
-            zip(by, map(operator.methodcaller('op'), by))
-        )
         grouping_keys = [
-            by_op.name
-            if isinstance(by_op, ops.TableColumn)
+            key.name
+            if isinstance(key, ops.TableColumn)
             else execute(
-                by, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(by.get_name())
-            for by, by_op in grouping_key_pairs
+                key, scope=scope, timecontext=timecontext, **kwargs
+            ).rename(key.resolve_name())
+            for key in by
         ]
         columns.update(
-            (by_op.name, by.get_name())
-            for by, by_op in grouping_key_pairs
-            if hasattr(by_op, 'name')
+            (key.name, key.resolve_name())
+            for key in by
+            if hasattr(key, 'name')
         )
         source = data.groupby(grouping_keys)
     else:
         source = data
 
-    scope = scope.merge_scope(Scope({op.table.op(): source}, timecontext))
+    scope = scope.merge_scope(Scope({op.table: source}, timecontext))
 
     pieces = []
     for metric in metrics:

@@ -5,8 +5,10 @@ import webbrowser
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
+import toolz
 from public import public
 
+import ibis.expr.lineage as lin
 from ibis import config
 from ibis.common.exceptions import (
     ExpressionError,
@@ -14,6 +16,7 @@ from ibis.common.exceptions import (
     IbisTypeError,
     TranslationError,
 )
+from ibis.common.grounds import Immutable
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
 
@@ -24,13 +27,17 @@ if TYPE_CHECKING:
     from ibis.expr.types.generic import Value
 
 
+# TODO(kszucs): consider to subclass from Annotable with a single _arg field
 @public
-class Expr:
+class Expr(Immutable, Hashable):
     """Base expression class"""
 
+    __slots__ = ("_arg",)
+
+    # TODO(kszucs): cover with tests
     def __init__(self, arg: ops.Node) -> None:
         # TODO: all inputs must inherit from a common table API
-        self._arg = arg
+        object.__setattr__(self, "_arg", arg)
 
     def __repr__(self) -> str:
         if not config.options.interactive:
@@ -48,6 +55,13 @@ class Expr:
             return "\n".join(lines)
         return repr(result)
 
+    # TODO(kszucs): cover with unittests
+    def __reduce__(self):
+        return (self.__class__, (self._arg,))
+
+    def __hash__(self):
+        return hash((self.__class__, self._arg))
+
     def _repr(self) -> str:
         from ibis.expr.format import fmt
 
@@ -60,9 +74,6 @@ class Expr:
                 f"{type(other)}"
             )
         return self._arg.equals(other._arg)
-
-    def __hash__(self) -> int:
-        return hash(self._key)
 
     def __bool__(self) -> bool:
         raise ValueError(
@@ -77,6 +88,7 @@ class Expr:
     def get_name(self):
         return self.op().resolve_name()
 
+    # TODO(kszucs): remove it entirely
     @cached_property
     def _safe_name(self) -> str | None:
         """Get the name of an expression `expr` if one exists
@@ -90,17 +102,6 @@ class Expr:
             return self.get_name()
         except (ExpressionError, AttributeError):
             return None
-
-    @property
-    def _key(self) -> tuple[Hashable, ...]:
-        """Key suitable for hashing an expression.
-
-        Returns
-        -------
-        tuple[Hashable, ...]
-            A tuple of hashable objects uniquely identifying this expression.
-        """
-        return type(self), self._safe_name, self.op()
 
     def _repr_png_(self) -> bytes | None:
         if config.options.interactive or not config.options.graphviz_repr:
@@ -189,6 +190,8 @@ class Expr:
     def op(self) -> ops.Node:
         return self._arg
 
+    # TODO(kszucs): reimplement this using lin.traverse and move out somewhere
+    # but feels odd attached directly to the Expr instances
     def _find_backends(self) -> list[BaseBackend]:
         """Return the possible backends for an expression.
 
@@ -198,6 +201,18 @@ class Expr:
             A list of the backends found.
         """
         from ibis.backends.base import BaseBackend
+
+        def finder(node):
+            # BaseBackend objects are not operation instances, so they don't
+            # get traversed, this is why we need to select backends out from
+            # the node's arguments
+            backends = [
+                arg for arg in node.args if isinstance(arg, BaseBackend)
+            ]
+            return lin.proceed, backends or None
+
+        results = lin.traverse(finder, self.op())
+        return list(toolz.unique(toolz.concat(results)))
 
         seen_backends: dict[
             str, BaseBackend
