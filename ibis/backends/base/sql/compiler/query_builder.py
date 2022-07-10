@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from io import StringIO
 
-import toolz
-
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir

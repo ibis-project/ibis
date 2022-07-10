@@ -18,7 +18,7 @@ import ibis.expr.types as ir
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Node, Unary, Value
+from ibis.expr.operations.core import Unary, Value
 from ibis.util import frozendict
 
 try:

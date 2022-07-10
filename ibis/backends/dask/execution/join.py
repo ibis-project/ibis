@@ -1,5 +1,3 @@
-import operator
-
 import dask.dataframe as dd
 from pandas import Timedelta
 
@@ -93,11 +91,8 @@ def execute_join(op, left, right, predicates, **kwargs):
     except KeyError:
         raise NotImplementedError(f'{op_type.__name__} not supported')
 
-    left_op = op.left.op()
-    right_op = op.right.op()
-
-    on = {left_op: [], right_op: []}
-    for predicate in map(operator.methodcaller('op'), predicates):
+    on = {op.left: [], op.right: []}
+    for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with dask'
@@ -116,8 +111,8 @@ def execute_join(op, left, right, predicates, **kwargs):
         left,
         right,
         how=how,
-        left_on=on[left_op],
-        right_on=on[right_op],
+        left_on=on[op.left],
+        right_on=on[op.right],
         suffixes=constants.JOIN_SUFFIXES,
     )
     return df

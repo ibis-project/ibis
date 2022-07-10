@@ -2,11 +2,10 @@ import operator
 
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Binary, Unary, Value
 
 

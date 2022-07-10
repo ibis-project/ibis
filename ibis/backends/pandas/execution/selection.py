@@ -118,11 +118,10 @@ def compute_projection(
                 for t in an.find_immediate_parent_tables(node)
             )
 
-            return coerce_to_output(
-                execute(node, scope=scope, timecontext=timecontext, **kwargs),
-                node,
-                data.index,
+            result = execute(
+                node, scope=scope, timecontext=timecontext, **kwargs
             )
+            return coerce_to_output(result, node, data.index)
     else:
         raise TypeError(node)
 
