@@ -164,7 +164,6 @@ def test_operation_class_aliases():
 def test_expression_class_aliases():
     assert ir.TableExpr is ir.Table
     assert ir.AnalyticExpr is ir.Analytic
-    assert ir.ExistsExpr is ir.Exists
     assert ir.TopKExpr is ir.TopK
     assert ir.ValueExpr is ir.Value
     assert ir.ScalarExpr is ir.Scalar
