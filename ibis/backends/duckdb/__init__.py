@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, NamedTuple
@@ -28,39 +29,40 @@ class _ColumnMetadata(NamedTuple):
 
 
 _register = RegexDispatcher("_register")
+_dialect = sa.dialects.postgresql.dialect()
 
 
-@_register.register(r"parquet://(?P<path>.*)", priority=10)
-def _parquet(filename, path, table_name=None):
+def _name_from_path(path: Path) -> str:
+    base, *_ = path.name.partition(os.extsep)
+    return base.replace("-", "_")
+
+
+def _quote(name: str):
+    return _dialect.identifier_preparer.quote(name)
+
+
+@_register.register(r"parquet://(?P<path>.+)", priority=10)
+def _parquet(_, path, table_name=None):
     path = Path(path).absolute()
-    table_name = table_name or path.stem.replace("-", "_")
+    table_name = _quote(table_name or _name_from_path(path))
     return f"CREATE VIEW {table_name} as SELECT * from read_parquet('{path}')"
 
 
-@_register.register(r"csv://(?P<path>.*)", priority=10)
-def _csv(filename, path, table_name=None):
+@_register.register(r"csv(?:\.gz)?://(?P<path>.+)", priority=10)
+def _csv(_, path, table_name=None):
     path = Path(path).absolute()
-    table_name = table_name or path.stem.replace("-", "_")
+    table_name = _quote(table_name or _name_from_path(path))
     return f"CREATE VIEW {table_name} as SELECT * from read_csv_auto('{path}')"  # noqa: E501
 
 
-@_register.register(r"file://(?P<path>\w+)\.(?P<extension>\w+)", priority=10)
-def _file(filename, path, extension, table_name=None):
-    return _register(
-        f"{extension}://{path}.{extension}", table_name=table_name
-    )
+@_register.register(r"(?:file://)?(?P<path>.+)", priority=9)
+def _file(_, path, table_name=None):
+    *_, extension = str(path).split(os.extsep, 1)
+    return _register(f"{extension}://{path}", table_name=table_name)
 
 
-@_register.register(r"(?P<path>\w+)\.(?P<extension>\w+)", priority=9)
-def _noprefix(filename, path, extension, table_name=None):
-    prefix = extension
-    if prefix == "csv.gz":
-        prefix = "csv"
-    return _register(f"{prefix}://{path}.{extension}", table_name=table_name)
-
-
-@_register.register(r".*", priority=1)
-def _default(filename, **kwargs):
+@_register.register(r".+", priority=1)
+def _default(_, **kwargs):
     raise ValueError(
         """
 Unrecognized filetype or extension.
