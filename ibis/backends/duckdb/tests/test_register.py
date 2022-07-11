@@ -1,8 +1,10 @@
 import contextlib
+import gzip
 import os
 from pathlib import Path
 
 import pytest
+from pytest import param
 
 import ibis
 from ibis.backends.conftest import read_tables
@@ -18,15 +20,41 @@ def pushd(new_dir):
         os.chdir(previous_dir)
 
 
+@pytest.fixture
+def gzip_csv(data_directory, tmp_path):
+    basename = "diamonds.csv"
+    f = tmp_path.joinpath(f"{basename}.gz")
+    data = data_directory.joinpath(basename).read_bytes()
+    f.write_bytes(gzip.compress(data))
+    return str(f.absolute())
+
+
 @pytest.mark.parametrize(
     "fname, in_table_name, out_table_name",
     [
-        ("diamonds.csv", None, "diamonds"),
-        ("csv://diamonds.csv", "Diamonds", "Diamonds"),
+        param("diamonds.csv", None, "diamonds", id="default"),
+        param("csv://diamonds.csv", "Diamonds", "Diamonds", id="csv_name"),
+        param(
+            "file://diamonds.csv",
+            "fancy_stones",
+            "fancy_stones",
+            id="file_name",
+        ),
+        param(
+            "file://diamonds.csv",
+            "fancy stones",
+            "fancy stones",
+            id="file_atypical_name",
+        ),
     ],
 )
-def test_register_csv(data_directory, fname, in_table_name, out_table_name):
+@pytest.mark.parametrize("ext", [None, "csv.gz"])
+def test_register_csv(
+    data_directory, fname, in_table_name, out_table_name, ext, gzip_csv
+):
     con = ibis.duckdb.connect()
+    if ext is not None:
+        fname = gzip_csv
     with pushd(data_directory):
         con.register(fname, table_name=in_table_name)
 
