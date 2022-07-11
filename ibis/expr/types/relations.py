@@ -4,17 +4,20 @@ import collections
 import functools
 import itertools
 import operator
+import sys
 import warnings
 from functools import cached_property
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
-import tabulate
+import rich.pretty
+import rich.table
 from public import public
 
 import ibis
 from ibis import util
 from ibis.common import exceptions as com
+from ibis.common.grounds import console
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
 
@@ -872,6 +875,9 @@ class Table(Expr):
         buf
             A writable buffer, defaults to stdout
         """
+        if buf is None:
+            buf = sys.stdout
+
         metrics = [self[col].count().name(col) for col in self.columns]
         metrics.append(self.count().name("nrows"))
 
@@ -879,22 +885,27 @@ class Table(Expr):
 
         *items, (_, n) = self.aggregate(metrics).execute().squeeze().items()
 
-        tabulated = tabulate.tabulate(
-            [
-                (
-                    column,
-                    schema[column],
-                    f"{n - non_nulls} ({100 * (1.0 - non_nulls / n):>3.3g}%)",
-                )
-                for column, non_nulls in items
-            ],
-            headers=["Column", "Type", "Nulls (%)"],
-            colalign=("left", "left", "right"),
-        )
-        width = tabulated[tabulated.index("\n") + 1 :].index("\n")
-        row_count = f"Rows: {n}".center(width)
-        footer_line = "-" * width
-        print("\n".join([tabulated, footer_line, row_count]), file=buf)
+        op = self.op()
+        title = getattr(op, "name", type(op).__name__)
+
+        table = rich.table.Table(title=f"Summary of {title}\n{n:d} rows")
+
+        table.add_column("Name", justify="left")
+        table.add_column("Type", justify="left")
+        table.add_column("# Nulls", justify="right")
+        table.add_column("% Nulls", justify="right")
+
+        for column, non_nulls in items:
+            table.add_row(
+                column,
+                rich.pretty.Pretty(schema[column]),
+                str(n - non_nulls),
+                f"{100 * (1.0 - non_nulls / n):>3.2f}",
+            )
+
+        with console.capture() as capture:
+            console.print(table)
+        buf.write(capture.get())
 
     def set_column(self, name: str, expr: ir.Value) -> Table:
         """Replace an existing column with a new expression.
