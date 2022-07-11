@@ -1946,7 +1946,7 @@ tzdata = {version = "*", markers = "python_version >= \"3.6\""}
 
 [[package]]
 name = "pyupgrade"
-version = "2.35.0"
+version = "2.37.0"
 description = "A tool to automatically upgrade syntax for newer versions."
 category = "dev"
 optional = false
@@ -3750,8 +3750,8 @@ pytz-deprecation-shim = [
     {file = "pytz_deprecation_shim-0.1.0.post0.tar.gz", hash = "sha256:af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d"},
 ]
 pyupgrade = [
-    {file = "pyupgrade-2.35.0-py2.py3-none-any.whl", hash = "sha256:32c0dce8a1b9903db10ba559bd80459716ce436352960331f64cfa13ac621db1"},
-    {file = "pyupgrade-2.35.0.tar.gz", hash = "sha256:c1b46466b770eb2b8991904bb4bf2d15348ceeb2a0f58ee945aa2edcfde0c5a6"},
+    {file = "pyupgrade-2.37.0-py2.py3-none-any.whl", hash = "sha256:0942c038aab199bed81274f259c6920f1b0065abde32f4092e3d0f55c970de29"},
+    {file = "pyupgrade-2.37.0.tar.gz", hash = "sha256:b17a580eb187fa3d25493f38d0acac550277b953d84fdd24de37d321c01f27bd"},
 ]
 pywin32 = [
     {file = "pywin32-304-cp310-cp310-win32.whl", hash = "sha256:3c7bacf5e24298c86314f03fa20e16558a4e4138fc34615d7de4070c23e65af3"},
