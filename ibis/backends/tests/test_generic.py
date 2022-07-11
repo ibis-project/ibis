@@ -2,6 +2,7 @@ import decimal
 import importlib
 import io
 import operator
+from contextlib import redirect_stdout
 
 import numpy as np
 import pandas as pd
@@ -435,16 +436,25 @@ def test_select_sort_sort(alltypes):
     query = query.sort_by(query.year).sort_by(query.bool_col)
 
 
-def test_table_info(alltypes):
+def check_table_info(buf, schema):
+    info_str = buf.getvalue()
+
+    assert "Null" in info_str
+    assert all(type.__class__.__name__ in info_str for type in schema.types)
+    assert all(name in info_str for name in schema.names)
+
+
+def test_table_info_buf(alltypes):
     buf = io.StringIO()
     alltypes.info(buf=buf)
+    check_table_info(buf, alltypes.schema())
 
-    info_str = buf.getvalue()
-    schema = alltypes.schema()
 
-    assert "Nulls" in info_str
-    assert all(str(type) in info_str for type in schema.types)
-    assert all(name in info_str for name in schema.names)
+def test_table_info_no_buf(alltypes):
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        alltypes.info()
+    check_table_info(buf, alltypes.schema())
 
 
 @pytest.mark.parametrize(
