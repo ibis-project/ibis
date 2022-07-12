@@ -8,7 +8,12 @@ from weakref import WeakValueDictionary
 from rich.console import Console
 
 from ibis.common.caching import WeakCache
-from ibis.common.validators import ImmutableProperty, Optional, Validator
+from ibis.common.validators import (
+    ImmutableProperty,
+    Parameter,
+    Signature,
+    Validator,
+)
 from ibis.util import frozendict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
@@ -31,39 +36,6 @@ class Base(metaclass=BaseMeta):
     @classmethod
     def __create__(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
-
-
-class Parameter(inspect.Parameter):
-    """
-    Augmented Parameter class to additionally hold a validator object.
-    """
-
-    __slots__ = ('_validator',)
-
-    def __init__(
-        self,
-        name,
-        kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        *,
-        validator=EMPTY,
-    ):
-        super().__init__(
-            name,
-            kind,
-            default=None if isinstance(validator, Optional) else EMPTY,
-        )
-        self._validator = validator
-
-    @property
-    def validator(self):
-        return self._validator
-
-    def validate(self, this, arg):
-        if self.validator is EMPTY:
-            return arg
-        else:
-            # TODO(kszucs): use self._validator
-            return self.validator(arg, this=this)
 
 
 class Immutable(Hashable):
@@ -132,7 +104,7 @@ class AnnotableMeta(BaseMeta):
                 else:
                     new_kwargs.append(param)
 
-        signature = inspect.Signature(
+        signature = Signature(
             inherited_args + new_args + new_kwargs + inherited_kwargs
         )
 
@@ -150,19 +122,8 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
 
     @classmethod
     def __create__(cls, *args, **kwargs):
-        bound = cls.__signature__.bind(*args, **kwargs)
-        bound.apply_defaults()
-
-        # bound the signature to the passed arguments and apply the validators
-        # before passing the arguments, so self.__init__() receives already
-        # validated arguments as keywords
-        kwargs = {}
-        for name, value in bound.arguments.items():
-            param = cls.__signature__.parameters[name]
-            # TODO(kszucs): provide more error context on failure
-            kwargs[name] = param.validate(kwargs, value)
-
         # construct the instance by passing the validated keyword arguments
+        kwargs = cls.__signature__.validate(*args, **kwargs)
         return super().__create__(**kwargs)
 
     def __init__(self, **kwargs):
