@@ -213,7 +213,7 @@ class BaseSQLBackend(BaseBackend):
         dml = getattr(query_ast, 'dml', query_ast)
         op = getattr(dml, 'parent_op', getattr(dml, 'table_set', None))
 
-        if isinstance(op, ops.TableNode):  # , sch.HasSchema)):
+        if isinstance(op, ops.TableNode):
             return op.schema
         elif isinstance(op, ops.Value):
             return sch.schema({op.resolve_name(): op.output_dtype})
