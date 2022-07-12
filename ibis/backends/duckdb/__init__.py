@@ -57,7 +57,8 @@ def _csv(_, path, table_name=None):
 
 @_register.register(r"(?:file://)?(?P<path>.+)", priority=9)
 def _file(_, path, table_name=None):
-    *_, extension = str(path).split(os.extsep, 1)
+    num_sep_chars = len(os.extsep)
+    extension = "".join(Path(path).suffixes)[num_sep_chars:]
     return _register(f"{extension}://{path}", table_name=table_name)
 
 
