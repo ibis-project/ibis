@@ -201,10 +201,6 @@ class ExpandingMathUnary(MathUnary):
     @immutable_property
     def output_dtype(self):
         return dt.higher_precedence(self.arg.output_dtype.largest, dt.double)
-        # if isinstance(self.arg.type(), dt.Decimal):
-        #     return self.arg.type().largest
-        # else:
-        #     return dt.double
 
 
 @public

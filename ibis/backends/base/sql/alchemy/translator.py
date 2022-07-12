@@ -61,7 +61,7 @@ class AlchemyExprTranslator(ExprTranslator):
             and isinstance(op, (ops.Sum, ops.Mean, ops.Min, ops.Max))
             and isinstance(dtype := arg.output_dtype, dt.Boolean)
         ):
-            return ops.Cast(arg, dt.Int32(nullable=type.nullable))
+            return ops.Cast(arg, dt.Int32(nullable=dtype.nullable))
         return arg
 
     def _reduction(self, sa_func, op):

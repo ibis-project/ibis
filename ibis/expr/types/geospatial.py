@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
 if TYPE_CHECKING:
-    from ibis.expr import types as ir
+    import ibis.expr.types as ir
 
 
 @public
@@ -20,10 +21,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             The area of `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoArea(self)
-        return op.to_expr()
+        return ops.GeoArea(self).to_expr()
 
     def as_binary(self) -> ir.BinaryValue:
         """Get the geometry as well-known bytes (WKB) without the SRID data.
@@ -33,10 +31,7 @@ class GeoSpatialValue(NumericValue):
         BinaryValue
             Binary value
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoAsBinary(self)
-        return op.to_expr()
+        return ops.GeoAsBinary(self).to_expr()
 
     def as_ewkt(self) -> ir.StringValue:
         """Get the geometry as well-known text (WKT) with the SRID data.
@@ -46,10 +41,7 @@ class GeoSpatialValue(NumericValue):
         StringValue
             String value
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoAsEWKT(self)
-        return op.to_expr()
+        return ops.GeoAsEWKT(self).to_expr()
 
     def as_text(self) -> ir.StringValue:
         """Get the geometry as well-known text (WKT) without the SRID data.
@@ -59,10 +51,7 @@ class GeoSpatialValue(NumericValue):
         StringValue
             String value
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoAsText(self)
-        return op.to_expr()
+        return ops.GeoAsText(self).to_expr()
 
     def as_ewkb(self) -> ir.BinaryValue:
         """Get the geometry as well-known bytes (WKB) with the SRID data.
@@ -72,10 +61,7 @@ class GeoSpatialValue(NumericValue):
         BinaryValue
             WKB value
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoAsEWKB(self)
-        return op.to_expr()
+        return ops.GeoAsEWKB(self).to_expr()
 
     def contains(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometry contains the `right`.
@@ -90,10 +76,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` contains `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoContains(self, right)
-        return op.to_expr()
+        return ops.GeoContains(self, right).to_expr()
 
     def contains_properly(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the first geometry contains the second one.
@@ -110,10 +93,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether self contains right excluding border points.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoContainsProperly(self, right)
-        return op.to_expr()
+        return ops.GeoContainsProperly(self, right).to_expr()
 
     def covers(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the first geometry covers the second one.
@@ -128,10 +108,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` covers `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoCovers(self, right)
-        return op.to_expr()
+        return ops.GeoCovers(self, right).to_expr()
 
     def covered_by(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the first geometry is covered by the second one.
@@ -146,10 +123,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` is covered by `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoCoveredBy(self, right)
-        return op.to_expr()
+        return ops.GeoCoveredBy(self, right).to_expr()
 
     def crosses(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries have at least one interior point in common.
@@ -164,10 +138,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` and `right` have at least one common interior point.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoCrosses(self, right)
-        return op.to_expr()
+        return ops.GeoCrosses(self, right).to_expr()
 
     def d_fully_within(
         self,
@@ -188,10 +159,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` is within a specified distance from `right`.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoDFullyWithin(self, right, distance)
-        return op.to_expr()
+        return ops.GeoDFullyWithin(self, right, distance).to_expr()
 
     def disjoint(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries have no points in common.
@@ -206,10 +174,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` and `right` are disjoint
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoDisjoint(self, right)
-        return op.to_expr()
+        return ops.GeoDisjoint(self, right).to_expr()
 
     def d_within(
         self,
@@ -230,10 +195,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` is partially within `distance` from `right`.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoDWithin(self, right, distance)
-        return op.to_expr()
+        return ops.GeoDWithin(self, right, distance).to_expr()
 
     def geo_equals(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries are equal.
@@ -248,10 +210,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` equals `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoEquals(self, right)
-        return op.to_expr()
+        return ops.GeoEquals(self, right).to_expr()
 
     def geometry_n(self, n: int | ir.IntegerValue) -> GeoSpatialValue:
         """Get the 1-based Nth geometry of a multi geometry.
@@ -266,10 +225,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Geometry value
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoGeometryN(self, n)
-        return op.to_expr()
+        return ops.GeoGeometryN(self, n).to_expr()
 
     def geometry_type(self) -> ir.StringValue:
         """Get the type of a geometry.
@@ -279,10 +235,7 @@ class GeoSpatialValue(NumericValue):
         StringValue
             String representing the type of `self`.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoGeometryType(self)
-        return op.to_expr()
+        return ops.GeoGeometryType(self).to_expr()
 
     def intersects(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries share any points.
@@ -297,10 +250,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` intersects `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoIntersects(self, right)
-        return op.to_expr()
+        return ops.GeoIntersects(self, right).to_expr()
 
     def is_valid(self) -> ir.BooleanValue:
         """Check if the geometry is valid.
@@ -310,10 +260,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` is valid
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoIsValid(self)
-        return op.to_expr()
+        return ops.GeoIsValid(self).to_expr()
 
     def ordering_equals(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if two geometries are equal and have the same point ordering.
@@ -331,10 +278,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether points and orderings are equal.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoOrderingEquals(self, right)
-        return op.to_expr()
+        return ops.GeoOrderingEquals(self, right).to_expr()
 
     def overlaps(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries share space, have the same dimension, and
@@ -350,10 +294,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Overlaps indicator
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoOverlaps(self, right)
-        return op.to_expr()
+        return ops.GeoOverlaps(self, right).to_expr()
 
     def touches(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the geometries have at least one point in common, but do
@@ -369,10 +310,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether self and right are touching
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoTouches(self, right)
-        return op.to_expr()
+        return ops.GeoTouches(self, right).to_expr()
 
     def distance(self, right: GeoSpatialValue) -> ir.FloatingValue:
         """Compute the distance between two geospatial expressions.
@@ -387,10 +325,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Distance between `self` and `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoDistance(self, right)
-        return op.to_expr()
+        return ops.GeoDistance(self, right).to_expr()
 
     def length(self) -> ir.FloatingValue:
         """Compute the length of a geospatial expression.
@@ -400,10 +335,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Length of `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoLength(self)
-        return op.to_expr()
+        return ops.GeoLength(self).to_expr()
 
     def perimeter(self) -> ir.FloatingValue:
         """Compute the perimeter of a geospatial expression.
@@ -413,10 +345,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Perimeter of `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoPerimeter(self)
-        return op.to_expr()
+        return ops.GeoPerimeter(self).to_expr()
 
     def max_distance(self, right: GeoSpatialValue) -> ir.FloatingValue:
         """Returns the 2-dimensional maximum distance between two geometries in
@@ -436,10 +365,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Maximum distance
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoMaxDistance(self, right)
-        return op.to_expr()
+        return ops.GeoMaxDistance(self, right).to_expr()
 
     def union(self, right: GeoSpatialValue) -> GeoSpatialValue:
         """Merge two geometries into a union geometry.
@@ -457,10 +383,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Union of geometries
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoUnion(self, right)
-        return op.to_expr()
+        return ops.GeoUnion(self, right).to_expr()
 
     def x(self) -> ir.FloatingValue:
         """Return the X coordinate of `self`, or NULL if not available.
@@ -472,10 +395,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             X coordinate of `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoX(self)
-        return op.to_expr()
+        return ops.GeoX(self).to_expr()
 
     def y(self) -> ir.FloatingValue:
         """Return the Y coordinate of `self`, or NULL if not available.
@@ -487,10 +407,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Y coordinate of `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoY(self)
-        return op.to_expr()
+        return ops.GeoY(self).to_expr()
 
     def x_min(self) -> ir.FloatingValue:
         """Return the X minima of a geometry.
@@ -500,10 +417,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             X minima
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoXMin(self)
-        return op.to_expr()
+        return ops.GeoXMin(self).to_expr()
 
     def x_max(self) -> ir.FloatingValue:
         """Return the X maxima of a geometry.
@@ -513,10 +427,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             X maxima
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoXMax(self)
-        return op.to_expr()
+        return ops.GeoXMax(self).to_expr()
 
     def y_min(self) -> ir.FloatingValue:
         """Return the Y minima of a geometry.
@@ -526,10 +437,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Y minima
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoYMin(self)
-        return op.to_expr()
+        return ops.GeoYMin(self).to_expr()
 
     def y_max(self) -> ir.FloatingValue:
         """Return the Y maxima of a geometry.
@@ -539,10 +447,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Y maxima
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoYMax(self)
-        return op.to_expr()
+        return ops.GeoYMax(self).to_expr()
 
     def start_point(self) -> PointValue:
         """Return the first point of a `LINESTRING` geometry as a `POINT`.
@@ -554,10 +459,7 @@ class GeoSpatialValue(NumericValue):
         PointValue
             Start point
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoStartPoint(self)
-        return op.to_expr()
+        return ops.GeoStartPoint(self).to_expr()
 
     def end_point(self) -> PointValue:
         """Return the last point of a `LINESTRING` geometry as a `POINT`.
@@ -569,10 +471,7 @@ class GeoSpatialValue(NumericValue):
         PointValue
             End point
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoEndPoint(self)
-        return op.to_expr()
+        return ops.GeoEndPoint(self).to_expr()
 
     def point_n(self, n: ir.IntegerValue) -> PointValue:
         """Return the Nth point in a single linestring in the geometry.
@@ -590,10 +489,7 @@ class GeoSpatialValue(NumericValue):
         PointValue
             Nth point in `self`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoPointN(self, n)
-        return op.to_expr()
+        return ops.GeoPointN(self, n).to_expr()
 
     def n_points(self) -> ir.IntegerValue:
         """Return the number of points in a geometry. Works for all geometries
@@ -603,10 +499,7 @@ class GeoSpatialValue(NumericValue):
         IntegerValue
             Number of points
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoNPoints(self)
-        return op.to_expr()
+        return ops.GeoNPoints(self).to_expr()
 
     def n_rings(self) -> ir.IntegerValue:
         """Return the number of rings for polygons and multipolygons.
@@ -618,10 +511,7 @@ class GeoSpatialValue(NumericValue):
         IntegerValue
             Number of rings
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoNRings(self)
-        return op.to_expr()
+        return ops.GeoNRings(self).to_expr()
 
     def srid(self) -> ir.IntegerValue:
         """Return the spatial reference identifier for the ST_Geometry.
@@ -631,10 +521,7 @@ class GeoSpatialValue(NumericValue):
         IntegerValue
             SRID
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoSRID(self)
-        return op.to_expr()
+        return ops.GeoSRID(self).to_expr()
 
     def set_srid(self, srid: ir.IntegerValue) -> GeoSpatialValue:
         """Set the spatial reference identifier for the `ST_Geometry`.
@@ -649,10 +536,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             `self` with SRID set to `srid`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoSetSRID(self, srid=srid)
-        return op.to_expr()
+        return ops.GeoSetSRID(self, srid=srid).to_expr()
 
     def buffer(self, radius: float | ir.FloatingValue) -> GeoSpatialValue:
         """Returns a geometry that represents all points whose distance from
@@ -669,10 +553,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Geometry expression
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoBuffer(self, radius=radius)
-        return op.to_expr()
+        return ops.GeoBuffer(self, radius=radius).to_expr()
 
     def centroid(self) -> PointValue:
         """Returns the centroid of the geometry.
@@ -682,10 +563,7 @@ class GeoSpatialValue(NumericValue):
         PointValue
             The centroid
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoCentroid(self)
-        return op.to_expr()
+        return ops.GeoCentroid(self).to_expr()
 
     def envelope(self) -> ir.PolygonValue:
         """Returns a geometry representing the bounding box of `self`.
@@ -695,10 +573,7 @@ class GeoSpatialValue(NumericValue):
         PolygonValue
             A polygon
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoEnvelope(self)
-        return op.to_expr()
+        return ops.GeoEnvelope(self).to_expr()
 
     def within(self, right: GeoSpatialValue) -> ir.BooleanValue:
         """Check if the first geometry is completely inside of the second.
@@ -713,10 +588,7 @@ class GeoSpatialValue(NumericValue):
         BooleanValue
             Whether `self` is in `right`.
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoWithin(self, right)
-        return op.to_expr()
+        return ops.GeoWithin(self, right).to_expr()
 
     def azimuth(self, right: GeoSpatialValue) -> ir.FloatingValue:
         """Return the angle in radians from the horizontal of the vector
@@ -735,10 +607,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             azimuth
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoAzimuth(self, right)
-        return op.to_expr()
+        return ops.GeoAzimuth(self, right).to_expr()
 
     def intersection(self, right: GeoSpatialValue) -> GeoSpatialValue:
         """Return the intersection of two geometries.
@@ -753,10 +622,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Intersection of `self` and `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoIntersection(self, right)
-        return op.to_expr()
+        return ops.GeoIntersection(self, right).to_expr()
 
     def difference(self, right: GeoSpatialValue) -> GeoSpatialValue:
         """Return the difference of two geometries.
@@ -771,10 +637,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Difference of `self` and `right`
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoDifference(self, right)
-        return op.to_expr()
+        return ops.GeoDifference(self, right).to_expr()
 
     def simplify(
         self,
@@ -795,10 +658,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Simplified geometry
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoSimplify(self, tolerance, preserve_collapsed)
-        return op.to_expr()
+        return ops.GeoSimplify(self, tolerance, preserve_collapsed).to_expr()
 
     def transform(self, srid: ir.IntegerValue) -> GeoSpatialValue:
         """Transform a geometry into a new SRID.
@@ -813,10 +673,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Transformed geometry
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoTransform(self, srid)
-        return op.to_expr()
+        return ops.GeoTransform(self, srid).to_expr()
 
     def line_locate_point(self, right: PointValue) -> ir.FloatingValue:
         """Locate the distance a point falls along the length of a line.
@@ -835,10 +692,7 @@ class GeoSpatialValue(NumericValue):
         FloatingValue
             Fraction of the total line length
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoLineLocatePoint(self, right)
-        return op.to_expr()
+        return ops.GeoLineLocatePoint(self, right).to_expr()
 
     def line_substring(
         self, start: ir.FloatingValue, end: ir.FloatingValue
@@ -862,10 +716,7 @@ class GeoSpatialValue(NumericValue):
         LineStringValue
             Clipped linestring
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoLineSubstring(self, start, end)
-        return op.to_expr()
+        return ops.GeoLineSubstring(self, start, end).to_expr()
 
     def line_merge(self) -> ir.LineStringValue:
         """Merge a `MultiLineString` into a `LineString`.
@@ -880,10 +731,7 @@ class GeoSpatialValue(NumericValue):
         GeoSpatialValue
             Merged linestrings
         """
-        from ibis.expr import operations as ops
-
-        op = ops.GeoLineMerge(self)
-        return op.to_expr()
+        return ops.GeoLineMerge(self).to_expr()
 
 
 @public
@@ -905,8 +753,6 @@ class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
         GeoSpatialScalar
             Union of geometries
         """
-        from ibis.expr import operations as ops
-
         return ops.GeoUnaryUnion(self).to_expr().name("union")
 
 
