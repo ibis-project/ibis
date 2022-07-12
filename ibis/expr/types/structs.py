@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
@@ -84,7 +85,6 @@ class StructValue(Value):
         >>> s['fruit']
         fruit: StructField(frozendict({'fruit': 'pear', 'weight': 0}), field='fruit')
         """  # noqa: E501
-        import ibis.expr.operations as ops
 
         return ops.StructField(self, name).to_expr().name(name)
 
