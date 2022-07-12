@@ -35,8 +35,9 @@ class Node(Annotable, Comparable):
         # analyzed deeper
         return False
 
+    @abstractmethod
     def to_expr(self):
-        return self.output_type(self)
+        ...
 
     # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name
     # abstractproperty
@@ -45,13 +46,6 @@ class Node(Annotable, Comparable):
 
     def has_resolved_name(self):
         return False
-
-    @property
-    def output_type(self):
-        """Resolve the output type of the expression."""
-        raise NotImplementedError(
-            f"output_type not implemented for {type(self)}"
-        )
 
     # TODO(kszucs): remove this method entirely
     def flat_args(self):
@@ -88,12 +82,11 @@ class Value(Node):
         rlz.Shape
         """
 
-    @property
-    def output_type(self):
+    def to_expr(self):
         if self.output_shape is Shape.COLUMNAR:
-            return self.output_dtype.column
+            return self.output_dtype.column(self)
         else:
-            return self.output_dtype.scalar
+            return self.output_dtype.scalar(self)
 
 
 @public

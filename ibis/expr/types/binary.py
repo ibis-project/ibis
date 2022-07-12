@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value
 
 
@@ -28,8 +29,6 @@ class BinaryValue(Value):
         BinaryValue
             Binary expression
         """
-        from ibis.expr import operations as ops
-
         return ops.HashBytes(self, how).to_expr()
 
 
