@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import functools
-import operator
 from typing import NamedTuple
 
 import toolz
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
 import ibis.util as util
