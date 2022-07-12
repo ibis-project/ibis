@@ -15,7 +15,6 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
@@ -275,9 +274,13 @@ class ValueList(Value):
 
     values = rlz.tuple_of(rlz.any)
 
-    output_type = ir.ValueList
     output_dtype = rlz.dtype_like("values")
     output_shape = rlz.shape_like("values")
+
+    def to_expr(self):
+        import ibis.expr.types as ir
+
+        return ir.ValueList(self)
 
 
 @public

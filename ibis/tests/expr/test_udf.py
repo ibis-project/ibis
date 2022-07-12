@@ -40,8 +40,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
     assert udf.input_type == tuple([dt.int8(), dt.string(), dt.boolean()])
     assert udf.return_type == dt.int8()
 
-    expr = udf.to_expr()
-    assert isinstance(expr, udf.output_type)
+    assert isinstance(udf.to_expr(), output_type)
 
     with pytest.raises(com.IbisTypeError):
         # wrong function type

@@ -7,12 +7,12 @@ from functools import cached_property
 
 from public import public
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis import util
-from ibis.common import exceptions as com
-from ibis.expr import rules as rlz
-from ibis.expr import schema as sch
-from ibis.expr import types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
+import ibis.util as util
 from ibis.expr.operations.core import Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
@@ -27,8 +27,6 @@ def genname():
 
 @public
 class TableNode(Node):
-    output_type = ir.Table
-
     def aggregate(self, this, metrics, by=None, having=None):
         return Aggregation(this, metrics, by=by, having=having)
 
@@ -41,6 +39,11 @@ class TableNode(Node):
                 sort_exprs,
             ),
         )
+
+    def to_expr(self):
+        import ibis.expr.types as ir
+
+        return ir.Table(self)
 
 
 @public
@@ -104,6 +107,7 @@ class InMemoryTable(PhysicalTable):
 # functionality should be handled by input rules for the Join class
 def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
+    import ibis.expr.types as ir
     from ibis.expr.analysis import shares_all_roots
 
     result = []
