@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
 
@@ -31,8 +32,6 @@ class ArrayValue(Value):
         >>> a.length()
         ArrayLength((1, 2, 3))
         """
-        import ibis.expr.operations as ops
-
         return ops.ArrayLength(self).to_expr()
 
     def __getitem__(
@@ -71,8 +70,6 @@ class ArrayValue(Value):
         >>> x[1:3]
         ArraySlice((1, 2, 3, 4), start=1, stop=3)
         """
-        import ibis.expr.operations as ops
-
         if isinstance(index, slice):
             start = index.start
             stop = index.stop
@@ -107,8 +104,6 @@ class ArrayValue(Value):
         >>> a + b
         ArrayConcat(left=(1, 2), right=(3, 4, 5))
         """
-        import ibis.expr.operations as ops
-
         return ops.ArrayConcat(self, other).to_expr()
 
     def __radd__(self, other: ArrayValue) -> ArrayValue:
@@ -132,8 +127,6 @@ class ArrayValue(Value):
         >>> b + a
         ArrayConcat(left=(3, 4, 5), right=(1, 2))
         """
-        import ibis.expr.operations as ops
-
         return ops.ArrayConcat(self, other).to_expr()
 
     def __mul__(self, n: int | ir.IntegerValue) -> ArrayValue:
@@ -156,8 +149,6 @@ class ArrayValue(Value):
         >>> x * 2
         ArrayRepeat((1, 2), times=2)
         """
-        import ibis.expr.operations as ops
-
         return ops.ArrayRepeat(self, n).to_expr()
 
     def __rmul__(self, n: int | ir.IntegerValue) -> ArrayValue:
@@ -180,8 +171,6 @@ class ArrayValue(Value):
         >>> 2 * x
         ArrayRepeat((1, 2), times=2)
         """
-        import ibis.expr.operations as ops
-
         return ops.ArrayRepeat(self, n).to_expr()
 
     def unnest(self) -> ir.Value:
@@ -192,8 +181,6 @@ class ArrayValue(Value):
         ir.Value
             Unnested array
         """
-        import ibis.expr.operations as ops
-
         expr = ops.Unnest(self).to_expr()
         try:
             return expr.name(self.get_name())
@@ -258,8 +245,6 @@ def array(
     >>> import ibis
     >>> result = ibis.array([1.0, 2.0, 3.0])
     """
-    import ibis.expr.operations as ops
-
     if all([isinstance(value, Column) for value in values]):
         return ops.ArrayColumn(values).to_expr()
     elif any([isinstance(value, Column) for value in values]):

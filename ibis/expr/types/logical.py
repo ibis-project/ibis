@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ibis.expr import types as ir
+    import ibis.expr.types as ir
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
@@ -49,26 +50,17 @@ class BooleanValue(NumericValue):
         return ops.Where(self, true_expr, false_expr).to_expr()
 
     def __and__(self, other: BooleanValue) -> BooleanValue:
-        from ibis.expr import operations as ops
-        from ibis.expr import rules as rlz
-
-        return _binop(ops.And, self, rlz.any(other))
+        return _binop(ops.And, self, other)
 
     __rand__ = __and__
 
     def __or__(self, other: BooleanValue) -> BooleanValue:
-        from ibis.expr import operations as ops
-        from ibis.expr import rules as rlz
-
-        return _binop(ops.Or, self, rlz.any(other))
+        return _binop(ops.Or, self, other)
 
     __ror__ = __or__
 
     def __xor__(self, other: BooleanValue) -> BooleanValue:
-        from ibis.expr import operations as ops
-        from ibis.expr import rules as rlz
-
-        return _binop(ops.Xor, self, rlz.any(other))
+        return _binop(ops.Xor, self, other)
 
     __rxor__ = __xor__
 
@@ -77,8 +69,6 @@ class BooleanValue(NumericValue):
 
     @staticmethod
     def __negate_op__():
-        from ibis.expr import operations as ops
-
         return ops.Not
 
 
@@ -91,32 +81,22 @@ class BooleanScalar(NumericScalar, BooleanValue):
 class BooleanColumn(NumericColumn, BooleanValue):
     def any(self) -> BooleanValue:
         import ibis.expr.analysis as L
-        from ibis.expr import operations as ops
 
         return L._make_any(self, ops.Any)
 
     def notany(self) -> BooleanValue:
         import ibis.expr.analysis as L
-        from ibis.expr import operations as ops
 
         return L._make_any(self, ops.NotAny)
 
     def all(self) -> BooleanScalar:
-        from ibis.expr import operations as ops
-
         return ops.All(self).to_expr()
 
     def notall(self) -> BooleanScalar:
-        from ibis.expr import operations as ops
-
         return ops.NotAll(self).to_expr()
 
     def cumany(self) -> BooleanColumn:
-        from ibis.expr import operations as ops
-
         return ops.CumulativeAny(self).to_expr()
 
     def cumall(self) -> BooleanColumn:
-        from ibis.expr import operations as ops
-
         return ops.CumulativeAll(self).to_expr()
