@@ -68,6 +68,30 @@ class SQL(Config):
     default_dialect = rlz.optional(rlz.str_, default="duckdb")
 
 
+class Interactive(Config):
+    """Options controlling the interactive repr.
+
+    Attributes
+    ----------
+    max_rows
+        Maximum rows to pretty print.
+    max_length
+        Maximum length for pretty-printed arrays and maps.
+    max_string
+        Maximum length for pretty-printed strings.
+    max_depth
+        Maximum depth for nested data types.
+    show_types
+        Show the inferred type of value expressions in the interactive repr.
+    """
+
+    max_rows = rlz.optional(rlz.int_, default=10)
+    max_length = rlz.optional(rlz.int_, default=5)
+    max_string = rlz.optional(rlz.int_, default=80)
+    max_depth = rlz.optional(rlz.int_, default=2)
+    show_types = rlz.optional(rlz.bool_, default=True)
+
+
 class Repr(Config):
     """Expression printing options.
 
@@ -82,12 +106,18 @@ class Repr(Config):
         SQLQueryResult operations.
     show_types : bool
         Show the inferred type of value expressions in the repr.
+    interactive
+        Options controlling the interactive repr.
     """
 
     depth = rlz.optional(rlz.int_(min=0))
     table_columns = rlz.optional(rlz.int_(min=0))
     query_text_length = rlz.optional(rlz.int_(min=0), default=80)
     show_types = rlz.optional(rlz.bool_, default=False)
+    interactive = rlz.optional(
+        rlz.instance_of(Interactive),
+        default=Interactive(),
+    )
 
 
 config_ = rlz.instance_of(Config)

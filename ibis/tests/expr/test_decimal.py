@@ -156,7 +156,7 @@ def test_invalid_precision_scale_type(precision, scale):
 def test_decimal_str(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    assert str(t) == f'decimal(prec={t.precision:d}, scale={t.scale:d})'
+    assert str(t) == f'decimal({t.precision:d}, {t.scale:d})'
 
 
 def test_decimal_repr(lineitem):

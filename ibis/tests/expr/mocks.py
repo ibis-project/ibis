@@ -16,6 +16,7 @@ from typing import Optional
 
 import pytest
 
+import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
@@ -387,10 +388,21 @@ class MockBackend(BaseSQLBackend):
         return Schema.from_tuples(MOCK_TABLES[name])
 
     def execute(self, expr, limit=None, params=None, **kwargs):
+        import pandas as pd
+
         ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
-        return None
+        try:
+            schema = expr.schema()
+        except AttributeError:
+            schema = expr.to_projection().schema()
+        df = schema.apply_to(pd.DataFrame([], columns=schema.names))
+        if isinstance(expr, ir.Scalar):
+            return None
+        elif isinstance(expr, ir.Column):
+            return df.iloc[:, 0]
+        return df
 
     def compile(
         self,

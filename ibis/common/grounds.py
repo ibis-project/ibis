@@ -5,8 +5,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Any
 from weakref import WeakValueDictionary
 
-from rich.console import Console
-
 from ibis.common.caching import WeakCache
 from ibis.common.validators import (
     ImmutableProperty,
@@ -17,8 +15,6 @@ from ibis.common.validators import (
 from ibis.util import frozendict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
-
-console = Console()
 
 
 class BaseMeta(ABCMeta):

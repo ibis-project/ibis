@@ -791,3 +791,18 @@ def test_bitwise_not_col(backend, alltypes, df):
     result = expr.execute()
     expected = ~df.int_col
     backend.assert_series_equal(result, expected.rename("tmp"))
+
+
+def test_interactive(alltypes):
+    expr = alltypes.mutate(
+        str_col=_.string_col.replace("1", "").nullif("2"),
+        date_col=_.timestamp_col.date(),
+        delta_col=lambda t: ibis.now() - t.timestamp_col,
+    )
+
+    orig = ibis.options.interactive
+    ibis.options.interactive = True
+    try:
+        repr(expr)
+    finally:
+        ibis.options.interactive = orig

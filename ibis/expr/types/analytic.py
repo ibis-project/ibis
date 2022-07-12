@@ -40,6 +40,9 @@ class TopK(Analytic):
         arg = op.arg.to_expr()
         return arg == getattr(rank_set, arg.get_name())
 
+    def __rich_console__(self, console, options):
+        return self.to_aggregation().__rich_console__(console, options)
+
     def to_aggregation(
         self, metric_name=None, parent_table=None, backup_metric_name=None
     ):

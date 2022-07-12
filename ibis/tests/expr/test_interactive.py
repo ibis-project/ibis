@@ -59,9 +59,7 @@ def test_default_limit(con):
     expected = """\
 SELECT *
 FROM functional_alltypes
-LIMIT {}""".format(
-        config.options.sql.default_limit
-    )
+LIMIT 11"""
 
     assert con.executed_queries[0] == expected
 
@@ -89,7 +87,8 @@ def test_disable_query_limit(con):
 
     expected = """\
 SELECT *
-FROM functional_alltypes"""
+FROM functional_alltypes
+LIMIT 11"""
 
     assert con.executed_queries[0] == expected
 
