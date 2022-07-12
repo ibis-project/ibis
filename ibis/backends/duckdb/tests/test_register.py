@@ -64,6 +64,18 @@ def test_register_csv(
     assert table.count().execute()
 
 
+def test_register_with_dotted_name(data_directory, tmp_path):
+    con = ibis.duckdb.connect()
+    basename = "foo.bar.baz/diamonds.csv"
+    f = tmp_path.joinpath(basename)
+    f.parent.mkdir()
+    data = data_directory.joinpath("diamonds.csv").read_bytes()
+    f.write_bytes(data)
+    con.register(str(f.absolute()))
+    table = con.table("diamonds")
+    assert table.count().execute()
+
+
 @pytest.mark.parametrize(
     "fname, in_table_name, out_table_name",
     [
