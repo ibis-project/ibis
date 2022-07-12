@@ -61,6 +61,61 @@ class Curried(toolz.curry, Validator):
         )
 
 
+class Parameter(inspect.Parameter):
+    """
+    Augmented Parameter class to additionally hold a validator object.
+    """
+
+    __slots__ = ('_validator',)
+
+    def __init__(
+        self,
+        name,
+        kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        *,
+        validator=EMPTY,
+    ):
+        super().__init__(
+            name,
+            kind,
+            default=None if isinstance(validator, Optional) else EMPTY,
+        )
+        self._validator = validator
+
+    @property
+    def validator(self):
+        return self._validator
+
+    def validate(self, this, arg):
+        if self.validator is EMPTY:
+            return arg
+        else:
+            return self._validator(arg, this=this)
+
+
+class Signature(inspect.Signature):
+    """
+    Validatable signature.
+
+    Primarly used in the implementation of ibis.common.grounds.Annotable.
+    """
+
+    def validate(self, *args, **kwargs):
+        bound = self.bind(*args, **kwargs)
+        bound.apply_defaults()
+
+        # bind the signature to the passed arguments and apply the validators
+        # before passing the arguments, so self.__init__() receives already
+        # validated arguments as keywords
+        this = {}
+        for name, value in bound.arguments.items():
+            param = self.parameters[name]
+            # TODO(kszucs): provide more error context on failure
+            this[name] = param.validate(this, value)
+
+        return this
+
+
 class ImmutableProperty(Callable):
     """
     Abstract base class for defining stored properties.

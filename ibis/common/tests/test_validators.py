@@ -1,7 +1,9 @@
+import inspect
+
 import pytest
 from toolz import identity
 
-from ibis.common.validators import Optional, Validator
+from ibis.common.validators import Optional, Parameter, Signature, Validator
 
 
 class InstanceOf(Validator):
@@ -54,3 +56,42 @@ def test_valid_optional(validator, value, expected):
 def test_invalid_optional(arg, value, expected):
     with pytest.raises(expected):
         arg(value)
+
+
+def test_parameter():
+    def fn(x, this):
+        return int(x) + this['other']
+
+    p = Parameter('novalidator')
+    assert p.validate({}, 'value') == 'value'
+
+    p = Parameter('test', validator=fn)
+
+    assert p.validator is fn
+    assert p.default is inspect.Parameter.empty
+    assert p.validate({'other': 1}, '2') == 3
+
+    with pytest.raises(TypeError):
+        p.validate({}, valid=inspect.Parameter.empty)
+
+    ofn = Optional(fn)
+    op = Parameter('test', validator=ofn)
+    assert op.validator is ofn
+    assert op.default is None
+    assert op.validate({'other': 1}, None) is None
+
+
+def test_signature():
+    def to_int(x, this):
+        return int(x)
+
+    def add_other(x, this):
+        return int(x) + this['other']
+
+    other = Parameter('other', validator=to_int)
+    this = Parameter('this', validator=add_other)
+
+    sig = Signature(parameters=[other, this])
+    assert sig.validate(1, 2) == {'other': 1, 'this': 3}
+    assert sig.validate(other=1, this=2) == {'other': 1, 'this': 3}
+    assert sig.validate(this=2, other=1) == {'other': 1, 'this': 3}
