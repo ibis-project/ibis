@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from ibis.expr import types as ir
 
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis.expr.types.core import Expr, _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -32,8 +33,6 @@ class TemporalValue(Value):
         StringValue
             Formatted version of `arg`
         """
-        import ibis.expr.operations as ops
-
         return ops.Strftime(self, format_str).to_expr()
 
 
@@ -57,26 +56,18 @@ class _DateComponentMixin:
 
     def epoch_seconds(self) -> ir.IntegerValue:
         """Extract UNIX epoch in seconds."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractEpochSeconds(self).to_expr()
 
     def year(self) -> ir.IntegerValue:
         """Extract the year component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractYear(self).to_expr().name("year")
 
     def month(self) -> ir.IntegerValue:
         """Extract the month component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractMonth(self).to_expr().name("month")
 
     def day(self) -> ir.IntegerValue:
         """Extract the day component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractDay(self).to_expr().name("day")
 
     @property
@@ -89,27 +80,18 @@ class _DateComponentMixin:
             An namespace expression containing methods to use to extract
             information.
         """  # noqa: E501
-
-        import ibis.expr.operations as ops
-
         return ops.DayOfWeekNode(self).to_expr()
 
     def day_of_year(self) -> ir.IntegerValue:
         """Extract the day of the year component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractDayOfYear(self).to_expr()
 
     def quarter(self) -> ir.IntegerValue:
         """Extract the quarter component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractQuarter(self).to_expr()
 
     def week_of_year(self) -> ir.IntegerValue:
         """Extract the week of the year component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractWeekOfYear(self).to_expr()
 
 
@@ -129,32 +111,22 @@ class _TimeComponentMixin:
         TimeValue
             The time component of `self`
         """
-        import ibis.expr.operations as ops
-
         return ops.Time(self).to_expr()
 
     def hour(self) -> ir.IntegerValue:
         """Extract the hour component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractHour(self).to_expr().name("hour")
 
     def minute(self) -> ir.IntegerValue:
         """Extract the minute component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractMinute(self).to_expr().name("minute")
 
     def second(self) -> ir.IntegerValue:
         """Extract the second component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractSecond(self).to_expr().name("second")
 
     def millisecond(self) -> ir.IntegerValue:
         """Extract the millisecond component."""
-        import ibis.expr.operations as ops
-
         return ops.ExtractMillisecond(self).to_expr().name("millisecond")
 
     def between(
@@ -183,7 +155,6 @@ class _TimeComponentMixin:
             as needed.
         """
         import ibis.expr.datatypes as dt
-        import ibis.expr.operations as ops
 
         op = self.op()
         if isinstance(op, ops.Time):
@@ -226,8 +197,6 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         TimeValue
             `self` truncated to `unit`
         """
-        import ibis.expr.operations as ops
-
         return ops.TimeTruncate(self, unit).to_expr()
 
     def __add__(
@@ -235,8 +204,6 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> TimeValue | NotImplemented:
         """Add an interval to a time expression."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.TimeAdd, self, other)
 
     add = radd = __radd__ = __add__
@@ -246,7 +213,6 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         other: TimeValue | IntervalValue,
     ) -> IntervalValue | TimeValue | NotImplemented:
         """Subtract a time or an interval from a time expression."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         other = rlz.any(other)
@@ -265,7 +231,6 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         other: TimeValue | IntervalValue,
     ) -> IntervalValue | TimeValue | NotImplemented:
         """Subtract a time or an interval from a time expression."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         other = rlz.any(other)
@@ -305,8 +270,6 @@ class DateValue(TemporalValue, _DateComponentMixin):
         DateValue
             Truncated date value expression
         """
-        import ibis.expr.operations as ops
-
         return ops.DateTruncate(self, unit).to_expr()
 
     def __add__(
@@ -314,8 +277,6 @@ class DateValue(TemporalValue, _DateComponentMixin):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> DateValue | NotImplemented:
         """Add an interval to a date."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.DateAdd, self, other)
 
     add = radd = __radd__ = __add__
@@ -329,7 +290,6 @@ class DateValue(TemporalValue, _DateComponentMixin):
         | IntervalValue,
     ) -> IntervalValue | DateValue | NotImplemented:
         """Subtract a date or an interval from a date."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
@@ -352,7 +312,6 @@ class DateValue(TemporalValue, _DateComponentMixin):
         | IntervalValue,
     ) -> IntervalValue | DateValue | NotImplemented:
         """Subtract a date or an interval from a date."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
@@ -397,8 +356,6 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         TimestampValue
             Truncated timestamp expression
         """
-        import ibis.expr.operations as ops
-
         return ops.TimestampTruncate(self, unit).to_expr()
 
     def date(self) -> DateValue:
@@ -409,8 +366,6 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         DateValue
             The date component of `self`
         """
-        import ibis.expr.operations as ops
-
         return ops.Date(self).to_expr()
 
     def __add__(
@@ -418,8 +373,6 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> TimestampValue | NotImplemented:
         """Add an interval to a timestamp."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.TimestampAdd, self, other)
 
     add = radd = __radd__ = __add__
@@ -434,7 +387,6 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         | IntervalValue,
     ) -> IntervalValue | TimestampValue | NotImplemented:
         """Subtract a timestamp or an interval from a timestamp."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         right = rlz.any(other)
@@ -458,7 +410,6 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         | IntervalValue,
     ) -> IntervalValue | TimestampValue | NotImplemented:
         """Subtract a timestamp or an interval from a timestamp."""
-        import ibis.expr.operations as ops
         import ibis.expr.rules as rlz
 
         right = rlz.any(other)
@@ -487,7 +438,6 @@ class TimestampColumn(TemporalColumn, TimestampValue):
 class IntervalValue(Value):
     def to_unit(self, target_unit: str) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
-        import ibis.expr.operations as ops
 
         # TODO(kszucs): should use a separate operation for unit conversion
         # which we can rewrite/simplify to integer multiplication/division
@@ -553,8 +503,6 @@ class IntervalValue(Value):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> IntervalValue | NotImplemented:
         """Add this interval to `other`."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.IntervalAdd, self, other)
 
     add = radd = __radd__ = __add__
@@ -564,8 +512,6 @@ class IntervalValue(Value):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> IntervalValue | NotImplemented:
         """Subtract `other` from this interval."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.IntervalSubtract, self, other)
 
     sub = __sub__
@@ -575,8 +521,6 @@ class IntervalValue(Value):
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
     ) -> IntervalValue | NotImplemented:
         """Subtract `other` from this interval."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.IntervalSubtract, other, self)
 
     rsub = __rsub__
@@ -586,8 +530,6 @@ class IntervalValue(Value):
         other: int | ir.IntegerValue,
     ) -> IntervalValue | NotImplemented:
         """Multiply this interval by `other`."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.IntervalMultiply, self, other)
 
     mul = rmul = __rmul__ = __mul__
@@ -597,8 +539,6 @@ class IntervalValue(Value):
         other: ir.IntegerValue,
     ) -> IntervalValue | NotImplemented:
         """Floor-divide this interval by `other`."""
-        import ibis.expr.operations as ops
-
         return _binop(ops.IntervalFloorDivide, self, other)
 
     floordiv = __floordiv__
@@ -611,8 +551,6 @@ class IntervalValue(Value):
         IntervalValue
             A negated interval value expression
         """
-        import ibis.expr.operations as ops
-
         op = self.op()
         if hasattr(op, "negate"):
             result = op.negate()
@@ -625,7 +563,6 @@ class IntervalValue(Value):
 
     @staticmethod
     def __negate_op__():
-        import ibis.expr.operations as ops
 
         return ops.Negate
 
@@ -652,8 +589,6 @@ class DayOfWeek(Expr):
 
             !!! note "Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6."
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.DayOfWeekIndex(self.op().arg).to_expr()
 
     def full_name(self):
@@ -664,6 +599,4 @@ class DayOfWeek(Expr):
         StringValue
             The name of the day of the week
         """
-        import ibis.expr.operations as ops
-
         return ops.DayOfWeekName(self.op().arg).to_expr()

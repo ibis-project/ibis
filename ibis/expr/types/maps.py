@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Iterable, Mapping
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import K, V
 
@@ -44,8 +45,6 @@ class MapValue(Value):
         >>> m.get("d")
         MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='d', default=None)
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.MapValueOrDefaultForKey(self, key, default).to_expr()
 
     def length(self) -> ir.IntegerValue:
@@ -63,8 +62,6 @@ class MapValue(Value):
         >>> m.length()
         MapLength(frozendict({'a': 1, 'b': 2}))
         """
-        import ibis.expr.operations as ops
-
         return ops.MapLength(self).to_expr()
 
     def __getitem__(self, key: ir.Value) -> ir.Value:
@@ -94,8 +91,6 @@ class MapValue(Value):
         >>> m["c"]  # note that this does not fail on construction
         MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.MapValueForKey(self, key).to_expr()
 
     def keys(self) -> ir.ArrayValue:
@@ -113,8 +108,6 @@ class MapValue(Value):
         >>> m.keys()
         MapKeys(frozendict({'a': 1, 'b': 2}))
         """
-        import ibis.expr.operations as ops
-
         return ops.MapKeys(self).to_expr()
 
     def values(self) -> ir.ArrayValue:
@@ -132,8 +125,6 @@ class MapValue(Value):
         >>> m.keys()
         MapKeys(frozendict({'a': 1, 'b': 2}))
         """
-        import ibis.expr.operations as ops
-
         return ops.MapValues(self).to_expr()
 
     def __add__(self, other: MapValue) -> MapValue:
@@ -157,8 +148,6 @@ class MapValue(Value):
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.MapConcat(self, other).to_expr()
 
     def __radd__(self, other: MapValue) -> MapValue:
@@ -182,8 +171,6 @@ class MapValue(Value):
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.MapConcat(self, other).to_expr()
 
 

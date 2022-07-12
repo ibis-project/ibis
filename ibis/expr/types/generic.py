@@ -10,7 +10,8 @@ from public import public
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.expr import datatypes as dt
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis.expr.types.core import Expr, _binop
 
 
@@ -44,8 +45,6 @@ class Value(Expr):
           a int64
         b: r0.a
         """
-        import ibis.expr.operations as ops
-
         # TODO(kszucs): shouldn't do simplification here, but rather later
         # when simplifying the whole operation tree
         # the expression's name is idendical to the new one
@@ -77,8 +76,6 @@ class Value(Expr):
         IntegerValue
             The hash value of `self`
         """
-        import ibis.expr.operations as ops
-
         return ops.Hash(self, how).to_expr()
 
     def cast(self, target_type: dt.DataType) -> Value:
@@ -94,8 +91,6 @@ class Value(Expr):
         Value
             Casted expression
         """
-        import ibis.expr.operations as ops
-
         op = ops.Cast(self, to=target_type)
 
         if op.to.equals(self.type()):
@@ -132,8 +127,6 @@ class Value(Expr):
         >>> ibis.coalesce(None, 4, 5)
         Coalesce([ValueList(values=[None, 4, 5])])
         """
-        import ibis.expr.operations as ops
-
         return ops.Coalesce([self, *args]).to_expr()
 
     def greatest(self, *args: ir.Value) -> ir.Value:
@@ -149,8 +142,6 @@ class Value(Expr):
         Value
             Maximum of the passed arguments
         """
-        import ibis.expr.operations as ops
-
         return ops.Greatest([self, *args]).to_expr()
 
     def least(self, *args: ir.Value) -> ir.Value:
@@ -166,8 +157,6 @@ class Value(Expr):
         Value
             Minimum of the passed arguments
         """
-        import ibis.expr.operations as ops
-
         return ops.Least([self, *args]).to_expr()
 
     def typeof(self) -> ir.StringValue:
@@ -180,8 +169,6 @@ class Value(Expr):
         StringValue
             A string indicating the type of the value
         """
-        import ibis.expr.operations as ops
-
         return ops.TypeOf(self).to_expr()
 
     def fillna(self, fill_value: Scalar) -> Value:
@@ -212,8 +199,6 @@ class Value(Expr):
         Value
             `self` filled with `fill_value` where it is `NA`
         """
-        import ibis.expr.operations as ops
-
         return ops.IfNull(self, fill_value).to_expr()
 
     def nullif(self, null_if_expr: Value) -> Value:
@@ -232,8 +217,6 @@ class Value(Expr):
         Value
             Value expression
         """
-        import ibis.expr.operations as ops
-
         return ops.NullIf(self, null_if_expr).to_expr()
 
     def between(
@@ -255,10 +238,7 @@ class Value(Expr):
         BooleanValue
             Expression indicating membership in the provided range
         """
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return ops.Between(self, rlz.any(lower), rlz.any(upper)).to_expr()
+        return ops.Between(self, lower, upper).to_expr()
 
     def isin(
         self,
@@ -297,8 +277,6 @@ class Value(Expr):
           string_col string
         Contains(value=r1.string_col, options=r0.other_string_col)
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.Contains(self, values).to_expr()
 
     def notin(
@@ -317,8 +295,6 @@ class Value(Expr):
         BooleanValue
             Whether `self`'s values are not contained in `values`
         """
-        import ibis.expr.operations as ops
-
         return ops.NotContains(self, values).to_expr()
 
     def substitute(
@@ -366,8 +342,6 @@ class Value(Expr):
         Value
             A window function expression
         """
-        import ibis.expr.operations as ops
-
         prior_op = self.op()
 
         # TODO(kszucs): fix this ugly hack
@@ -387,14 +361,10 @@ class Value(Expr):
 
     def isnull(self) -> ir.BooleanValue:
         """Return whether this expression is NULL."""
-        import ibis.expr.operations as ops
-
         return ops.IsNull(self).to_expr()
 
     def notnull(self) -> ir.BooleanValue:
         """Return whether this expression is not NULL."""
-        import ibis.expr.operations as ops
-
         return ops.NotNull(self).to_expr()
 
     def case(self):
@@ -453,8 +423,6 @@ class Value(Expr):
 
     def collect(self) -> ir.ArrayValue:
         """Return an array of the elements of this expression."""
-        import ibis.expr.operations as ops
-
         return ops.ArrayCollect(self).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
@@ -472,11 +440,8 @@ class Value(Expr):
         BooleanValue
             Whether this expression is not distinct from `other`
         """
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
         try:
-            return ops.IdenticalTo(self, rlz.any(other)).to_expr()
+            return ops.IdenticalTo(self, other).to_expr()
         except (com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
@@ -500,48 +465,28 @@ class Value(Expr):
         StringScalar
             Concatenated string expression
         """
-        import ibis.expr.operations as ops
-
         return ops.GroupConcat(self, sep=sep, where=where).to_expr()
 
     def __hash__(self) -> int:
         return super().__hash__()
 
     def __eq__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.Equals, self, rlz.any(other))
+        return _binop(ops.Equals, self, other)
 
     def __ne__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.NotEquals, self, rlz.any(other))
+        return _binop(ops.NotEquals, self, other)
 
     def __ge__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.GreaterEqual, self, rlz.any(other))
+        return _binop(ops.GreaterEqual, self, other)
 
     def __gt__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.Greater, self, rlz.any(other))
+        return _binop(ops.Greater, self, other)
 
     def __le__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.LessEqual, self, rlz.any(other))
+        return _binop(ops.LessEqual, self, other)
 
     def __lt__(self, other: Value) -> ir.BooleanValue:
-        import ibis.expr.operations as ops
-        import ibis.expr.rules as rlz
-
-        return _binop(ops.Less, self, rlz.any(other))
+        return _binop(ops.Less, self, other)
 
 
 @public
@@ -614,8 +559,6 @@ class Column(Value):
         Scalar
             An approximate count of the distinct elements of `self`
         """
-        import ibis.expr.operations as ops
-
         return (
             ops.ApproxCountDistinct(self, where)
             .to_expr()
@@ -644,43 +587,31 @@ class Column(Value):
         Scalar
             An approximation of the median of `self`
         """
-        import ibis.expr.operations as ops
-
         return ops.ApproxMedian(self, where).to_expr().name("approx_median")
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column."""
-        import ibis.expr.operations as ops
-
         return ops.Max(self, where).to_expr().name("max")
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column."""
-        import ibis.expr.operations as ops
-
         return ops.Min(self, where).to_expr().name("min")
 
     def argmax(
         self, key: ir.Value, where: ir.BooleanValue | None = None
     ) -> Scalar:
         """Return the value of `self` that maximizes `key`."""
-        import ibis.expr.operations as ops
-
         return ops.ArgMax(self, key=key, where=where).to_expr()
 
     def argmin(
         self, key: ir.Value, where: ir.BooleanValue | None = None
     ) -> Scalar:
         """Return the value of `self` that minimizes `key`."""
-        import ibis.expr.operations as ops
-
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(
         self, where: ir.BooleanValue | None = None
     ) -> ir.IntegerScalar:
-        import ibis.expr.operations as ops
-
         return ops.CountDistinct(self, where).to_expr().name("nunique")
 
     def topk(
@@ -702,8 +633,6 @@ class Column(Value):
         TopK
             A top-k expression
         """
-        import ibis.expr.operations as ops
-
         op = ops.TopK(self, k, by=by if by is not None else self.count())
         return op.to_expr()
 
@@ -769,8 +698,6 @@ class Column(Value):
         Scalar
             An expression
         """
-        import ibis.expr.operations as ops
-
         return ops.Arbitrary(self, how=how, where=where).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
@@ -786,8 +713,6 @@ class Column(Value):
         IntegerScalar
             Number of elements in an expression
         """
-        import ibis.expr.operations as ops
-
         return ops.Count(self, where).to_expr().name("count")
 
     def value_counts(self, metric_name: str = "count") -> ir.Table:
@@ -811,28 +736,18 @@ class Column(Value):
         return base.group_by(expr).aggregate(metric)
 
     def first(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.FirstValue(self).to_expr()
 
     def last(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.LastValue(self).to_expr()
 
     def rank(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.MinRank(self).to_expr()
 
     def dense_rank(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.DenseRank(self).to_expr()
 
     def percent_rank(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.PercentRank(self).to_expr()
 
     def cume_dist(self) -> Column:
@@ -841,13 +756,9 @@ class Column(Value):
         return ops.CumeDist(self).to_expr()
 
     def cummin(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.CumulativeMin(self).to_expr()
 
     def cummax(self) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.CumulativeMax(self).to_expr()
 
     def lag(
@@ -855,8 +766,6 @@ class Column(Value):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.Lag(self, offset, default).to_expr()
 
     def lead(
@@ -864,13 +773,9 @@ class Column(Value):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
-        import ibis.expr.operations as ops
-
         return ops.Lead(self, offset, default).to_expr()
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
-        import ibis.expr.operations as ops
-
         return ops.NTile(self, buckets).to_expr()
 
     def nth(self, n: int | ir.IntegerValue) -> Column:
@@ -886,8 +791,6 @@ class Column(Value):
         Column
             The nth value over a window
         """
-        import ibis.expr.operations as ops
-
         return ops.NthValue(self, n).to_expr()
 
 
@@ -930,7 +833,6 @@ _NULL = None
 @public
 def null():
     """Create a NULL/NA scalar"""
-    import ibis.expr.operations as ops
 
     global _NULL
     if _NULL is None:
@@ -993,7 +895,6 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
     import ibis.expr.datatypes as dt
-    import ibis.expr.operations as ops
 
     if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
         return value

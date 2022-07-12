@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
@@ -62,8 +63,6 @@ class StringValue(Value):
         IntegerValue
             The length of the input
         """
-        import ibis.expr.operations as ops
-
         return ops.StringLength(self).to_expr()
 
     def lower(self) -> StringValue:
@@ -74,8 +73,6 @@ class StringValue(Value):
         StringValue
             Lowercase string
         """
-        import ibis.expr.operations as ops
-
         return ops.Lowercase(self).to_expr()
 
     def upper(self) -> StringValue:
@@ -86,8 +83,6 @@ class StringValue(Value):
         StringValue
             Uppercase string
         """
-        import ibis.expr.operations as ops
-
         return ops.Uppercase(self).to_expr()
 
     def reverse(self) -> StringValue:
@@ -98,8 +93,6 @@ class StringValue(Value):
         StringValue
             Reversed string
         """
-        import ibis.expr.operations as ops
-
         return ops.Reverse(self).to_expr()
 
     def ascii_str(self) -> ir.IntegerValue:
@@ -110,8 +103,6 @@ class StringValue(Value):
         IntegerValue
             ASCII code of the first character of the input
         """
-        import ibis.expr.operations as ops
-
         return ops.StringAscii(self).to_expr()
 
     def strip(self) -> StringValue:
@@ -122,8 +113,6 @@ class StringValue(Value):
         StringValue
             Stripped string
         """
-        import ibis.expr.operations as ops
-
         return ops.Strip(self).to_expr()
 
     def lstrip(self) -> StringValue:
@@ -134,8 +123,6 @@ class StringValue(Value):
         StringValue
             Left-stripped string
         """
-        import ibis.expr.operations as ops
-
         return ops.LStrip(self).to_expr()
 
     def rstrip(self) -> StringValue:
@@ -146,8 +133,6 @@ class StringValue(Value):
         StringValue
             Right-stripped string
         """
-        import ibis.expr.operations as ops
-
         return ops.RStrip(self).to_expr()
 
     def capitalize(self) -> StringValue:
@@ -158,8 +143,6 @@ class StringValue(Value):
         StringValue
             Capitalized string
         """
-        import ibis.expr.operations as ops
-
         return ops.Capitalize(self).to_expr()
 
     initcap = capitalize
@@ -180,8 +163,6 @@ class StringValue(Value):
         BooleanValue
             Boolean indicating the presence of `substr` in the expression
         """
-        import ibis.expr.operations as ops
-
         return ops.StringContains(self, substr).to_expr()
 
     def hashbytes(
@@ -200,8 +181,6 @@ class StringValue(Value):
         BinaryValue
             Binary expression
         """
-        import ibis.expr.operations as ops
-
         return ops.HashBytes(self, how).to_expr()
 
     def substr(
@@ -224,8 +203,6 @@ class StringValue(Value):
         StringValue
             Found substring
         """
-        import ibis.expr.operations as ops
-
         return ops.Substring(self, start, length).to_expr()
 
     def left(self, nchars: int | ir.IntegerValue) -> StringValue:
@@ -256,8 +233,6 @@ class StringValue(Value):
         StringValue
             Characters from the end
         """
-        import ibis.expr.operations as ops
-
         return ops.StrRight(self, nchars).to_expr()
 
     def repeat(self, n: int | ir.IntegerValue) -> StringValue:
@@ -273,8 +248,6 @@ class StringValue(Value):
         StringValue
             Repeated string
         """
-        import ibis.expr.operations as ops
-
         return ops.Repeat(self, n).to_expr()
 
     __mul__ = __rmul__ = repeat
@@ -314,8 +287,6 @@ class StringValue(Value):
           string_col string
         Translate(r0.string_col, from_str='a', to_str='bc')
         """
-        import ibis.expr.operations as ops
-
         return ops.Translate(self, from_str, to_str).to_expr()
 
     def find(
@@ -341,8 +312,6 @@ class StringValue(Value):
         IntegerValue
             Position of `substr` in `arg` starting from `start`
         """
-        import ibis.expr.operations as ops
-
         if end is not None:
             raise NotImplementedError
         return ops.StringFind(self, substr, start, end).to_expr()
@@ -382,8 +351,6 @@ class StringValue(Value):
         >>> expr
         LPad('abcdefg', length=5, pad='-')
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.LPad(self, length, pad).to_expr()
 
     def rpad(
@@ -423,8 +390,6 @@ class StringValue(Value):
         StringValue
             Padded string
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.RPad(self, length, pad).to_expr()
 
     def find_in_set(self, str_list: Sequence[str]) -> ir.IntegerValue:
@@ -453,8 +418,6 @@ class StringValue(Value):
             Position of `str_list` in `self`. Returns -1 if `self` isn't found
             or if `self` contains `','`.
         """
-        import ibis.expr.operations as ops
-
         return ops.FindInSet(self, str_list).to_expr()
 
     def join(self, strings: Sequence[str | StringValue]) -> StringValue:
@@ -478,8 +441,6 @@ class StringValue(Value):
         StringValue
             Joined string
         """
-        import ibis.expr.operations as ops
-
         return ops.StringJoin(self, strings).to_expr()
 
     def startswith(self, start: str | StringValue) -> ir.BooleanValue:
@@ -502,8 +463,6 @@ class StringValue(Value):
         BooleanValue
             Boolean indicating whether `self` starts with `start`
         """
-        import ibis.expr.operations as ops
-
         return ops.StartsWith(self, start).to_expr()
 
     def endswith(self, end: str | StringValue) -> ir.BooleanValue:
@@ -526,8 +485,6 @@ class StringValue(Value):
         BooleanValue
             Boolean indicating whether `self` ends with `end`
         """
-        import ibis.expr.operations as ops
-
         return ops.EndsWith(self, end).to_expr()
 
     def like(
@@ -552,8 +509,6 @@ class StringValue(Value):
         BooleanValue
             Column indicating matches
         """
-        import ibis.expr.operations as ops
-
         return functools.reduce(
             operator.or_,
             (
@@ -584,8 +539,6 @@ class StringValue(Value):
         BooleanValue
             Column indicating matches
         """
-        import ibis.expr.operations as ops
-
         return functools.reduce(
             operator.or_,
             (
@@ -609,8 +562,6 @@ class StringValue(Value):
         BooleanValue
             Indicator of matches
         """
-        import ibis.expr.operations as ops
-
         return ops.RegexSearch(self, pattern).to_expr()
 
     rlike = re_search
@@ -634,8 +585,6 @@ class StringValue(Value):
         StringValue
             Extracted match
         """
-        import ibis.expr.operations as ops
-
         return ops.RegexExtract(self, pattern, index).to_expr()
 
     def re_replace(
@@ -667,8 +616,6 @@ class StringValue(Value):
         StringValue
             Modified string
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.RegexReplace(self, pattern, replacement).to_expr()
 
     def replace(
@@ -700,8 +647,6 @@ class StringValue(Value):
         StringVulae
             Replaced string
         """  # noqa: E501
-        import ibis.expr.operations as ops
-
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
     def to_timestamp(
@@ -729,8 +674,6 @@ class StringValue(Value):
         TimestampValue
             Parsed timestamp value
         """
-        import ibis.expr.operations as ops
-
         return ops.StringToTimestamp(self, format_str, timezone).to_expr()
 
     def parse_url(
@@ -769,8 +712,6 @@ class StringValue(Value):
         StringValue
             Extracted string value
         """
-        import ibis.expr.operations as ops
-
         return ops.ParseURL(self, extract, key).to_expr()
 
     def split(self, delimiter: str | StringValue) -> ir.ArrayValue:
@@ -786,8 +727,6 @@ class StringValue(Value):
         ArrayValue
             The string split by `delimiter`
         """
-        import ibis.expr.operations as ops
-
         return ops.StringSplit(self, delimiter).to_expr()
 
     def concat(
@@ -809,8 +748,6 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        import ibis.expr.operations as ops
-
         return ops.StringConcat([self, other, *args]).to_expr()
 
     def __add__(self, other: str | StringValue) -> StringValue:
@@ -826,8 +763,6 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        import ibis.expr.operations as ops
-
         return ops.StringConcat([self, other]).to_expr()
 
     def __radd__(self, other: str | StringValue) -> StringValue:
@@ -843,8 +778,6 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        import ibis.expr.operations as ops
-
         return ops.StringConcat([other, self]).to_expr()
 
     def convert_base(
@@ -866,14 +799,11 @@ class StringValue(Value):
         IntegerValue
             Converted expression
         """
-        import ibis.expr.operations as ops
-
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
     def __mul__(
         self, n: int | ir.IntegerValue
     ) -> StringValue | NotImplemented:
-        import ibis.expr.operations as ops
 
         return _binop(ops.Repeat, self, n)
 

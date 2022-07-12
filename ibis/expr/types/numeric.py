@@ -5,20 +5,19 @@ from typing import TYPE_CHECKING, Literal, Sequence
 
 from public import public
 
+import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
-    from ibis.expr import types as ir
+    import ibis.expr.types as ir
 
 
 @public
 class NumericValue(Value):
     @staticmethod
     def __negate_op__():
-        from ibis.expr import operations as ops
-
         return ops.Negate
 
     def negate(self) -> NumericValue:
@@ -71,8 +70,6 @@ class NumericValue(Value):
         NumericValue
             The rounded expression
         """
-        from ibis.expr import operations as ops
-
         return ops.Round(self, digits).to_expr()
 
     def log(self, base: NumericValue | None = None) -> NumericValue:
@@ -88,8 +85,6 @@ class NumericValue(Value):
         NumericValue
             Logarithm of `arg` with base `base`
         """
-        from ibis.expr import operations as ops
-
         return ops.Log(self, base).to_expr()
 
     def clip(
@@ -111,8 +106,6 @@ class NumericValue(Value):
         NumericValue
             Clipped input
         """
-        from ibis.expr import operations as ops
-
         if lower is None and upper is None:
             raise ValueError(
                 "at least one of lower and upper must be provided"
@@ -122,20 +115,14 @@ class NumericValue(Value):
 
     def abs(self) -> NumericValue:
         """Return the absolute value of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Abs(self).to_expr()
 
     def ceil(self) -> DecimalValue | IntegerValue:
         """Return the ceiling of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Ceil(self).to_expr()
 
     def degrees(self) -> NumericValue:
         """Compute the degrees of `self` radians."""
-        from ibis.expr import operations as ops
-
         return ops.Degrees(self).to_expr()
 
     rad2deg = degrees
@@ -148,150 +135,104 @@ class NumericValue(Value):
         NumericValue
             $e^\texttt{self}$
         """
-        from ibis.expr import operations as ops
-
         return ops.Exp(self).to_expr()
 
     def floor(self) -> DecimalValue | IntegerValue:
         """Return the floor of an expression."""
-        from ibis.expr import operations as ops
-
         return ops.Floor(self).to_expr()
 
     def log2(self) -> NumericValue:
         r"""Compute $\log_{2}\left(\texttt{self}\right)$."""
-        from ibis.expr import operations as ops
-
         return ops.Log2(self).to_expr()
 
     def log10(self) -> NumericValue:
         r"""Compute $\log_{10}\left(\texttt{self}\right)$."""
-        from ibis.expr import operations as ops
-
         return ops.Log10(self).to_expr()
 
     def ln(self) -> NumericValue:
         r"""Compute $\ln\left(\texttt{self}\right)$."""
-        from ibis.expr import operations as ops
-
         return ops.Ln(self).to_expr()
 
     def radians(self) -> NumericValue:
         """Compute radians from `self` degrees."""
-        from ibis.expr import operations as ops
-
         return ops.Radians(self).to_expr()
 
     deg2rad = radians
 
     def sign(self) -> NumericValue:
         """Return the sign of the input."""
-        from ibis.expr import operations as ops
-
         return ops.Sign(self).to_expr()
 
     def sqrt(self) -> NumericValue:
         """Compute the square root of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Sqrt(self).to_expr()
 
     def nullifzero(self) -> NumericValue:
         """Return `NULL` if an expression is zero."""
-        from ibis.expr import operations as ops
-
         return ops.NullIfZero(self).to_expr()
 
     def zeroifnull(self) -> NumericValue:
         """Return zero if an expression is `NULL`."""
-        from ibis.expr import operations as ops
-
         return ops.ZeroIfNull(self).to_expr()
 
     def acos(self) -> NumericValue:
         """Compute the arc cosine of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Acos(self).to_expr()
 
     def asin(self) -> NumericValue:
         """Compute the arc sine of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Asin(self).to_expr()
 
     def atan(self) -> NumericValue:
         """Compute the arc tangent of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Atan(self).to_expr()
 
     def atan2(self, other: NumericValue) -> NumericValue:
         """Compute the two-argument version of arc tangent."""
-        from ibis.expr import operations as ops
-
         return ops.Atan2(self, other).to_expr()
 
     def cos(self) -> NumericValue:
         """Compute the cosine of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Cos(self).to_expr()
 
     def cot(self) -> NumericValue:
         """Compute the cotangent of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Cot(self).to_expr()
 
     def sin(self) -> NumericValue:
         """Compute the sine of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Sin(self).to_expr()
 
     def tan(self) -> NumericValue:
         """Compute the tangent of `self`."""
-        from ibis.expr import operations as ops
-
         return ops.Tan(self).to_expr()
 
     def __add__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Add `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Add, self, other)
 
     add = radd = __radd__ = __add__
 
     def __sub__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Substract `other` from `self`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
     def __rsub__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Substract `self` from `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__
 
     def __mul__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Multiply `self` and `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Multiply, self, other)
 
     mul = rmul = __rmul__ = __mul__
 
     def __truediv__(self, other):
         """Divide `self` by `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Divide, self, other)
 
     div = __div__ = __truediv__
@@ -300,8 +241,6 @@ class NumericValue(Value):
         self, other: NumericValue
     ) -> NumericValue | NotImplemented:
         """Divide `other` by `self`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Divide, other, self)
 
     rdiv = __rdiv__ = __rtruediv__
@@ -311,8 +250,6 @@ class NumericValue(Value):
         other: NumericValue,
     ) -> NumericValue | NotImplemented:
         """Floor divide `self` by `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.FloorDivide, self, other)
 
     floordiv = __floordiv__
@@ -322,39 +259,30 @@ class NumericValue(Value):
         other: NumericValue,
     ) -> NumericValue | NotImplemented:
         """Floor divide `other` by `self`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.FloorDivide, other, self)
 
     rfloordiv = __rfloordiv__
 
     def __pow__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Raise `self` to the `other`th power."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Power, self, other)
 
     pow = __pow__
 
     def __rpow__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Raise `other` to the `self`th power."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Power, other, self)
 
     rpow = __rpow__
 
     def __mod__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Compute `self` modulo `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.Modulus, self, other)
 
     mod = __mod__
 
     def __rmod__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Compute `other` modulo `self`."""
-        from ibis.expr import operations as ops
 
         return _binop(ops.Modulus, other, self)
 
@@ -376,8 +304,6 @@ class NumericValue(Value):
         PointValue
             Points
         """
-        from ibis.expr import operations as ops
-
         return ops.GeoPoint(self, right).to_expr()
 
 
@@ -421,8 +347,6 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             Quantile of the input
         """
-        from ibis.expr import operations as ops
-
         if isinstance(quantile, collections.abc.Sequence):
             op = ops.MultiQuantile
         else:
@@ -448,8 +372,6 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             Standard deviation of `arg`
         """
-        from ibis.expr import operations as ops
-
         return (
             ops.StandardDev(self, how=how, where=where).to_expr().name("std")
         )
@@ -473,8 +395,6 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             Standard deviation of `arg`
         """
-        from ibis.expr import operations as ops
-
         return ops.Variance(self, how=how, where=where).to_expr().name("var")
 
     def corr(
@@ -499,8 +419,6 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             The correlation of `left` and `right`
         """
-        from ibis.expr import operations as ops
-
         return ops.Correlation(self, right, how=how, where=where).to_expr()
 
     def cov(
@@ -525,8 +443,6 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             The covariance of `self` and `right`
         """
-        from ibis.expr import operations as ops
-
         return ops.Covariance(self, right, how=how, where=where).to_expr()
 
     def mean(
@@ -545,13 +461,9 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             The mean of the input expression
         """
-        from ibis.expr import operations as ops
-
         return ops.Mean(self, where=where).to_expr().name("mean")
 
     def cummean(self) -> NumericColumn:
-        from ibis.expr import operations as ops
-
         return ops.CumulativeMean(self).to_expr()
 
     def sum(
@@ -570,13 +482,9 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             The sum of the input expression
         """
-        from ibis.expr import operations as ops
-
         return ops.Sum(self, where=where).to_expr().name("sum")
 
     def cumsum(self) -> NumericColumn:
-        from ibis.expr import operations as ops
-
         return ops.CumulativeSum(self).to_expr()
 
     def bucket(
@@ -613,8 +521,6 @@ class NumericColumn(Column, NumericValue):
         CategoryColumn
             A categorical column expression
         """
-        from ibis.expr import operations as ops
-
         return ops.Bucket(
             self,
             buckets,
@@ -652,8 +558,6 @@ class NumericColumn(Column, NumericValue):
         CategoryColumn
             Coded value expression
         """
-        from ibis.expr import operations as ops
-
         return ops.Histogram(
             self, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
         ).to_expr()
@@ -717,8 +621,6 @@ class IntegerValue(NumericValue):
         TimestampValue
             `self` converted to a timestamp
         """
-        from ibis.expr import operations as ops
-
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
     def to_interval(
@@ -739,8 +641,6 @@ class IntegerValue(NumericValue):
         IntervalValue
             An interval in units of `unit`
         """
-        from ibis.expr import operations as ops
-
         return ops.IntervalFromInteger(self, unit).to_expr()
 
     def convert_base(
@@ -762,8 +662,6 @@ class IntegerValue(NumericValue):
         IntegerValue
             Converted expression
         """
-        from ibis.expr import operations as ops
-
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
     def __and__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
@@ -845,20 +743,14 @@ class IntegerScalar(NumericScalar, IntegerValue):
 class IntegerColumn(NumericColumn, IntegerValue):
     def bit_and(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise and operator."""
-        from ibis.expr import operations as ops
-
         return ops.BitAnd(self, where).to_expr().name("bit_and")
 
     def bit_or(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise or operator."""
-        from ibis.expr import operations as ops
-
         return ops.BitOr(self, where).to_expr().name("bit_or")
 
     def bit_xor(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise exclusive or operator."""
-        from ibis.expr import operations as ops
-
         return ops.BitXor(self, where).to_expr().name("bit_xor")
 
 
@@ -866,14 +758,10 @@ class IntegerColumn(NumericColumn, IntegerValue):
 class FloatingValue(NumericValue):
     def isnan(self) -> ir.BooleanValue:
         """Return whether the value is NaN."""
-        from ibis.expr import operations as ops
-
         return ops.IsNan(self).to_expr()
 
     def isinf(self) -> ir.BooleanValue:
         """Return whether the value is infinity."""
-        from ibis.expr import operations as ops
-
         return ops.IsInf(self).to_expr()
 
 
@@ -897,8 +785,6 @@ class DecimalValue(NumericValue):
         IntegerValue
             The precision of the expression.
         """
-        from ibis.expr import operations as ops
-
         return ops.DecimalPrecision(self).to_expr()
 
     def scale(self) -> IntegerValue:
@@ -909,8 +795,6 @@ class DecimalValue(NumericValue):
         IntegerValue
             The scale of the expression.
         """
-        from ibis.expr import operations as ops
-
         return ops.DecimalScale(self).to_expr()
 
 

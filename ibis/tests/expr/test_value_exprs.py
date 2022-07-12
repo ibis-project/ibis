@@ -1060,9 +1060,8 @@ def test_custom_type_binary_operations():
     class FooNode(ops.Node):
         value = rlz.integer
 
-        @property
-        def output_type(self):
-            return Foo
+        def to_expr(self):
+            return Foo(self)
 
     left = ibis.literal(2)
     right = FooNode(3).to_expr()
@@ -1084,8 +1083,8 @@ def test_empty_array_as_argument():
     class FooNode(ops.Node):
         value = rlz.value(dt.Array(dt.int64))
 
-        def output_type(self):
-            return Foo
+        def to_expr(self):
+            return Foo(self)
 
     node = FooNode([])
     value = node.value
