@@ -2,7 +2,6 @@ from public import public
 
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis import util
 from ibis.common import exceptions as com
 from ibis.expr.operations.core import Value
@@ -10,6 +9,8 @@ from ibis.expr.operations.core import Value
 
 # TODO(kszucs): rewrite to both receive operations and return with operations
 def _to_sort_key(key, *, table=None):
+    import ibis.expr.types as ir
+
     if isinstance(key, DeferredSortKey):
         if table is None:
             raise com.IbisTypeError(
@@ -77,7 +78,6 @@ class SortKey(Value):
         default=True,
     )
 
-    output_type = ir.SortExpr
     output_shape = rlz.Shape.COLUMNAR
 
     def resolve_name(self):
@@ -86,6 +86,13 @@ class SortKey(Value):
     @property
     def output_dtype(self):
         return self.expr.output_dtype
+
+    # TODO(kszucs): should either return with a regular value expression or
+    # shoulnd't be a subclass of ops.Value
+    def to_expr(self):
+        import ibis.expr.types as ir
+
+        return ir.SortExpr(self)
 
 
 @public
