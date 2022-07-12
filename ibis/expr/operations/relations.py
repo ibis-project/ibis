@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import itertools
 from abc import abstractmethod
-from functools import cached_property
 
 from public import public
 
@@ -13,6 +12,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.common.validators import immutable_property
 from ibis.expr.operations.core import Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
@@ -40,6 +40,11 @@ class TableNode(Node):
             ),
         )
 
+    @property
+    @abstractmethod
+    def schema(self) -> sch.Schema:
+        """Return a schema."""
+
     def to_expr(self):
         import ibis.expr.types as ir
 
@@ -47,7 +52,7 @@ class TableNode(Node):
 
 
 @public
-class PhysicalTable(TableNode, sch.HasSchema):
+class PhysicalTable(TableNode):
     def blocks(self):
         return True
 
@@ -75,7 +80,7 @@ class DatabaseTable(PhysicalTable):
 
 
 @public
-class SQLQueryResult(TableNode, sch.HasSchema):
+class SQLQueryResult(TableNode):
     """A table sourced from the result set of a select query"""
 
     query = rlz.instance_of(str)
@@ -261,7 +266,7 @@ class AsOfJoin(Join):
 
 
 @public
-class SetOp(TableNode, sch.HasSchema):
+class SetOp(TableNode):
     left = rlz.table
     right = rlz.table
     distinct = rlz.optional(rlz.instance_of(bool), default=False)
@@ -311,7 +316,7 @@ class Limit(TableNode):
 
 
 @public
-class SelfReference(TableNode, sch.HasSchema):
+class SelfReference(TableNode):
     table = rlz.table
 
     @property
@@ -322,22 +327,43 @@ class SelfReference(TableNode, sch.HasSchema):
         return True
 
 
-@public
-class Selection(TableNode, sch.HasSchema):
+class Projection(TableNode):
     table = rlz.table
-    selections = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of(
-                (
-                    rlz.table,
-                    rlz.column_from("table"),
-                    rlz.function_of("table"),
-                    rlz.any,
-                )
+    selections = rlz.tuple_of(
+        rlz.one_of(
+            (
+                rlz.table,
+                rlz.column_from("table"),
+                rlz.function_of("table"),
+                rlz.any,
             )
-        ),
-        default=(),
+        )
     )
+
+    @immutable_property
+    def schema(self):
+        # Resolve schema and initialize
+
+        if not self.selections:
+            return self.table.schema
+
+        types = []
+        names = []
+
+        for projection in self.selections:
+            if isinstance(projection, Value):
+                names.append(projection.resolve_name())
+                types.append(projection.output_dtype)
+            elif isinstance(projection, TableNode):
+                schema = projection.schema
+                names.extend(schema.names)
+                types.extend(schema.types)
+
+        return sch.Schema(names, types)
+
+
+@public
+class Selection(Projection):
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
         rlz.tuple_of(
@@ -395,34 +421,6 @@ class Selection(TableNode, sch.HasSchema):
             sort_keys=sort_keys,
             **kwargs,
         )
-
-        # Validate no overlapping columns in schema
-        assert self.schema
-
-    @cached_property
-    def _projection(self):
-        return self.__class__(table=self.table, selections=self.selections)
-
-    @cached_property
-    def schema(self):
-        # Resolve schema and initialize
-
-        if not self.selections:
-            return self.table.schema
-
-        types = []
-        names = []
-
-        for projection in self.selections:
-            if isinstance(projection, Value):
-                names.append(projection.resolve_name())
-                types.append(projection.output_dtype)
-            elif isinstance(projection, TableNode):
-                schema = projection.schema
-                names.extend(schema.names)
-                types.extend(schema.types)
-
-        return sch.Schema(names, types)
 
     def blocks(self):
         return bool(self.selections)
@@ -512,7 +510,7 @@ class AggregateSelection:
 
 
 @public
-class Aggregation(TableNode, sch.HasSchema):
+class Aggregation(TableNode):
 
     """
     metrics : per-group scalar aggregates
@@ -630,13 +628,11 @@ class Aggregation(TableNode, sch.HasSchema):
             predicates=predicates,
             sort_keys=sort_keys,
         )
-        # Validate schema has no overlapping columns
-        assert self.schema
 
     def blocks(self):
         return True
 
-    @cached_property
+    @immutable_property
     def schema(self):
         names = []
         types = []
@@ -667,7 +663,7 @@ class Aggregation(TableNode, sch.HasSchema):
 
 
 @public
-class Distinct(TableNode, sch.HasSchema):
+class Distinct(TableNode):
     """
     Distinct is a table-level unique-ing operation.
 
@@ -682,11 +678,6 @@ class Distinct(TableNode, sch.HasSchema):
 
     table = rlz.table
 
-    def __init__(self, table):
-        # check whether schema has overlapping columns or not
-        assert table.schema
-        super().__init__(table=table)
-
     @property
     def schema(self):
         return self.table.schema
@@ -696,7 +687,7 @@ class Distinct(TableNode, sch.HasSchema):
 
 
 @public
-class FillNa(TableNode, sch.HasSchema):
+class FillNa(TableNode):
     """Fill null values in the table."""
 
     table = rlz.table
@@ -725,7 +716,7 @@ class FillNa(TableNode, sch.HasSchema):
 
 
 @public
-class DropNa(TableNode, sch.HasSchema):
+class DropNa(TableNode):
     """Drop null values in the table."""
 
     table = rlz.table
@@ -757,7 +748,7 @@ class SQLStringView(PhysicalTable):
     name = rlz.instance_of(str)
     query = rlz.instance_of(str)
 
-    @cached_property
+    @immutable_property
     def schema(self):
         # TODO(kszucs): avoid converting to expression
         backend = self.child.to_expr()._find_backend()
