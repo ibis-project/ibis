@@ -17,6 +17,7 @@ from ibis.common.exceptions import (
     TranslationError,
 )
 from ibis.common.grounds import Immutable
+from ibis.common.pretty import console
 from ibis.config import _default_backend, options
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
@@ -40,17 +41,18 @@ class Expr(Immutable):
         if not options.interactive:
             return self._repr()
 
-        try:
-            result = self.execute()
-        except TranslationError as e:
-            lines = [
-                "Translation to backend failed",
-                f"Error message: {e.args[0]}",
-                "Expression repr follows:",
-                self._repr(),
-            ]
-            return "\n".join(lines)
-        return repr(result)
+        with console.capture() as capture:
+            try:
+                console.print(self)
+            except TranslationError as e:
+                lines = [
+                    "Translation to backend failed",
+                    f"Error message: {e.args[0]}",
+                    "Expression repr follows:",
+                    self._repr(),
+                ]
+                return "\n".join(lines)
+        return capture.get()
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))

@@ -9,6 +9,8 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, MutableMapping
 
+import pandas as pd
+import pyarrow.types as pat
 import sqlalchemy as sa
 import toolz
 
@@ -188,7 +190,16 @@ class Backend(BaseAlchemyBackend):
         schema: sch.Schema,
     ):
         table = cursor.cursor.fetch_arrow_table()
-        df = table.to_pandas(timestamp_as_object=True)
+        df = pd.DataFrame(
+            {
+                name: (
+                    col.to_pylist()
+                    if pat.is_nested(col.type)
+                    else col.to_pandas(timestamp_as_object=True)
+                )
+                for name, col in zip(table.column_names, table.columns)
+            }
+        )
         return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:

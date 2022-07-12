@@ -10,15 +10,19 @@ from functools import cached_property
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
-import rich.pretty
-import rich.table
 from public import public
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.grounds import console
+from ibis.common.pretty import (
+    _format_dtype,
+    _format_value,
+    _pretty_value,
+    console,
+)
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
 
@@ -87,6 +91,66 @@ class Table(Expr):
             return None
 
         return self.execute()._repr_html_()
+
+    def __rich_console__(self, console, options):
+        import rich.table
+        from rich.align import Align
+        from rich.style import Style
+
+        nrows = ibis.options.repr.interactive.max_rows
+        result = self.limit(nrows + 1).execute()
+
+        schema = self.schema()
+        types = schema.types
+
+        table = rich.table.Table(
+            row_styles=(
+                [Style(bgcolor=None), Style(bgcolor="grey7")]
+                if any(
+                    isinstance(typ, (dt.Struct, dt.Array, dt.Map))
+                    for typ in types
+                )
+                else None
+            )
+        )
+
+        columns = self.columns
+        alignment = {}
+        for column in columns:
+            if isinstance(schema[column], dt.Numeric):
+                alignment[column] = justify = "right"
+            else:
+                justify = "none"
+            table.add_column(
+                Align(column, align="left"), justify=justify, vertical="middle"
+            )
+
+        if ibis.options.repr.interactive.show_types:
+            table.add_row(
+                *(
+                    Align(_format_dtype(dtype), align="left")
+                    for dtype in types
+                ),
+                end_section=True,
+            )
+
+        for row in result.iloc[:nrows].itertuples(index=False):
+            table.add_row(
+                *(
+                    _pretty_value(_format_value(v), typ)
+                    for v, typ in zip(row, types)
+                )
+            )
+
+        if len(result) > nrows:
+            table.add_row(
+                *(
+                    Align(char, align=alignment.get(col, "center"))
+                    for col, char in zip(columns, "⋮" * len(columns))
+                )
+            )
+
+        return console.render(table, options=options)
 
     def __getitem__(self, what):
         from ibis.expr.types.analytic import TopK
@@ -941,6 +1005,9 @@ class Table(Expr):
         buf
             A writable buffer, defaults to stdout
         """
+        import rich.table
+        from rich.pretty import Pretty
+
         if buf is None:
             buf = sys.stdout
 
@@ -964,7 +1031,7 @@ class Table(Expr):
         for column, non_nulls in items:
             table.add_row(
                 column,
-                rich.pretty.Pretty(schema[column]),
+                Pretty(schema[column]),
                 str(n - non_nulls),
                 f"{100 * (1.0 - non_nulls / n):>3.2f}",
             )

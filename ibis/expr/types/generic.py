@@ -12,6 +12,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.pretty import _format_value, _pretty_value
 from ibis.expr.types.core import Expr, _binop
 
 
@@ -475,24 +476,28 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-
-@public
-class Scalar(Value):
     def to_projection(self) -> ir.Table:
-        """Promote this scalar expression to a projection."""
+        """Promote this value expression to a projection."""
         from ibis.expr.analysis import find_immediate_parent_tables
-        from ibis.expr.types.relations import Table
 
         roots = find_immediate_parent_tables(self.op())
         if len(roots) > 1:
             raise com.RelationError(
-                'Cannot convert scalar expression '
+                f'Cannot convert {type(self)} expression '
                 'involving multiple base table references '
                 'to a projection'
             )
 
-        table = Table(roots[0])
-        return table.projection([self])
+        return roots[0].to_expr().projection([self])
+
+
+@public
+class Scalar(Value):
+    def __rich_console__(self, console, options):
+        return console.render(
+            _pretty_value(_format_value(self.execute()), self.type()),
+            options=options,
+        )
 
     def _repr_html_(self) -> str | None:
         return None
@@ -500,26 +505,16 @@ class Scalar(Value):
 
 @public
 class Column(Value):
-    def to_projection(self) -> ir.Table:
-        """Promote this column expression to a projection."""
-        from ibis.expr.analysis import find_immediate_parent_tables
-        from ibis.expr.types.relations import Table
-
-        roots = find_immediate_parent_tables(self.op())
-        if len(roots) > 1:
-            raise com.RelationError(
-                'Cannot convert array expression involving multiple base '
-                'table references to a projection'
-            )
-
-        table = Table(roots[0])
-        return table.projection([self])
-
     def _repr_html_(self) -> str | None:
         if not ibis.options.interactive:
             return None
 
         return self.execute().to_frame()._repr_html_()
+
+    def __rich_console__(self, console, options):
+        named = self.name(self.op().name)
+        projection = named.to_projection()
+        return console.render(projection, options=options)
 
     def bottomk(self, k: int, by: Value | None = None) -> ir.TopK:
         raise NotImplementedError("bottomk is not implemented")

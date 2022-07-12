@@ -454,7 +454,7 @@ def fmt_selection_column(value_expr: object, **_: Any) -> str:
 
 def type_info(datatype: dt.DataType) -> str:
     """Format `datatype` for display next to a column."""
-    return f"  # {datatype}" if ibis.options.repr.show_types else ""
+    return f"  # {datatype}" * ibis.options.repr.show_types
 
 
 @fmt_selection_column.register

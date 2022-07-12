@@ -121,7 +121,12 @@ class Bounds(NamedTuple):
 
 
 @public
-class Integer(Primitive):
+class Numeric(DataType):
+    """Numeric types."""
+
+
+@public
+class Integer(Primitive, Numeric):
     """Integer values."""
 
     scalar = ir.IntegerScalar
@@ -232,7 +237,7 @@ class UnsignedInteger(Integer):
 
 
 @public
-class Floating(Primitive):
+class Floating(Primitive, Numeric):
     """Floating point values."""
 
     scalar = ir.FloatingScalar
@@ -329,7 +334,7 @@ class Float64(Floating):
 
 
 @public
-class Decimal(DataType):
+class Decimal(Numeric):
     """Fixed-precision decimal values."""
 
     precision = optional(instance_of(int))
@@ -386,10 +391,10 @@ class Decimal(DataType):
         args = []
 
         if (precision := self.precision) is not None:
-            args.append(f"prec={precision:d}")
+            args.append(str(precision))
 
         if (scale := self.scale) is not None:
-            args.append(f"scale={scale:d}")
+            args.append(str(scale))
 
         if not args:
             return ""
@@ -465,7 +470,7 @@ class Interval(DataType):
 
     @property
     def _pretty_piece(self) -> str:
-        return f"<{self.value_type}>(unit={self.unit!r})"
+        return f"({self.unit!r})"
 
 
 @public
