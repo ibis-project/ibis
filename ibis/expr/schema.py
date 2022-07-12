@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import collections
 from typing import TYPE_CHECKING, Iterable, Iterator, Mapping, Sequence
 
@@ -395,15 +394,6 @@ class Schema(Annotable, Comparable):
         # input columns
         df.columns = schema_names
         return df
-
-
-class HasSchema(abc.ABC):
-    """Mixin representing a structured dataset with a schema."""
-
-    @property
-    @abc.abstractmethod
-    def schema(self) -> Schema:
-        """Return a schema."""
 
 
 schema = Dispatcher('schema')
