@@ -1,24 +1,13 @@
-from types import FunctionType, LambdaType
-
 from public import public
 
 from ibis.expr import rules as rlz
 from ibis.expr.operations.analytic import AnalyticOp
 from ibis.expr.operations.core import ValueOp, distinct_roots
 from ibis.expr.operations.reductions import Reduction
+from ibis.expr.operations.udf import UDFMixin
 
 
-@public
-class VectorizedUDF(ValueOp):
-    func = rlz.instance_of((FunctionType, LambdaType))
-    func_summary = rlz.optional(rlz.string)
-    func_desc = rlz.optional(rlz.string)
-    func_args = rlz.tuple_of(rlz.column(rlz.any))
-    # TODO(kszucs): should rename these arguments to
-    # input_dtypes and return_dtype
-    input_type = rlz.tuple_of(rlz.datatype)
-    return_type = rlz.datatype
-
+class VectorizedUDF(ValueOp, UDFMixin):
     @property
     def inputs(self):
         return self.func_args

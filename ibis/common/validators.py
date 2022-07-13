@@ -155,13 +155,20 @@ def map_to(mapping, variant, **kwargs):
 
 
 @validator
-def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
+def container_of(
+    inner, arg, *, type, min_length=0, max_length=None, flatten=False, **kwargs
+):
     if not is_iterable(arg):
         raise IbisTypeError('Argument must be a sequence')
 
     if len(arg) < min_length:
         raise IbisTypeError(
             f'Arg must have at least {min_length} number of elements'
+        )
+
+    if max_length is not None and len(arg) > max_length:
+        raise IbisTypeError(
+            f'Arg must have at most {max_length} number of elements'
         )
 
     if flatten:
