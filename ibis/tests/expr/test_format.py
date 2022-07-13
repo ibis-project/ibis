@@ -6,6 +6,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.format
 import ibis.expr.operations as ops
+import ibis.udf.vectorized as udf
 
 
 def test_format_table_column(table):
@@ -324,3 +325,22 @@ def test_two_inner_joins():
     )
     rep = repr(joined)
     assert rep.count("InnerJoin") == 2
+
+
+def test_destruct_selection():
+    table = ibis.table([('col', 'int64')], name='t')
+
+    @udf.reduction(
+        input_type=['int64'],
+        output_type=dt.Struct.from_dict({
+            'sum': 'int64',
+            'mean': 'float64',
+        })
+    )
+    def multi_output_udf(v):
+        return v.sum(), v.mean()
+
+    expr = table.aggregate(multi_output_udf(table['col']).destructure())
+    result = repr(expr)
+
+    assert "<unnamed>: ReductionVectorizedUDF" in result
