@@ -867,6 +867,54 @@ class Table(Expr):
                 )
         return ops.FillNa(self, replacements).to_expr()
 
+    def unpack(self, *columns: str) -> Table:
+        """Project the struct fields of each of `columns` into `self`.
+
+        Existing fields are retained in the projection.
+
+        Parameters
+        ----------
+        columns
+            String column names to project into `self`.
+
+        Returns
+        -------
+        Table
+            The child table with struct fields of each of `columns` projected.
+
+        Examples
+        --------
+        >>> schema = dict(a="struct<b: float, c: string>", d="string")
+        >>> t = ibis.table(schema, name="t")
+        >>> t
+        UnboundTable: t
+          a struct<b: float64, c: string>
+          d string
+        >>> t.unpack("a")
+        r0 := UnboundTable: t
+          a struct<b: float64, c: string>
+          d string
+
+        Selection[r0]
+          selections:
+            b: StructField(r0.a, field='b')
+            c: StructField(r0.a, field='c')
+            d: r0.d
+
+        See Also
+        --------
+        ibis.expr.types.structs.StructValue.lift
+        """
+        columns_to_unpack = frozenset(columns)
+        result_columns = []
+        for column in self.columns:
+            if column in columns_to_unpack:
+                expr = self[column]
+                result_columns.extend(expr[field] for field in expr.names)
+            else:
+                result_columns.append(column)
+        return self[result_columns]
+
     def info(self, buf: IO[str] | None = None) -> None:
         """Show column names, types and null counts.
 
