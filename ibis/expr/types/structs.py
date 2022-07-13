@@ -112,6 +112,43 @@ class StructValue(Value):
         """Return a mapping from field name to field type of the struct."""
         return util.frozendict(self.type().pairs)
 
+    def lift(self) -> ir.Table:
+        """Project the fields of `self` into a table.
+
+        This method is useful when analyzing data that has deeply nested
+        structs or arrays of structs. `lift` can be chained to avoid repeating
+        column names and table references.
+
+        See also [`Table.unpack`][ibis.expr.types.relations.Table.unpack].
+
+        Returns
+        -------
+        Table
+            A projection with this struct expression's fields.
+
+        Examples
+        --------
+        >>> schema = dict(a="struct<b: float, c: string>", d="string")
+        >>> t = ibis.table(schema, name="t")
+        >>> t
+        UnboundTable: t
+          a struct<b: float64, c: string>
+          d string
+        >>> t.a.lift()
+        r0 := UnboundTable: t
+          a struct<b: float64, c: string>
+          d string
+
+        Selection[r0]
+          selections:
+            b: StructField(r0.a, field='b')
+            c: StructField(r0.a, field='c')
+        """
+        import ibis.expr.analysis as an
+
+        table = an.find_first_base_table(self)
+        return table[[self[name] for name in self.names]]
+
     def destructure(self) -> DestructValue:
         """Destructure `self` into a `DestructValue`.
 
