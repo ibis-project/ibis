@@ -447,12 +447,18 @@ def type_info(datatype: dt.DataType) -> str:
 def _fmt_selection_column_value_expr(
     expr: ir.Value, *, aliases: Aliases, maxlen: int = 0
 ) -> str:
-    raw_name = expr._safe_name
-    assert raw_name is not None, (
-        "`_safe_name` property should never be None when formatting a "
-        "selection column expression"
-    )
-    name = f"{raw_name}:"
+    if isinstance(expr, ir.DestructValue):
+        # Destruct exprs won't have a name
+        # (The resulting column names will be the fields in the struct)
+        name = "<unnamed>:"
+    else:
+        raw_name = expr._safe_name
+
+        assert raw_name is not None, (
+            "`_safe_name` property should never be None when formatting a "
+            "selection column expression"
+        )
+        name = f"{raw_name}:"
     # the additional 1 is for the colon
     aligned_name = f"{name:<{maxlen + 1}}"
     value = fmt_value(expr, aliases=aliases)
