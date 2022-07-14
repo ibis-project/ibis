@@ -15,7 +15,6 @@ import ibis.util as util
 from ibis.common.validators import immutable_property
 from ibis.expr.operations.core import Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
-from ibis.expr.operations.sortkeys import _maybe_convert_sort_keys
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
@@ -27,15 +26,8 @@ def genname():
 
 @public
 class TableNode(Node):
-    def sort_by(self, expr, sort_exprs):
-        return Selection(
-            expr,
-            [],
-            sort_keys=_maybe_convert_sort_keys(
-                [expr],
-                sort_exprs,
-            ),
-        )
+    def sort_by(self, sort_exprs):
+        return Selection(self, [], sort_keys=sort_exprs)
 
     @property
     @abstractmethod
@@ -350,37 +342,7 @@ class Projection(TableNode):
 class Selection(Projection):
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of(
-                (
-                    rlz.column_from("table"),
-                    rlz.function_of("table"),
-                    rlz.sort_key(from_="table"),
-                    rlz.pair(
-                        rlz.one_of(
-                            (
-                                rlz.column_from("table"),
-                                rlz.function_of("table"),
-                                rlz.any,
-                            )
-                        ),
-                        rlz.map_to(
-                            {
-                                True: True,
-                                False: False,
-                                "desc": False,
-                                "descending": False,
-                                "asc": True,
-                                "ascending": True,
-                                1: True,
-                                0: False,
-                            }
-                        ),
-                    ),
-                )
-            )
-        ),
-        default=(),
+        rlz.tuple_of(rlz.sort_key_from("table")), default=()
     )
 
     def __init__(self, table, selections, predicates, sort_keys, **kwargs):
@@ -406,22 +368,21 @@ class Selection(Projection):
             **kwargs,
         )
 
-    def sort_by(self, expr, sort_exprs):
+    def sort_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
-        resolved_keys = _maybe_convert_sort_keys(
-            [self.table, expr], sort_exprs
-        )
+        keys = rlz.tuple_of(rlz.sort_key_from(self), sort_exprs)
+
         if not self.selections:
-            if shares_all_roots(resolved_keys, self.table):
+            if shares_all_roots(keys, self.table):
                 return Selection(
                     self.table,
                     self.selections,
                     predicates=self.predicates,
-                    sort_keys=self.sort_keys + tuple(resolved_keys),
+                    sort_keys=self.sort_keys + keys,
                 )
 
-        return Selection(expr, [], sort_keys=resolved_keys)
+        return Selection(self, [], sort_keys=keys)
 
 
 @public
@@ -483,37 +444,7 @@ class Aggregation(TableNode):
     )
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of(
-                (
-                    rlz.column_from("table"),
-                    rlz.function_of("table"),
-                    rlz.sort_key(from_="table"),
-                    rlz.pair(
-                        rlz.one_of(
-                            (
-                                rlz.column_from("table"),
-                                rlz.function_of("table"),
-                                rlz.any,
-                            )
-                        ),
-                        rlz.map_to(
-                            {
-                                True: True,
-                                False: False,
-                                "desc": False,
-                                "descending": False,
-                                "asc": True,
-                                "ascending": True,
-                                1: True,
-                                0: False,
-                            }
-                        ),
-                    ),
-                )
-            )
-        ),
-        default=(),
+        rlz.tuple_of(rlz.sort_key_from("table")), default=()
     )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
@@ -555,23 +486,22 @@ class Aggregation(TableNode):
 
         return sch.Schema(names, types)
 
-    def sort_by(self, expr, sort_exprs):
+    def sort_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
-        resolved_keys = _maybe_convert_sort_keys(
-            [self.table, expr], sort_exprs
-        )
-        if shares_all_roots(resolved_keys, self.table):
+        keys = rlz.tuple_of(rlz.sort_key_from(self), sort_exprs)
+
+        if shares_all_roots(keys, self.table):
             return Aggregation(
                 self.table,
                 self.metrics,
                 by=self.by,
                 having=self.having,
                 predicates=self.predicates,
-                sort_keys=self.sort_keys + tuple(resolved_keys),
+                sort_keys=self.sort_keys + keys,
             )
 
-        return Selection(expr, [], sort_keys=resolved_keys)
+        return Selection(self, [], sort_keys=keys)
 
 
 @public
