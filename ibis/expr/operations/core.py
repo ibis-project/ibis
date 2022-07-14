@@ -30,11 +30,6 @@ class Node(Annotable, Comparable):
     def inputs(self):
         return self.args
 
-    def blocks(self):
-        # The contents of this node at referentially distinct and may not be
-        # analyzed deeper
-        return False
-
     @abstractmethod
     def to_expr(self):
         ...

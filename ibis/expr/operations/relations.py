@@ -27,8 +27,8 @@ def genname():
 
 @public
 class TableNode(Node):
-    def aggregate(self, this, metrics, by=None, having=None):
-        return Aggregation(this, metrics, by=by, having=having)
+    def aggregate(self, metrics, by=None, having=None):
+        return Aggregation(self, metrics, by=by, having=having)
 
     def sort_by(self, expr, sort_exprs):
         return Selection(
@@ -53,8 +53,7 @@ class TableNode(Node):
 
 @public
 class PhysicalTable(TableNode):
-    def blocks(self):
-        return True
+    pass
 
 
 @public
@@ -86,9 +85,6 @@ class SQLQueryResult(TableNode):
     query = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
     source = rlz.client
-
-    def blocks(self):
-        return True
 
 
 @public
@@ -282,9 +278,6 @@ class SetOp(TableNode):
     def schema(self):
         return self.left.schema
 
-    def blocks(self):
-        return True
-
 
 @public
 class Union(SetOp):
@@ -307,9 +300,6 @@ class Limit(TableNode):
     n = rlz.instance_of(int)
     offset = rlz.instance_of(int)
 
-    def blocks(self):
-        return True
-
     @property
     def schema(self):
         return self.table.schema
@@ -322,9 +312,6 @@ class SelfReference(TableNode):
     @property
     def schema(self):
         return self.table.schema
-
-    def blocks(self):
-        return True
 
 
 class Projection(TableNode):
@@ -422,15 +409,9 @@ class Selection(Projection):
             **kwargs,
         )
 
-    def blocks(self):
-        return bool(self.selections)
-
-    def aggregate(self, this, metrics, by=None, having=None):
-        if len(self.selections) > 0:
-            return Aggregation(this, metrics, by=by, having=having)
-        else:
-            helper = AggregateSelection(this, metrics, by, having)
-            return helper.get_result()
+    def aggregate(self, metrics, by=None, having=None):
+        helper = AggregateSelection(self, metrics, by, having)
+        return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
@@ -438,7 +419,7 @@ class Selection(Projection):
         resolved_keys = _maybe_convert_sort_keys(
             [self.table, expr], sort_exprs
         )
-        if not self.blocks():
+        if not self.selections:
             if shares_all_roots(resolved_keys, self.table):
                 return Selection(
                     self.table,
@@ -455,22 +436,22 @@ class AggregateSelection:
     # sort keys cannot be discarded because of order-dependent
     # aggregate functions like GROUP_CONCAT
 
-    def __init__(self, parent, metrics, by, having):
-        self.parent = parent
-        self.op = parent.op()
+    def __init__(self, op, metrics, by, having):
+        assert isinstance(op, Selection)
+        self.op = op
         self.metrics = metrics
         self.by = by
         self.having = having
 
     def get_result(self):
-        if self.op.blocks():
+        if self.op.selections:
             return self._plain_subquery()
         else:
             return self._attempt_pushdown()
 
     def _plain_subquery(self):
         return Aggregation(
-            self.parent, self.metrics, by=self.by, having=self.having
+            self.op, self.metrics, by=self.by, having=self.having
         )
 
     def _attempt_pushdown(self):
@@ -629,9 +610,6 @@ class Aggregation(TableNode):
             sort_keys=sort_keys,
         )
 
-    def blocks(self):
-        return True
-
     @immutable_property
     def schema(self):
         names = []
@@ -681,9 +659,6 @@ class Distinct(TableNode):
     @property
     def schema(self):
         return self.table.schema
-
-    def blocks(self):
-        return True
 
 
 @public
