@@ -96,8 +96,4 @@ self: super:
     '';
     SETUPTOOLS_SCM_PRETEND_VERSION = version;
   });
-
-  jupyter-core = super.jupyter-core.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
 }
