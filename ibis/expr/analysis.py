@@ -45,8 +45,8 @@ def sub_for(node, substitutions):
         try:
             return substitutions[node]
         except KeyError:
-            if node.blocks():
-                return node
+            if isinstance(node, ops.TableNode):
+                return lin.halt
             return lin.proceed
 
     return substitute(fn, node)
@@ -265,14 +265,14 @@ def get_mutation_exprs(
     return [table_expr] + exprs
 
 
-def apply_filter(expr, predicates):
+def apply_filter(op, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
     # easily and safely, to make both cleaner SQL and fewer referential errors
     # for users
-    op = expr.op()
+    assert isinstance(op, ops.Node)
 
     if isinstance(op, ops.Selection):
-        return _filter_selection(expr, predicates)
+        return _filter_selection(op, predicates)
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
         # GH1344: We can't sub in things with correlated subqueries
@@ -289,7 +289,7 @@ def apply_filter(expr, predicates):
         )
 
         if shares_all_roots(simplified_predicates, op.table):
-            result = ops.Aggregation(
+            return ops.Aggregation(
                 op.table,
                 op.metrics,
                 by=op.by,
@@ -298,14 +298,12 @@ def apply_filter(expr, predicates):
                 sort_keys=op.sort_keys,
             )
 
-            return ir.Table(result)
-
     if not predicates:
-        return expr
-    return ops.Selection(expr, [], predicates).to_expr()
+        return op
+    return ops.Selection(op, [], predicates)
 
 
-def _filter_selection(expr, predicates):
+def _filter_selection(op, predicates):
     # if any of the filter predicates have the parent expression among
     # their roots, then pushdown (at least of that predicate) is not
     # possible
@@ -319,7 +317,6 @@ def _filter_selection(expr, predicates):
     # below the projection, we need to rewrite the predicate referencing
     # the parent tables in the join being projected
 
-    op = expr.op()
     # Potential fusion opportunity. The predicates may need to be
     # rewritten in terms of the child table. This prevents the broken
     # ref issue (described in more detail in #59)
@@ -345,13 +342,12 @@ def _filter_selection(expr, predicates):
             )
             for sel in op.selections
         ):
-            result = ops.Selection(
+            return ops.Selection(
                 op.table,
                 selections=op.selections,
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys,
             )
-            return result.to_expr()
 
     can_pushdown = _can_pushdown(op, predicates)
 
@@ -360,16 +356,14 @@ def _filter_selection(expr, predicates):
             substitute_parents(x) for x in predicates
         )
         fused_predicates = op.predicates + simplified_predicates
-        result = ops.Selection(
+        return ops.Selection(
             op.table,
             selections=op.selections,
             predicates=fused_predicates,
             sort_keys=op.sort_keys,
         )
     else:
-        result = ops.Selection(expr, selections=[], predicates=predicates)
-
-    return result.to_expr()
+        return ops.Selection(op, selections=[], predicates=predicates)
 
 
 def _can_pushdown(op, predicates):
@@ -592,7 +586,9 @@ def _find_projections(node):
         return lin.proceed, Projection(node.table, node.selections)
     elif isinstance(node, ops.SelfReference):
         return lin.proceed, node
-    elif node.blocks():
+    elif isinstance(node, ops.Join):
+        return lin.proceed, None
+    elif isinstance(node, ops.TableNode):
         return lin.halt, node
     else:
         return lin.proceed, None
