@@ -432,7 +432,7 @@ class Table(Expr):
             sort_exprs = []
         else:
             sort_exprs = util.promote_list(sort_exprs)
-        return self.op().sort_by(self, sort_exprs).to_expr()
+        return self.op().sort_by(sort_exprs).to_expr()
 
     def union(
         self,
