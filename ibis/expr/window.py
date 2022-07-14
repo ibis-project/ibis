@@ -10,6 +10,7 @@ import pandas as pd
 import toolz
 
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.exceptions import IbisInputError
@@ -266,12 +267,8 @@ class Window(Comparable):
             ).op()
             for arg in self._group_by
         ]
-        sorts = [
-            ops.sortkeys._to_sort_key(
-                k.to_expr() if isinstance(k, ops.Node) else k, table=table
-            ).op()
-            for k in self._order_by
-        ]
+        sorts = rlz.tuple_of(rlz.sort_key_from(table), self._order_by)
+
         return self._replace(group_by=groups, order_by=sorts)
 
     def combine(self, window):

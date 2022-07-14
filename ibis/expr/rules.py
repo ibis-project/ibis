@@ -103,12 +103,46 @@ def value_list_of(inner, arg, **kwargs):
 
 
 @rule
-def sort_key(key, *, from_=None, this):
+def sort_key_from(table, key, *, this=None):
     import ibis.expr.operations as ops
 
-    table = this[from_] if from_ is not None else None
-    key = ops.sortkeys._to_sort_key(key, table=table)
-    return key.op()
+    if isinstance(key, tuple):
+        column, order = key
+    else:
+        column, order = key, True
+
+    if isinstance(order, str):
+        order = order.lower()
+
+    is_ascending = {
+        "asc": True,
+        "ascending": True,
+        "desc": False,
+        "descending": False,
+        0: False,
+        1: True,
+        False: False,
+        True: True,
+    }
+    ascending = map_to(is_ascending, order)
+    column = one_of(
+        (
+            instance_of((ops.DeferredSortKey, ops.SortKey)),
+            column_from(table),
+            function_of(table),
+            any,
+        ),
+        column,
+        this=this,
+    )
+
+    if isinstance(column, ops.SortKey):
+        return column
+    elif isinstance(column, ops.DeferredSortKey):
+        table = this[table] if isinstance(table, str) else table
+        return column.resolve(table)
+    else:
+        return ops.SortKey(column, ascending=ascending)
 
 
 @rule
@@ -434,7 +468,7 @@ def table(arg, *, schema=None, **kwargs):
 
 
 @rule
-def column_from(name, column, *, this):
+def column_from(table, column, *, this=None):
     """A column from a named table.
 
     This validator accepts columns passed as string, integer, or column
@@ -442,17 +476,23 @@ def column_from(name, column, *, this):
     checks if the column in the table is equal to the column being
     passed.
     """
-    if name not in this:
-        raise com.IbisTypeError(f"Could not get table {name} from {this}")
+    import ibis.expr.operations as ops
+
+    if isinstance(table, str):
+        if table not in this:
+            raise com.IbisTypeError(f"Could not get table {table} from {this}")
+        else:
+            table = this[table]
 
     # TODO(kszucs): should avoid converting to TableExpr
-    table = this[name].to_expr()
-
-    if isinstance(column, (str, int)):
-        return table[column].op()
+    table = table.to_expr()
 
     # TODO(kszucs): should avoid converting to a ColumnExpr
-    column = column.to_expr()
+    if isinstance(column, ops.Node):
+        column = column.to_expr()
+
+    column = table._ensure_expr(column)
+
     if not isinstance(column, ir.Column):
         raise com.IbisTypeError(
             "value must be an int or str or Column, got "
@@ -495,12 +535,20 @@ def function_of(
     fn,
     *,
     output_rule=any,
-    this,
+    this=None,
 ):
+    import ibis.expr.operations as ops
+
     if isinstance(arg, str):
         arg = this[arg].to_expr()
     elif callable(arg):
         arg = arg(this=this).to_expr()
+    elif isinstance(arg, ops.Node):
+        arg = arg.to_expr()
+    else:
+        raise com.IbisTypeError(
+            'argument `arg` must be a string, inner rule or an operation'
+        )
 
     if util.is_function(fn):
         arg = fn(arg)
