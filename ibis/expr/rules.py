@@ -20,6 +20,7 @@ from ibis.common.validators import (  # noqa: F401
     tuple_of,
     validator,
 )
+from ibis.expr.deferred import Deferred
 
 
 # TODO(kszucs): consider to rename to datashape
@@ -415,15 +416,6 @@ def table(arg, *, schema=None, **kwargs):
     it must be of the specified type. The table may have extra columns not
     specified in the schema.
     """
-    # import ibis
-
-    # if not isinstance(arg, ir.Table):
-    #     try:
-    #         return ibis.table(data=arg, schema=schema)
-    #     except Exception as e:
-    #         raise com.IbisTypeError(
-    #             f'Argument is not a table; got type {type(arg).__name__}'
-    #         ) from e
     import ibis.expr.operations as ops
 
     if not isinstance(arg, ops.TableNode):
@@ -505,17 +497,21 @@ def function_of(
     output_rule=any,
     this,
 ):
-    if not util.is_function(fn):
+    if isinstance(arg, str):
+        arg = this[arg].to_expr()
+    elif callable(arg):
+        arg = arg(this=this).to_expr()
+
+    if util.is_function(fn):
+        arg = fn(arg)
+    elif isinstance(fn, Deferred):
+        arg = fn.resolve(arg)
+    else:
         raise com.IbisTypeError(
             'argument `fn` must be a function, lambda or deferred operation'
         )
 
-    if isinstance(arg, str):
-        arg = this[arg]
-    elif callable(arg):
-        arg = arg(this=this)
-
-    return output_rule(fn(arg.to_expr()), this=this)
+    return output_rule(arg, this=this)
 
 
 @rule
