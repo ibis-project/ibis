@@ -345,4 +345,4 @@ def test_destruct_selection():
     expr = table.aggregate(multi_output_udf(table['col']).destructure())
     result = repr(expr)
 
-    assert "<unnamed>: ReductionVectorizedUDF" in result
+    assert "(sum, mean): ReductionVectorizedUDF" in result
