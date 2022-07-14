@@ -343,17 +343,22 @@ class Table(Expr):
         Table
             An aggregate table expression
         """
-        metrics = [
-            self._ensure_expr(item)
-            for item in util.flatten_iterable(util.promote_list(metrics))
-        ]
+        import ibis.expr.analysis as an
+
+        metrics = util.promote_list(metrics)
         metrics.extend(
             self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
         )
-        helper = ops.AggregateSelection(
-            self.op(), metrics, by=by, having=having
+
+        agg = ops.Aggregation(
+            self,
+            metrics=metrics,
+            by=util.promote_list(by),
+            having=util.promote_list(having),
         )
-        return helper.get_result().to_expr()
+        agg = an.simplify_aggregation(agg)
+
+        return agg.to_expr()
 
     def distinct(self) -> Table:
         """Compute the set of unique rows in the table."""
