@@ -27,9 +27,6 @@ def genname():
 
 @public
 class TableNode(Node):
-    def aggregate(self, metrics, by=None, having=None):
-        return Aggregation(self, metrics, by=by, having=having)
-
     def sort_by(self, expr, sort_exprs):
         return Selection(
             expr,
@@ -409,10 +406,6 @@ class Selection(Projection):
             **kwargs,
         )
 
-    def aggregate(self, metrics, by=None, having=None):
-        helper = AggregateSelection(self, metrics, by, having)
-        return helper.get_result()
-
     def sort_by(self, expr, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
@@ -437,17 +430,20 @@ class AggregateSelection:
     # aggregate functions like GROUP_CONCAT
 
     def __init__(self, op, metrics, by, having):
-        assert isinstance(op, Selection)
+        assert isinstance(op, TableNode), type(op)
         self.op = op
         self.metrics = metrics
-        self.by = by
-        self.having = having
+        self.by = util.promote_list(by if by is not None else [])
+        self.having = util.promote_list(having if having is not None else [])
 
     def get_result(self):
-        if self.op.selections:
-            return self._plain_subquery()
+        if isinstance(self.op, Selection):
+            if self.op.selections:
+                return self._plain_subquery()
+            else:
+                return self._attempt_pushdown()
         else:
-            return self._attempt_pushdown()
+            return self._plain_subquery()
 
     def _plain_subquery(self):
         return Aggregation(
