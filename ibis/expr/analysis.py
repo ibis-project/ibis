@@ -467,6 +467,38 @@ def windowize_function(expr, w=None):
     return _windowize(expr.op(), w).to_expr()
 
 
+def simplify_aggregation(agg):
+    def _pushdown(nodes):
+        subbed = []
+        for node in nodes:
+            subbed.append(sub_for(node, {agg.table: agg.table.table}))
+
+        # TODO(kszucs): perhaps this validation could be omitted
+        if subbed:
+            valid = shares_all_roots(subbed, agg.table.table)
+        else:
+            valid = True
+
+        return valid, subbed
+
+    if isinstance(agg.table, ops.Selection) and not agg.table.selections:
+        metrics_valid, lowered_metrics = _pushdown(agg.metrics)
+        by_valid, lowered_by = _pushdown(agg.by)
+        having_valid, lowered_having = _pushdown(agg.having)
+
+        if metrics_valid and by_valid and having_valid:
+            return ops.Aggregation(
+                agg.table.table,
+                lowered_metrics,
+                by=lowered_by,
+                having=lowered_having,
+                predicates=agg.table.predicates,
+                sort_keys=agg.table.sort_keys,
+            )
+
+    return agg
+
+
 class Projector:
 
     """
