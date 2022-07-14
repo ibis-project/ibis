@@ -237,9 +237,6 @@ class TopK(Node):
     k = rlz.non_negative_integer
     by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
 
-    def blocks(self):  # pragma: no cover
-        return True
-
     def to_expr(self):
         import ibis.expr.types as ir
 
