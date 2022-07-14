@@ -346,12 +346,10 @@ class Table(Expr):
             self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
         )
 
-        op = self.op().aggregate(
-            metrics,
-            by=util.promote_list(by if by is not None else []),
-            having=util.promote_list(having if having is not None else []),
+        helper = ops.AggregateSelection(
+            self.op(), metrics, by=by, having=having
         )
-        return op.to_expr()
+        return helper.get_result().to_expr()
 
     def distinct(self) -> Table:
         """Compute the set of unique rows in the table."""
