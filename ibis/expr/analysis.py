@@ -927,8 +927,4 @@ def _rewrite_filter_value(op, expr, **kwargs):
     if all(map(operator.is_, visited, args)):
         return expr
     else:
-        return (
-            op.__class__(*visited)
-            .to_expr()
-            .name("tmp" if not expr.has_name() else expr.get_name())
-        )
+        return op.__class__(*visited).to_expr()
