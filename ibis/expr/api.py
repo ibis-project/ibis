@@ -533,9 +533,9 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
         A sort expression or deferred sort key
     """
     if not isinstance(expr, Expr):
-        return ops.DeferredSortKey(expr)
+        return ops.DeferredSortKey(expr, ascending=True)
     else:
-        return ops.SortKey(expr).to_expr()
+        return ops.SortKey(expr, ascending=True).to_expr()
 
 
 def random() -> ir.FloatingScalar:
