@@ -425,68 +425,6 @@ class Selection(Projection):
 
 
 @public
-class AggregateSelection:
-    # sort keys cannot be discarded because of order-dependent
-    # aggregate functions like GROUP_CONCAT
-
-    def __init__(self, op, metrics, by, having):
-        assert isinstance(op, TableNode), type(op)
-        self.op = op
-        self.metrics = metrics
-        self.by = util.promote_list(by if by is not None else [])
-        self.having = util.promote_list(having if having is not None else [])
-
-    def get_result(self):
-        if isinstance(self.op, Selection):
-            if self.op.selections:
-                return self._plain_subquery()
-            else:
-                return self._attempt_pushdown()
-        else:
-            return self._plain_subquery()
-
-    def _plain_subquery(self):
-        return Aggregation(
-            self.op, self.metrics, by=self.by, having=self.having
-        )
-
-    def _attempt_pushdown(self):
-        metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
-        by_valid, lowered_by = self._pushdown_exprs(self.by)
-        having_valid, lowered_having = self._pushdown_exprs(self.having)
-
-        if metrics_valid and by_valid and having_valid:
-            return Aggregation(
-                self.op.table,
-                lowered_metrics,
-                by=lowered_by,
-                having=lowered_having,
-                predicates=self.op.predicates,
-                sort_keys=self.op.sort_keys,
-            )
-        else:
-            return self._plain_subquery()
-
-    def _pushdown_exprs(self, exprs):
-        from ibis.expr.analysis import shares_all_roots, sub_for
-
-        subbed_exprs = []
-        for expr in util.promote_list(exprs):
-            # TODO(kszucs): factor out _ensure_expr to bind_expr
-            expr = self.op.table.to_expr()._ensure_expr(expr)
-            subbed = sub_for(expr.op(), {self.op: self.op.table})
-            subbed_exprs.append(subbed.to_expr())
-
-        if subbed_exprs:
-            subbed_ops = [expr.op() for expr in subbed_exprs]
-            valid = shares_all_roots(subbed_ops, self.op.table)
-        else:
-            valid = True
-
-        return valid, subbed_exprs
-
-
-@public
 class Aggregation(TableNode):
 
     """
