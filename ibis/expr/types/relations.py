@@ -341,15 +341,19 @@ class Table(Expr):
         Table
             An aggregate table expression
         """
+        import ibis.expr.analysis as an
+
+        by = [] if by is None else util.promote_list(by)
+        having = [] if having is None else util.promote_list(having)
         metrics = [] if metrics is None else util.promote_list(metrics)
         metrics.extend(
             self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
         )
 
-        helper = ops.AggregateSelection(
-            self.op(), metrics, by=by, having=having
-        )
-        return helper.get_result().to_expr()
+        agg = ops.Aggregation(self, metrics=metrics, by=by, having=having)
+        agg = an.simplify_aggregation(agg)
+
+        return agg.to_expr()
 
     def distinct(self) -> Table:
         """Compute the set of unique rows in the table."""
