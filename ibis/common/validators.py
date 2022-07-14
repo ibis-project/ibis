@@ -166,7 +166,7 @@ def one_of(inners, arg, **kwargs):
 
 
 @validator
-def compose_of(inners, arg, *, this):
+def compose_of(inners, arg, **kwargs):
     """All of the inner validators must pass.
 
     The order of inner validators matters.
@@ -185,7 +185,7 @@ def compose_of(inners, arg, *, this):
       Value maybe coerced by inner validators to the appropiate types
     """
     for inner in reversed(inners):
-        arg = inner(arg, this=this)
+        arg = inner(arg, **kwargs)
     return arg
 
 
