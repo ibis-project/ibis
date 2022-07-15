@@ -1,5 +1,7 @@
 import pytest
 
+import ibis
+
 
 def test_backend_name(backend):
     # backend is the TestConf for the backend
@@ -41,6 +43,39 @@ def test_database_consistency(con):
 def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)
-    # only table that is garanteed to be in all backends
+    # only table that is guaranteed to be in all backends
     assert 'functional_alltypes' in tables
     assert all(isinstance(table, str) for table in tables)
+
+
+def test_tables_accessor_mapping(con):
+    assert isinstance(con.tables["functional_alltypes"], ibis.ir.Table)
+
+    with pytest.raises(KeyError, match="doesnt_exist"):
+        con.tables["doesnt_exist"]
+
+    tables = con.list_tables()
+
+    assert len(con.tables) == len(tables)
+    assert sorted(con.tables) == sorted(tables)
+
+
+def test_tables_accessor_getattr(con):
+    assert isinstance(con.tables.functional_alltypes, ibis.ir.Table)
+
+    with pytest.raises(AttributeError, match="doesnt_exist"):
+        getattr(con.tables, "doesnt_exist")
+
+    # Underscore/double-underscore attributes are never available, since many
+    # python apis expect checking for the absence of these to be cheap.
+    with pytest.raises(AttributeError, match="_private_attr"):
+        getattr(con.tables, "_private_attr")
+
+
+def test_tables_accessor_tab_completion(con):
+    attrs = dir(con.tables)
+    assert 'functional_alltypes' in attrs
+    assert 'keys' in attrs  # type methods also present
+
+    keys = con.tables._ipython_key_completions_()
+    assert 'functional_alltypes' in keys
