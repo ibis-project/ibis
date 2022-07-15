@@ -54,6 +54,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                             [1.0, 2.0, 3.0],
                             'a',
                             1.0,
+                            [[], [np.int64(1), 2, 3], None],
                         ),
                         (
                             [4, 5],
@@ -61,6 +62,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                             [4.0, 5.0],
                             'a',
                             2.0,
+                            [],
                         ),
                         (
                             [6, None],
@@ -68,6 +70,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                             [6.0, np.nan],
                             'a',
                             3.0,
+                            [None, [], None],
                         ),
                         (
                             [None, 1, None],
@@ -75,6 +78,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                             [],
                             'b',
                             4.0,
+                            [[1], [2], [], [3, 4, 5]],
                         ),
                         (
                             [2, None, 3],
@@ -82,6 +86,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                             np.nan,
                             'b',
                             5.0,
+                            None,
                         ),
                         (
                             [4, None, None, 5],
@@ -89,9 +94,17 @@ class TestConf(BackendTest, RoundHalfToEven):
                             [4.0, np.nan, np.nan, 5.0],
                             'c',
                             6.0,
+                            [[1, 2, 3]],
                         ),
                     ],
-                    columns=["x", "y", "z", "grouper", "scalar_column"],
+                    columns=[
+                        "x",
+                        "y",
+                        "z",
+                        "grouper",
+                        "scalar_column",
+                        "multi_dim",
+                    ],
                 ),
             }
         )

@@ -125,7 +125,11 @@ unnest = toolz.compose(
 
 
 @builtin_array
-def test_array_discovery(con):
+@pytest.mark.never(
+    ["clickhouse", "pandas", "pyspark"],
+    reason="backend does not flatten array types",
+)
+def test_array_discovery_postgres_duckdb(con):
     t = con.table("array_types")
     expected = ibis.schema(
         dict(
@@ -134,11 +138,53 @@ def test_array_discovery(con):
             z=dt.Array(dt.float64),
             grouper=dt.string,
             scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.int64),
         )
     )
-    assert list(t.columns) == list(expected.names)
-    for name, typ in t.schema().items():
-        assert isinstance(typ, type(expected[name]))
+    assert t.schema() == expected
+
+
+@builtin_array
+@pytest.mark.never(
+    ["duckdb", "pandas", "postgres", "pyspark"],
+    reason="backend supports nullable nested types",
+)
+def test_array_discovery_clickhouse(con):
+    t = con.table("array_types")
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.int64, nullable=False),
+            y=dt.Array(dt.string, nullable=False),
+            z=dt.Array(dt.float64, nullable=False),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(
+                dt.Array(dt.int64, nullable=False),
+                nullable=False,
+            ),
+        )
+    )
+    assert t.schema() == expected
+
+
+@builtin_array
+@pytest.mark.notyet(
+    ["clickhouse", "duckdb", "postgres"],
+    reason="backend does not support nullable nested types",
+)
+def test_array_discovery_desired(con):
+    t = con.table("array_types")
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.int64),
+            y=dt.Array(dt.string),
+            z=dt.Array(dt.float64),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.Array(dt.int64)),
+        )
+    )
+    assert t.schema() == expected
 
 
 @unnest
