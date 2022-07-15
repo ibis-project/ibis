@@ -92,7 +92,7 @@ repos:
       - id: nix-linter
         name: nix-linter
         language: system
-        entry: nix-linter
+        entry: nix-linter --check="no-FreeLetInFunc"
         exclude: nix/sources\.nix
         files: \.nix$
         types:
