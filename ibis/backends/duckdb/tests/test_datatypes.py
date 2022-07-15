@@ -56,6 +56,8 @@ EXPECTED_SCHEMA = dict(
             c=dt.Array(dt.Map(dt.string, dt.Array(dt.float64))),
         )
     ),
+    T=dt.Array(dt.Array(dt.int32)),
+    U=dt.Array(dt.Array(dt.int32)),
 )
 
 
@@ -109,6 +111,8 @@ EXPECTED_SCHEMA = dict(
             ("Q", "LIST<INTEGER>"),
             ("R", "MAP<STRING, BIGINT>"),
             ("S", "STRUCT(a INT, b TEXT, c LIST<MAP<TEXT, LIST<FLOAT8>>>)"),
+            ("T", "LIST<LIST<INTEGER>>"),
+            ("U", "INTEGER[][]"),
         ]
     ],
 )

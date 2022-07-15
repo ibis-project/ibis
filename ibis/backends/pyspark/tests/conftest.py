@@ -152,20 +152,35 @@ def get_common_spark_testing_client(data_directory, connect):
     df_nested_types.createOrReplaceTempView('nested_types')
     df_array_types = s.createDataFrame(
         [
-            ([1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0),
-            ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0),
-            ([6, None], ['f', None], [6.0, None], 'a', 3.0),
-            ([None, 1, None], [None, 'a', None], [], 'b', 4.0),
-            ([2, None, 3], ['b', None, 'c'], None, 'b', 5.0),
+            (
+                [1, 2, 3],
+                ['a', 'b', 'c'],
+                [1.0, 2.0, 3.0],
+                'a',
+                1.0,
+                [[], [1, 2, 3], None],
+            ),
+            ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0, []),
+            ([6, None], ['f', None], [6.0, None], 'a', 3.0, [None, [], None]),
+            (
+                [None, 1, None],
+                [None, 'a', None],
+                [],
+                'b',
+                4.0,
+                [[1], [2], [], [3, 4, 5]],
+            ),
+            ([2, None, 3], ['b', None, 'c'], None, 'b', 5.0, None),
             (
                 [4, None, None, 5],
                 ['d', None, None, 'e'],
                 [4.0, None, None, 5.0],
                 'c',
                 6.0,
+                [[1, 2, 3]],
             ),
         ],
-        ["x", "y", "z", "grouper", "scalar_column"],
+        ["x", "y", "z", "grouper", "scalar_column", "multi_dim"],
     )
     df_array_types.createOrReplaceTempView("array_types")
 

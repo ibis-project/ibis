@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import parsy as p
+import toolz
 
 from ibis import util
 
@@ -111,11 +112,15 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         return Array(value_type)
 
     @p.generate
+    def brackets():
+        yield spaceless(LBRACKET)
+        yield spaceless(RBRACKET)
+
+    @p.generate
     def pg_array():
         value_type = yield non_pg_array_type
-        yield LBRACKET
-        yield RBRACKET
-        return Array(value_type)
+        n = len((yield brackets.at_least(1)))
+        return toolz.nth(n, toolz.iterate(Array, value_type))
 
     @p.generate
     def map():

@@ -95,8 +95,11 @@ def _(itype, **kwargs):
 
 @to_sqla_type.register(dt.Array)
 def _(itype, **kwargs):
-    ibis_type = itype.value_type
-    return sa.ARRAY(to_sqla_type(ibis_type, **kwargs))
+    # Unwrap the array element type because sqlalchemy doesn't allow arrays of
+    # arrays. This doesn't affect the underlying data.
+    while isinstance(itype, dt.Array):
+        itype = itype.value_type
+    return sa.ARRAY(to_sqla_type(itype, **kwargs))
 
 
 @to_sqla_type.register(dt.Struct)
