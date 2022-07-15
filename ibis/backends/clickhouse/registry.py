@@ -884,6 +884,7 @@ _unsupported_ops_list = [
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,
+    ops.CumeDist,
     ops.CumulativeSum,
     ops.CumulativeMin,
     ops.CumulativeMax,

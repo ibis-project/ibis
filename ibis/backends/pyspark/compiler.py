@@ -1426,6 +1426,13 @@ def compile_percent_rank(t, expr, scope, timecontext, **kwargs):
     return F.percent_rank()
 
 
+@compiles(ops.CumeDist)
+def compile_cume_dist(t, expr, scope, timecontext, **kwargs):
+    raise com.UnsupportedOperationError(
+        'PySpark backend does not support cume_dist with Ibis.'
+    )
+
+
 @compiles(ops.NTile)
 def compile_ntile(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
