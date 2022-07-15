@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import os
 import webbrowser
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
-from cached_property import cached_property
 from public import public
 
 from ibis import config

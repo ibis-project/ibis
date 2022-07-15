@@ -8,7 +8,6 @@ from typing import NamedTuple
 import numpy as np
 import pandas as pd
 import toolz
-from cached_property import cached_property
 
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Comparable
@@ -141,7 +140,7 @@ class Window(Comparable):
 
         self._validate_frame()
 
-    @cached_property
+    @functools.cached_property
     def _hash(self) -> int:
         return hash(
             (

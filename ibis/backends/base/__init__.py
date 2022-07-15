@@ -9,8 +9,6 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
 if TYPE_CHECKING:
     import pandas as pd
 
-from cached_property import cached_property
-
 import ibis
 import ibis.common.exceptions as exc
 import ibis.config
@@ -176,7 +174,7 @@ class BaseBackend(abc.ABC):
     def __eq__(self, other):
         return self.db_identity == other.db_identity
 
-    @cached_property
+    @functools.cached_property
     def db_identity(self) -> str:
         """Return the identity of the database.
 
