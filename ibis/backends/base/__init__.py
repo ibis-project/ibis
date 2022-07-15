@@ -1,10 +1,20 @@
 from __future__ import annotations
 
 import abc
+import collections.abc
 import functools
+import keyword
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Mapping
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Iterable,
+    Iterator,
+    Mapping,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -143,6 +153,55 @@ class Database:
             A pattern to use for listing tables.
         """
         return self.client.list_tables(like, database=self.name)
+
+
+class TablesAccessor(collections.abc.Mapping):
+    """A mapping-like object for accessing tables off a backend.
+
+    Tables may be accessed by name using either index or attribute access:
+
+    Examples
+    --------
+    >>> con = ibis.sqlite.connect("example.db")
+    >>> people = con.tables['people']  # access via index
+    >>> people = con.tables.people  # access via attribute
+    """
+
+    def __init__(self, backend: BaseBackend):
+        self._backend = backend
+
+    def __getitem__(self, name) -> ir.Table:
+        try:
+            return self._backend.table(name)
+        except Exception as exc:
+            raise KeyError(name) from exc
+
+    def __getattr__(self, name) -> ir.Table:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        try:
+            return self._backend.table(name)
+        except Exception as exc:
+            raise AttributeError(name) from exc
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(sorted(self._backend.list_tables()))
+
+    def __len__(self) -> int:
+        return len(self._backend.list_tables())
+
+    def __dir__(self) -> list[str]:
+        o = set()
+        o.update(dir(type(self)))
+        o.update(
+            name
+            for name in self._backend.list_tables()
+            if name.isidentifier() and not keyword.iskeyword(name)
+        )
+        return list(o)
+
+    def _ipython_key_completions_(self) -> list[str]:
+        return self._backend.list_tables()
 
 
 class BaseBackend(abc.ABC):
@@ -367,6 +426,20 @@ class BaseBackend(abc.ABC):
     )
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Return a table expression from the database."""
+
+    @functools.cached_property
+    def tables(self):
+        """An accessor for tables in the database.
+
+        Tables may be accessed by name using either index or attribute access:
+
+        Examples
+        --------
+        >>> con = ibis.sqlite.connect("example.db")
+        >>> people = con.tables['people']  # access via index
+        >>> people = con.tables.people  # access via attribute
+        """
+        return TablesAccessor(self)
 
     @deprecated(version='2.0', instead='use `.table(name).schema()`')
     def get_schema(self, table_name: str, database: str = None) -> sch.Schema:
