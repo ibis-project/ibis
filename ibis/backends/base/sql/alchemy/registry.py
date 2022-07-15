@@ -361,6 +361,7 @@ def _window(t, expr):
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
+        ops.CumeDist,
     )
 
     if isinstance(window_op, ops.CumulativeOp):
@@ -389,6 +390,7 @@ def _window(t, expr):
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
+        ops.CumeDist,
         ops.RowNumber,
     )
 
@@ -656,6 +658,7 @@ sqlalchemy_window_functions_registry = {
     ops.DenseRank: unary(lambda _: sa.func.dense_rank()),
     ops.MinRank: unary(lambda _: sa.func.rank()),
     ops.PercentRank: unary(lambda _: sa.func.percent_rank()),
+    ops.CumeDist: unary(lambda _: sa.func.cume_dist()),
     ops.NthValue: _nth_value,
     ops.Window: _window,
     ops.CumulativeOp: _window,

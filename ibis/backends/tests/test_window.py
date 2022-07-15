@@ -54,6 +54,12 @@ def calc_zscore(s):
             id='percent_rank',
         ),
         param(
+            lambda t, win: t.id.cume_dist().over(win),
+            lambda t: t.id.rank(method='min') / t.id.transform(len),
+            id='cume_dist',
+            marks=pytest.mark.notimpl(["pyspark"]),
+        ),
+        param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
             lambda t: t,
             id='ntile',

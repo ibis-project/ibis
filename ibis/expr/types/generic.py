@@ -799,6 +799,11 @@ class Column(Value):
 
         return ops.PercentRank(self).to_expr()
 
+    def cume_dist(self) -> Column:
+        import ibis.expr.operations as ops
+
+        return ops.CumeDist(self).to_expr()
+
     def cummin(self) -> Column:
         import ibis.expr.operations as ops
 

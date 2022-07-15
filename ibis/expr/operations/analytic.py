@@ -205,6 +205,12 @@ class PercentRank(Analytic):
 
 
 @public
+class CumeDist(Analytic):
+    arg = rlz.column(rlz.any)
+    output_dtype = dt.double
+
+
+@public
 class NTile(Analytic):
     arg = rlz.column(rlz.any)
     buckets = rlz.scalar(rlz.integer)

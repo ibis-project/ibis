@@ -183,6 +183,7 @@ def format_window(translator, op, window):
         ops.MinRank,
         ops.NTile,
         ops.PercentRank,
+        ops.CumeDist,
         ops.RowNumber,
     )
 
@@ -250,6 +251,7 @@ def window(translator, expr):
         ops.FirstValue,
         ops.LastValue,
         ops.PercentRank,
+        ops.CumeDist,
         ops.NTile,
     )
 
