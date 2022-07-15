@@ -79,7 +79,7 @@ pkgs.mkShell {
     rsync
   ]);
 
-  PYTHONPATH = builtins.toPath ./.;
+  PYTHONPATH = ./.;
   PGPASSWORD = "postgres";
   MYSQL_PWD = "ibis";
 }

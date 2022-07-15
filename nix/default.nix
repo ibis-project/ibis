@@ -24,10 +24,7 @@ import sources.nixpkgs {
           ibis = ../ibis;
         };
         overrides = pkgs.poetry2nix.overrides.withDefaults (
-          import ../poetry-overrides.nix {
-            inherit pkgs;
-            inherit (pkgs) lib stdenv;
-          }
+          import ../poetry-overrides.nix
         );
       };
 

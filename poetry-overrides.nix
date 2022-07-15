@@ -1,20 +1,21 @@
-{ lib, pkgs, stdenv, ... }:
+self: super:
 let
-  numpyVersion = self: self.numpy.version;
+  inherit (self) pkgs;
+  inherit (pkgs) lib stdenv;
+  numpyVersion = self.numpy.version;
   parallelizeSetupPy = drv: drv.overridePythonAttrs (attrs: {
     format = "setuptools";
     enableParallelBuilding = true;
     setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
   });
 in
-self: super:
 {
   # see https://github.com/numpy/numpy/issues/19624 for details
   numpy = super.numpy.overridePythonAttrs (attrs: {
     patches = (attrs.patches or [ ])
       ++ lib.optional
       # this patch only applies to macos and only with numpy versions >=1.21,<1.21.2
-      (stdenv.isDarwin && (lib.versionAtLeast (numpyVersion self) "1.21.0" && lib.versionOlder (numpyVersion self) "1.21.2"))
+      (stdenv.isDarwin && (lib.versionAtLeast numpyVersion "1.21.0" && lib.versionOlder numpyVersion "1.21.2"))
       (pkgs.fetchpatch {
         url = "https://github.com/numpy/numpy/commit/8045183084042fbafc995dd26eb4d9ca45eb630e.patch";
         sha256 = "14g69vq7llkh6smpfrb50iqga7fd360dkcc0rlwb5k2cz8bsii5b";
@@ -49,17 +50,6 @@ self: super:
       inherit src patches;
       sha256 = "sha256-rGXSmn3MF2wFyMqzF15gB9DK5f9W4Gk08J7tOsZ7IH0=";
     };
-  });
-
-  nbconvert = super.nbconvert.overridePythonAttrs (_: {
-    postPatch = ''
-      substituteInPlace \
-        ./nbconvert/exporters/templateexporter.py \
-        --replace \
-        'root_dirs.extend(jupyter_path())' \
-        'root_dirs.extend(jupyter_path() + [os.path.join("@out@", "share", "jupyter")])' \
-        --subst-var out
-    '';
   });
 
   tabulate = super.tabulate.overridePythonAttrs (_: {
