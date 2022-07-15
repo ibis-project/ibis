@@ -52,7 +52,6 @@ package_data = {'': ['*']}
 
 install_requires = [
     'atpublic>=2.3,<4',
-    'cached_property>=1,<2',
     'multipledispatch>=0.6,<0.7',
     'numpy>=1,<2',
     'packaging>=21.3,<22',

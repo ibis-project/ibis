@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import collections
 import itertools
+from functools import cached_property
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
-from cached_property import cached_property
 from public import public
 
 from ibis import util

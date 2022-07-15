@@ -4,11 +4,11 @@ import collections
 import functools
 import itertools
 import operator
+from functools import cached_property
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
 import numpy as np
 import tabulate
-from cached_property import cached_property
 from public import public
 
 import ibis
