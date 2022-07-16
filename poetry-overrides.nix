@@ -59,14 +59,8 @@ in
   pandas = parallelizeSetupPy super.pandas;
   pydantic = parallelizeSetupPy super.pydantic;
 
-  mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
-    patches = attrs.patches or [ ] ++ [
-      (pkgs.fetchpatch {
-        name = "fix-jinja2-imports.patch";
-        url = "https://github.com/mkdocstrings/mkdocstrings/commit/b37722716b1e0ed6393ec71308dfb0f85e142f3b.patch";
-        sha256 = "sha256-DD1SjEvs5HBlSRLrqP3jhF/yoeWkF7F3VXCD1gyt5Fc=";
-      })
-    ];
+  mkdocstrings-python-legacy = super.mkdocstrings-python-legacy.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.pdm-pep517 ];
   });
 
   watchdog = super.watchdog.overrideAttrs (attrs: lib.optionalAttrs
