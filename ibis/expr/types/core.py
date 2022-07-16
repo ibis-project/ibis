@@ -129,7 +129,7 @@ class Expr:
         Notes
         -----
         This method opens a web browser tab showing the image of the expression
-        graph created by the code in [ibis.expr.visualize][].
+        graph created by the code in the `ibis.expr.visualize` module.
 
         Raises
         ------
