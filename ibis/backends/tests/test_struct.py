@@ -12,11 +12,12 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "pyspark"]),
+    pytest.mark.notimpl(["datafusion"]),
 ]
 
 
 @pytest.mark.notimpl(["dask", "snowflake"])
+@pytest.mark.broken(["pyspark"], reason="fixed in #5097")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
@@ -56,10 +57,11 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]
-    result = pd.Series([con.execute(query)])
+    dtype = query.type().to_pandas()
+    result = pd.Series([con.execute(query)], dtype=dtype)
     result = result.replace({np.nan: None})
     expected = pd.Series([_SIMPLE_DICT[field]])
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected.astype(dtype))
 
 
 @pytest.mark.notimpl(["postgres", "snowflake"])
@@ -87,6 +89,7 @@ def test_null_literal(con, field):
 
 
 @pytest.mark.notimpl(["bigquery", "dask", "pandas", "postgres", "snowflake"])
+@pytest.mark.broken(["pyspark"], reason="fixed in #5097")
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")

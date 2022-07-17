@@ -16,7 +16,8 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 pytest.importorskip("pyspark")
 
 import pyspark.sql.functions as F  # noqa: E402
-from pyspark.sql import SparkSession  # noqa: E402
+import pyspark.sql.types as pt  # noqa: E402
+from pyspark.sql import Row, SparkSession  # noqa: E402
 
 
 def get_common_spark_testing_client(data_directory, connect):
@@ -75,7 +76,31 @@ def get_common_spark_testing_client(data_directory, connect):
     df_simple = s.createDataFrame([(1, 'a')], ['foo', 'bar'])
     df_simple.createOrReplaceTempView('simple')
 
-    df_struct = s.createDataFrame([((1, 2, 'a'),)], ['struct_col'])
+    df_struct = s.createDataFrame(
+        [
+            Row(abc=Row(a=1.0, b='banana', c=2)),
+            Row(abc=Row(a=2.0, b='apple', c=3)),
+            Row(abc=Row(a=3.0, b='orange', c=4)),
+            Row(abc=Row(a=None, b='banana', c=2)),
+            Row(abc=Row(a=2.0, b=None, c=3)),
+            Row(abc=None),
+            Row(abc=Row(a=3.0, b='orange', c=None)),
+        ],
+        schema=pt.StructType(
+            [
+                pt.StructField(
+                    "abc",
+                    pt.StructType(
+                        [
+                            pt.StructField("a", pt.DoubleType(), True),
+                            pt.StructField("b", pt.StringType(), True),
+                            pt.StructField("c", pt.IntegerType(), True),
+                        ]
+                    ),
+                )
+            ]
+        ),
+    )
     df_struct.createOrReplaceTempView('struct')
 
     df_nested_types = s.createDataFrame(
