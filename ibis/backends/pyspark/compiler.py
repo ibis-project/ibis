@@ -17,11 +17,7 @@ import ibis.expr.types as ir
 from ibis import interval
 from ibis.backends.pandas.client import PandasInMemoryTable
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pyspark.datatypes import (
-    ibis_array_dtype_to_spark_dtype,
-    ibis_dtype_to_spark_dtype,
-    spark_dtype,
-)
+from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.pyspark.timecontext import (
     combine_time_context,
     filter_by_time_context,
@@ -236,6 +232,16 @@ def compile_struct_field(t, op, **kwargs):
     return arg[op.field]
 
 
+@compiles(ops.StructColumn)
+def compile_struct_column(t, op, **kwargs):
+    return F.struct(
+        *(
+            t.translate(col, **kwargs).alias(name)
+            for name, col in zip(op.names, op.values)
+        )
+    )
+
+
 @compiles(ops.SelfReference)
 def compile_self_reference(t, op, **kwargs):
     return t.translate(op.table, **kwargs)
@@ -252,10 +258,7 @@ def compile_cast(t, op, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
-    if op.to.is_array():
-        cast_type = ibis_array_dtype_to_spark_dtype(op.to)
-    else:
-        cast_type = ibis_dtype_to_spark_dtype(op.to)
+    cast_type = spark_dtype(op.to)
 
     src_column = t.translate(op.arg, **kwargs)
     return src_column.cast(cast_type)
@@ -357,8 +360,10 @@ def compile_literal(t, op, *, raw=False, **kwargs):
             return set(value)
         else:
             return value
-    elif isinstance(value, tuple):
+    elif dtype.is_array():
         return F.array(*map(F.lit, value))
+    elif dtype.is_struct():
+        return F.struct(*(F.lit(val).alias(name) for name, val in value.items()))
     else:
         if isinstance(value, pd.Timestamp) and value.tz is None:
             value = value.tz_localize("UTC").to_pydatetime()
@@ -629,7 +634,7 @@ def compile_covariance(t, op, **kwargs):
 
     fn = {"sample": F.covar_samp, "pop": F.covar_pop}[how]
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
+    pyspark_double_type = spark_dtype(dt.double)
     new_op = op.__class__(
         left=ops.Cast(op.left, to=pyspark_double_type),
         right=ops.Cast(op.right, to=pyspark_double_type),
@@ -644,7 +649,7 @@ def compile_correlation(t, op, **kwargs):
     if (how := op.how) == "pop":
         raise ValueError("PySpark only implements sample correlation")
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
+    pyspark_double_type = spark_dtype(dt.double)
     new_op = op.__class__(
         left=ops.Cast(op.left, to=pyspark_double_type),
         right=ops.Cast(op.right, to=pyspark_double_type),
@@ -706,7 +711,6 @@ def compile_abs(t, op, **kwargs):
 
 @compiles(ops.Clip)
 def compile_clip(t, op, **kwargs):
-    spark_dtype = ibis_dtype_to_spark_dtype(op.output_dtype)
     col = t.translate(op.arg, **kwargs)
     upper = t.translate(op.upper, **kwargs) if op.upper is not None else float('inf')
     lower = t.translate(op.lower, **kwargs) if op.lower is not None else float('-inf')
@@ -722,7 +726,7 @@ def compile_clip(t, op, **kwargs):
     def clip(column, lower_value, upper_value):
         return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))
 
-    return clip(col, lower, upper).cast(spark_dtype)
+    return clip(col, lower, upper).cast(spark_dtype(op.output_dtype))
 
 
 @compiles(ops.Round)
@@ -1575,7 +1579,7 @@ def compile_array_length(t, op, **kwargs):
 def compile_array_slice(t, op, **kwargs):
     start = op.start.value if op.start is not None else op.start
     stop = op.stop.value if op.stop is not None else op.stop
-    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.output_dtype)
+    spark_type = spark_dtype(op.arg.output_dtype)
 
     @F.udf(spark_type)
     def array_slice(array):
@@ -1817,7 +1821,7 @@ def compile_random(*args, **kwargs):
 @compiles(PandasInMemoryTable)
 def compile_in_memory_table(t, op, session, **kwargs):
     fields = [
-        pt.StructField(name, ibis_dtype_to_spark_dtype(dtype), dtype.nullable)
+        pt.StructField(name, spark_dtype(dtype), dtype.nullable)
         for name, dtype in op.schema.items()
     ]
     schema = pt.StructType(fields)
