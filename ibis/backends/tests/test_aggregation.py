@@ -683,14 +683,17 @@ def test_agg_sort(alltypes):
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
-        .group_by(_.bigint_col)
+        .mutate(x=L(1, "int64"))
+        .group_by(_.x)
         .aggregate(_.double_col.sum())
     )
 
-    result = expr.execute()
+    # TODO: The pyspark backend doesn't apply schemas to outputs
+    result = expr.execute().astype({"x": "int64"})
     expected = (
         df.loc[df.string_col == "1", :]
-        .groupby("bigint_col")
+        .assign(x=1)
+        .groupby("x")
         .double_col.sum()
         .rename("sum")
         .reset_index()

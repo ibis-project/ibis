@@ -343,9 +343,24 @@ class Table(Expr):
 
         op = self.op().aggregate(
             self,
-            metrics,
-            by=util.promote_list(by if by is not None else []),
-            having=util.promote_list(having if having is not None else []),
+            [
+                metric
+                if util.is_iterable(metric)
+                else self._ensure_expr(metric)
+                for metric in metrics
+            ],
+            by=list(
+                map(
+                    self._ensure_expr,
+                    util.promote_list(by if by is not None else []),
+                )
+            ),
+            having=list(
+                map(
+                    self._ensure_expr,
+                    util.promote_list(having if having is not None else []),
+                )
+            ),
         )
         return op.to_expr()
 
