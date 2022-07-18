@@ -20,7 +20,11 @@ coverage:
   status:
     project:
       default:
+        # Allow for slight decreases in code coverage, makes
+        # the coverage status checks a little less finicky
+        threshold: 0.5%
         only_pulls: true
     patch:
       default:
+        threshold: 0.5%
         only_pulls: true
