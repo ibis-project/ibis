@@ -60,7 +60,10 @@ class GroupedTable:
         self, table, by, having=None, order_by=None, window=None, **expressions
     ):
         self.table = table
-        self.by = util.promote_list(by if by is not None else []) + [
+        self.by = [
+            _get_group_by_key(table, v)
+            for v in util.promote_list(by if by is not None else [])
+        ] + [
             _get_group_by_key(table, v).name(k)
             for k, v in sorted(expressions.items(), key=toolz.first)
         ]
