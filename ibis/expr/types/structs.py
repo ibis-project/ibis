@@ -46,7 +46,15 @@ def struct(
     Create a struct literal from a [`dict`][dict] with a specified type
     >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
     """
-    return literal(collections.OrderedDict(value), type=type)
+    import ibis.expr.operations as ops
+
+    items = dict(value)
+    values = items.values()
+    if any(isinstance(value, Value) for value in values):
+        return ops.StructColumn(
+            names=tuple(items.keys()), values=tuple(values)
+        ).to_expr()
+    return literal(collections.OrderedDict(items), type=type)
 
 
 @public
