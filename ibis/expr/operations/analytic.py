@@ -12,7 +12,7 @@ from ibis.expr.window import propagate_down_window
 @public
 class Window(Value):
     expr = rlz.analytic
-    window = rlz.window(from_base_table_of="expr")
+    window = rlz.window_from(rlz.base_table_of(rlz.ref("expr"), strict=False))
 
     output_dtype = rlz.dtype_like("expr")
     output_shape = rlz.Shape.COLUMNAR
@@ -235,7 +235,9 @@ class NthValue(Analytic):
 class TopK(Node):
     arg = rlz.column(rlz.any)
     k = rlz.non_negative_integer
-    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
+    by = rlz.one_of(
+        (rlz.function_of(rlz.base_table_of(rlz.ref("arg"))), rlz.any)
+    )
 
     def to_expr(self):
         import ibis.expr.types as ir
