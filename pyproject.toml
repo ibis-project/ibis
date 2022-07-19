@@ -28,7 +28,6 @@ pattern = "^(?P<base>\\d+(\\.\\d+)*)"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 atpublic = ">=2.3,<4"
-importlib-metadata = { version = ">=4,<5", python = "<3.10" }
 multipledispatch = ">=0.6,<0.7"
 numpy = ">=1,<2"
 packaging = ">=21.3,<22"
@@ -178,8 +177,6 @@ filterwarnings = [
   "ignore:Exception ignored in:",
   # poetry
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
-  # older importlib metadata that there's no real point in breaking with
-  "ignore:SelectableGroups:DeprecationWarning",
   # geopandas warning
   "ignore:The distutils package is deprecated:DeprecationWarning",
   # dask

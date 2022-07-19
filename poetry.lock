@@ -664,7 +664,7 @@ python-versions = ">=3.5"
 name = "importlib-metadata"
 version = "4.12.0"
 description = "Read metadata from Python packages"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -2368,7 +2368,7 @@ python-versions = "*"
 name = "zipp"
 version = "3.8.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -2394,7 +2394,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "1d4139881e1f11d1a6a802d6800dbae4b0d37d4a57de8eca7655e0ed8545ca65"
+content-hash = "5f1ba45df83838aef0d7f83b4ce289930dbe93eef08df5d4654fae6dc6403889"
 
 [metadata.files]
 absolufy-imports = [
