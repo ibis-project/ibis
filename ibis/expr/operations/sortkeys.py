@@ -34,14 +34,3 @@ class SortKey(Value):
         import ibis.expr.types as ir
 
         return ir.SortExpr(self)
-
-
-@public
-class DeferredSortKey:
-    def __init__(self, what, ascending=True):
-        self.what = what
-        self.ascending = ascending
-
-    def resolve(self, parent):
-        what = parent.to_expr()._ensure_expr(self.what)
-        return SortKey(what, ascending=self.ascending)

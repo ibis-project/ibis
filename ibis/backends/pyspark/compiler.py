@@ -1139,7 +1139,7 @@ def compile_window_op(t, op, **kwargs):
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
         F.col(sort.resolve_name()).cast('long')
-        if isinstance(sort.expr.output_dtype, dt.Timestamp)
+        if isinstance(sort.output_dtype, dt.Timestamp)
         else sort.resolve_name()
         for sort in order_by
     ]

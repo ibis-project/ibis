@@ -17,6 +17,7 @@ from ibis.common.validators import (  # noqa: F401
     map_to,
     one_of,
     optional,
+    ref,
     tuple_of,
     validator,
 )
@@ -85,6 +86,11 @@ class rule(validator):
 
 
 @rule
+def just(arg):
+    return lambda **_: arg
+
+
+@rule
 def value_list_of(inner, arg, **kwargs):
     # TODO(kszucs): would be nice to remove ops.ValueList
     # the main blocker is that some of the backends execution
@@ -103,16 +109,8 @@ def value_list_of(inner, arg, **kwargs):
 
 
 @rule
-def sort_key_from(table, key, *, this=None):
+def sort_key_from(table_ref, key, **kwargs):
     import ibis.expr.operations as ops
-
-    if isinstance(key, tuple):
-        column, order = key
-    else:
-        column, order = key, True
-
-    if isinstance(order, str):
-        order = order.lower()
 
     is_ascending = {
         "asc": True,
@@ -124,25 +122,28 @@ def sort_key_from(table, key, *, this=None):
         False: False,
         True: True,
     }
-    ascending = map_to(is_ascending, order)
-    column = one_of(
-        (
-            instance_of((ops.DeferredSortKey, ops.SortKey)),
-            column_from(table),
-            function_of(table),
-            any,
-        ),
-        column,
-        this=this,
+
+    if callable(key):
+        key = function_of(table_ref, key)
+
+    if isinstance(key, ops.SortKey):
+        return key
+    elif isinstance(key, tuple):
+        key, order = key
+    else:
+        key, order = key, True
+
+    key = one_of(
+        (function_of(table_ref), column_from(table_ref), column(any)),
+        key,
+        **kwargs,
     )
 
-    if isinstance(column, ops.SortKey):
-        return column
-    elif isinstance(column, ops.DeferredSortKey):
-        table = this[table] if isinstance(table, str) else table
-        return column.resolve(table)
-    else:
-        return ops.SortKey(column, ascending=ascending)
+    if isinstance(order, str):
+        order = order.lower()
+    order = map_to(is_ascending, order)
+
+    return ops.SortKey(key, ascending=order)
 
 
 @rule
@@ -432,8 +433,11 @@ def numeric_like(name, op):
     return output_dtype
 
 
+# TODO(kszucs): it could be as simple as rlz.instance_of(ops.TableNode)
+# we have a single test case testing the schema superset condition, not
+# used anywhere else
 @rule
-def table(arg, *, schema=None, **kwargs):
+def table(arg, schema=None, **kwargs):
     """A table argument.
 
     Parameters
@@ -471,7 +475,7 @@ def table(arg, *, schema=None, **kwargs):
 
 
 @rule
-def column_from(table, column, *, this=None):
+def column_from(table_ref, column, **kwargs):
     """A column from a named table.
 
     This validator accepts columns passed as string, integer, or column
@@ -481,14 +485,8 @@ def column_from(table, column, *, this=None):
     """
     import ibis.expr.operations as ops
 
-    if isinstance(table, str):
-        if table not in this:
-            raise com.IbisTypeError(f"Could not get table {table} from {this}")
-        else:
-            table = this[table]
-
     # TODO(kszucs): should avoid converting to TableExpr
-    table = table.to_expr()
+    table = table_ref(**kwargs).to_expr()
 
     # TODO(kszucs): should avoid converting to a ColumnExpr
     if isinstance(column, ops.Node):
@@ -519,16 +517,14 @@ def column_from(table, column, *, this=None):
         )
 
 
-# TODO(kszucs): consider to remove since it's only used by TopK
 @rule
-def base_table_of(name, *, this):
+def base_table_of(table_ref, *, this, strict=True):
     from ibis.expr.analysis import find_first_base_table
 
-    arg = this[name]
+    arg = table_ref(this=this)
     base = find_first_base_table(arg)
-    if base is None:
+    if strict and base is None:
         raise com.IbisTypeError(f"`{arg}` doesn't have a base table")
-
     return base
 
 
@@ -587,8 +583,12 @@ def non_negative_integer(arg, **kwargs):
 
 
 @rule
-def pair(inner_left, inner_right, a, b, **kwargs):
-    return inner_left(a, **kwargs), inner_right(b, **kwargs)
+def pair(inner_left, inner_right, arg, **kwargs):
+    try:
+        a, b = arg
+    except TypeError:
+        raise com.IbisTypeError(f"{arg} is not an iterable with two elements")
+    return inner_left(a[0], **kwargs), inner_right(b, **kwargs)
 
 
 @rule
@@ -603,8 +603,7 @@ def analytic(arg, **kwargs):
 
 
 @validator
-def window(win, *, from_base_table_of, this):
-    from ibis.expr.analysis import find_first_base_table
+def window_from(table_ref, win, **kwargs):
     from ibis.expr.window import Window
 
     if not isinstance(win, Window):
@@ -613,7 +612,7 @@ def window(win, *, from_base_table_of, this):
             f"got type {type(win).__name__}"
         )
 
-    table = find_first_base_table(this[from_base_table_of])
+    table = table_ref(**kwargs)
     if table is not None:
         win = win.bind(table.to_expr())
 

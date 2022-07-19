@@ -366,10 +366,10 @@ def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     ir.SortExpr | ops.DeferredSortKey
         A sort expression or deferred sort key
     """
-    if not isinstance(expr, Expr):
-        return ops.DeferredSortKey(expr, ascending=False)
-    else:
+    if isinstance(expr, Expr):
         return ops.SortKey(expr, ascending=False).to_expr()
+    else:
+        return (expr, False)
 
 
 def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
@@ -401,10 +401,10 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     ir.SortExpr | ops.DeferredSortKey
         A sort expression or deferred sort key
     """
-    if not isinstance(expr, Expr):
-        return ops.DeferredSortKey(expr, ascending=True)
-    else:
+    if isinstance(expr, Expr):
         return ops.SortKey(expr, ascending=True).to_expr()
+    else:
+        return (expr, True)
 
 
 def random() -> ir.FloatingScalar:

@@ -107,33 +107,19 @@ class Window(Comparable):
         max_lookback=None,
         how='rows',
     ):
-        import ibis.expr.operations as ops
+        group_by = [] if group_by is None else promote_list(group_by)
+        order_by = [] if order_by is None else promote_list(order_by)
 
         self._group_by = tuple(
             toolz.unique(
-                (
-                    arg.op() if isinstance(arg, ir.Expr) else arg
-                    for arg in promote_list(
-                        [] if group_by is None else group_by
-                    )
-                ),
-                key=lambda value: getattr(value, "_key", value),
+                arg.op() if isinstance(arg, ir.Expr) else arg
+                for arg in group_by
             )
         )
-
-        _order_by = []
-        for expr in promote_list([] if order_by is None else order_by):
-            try:
-                arg = expr.op()
-            except AttributeError:
-                arg = expr
-            if isinstance(expr, ir.Expr) and not isinstance(expr, ir.SortExpr):
-                arg = ops.SortKey(arg)
-            _order_by.append(arg)
-
         self._order_by = tuple(
             toolz.unique(
-                _order_by, key=lambda value: getattr(value, "_key", value)
+                arg.op() if isinstance(arg, ir.Expr) else arg
+                for arg in order_by
             )
         )
 
@@ -261,15 +247,13 @@ class Window(Comparable):
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
 
-        import ibis.expr.operations as ops
-
-        groups = [
-            table._ensure_expr(
-                arg.to_expr() if isinstance(arg, ops.Node) else arg
-            ).op()
-            for arg in self._group_by
-        ]
-        sorts = rlz.tuple_of(rlz.sort_key_from(table), self._order_by)
+        groups = rlz.tuple_of(
+            rlz.one_of((rlz.column_from(rlz.just(table)), rlz.any)),
+            self._group_by,
+        )
+        sorts = rlz.tuple_of(
+            rlz.sort_key_from(rlz.just(table)), self._order_by
+        )
 
         return self._replace(group_by=groups, order_by=sorts)
 
