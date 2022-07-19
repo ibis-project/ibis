@@ -51,27 +51,6 @@ def test_string_temporal_compare(con, op, left, right, type):
 
 
 @pytest.mark.parametrize(
-    ('func', 'left', 'right', 'expected'),
-    [
-        (operator.add, L(3), L(4), 7),
-        (operator.sub, L(3), L(4), -1),
-        (operator.mul, L(3), L(4), 12),
-        (operator.truediv, L(12), L(4), 3),
-        (operator.pow, L(12), L(2), 144),
-        (operator.mod, L(12), L(5), 2),
-        (operator.truediv, L(7), L(2), 3.5),
-        (operator.floordiv, L(7), L(2), 3),
-        (lambda x, y: x.floordiv(y), L(7), 2, 3),
-        (lambda x, y: x.rfloordiv(y), L(2), 7, 3),
-    ],
-)
-def test_binary_arithmetic(con, func, left, right, expected):
-    expr = func(left, right)
-    result = con.execute(expr)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
     ('op', 'expected'),
     [
         (lambda a, b: a + b, '`int_col` + `tinyint_col`'),
