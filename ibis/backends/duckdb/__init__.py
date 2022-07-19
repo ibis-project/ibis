@@ -15,6 +15,7 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
+    import ibis.expr.types as ir
 
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -28,7 +29,7 @@ class _ColumnMetadata(NamedTuple):
     type: dt.DataType
 
 
-_register = RegexDispatcher("_register")
+_generate_view_code = RegexDispatcher("_register")
 _dialect = sa.dialects.postgresql.dialect()
 
 
@@ -41,28 +42,36 @@ def _quote(name: str):
     return _dialect.identifier_preparer.quote(name)
 
 
-@_register.register(r"parquet://(?P<path>.+)", priority=10)
+@_generate_view_code.register(r"parquet://(?P<path>.+)", priority=10)
 def _parquet(_, path, table_name=None):
     path = Path(path).absolute()
-    table_name = _quote(table_name or _name_from_path(path))
-    return f"CREATE VIEW {table_name} as SELECT * from read_parquet('{path}')"
+    table_name = table_name or _name_from_path(path)
+    quoted_table_name = _quote(table_name)
+    return (
+        f"CREATE VIEW {quoted_table_name} as SELECT * from read_parquet('{path}')",  # noqa: E501
+        table_name,
+    )
 
 
-@_register.register(r"csv(?:\.gz)?://(?P<path>.+)", priority=10)
+@_generate_view_code.register(r"csv(?:\.gz)?://(?P<path>.+)", priority=10)
 def _csv(_, path, table_name=None):
     path = Path(path).absolute()
-    table_name = _quote(table_name or _name_from_path(path))
-    return f"CREATE VIEW {table_name} as SELECT * from read_csv_auto('{path}')"  # noqa: E501
+    table_name = table_name or _name_from_path(path)
+    quoted_table_name = _quote(table_name)
+    return (
+        f"CREATE VIEW {quoted_table_name} as SELECT * from read_csv_auto('{path}')",  # noqa: E501
+        table_name,
+    )
 
 
-@_register.register(r"(?:file://)?(?P<path>.+)", priority=9)
+@_generate_view_code.register(r"(?:file://)?(?P<path>.+)", priority=9)
 def _file(_, path, table_name=None):
     num_sep_chars = len(os.extsep)
     extension = "".join(Path(path).suffixes)[num_sep_chars:]
-    return _register(f"{extension}://{path}", table_name=table_name)
+    return _generate_view_code(f"{extension}://{path}", table_name=table_name)
 
 
-@_register.register(r".+", priority=1)
+@_generate_view_code.register(r".+", priority=1)
 def _default(_, **kwargs):
     raise ValueError(
         """
@@ -119,7 +128,7 @@ class Backend(BaseAlchemyBackend):
         self,
         path: str | Path,
         table_name: str | None = None,
-    ) -> None:
+    ) -> ir.Table:
         """Register an external file as a table in the current connection
         database
 
@@ -131,9 +140,15 @@ class Backend(BaseAlchemyBackend):
             Name for the created table.  Defaults to filename if not given.
             Any dashes in a user-provided or generated name will be
             replaced with underscores.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
         """
-        view = _register(path, table_name=table_name)
+        view, table_name = _generate_view_code(path, table_name=table_name)
         self.con.execute(view)
+        return self.table(table_name)
 
     def fetch_from_cursor(
         self,
