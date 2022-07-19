@@ -354,43 +354,6 @@ class Pi(Constant):
 
 
 @public
-class StructField(Value):
-    arg = rlz.struct
-    field = rlz.instance_of(str)
-
-    output_shape = rlz.shape_like("arg")
-
-    @immutable_property
-    def output_dtype(self):
-        struct_dtype = self.arg.type()
-        value_dtype = struct_dtype[self.field]
-        return value_dtype
-
-    def resolve_name(self):
-        return self.field
-
-    def has_resolved_name(self):
-        return True
-
-
-@public
-class StructColumn(Value):
-    names = rlz.tuple_of(rlz.instance_of(str), min_length=1)
-    values = rlz.tuple_of(rlz.any, min_length=1)
-
-    output_shape = rlz.Shape.COLUMNAR
-
-    @immutable_property
-    def output_dtype(self):
-        return dt.Struct.from_tuples(
-            zip(self.names, (value.type() for value in self.values))
-        )
-
-    def root_tables(self):
-        return distinct_roots(*self.values)
-
-
-@public
 class DecimalPrecision(Unary):
     arg = rlz.decimal
     output_dtype = dt.int32
