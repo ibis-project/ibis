@@ -11,5 +11,6 @@ from ibis.expr.operations.reductions import *  # noqa: F401,F403
 from ibis.expr.operations.relations import *  # noqa: F401,F403
 from ibis.expr.operations.sortkeys import *  # noqa: F401,F403
 from ibis.expr.operations.strings import *  # noqa: F401,F403
+from ibis.expr.operations.structs import *  # noqa: F401,F403
 from ibis.expr.operations.temporal import *  # noqa: F401,F403
 from ibis.expr.operations.vectorized import *  # noqa: F401,F403
