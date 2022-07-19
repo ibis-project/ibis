@@ -63,13 +63,13 @@ def test_parameter():
         return int(x) + this['other']
 
     p = Parameter('novalidator')
-    assert p.validate({}, 'value') == 'value'
+    assert p.validate('value', this={}) == 'value'
 
     p = Parameter('test', validator=fn)
 
     assert p.validator is fn
     assert p.default is inspect.Parameter.empty
-    assert p.validate({'other': 1}, '2') == 3
+    assert p.validate('2', this={'other': 1}) == 3
 
     with pytest.raises(TypeError):
         p.validate({}, valid=inspect.Parameter.empty)
@@ -78,7 +78,7 @@ def test_parameter():
     op = Parameter('test', validator=ofn)
     assert op.validator is ofn
     assert op.default is None
-    assert op.validate({'other': 1}, None) is None
+    assert op.validate(None, this={'other': 1}) is None
 
 
 def test_signature():
