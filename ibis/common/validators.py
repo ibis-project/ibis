@@ -86,7 +86,7 @@ class Parameter(inspect.Parameter):
     def validator(self):
         return self._validator
 
-    def validate(self, this, arg):
+    def validate(self, arg, *, this):
         if self.validator is EMPTY:
             return arg
         else:
@@ -100,18 +100,20 @@ class Signature(inspect.Signature):
     Primarly used in the implementation of ibis.common.grounds.Annotable.
     """
 
-    def validate(self, *args, **kwargs):
+    def apply(self, *args, **kwargs):
         bound = self.bind(*args, **kwargs)
         bound.apply_defaults()
+        return bound.arguments
 
+    def validate(self, *args, **kwargs):
         # bind the signature to the passed arguments and apply the validators
         # before passing the arguments, so self.__init__() receives already
         # validated arguments as keywords
         this = {}
-        for name, value in bound.arguments.items():
+        for name, value in self.apply(*args, **kwargs).items():
             param = self.parameters[name]
             # TODO(kszucs): provide more error context on failure
-            this[name] = param.validate(this, value)
+            this[name] = param.validate(value, this=this)
 
         return this
 
@@ -137,8 +139,11 @@ immutable_property = ImmutableProperty
 
 
 @validator
-def noop(arg, **kwargs):
-    return arg
+def ref(key, *, this):
+    try:
+        return this[key]
+    except KeyError:
+        raise IbisTypeError(f"Could not get `{key}` from {this}")
 
 
 @validator
@@ -166,7 +171,7 @@ def one_of(inners, arg, **kwargs):
 
 
 @validator
-def compose_of(inners, arg, **kwargs):
+def all_of(inners, arg, **kwargs):
     """All of the inner validators must pass.
 
     The order of inner validators matters.
@@ -184,7 +189,7 @@ def compose_of(inners, arg, **kwargs):
     arg : Any
       Value maybe coerced by inner validators to the appropiate types
     """
-    for inner in reversed(inners):
+    for inner in inners:
         arg = inner(arg, **kwargs)
     return arg
 

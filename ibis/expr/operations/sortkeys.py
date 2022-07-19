@@ -1,6 +1,9 @@
+from typing import Callable
+
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.grounds import Annotable
 from ibis.expr.operations.core import Value
 
 
@@ -37,11 +40,6 @@ class SortKey(Value):
 
 
 @public
-class DeferredSortKey:
-    def __init__(self, what, ascending=True):
-        self.what = what
-        self.ascending = ascending
-
-    def resolve(self, parent):
-        what = parent.to_expr()._ensure_expr(self.what)
-        return SortKey(what, ascending=self.ascending)
+class DeferredSortKey(Annotable):
+    what = rlz.instance_of((int, str, Callable))
+    ascending = rlz.instance_of(bool)
