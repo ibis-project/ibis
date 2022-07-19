@@ -177,6 +177,18 @@ def _string_agg(t, expr):
     return agg
 
 
+def _struct_column(t, expr):
+    op = expr.op()
+    compile_kwargs = dict(literal_binds=True)
+    translated_pairs = (
+        (name, t.translate(value).compile(compile_kwargs=compile_kwargs))
+        for name, value in zip(op.names, op.values)
+    )
+    return sa.func.struct_pack(
+        *(sa.text(f"{name} := {value}") for name, value in translated_pairs)
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
@@ -212,6 +224,7 @@ operation_registry.update(
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
         ops.GroupConcat: _string_agg,
+        ops.StructColumn: _struct_column,
     }
 )
 
