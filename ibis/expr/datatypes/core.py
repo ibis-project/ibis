@@ -32,7 +32,7 @@ from public import public
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.common.grounds import Annotable, Comparable, Singleton
 from ibis.common.validators import (
-    compose_of,
+    all_of,
     instance_of,
     isin,
     map_to,
@@ -491,7 +491,7 @@ class Interval(DataType):
     """The time unit of the interval."""
 
     value_type = optional(
-        compose_of([datatype, instance_of(Integer)]), default=Int32()
+        all_of([datatype, instance_of(Integer)]), default=Int32()
     )
     """The underlying type of the stored values."""
 
