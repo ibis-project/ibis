@@ -18,6 +18,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.expr.window import _determine_how, rows_with_max_lookback
@@ -146,8 +147,12 @@ def test_over_auto_bind(alltypes):
 
     expr = t.f.lag().over(w)
 
-    actual_window = expr.op().args[1]
-    expected = ibis.window(group_by=t.g, order_by=t.f)
+    # TODO(kszucs): the window object doesn't apply the rules for the sorting
+    # keys, so need to wrap the expected order key with a SortKey for now
+    # on long term we should refactor the window object to a WindowFrame op
+    actual_window = expr.op().args[1]  # noqa
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+
     assert_equal(actual_window, expected)
 
 
@@ -159,8 +164,9 @@ def test_window_function_bind(alltypes):
 
     expr = t.f.lag().over(w)
 
-    actual_window = expr.op().args[1]
-    expected = ibis.window(group_by=t.g, order_by=t.f)
+    actual_window = expr.op().args[1]  # noqa
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+
     assert_equal(actual_window, expected)
 
 
@@ -193,8 +199,8 @@ def test_window_bind_to_table(alltypes):
     t = alltypes
     w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
-    w2 = w.bind(alltypes)
-    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))
+    w2 = w.bind(alltypes)  # noqa
+    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))  # noqa
 
     assert_equal(w2, expected)
 

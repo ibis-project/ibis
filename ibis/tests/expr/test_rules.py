@@ -299,7 +299,7 @@ def test_invalid_column_or_scalar(validator, value, expected):
     ],
 )
 def test_valid_column_from(check_table, value, expected):
-    validator = rlz.column_from("table")
+    validator = rlz.column_from(rlz.ref("table"))
     this = dict(table=table.op())
     assert validator(value, this=this).equals(expected.op())
 
@@ -307,11 +307,11 @@ def test_valid_column_from(check_table, value, expected):
 @pytest.mark.parametrize(
     ('check_table', 'validator', 'value'),
     [
-        (table, rlz.column_from("not_table"), "int_col"),
-        (table, rlz.column_from("table"), "col_not_in_table"),
+        (table, rlz.column_from(rlz.ref("not_table")), "int_col"),
+        (table, rlz.column_from(rlz.ref("table")), "col_not_in_table"),
         (
             table,
-            rlz.column_from("table"),
+            rlz.column_from(rlz.ref("table")),
             similar_table.int_col,
         ),
     ],
@@ -367,7 +367,7 @@ def test_optional(validator, input):
 def test_base_table_of_failure_mode():
     class BrokenUseOfBaseTableOf(ops.Node):
         arg = rlz.any
-        foo = rlz.function_of(rlz.base_table_of("arg"))
+        foo = rlz.function_of(rlz.base_table_of(rlz.ref("arg"), strict=True))
 
     arg = ibis.literal("abc")
 
