@@ -309,8 +309,8 @@ class Projection(TableNode):
         rlz.one_of(
             (
                 rlz.table,
-                rlz.column_from("table"),
-                rlz.function_of("table"),
+                rlz.column_from(rlz.ref("table")),
+                rlz.function_of(rlz.ref("table")),
                 rlz.any,
             )
         )
@@ -342,7 +342,7 @@ class Projection(TableNode):
 class Selection(Projection):
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.tuple_of(rlz.sort_key_from("table")), default=()
+        rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
     )
 
     def __init__(self, table, selections, predicates, sort_keys, **kwargs):
@@ -371,7 +371,7 @@ class Selection(Projection):
     def sort_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
-        keys = rlz.tuple_of(rlz.sort_key_from(self), sort_exprs)
+        keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
 
         if not self.selections:
             if shares_all_roots(keys, self.table):
@@ -403,7 +403,7 @@ class Aggregation(TableNode):
             rlz.one_of(
                 (
                     rlz.function_of(
-                        "table",
+                        rlz.ref("table"),
                         output_rule=rlz.one_of(
                             (rlz.reduction, rlz.scalar(rlz.any))
                         ),
@@ -421,8 +421,8 @@ class Aggregation(TableNode):
         rlz.tuple_of(
             rlz.one_of(
                 (
-                    rlz.function_of("table"),
-                    rlz.column_from("table"),
+                    rlz.function_of(rlz.ref("table")),
+                    rlz.column_from(rlz.ref("table")),
                     rlz.column(rlz.any),
                 )
             )
@@ -434,7 +434,7 @@ class Aggregation(TableNode):
             rlz.one_of(
                 (
                     rlz.function_of(
-                        "table", output_rule=rlz.scalar(rlz.boolean)
+                        rlz.ref("table"), output_rule=rlz.scalar(rlz.boolean)
                     ),
                     rlz.scalar(rlz.boolean),
                 )
@@ -489,7 +489,7 @@ class Aggregation(TableNode):
     def sort_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
-        keys = rlz.tuple_of(rlz.sort_key_from(self), sort_exprs)
+        keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
 
         if shares_all_roots(keys, self.table):
             return Aggregation(
@@ -560,7 +560,7 @@ class DropNa(TableNode):
 
     table = rlz.table
     how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.tuple_of(rlz.column_from("table")))
+    subset = rlz.optional(rlz.tuple_of(rlz.column_from(rlz.ref("table"))))
 
     @property
     def schema(self):
