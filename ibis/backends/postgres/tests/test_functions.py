@@ -180,31 +180,6 @@ def test_strftime(con, pattern):
 
 
 @pytest.mark.parametrize(
-    ('func', 'left', 'right', 'expected'),
-    [
-        param(operator.add, L(3), L(4), 7, id='add'),
-        param(operator.sub, L(3), L(4), -1, id='sub'),
-        param(operator.mul, L(3), L(4), 12, id='mul'),
-        param(operator.truediv, L(12), L(4), 3, id='truediv_no_remainder'),
-        param(operator.pow, L(12), L(2), 144, id='pow'),
-        param(operator.mod, L(12), L(5), 2, id='mod'),
-        param(operator.truediv, L(7), L(2), 3.5, id='truediv_remainder'),
-        param(operator.floordiv, L(7), L(2), 3, id='floordiv'),
-        param(
-            lambda x, y: x.floordiv(y), L(7), 2, 3, id='floordiv_no_literal'
-        ),
-        param(
-            lambda x, y: x.rfloordiv(y), L(2), 7, 3, id='rfloordiv_no_literal'
-        ),
-    ],
-)
-def test_binary_arithmetic(con, func, left, right, expected):
-    expr = func(left, right)
-    result = con.execute(expr)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
     ('value', 'expected'),
     [
         param(L('foo_bar'), 'text', id='text'),
