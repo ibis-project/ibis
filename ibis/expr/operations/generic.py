@@ -374,6 +374,23 @@ class StructField(Value):
 
 
 @public
+class StructColumn(Value):
+    names = rlz.tuple_of(rlz.instance_of(str), min_length=1)
+    values = rlz.tuple_of(rlz.any, min_length=1)
+
+    output_shape = rlz.Shape.COLUMNAR
+
+    @immutable_property
+    def output_dtype(self):
+        return dt.Struct.from_tuples(
+            zip(self.names, (value.type() for value in self.values))
+        )
+
+    def root_tables(self):
+        return distinct_roots(*self.values)
+
+
+@public
 class DecimalPrecision(Unary):
     arg = rlz.decimal
     output_dtype = dt.int32
