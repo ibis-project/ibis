@@ -84,12 +84,9 @@ class Backend(BaseAlchemyBackend):
     @property
     def version(self) -> str:
         # TODO: there is a `PRAGMA version` we could use instead
-        try:
-            import importlib.metadata as importlib_metadata
-        except ImportError:
-            # TODO: remove this when Python 3.9 support is dropped
-            import importlib_metadata
-        return importlib_metadata.version("duckdb")
+        import importlib.metadata
+
+        return importlib.metadata.version("duckdb")
 
     def do_connect(
         self,

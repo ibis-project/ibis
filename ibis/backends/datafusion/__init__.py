@@ -37,12 +37,9 @@ class Backend(BaseBackend):
 
     @property
     def version(self):
-        try:
-            import importlib.metadata as importlib_metadata
-        except ImportError:
-            # TODO: remove this when Python 3.9 support is dropped
-            import importlib_metadata
-        return importlib_metadata.version("datafusion")
+        import importlib.metadata
+
+        return importlib.metadata.version("datafusion")
 
     def do_connect(
         self,

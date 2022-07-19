@@ -1,4 +1,7 @@
 """Initialize Ibis module."""
+from __future__ import annotations
+
+import importlib.metadata as _importlib_metadata
 
 # Converting an Ibis schema to a pandas DataFrame requires registering
 # some type conversions that are currently registered in the pandas backend
@@ -12,16 +15,27 @@ from ibis.config import options
 from ibis.expr import api
 from ibis.expr.api import *  # noqa: F401,F403
 
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    # TODO: remove this when Python 3.9 support is dropped
-    import importlib_metadata
-
-__all__ = ['api', 'ir', 'util', 'IbisError', 'options']
+__all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
 __all__ += api.__all__
 
 __version__ = "3.0.2"
+
+
+def _get_backend_entrypoints() -> list[_importlib_metadata.EntryPoint]:
+    """Get the list of installed `ibis.backend` entrypoints"""
+    import sys
+
+    if sys.version_info < (3, 10):
+        return list(_importlib_metadata.entry_points()['ibis.backends'])
+    else:
+        return list(_importlib_metadata.entry_points(group="ibis.backends"))
+
+
+def __dir__() -> list[str]:
+    """Adds tab completion for ibis backends to the top-level module"""
+    out = set(__all__)
+    out.update(ep.name for ep in _get_backend_entrypoints())
+    return sorted(out)
 
 
 def __getattr__(name: str) -> BaseBackend:
@@ -39,11 +53,7 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    entry_points = {
-        entry_point
-        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
-        if name == entry_point.name
-    }
+    entry_points = {ep for ep in _get_backend_entrypoints() if ep.name == name}
 
     if not entry_points:
         raise AttributeError(
