@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+import importlib.metadata
 import os
 import platform
 from functools import lru_cache
@@ -18,12 +18,6 @@ import pytest
 
 import ibis
 import ibis.util as util
-
-try:
-    import importlib.metadata as importlib_metadata
-except ImportError:
-    import importlib_metadata
-
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -236,10 +230,15 @@ def _get_backend_names() -> frozenset[str]:
     If a `set` is used, then any in-place modifications to the set
     are visible to every caller of this function.
     """
-    return frozenset(
-        entry_point.name
-        for entry_point in importlib_metadata.entry_points()["ibis.backends"]
-    )
+    import sys
+
+    if sys.version_info < (3, 10):
+        entrypoints = list(importlib.metadata.entry_points()['ibis.backends'])
+    else:
+        entrypoints = list(
+            importlib.metadata.entry_points(group="ibis.backends")
+        )
+    return frozenset(ep.name for ep in entrypoints)
 
 
 def _get_backend_conf(backend_str: str):
