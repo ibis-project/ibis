@@ -654,6 +654,14 @@ def _array_column(translator, expr):
     return f"[{args}]"
 
 
+def _struct_column(translator, expr):
+    args = ", ".join(map(translator.translate, expr.op().values))
+    # ClickHouse struct types cannot be nullable
+    # (non-nested fields can be nullable)
+    struct_type = serialize(expr.type()(nullable=False))
+    return f"CAST(({args}) AS {struct_type})"
+
+
 def _clip(translator, expr):
     op = expr.op()
     arg = translator.translate(op.arg)
@@ -832,6 +840,7 @@ operation_registry = {
     ops.ArrayColumn: _array_column,
     ops.Clip: _clip,
     ops.StructField: _struct_field,
+    ops.StructColumn: _struct_column,
 }
 
 
