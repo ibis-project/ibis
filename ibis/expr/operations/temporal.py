@@ -368,7 +368,7 @@ class IntervalBinary(Binary):
             else arg
             for arg in self.args
         ]
-        value_dtype = rlz._promote_numeric_binop(integer_args, self.op)
+        value_dtype = rlz._promote_integral_binop(integer_args, self.op)
         left_dtype = self.left.type()
         return dt.Interval(
             unit=left_dtype.unit,
