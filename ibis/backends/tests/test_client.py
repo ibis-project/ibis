@@ -359,3 +359,22 @@ def test_in_memory(alchemy_backend):
     finally:
         con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
         assert table_name not in con.list_tables()
+
+
+@pytest.mark.parametrize(
+    "coltype", [dt.uint8, dt.uint16, dt.uint32, dt.uint64]
+)
+@pytest.mark.notyet(
+    ["postgres", "mysql", "sqlite"],
+    raises=TypeError,
+    reason="postgres, mysql and sqlite do not support unsigned integer types",
+)
+def test_unsigned_integer_type(alchemy_con, coltype):
+    tname = guid()
+    alchemy_con.create_table(
+        tname, schema=ibis.schema(dict(a=coltype)), force=True
+    )
+    try:
+        assert tname in alchemy_con.list_tables()
+    finally:
+        alchemy_con.drop_table(tname, force=True)

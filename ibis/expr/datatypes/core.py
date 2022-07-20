@@ -1344,11 +1344,13 @@ def infer_floating(value: float) -> Float64:
 
 
 @infer.register(int)
-def infer_integer(value: int) -> Integer:
-    for dtype in (int8, int16, int32, int64):
+def infer_integer(value: int, prefer_unsigned: bool = False) -> Integer:
+    types = (uint8, uint16, uint32, uint64) if prefer_unsigned else ()
+    types += (int8, int16, int32, int64)
+    for dtype in types:
         if dtype.bounds.lower <= value <= dtype.bounds.upper:
             return dtype
-    return int64
+    return uint64 if prefer_unsigned else int64
 
 
 @infer.register(enum.Enum)

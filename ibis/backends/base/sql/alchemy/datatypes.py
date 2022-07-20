@@ -9,6 +9,7 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import UserDefinedType
 
 import ibis.expr.datatypes as dt
@@ -31,6 +32,41 @@ class StructType(UserDefinedType):
     def get_col_spec(self, **_):
         pairs = ", ".join(f"{k} {v}" for k, v in self.pairs)
         return f"STRUCT({pairs})"
+
+
+class UInt64(sa.types.Integer):
+    pass
+
+
+class UInt32(sa.types.Integer):
+    pass
+
+
+class UInt16(sa.types.Integer):
+    pass
+
+
+class UInt8(sa.types.Integer):
+    pass
+
+
+@compiles(UInt64, "postgresql")
+@compiles(UInt32, "postgresql")
+@compiles(UInt16, "postgresql")
+@compiles(UInt8, "postgresql")
+@compiles(UInt64, "mysql")
+@compiles(UInt32, "mysql")
+@compiles(UInt16, "mysql")
+@compiles(UInt8, "mysql")
+@compiles(UInt64, "sqlite")
+@compiles(UInt32, "sqlite")
+@compiles(UInt16, "sqlite")
+@compiles(UInt8, "sqlite")
+def compile_uint(element, compiler, **kw):
+    dialect_name = compiler.dialect.name
+    raise TypeError(
+        f"unsigned integers are not supported in the {dialect_name} backend"
+    )
 
 
 def table_from_schema(name, meta, schema, database: str | None = None):
@@ -62,6 +98,10 @@ ibis_type_to_sqla = {
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
     dt.Int64: sa.BigInteger,
+    dt.UInt8: UInt8,
+    dt.UInt16: UInt16,
+    dt.UInt32: UInt32,
+    dt.UInt64: UInt64,
     dt.JSON: sa.JSON,
 }
 

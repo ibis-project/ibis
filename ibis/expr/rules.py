@@ -275,22 +275,22 @@ def shape_like(name):
 # TODO(kszucs): might just use bounds instead of actual literal values
 # that could simplify interval binop output_type methods
 # TODO(kszucs): pre-generate mapping?
-def _promote_numeric_binop(exprs, op):
-    bounds, dtypes = [], []
-    for arg in exprs:
-        dtypes.append(arg.type())
-        if hasattr(arg.op(), 'value'):
-            # arg.op() is a literal
-            bounds.append([arg.op().value])
-        else:
-            bounds.append(arg.type().bounds)
+def _promote_integral_binop(exprs, op):
+    dtypes = []
+    bounds = []
+    for expr in exprs:
+        try:
+            bounds.append([expr.op().value])
+        except AttributeError:
+            dtypes.append(expr.type())
+            bounds.append(expr.type().bounds)
 
+    all_unsigned = dtypes and util.all_of(dtypes, dt.UnsignedInteger)
     # In some cases, the bounding type might be int8, even though neither
     # of the types are that small. We want to ensure the containing type is
     # _at least_ as large as the smallest type in the expression.
-    values = starmap(op, product(*bounds))
-    dtypes += [dt.infer(value) for value in values]
-
+    values = list(starmap(op, product(*bounds)))
+    dtypes.extend(dt.infer(v, prefer_unsigned=all_unsigned) for v in values)
     return dt.highest_precedence(dtypes)
 
 
@@ -299,7 +299,7 @@ def numeric_like(name, op):
     def output_dtype(self):
         args = getattr(self, name)
         if util.all_of(args, ir.IntegerValue):
-            result = _promote_numeric_binop(args, op)
+            result = _promote_integral_binop(args, op)
         else:
             result = highest_precedence_dtype(args)
 
