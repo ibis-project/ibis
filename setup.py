@@ -64,7 +64,6 @@ install_requires = [
 ]
 
 extras_require = {
-    ':python_version < "3.10"': ['importlib-metadata>=4,<5'],
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',
         'clickhouse-driver[numpy]>=0.1,<0.3',
