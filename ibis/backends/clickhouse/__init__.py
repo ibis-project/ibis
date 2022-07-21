@@ -49,6 +49,7 @@ class Backend(BaseSQLBackend):
         compression: (
             Literal["lz4", "lz4hc", "quicklz", "zstd"] | bool
         ) = _default_compression,
+        **kwargs: Any,
     ):
         """Create a ClickHouse client for use with Ibis.
 
@@ -89,6 +90,7 @@ class Backend(BaseSQLBackend):
             password=password,
             client_name=client_name,
             compression=compression,
+            **kwargs,
         )
 
     @property
