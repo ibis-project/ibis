@@ -46,8 +46,8 @@ class SimpleCaseBuilder(TypedCaseBuilder):
     op = ops.SimpleCase
 
     base = rlz.any
-    cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
+    cases = rlz.optional(rlz.nodes_of(rlz.any), default=[])
+    results = rlz.optional(rlz.nodes_of(rlz.any), default=[])
     default = rlz.optional(rlz.any)
 
     def when(self, case_expr, result_expr):
@@ -89,8 +89,8 @@ class SimpleCaseBuilder(TypedCaseBuilder):
 class SearchedCaseBuilder(TypedCaseBuilder):
     op = ops.SearchedCase
 
-    cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
+    cases = rlz.optional(rlz.nodes_of(rlz.any), default=[])
+    results = rlz.optional(rlz.nodes_of(rlz.any), default=[])
     default = rlz.optional(rlz.any)
 
     def when(self, case_expr, result_expr):

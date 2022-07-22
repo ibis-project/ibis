@@ -1,5 +1,6 @@
 from public import public
 
+from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Unary, Value
@@ -116,7 +117,7 @@ class RPad(Value):
 @public
 class FindInSet(Value):
     needle = rlz.string
-    values = rlz.value_list_of(rlz.string, min_length=1)
+    values = rlz.nodes_of(rlz.string, min_length=1)
 
     output_shape = rlz.shape_like("needle")
     output_dtype = dt.int64
@@ -125,10 +126,14 @@ class FindInSet(Value):
 @public
 class StringJoin(Value):
     sep = rlz.string
-    arg = rlz.value_list_of(rlz.string, min_length=1)
+    arg = rlz.nodes_of(rlz.string, min_length=1)
 
     output_dtype = dt.string
-    output_shape = rlz.shape_like("arg")
+    # output_shape = rlz.shape_like("arg")
+
+    @immutable_property
+    def output_shape(self):
+        return rlz.highest_precedence_shape(self.arg.values)
 
 
 @public
@@ -213,10 +218,14 @@ class StringSplit(Value):
 
 @public
 class StringConcat(Value):
-    arg = rlz.value_list_of(rlz.string)
+    arg = rlz.nodes_of(rlz.string)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
+
+    @immutable_property
+    def output_shape(self):
+        return rlz.highest_precedence_shape(self.arg.values)
 
 
 @public

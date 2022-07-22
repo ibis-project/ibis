@@ -11,7 +11,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Binary, Unary, Value
+from ibis.expr.operations.core import Binary, NodeList, Unary, Value
 from ibis.expr.operations.generic import _Negatable
 
 
@@ -129,12 +129,13 @@ class Between(Value):
         )
 
 
+# TODO(kszucs): decompose it into at least two operations
 @public
 class Contains(Value):
     value = rlz.any
     options = rlz.one_of(
         [
-            rlz.value_list_of(rlz.any),
+            rlz.nodes_of(rlz.any),
             rlz.column(rlz.any),
             rlz.array,
             rlz.set_,
@@ -142,7 +143,14 @@ class Contains(Value):
     )
 
     output_dtype = dt.boolean
-    output_shape = rlz.shape_like("args")
+
+    @immutable_property
+    def output_shape(self):
+        if isinstance(self.options, NodeList):
+            args = [self.value, *self.options]
+        else:
+            args = self.args
+        return rlz.highest_precedence_shape(args)
 
 
 @public
@@ -180,7 +188,7 @@ class Where(Value):
 @public
 class ExistsSubquery(Value, _Negatable):
     foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
+    predicates = rlz.nodes_of(rlz.boolean)
 
     output_dtype = dt.boolean
     output_shape = rlz.Shape.COLUMNAR
@@ -192,7 +200,7 @@ class ExistsSubquery(Value, _Negatable):
 @public
 class NotExistsSubquery(Value, _Negatable):
     foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
+    predicates = rlz.nodes_of(rlz.boolean)
 
     output_dtype = dt.boolean
     output_shape = rlz.Shape.COLUMNAR
@@ -239,8 +247,8 @@ class _UnresolvedSubquery(Value, _Negatable):
     resolved against the outer leaf table when `Selection`s are constructed.
     """
 
-    tables = rlz.tuple_of(rlz.table)
-    predicates = rlz.tuple_of(rlz.boolean)
+    tables = rlz.nodes_of(rlz.table)
+    predicates = rlz.nodes_of(rlz.boolean)
 
     output_dtype = dt.boolean
     output_shape = rlz.Shape.COLUMNAR
