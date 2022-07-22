@@ -255,7 +255,6 @@ class TimestampFromYMDHMS(Value):
     hours = rlz.integer
     minutes = rlz.integer
     seconds = rlz.integer
-    timezone = rlz.optional(rlz.string)
 
     output_dtype = dt.timestamp
     output_shape = rlz.shape_like("args")
@@ -266,10 +265,9 @@ class TimestampFromUNIX(Value):
     arg = rlz.any
     # Only pandas-based backends support 'ns'
     unit = rlz.isin({'s', 'ms', 'us', 'ns'})
-    output_shape = rlz.shape_like('arg')
 
     output_dtype = dt.timestamp
-    output_shape = rlz.shape_like("args")
+    output_shape = rlz.shape_like('arg')
 
 
 @public

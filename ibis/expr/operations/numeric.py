@@ -174,7 +174,7 @@ class Clip(Value):
     upper = rlz.optional(rlz.strict_numeric)
 
     output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("args")
+    output_shape = rlz.shape_like("arg")
 
 
 @public

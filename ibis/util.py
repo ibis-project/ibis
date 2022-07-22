@@ -134,7 +134,7 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
     """
     if isinstance(val, list):
         return val
-    elif isinstance(val, tuple):
+    elif is_iterable(val):
         return list(val)
     else:
         return [val]
@@ -453,9 +453,7 @@ def to_op_dag(node: ops.Node) -> Graph:
         if (node := stack.pop()) not in dag:
             # TODO(kszucs): use a more generic approach without filtering out
             # node instances
-            children = [
-                arg for arg in node.flat_args() if isinstance(arg, ops.Node)
-            ]
+            children = [arg for arg in node.args if isinstance(arg, ops.Node)]
             dag[node] = children
             stack.extend(children)
     return dag

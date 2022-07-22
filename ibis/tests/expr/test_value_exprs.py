@@ -1400,7 +1400,7 @@ def test_literal_hash():
     op = expr.op()
     # hashing triggers computation and storage of the op's hash
     result1 = hash(op)
-    assert op._hash == result1
+    assert op.__precomputed_hash__ == result1
     assert hash(op) == result1
 
 

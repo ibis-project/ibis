@@ -16,6 +16,7 @@ import pandas as pd
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import connect
@@ -260,7 +261,7 @@ def param(type: dt.DataType) -> ir.Scalar:
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
-def sequence(values: Sequence[T | None]) -> ir.ValueList:
+def sequence(values: Sequence[T | None]) -> ir.Sequence:
     """Wrap a list of Python values as an Ibis sequence type.
 
     Parameters
@@ -270,10 +271,10 @@ def sequence(values: Sequence[T | None]) -> ir.ValueList:
 
     Returns
     -------
-    ValueList
+    Sequence
         A list expression
     """
-    return ops.ValueList(values).to_expr()
+    return rlz.list_of(rlz.any, values).to_expr()
 
 
 def schema(

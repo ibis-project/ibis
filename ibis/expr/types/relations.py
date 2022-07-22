@@ -1286,7 +1286,7 @@ def _resolve_predicates(
 
 # TODO(kszucs): remove it
 def bind_expr(table, expr):
-    if isinstance(expr, (list, tuple)):
+    if util.is_iterable(expr):
         return [bind_expr(table, x) for x in expr]
 
     return table._ensure_expr(expr)

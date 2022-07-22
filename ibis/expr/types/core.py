@@ -214,28 +214,6 @@ class Expr(Immutable, Hashable):
         results = lin.traverse(finder, self.op())
         return list(toolz.unique(toolz.concat(results)))
 
-        seen_backends: dict[
-            str, BaseBackend
-        ] = {}  # key is backend.db_identity
-
-        stack = [self.op()]
-        seen = set()
-
-        while stack:
-            node = stack.pop()
-
-            if node not in seen:
-                seen.add(node)
-
-                for arg in node.flat_args():
-                    if isinstance(arg, BaseBackend):
-                        if arg.db_identity not in seen_backends:
-                            seen_backends[arg.db_identity] = arg
-                    elif isinstance(arg, Expr):
-                        stack.append(arg.op())
-
-        return list(seen_backends.values())
-
     def _find_backend(self) -> BaseBackend:
         backends = self._find_backends()
 
