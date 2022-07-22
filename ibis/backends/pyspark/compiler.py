@@ -1057,7 +1057,7 @@ def compile_string_like(t, op, **kwargs):
     return src_column.like(pattern)
 
 
-@compiles(ops.ValueList)
+@compiles(ops.NodeList)
 def compile_value_list(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
     return [t.translate(col, **kwargs) for col in op.values]

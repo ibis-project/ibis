@@ -357,7 +357,7 @@ operation_registry = {
     ops.E: lambda *args: 'e()',
     ops.Literal: literal,
     ops.NullLiteral: null_literal,
-    ops.ValueList: value_list,
+    ops.NodeList: value_list,
     ops.Cast: cast,
     ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),

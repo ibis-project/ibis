@@ -434,40 +434,27 @@ def execute_table_column_df_or_df_groupby(op, data, **kwargs):
     return data[op.name]
 
 
-@execute_node.register(
-    ops.Aggregation,
-    pd.DataFrame,
-    tuple,
-    tuple,
-    tuple,
-    tuple,
-    tuple,
-)
+@execute_node.register(ops.Aggregation, pd.DataFrame)
 def execute_aggregation_dataframe(
     op,
     data,
-    metrics,
-    by,
-    having,
-    predicates,
-    sort_keys,
     scope=None,
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    assert metrics, 'no metrics found during aggregation execution'
+    assert op.metrics, 'no metrics found during aggregation execution'
 
-    if sort_keys:
+    if op.sort_keys:
         raise NotImplementedError(
             'sorting on aggregations not yet implemented'
         )
 
-    if predicates:
+    if op.predicates:
         predicate = functools.reduce(
             operator.and_,
             (
                 execute(p, scope=scope, timecontext=timecontext, **kwargs)
-                for p in predicates
+                for p in op.predicates
             ),
         )
         data = data.loc[predicate]
@@ -481,11 +468,11 @@ def execute_aggregation_dataframe(
             else execute(
                 key, scope=scope, timecontext=timecontext, **kwargs
             ).rename(key.resolve_name())
-            for key in by
+            for key in op.by
         ]
         columns.update(
             (key.name, key.resolve_name())
-            for key in by
+            for key in op.by
             if hasattr(key, 'name')
         )
         source = data.groupby(grouping_keys)
@@ -499,21 +486,21 @@ def execute_aggregation_dataframe(
             execute(metric, scope=scope, timecontext=timecontext, **kwargs),
             metric,
         )
-        for metric in metrics
+        for metric in op.metrics
     ]
 
     result = pd.concat(pieces, axis=1)
 
     # If grouping, need a reset to get the grouping key back as a column
-    if by:
+    if op.by:
         result = result.reset_index()
 
     result.columns = [columns.get(c, c) for c in result.columns]
 
-    if having:
+    if op.having:
         # .having(...) is only accessible on groupby, so this should never
         # raise
-        if not by:
+        if not op.by:
             raise ValueError(
                 'Filtering out aggregation values is not allowed without at '
                 'least one grouping key'
@@ -524,7 +511,7 @@ def execute_aggregation_dataframe(
             operator.and_,
             (
                 execute(h, scope=scope, timecontext=timecontext, **kwargs)
-                for h in having
+                for h in op.having
             ),
         )
         assert len(predicate) == len(
@@ -992,7 +979,7 @@ def execute_alias(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ops.ValueList, collections.abc.Sequence)
+@execute_node.register(ops.NodeList, collections.abc.Sequence)
 def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
@@ -1141,11 +1128,12 @@ def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
 
 
-@execute_node.register(ops.DropNa, pd.DataFrame, type(None))
-@execute_node.register(ops.DropNa, pd.DataFrame, tuple)
-def execute_node_dropna_dataframe(op, df, subset, **kwargs):
-    if subset is not None:
-        subset = [col.resolve_name() for col in subset]
+@execute_node.register(ops.DropNa, pd.DataFrame)
+def execute_node_dropna_dataframe(op, df, **kwargs):
+    if op.subset is not None:
+        subset = [col.resolve_name() for col in op.subset]
+    else:
+        subset = None
     return df.dropna(how=op.how, subset=subset)
 
 

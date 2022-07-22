@@ -308,13 +308,10 @@ def build_df_from_projection(
     return pd.concat(new_pieces, axis=1)
 
 
-@execute_node.register(ops.Selection, pd.DataFrame, tuple, tuple, tuple)
+@execute_node.register(ops.Selection, pd.DataFrame)
 def execute_selection_dataframe(
     op,
     data,
-    selections,
-    predicates,
-    sort_keys,
     scope: Scope,
     timecontext: Optional[TimeContext],
     **kwargs,
@@ -322,12 +319,12 @@ def execute_selection_dataframe(
     result = data
 
     # Build up the individual pandas structures from column expressions
-    if selections:
-        if all(isinstance(s, ops.TableColumn) for s in selections):
-            result = build_df_from_selection(selections, data, op.table)
+    if op.selections:
+        if all(isinstance(s, ops.TableColumn) for s in op.selections):
+            result = build_df_from_selection(op.selections, data, op.table)
         else:
             result = build_df_from_projection(
-                selections,
+                op.selections,
                 op,
                 data,
                 scope=scope,
@@ -335,9 +332,9 @@ def execute_selection_dataframe(
                 **kwargs,
             )
 
-    if predicates:
+    if op.predicates:
         predicates = _compute_predicates(
-            op.table, predicates, data, scope, timecontext, **kwargs
+            op.table, op.predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         assert len(predicate) == len(
@@ -345,10 +342,10 @@ def execute_selection_dataframe(
         ), 'Selection predicate length does not match underlying table'
         result = result.loc[predicate]
 
-    if sort_keys:
+    if op.sort_keys:
         result, grouping_keys, ordering_keys = util.compute_sorted_frame(
             result,
-            order_by=sort_keys,
+            order_by=op.sort_keys,
             scope=scope,
             timecontext=timecontext,
             **kwargs,

@@ -460,6 +460,13 @@ def type_info(datatype: dt.DataType) -> str:
 
 
 @fmt_selection_column.register
+def _fmt_selection_column_sequence(node: ops.NodeList, **kwargs):
+    return "\n".join(
+        fmt_selection_column(value, **kwargs) for value in node.values
+    )
+
+
+@fmt_selection_column.register
 def _fmt_selection_column_value_expr(
     node: ops.Value, *, aliases: Aliases, maxlen: int = 0
 ) -> str:
@@ -538,6 +545,11 @@ def _fmt_value_function_type(func: types.FunctionType, **_: Any) -> str:
 @fmt_value.register
 def _fmt_value_node(op: ops.Node, **_: Any) -> str:
     assert False, f"`fmt_value` not implemented for operation: {type(op)}"
+
+
+@fmt_value.register
+def _fmt_value_sequence(op: ops.NodeList, **kwargs: Any) -> str:
+    return ", ".join([fmt_value(value, **kwargs) for value in op])
 
 
 @fmt_value.register
