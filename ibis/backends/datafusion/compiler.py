@@ -376,7 +376,7 @@ def mean(op):
     return df.functions.avg(arg)
 
 
-@translate.register(ops.ValueList)
+@translate.register(ops.NodeList)
 def value_list(op):
     return list(map(translate, op.values))
 

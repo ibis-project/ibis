@@ -95,7 +95,7 @@ class Schema(Annotable, Comparable):
         return self.types[self._name_locs[name]]
 
     def __equals__(self, other):
-        return self.args == other.args
+        return self.__args__ == other.__args__
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.

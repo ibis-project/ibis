@@ -189,7 +189,7 @@ def _contains(func):
 
         if (
             # not a list expr
-            not isinstance(op.options, ops.ValueList)
+            not isinstance(op.options, ops.NodeList)
             # but still a column expr
             and op.options.output_shape is Shape.COLUMNAR
             # wasn't already compiled into a select statement
@@ -541,7 +541,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Round: _round,
     ops.TypeOf: unary(sa.func.typeof),
     ops.Literal: _literal,
-    ops.ValueList: _value_list,
+    ops.NodeList: _value_list,
     ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,

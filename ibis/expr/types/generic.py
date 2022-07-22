@@ -240,10 +240,7 @@ class Value(Expr):
         """
         return ops.Between(self, lower, upper).to_expr()
 
-    def isin(
-        self,
-        values: Value | Sequence[Value],
-    ) -> ir.BooleanValue:
+    def isin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are in `values`.
 
         Parameters
@@ -279,10 +276,7 @@ class Value(Expr):
         """  # noqa: E501
         return ops.Contains(self, values).to_expr()
 
-    def notin(
-        self,
-        values: Value | Sequence[Value],
-    ) -> ir.BooleanValue:
+    def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
 
         Parameters
@@ -391,7 +385,7 @@ class Value(Expr):
         >>> case_expr
         r0 := UnboundTable[t]
           string_col string
-        SimpleCase(base=r0.string_col, cases=[ValueList(values=['a', 'b'])], results=[ValueList(values=['an a', 'a b'])], default='null or (not a and not b)')
+        SimpleCase(base=r0.string_col, cases=[List(values=['a', 'b'])], results=[List(values=['an a', 'a b'])], default='null or (not a and not b)')
         """  # noqa: E501
         import ibis.expr.builders as bl
 
@@ -810,7 +804,7 @@ class NullColumn(Column, NullValue):
 
 
 @public
-class ValueList(Value, Sequence[Value]):
+class List(Expr, Sequence[Expr]):
     @property
     def values(self):
         return self.op().values
@@ -945,5 +939,6 @@ public(
     AnyValue=Value,
     AnyScalar=Scalar,
     AnyColumn=Column,
-    ListExpr=ValueList,
+    ListExpr=List,
+    ValueList=List,
 )

@@ -171,34 +171,31 @@ def build_df_from_projection(
     return dd.concat(data_pieces, axis=1).reset_index(drop=True)
 
 
-@execute_node.register(ops.Selection, dd.DataFrame, tuple, tuple, tuple)
+@execute_node.register(ops.Selection, dd.DataFrame)
 def execute_selection_dataframe(
     op,
     data,
-    selections,
-    predicates,
-    sort_keys,
     scope: Scope,
     timecontext: Optional[TimeContext],
     **kwargs,
 ):
     result = data
 
-    if predicates:
+    if op.predicates:
         predicates = _compute_predicates(
-            op.table, predicates, data, scope, timecontext, **kwargs
+            op.table, op.predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         result = result.loc[predicate]
 
-    if selections:
+    if op.selections:
         # if we are just performing select operations we can do a direct
         # selection
-        if all(isinstance(s, ops.TableColumn) for s in selections):
-            result = build_df_from_selection(selections, result, op.table)
+        if all(isinstance(s, ops.TableColumn) for s in op.selections):
+            result = build_df_from_selection(op.selections, result, op.table)
         else:
             result = build_df_from_projection(
-                selections,
+                op.selections,
                 op,
                 result,
                 scope=scope,
@@ -206,14 +203,14 @@ def execute_selection_dataframe(
                 **kwargs,
             )
 
-    if sort_keys:
-        if len(sort_keys) > 1:
+    if op.sort_keys:
+        if len(op.sort_keys) > 1:
             raise NotImplementedError(
                 """
                 Multi-key sorting is not implemented for the Dask backend
                 """
             )
-        sort_key = sort_keys[0]
+        sort_key = op.sort_keys[0]
         ascending = getattr(sort_key, 'ascending', True)
         if not ascending:
             raise NotImplementedError(

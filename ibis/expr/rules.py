@@ -1,3 +1,4 @@
+import builtins
 import enum
 import operator
 from itertools import product, starmap
@@ -13,7 +14,6 @@ from ibis.common.validators import (  # noqa: F401
     immutable_property,
     instance_of,
     isin,
-    list_of,
     map_to,
     one_of,
     optional,
@@ -31,7 +31,14 @@ class Shape(enum.IntEnum):
     # TABULAR = 2
 
 
-def highest_precedence_dtype(args):
+def highest_precedence_shape(nodes):
+    if builtins.any(node.output_shape is Shape.COLUMNAR for node in nodes):
+        return Shape.COLUMNAR
+    else:
+        return Shape.SCALAR
+
+
+def highest_precedence_dtype(nodes):
     """Return the highest precedence type from the passed expressions
 
     Also verifies that there are valid implicit casts between any of the types
@@ -40,7 +47,7 @@ def highest_precedence_dtype(args):
 
     Parameters
     ----------
-    exprs : Iterable[ir.Value]
+    nodes : Iterable[ops.Value]
       A sequence of Expressions
 
     Returns
@@ -48,7 +55,7 @@ def highest_precedence_dtype(args):
     dtype: DataType
       The highest precedence datatype
     """
-    return dt.highest_precedence(arg.output_dtype for arg in args)
+    return dt.highest_precedence(node.output_dtype for node in nodes)
 
 
 def castable(source, target):
@@ -90,22 +97,13 @@ def just(arg):
     return lambda **_: arg
 
 
+# TODO(kszucs): perhaps rename to nodes_of
 @rule
-def value_list_of(inner, arg, **kwargs):
-    # TODO(kszucs): would be nice to remove ops.ValueList
-    # the main blocker is that some of the backends execution
-    # model depends on the wrapper operation, for example
-    # the dispatcher in pandas requires operation objects
+def nodes_of(inner, arg, **kwargs):
     import ibis.expr.operations as ops
 
-    # TODO(kszucs): should jut probably make ValueList iterable
-    if isinstance(arg, ops.ValueList):
-        values = arg.values
-    else:
-        values = arg
-
-    values = tuple_of(inner, values, **kwargs)
-    return ops.ValueList(values)
+    values = tuple_of(inner, arg, **kwargs)
+    return ops.NodeList(*values)
 
 
 @rule
@@ -337,11 +335,9 @@ def client(arg, **kwargs):
 def dtype_like(name):
     @immutable_property
     def output_dtype(self):
-        arg = getattr(self, name)
-        if util.is_iterable(arg):
-            return highest_precedence_dtype(arg)
-        else:
-            return arg.output_dtype
+        args = getattr(self, name)
+        args = args if util.is_iterable(args) else [args]
+        return highest_precedence_dtype(args)
 
     return output_dtype
 
@@ -349,17 +345,9 @@ def dtype_like(name):
 def shape_like(name):
     @immutable_property
     def output_shape(self):
-        arg = getattr(self, name)
-        if util.is_iterable(arg):
-            for op in arg:
-                try:
-                    if op.output_shape is Shape.COLUMNAR:
-                        return Shape.COLUMNAR
-                except AttributeError:
-                    continue
-            return Shape.SCALAR
-        else:
-            return arg.output_shape
+        args = getattr(self, name)
+        args = args if util.is_iterable(args) else [args]
+        return highest_precedence_shape(args)
 
     return output_shape
 
