@@ -457,11 +457,7 @@ def to_op_dag(node: ops.Node) -> Graph:
 
     while stack:
         if (node := stack.pop()) not in dag:
-            # TODO(kszucs): use a more generic approach without filtering out
-            # node instances
-            children = [
-                arg for arg in node.flat_args() if isinstance(arg, ops.Node)
-            ]
+            children = [arg for arg in node.args if isinstance(arg, ops.Node)]
             dag[node] = children
             stack.extend(children)
     return dag

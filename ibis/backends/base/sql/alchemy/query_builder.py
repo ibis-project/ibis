@@ -270,7 +270,7 @@ class AlchemySelect(Select):
             return result.select_from(table_set)
 
         # otherwise we expect a single FROM in `result`
-        assert num_froms == 1, f"num_froms == {num_froms:d}"
+        # assert num_froms == 1, f"num_froms == {num_froms:d}"
 
         # and then we need to replace every occurrence of `result`'s `FROM`
         # with `table_set` to handle correlated EXISTs coming from

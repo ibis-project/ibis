@@ -31,7 +31,7 @@ class StructField(Value):
 @public
 class StructColumn(Value):
     names = rlz.tuple_of(rlz.instance_of(str), min_length=1)
-    values = rlz.tuple_of(rlz.any, min_length=1)
+    values = rlz.nodes_of(rlz.any, min_length=1)
 
     output_shape = rlz.Shape.COLUMNAR
 

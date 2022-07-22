@@ -26,58 +26,41 @@ from ibis.expr.typing import TimeContext
 
 # TODO - aggregations - #2553
 # Not all code paths work cleanly here
-@execute_node.register(
-    ops.Aggregation,
-    dd.DataFrame,
-    tuple,
-    tuple,
-    tuple,
-    tuple,
-    tuple,
-)
+@execute_node.register(ops.Aggregation, dd.DataFrame)
 def execute_aggregation_dataframe(
-    op,
-    data,
-    metrics,
-    by,
-    having,
-    predicates,
-    sort_keys,
-    scope=None,
-    timecontext: Optional[TimeContext] = None,
-    **kwargs
+    op, data, scope=None, timecontext: Optional[TimeContext] = None, **kwargs
 ):
-    assert metrics, 'no metrics found during aggregation execution'
+    assert op.metrics, 'no metrics found during aggregation execution'
 
-    if sort_keys:
+    if op.sort_keys:
         raise NotImplementedError(
             'sorting on aggregations not yet implemented'
         )
 
-    if predicates:
+    if op.predicates:
         predicate = functools.reduce(
             operator.and_,
             (
                 execute(p, scope=scope, timecontext=timecontext, **kwargs)
-                for p in predicates
+                for p in op.predicates
             ),
         )
         data = data.loc[predicate]
 
     columns = {}
 
-    if by:
+    if op.by:
         grouping_keys = [
             key.name
             if isinstance(key, ops.TableColumn)
             else execute(
                 key, scope=scope, timecontext=timecontext, **kwargs
             ).rename(key.resolve_name())
-            for key in by
+            for key in op.by
         ]
         columns.update(
             (key.name, key.resolve_name())
-            for key in by
+            for key in op.by
             if hasattr(key, 'name')
         )
         source = data.groupby(grouping_keys)
@@ -87,7 +70,7 @@ def execute_aggregation_dataframe(
     scope = scope.merge_scope(Scope({op.table: source}, timecontext))
 
     pieces = []
-    for metric in metrics:
+    for metric in op.metrics:
         piece = execute(metric, scope=scope, timecontext=timecontext, **kwargs)
         piece = coerce_to_output(piece, metric)
         pieces.append(piece)
@@ -98,15 +81,15 @@ def execute_aggregation_dataframe(
     result = safe_concat(pieces)
 
     # If grouping, need a reset to get the grouping key back as a column
-    if by:
+    if op.by:
         result = result.reset_index()
 
     result.columns = [columns.get(c, c) for c in result.columns]
 
-    if having:
+    if op.having:
         # .having(...) is only accessible on groupby, so this should never
         # raise
-        if not by:
+        if not op.by:
             raise ValueError(
                 'Filtering out aggregation values is not allowed without at '
                 'least one grouping key'
@@ -117,7 +100,7 @@ def execute_aggregation_dataframe(
             operator.and_,
             (
                 execute(having, scope=scope, timecontext=timecontext, **kwargs)
-                for having in having
+                for having in op.having
             ),
         )
         assert len(predicate) == len(

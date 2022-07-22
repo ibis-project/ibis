@@ -865,3 +865,16 @@ def _rewrite_filter_value(op, name: str | None = None, **kwargs):
         return ops.Alias(new_op, name=op.resolve_name())
     else:
         return ops.Alias(new_op, name="tmp")
+
+
+@_rewrite_filter.register(ops.NodeList)
+def _rewrite_filter_value_list(op, name: str | None = None, **kwargs):
+    visited = [
+        _rewrite_filter(arg, **kwargs) if isinstance(arg, ops.Node) else arg
+        for arg in op.args
+    ]
+
+    if all(map(operator.is_, visited, op.args)):
+        return op
+
+    return op.__class__(*visited)

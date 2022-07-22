@@ -305,7 +305,7 @@ class SelfReference(TableNode):
 
 class Projection(TableNode):
     table = rlz.table
-    selections = rlz.tuple_of(
+    selections = rlz.nodes_of(
         rlz.one_of(
             (
                 rlz.table,
@@ -340,9 +340,9 @@ class Projection(TableNode):
 
 @public
 class Selection(Projection):
-    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
+    predicates = rlz.optional(rlz.nodes_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
+        rlz.nodes_of(rlz.sort_key_from(rlz.ref("table"))), default=()
     )
 
     def __init__(self, table, selections, predicates, sort_keys, **kwargs):
@@ -399,7 +399,7 @@ class Aggregation(TableNode):
 
     table = rlz.table
     metrics = rlz.optional(
-        rlz.tuple_of(
+        rlz.nodes_of(
             rlz.one_of(
                 (
                     rlz.function_of(
@@ -410,7 +410,7 @@ class Aggregation(TableNode):
                     ),
                     rlz.reduction,
                     rlz.scalar(rlz.any),
-                    rlz.tuple_of(rlz.scalar(rlz.any)),
+                    rlz.nodes_of(rlz.scalar(rlz.any)),  # TODO(kszucs): ???
                 )
             ),
             flatten=True,
@@ -418,7 +418,7 @@ class Aggregation(TableNode):
         default=(),
     )
     by = rlz.optional(
-        rlz.tuple_of(
+        rlz.nodes_of(
             rlz.one_of(
                 (
                     rlz.function_of(rlz.ref("table")),
@@ -430,7 +430,7 @@ class Aggregation(TableNode):
         default=(),
     )
     having = rlz.optional(
-        rlz.tuple_of(
+        rlz.nodes_of(
             rlz.one_of(
                 (
                     rlz.function_of(
@@ -442,9 +442,9 @@ class Aggregation(TableNode):
         ),
         default=(),
     )
-    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
+    predicates = rlz.optional(rlz.nodes_of(rlz.boolean), default=())
     sort_keys = rlz.optional(
-        rlz.tuple_of(rlz.sort_key_from("table")), default=()
+        rlz.nodes_of(rlz.sort_key_from("table")), default=()
     )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
@@ -560,7 +560,7 @@ class DropNa(TableNode):
 
     table = rlz.table
     how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.tuple_of(rlz.column_from(rlz.ref("table"))))
+    subset = rlz.optional(rlz.nodes_of(rlz.column_from(rlz.ref("table"))))
 
     @property
     def schema(self):

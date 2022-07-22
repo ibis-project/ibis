@@ -100,7 +100,7 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                args = node.flat_args()
+                args = node.args
             elif isinstance(control, collections.abc.Iterable):
                 args = control
             else:

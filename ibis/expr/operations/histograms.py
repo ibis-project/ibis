@@ -21,7 +21,7 @@ class BucketLike(Value):
 @public
 class Bucket(BucketLike):
     arg = rlz.column(rlz.any)
-    buckets = rlz.tuple_of(rlz.scalar(rlz.any))
+    buckets = rlz.nodes_of(rlz.scalar(rlz.any))
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
     close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
     include_under = rlz.optional(rlz.instance_of(bool), default=False)
