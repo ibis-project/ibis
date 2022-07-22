@@ -9,6 +9,7 @@ packages = [
     'ibis.backends.base.sql.alchemy',
     'ibis.backends.base.sql.compiler',
     'ibis.backends.base.sql.registry',
+    'ibis.backends.adbc',
     'ibis.backends.clickhouse',
     'ibis.backends.clickhouse.tests',
     'ibis.backends.dask',
@@ -116,6 +117,7 @@ extras_require = {
 
 entry_points = {
     'ibis.backends': [
+        'adbc = ibis.backends.adbc',
         'clickhouse = ibis.backends.clickhouse',
         'dask = ibis.backends.dask',
         'datafusion = ibis.backends.datafusion',

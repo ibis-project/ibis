@@ -9,6 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
 _to_pyarrow_types = {
+    dt.Null: pa.null(),
     dt.Int8: pa.int8(),
     dt.Int16: pa.int16(),
     dt.Int32: pa.int32(),
@@ -51,6 +52,7 @@ def from_ibis_interval(dtype):
 
 
 _to_ibis_dtypes = {
+    pa.null(): dt.Null,
     pa.int8(): dt.Int8,
     pa.int16(): dt.Int16,
     pa.int32(): dt.Int32,

@@ -89,7 +89,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
-        elif isinstance(ref_op, ops.UnboundTable):
+        elif isinstance(ref_op, (ops.DatabaseTable, ops.UnboundTable)):
             # use SQLAlchemy's TableClause and ColumnClause for unbound tables
             schema = ref_op.schema
             result = sa.table(

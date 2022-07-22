@@ -108,6 +108,7 @@ tomli = ">=2.0.1,<3"
 
 [tool.poetry.extras]
 all = [
+  "adbc",
   "clickhouse-cityhash",
   "clickhouse-driver",
   "dask",
@@ -128,6 +129,7 @@ all = [
   "Shapely",
   "sqlalchemy",
 ]
+adbc = ["pyarrow", "sqlalchemy"]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
@@ -142,6 +144,7 @@ sqlite = ["sqlalchemy"]
 visualization = ["graphviz"]
 
 [tool.poetry.plugins."ibis.backends"]
+adbc = "ibis.backends.adbc"
 clickhouse = "ibis.backends.clickhouse"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
@@ -237,6 +240,7 @@ markers = [
   "never: tests for functionality that a backend is likely to never implement",
   "broken: test has exposed existing broken functionality",
   "sqlalchemy_only: tests for SQLAlchemy based backends",
+  "adbc: ADBC tests",
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
