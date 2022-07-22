@@ -166,52 +166,48 @@ class Baz:
     ('validator', 'values', 'expected'),
     [
         param(
-            rlz.value_list_of(identity),
-            (3, 2),
-            ibis.sequence([3, 2]),
-            id="list_identity",
-        ),
-        param(
-            rlz.value_list_of(rlz.integer),
+            rlz.nodes_of(rlz.integer),
             (3, 2),
             ibis.sequence([3, 2]),
             id="list_int",
         ),
         param(
-            rlz.value_list_of(rlz.integer),
+            rlz.nodes_of(rlz.integer),
             (3, None),
             ibis.sequence([3, ibis.NA]),
             id="list_int_null",
         ),
         param(
-            rlz.value_list_of(rlz.string),
+            rlz.nodes_of(rlz.string),
             ('a',),
             ibis.sequence(['a']),
             id="list_string_one",
         ),
         param(
-            rlz.value_list_of(rlz.string),
+            rlz.nodes_of(rlz.string),
             ['a', 'b'],
             ibis.sequence(['a', 'b']),
             id="list_string_two",
         ),
+        # TODO(kszucs): currently this is disallowed, probably shouldn't
+        # support this case
+        # param(
+        #     rlz.list_of(rlz.list_of(rlz.string)),
+        #     [[], ['a']],
+        #     ibis.sequence([ibis.sequence([]), ibis.sequence(['a'])]),
+        #     id="list_list_string",
+        # ),
         param(
-            rlz.value_list_of(rlz.value_list_of(rlz.string)),
-            [[], ['a']],
-            ibis.sequence([ibis.sequence([]), ibis.sequence(['a'])]),
-            id="list_list_string",
-        ),
-        param(
-            rlz.value_list_of(rlz.boolean, min_length=2),
+            rlz.nodes_of(rlz.boolean, min_length=2),
             [True, False],
             ibis.sequence([True, False]),
             id="boolean",
         ),
     ],
 )
-def test_valid_value_list_of(validator, values, expected):
+def test_valid_list_of(validator, values, expected):
     result = validator(values)
-    assert isinstance(result, ops.ValueList)
+    assert isinstance(result, ops.NodeList)
     assert len(result.values) == len(values)
     assert result == expected.op()
 
@@ -220,7 +216,7 @@ def test_valid_list_of_extra():
     validator = rlz.tuple_of(identity)
     assert validator((3, 2)) == tuple([3, 2])
 
-    validator = rlz.list_of(rlz.list_of(rlz.string))
+    validator = rlz.nodes_of(rlz.nodes_of(rlz.string))
     result = validator([[], ['a']])
     assert result[1][0].equals(ibis.literal('a').op())
 
@@ -228,10 +224,10 @@ def test_valid_list_of_extra():
 @pytest.mark.parametrize(
     ('validator', 'values'),
     [
-        (rlz.value_list_of(rlz.double, min_length=2), [1]),
-        (rlz.value_list_of(rlz.integer), 1.1),
-        (rlz.value_list_of(rlz.string), 'asd'),
-        (rlz.value_list_of(identity), 3),
+        (rlz.nodes_of(rlz.double, min_length=2), [1]),
+        (rlz.nodes_of(rlz.integer), 1.1),
+        (rlz.nodes_of(rlz.string), 'asd'),
+        (rlz.nodes_of(identity), 3),
     ],
 )
 def test_invalid_list_of(validator, values):
@@ -351,7 +347,7 @@ def test_table_with_schema_invalid(table):
 @pytest.mark.parametrize(
     ('validator', 'input'),
     [
-        (rlz.value_list_of(rlz.integer), (3, 2)),
+        (rlz.nodes_of(rlz.integer), (3, 2)),
         (rlz.instance_of(int), 32),
     ],
 )

@@ -47,7 +47,7 @@ class StringOp(Value):
     arg = InstanceOf(str)
 
     def __eq__(self, other):
-        return self.args == other.args
+        return self.__args__ == other.__args__
 
 
 def test_annotable():
@@ -69,8 +69,8 @@ def test_annotable():
     assert obj.value == 10
     assert obj.lower == 2
     assert obj.upper is None
-    assert obj.args == (10, 2, None)
-    assert obj.argnames == argnames
+    assert obj.__args__ == (10, 2, None)
+    assert obj.__argnames__ == argnames
     assert obj.__slots__ == ("value", "lower", "upper")
     assert not hasattr(obj, "__dict__")
 
@@ -87,7 +87,7 @@ def test_composition_of_annotable_and_comparable():
         upper = Optional(IsInt, default=None)
 
         def __equals__(self, other):
-            return self.args == other.args
+            return self.__args__ == other.__args__
 
     a = Between(3, lower=0, upper=4)
     b = Between(3, lower=0, upper=4)
@@ -171,7 +171,7 @@ def test_positional_argument_reordering():
         chickens = IsInt
 
         def __eq__(self, other):
-            return self.args == other.args
+            return self.__args__ == other.__args__
 
     class NoHooves(Farm):
         horses = Optional(IsInt, default=0)

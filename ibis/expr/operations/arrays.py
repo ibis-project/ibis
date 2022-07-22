@@ -9,7 +9,7 @@ from ibis.expr.operations.core import Unary, Value
 
 @public
 class ArrayColumn(Value):
-    cols = rlz.value_list_of(rlz.column(rlz.any), min_length=1)
+    cols = rlz.nodes_of(rlz.column(rlz.any), min_length=1)
 
     output_shape = rlz.Shape.COLUMNAR
 

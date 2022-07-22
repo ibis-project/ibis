@@ -57,7 +57,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
         from ibis.backends.base.sql.registry.main import table_array_view
 
         left, right = op.args
-        if isinstance(right, ops.ValueList) and not right.values:
+        if isinstance(right, ops.NodeList) and not right.values:
             return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
 
         left_arg = translator.translate(left)
@@ -68,7 +68,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
 
         # special case non-foreign isin/notin expressions
         if (
-            not isinstance(right, ops.ValueList)
+            not isinstance(right, ops.NodeList)
             and right.output_shape is Shape.COLUMNAR
             # foreign refs are already been compiled correctly during
             # TableColumn compilation
@@ -87,7 +87,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             right_arg = translator.translate(right)
 
         # we explicitly do NOT parenthesize the right side because it doesn't
-        # make sense to do so for ValueList operations
+        # make sense to do so for Sequence operations
 
         return f"{left_arg} {op_string} {right_arg}"
 
