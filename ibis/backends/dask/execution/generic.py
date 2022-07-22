@@ -117,10 +117,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             execute_difference_dataframe_dataframe,
         )
     ],
-    ops.DropNa: [
-        ((dd.DataFrame, tuple), execute_node_dropna_dataframe),
-        ((dd.DataFrame, type(None)), execute_node_dropna_dataframe),
-    ],
+    ops.DropNa: [((dd.DataFrame,), execute_node_dropna_dataframe)],
     ops.FillNa: [
         ((dd.DataFrame, simple_types), execute_node_fillna_dataframe_scalar),
         ((dd.DataFrame,), execute_node_fillna_dataframe_dict),
@@ -173,7 +170,7 @@ register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 execute_node.register(DaskTable, DaskBackend)(execute_database_table_client)
 
 
-@execute_node.register(ops.ValueList, collections.abc.Sequence)
+@execute_node.register(ops.NodeList, collections.abc.Sequence)
 def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 

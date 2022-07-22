@@ -575,9 +575,29 @@ def get_node_arguments_parameter(node):
     return ()
 
 
+@get_node_arguments.register(ops.NodeList)
+def get_node_arguments_list(node):
+    return (node.values,)
+
+
+@get_node_arguments.register(ops.DropNa)
+def get_node_arguments_dropna(node):
+    return (node.table,)
+
+
+@get_node_arguments.register(ops.Selection)
+def get_node_arguments_selection(node):
+    return (node.table,)
+
+
+@get_node_arguments.register(ops.Aggregation)
+def get_node_arguments_aggregation(node):
+    return (node.table,)
+
+
 @get_node_arguments.register(ops.Window)
 def get_node_arguments_window(node):
-    return [get_node_arguments(node.expr)[0], node.window]
+    return (get_node_arguments(node.expr)[0], node.window)
 
 
 @get_node_arguments.register(

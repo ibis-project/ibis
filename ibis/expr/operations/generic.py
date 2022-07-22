@@ -177,13 +177,10 @@ class CoalesceLike(Value):
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
-    arg = rlz.value_list_of(rlz.any)
+    arg = rlz.nodes_of(rlz.any)
 
     output_shape = rlz.shape_like('arg')
-
-    @immutable_property
-    def output_dtype(self):
-        return rlz.highest_precedence_dtype(self.arg.values)
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -258,25 +255,11 @@ class ScalarParameter(Value):
     def resolve_name(self):
         return f'param_{self.counter:d}'
 
+    def has_resolved_name(self):
+        return True
+
     def __hash__(self):
         return hash((self.dtype, self.counter))
-
-
-@public
-class ValueList(Value):
-    """Data structure for a list of value expressions"""
-
-    # NOTE: this proxies the Value behaviour to the underlying values
-
-    values = rlz.tuple_of(rlz.any)
-
-    output_dtype = rlz.dtype_like("values")
-    output_shape = rlz.shape_like("values")
-
-    def to_expr(self):
-        import ibis.expr.types as ir
-
-        return ir.ValueList(self)
 
 
 @public
@@ -340,40 +323,42 @@ class HashBytes(Value):
 @public
 class SimpleCase(Value):
     base = rlz.any
-    cases = rlz.value_list_of(rlz.any)
-    results = rlz.value_list_of(rlz.any)
+    cases = rlz.nodes_of(rlz.any)
+    results = rlz.nodes_of(rlz.any)
     default = rlz.any
 
     output_shape = rlz.shape_like("base")
 
     def __init__(self, cases, results, **kwargs):
-        assert len(cases.values) == len(results.values)
+        assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, **kwargs)
 
     @immutable_property
     def output_dtype(self):
-        # TODO(kszucs): we could extend the functionality of
-        # rlz.shape_like to support varargs with .flat_args()
-        # to define a subset of input arguments
-        values = [*self.results.values, self.default]
+        values = [*self.results, self.default]
         return rlz.highest_precedence_dtype(values)
 
 
 @public
 class SearchedCase(Value):
-    cases = rlz.value_list_of(rlz.boolean)
-    results = rlz.value_list_of(rlz.any)
+    cases = rlz.nodes_of(rlz.boolean)
+    results = rlz.nodes_of(rlz.any)
     default = rlz.any
 
-    output_shape = rlz.shape_like("cases")
+    # output_shape = rlz.shape_like("cases")
 
     def __init__(self, cases, results, default):
-        assert len(cases.values) == len(results.values)
+        assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)
 
     @immutable_property
+    def output_shape(self):
+        # TODO(kszucs): can be removed after making Sequence iterable
+        return rlz.highest_precedence_shape(self.cases)
+
+    @immutable_property
     def output_dtype(self):
-        exprs = [*self.results.values, self.default]
+        exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
 
 

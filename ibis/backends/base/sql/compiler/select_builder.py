@@ -40,7 +40,7 @@ class _CorrelatedRefCheck:
     def visit(self, node, in_subquery):
         in_subquery |= self.is_subquery(node)
 
-        for arg in node.flat_args():
+        for arg in node.args:
             if isinstance(arg, ops.TableNode):
                 self.visit_table(arg, in_subquery=in_subquery)
             elif isinstance(arg, ops.Node):
@@ -62,8 +62,15 @@ class _CorrelatedRefCheck:
         if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
             self.ref_check(node, in_subquery=in_subquery)
 
-        for arg in node.flat_args():
-            if isinstance(arg, ops.Node):
+        for arg in node.args:
+            # TODO(kszucs): shouldn't be required since ops.List is properly
+            # traversable, but otherwise there will be more table references
+            # than expected (probably has something to do with the traversal
+            # order)
+            if isinstance(arg, ops.NodeList):
+                for item in arg:
+                    self.visit(item, in_subquery=in_subquery)
+            elif isinstance(arg, ops.Node):
                 self.visit(arg, in_subquery=in_subquery)
 
     def ref_check(self, node, in_subquery) -> None:

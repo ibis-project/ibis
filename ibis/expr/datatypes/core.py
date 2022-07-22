@@ -100,15 +100,7 @@ class DataType(Annotable, Comparable):
 
     # TODO(kszucs): remove it
     def __call__(self, nullable: bool = True) -> DataType:
-        if nullable is not True and nullable is not False:
-            raise TypeError(
-                "__call__ only accepts the 'nullable' argument. "
-                "Please construct a new instance of the type to change the "
-                "values of the attributes."
-            )
-        kwargs = dict(zip(self.argnames, self.args))
-        kwargs["nullable"] = nullable
-        return self.__class__(**kwargs)
+        return self.copy(nullable=nullable)
 
     @property
     def _pretty_piece(self) -> str:
@@ -124,7 +116,7 @@ class DataType(Annotable, Comparable):
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
     def __equals__(self, other: Any) -> bool:
-        return self.args == other.args
+        return self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, DataType):

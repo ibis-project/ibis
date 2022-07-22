@@ -169,6 +169,7 @@ def test_operation_class_aliases():
     assert ops.BinaryOp is ops.Binary
     assert ops.WindowOp is ops.Window
     assert ops.AnalyticOp is ops.Analytic
+    assert ops.ValueList is ops.NodeList
 
 
 def test_expression_class_aliases():
@@ -181,4 +182,5 @@ def test_expression_class_aliases():
     assert ir.AnyValue is ir.Value
     assert ir.AnyScalar is ir.Scalar
     assert ir.AnyColumn is ir.Column
-    assert ir.ListExpr is ir.ValueList
+    assert ir.ListExpr is ir.List
+    assert ir.ValueList is ir.List

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Sequence
 
 from public import public
 
@@ -8,14 +9,21 @@ import ibis.expr.rules as rlz
 from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Annotable, Comparable
 from ibis.expr.rules import Shape
-from ibis.expr.schema import Schema
-from ibis.util import UnnamedMarker, is_iterable
+from ibis.util import UnnamedMarker
 
 
 @public
 class Node(Annotable, Comparable):
+    @property
+    def args(self):
+        return self.__args__
+
+    @property
+    def argnames(self):
+        return self.__argnames__
+
     def __equals__(self, other):
-        return self.args == other.args
+        return self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -36,14 +44,6 @@ class Node(Annotable, Comparable):
 
     def has_resolved_name(self):
         return False
-
-    # TODO(kszucs): remove this method entirely
-    def flat_args(self):
-        for arg in self.args:
-            if not isinstance(arg, Schema) and is_iterable(arg):
-                yield from arg
-            else:
-                yield arg
 
 
 @public
@@ -117,4 +117,40 @@ class Binary(Value):
         return max(self.left.output_shape, self.right.output_shape)
 
 
-public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)
+@public
+class NodeList(Node, Sequence[Node]):
+    """
+    Data structure for grouping arbitrary node objects.
+    """
+
+    values = rlz.tuple_of(rlz.instance_of(Node))
+
+    @classmethod
+    def __create__(self, *args):
+        return super().__create__(values=args)
+
+    @property
+    def args(self):
+        return self.values
+
+    def __len__(self):
+        return len(self.values)
+
+    def __getitem__(self, index):
+        return self.values[index]
+
+    def __add__(self, other):
+        values = self.values + tuple(other)
+        return self.__class__(*values)
+
+    def __radd__(self, other):
+        values = tuple(other) + self.values
+        return self.__class__(*values)
+
+    def to_expr(self):
+        import ibis.expr.types as ir
+
+        return ir.List(self)
+
+
+public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, ValueList=NodeList)

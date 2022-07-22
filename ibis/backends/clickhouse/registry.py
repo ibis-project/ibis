@@ -520,8 +520,8 @@ def _string_split(translator, op):
 def _string_join(translator, op):
     sep, elements = op.args
     assert isinstance(
-        elements, ops.ValueList
-    ), f'elements must be a ValueList, got {type(elements)}'
+        elements, ops.NodeList
+    ), f'elements must be a Sequence, got {type(elements)}'
     sep_ = translator.translate(sep)
     elements_ = ', '.join(map(translator.translate, elements.values))
     return f'arrayStringConcat([{elements_}], {sep_})'
@@ -758,7 +758,7 @@ operation_registry = {
     # Other operations
     ops.E: lambda *_: 'e()',
     ops.Literal: _literal,
-    ops.ValueList: _value_list,
+    ops.NodeList: _value_list,
     ops.Cast: _cast,
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse's greatest and least doesn't support varargs
