@@ -5,10 +5,10 @@
         "homepage": "",
         "owner": "hercules-ci",
         "repo": "gitignore.nix",
-        "rev": "f840a659d57e53fa751a9248b17149fd0cf2a221",
-        "sha256": "1fmghsp9bbhqknkc9vkbpram9j0az6py9xhdk0xfs3mdf8s36cp6",
+        "rev": "f2ea0f8ff1bce948ccb6b893d15d5ea3efaf1364",
+        "sha256": "02q2yvakyh9x9h9x9az2rr3h6h0zymhrl0z2xflc6blvz6zzqkf2",
         "type": "tarball",
-        "url": "https://github.com/hercules-ci/gitignore.nix/archive/f840a659d57e53fa751a9248b17149fd0cf2a221.tar.gz",
+        "url": "https://github.com/hercules-ci/gitignore.nix/archive/f2ea0f8ff1bce948ccb6b893d15d5ea3efaf1364.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
