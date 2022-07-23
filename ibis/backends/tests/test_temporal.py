@@ -726,15 +726,15 @@ def test_day_of_week_column_group_by(
 
 
 @pytest.mark.notimpl(["datafusion"])
-def test_now(backend, con):
+def test_now(con):
     expr = ibis.now()
     result = con.execute(expr)
-    pandas_now = pd.Timestamp('now')
     assert isinstance(result, pd.Timestamp)
 
-    # this could fail if we're testing in different timezones and we're testing
-    # on Dec 31st
-    assert result.year == pandas_now.year
+    pattern = "%Y%m%d %H"
+    result_strftime = con.execute(expr.strftime(pattern))
+    expected_strftime = datetime.datetime.utcnow().strftime(pattern)
+    assert result_strftime == expected_strftime
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
