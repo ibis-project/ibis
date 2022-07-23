@@ -239,8 +239,9 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 @pre_execute.register(ops.TimestampNow)
 @pre_execute.register(ops.TimestampNow, BaseBackend)
 def pre_execute_timestamp_now(op, *args, **kwargs):
-    timecontext = kwargs.get('timecontext', None)
-    return Scope({op: pd.Timestamp('now')}, timecontext)
+    timecontext = kwargs.get("timecontext", None)
+    now = pd.Timestamp("now", tz="UTC").tz_localize(None)
+    return Scope({op: now}, timecontext)
 
 
 @execute_node.register(ops.DayOfWeekIndex, (str, datetime.date))
