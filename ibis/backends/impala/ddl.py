@@ -91,6 +91,7 @@ class DelimitedFormat:
         if self.lineterminator is not None:
             yield f"LINES TERMINATED BY '{self.lineterminator}'"
 
+        yield 'STORED AS TEXTFILE'
         yield f"LOCATION '{self.path}'"
 
         if self.na_rep is not None:
