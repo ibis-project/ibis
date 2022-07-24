@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence as Seq
+from typing import Sequence
 
+from matchpy import Arity
 from public import public
 
 import ibis.expr.rules as rlz
 from ibis.common.exceptions import ExpressionError
-from ibis.common.grounds import Annotable, Comparable
+from ibis.common.grounds import Annotable, Comparable, Matchable
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Annotable, Comparable):
+class Node(Comparable, Matchable, Annotable):
+    def __equals__(self, other):
+        return self.__args__ == other.__args__
+
     @property
     def args(self):
         return self.__args__
@@ -21,9 +25,6 @@ class Node(Annotable, Comparable):
     @property
     def argnames(self):
         return self.__argnames__
-
-    def __equals__(self, other):
-        return self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, Node):
@@ -118,7 +119,7 @@ class Binary(Value):
 
 
 @public
-class List(Node, Seq[Node]):
+class List(Node, Sequence[Node], arity=Arity.variadic):
     """
     Data structure for grouping arbitrary node objects.
     """

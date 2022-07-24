@@ -1,6 +1,6 @@
 from sre_constants import AT_NON_BOUNDARY
 
-from ibis.common.grounds import Annotable, Validator
+from ibis.common.grounds import Matchable, Validator
 
 
 class InstanceOf(Validator):
@@ -20,7 +20,7 @@ IsInt = InstanceOf(int)
 IsStr = InstanceOf(str)
 
 
-class Node(Annotable):
+class Node(Matchable):
     pass
 
 
@@ -32,7 +32,7 @@ class Literal(Node):
         return Add(self, other)
 
 
-class BinaryOperation(Annotable):
+class BinaryOperation(Node):
     left = InstanceOf(Node)
     right = InstanceOf(Node)
 

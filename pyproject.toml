@@ -62,6 +62,7 @@ requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8.5", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
 sqlglot = { version = ">=4.5.0,<5", optional = true }
+matchpy = {git = "https://github.com/kszucs/matchpy.git", rev = "integration"}
 
 [tool.poetry.dev-dependencies]
 absolufy-imports = ">=0.3.1,<1"
