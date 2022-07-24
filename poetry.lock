@@ -996,6 +996,30 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "matchpy"
+version = "0.5.5+4.g31c7876"
+description = "A library for pattern matching on symbolic expressions."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+develop = false
+
+[package.dependencies]
+multiset = ">=2.0,<3.0"
+
+[package.extras]
+develop = ["Sphinx (>=1.4,<2.0)", "attrs (>=19.2.0)", "coverage (>=4.2,<5.0)", "coveralls", "dataclasses", "flake8", "hypothesis (>=3.6,<5.0)", "pylint (>=1.6,<2.0)", "pytest (>=4.6,<5.0)", "pytest-cov (>=2.4,<3.0)", "sphinx-rtd-theme"]
+docs = ["Sphinx (>=1.4,<2.0)", "sphinx-rtd-theme"]
+graphs = ["graphviz (>=0.5,<0.6)"]
+tests = ["attrs (>=19.2.0)", "hypothesis (>=3.6,<5.0)", "pytest (>=4.6,<5.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/kszucs/matchpy.git"
+reference = "integration"
+resolved_reference = "31c78763aa0f33309ce3ee2d416c2b1edcdf69b8"
+
+[[package]]
 name = "matplotlib-inline"
 version = "0.1.6"
 description = "Inline Matplotlib backend for Jupyter"
@@ -1251,6 +1275,14 @@ python-versions = "*"
 
 [package.dependencies]
 six = "*"
+
+[[package]]
+name = "multiset"
+version = "2.1.1"
+description = "An implementation of a multiset."
+category = "main"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "munch"
@@ -2403,7 +2435,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "e37974be394fb09d488a0adf59d2abf1dced215e5758f8438aa69f33c512f25e"
+content-hash = "32b84226827f4c84ff9074331da62d3f05e79b0c1153dc580fcee4092a3e2557"
 
 [metadata.files]
 absolufy-imports = [
@@ -3332,6 +3364,7 @@ markupsafe = [
     {file = "MarkupSafe-2.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:46d00d6cfecdde84d40e572d63735ef81423ad31184100411e6e3388d405e247"},
     {file = "MarkupSafe-2.1.1.tar.gz", hash = "sha256:7f91197cc9e48f989d12e4e6fbc46495c446636dfc81b9ccf50bb0ec74b91d4b"},
 ]
+matchpy = []
 matplotlib-inline = [
     {file = "matplotlib-inline-0.1.6.tar.gz", hash = "sha256:f887e5f10ba98e8d2b150ddcf4702c1e5f8b3a20005eb0f74bfdbd360ee6f304"},
     {file = "matplotlib_inline-0.1.6-py3-none-any.whl", hash = "sha256:f1f41aab5328aa5aaea9b16d083b128102f8712542f819fe7e6a420ff581b311"},
@@ -3410,6 +3443,10 @@ multipledispatch = [
     {file = "multipledispatch-0.6.0-py2-none-any.whl", hash = "sha256:407e6d8c5fa27075968ba07c4db3ef5f02bea4e871e959570eeb69ee39a6565b"},
     {file = "multipledispatch-0.6.0-py3-none-any.whl", hash = "sha256:a55c512128fb3f7c2efd2533f2550accb93c35f1045242ef74645fc92a2c3cba"},
     {file = "multipledispatch-0.6.0.tar.gz", hash = "sha256:a7ab1451fd0bf9b92cab3edbd7b205622fb767aeefb4fb536c2e3de9e0a38bea"},
+]
+multiset = [
+    {file = "multiset-2.1.1-py2.py3-none-any.whl", hash = "sha256:4f86178b3bfbd4c978fdfa5034249947b3710525cfc232bec6cb765ab6747e2d"},
+    {file = "multiset-2.1.1.tar.gz", hash = "sha256:4801569c08bfcecfe7b0927b17f079c90f8607aca8fecaf42ded92b737162bc7"},
 ]
 munch = [
     {file = "munch-2.5.0-py2.py3-none-any.whl", hash = "sha256:6f44af89a2ce4ed04ff8de41f70b226b984db10a91dcc7b9ac2efc1c77022fdd"},

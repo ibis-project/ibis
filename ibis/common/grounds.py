@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Hashable
 from weakref import WeakValueDictionary
 
+from matchpy import Arity, Operation
 from rich.console import Console
 
 from ibis.common.caching import WeakCache
@@ -56,7 +57,7 @@ class AnnotableMeta(BaseMeta):
 
     __slots__ = ()
 
-    def __new__(metacls, clsname, bases, dct):
+    def __new__(metacls, clsname, bases, dct, **kwargs):
         # inherit from parent signatures
         params = {}
         properties = {}
@@ -113,8 +114,7 @@ class AnnotableMeta(BaseMeta):
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
         attribs["__argnames__"] = argnames
-        attribs["__match_args__"] = argnames
-        return super().__new__(metacls, clsname, bases, attribs)
+        return super().__new__(metacls, clsname, bases, attribs, **kwargs)
 
 
 class Annotable(Base, Immutable, metaclass=AnnotableMeta):
@@ -181,6 +181,50 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         kwargs = dict(zip(self.__argnames__, self.__args__))
         newargs = {**kwargs, **overrides}
         return self.__class__(**newargs)
+
+
+class Matchable(Annotable):
+
+    __slots__ = ()
+
+    def __init_subclass__(
+        cls,
+        /,
+        name=None,
+        arity=False,
+        associative=False,
+        commutative=False,
+        one_identity=False,
+        infix=False,
+        **kwargs,
+    ):
+        # support python 3.10 pattern matching
+        cls.__match_args__ = cls.__argnames__
+        # integrate with matchpy by creating a matchpy specific operation
+        cls.__pattern__ = Operation.new(
+            head=cls,
+            name=name or cls.__name__,
+            arity=arity or Arity(len(cls.__argnames__), True),
+            associative=associative,
+            commutative=commutative,
+            one_identity=one_identity,
+            infix=infix,
+        )
+        # need to register the current class as a subclass of matchpy's
+        # Operation class, so that the operation class instandiated above
+        # can be matched agains an actual instance of the current class
+        Operation.register(cls)
+
+    @classmethod
+    def pattern(cls, *args, **kwargs):
+        params = cls.__signature__.apply(*args, **kwargs)
+        return cls.__pattern__(*params.values())
+
+    def __len__(self):
+        return len(self.__args__)
+
+    def __getitem__(self, key):
+        return self.__args__[key]
 
 
 class Weakrefable(Base):

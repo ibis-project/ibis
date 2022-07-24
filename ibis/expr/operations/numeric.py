@@ -16,7 +16,7 @@ class NumericBinary(Binary):
 
 
 @public
-class Add(NumericBinary):
+class Add(NumericBinary, commutative=True, associative=True):
     output_dtype = rlz.numeric_like("args", operator.add)
 
 

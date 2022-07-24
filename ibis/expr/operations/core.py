@@ -3,16 +3,17 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence
 
+from matchpy import Arity
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.grounds import Annotable, Comparable
+from ibis.common.grounds import Annotable, Comparable, Matchable
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Annotable, Comparable):
+class Node(Comparable, Matchable, Annotable):
     @property
     def args(self):
         return self.__args__
@@ -131,7 +132,7 @@ class Binary(Value):
 
 
 @public
-class NodeList(Node, Sequence[Node]):
+class NodeList(Node, Sequence[Node], arity=Arity.variadic):
     """
     Data structure for grouping arbitrary node objects.
     """
