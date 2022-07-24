@@ -107,11 +107,13 @@ class AnnotableMeta(BaseMeta):
         signature = Signature(
             inherited_args + new_args + new_kwargs + inherited_kwargs
         )
+        argnames = tuple(signature.parameters.keys())
 
         attribs["__slots__"] = tuple(slots)
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
-        attribs["__argnames__"] = tuple(signature.parameters.keys())
+        attribs["__argnames__"] = argnames
+        attribs["__match_args__"] = argnames
         return super().__new__(metacls, clsname, bases, attribs)
 
 
