@@ -123,6 +123,9 @@ class List(Node, Seq[Node]):
     Data structure for grouping arbitrary node objects.
     """
 
+    # https://peps.python.org/pep-0653/#additions-to-the-object-model
+    # TODO(kszucs): __match_container__ = MATCH_SEQUENCE
+
     # values = rlz.tuple_of(rlz.instance_of(Node))
     values = rlz.instance_of(tuple)
 
