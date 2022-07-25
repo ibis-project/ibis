@@ -85,8 +85,7 @@ class StructValue(Value):
         >>> s['fruit']
         fruit: StructField(frozendict({'fruit': 'pear', 'weight': 0}), field='fruit')
         """  # noqa: E501
-
-        return ops.StructField(self, name).to_expr().name(name)
+        return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):
         self.__dict__ = instance_dictionary

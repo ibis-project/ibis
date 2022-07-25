@@ -99,7 +99,7 @@ def _literal(_, op):
                     for i, val in enumerate(value.values())
                 )
             )
-            name = op.resolve_name() if op.has_resolved_name() else "tmp"
+            name = op.name if isinstance(op, ops.Named) else "tmp"
             params = {name: to_sqla_type(dtype)}
             return bound_text.columns(**params).scalar_subquery()
         raise NotImplementedError(

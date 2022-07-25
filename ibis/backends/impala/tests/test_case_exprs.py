@@ -131,7 +131,7 @@ def test_decimal_fillna_cast_arg(tpch_lineitem, expr_fn, expected):
 
 def test_identical_to(con):
     t = con.table('functional_alltypes')
-    expr = t.tinyint_col.identical_to(t.double_col)
+    expr = t.tinyint_col.identical_to(t.double_col).name('tmp')
     result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT `tinyint_col` IS NOT DISTINCT FROM `double_col` AS `tmp`
@@ -140,6 +140,8 @@ FROM ibis_testing.`functional_alltypes`"""
 
 
 def test_identical_to_special_case():
-    expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
+    expr = (
+        ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64')).name('tmp')
+    )
     result = ImpalaCompiler.to_sql(expr)
     assert result == 'SELECT TRUE AS `tmp`'

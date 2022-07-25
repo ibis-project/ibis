@@ -1458,7 +1458,7 @@ FROM (
 
 
 def test_startswith(startswith):
-    expr = startswith
+    expr = startswith.name('tmp')
     expected = """\
 SELECT `foo_id` like concat('foo', '%') AS `tmp`
 FROM star1"""
@@ -1466,7 +1466,7 @@ FROM star1"""
 
 
 def test_endswith(endswith):
-    expr = endswith
+    expr = endswith.name('tmp')
     expected = """\
 SELECT `foo_id` like concat('%', 'foo') AS `tmp`
 FROM star1"""

@@ -1,5 +1,3 @@
-import concurrent.futures
-import multiprocessing
 from posixpath import join as pjoin
 
 import pytest
@@ -379,6 +377,9 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_temp_table_concurrency(con, test_data_dir):
+    import concurrent.futures
+    import multiprocessing
+
     def limit(con, hdfs_path, offset):
         t = con.parquet_file(hdfs_path)
         return t.sort_by(t.r_regionkey).limit(1, offset=offset).execute()

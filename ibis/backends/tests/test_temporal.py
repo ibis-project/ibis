@@ -109,7 +109,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
 
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
-    expr = alltypes.timestamp_col.epoch_seconds()
+    expr = alltypes.timestamp_col.epoch_seconds().name('tmp')
     result = expr.execute()
 
     expected = backend.default_series_rename(
@@ -120,7 +120,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
 
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
-    expr = alltypes.timestamp_col.week_of_year()
+    expr = alltypes.timestamp_col.week_of_year().name('tmp')
     result = expr.execute()
     expected = backend.default_series_rename(
         df.timestamp_col.dt.isocalendar().week.astype("int32")
@@ -193,7 +193,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_truncate(backend, alltypes, df, unit):
-    expr = alltypes.timestamp_col.truncate(unit)
+    expr = alltypes.timestamp_col.truncate(unit).name('tmp')
 
     dtype = f'datetime64[{unit}]'
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
@@ -228,7 +228,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_date_truncate(backend, alltypes, df, unit):
-    expr = alltypes.timestamp_col.date().truncate(unit)
+    expr = alltypes.timestamp_col.date().truncate(unit).name('tmp')
 
     dtype = f"datetime64[{unit}]"
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
@@ -282,7 +282,7 @@ def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
     interval = alltypes.int_col.to_interval(unit=unit)
-    expr = alltypes.timestamp_col + interval
+    expr = (alltypes.timestamp_col + interval).name('tmp')
 
     def convert_to_offset(offset, displacement_type=displacement_type):
         resolution = f'{interval.type().resolution}s'
@@ -321,7 +321,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     date_col = expr = (
         ibis.literal('-').join(['20' + year, month, day]).cast('date')
     )
-    expr = date_col + interval
+    expr = (date_col + interval).name('tmp')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
         result = con.execute(expr)
@@ -405,7 +405,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
 )
 @pytest.mark.notimpl(["datafusion", "sqlite"])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
-    expr = expr_fn(alltypes, backend)
+    expr = expr_fn(alltypes, backend).name('tmp')
     expected = expected_fn(df, backend)
 
     result = con.execute(expr)
@@ -441,7 +441,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
-    expr = temporal_fn(alltypes, timedelta)
+    expr = temporal_fn(alltypes, timedelta).name('tmp')
     expected = temporal_fn(df, timedelta)
 
     result = con.execute(expr)
@@ -480,9 +480,11 @@ def test_timestamp_comparison_filter(
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
-    expr = timestamp_date + delta
+    expr = (timestamp_date + delta).name('result')
     result = expr.execute()
-    expected = timestamp_date.execute() + pd.Timedelta(10, unit='D')
+    expected = timestamp_date.name('result').execute() + pd.Timedelta(
+        10, unit='D'
+    )
     backend.assert_series_equal(result, expected)
 
 

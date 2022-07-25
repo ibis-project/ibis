@@ -36,7 +36,7 @@ def test_scalar_aggregates_multiple_tables(con):
 
     expr = flagged.value.mean() / unflagged.value.mean() - 1
 
-    result = Compiler.to_sql(expr)
+    result = Compiler.to_sql(expr.name('tmp'))
     expected = """\
 SELECT (t0.`mean` / t1.`mean`) - 1 AS `tmp`
 FROM (
@@ -54,17 +54,20 @@ FROM (
     fv = flagged.value
     uv = unflagged.value
 
-    expr = (fv.mean() / fv.sum()) - (uv.mean() / uv.sum())
+    fv_stat = (fv.mean() / fv.sum()).name('fv')
+    uv_stat = (uv.mean() / uv.sum()).name('uv')
+
+    expr = (fv_stat - uv_stat).name('tmp')
     result = Compiler.to_sql(expr)
     expected = """\
-SELECT t0.`tmp` - t1.`tmp` AS `tmp`
+SELECT t0.`fv` - t1.`uv` AS `tmp`
 FROM (
-  SELECT avg(`value`) / sum(`value`) AS `tmp`
+  SELECT avg(`value`) / sum(`value`) AS `fv`
   FROM tbl
   WHERE `flag` = '1'
 ) t0
   CROSS JOIN (
-    SELECT avg(`value`) / sum(`value`) AS `tmp`
+    SELECT avg(`value`) / sum(`value`) AS `uv`
     FROM tbl
     WHERE `flag` = '0'
   ) t1"""
@@ -105,7 +108,7 @@ def test_complex_array_expr_projection(alltypes):
 
     query = Compiler.to_sql(expr2)
     expected = """\
-SELECT CAST(`g` AS double) AS `cast(g, float64)`
+SELECT CAST(`g` AS double) AS `Cast(g, float64)`
 FROM (
   SELECT `g`, count(*) AS `count`
   FROM alltypes
@@ -115,11 +118,11 @@ FROM (
 
 
 def test_scalar_exprs_no_table_refs(con):
-    expr1 = ibis.now()
+    expr1 = ibis.now().name('tmp')
     expected1 = "SELECT now() AS `tmp`"
 
     expr2 = ibis.literal(1) + ibis.literal(2)
-    expected2 = "SELECT 1 + 2 AS `tmp`"
+    expected2 = "SELECT 1 + 2 AS `Add(1, 2)`"
 
     cases = [(expr1, expected1), (expr2, expected2)]
 

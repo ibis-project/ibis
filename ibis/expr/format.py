@@ -95,9 +95,7 @@ def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
     """
     try:
         return max(
-            len(node.resolve_name())
-            for node in nodes
-            if node.has_resolved_name()
+            len(node.name) for node in nodes if isinstance(node, ops.Named)
         )
     except ValueError:
         return 0
@@ -470,12 +468,7 @@ def _fmt_selection_column_sequence(node: ops.NodeList, **kwargs):
 def _fmt_selection_column_value_expr(
     node: ops.Value, *, aliases: Aliases, maxlen: int = 0
 ) -> str:
-    raw_name = node.resolve_name()
-    assert raw_name is not None, (
-        "`_safe_name` property should never be None when formatting a "
-        "selection column expression"
-    )
-    name = f"{raw_name}:"
+    name = f"{node.name}:"
     # the additional 1 is for the colon
     aligned_name = f"{name:<{maxlen + 1}}"
     value = fmt_value(node, aliases=aliases)

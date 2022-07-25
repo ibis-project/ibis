@@ -167,21 +167,19 @@ class SelectBuilder:
             return node, toolz.identity
 
         elif isinstance(node, ops.Value):
-            if not node.has_resolved_name():
-                node = ops.Alias(node, name="tmp")
             if node.output_shape is Shape.SCALAR:
                 if L.is_scalar_reduction(node):
                     table_expr = L.reduction_to_aggregation(node)
-                    return table_expr.op(), _get_scalar(node.resolve_name())
+                    return table_expr.op(), _get_scalar(node.name)
                 else:
-                    return node, _get_scalar(node.resolve_name())
+                    return node, _get_scalar(node.name)
             elif node.output_shape is Shape.COLUMNAR:
                 if isinstance(node, ops.TableColumn):
                     table_expr = node.table.to_expr()[[node.name]]
                     result_handler = _get_column(node.name)
                 else:
                     table_expr = node.to_expr().to_projection()
-                    result_handler = _get_column(node.resolve_name())
+                    result_handler = _get_column(node.name)
 
                 return table_expr.op(), result_handler
             else:
@@ -318,6 +316,8 @@ class SelectBuilder:
             base = op.base.to_expr()
 
         bucket = ((op.arg.to_expr() - base) / binwidth).floor()
+        if isinstance(op, ops.Named):
+            bucket = bucket.name(op.name)
 
         return bucket.op()
 

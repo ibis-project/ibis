@@ -412,10 +412,7 @@ class _PushdownValidate:
         for val in self.parent.selections:
             if isinstance(val, ops.PhysicalTable) and node.name in val.schema:
                 is_valid = True
-            elif (
-                isinstance(val, ops.TableColumn)
-                and node.name == val.resolve_name()
-            ):
+            elif isinstance(val, ops.TableColumn) and node.name == val.name:
                 # Aliased table columns are no good
                 col_table = val.table
                 is_valid = col_table.equals(node.table)
@@ -820,9 +817,7 @@ def _rewrite_filter_reduction(op, name: str | None = None, **kwargs):
     # this level? Means we probably have the wrong design, but will have to
     # revisit when it becomes a problem.
 
-    # TODO(kszucs): may need to wrap with Alias
     if name is not None:
-        # expr = expr.name(name)
         op = ops.Alias(op, name=name)
     aggregation = reduction_to_aggregation(op)
     return ops.TableArrayView(aggregation)
@@ -850,7 +845,7 @@ def _rewrite_filter_alias(op, name: str | None = None, **kwargs):
 
 
 @_rewrite_filter.register(ops.Value)
-def _rewrite_filter_value(op, name: str | None = None, **kwargs):
+def _rewrite_filter_value(op, **kwargs):
     """Recursively apply filter rewriting on operations."""
 
     visited = [
@@ -860,15 +855,11 @@ def _rewrite_filter_value(op, name: str | None = None, **kwargs):
     if all(map(operator.is_, visited, op.args)):
         return op
 
-    new_op = op.__class__(*visited)
-    if op.has_resolved_name():
-        return ops.Alias(new_op, name=op.resolve_name())
-    else:
-        return ops.Alias(new_op, name="tmp")
+    return op.__class__(*visited)
 
 
 @_rewrite_filter.register(ops.NodeList)
-def _rewrite_filter_value_list(op, name: str | None = None, **kwargs):
+def _rewrite_filter_value_list(op, **kwargs):
     visited = [
         _rewrite_filter(arg, **kwargs) if isinstance(arg, ops.Node) else arg
         for arg in op.args

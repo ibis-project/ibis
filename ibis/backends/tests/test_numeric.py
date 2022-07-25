@@ -76,7 +76,7 @@ def test_isnan_isinf(
     expr_fn,
     expected_expr_fn,
 ):
-    expr = expr_fn(operand_fn(alltypes))
+    expr = expr_fn(operand_fn(alltypes)).name('tmp')
     expected = expected_expr_fn(expected_operand_fn(df))
 
     result = con.execute(expr)
@@ -267,7 +267,7 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
 def test_simple_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
-    expr = expr_fn(alltypes)
+    expr = expr_fn(alltypes).name('tmp')
     expected = backend.default_series_rename(expected_fn(df))
     result = con.execute(expr)
     backend.assert_series_equal(result, expected)
@@ -327,7 +327,7 @@ def test_simple_math_functions_columns(
 def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
-    expr = expr_fn(alltypes)
+    expr = expr_fn(alltypes).name('tmp')
     expected = backend.default_series_rename(expected_fn(df))
     result = con.execute(expr)
     backend.assert_series_equal(result, expected)
@@ -408,7 +408,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
 
-    expr = op(alltypes.double_col, smallint_col)
+    expr = op(alltypes.double_col, smallint_col).name('tmp')
 
     result = expr.execute()
     expected = op(df.double_col, smallint_series)
@@ -422,7 +422,9 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
 
 
 def test_mod(backend, alltypes, df):
-    expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1)
+    expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name(
+        'tmp'
+    )
 
     result = expr.execute()
     expected = operator.mod(df.smallint_col, df.smallint_col + 1)
@@ -432,7 +434,9 @@ def test_mod(backend, alltypes, df):
 
 
 def test_floating_mod(backend, alltypes, df):
-    expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
+    expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name(
+        'tmp'
+    )
 
     result = expr.execute()
     expected = operator.mod(df.double_col, df.smallint_col + 1)
@@ -458,8 +462,11 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
-    expected = backend.default_series_rename(df[column].div(denominator))
-    result = expr.execute()
+    result = expr.name('tmp').execute()
+
+    expected = df[column].div(denominator)
+    expected = backend.default_series_rename(expected)
+
     backend.assert_series_equal(result, expected)
 
 
