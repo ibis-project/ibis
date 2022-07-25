@@ -99,10 +99,11 @@ def test_sql_generation():
     func.register('identity', 'udf_testing')
 
     result = func('hello world')
-    assert (
-        ibis.impala.compile(result)
-        == "SELECT udf_testing.identity('hello world') AS `tmp`"
+    expected = (
+        "SELECT udf_testing.identity('hello world') AS "
+        "`UDF_Tester('hello world')`"
     )
+    assert ibis.impala.compile(result) == expected
 
 
 def test_sql_generation_from_infoclass():
@@ -110,7 +111,7 @@ def test_sql_generation_from_infoclass():
     repr(func)
 
     func.register('info_test', 'udf_testing')
-    result = func('hello world')
+    result = func('hello world').name('tmp')
     assert (
         ibis.impala.compile(result)
         == "SELECT udf_testing.info_test('hello world') AS `tmp`"

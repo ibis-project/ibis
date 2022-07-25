@@ -336,9 +336,7 @@ def _cumulative_to_window(translator, op, window):
 
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
-    new_expr = new_op.to_expr()
-    if op.has_resolved_name():
-        new_expr = new_expr.name(op.resolve_name())
+    new_expr = new_op.to_expr().name(op.name)
 
     if type(new_op) in translator._rewrites:
         new_expr = translator._rewrites[type(new_op)](new_expr)

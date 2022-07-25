@@ -101,10 +101,13 @@ class DataType(Annotable, Comparable):
     def __call__(self, nullable: bool = True) -> DataType:
         return self.copy(nullable=nullable)
 
+    # TODO(kszucs): we probably don't need this, could use the annotable repr
+    # instead
     @property
     def _pretty_piece(self) -> str:
         return ""
 
+    # TODO(kszucs): probably should remove
     @property
     def name(self) -> str:
         """Return the name of the data type."""
@@ -1729,6 +1732,12 @@ def _multipolygon_to_tuple(typ: MultiPolygon, values: Sequence) -> tuple:
 
 class _WellKnownText(NamedTuple):
     text: str
+
+    def __str__(self):
+        return self.text
+
+    def __repr__(self):
+        return self.text
 
 
 if IS_SHAPELY_AVAILABLE:

@@ -117,7 +117,7 @@ def test_sqla_schema_conversion(con):
     ],
 )
 def test_comparisons(con, functional_alltypes, sa_functional_alltypes, op):
-    expr = op(functional_alltypes.double_col, 5)
+    expr = op(functional_alltypes.double_col, 5).name("tmp")
     expected = sa.select(
         [op(sa_functional_alltypes.c.double_col, L(5)).label("tmp")]
     )
@@ -144,7 +144,7 @@ def test_boolean_conjunction(
     expr_fn,
     expected_fn,
 ):
-    expr = expr_fn(functional_alltypes.double_col)
+    expr = expr_fn(functional_alltypes.double_col).name('tmp')
     expected = sa.select(
         [expr_fn(sa_functional_alltypes.c.double_col).label("tmp")]
     )
@@ -152,7 +152,7 @@ def test_boolean_conjunction(
 
 
 def test_between(con, functional_alltypes, sa_functional_alltypes):
-    expr = functional_alltypes.double_col.between(5, 10)
+    expr = functional_alltypes.double_col.between(5, 10).name("tmp")
     expected = sa.select(
         [sa_functional_alltypes.c.double_col.between(L(5), L(10)).label("tmp")]
     )
@@ -173,7 +173,7 @@ def test_isnull_notnull(
     expr_fn,
     expected_fn,
 ):
-    expr = expr_fn(functional_alltypes.double_col)
+    expr = expr_fn(functional_alltypes.double_col).name("tmp")
     expected = sa.select(
         [expected_fn(sa_functional_alltypes.c.double_col).label("tmp")]
     )
@@ -185,7 +185,7 @@ def test_negate(sa_functional_alltypes, functional_alltypes):
     expected = sa.select(
         [sql.not_(sa_functional_alltypes.c.double_col > L(0)).label("tmp")]
     )
-    _check(expr, expected)
+    _check(expr.name('tmp'), expected)
 
 
 def test_coalesce(sa_functional_alltypes, functional_alltypes):
@@ -201,7 +201,7 @@ def test_coalesce(sa_functional_alltypes, functional_alltypes):
     v2 = (d > 30).ifelse(d, ibis.NA)
     v3 = f
 
-    expr = ibis.coalesce(v2, v1, v3)
+    expr = ibis.coalesce(v2, v1, v3).name("tmp")
     expected = sa.select(
         [
             sa.func.coalesce(
@@ -330,7 +330,7 @@ def test_full_outer_join(con):
 
 def test_simple_case(sa_alltypes, alltypes, simple_case):
     st = sa_alltypes
-    expr = simple_case
+    expr = simple_case.name("tmp")
     expected = sa.select(
         [
             sa.case(
@@ -347,7 +347,7 @@ def test_simple_case(sa_alltypes, alltypes, simple_case):
 
 def test_searched_case(sa_alltypes, alltypes, search_case):
     st = sa_alltypes.alias("t0")
-    expr = search_case
+    expr = search_case.name("tmp")
     expected = sa.select(
         [
             sa.case(

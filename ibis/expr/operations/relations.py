@@ -12,7 +12,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.util as util
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Node, Value
+from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class TableNode(Node):
 
 
 @public
-class PhysicalTable(TableNode):
+class PhysicalTable(TableNode, Named):
     pass
 
 
@@ -51,12 +51,6 @@ class PhysicalTable(TableNode):
 class UnboundTable(PhysicalTable):
     schema = rlz.instance_of(sch.Schema)
     name = rlz.optional(rlz.instance_of(str), default=genname)
-
-    def has_resolved_name(self):
-        return True
-
-    def resolve_name(self):
-        return self.name
 
 
 @public
@@ -315,7 +309,7 @@ class Projection(TableNode):
 
         for projection in self.selections:
             if isinstance(projection, Value):
-                names.append(projection.resolve_name())
+                names.append(projection.name)
                 types.append(projection.output_dtype)
             elif isinstance(projection, TableNode):
                 schema = projection.schema
@@ -468,7 +462,7 @@ class Aggregation(TableNode):
         types = []
 
         for e in self.by + self.metrics:
-            names.append(e.resolve_name())
+            names.append(e.name)
             types.append(e.output_dtype)
 
         return sch.Schema(names, types)

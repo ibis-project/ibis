@@ -110,13 +110,13 @@ def test_array_concat(client, op):
     table = client.table('array_table')
     x = table.array_int.cast('array<string>')
     y = table.array_str
-    expr = op(x, y)
+    expr = op(x, y).name('array_result')
     result = expr.execute()
 
     df = table.compile().toPandas()
     expected = op(
         df.array_int.apply(lambda x: list(map(str, x))), df.array_str
-    ).rename('tmp')
+    ).rename('array_result')
     tm.assert_series_equal(result, expected)
 
 

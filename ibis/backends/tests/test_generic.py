@@ -565,7 +565,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     reason="unsupported operation with later versions of pandas",
 )
 def test_zeroifnull_column(backend, alltypes, df):
-    expr = alltypes.int_col.nullif(1).zeroifnull()
+    expr = alltypes.int_col.nullif(1).zeroifnull().name('tmp')
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)

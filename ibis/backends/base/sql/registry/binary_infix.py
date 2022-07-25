@@ -77,8 +77,6 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
                 for leaf in an.find_immediate_parent_tables(right)
             )
         ):
-            if not right.has_resolved_name():
-                right = ops.Alias(right, name="tmp")  # .name("tmp")
             right_arg = table_array_view(
                 translator,
                 right.to_expr().to_projection().to_array().op(),

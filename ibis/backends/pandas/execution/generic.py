@@ -467,14 +467,9 @@ def execute_aggregation_dataframe(
             if isinstance(key, ops.TableColumn)
             else execute(
                 key, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(key.resolve_name())
+            ).rename(key.name)
             for key in op.by
         ]
-        columns.update(
-            (key.name, key.resolve_name())
-            for key in op.by
-            if hasattr(key, 'name')
-        )
         source = data.groupby(grouping_keys)
     else:
         source = data
@@ -1127,7 +1122,7 @@ def execute_node_log_number_number(op, value, base, **kwargs):
 
 @execute_node.register(ops.DropNa, pd.DataFrame)
 def execute_node_dropna_dataframe(op, df, **kwargs):
-    subset = [col.resolve_name() for col in op.subset] if op.subset else None
+    subset = [col.name for col in op.subset] if op.subset else None
     return df.dropna(how=op.how, subset=subset)
 
 

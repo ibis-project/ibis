@@ -16,7 +16,7 @@ import ibis.expr.datatypes as dt
 @pytest.mark.notimpl(["datafusion"])
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
-    expr = alltypes[column] + value
+    expr = (alltypes[column] + value).name('tmp')
     expected = df[column] + raw_value
     result = expr.execute(params={value: raw_value})
     expected = backend.default_series_rename(expected)
@@ -32,8 +32,8 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
     col = alltypes.timestamp_col.date()
-    expr = col.between(start, end)
-    expected_expr = col.between(start_string, end_string)
+    expr = col.between(start, end).name('output')
+    expected_expr = col.between(start_string, end_string).name('output')
 
     result = expr.execute(params={start: start_string, end: end_string})
     expected = expected_expr.execute()

@@ -207,7 +207,7 @@ class ExprTranslator:
             # return expr.get_name() != op.name
             return False
 
-        return op.resolve_name() is not unnamed
+        return op.name is not unnamed
 
     def name(self, translated, name, force=True):
         return '{} AS {}'.format(
@@ -219,8 +219,7 @@ class ExprTranslator:
         translated = self.translate(self.node)
         if self._needs_name(self.node):
             # TODO: this could fail in various ways
-            name = self.node.resolve_name()
-            translated = self.name(translated, name)
+            translated = self.name(translated, self.node.name)
         return translated
 
     @classmethod

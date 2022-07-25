@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Sequence
 
 from matchpy import Arity
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.exceptions import ExpressionError
+
+# from ibis.common.exceptions import ExpressionError
 from ibis.common.grounds import Annotable, Comparable, Matchable
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
@@ -26,6 +27,7 @@ class Node(Comparable, Matchable, Annotable):
     def argnames(self):
         return self.__argnames__
 
+    # TODO(kszucs): move to comparable
     def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(
@@ -38,17 +40,44 @@ class Node(Comparable, Matchable, Annotable):
     def to_expr(self):
         ...
 
-    # TODO(kszucs): introduce a HasName schema, or NamedValue with a .name
-    # abstractproperty
-    def resolve_name(self):
-        raise ExpressionError(f'Expression is not named: {type(self)}')
+    # TODO(kszucs): consider to keep the following methods for backward compat
+    # def resolve_name(self):
+    #     if not self.has_resolved_name():
+    #         raise ExpressionError(f'Expression is not named: {type(self)}')
+    #     else:
+    #         return self.name
 
-    def has_resolved_name(self):
-        return False
+    # def has_resolved_name(self):
+    #     return isinstance(self, Named)
 
 
 @public
-class Value(Node):
+class Named(ABC):
+
+    __slots__ = tuple()
+
+    @property
+    @abstractmethod
+    def name(self):
+        """
+        Name of the operation.
+
+        Returns
+        -------
+        str
+        """
+
+
+@public
+class Value(Node, Named):
+
+    # TODO(kszucs): cover it with tests
+    # TODO(kszucs): figure out how to represent not named arguments
+    @property
+    def name(self):
+        args = ", ".join(arg.name for arg in self if isinstance(arg, Named))
+        return f"{self.__class__.__name__}({args})"
+
     @property
     @abstractmethod
     def output_dtype(self):
@@ -87,12 +116,6 @@ class Alias(Value):
 
     output_shape = rlz.shape_like("arg")
     output_dtype = rlz.dtype_like("arg")
-
-    def has_resolved_name(self):
-        return True
-
-    def resolve_name(self):
-        return self.name
 
 
 @public

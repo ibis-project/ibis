@@ -55,14 +55,9 @@ def execute_aggregation_dataframe(
             if isinstance(key, ops.TableColumn)
             else execute(
                 key, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(key.resolve_name())
+            ).rename(key.name)
             for key in op.by
         ]
-        columns.update(
-            (key.name, key.resolve_name())
-            for key in op.by
-            if hasattr(key, 'name')
-        )
         source = data.groupby(grouping_keys)
     else:
         source = data

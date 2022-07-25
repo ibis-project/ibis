@@ -273,6 +273,7 @@ class Comparable(Weakrefable):
             return True
 
         # type comparison should be cheap
+        # TODO(kszucs): could use `is not` instead of `!=`
         if type(self) != type(other):
             return False
 
