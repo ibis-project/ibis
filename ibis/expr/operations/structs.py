@@ -21,11 +21,9 @@ class StructField(Value):
         value_dtype = struct_dtype[self.field]
         return value_dtype
 
-    def resolve_name(self) -> str:
+    @property
+    def name(self) -> str:
         return self.field
-
-    def has_resolved_name(self) -> bool:
-        return True
 
 
 @public

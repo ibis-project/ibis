@@ -274,14 +274,15 @@ def test_unnest_no_nulls(con):
 
 
 @unnest
-def test_unnest_unnamed(con):
+def test_unnest_default_name(con):
     array_types = con.table("array_types")
     df = array_types.execute()
     expr = (
         array_types.x.cast("!array<int64>")
         + ibis.array([1], type="!array<int64>")
     ).unnest()
-    assert not expr.has_name()
+    assert expr.get_name().startswith("ArrayConcat(")
+
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
     tm.assert_series_equal(result, expected.astype("float64"))

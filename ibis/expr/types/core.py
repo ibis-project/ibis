@@ -9,6 +9,7 @@ import toolz
 from public import public
 
 import ibis.expr.lineage as lin
+import ibis.expr.operations as ops
 from ibis import config
 from ibis.common.exceptions import (
     ExpressionError,
@@ -21,7 +22,6 @@ from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
 
 if TYPE_CHECKING:
-    import ibis.expr.operations as ops
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
@@ -79,10 +79,10 @@ class Expr(Immutable):
     __nonzero__ = __bool__
 
     def has_name(self):
-        return self.op().has_resolved_name()
+        return isinstance(self.op(), ops.Named)
 
     def get_name(self):
-        return self.op().resolve_name()
+        return self.op().name
 
     # TODO(kszucs): remove it entirely
     @cached_property

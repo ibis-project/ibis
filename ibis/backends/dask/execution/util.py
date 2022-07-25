@@ -7,7 +7,6 @@ import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.backends.pandas.execution.util as pd_util
-import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.util
@@ -125,7 +124,7 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = node.resolve_name()
+    result_name = node.name
 
     if isinstance(result, (pd.DataFrame, dd.DataFrame)):
         result = result.apply(dict, axis=1)
@@ -221,11 +220,9 @@ def compute_sort_key(
     ``execute`` the expression and sort by the new derived column.
     """
     name = ibis.util.guid()
-    try:
-        if isinstance(key, str):
-            return name, data[key]
-        return name, data[key.resolve_name()]
-    except com.ExpressionError:
+    if key.name in data:
+        return name, data[key.name]
+    else:
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(

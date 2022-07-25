@@ -613,7 +613,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     reason="unsupported operation with later versions of pandas",
 )
 def test_zeroifnull_column(backend, alltypes, df):
-    expr = alltypes.int_col.nullif(1).zeroifnull()
+    expr = alltypes.int_col.nullif(1).zeroifnull().name('tmp')
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)
@@ -696,7 +696,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
 )
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
-    expr = op(left_fn(alltypes), right_fn(alltypes))
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
 
     expected = op(left_fn(df), right_fn(df)).rename("tmp")
@@ -742,7 +742,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
-    expr = op(left_fn(alltypes), right_fn(alltypes))
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = expr.execute()
 
     pandas_left = getattr(left := left_fn(df), "values", left)
@@ -787,7 +787,7 @@ def test_bitwise_not_scalar(con):
 
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_bitwise_not_col(backend, alltypes, df):
-    expr = ~alltypes.int_col
+    expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()
     expected = ~df.int_col
     backend.assert_series_equal(result, expected.rename("tmp"))
