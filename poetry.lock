@@ -224,7 +224,7 @@ python-versions = "*"
 click = ">=4.0"
 
 [package.extras]
-dev = ["pytest (>=3.6)", "pytest-cov", "wheel", "coveralls"]
+dev = ["coveralls", "wheel", "pytest-cov", "pytest (>=3.6)"]
 
 [[package]]
 name = "clickhouse-cityhash"
@@ -249,9 +249,9 @@ pytz = "*"
 tzlocal = "*"
 
 [package.extras]
-lz4 = ["clickhouse-cityhash (>=1.0.2.1)", "lz4", "lz4 (<=3.0.1)"]
-numpy = ["numpy (>=1.12.0)", "pandas (>=0.24.0)"]
-zstd = ["zstd", "clickhouse-cityhash (>=1.0.2.1)"]
+zstd = ["clickhouse-cityhash (>=1.0.2.1)", "zstd"]
+numpy = ["pandas (>=0.24.0)", "numpy (>=1.12.0)"]
+lz4 = ["lz4 (<=3.0.1)", "lz4", "clickhouse-cityhash (>=1.0.2.1)"]
 
 [[package]]
 name = "cligj"
@@ -312,7 +312,7 @@ optional = false
 python-versions = "*"
 
 [package.extras]
-test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
+test = ["hypothesis (==3.55.3)", "flake8 (==3.7.8)"]
 
 [[package]]
 name = "coverage"
@@ -330,7 +330,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "dask"
-version = "2022.7.0"
+version = "2022.7.1"
 description = "Parallel PyData with Task Scheduling"
 category = "main"
 optional = true
@@ -348,10 +348,10 @@ toolz = ">=0.8.2"
 
 [package.extras]
 array = ["numpy (>=1.18)"]
-complete = ["bokeh (>=2.4.2)", "distributed (==2022.7.0)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
+complete = ["bokeh (>=2.4.2)", "distributed (==2022.7.1)", "jinja2", "numpy (>=1.18)", "pandas (>=1.0)"]
 dataframe = ["numpy (>=1.18)", "pandas (>=1.0)"]
 diagnostics = ["bokeh (>=2.4.2)", "jinja2"]
-distributed = ["distributed (==2022.7.0)"]
+distributed = ["distributed (==2022.7.1)"]
 test = ["pytest", "pytest-rerunfailures", "pytest-xdist", "pre-commit"]
 
 [[package]]
@@ -596,7 +596,7 @@ python-versions = "*"
 python-dateutil = ">=2.8.1"
 
 [package.extras]
-dev = ["twine", "markdown", "flake8", "wheel"]
+dev = ["wheel", "flake8", "markdown", "twine"]
 
 [[package]]
 name = "gitdb"
@@ -967,14 +967,14 @@ python-versions = ">=3.7"
 mdurl = ">=0.1,<1.0"
 
 [package.extras]
-benchmarking = ["psutil", "pytest", "pytest-benchmark (>=3.2,<4.0)"]
-code_style = ["pre-commit (==2.6)"]
-compare = ["commonmark (>=0.9.1,<0.10.0)", "markdown (>=3.3.6,<3.4.0)", "mistletoe (>=0.8.1,<0.9.0)", "mistune (>=2.0.2,<2.1.0)", "panflute (>=2.1.3,<2.2.0)"]
-linkify = ["linkify-it-py (>=1.0,<2.0)"]
-plugins = ["mdit-py-plugins"]
+testing = ["pytest-regressions", "pytest-cov", "pytest", "coverage"]
+rtd = ["sphinx-book-theme", "sphinx-design", "sphinx-copybutton", "sphinx", "pyyaml", "myst-parser", "attrs"]
 profiling = ["gprof2dot"]
-rtd = ["attrs", "myst-parser", "pyyaml", "sphinx", "sphinx-copybutton", "sphinx-design", "sphinx-book-theme"]
-testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
+plugins = ["mdit-py-plugins"]
+linkify = ["linkify-it-py (>=1.0,<2.0)"]
+compare = ["panflute (>=2.1.3,<2.2.0)", "mistune (>=2.0.2,<2.1.0)", "mistletoe (>=0.8.1,<0.9.0)", "markdown (>=3.3.6,<3.4.0)", "commonmark (>=0.9.1,<0.10.0)"]
+code_style = ["pre-commit (==2.6)"]
+benchmarking = ["pytest-benchmark (>=3.2,<4.0)", "pytest", "psutil"]
 
 [[package]]
 name = "markupsafe"
@@ -1015,9 +1015,9 @@ python-versions = "~=3.6"
 markdown-it-py = ">=1.0.0,<3.0.0"
 
 [package.extras]
+testing = ["pytest-regressions", "pytest-cov", "pytest (>=3.6,<4)", "coverage"]
+rtd = ["sphinx-book-theme (>=0.1.0,<0.2.0)", "myst-parser (>=0.14.0,<0.15.0)"]
 code_style = ["pre-commit (==2.6)"]
-rtd = ["myst-parser (>=0.14.0,<0.15.0)", "sphinx-book-theme (>=0.1.0,<0.2.0)"]
-testing = ["coverage", "pytest (>=3.6,<4)", "pytest-cov", "pytest-regressions"]
 
 [[package]]
 name = "mdurl"
@@ -1050,8 +1050,8 @@ pyyaml = ">=5.1"
 verspec = "*"
 
 [package.extras]
-dev = ["coverage", "flake8 (>=3.0)", "shtab"]
-test = ["coverage", "flake8 (>=3.0)", "shtab"]
+test = ["shtab", "flake8 (>=3.0)", "coverage"]
+dev = ["shtab", "flake8 (>=3.0)", "coverage"]
 
 [[package]]
 name = "mistune"
@@ -1173,7 +1173,7 @@ pyyaml = "*"
 termcolor = "*"
 
 [package.extras]
-test = ["mkdocs-macros-test", "mkdocs-material (>=6.2)", "mkdocs-include-markdown-plugin"]
+test = ["mkdocs-include-markdown-plugin", "mkdocs-material (>=6.2)", "mkdocs-macros-test"]
 
 [[package]]
 name = "mkdocs-material"
@@ -1455,7 +1455,7 @@ locket = "*"
 toolz = "*"
 
 [package.extras]
-complete = ["numpy (>=1.9.0)", "pandas (>=0.19.0)", "pyzmq", "blosc"]
+complete = ["blosc", "pyzmq", "pandas (>=0.19.0)", "numpy (>=1.9.0)"]
 
 [[package]]
 name = "pathspec"
@@ -1505,8 +1505,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
@@ -1705,8 +1705,8 @@ optional = true
 python-versions = ">=3.6"
 
 [package.extras]
-ed25519 = ["PyNaCl (>=1.4.0)"]
 rsa = ["cryptography"]
+ed25519 = ["PyNaCl (>=1.4.0)"]
 
 [[package]]
 name = "pyparsing"
@@ -1819,7 +1819,7 @@ coverage = {version = ">=5.2.1", extras = ["toml"]}
 pytest = ">=4.6"
 
 [package.extras]
-testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtualenv"]
+testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
 
 [[package]]
 name = "pytest-forked"
@@ -2155,7 +2155,7 @@ executing = "*"
 pure-eval = "*"
 
 [package.extras]
-tests = ["pytest", "typeguard", "pygments", "littleutils", "cython"]
+tests = ["cython", "littleutils", "pygments", "typeguard", "pytest"]
 
 [[package]]
 name = "tabulate"
@@ -2218,8 +2218,8 @@ python-versions = ">=3.6"
 webencodings = ">=0.4"
 
 [package.extras]
-doc = ["sphinx", "sphinx-rtd-theme"]
-test = ["pytest", "pytest-cov", "pytest-flake8", "pytest-isort", "coverage"]
+test = ["coverage", "pytest-isort", "pytest-flake8", "pytest-cov", "pytest"]
+doc = ["sphinx-rtd-theme", "sphinx"]
 
 [[package]]
 name = "tokenize-rt"
@@ -2335,7 +2335,7 @@ optional = false
 python-versions = "*"
 
 [package.extras]
-test = ["coverage", "flake8 (>=3.7)", "mypy", "pretend", "pytest"]
+test = ["pytest", "pretend", "mypy", "flake8 (>=3.7)", "coverage"]
 
 [[package]]
 name = "watchdog"
@@ -2881,8 +2881,8 @@ coverage = [
     {file = "coverage-6.4.2.tar.gz", hash = "sha256:6c3ccfe89c36f3e5b9837b9ee507472310164f352c9fe332120b764c9d60adbe"},
 ]
 dask = [
-    {file = "dask-2022.7.0-py3-none-any.whl", hash = "sha256:3301725a654796ba5942536646689a37c27513c89724b34a40281bb6848b2963"},
-    {file = "dask-2022.7.0.tar.gz", hash = "sha256:50ad63035d6429cfa71d4c1832888a668e4260b1ef11163c795edc0ed177b4b3"},
+    {file = "dask-2022.7.1-py3-none-any.whl", hash = "sha256:501bdd2fc3f7bce7a42f4cb85a7883e831d45ce1c2be2465e5e687f9e9d35d74"},
+    {file = "dask-2022.7.1.tar.gz", hash = "sha256:a3972489c46456e54070fe140a2178e002c2e96912ed9ef85c3896b74f469194"},
 ]
 datafusion = [
     {file = "datafusion-0.6.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:74c6bb54453e800c7cfdd93dc7f0b41ca20ef92f07012bdf92db02759b2eb695"},
