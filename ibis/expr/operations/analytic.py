@@ -25,6 +25,10 @@ class Window(Value):
         new_window = self.window.combine(window)
         return Window(self.expr, new_window)
 
+    @property
+    def name(self):
+        return self.expr.name
+
 
 @public
 class Analytic(Value):

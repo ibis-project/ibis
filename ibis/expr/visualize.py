@@ -78,7 +78,7 @@ def to_graph(op, node_attr=None, edge_attr=None):
     elif not isinstance(op, ops.Node):
         raise TypeError(op)
 
-    stack = [(op, op.resolve_name() if op.has_resolved_name() else None)]
+    stack = [(op, op.name if isinstance(op, ops.Named) else None)]
     seen = set()
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS, edge_attr=edge_attr or {}

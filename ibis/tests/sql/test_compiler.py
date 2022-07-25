@@ -381,6 +381,6 @@ def test_column_expr_default_name():
     )
     named_derived_expr = t.int_col + 4
     result = Compiler.to_sql(named_derived_expr)
-    expected = 'SELECT `int_col` + 4 AS `tmp`\nFROM int_col_table'
+    expected = 'SELECT `int_col` + 4 AS `Add(int_col, 4)`\nFROM int_col_table'
 
     assert result == expected

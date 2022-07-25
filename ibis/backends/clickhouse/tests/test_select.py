@@ -204,8 +204,8 @@ FROM (
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (ibis.now(), 'SELECT now() AS `tmp`'),
-        (ibis.literal(1) + ibis.literal(2), 'SELECT 1 + 2 AS `tmp`'),
+        (ibis.now(), 'SELECT now() AS `TimestampNow()`'),
+        (ibis.literal(1) + ibis.literal(2), 'SELECT 1 + 2 AS `Add(1, 2)`'),
     ],
 )
 def test_scalar_exprs_no_table_refs(expr, expected):

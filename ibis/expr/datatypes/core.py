@@ -98,14 +98,16 @@ class DataType(Annotable, Comparable):
 
     nullable = optional(instance_of(bool), default=True)
 
-    # TODO(kszucs): remove it
+    # TODO(kszucs): remove it in favor of copy()
     def __call__(self, nullable: bool = True) -> DataType:
         return self.copy(nullable=nullable)
 
+    # TODO(kszucs): remove it, prefer to use Annotable.__repr__ instead
     @property
     def _pretty_piece(self) -> str:
         return ""
 
+    # TODO(kszucs): should remove it, only used internally
     @property
     def name(self) -> str:
         """Return the name of the data type."""
@@ -1732,6 +1734,12 @@ def _multipolygon_to_tuple(typ: MultiPolygon, values: Sequence) -> tuple:
 
 class _WellKnownText(NamedTuple):
     text: str
+
+    def __str__(self):
+        return self.text
+
+    def __repr__(self):
+        return self.text
 
 
 if IS_SHAPELY_AVAILABLE:

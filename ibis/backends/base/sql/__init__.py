@@ -233,7 +233,7 @@ class BaseSQLBackend(BaseBackend):
         if isinstance(op, ops.TableNode):
             return op.schema
         elif isinstance(op, ops.Value):
-            return sch.schema({op.resolve_name(): op.output_dtype})
+            return sch.schema({op.name: op.output_dtype})
         else:
             raise ValueError(
                 'Expression with type {} does not have a '

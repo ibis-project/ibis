@@ -465,7 +465,7 @@ def test_number_to_string_scalar():
 
 def test_casted_exprs_are_named(table):
     expr = table.f.cast('string')
-    assert expr.get_name() == 'cast(f, string)'
+    assert expr.get_name() == 'Cast(f, string)'
 
     # it works! per GH #396
     expr.value_counts()

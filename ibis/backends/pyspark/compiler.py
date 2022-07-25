@@ -113,9 +113,9 @@ def _can_be_replaced_by_column_name(column, table):
     return (
         isinstance(column, ops.TableColumn)
         and column.table == table
-        and column.resolve_name() in table.schema
+        and column.name in table.schema
         # TODO(kszucs): do we really need this condition?
-        and column == table.to_expr()[column.resolve_name()].op()
+        and column == table.to_expr()[column.name].op()
     )
 
 
@@ -173,7 +173,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
             # column from the root table itself (i.e. excluding mutations and
             # renames), we can get the selection name directly.
             if _can_be_replaced_by_column_name(selection, op.table):
-                col_in_selection_order.append(selection.resolve_name())
+                col_in_selection_order.append(selection.name)
             else:
                 col = t.translate(
                     selection,
@@ -181,7 +181,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
                     timecontext=adjusted_timecontext,
                     **kwargs,
                 )
-                col = col.alias(selection.resolve_name())
+                col = col.alias(selection.name)
                 col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
@@ -1105,7 +1105,7 @@ def compile_join(t, op, how, **kwargs):
                     type(pred)
                 )
             )
-        pred_columns.append(pred.left.resolve_name())
+        pred_columns.append(pred.left.name)
 
     return left_df.join(right_df, pred_columns, how)
 
@@ -1148,9 +1148,9 @@ def compile_window_op(t, op, **kwargs):
 
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(sort.resolve_name()).cast('long')
+        F.col(sort.name).cast('long')
         if isinstance(sort.output_dtype, dt.Timestamp)
-        else sort.resolve_name()
+        else sort.name
         for sort in window._order_by
     ]
     aggcontext = AggregationContext.WINDOW
@@ -1453,17 +1453,7 @@ def compiles_day_of_week_name(t, op, **kwargs):
 
 
 def _get_interval_col(t, op, allowed_units=None, **kwargs):
-    # if interval expression is a binary op, translate expression into
-    # an interval column and return
-    if isinstance(op, ops.IntervalBinary):
-        return t.translate(op, **kwargs)
-
-    # otherwise, translate expression into a literal op and construct
-    # interval column from literal value and dtype
-    if not isinstance(op, ops.Literal):
-        op = t.translate(op, **kwargs)
-
-    dtype = op.dtype
+    dtype = op.output_dtype
     if not isinstance(dtype, dt.Interval):
         raise com.UnsupportedArgumentError(
             f'{dtype} expression cannot be converted to interval column. '
@@ -1474,6 +1464,22 @@ def _get_interval_col(t, op, allowed_units=None, **kwargs):
             f'Interval unit "{dtype.unit}" is not allowed. Allowed units are: '
             f'{allowed_units}'
         )
+
+    # if interval expression is a binary op, translate expression into
+    # an interval column and return
+    if isinstance(op, ops.IntervalBinary):
+        return t.translate(op, **kwargs)
+
+    # otherwise, translate expression into a literal op and construct
+    # interval column from literal value and dtype
+    if isinstance(op, ops.Alias):
+        op = op.arg
+
+    # TODO(kszucs): t.translate should never return with an ibis operation;
+    # I assume this is required for special case when casting to intervals,
+    # see the implementation of ops.Cast compilation
+    if not isinstance(op, ops.Literal):
+        op = t.translate(op, **kwargs)
 
     if isinstance(op.value, pd.Timedelta):
         td_nanos = op.value.value
@@ -1675,9 +1681,12 @@ def compile_not_null(t, op, **kwargs):
 @compiles(ops.DropNa)
 def compile_dropna_table(t, op, **kwargs):
     table = t.translate(op.table, **kwargs)
-    subset = op.subset
-    if subset is not None:
-        subset = [col.resolve_name() for col in subset]
+
+    if op.subset is not None:
+        subset = [col.name for col in op.subset]
+    else:
+        subset = None
+
     return table.dropna(how=op.how, subset=subset)
 
 

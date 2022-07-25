@@ -24,8 +24,9 @@ class SortKey(Value):
 
     output_shape = rlz.Shape.COLUMNAR
 
-    def resolve_name(self):
-        return self.expr.resolve_name()
+    @property
+    def name(self):
+        return self.expr.name
 
     @property
     def output_dtype(self):
