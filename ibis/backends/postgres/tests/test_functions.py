@@ -439,7 +439,7 @@ def test_numeric_builtins_work(alltypes, df):
     expr = alltypes.double_col.fillna(0)
     result = expr.execute()
     expected = df.double_col.fillna(0)
-    expected.name = 'tmp'
+    expected.name = 'IfNull(double_col, 0)'
     tm.assert_series_equal(result, expected)
 
 
@@ -1216,11 +1216,11 @@ def test_identical_to(con, df):
 
 def test_rank(con):
     t = con.table('functional_alltypes')
-    expr = t.double_col.rank()
+    expr = t.double_col.rank().name('rank')
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
-        "SELECT rank() OVER (ORDER BY t0.double_col) - 1 AS tmp \n"
+        "SELECT rank() OVER (ORDER BY t0.double_col) - 1 AS rank \n"
         "FROM functional_alltypes AS t0"
     )
     assert result == expected
@@ -1228,23 +1228,23 @@ def test_rank(con):
 
 def test_percent_rank(con):
     t = con.table('functional_alltypes')
-    expr = t.double_col.percent_rank()
+    expr = t.double_col.percent_rank().name("percent_rank")
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
         "SELECT percent_rank() OVER (ORDER BY t0.double_col) AS "
-        "tmp \nFROM functional_alltypes AS t0"
+        "percent_rank \nFROM functional_alltypes AS t0"
     )
     assert result == expected
 
 
 def test_ntile(con):
     t = con.table('functional_alltypes')
-    expr = t.double_col.ntile(7)
+    expr = t.double_col.ntile(7).name('result')
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
-        "SELECT ntile(7) OVER (ORDER BY t0.double_col) - 1 AS tmp \n"
+        "SELECT ntile(7) OVER (ORDER BY t0.double_col) - 1 AS result \n"
         "FROM functional_alltypes AS t0"
     )
     assert result == expected
@@ -1475,14 +1475,17 @@ def test_string_temporal_compare_between(con, op, left, right):
 
 
 def test_scalar_parameter(con):
+    start_string, end_string = '2009-03-01', '2010-07-03'
+
     start = ibis.param(dt.date)
     end = ibis.param(dt.date)
     t = con.table('functional_alltypes')
     col = t.date_string_col.cast('date')
-    expr = col.between(start, end)
-    start_string, end_string = '2009-03-01', '2010-07-03'
+    expr = col.between(start, end).name('res')
+    expected_expr = col.between(start_string, end_string).name('res')
+
     result = expr.execute(params={start: start_string, end: end_string})
-    expected = col.between(start_string, end_string).execute()
+    expected = expected_expr.execute()
     tm.assert_series_equal(result, expected)
 
 

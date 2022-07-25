@@ -305,7 +305,7 @@ def test_fillna_nullif(con, expr, expected):
 
 
 def test_numeric_builtins_work(alltypes, df):
-    expr = alltypes.double_col.fillna(0)
+    expr = alltypes.double_col.fillna(0).name('tmp')
     result = expr.execute()
     expected = df.double_col.fillna(0)
     expected.name = 'tmp'
@@ -330,7 +330,8 @@ def test_numeric_builtins_work(alltypes, df):
     ],
 )
 def test_ifelse(alltypes, df, func, expected_func):
-    result = func(alltypes).execute()
+    expr = func(alltypes).name('tmp')
+    result = expr.execute()
     expected = expected_func(df)
     tm.assert_series_equal(result, expected)
 
@@ -731,14 +732,17 @@ def test_compile_with_one_unnamed_table():
 
 
 def test_scalar_parameter(alltypes):
+    start_string, end_string = '2009-03-01', '2010-07-03'
+
     start = ibis.param(dt.date)
     end = ibis.param(dt.date)
     t = alltypes
     col = t.date_string_col.cast('date')
-    expr = col.between(start, end)
-    start_string, end_string = '2009-03-01', '2010-07-03'
+    expr = col.between(start, end).name('result')
     result = expr.execute(params={start: start_string, end: end_string})
-    expected = col.between(start_string, end_string).execute()
+
+    expected_expr = col.between(start_string, end_string).name('result')
+    expected = expected_expr.execute()
     tm.assert_series_equal(result, expected)
 
 

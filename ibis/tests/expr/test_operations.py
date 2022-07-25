@@ -74,6 +74,7 @@ operations = [
     ops.Or(false, true),
     ops.GreaterEqual(three, two),
     ops.Sum(t.a),
+    t.a.op(),
 ]
 
 

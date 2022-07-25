@@ -14,7 +14,7 @@ import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.exceptions import ExpressionError, RelationError
+from ibis.common.exceptions import RelationError
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
@@ -128,8 +128,10 @@ def test_projection_with_exprs(table):
     assert schema.types == (dt.double, dt.double, dt.string)
 
     # Test with unnamed expr
-    with pytest.raises(ExpressionError):
-        table.projection(['g', table['a'] - table['c']])
+    proj = table.projection(['g', table['a'] - table['c']])
+    schema = proj.schema()
+    assert schema.names == ('g', 'Subtract(a, c)')
+    assert schema.types == (dt.string, dt.int64)
 
 
 def test_projection_duplicate_names(table):
@@ -686,7 +688,7 @@ def test_value_counts_unnamed_expr(con):
     nation = con.table('tpch_nation')
 
     expr = nation.n_name.lower().value_counts()
-    expected = nation.n_name.lower().name('unnamed').value_counts()
+    expected = nation.n_name.lower().name('Lowercase(n_name)').value_counts()
     assert_equal(expr, expected)
 
 
@@ -694,8 +696,10 @@ def test_aggregate_unnamed_expr(con):
     nation = con.table('tpch_nation')
     expr = nation.n_name.lower().left(1)
 
-    with pytest.raises(com.ExpressionError):
-        nation.group_by(expr).aggregate(nation.count().name('metric'))
+    agg = nation.group_by(expr).aggregate(nation.count().name('metric'))
+    schema = agg.schema()
+    assert schema.names == ('Substring(Lowercase(n_name), 0, 1)', 'metric')
+    assert schema.types == (dt.string, dt.int64)
 
 
 def test_default_reduction_names(table):
