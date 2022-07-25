@@ -81,5 +81,6 @@ checklinks *args:
     mapfile -t files < <(find site -name '*.html' \
         -and \( -not \( -wholename 'site/SUMMARY/index.html' \
                         -or -wholename 'site/user_guide/design/index.html' \
-                        -or -wholename 'site/overrides/main.html' \) \))
+                        -or -wholename 'site/overrides/main.html' \
+                        -or -wholename 'site/blog/Ibis-version-3.1.0-release/index.html' \) \))
     lychee "${files[@]}" --base site --require-https {{ args }}
