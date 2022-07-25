@@ -64,7 +64,7 @@ class TopK(Analytic):
             )
 
         if metric_name is None:
-            if by.resolve_name() == op.arg.resolve_name():
+            if by.name == op.arg.name:
                 by = by.name(backup_metric_name)
         else:
             by = by.name(metric_name)
@@ -78,7 +78,7 @@ class TopK(Analytic):
                 'Cross-table TopK; must provide a parent joined table'
             )
 
-        return agg.sort_by([(by.resolve_name(), False)]).limit(op.k)
+        return agg.sort_by([(by.name, False)]).limit(op.k)
 
 
 public(AnalyticExpr=Analytic, TopKExpr=TopK)

@@ -89,10 +89,10 @@ def test_literal_geospatial_explicit(con, expr, expected):
     ],
 )
 def test_literal_geospatial_inferred(con, shp, expected):
-    result = str(con.compile(ibis.literal(shp)))
+    result = str(con.compile(ibis.literal(shp).name('result')))
     name = type(shp).__name__.upper()
     pair = f"{name} {expected}"
-    assert result == f"SELECT {pair!r} AS tmp"
+    assert result == f"SELECT {pair!r} AS result"
 
 
 @pytest.mark.parametrize(
@@ -561,14 +561,14 @@ def test_geo_equals(geotable):
     # simple test using ==
     expected = 'SELECT t0.geo_point = t0.geo_point AS tmp \nFROM geo AS t0'
     expr = geotable.geo_point == geotable.geo_point
-    assert str(expr.compile().compile()) == expected
+    assert str(expr.name('tmp').compile().compile()) == expected
     assert expr.execute().all()
 
     # using geo_equals
     expected = (
         'SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0'
     )
-    expr = geotable.geo_point.geo_equals(geotable.geo_point)
+    expr = geotable.geo_point.geo_equals(geotable.geo_point).name('tmp')
     assert str(expr.compile().compile()) == expected
     assert expr.execute().all()
 

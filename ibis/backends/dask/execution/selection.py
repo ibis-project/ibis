@@ -75,7 +75,7 @@ def compute_projection(
         )
         return map_new_column_names_to_data(mapping, data)
     elif isinstance(node, ops.Value):
-        name = node.resolve_name()
+        name = node.name
         assert name is not None, 'Value selection name is None'
 
         if node.output_shape is Shape.SCALAR:
@@ -211,8 +211,7 @@ def execute_selection_dataframe(
                 """
             )
         sort_key = op.sort_keys[0]
-        ascending = getattr(sort_key, 'ascending', True)
-        if not ascending:
+        if not sort_key.ascending:
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"
             )

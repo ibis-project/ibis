@@ -93,7 +93,7 @@ class Value(Expr):
         """
         op = ops.Cast(self, to=target_type)
 
-        if op.to.equals(self.type()):
+        if op.to == self.type():
             # noop case if passed type is the same
             return self
 
@@ -103,10 +103,7 @@ class Value(Expr):
             if from_geotype == to_geotype:
                 return self
 
-        result = op.to_expr()
-        if not self.has_name():
-            return result
-        return result.name(f'cast({self.get_name()}, {op.to})')
+        return op.to_expr()
 
     def coalesce(self, *args: Value) -> Value:
         """Return the first non-null value from `args`.
@@ -347,11 +344,7 @@ class Value(Expr):
         else:
             op = ops.Window(self, window)
 
-        result = op.to_expr()
-
-        if self.has_name():
-            return result.name(self.get_name())
-        return result
+        return op.to_expr()
 
     def isnull(self) -> ir.BooleanValue:
         """Return whether this expression is NULL."""
@@ -722,12 +715,7 @@ class Column(Value):
         base = find_first_base_table(self.op()).to_expr()
         metric = base.count().name(metric_name)
 
-        if not self.has_name():
-            expr = self.name("unnamed")
-        else:
-            expr = self
-
-        return base.group_by(expr).aggregate(metric)
+        return base.group_by(self).aggregate(metric)
 
     def first(self) -> Column:
         return ops.FirstValue(self).to_expr()

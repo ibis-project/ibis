@@ -1,14 +1,12 @@
 from typing import Any, Optional, Union
 
 import pandas as pd
-import toolz
 
-import ibis.common.exceptions as com
 import ibis.expr.analysis as an
+import ibis.expr.operations as ops
 import ibis.util
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.execution import constants
-from ibis.expr import operations as ops
 from ibis.expr.scope import Scope
 
 
@@ -24,11 +22,11 @@ def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
-    try:
-        if isinstance(key, str):
-            return key, None
-        return key.resolve_name(), None
-    except com.ExpressionError:
+    if isinstance(key, str):
+        return key, None
+    elif key.name in data:
+        return key.name, None
+    else:
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
@@ -44,11 +42,18 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
 def compute_sorted_frame(
     df, order_by, group_by=(), timecontext=None, **kwargs
 ):
-    computed_sort_keys = []
-    sort_keys = list(toolz.concatv(group_by, order_by))
-    ascending = [getattr(key, "ascending", True) for key in sort_keys]
-    new_columns = {}
+    sort_keys = []
+    ascending = []
 
+    for value in group_by:
+        sort_keys.append(value)
+        ascending.append(True)
+    for key in order_by:
+        sort_keys.append(key)
+        ascending.append(key.ascending)
+
+    new_columns = {}
+    computed_sort_keys = []
     for i, key in enumerate(sort_keys):
         computed_sort_key, temporary_column = compute_sort_key(
             key, df, timecontext, **kwargs
@@ -113,15 +118,13 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = node.resolve_name()
-
     if isinstance(result, pd.DataFrame):
         rows = result.to_dict(orient="records")
-        return pd.Series(rows, name=result_name)
+        return pd.Series(rows, name=node.name)
 
     # columnar result
     if isinstance(result, pd.Series):
-        return result.rename(result_name)
+        return result.rename(node.name)
 
     # Wrap `result` into a single-element Series.
-    return pd.Series([result], name=result_name)
+    return pd.Series([result], name=node.name)

@@ -281,7 +281,7 @@ def test_string_col_is_unicode(alltypes, df):
     ],
 )
 def test_string(backend, alltypes, df, result_func, expected_func):
-    expr = result_func(alltypes)
+    expr = result_func(alltypes).name('tmp')
     result = expr.execute()
 
     expected = backend.default_series_rename(expected_func(df))

@@ -63,7 +63,7 @@ def compute_projection(
         )
         return map_new_column_names_to_data(mapping, data)
     elif isinstance(node, ops.Value):
-        name = node.resolve_name()
+        name = node.name
         assert name is not None, 'Value selection name is None'
 
         if node.output_shape is Shape.SCALAR:
@@ -253,7 +253,7 @@ def build_df_from_selection(
     cols = defaultdict(list)
 
     for node in selections:
-        selection = node.resolve_name()
+        selection = node.name
         if selection not in data:
             if not isinstance(table, ops.Join):
                 raise KeyError(selection)
@@ -261,7 +261,7 @@ def build_df_from_selection(
             if selection + join_suffix not in data:
                 raise KeyError(selection)
             selection += join_suffix
-        cols[selection].append(node.resolve_name())
+        cols[selection].append(node.name)
 
     result = data[list(cols.keys())]
 
