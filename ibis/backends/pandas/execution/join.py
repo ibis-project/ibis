@@ -1,4 +1,3 @@
-import functools
 import operator
 
 import pandas as pd
