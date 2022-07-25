@@ -232,6 +232,8 @@ class AlchemySelect(Select):
                     arg = self.context.get_ref(op)
                     if arg is None:
                         raise ValueError(op)
+            else:
+                raise TypeError(op)
 
             to_select.append(arg)
 
@@ -319,7 +321,7 @@ class AlchemySelect(Select):
             # here we have to determine if key.expr is in the select set (as it
             # will be in the case of order_by fused with an aggregation
             if _can_lower_sort_column(self.table_set, sort_expr):
-                arg = sort_expr.resolve_name()
+                arg = sort_expr.name
             else:
                 arg = self._translate(sort_expr)
 

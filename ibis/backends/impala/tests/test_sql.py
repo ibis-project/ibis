@@ -220,8 +220,8 @@ def test_logically_negate_complex_boolean_expr():
     def f(t):
         return t.a.isin(['foo']) & t.c.notnull()
 
-    expr = f(t)
-    result = ImpalaCompiler.to_sql(~expr)
+    expr = (~f(t)).name('tmp')
+    result = ImpalaCompiler.to_sql(expr)
     expected = """\
 SELECT NOT (`a` IN ('foo') AND (`c` IS NOT NULL)) AS `tmp`
 FROM t"""

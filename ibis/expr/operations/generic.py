@@ -18,7 +18,7 @@ import ibis.expr.rules as rlz
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Unary, Value
+from ibis.expr.operations.core import Named, Unary, Value
 from ibis.util import frozendict
 
 try:
@@ -30,7 +30,7 @@ else:
 
 
 @public
-class TableColumn(Value):
+class TableColumn(Value, Named):
     """Selects a column from a `Table`."""
 
     table = rlz.table
@@ -49,33 +49,23 @@ class TableColumn(Value):
 
         super().__init__(table=table, name=name)
 
-    def resolve_name(self):
-        return self.name
-
-    def has_resolved_name(self):
-        return True
-
     @property
     def output_dtype(self):
         return self.table.schema[self.name]
 
 
 @public
-class RowID(Value):
+class RowID(Value, Named):
     """The row number (an autonumeric) of the returned result."""
+
+    name = "rowid"
 
     output_shape = rlz.Shape.COLUMNAR
     output_dtype = dt.int64
 
-    def resolve_name(self):
-        return 'rowid'
-
-    def has_resolved_name(self):
-        return True
-
 
 @public
-class TableArrayView(Value):
+class TableArrayView(Value, Named):
 
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
@@ -105,7 +95,9 @@ class Cast(Value):
     output_shape = rlz.shape_like("arg")
     output_dtype = property(attrgetter("to"))
 
-    # see #396 for the issue preventing an implementation of resolve_name
+    @property
+    def name(self):
+        return f"{self.__class__.__name__}({self.arg.name}, {self.to})"
 
 
 @public
@@ -228,20 +220,26 @@ class Literal(Value):
     )
     dtype = rlz.datatype
 
+    # TODO(kszucs): it should be named actually
+
     output_shape = rlz.Shape.SCALAR
     output_dtype = property(attrgetter("dtype"))
+
+    @property
+    def name(self):
+        return repr(self.value)
 
 
 @public
 class NullLiteral(Literal, Singleton):
     """Typeless NULL literal"""
 
-    value = rlz.optional(type(None))
+    value = rlz.optional(type(None), default=None)
     dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)
 
 
 @public
-class ScalarParameter(Value):
+class ScalarParameter(Value, Named):
     _counter = itertools.count()
 
     dtype = rlz.datatype
@@ -252,11 +250,9 @@ class ScalarParameter(Value):
     output_shape = rlz.Shape.SCALAR
     output_dtype = property(attrgetter("dtype"))
 
-    def resolve_name(self):
+    @property
+    def name(self):
         return f'param_{self.counter:d}'
-
-    def has_resolved_name(self):
-        return True
 
     def __hash__(self):
         return hash((self.dtype, self.counter))

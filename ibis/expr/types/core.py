@@ -79,10 +79,10 @@ class Expr(Immutable):
     __nonzero__ = __bool__
 
     def has_name(self):
-        return self.op().has_resolved_name()
+        return isinstance(self.op(), ops.Named)
 
     def get_name(self):
-        return self.op().resolve_name()
+        return self.op().name
 
     # TODO(kszucs): remove it entirely
     @cached_property

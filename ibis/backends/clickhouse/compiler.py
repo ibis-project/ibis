@@ -31,7 +31,7 @@ class ClickhouseSelect(Select):
 
         lines = []
         if len(self.group_by) > 0:
-            columns = [f'`{op.resolve_name()}`' for op in self.group_by]
+            columns = [f'`{op.name}`' for op in self.group_by]
             clause = 'GROUP BY {}'.format(', '.join(columns))
             lines.append(clause)
 
