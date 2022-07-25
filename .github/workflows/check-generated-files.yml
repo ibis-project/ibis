@@ -118,6 +118,8 @@ jobs:
 
       - name: run poetry lock
         run: poetry lock --no-update
+        env:
+          PYTHONHASHSEED: "42"
 
       - name: check whether poetry lockfile needs to be updated
         run: git diff --exit-code poetry.lock
