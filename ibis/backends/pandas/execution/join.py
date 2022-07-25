@@ -58,7 +58,7 @@ def _get_semi_anti_join_filter(op, left, right, predicates, **kwargs):
     )
     predicates = inner["_merge"].apply(
         lambda x: True if x == "both" else False
-    ).convert_dtypes()
+    ).astype(bool)
     return predicates
 
 
