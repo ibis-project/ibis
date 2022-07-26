@@ -11,6 +11,7 @@
 * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
 * [User Guide](user_guide/)
 * [Execution Backends](backends/)
+* [How To Guide](how_to/)
 * [Contribute](contribute/)
 * Community
     * [Blog](blog/)
