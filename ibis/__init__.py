@@ -18,7 +18,7 @@ from ibis.expr.api import *  # noqa: F401,F403
 __all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
 __all__ += api.__all__
 
-__version__ = "3.0.2"
+__version__ = "3.1.0"
 
 
 def _get_backend_entrypoints() -> list[_importlib_metadata.EntryPoint]:
