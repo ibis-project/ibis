@@ -55,7 +55,11 @@ def _get_semi_anti_join_filter(op, left, right, predicates, **kwargs):
         indicator=True,
         suffixes=constants.JOIN_SUFFIXES,
     )
-    predicates = inner["_merge"] == "both"
+    predicates = (
+        inner["_merge"]
+        .apply(lambda x: True if x == "both" else False)
+        .astype(bool)
+    )
     return predicates
 
 
