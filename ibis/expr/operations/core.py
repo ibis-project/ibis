@@ -157,6 +157,11 @@ class List(Node, Sequence[Node], arity=Arity.variadic):
     def __create__(self, *args):
         return super().__create__(values=args)
 
+    @classmethod
+    def pattern(cls, *args):
+        params = cls.__signature__.apply(values=args)
+        return cls.__pattern__(*params['values'])
+
     @property
     def args(self):
         return self.values
