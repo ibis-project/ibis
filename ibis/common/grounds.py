@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import inspect
 from abc import ABCMeta, abstractmethod
-from typing import Any, Hashable
+from typing import Any, Hashable, Mapping, Sequence
 from weakref import WeakValueDictionary
 
-from matchpy import Arity, Operation
+import matchpy
 from rich.console import Console
 
 from ibis.common.caching import WeakCache
@@ -183,6 +183,17 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         return self.__class__(**newargs)
 
 
+class _Operation(matchpy.Operation):
+    def __lshift__(self, other):
+        if isinstance(other, Matchable):
+            pattern = matchpy.Pattern(self)
+            return next(matchpy.match(other, pattern))
+        else:
+            return matchpy.substitute(self, other)
+
+    __rrshift__ = __lshift__
+
+
 class Matchable(Annotable):
 
     __slots__ = ()
@@ -201,19 +212,15 @@ class Matchable(Annotable):
         # support python 3.10 pattern matching
         cls.__match_args__ = cls.__argnames__
         # integrate with matchpy by creating a matchpy specific operation
-        cls.__pattern__ = Operation.new(
+        cls.__pattern__ = _Operation.new(
             head=cls,
             name=name or cls.__name__,
-            arity=arity or Arity(len(cls.__argnames__), True),
+            arity=arity or matchpy.Arity(len(cls.__argnames__), True),
             associative=associative,
             commutative=commutative,
             one_identity=one_identity,
             infix=infix,
         )
-        # need to register the current class as a subclass of matchpy's
-        # Operation class, so that the operation class instandiated above
-        # can be matched agains an actual instance of the current class
-        Operation.register(cls)
 
     @classmethod
     def pattern(cls, *args, **kwargs):
@@ -225,6 +232,28 @@ class Matchable(Annotable):
 
     def __getitem__(self, key):
         return self.__args__[key]
+
+    def __rshift__(self, args):
+        if isinstance(args, _Operation):
+            operation = args
+        elif isinstance(args, Sequence):
+            operation = self.pattern(*args)
+        elif isinstance(args, Mapping):
+            operation = self.pattern(**args)
+        else:
+            raise TypeError(
+                f"Unable to construct a matchable pattern from `{args}`"
+            )
+        pattern = matchpy.Pattern(operation)
+        return next(matchpy.match(self, pattern))
+
+    __rlshift__ = __rshift__
+
+
+# need to register the current class as a subclass of matchpy's Operation class
+# so that the operation class instandiated above can be matched agains an
+# actual instance of the current class
+matchpy.Operation.register(Matchable)
 
 
 class Weakrefable(Base):
