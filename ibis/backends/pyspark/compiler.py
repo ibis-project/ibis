@@ -423,10 +423,26 @@ def compile_aggregation(t, expr, scope, timecontext, **kwargs):
 @compiles(ops.Union)
 def compile_union(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
-    result = t.translate(op.left, scope, timecontext).union(
-        t.translate(op.right, scope, timecontext)
-    )
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+    result = left.union(right)
     return result.distinct() if op.distinct else result
+
+
+@compiles(ops.Intersection)
+def compile_intersection(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+    return left.intersect(right) if op.distinct else left.intersectAll(right)
+
+
+@compiles(ops.Difference)
+def compile_difference(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+    return left.subtract(right) if op.distinct else left.exceptAll(right)
 
 
 @compiles(ops.Contains)
