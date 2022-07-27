@@ -105,12 +105,15 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.Intersection: [
         (
-            (dd.DataFrame, dd.DataFrame),
+            (dd.DataFrame, dd.DataFrame, bool),
             execute_intersection_dataframe_dataframe,
         )
     ],
     ops.Difference: [
-        ((dd.DataFrame, dd.DataFrame), execute_difference_dataframe_dataframe)
+        (
+            (dd.DataFrame, dd.DataFrame, bool),
+            execute_difference_dataframe_dataframe,
+        )
     ],
     ops.DropNa: [((dd.DataFrame, tuple), execute_node_dropna_dataframe)],
     ops.FillNa: [

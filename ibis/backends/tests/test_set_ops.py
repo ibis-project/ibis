@@ -53,7 +53,7 @@ def test_union_no_sort(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["clickhouse", "sqlite"],
+                ["clickhouse", "dask", "pandas", "sqlite"],
                 reason="backend doesn't support INTERSECT ALL",
             ),
             id="all",
@@ -61,7 +61,7 @@ def test_union_no_sort(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["impala"])
 def test_intersect(backend, alltypes, df, distinct):
     expr = alltypes.intersect(alltypes, distinct=distinct).sort_by("id")
@@ -79,7 +79,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["clickhouse", "sqlite"],
+                ["clickhouse", "dask", "pandas", "sqlite"],
                 reason="backend doesn't support EXCEPT ALL",
             ),
             id="all",
@@ -87,7 +87,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["impala"])
 def test_difference(backend, alltypes, distinct):
     expr = alltypes.difference(alltypes, distinct=distinct)
