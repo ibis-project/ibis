@@ -254,13 +254,14 @@ class AsOfJoin(Join):
 class SetOp(TableNode, sch.HasSchema):
     left = rlz.table
     right = rlz.table
+    distinct = rlz.optional(rlz.instance_of(bool), default=False)
 
-    def __init__(self, left, right, **kwargs):
+    def __init__(self, left, right, distinct: bool, **kwargs):
         if not left.schema().equals(right.schema()):
             raise com.RelationError(
                 'Table schemas must be equal for set operations'
             )
-        super().__init__(left=left, right=right, **kwargs)
+        super().__init__(left=left, right=right, distinct=distinct, **kwargs)
 
     @property
     def schema(self):
@@ -272,7 +273,7 @@ class SetOp(TableNode, sch.HasSchema):
 
 @public
 class Union(SetOp):
-    distinct = rlz.optional(rlz.instance_of(bool), default=False)
+    pass
 
 
 @public

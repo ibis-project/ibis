@@ -292,7 +292,7 @@ class Table(Expr):
 
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, right: Table) -> Table:
+    def difference(self, right: Table, distinct: bool = True) -> Table:
         """Compute the set difference of two table expressions.
 
         The input tables must have identical schemas.
@@ -301,6 +301,8 @@ class Table(Expr):
         ----------
         right
             Table expression
+        distinct
+            Only diff distinct rows not occurring in the calling table
 
         Returns
         -------
@@ -309,7 +311,7 @@ class Table(Expr):
         """
         from ibis.expr import operations as ops
 
-        return ops.Difference(self, right).to_expr()
+        return ops.Difference(self, right, distinct=distinct).to_expr()
 
     def aggregate(
         self,
@@ -455,8 +457,7 @@ class Table(Expr):
         right
             Table expression
         distinct
-            Only union distinct rows not occurring in the calling table (this
-            can be very expensive, be careful)
+            Only union distinct rows not occurring in the calling table
 
         Returns
         -------
@@ -467,7 +468,7 @@ class Table(Expr):
 
         return ops.Union(self, right, distinct=distinct).to_expr()
 
-    def intersect(self, right: Table) -> Table:
+    def intersect(self, right: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of two table expressions.
 
         The input tables must have identical schemas.
@@ -476,6 +477,8 @@ class Table(Expr):
         ----------
         right
             Table expression
+        distinct
+            Only intersect distinct rows not occurring in the calling table
 
         Returns
         -------
@@ -484,7 +487,7 @@ class Table(Expr):
         """
         from ibis.expr import operations as ops
 
-        return ops.Intersection(self, right).to_expr()
+        return ops.Intersection(self, right, distinct=distinct).to_expr()
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.
