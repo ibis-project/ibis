@@ -879,20 +879,36 @@ def execute_union_dataframe_dataframe(
     return result.drop_duplicates() if distinct else result
 
 
-@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
+@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame, bool)
 def execute_intersection_dataframe_dataframe(
-    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+    op,
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    distinct: bool,
+    **kwargs,
 ):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
     result = left.merge(right, on=list(left.columns), how="inner")
     return result
 
 
-@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame)
+@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame, bool)
 def execute_difference_dataframe_dataframe(
-    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+    op,
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    distinct: bool,
+    **kwargs,
 ):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
     merged = left.merge(
-        right, on=list(left.columns), how='outer', indicator=True
+        right, on=list(left.columns), how="outer", indicator=True
     )
     result = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
     return result
