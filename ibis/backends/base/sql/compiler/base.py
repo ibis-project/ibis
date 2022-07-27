@@ -53,11 +53,19 @@ class QueryAST:
 
 
 class SetOp(DML):
-    def __init__(self, tables, expr, context):
+    def __init__(self, tables, expr, context, distincts):
         self.context = context
         self.tables = tables
         self.table_set = expr
+        self.distincts = distincts
         self.filters = []
+
+    @classmethod
+    def keyword(cls, distinct):
+        return cls._keyword + (not distinct) * " ALL"
+
+    def _get_keyword_list(self):
+        return map(self.keyword, self.distincts)
 
     def _extract_subqueries(self):
         self.subqueries = _extract_common_table_expressions(
@@ -83,9 +91,6 @@ class SetOp(DML):
         if ref is not None:
             return f'SELECT *\nFROM {ref}'
         return self.context.get_compiled_expr(expr)
-
-    def _get_keyword_list(self):
-        raise NotImplementedError("Need objects to interleave")
 
     def compile(self):
         self._extract_subqueries()

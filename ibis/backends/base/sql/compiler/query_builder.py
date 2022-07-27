@@ -455,33 +455,18 @@ class Select(DML, Comparable):
 
 
 class Union(SetOp):
-    def __init__(self, tables, expr, context, distincts):
-        super().__init__(tables, expr, context)
-        self.distincts = distincts
-
-    @staticmethod
-    def keyword(distinct):
-        return 'UNION' if distinct else 'UNION ALL'
-
-    def _get_keyword_list(self):
-        return map(self.keyword, self.distincts)
+    _keyword = "UNION"
 
 
 class Intersection(SetOp):
     _keyword = "INTERSECT"
 
-    def _get_keyword_list(self):
-        return [self._keyword] * (len(self.tables) - 1)
-
 
 class Difference(SetOp):
     _keyword = "EXCEPT"
 
-    def _get_keyword_list(self):
-        return [self._keyword] * (len(self.tables) - 1)
 
-
-def flatten_union(table: ir.Table):
+def flatten_set_op(table: ir.Table):
     """Extract all union queries from `table`.
 
     Parameters
@@ -493,14 +478,14 @@ def flatten_union(table: ir.Table):
     Iterable[Union[Table, bool]]
     """
     op = table.op()
-    if isinstance(op, ops.Union):
+    if isinstance(op, ops.SetOp):
         # For some reason mypy considers `op.left` and `op.right`
         # of `Argument` type, and fails the validation. While in
         # `flatten` types are the same, and it works
         return toolz.concatv(
-            flatten_union(op.left),  # type: ignore
+            flatten_set_op(op.left),  # type: ignore
             [op.distinct],
-            flatten_union(op.right),  # type: ignore
+            flatten_set_op(op.right),  # type: ignore
         )
     return [table]
 
@@ -517,7 +502,9 @@ def flatten(table: ir.Table):
     Iterable[Union[Table]]
     """
     op = table.op()
-    return list(toolz.concatv(flatten_union(op.left), flatten_union(op.right)))
+    return list(
+        toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right))
+    )
 
 
 class Compiler:
@@ -617,35 +604,37 @@ class Compiler:
     def _generate_teardown_queries(expr, context):
         return []
 
-    @classmethod
-    def _make_union(cls, expr, context):
+    @staticmethod
+    def _make_set_op(cls, expr, context):
         # flatten unions so that we can codegen them all at once
-        union_info = list(flatten_union(expr))
+        set_op_info = list(flatten_set_op(expr))
 
         # since op is a union, we have at least 3 elements in union_info (left
         # distinct right) and if there is more than a single union we have an
         # additional two elements per union (distinct right) which means the
         # total number of elements is at least 3 + (2 * number of unions - 1)
         # and is therefore an odd number
-        npieces = len(union_info)
-        assert npieces >= 3 and npieces % 2 != 0, 'Invalid union expression'
+        npieces = len(set_op_info)
+        assert (
+            npieces >= 3 and npieces % 2 != 0
+        ), 'Invalid set operation expression'
 
         # 1. every other object starting from 0 is a Table instance
         # 2. every other object starting from 1 is a bool indicating the type
-        #    of union (distinct or not distinct)
-        table_exprs, distincts = union_info[::2], union_info[1::2]
-        return cls.union_class(
-            table_exprs, expr, distincts=distincts, context=context
-        )
+        #    of $set_op (distinct or not distinct)
+        table_exprs, distincts = set_op_info[::2], set_op_info[1::2]
+        return cls(table_exprs, expr, distincts=distincts, context=context)
+
+    @classmethod
+    def _make_union(cls, expr, context):
+        return cls._make_set_op(cls.union_class, expr, context)
 
     @classmethod
     def _make_intersect(cls, expr, context):
         # flatten intersections so that we can codegen them all at once
-        table_exprs = list(flatten(expr))
-        return cls.intersect_class(table_exprs, expr, context=context)
+        return cls._make_set_op(cls.intersect_class, expr, context)
 
     @classmethod
     def _make_difference(cls, expr, context):
         # flatten differences so that we can codegen them all at once
-        table_exprs = list(flatten(expr))
-        return cls.difference_class(table_exprs, expr, context=context)
+        return cls._make_set_op(cls.difference_class, expr, context)
