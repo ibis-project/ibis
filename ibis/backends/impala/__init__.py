@@ -1312,9 +1312,7 @@ class Backend(BaseSQLBackend):
         return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt):
-        return self.fetch_from_cursor(
-            self.raw_sql(stmt, results=True), schema=None
-        )
+        return self.fetch_from_cursor(self.raw_sql(stmt), schema=None)
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)

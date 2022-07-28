@@ -39,14 +39,14 @@ def test_refresh(con, spy, qname):
 def test_describe_formatted(con, spy, qname):
     t = con.table('functional_alltypes')
     desc = t.describe_formatted()
-    spy.assert_called_with(f'DESCRIBE FORMATTED {qname}', results=True)
+    spy.assert_called_with(f'DESCRIBE FORMATTED {qname}')
     assert isinstance(desc, metadata.TableMetadata)
 
 
 def test_show_files(con, spy, qname):
     t = con.table('functional_alltypes')
     desc = t.files()
-    spy.assert_called_with(f'SHOW FILES IN {qname}', results=True)
+    spy.assert_called_with(f'SHOW FILES IN {qname}')
     assert isinstance(desc, pd.DataFrame)
 
 
@@ -54,9 +54,9 @@ def test_table_column_stats(con, spy, qname):
     t = con.table('functional_alltypes')
 
     desc = t.stats()
-    spy.assert_called_with(f'SHOW TABLE STATS {qname}', results=True)
+    spy.assert_called_with(f'SHOW TABLE STATS {qname}')
     assert isinstance(desc, pd.DataFrame)
 
     desc = t.column_stats()
-    spy.assert_called_with(f'SHOW COLUMN STATS {qname}', results=True)
+    spy.assert_called_with(f'SHOW COLUMN STATS {qname}')
     assert isinstance(desc, pd.DataFrame)
