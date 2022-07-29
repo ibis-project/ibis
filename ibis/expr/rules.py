@@ -568,3 +568,14 @@ def window(win, *, from_base_table_of, this):
         if not isinstance(order_var.type(), dt.Timestamp):
             raise com.IbisInputError(error_msg)
     return win
+
+
+@validator
+def uri(arg, **kwargs):
+    import urllib.parse
+
+    arg = instance_of(str, arg)
+    uri = urllib.parse.urlparse(arg)
+    if not uri.scheme:
+        raise ValueError(f"Missing URI scheme in '{arg}'")
+    return arg

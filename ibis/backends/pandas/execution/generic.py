@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas import Backend as PandasBackend
 from ibis.backends.pandas import aggcontext as agg_ctx
-from ibis.backends.pandas.client import PandasTable
+from ibis.backends.pandas.client import PandasFileTable, PandasTable
 from ibis.backends.pandas.core import (
     boolean_types,
     date_types,
@@ -1077,6 +1077,33 @@ def execute_database_table_client(
         if time_col not in df:
             raise com.IbisError(
                 f'Table {op.name} must have a time column named {time_col}'
+                ' to execute with time context.'
+            )
+        # filter with time context
+        mask = df[time_col].between(begin, end)
+        return df.loc[mask].reset_index(drop=True)
+    return df
+
+
+@execute_node.register(
+    PandasFileTable, tuple, ops.ParquetFileFormat, PandasBackend
+)
+def execute_file_table_client(
+    op,
+    items,
+    file_format,
+    client,
+    timecontext: Optional[TimeContext],
+    **kwargs,
+):
+    df = pd.concat([pd.read_parquet(uri) for uri in items])
+
+    if timecontext:
+        begin, end = timecontext
+        time_col = get_time_col()
+        if time_col not in df:
+            raise com.IbisError(
+                f'Table must have a time column named {time_col}'
                 ' to execute with time context.'
             )
         # filter with time context

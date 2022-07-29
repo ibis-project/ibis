@@ -114,6 +114,37 @@ def test_custom_table_expr():
     assert isinstance(expr, MyTable)
 
 
+@pytest.mark.parametrize(
+    ['format_class', 'extension'],
+    [
+        (ops.ArrowFileFormat, 'arrow'),
+        (ops.OrcFileFormat, 'orc'),
+        (ops.ParquetFileFormat, 'parquet'),
+    ],
+)
+def test_file_table(format_class, extension):
+    node = ops.FileTable(
+        items=[
+            f's3://foo/2009/01/data.{extension}',
+            f's3://foo/2009/02/data.{extension}',
+        ],
+        schema=ibis.schema(
+            [
+                ('a', 'int32'),
+            ]
+        ),
+        file_format=format_class(),
+    )
+    assert str(node.to_expr())
+
+    with pytest.raises(ValueError, match='Missing URI scheme'):
+        node = ops.FileTable(
+            items=[f'foo/bar/baz.{extension}'],
+            schema=node.schema,
+            file_format=node.file_format,
+        )
+
+
 @pytest.fixture(scope='session')
 def dummy_op():
     class DummyOp(ops.Value):

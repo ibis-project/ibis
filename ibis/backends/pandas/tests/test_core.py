@@ -195,3 +195,22 @@ def test_scope_look_up():
     scope = scope.merge_scope(Scope({one_day: 1}, None))
     assert scope.get_value(one_hour) is None
     assert scope.get_value(one_day) is not None
+
+
+def test_file_table(dataframe, tmp_path):
+    path = tmp_path / 'data.parquet'
+    dataframe.to_parquet(path)
+    t = Backend().parquet_files([path])
+
+    assert t.op().items == (f'file://{path}',)
+    assert t.op().file_format == ops.ParquetFileFormat()
+    assert t.op().schema == ibis.schema(
+        [
+            ('plain_int64', 'int64'),
+            ('plain_strings', 'string'),
+            ('dup_strings', 'string'),
+        ]
+    )
+
+    result = t.execute()
+    tm.assert_frame_equal(result, dataframe)

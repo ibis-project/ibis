@@ -85,6 +85,48 @@ class DatabaseTable(PhysicalTable):
 
 
 @public
+class FileFormat(Node):
+    """
+    Base class representing the format of files in a FileTable.
+    """
+
+
+@public
+class ArrowFileFormat(FileFormat):
+    """
+    Files of Arrow IPC format.
+    """
+
+
+@public
+class OrcFileFormat(FileFormat):
+    """
+    Files of ORC format.
+    """
+
+
+@public
+class ParquetFileFormat(FileFormat):
+    """
+    Files of Parquet format.
+    """
+
+
+@public
+class FileTable(TableNode, sch.HasSchema):
+    """
+    A table sourced from a files on a local/remote filesystem.
+
+    More common in systems shaped like 'query engines' (e.g. Pandas,
+    Acero, DuckDB).
+    """
+
+    items = rlz.tuple_of(rlz.uri)
+    schema = rlz.instance_of(sch.Schema)
+    file_format = rlz.instance_of(FileFormat)
+
+
+@public
 class SQLQueryResult(TableNode, sch.HasSchema):
     """A table sourced from the result set of a select query"""
 

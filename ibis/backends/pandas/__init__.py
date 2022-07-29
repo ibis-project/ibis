@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, MutableMapping
 
 import pandas as pd
@@ -15,6 +16,7 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.client import (
     PandasDatabase,
+    PandasFileTable,
     PandasTable,
     ibis_schema_to_pandas,
 )
@@ -148,6 +150,53 @@ class BasePandasBackend(BaseBackend):
 
         if schema is not None:
             self.schemas[table_name] = schema
+
+    def parquet_files(self, files, schema=None):
+        """
+        Create a table backed by Parquet files on disk.
+
+        Parameters
+        ----------
+        files : list of str
+            A list of file paths.
+
+        schema : Schema, optional
+            The schema of the data. If not given, it will be inferred
+            from the *first* file listed.
+        """
+        if not files:
+            raise ValueError("Must pass as least one file")
+
+        # TODO: it'd be nice to support things like directories and
+        # globs here (would probably require being able to assume
+        # PyArrow)
+
+        items = []
+        for raw_path in files:
+            # Assume filesystem paths for now; in the future we could
+            # describe S3 paths, etc.
+            path = Path(raw_path).expanduser().resolve()
+            if not path.is_file():
+                raise ValueError(
+                    f"'{raw_path}' does not exist or is not a file!"
+                )
+
+            if not schema:
+                # It'd be nice to be able to assume PyArrow here to avoid
+                # reading the entire file
+                df = pd.read_parquet(path)
+                schema = sch.infer(df)
+
+            # N.B. the Pandas docs say this should be something like
+            # `file://localhost/path` but this doesn't actually work
+            items.append(f"file://{path}")
+
+        return PandasFileTable(
+            items=items,
+            schema=schema,
+            file_format=ops.ParquetFileFormat(),
+            source=self,
+        ).to_expr()
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:

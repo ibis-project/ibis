@@ -143,6 +143,14 @@ def _fmt_table_op_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
     return f"{top}\n{formatted_schema}"
 
 
+@fmt_table_op.register
+def _fmt_table_op_file_table(op: ops.FileTable, **_: Any) -> str:
+    lines = [f"{op.__class__.__name__}: {op.file_format}"]
+    lines.extend(f"  - {item}" for item in op.items)
+    lines.append(fmt_schema(op.schema))
+    return "\n".join(lines)
+
+
 def fmt_schema(schema: sch.Schema) -> str:
     """Format `schema`.
 

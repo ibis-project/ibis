@@ -158,6 +158,7 @@ def is_computable_input(arg):
 @is_computable_input.register(type(None))
 @is_computable_input.register(win.Window)
 @is_computable_input.register(tuple)
+@is_computable_input.register(ops.FileFormat)
 def is_computable_input_arg(arg):
     """Return whether `arg` is a valid computable argument."""
     return True
