@@ -870,3 +870,48 @@ def test_big_timestamp(con):
     result = con.execute(value)
     expected = datetime.datetime(2419, 10, 11, 10, 10, 25)
     assert result == expected
+
+
+DATE = datetime.date(2010, 11, 1)
+
+
+def build_date_col(t):
+    return (
+        t.year.cast("string")
+        + "-"
+        + t.month.cast("string").lpad(2, "0")
+        + "-"
+        + (t.int_col + 1).cast("string").lpad(2, "0")
+    ).cast("date")
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+@pytest.mark.parametrize(
+    ("left_fn", "right_fn"),
+    [
+        param(build_date_col, lambda _: DATE, id="column_date"),
+        param(lambda _: DATE, build_date_col, id="date_column"),
+    ],
+)
+def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
+    left = left_fn(alltypes)
+    right = right_fn(alltypes)
+    expr = left == right
+    result = expr.execute().rename("result")
+    expected = (
+        pd.to_datetime(
+            (
+                df.year.astype(str)
+                .add("-")
+                .add(df.month.astype(str).str.rjust(2, "0"))
+                .add("-")
+                .add(df.int_col.add(1).astype(str).str.rjust(2, "0"))
+            ),
+            format="%Y-%m-%d",
+            exact=True,
+        )
+        .eq(pd.Timestamp(DATE))
+        .rename("result")
+    )
+    backend.assert_series_equal(result, expected)
