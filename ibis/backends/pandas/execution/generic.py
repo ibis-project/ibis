@@ -25,6 +25,7 @@ from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.client import PandasTable
 from ibis.backends.pandas.core import (
     boolean_types,
+    date_types,
     execute,
     fixed_width_types,
     floating_types,
@@ -762,6 +763,18 @@ def execute_not_bool(_, data, **kwargs):
     return not data
 
 
+def _execute_binary_op_impl(op, left, right, **_):
+    op_type = type(op)
+    try:
+        operation = constants.BINARY_OPERATIONS[op_type]
+    except KeyError:
+        raise NotImplementedError(
+            f'Binary operation {op_type.__name__} not implemented'
+        )
+    else:
+        return operation(left, right)
+
+
 @execute_node.register(ops.Binary, pd.Series, pd.Series)
 @execute_node.register(
     (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
@@ -784,17 +797,16 @@ def execute_not_bool(_, data, **kwargs):
 @execute_node.register(ops.Multiply, integer_types, str)
 @execute_node.register(ops.Multiply, str, integer_types)
 @execute_node.register(ops.Comparison, pd.Series, timestamp_types)
-@execute_node.register(ops.Comparison, timestamp_types, pd.Series)
+@execute_node.register(ops.Comparison, timedelta_types, pd.Series)
 def execute_binary_op(op, left, right, **kwargs):
-    op_type = type(op)
-    try:
-        operation = constants.BINARY_OPERATIONS[op_type]
-    except KeyError:
-        raise NotImplementedError(
-            f'Binary operation {op_type.__name__} not implemented'
-        )
-    else:
-        return operation(left, right)
+    return _execute_binary_op_impl(op, left, right, **kwargs)
+
+
+@execute_node.register(ops.Comparison, pd.Series, date_types)
+def execute_binary_op_date(op, left, right, **kwargs):
+    return _execute_binary_op_impl(
+        op, pd.to_datetime(left), pd.to_datetime(right), **kwargs
+    )
 
 
 @execute_node.register(ops.Binary, SeriesGroupBy, SeriesGroupBy)
