@@ -515,16 +515,16 @@ test = ["pytest (>=3)", "pytest-cov", "boto3 (>=1.2.4)", "mock"]
 
 [[package]]
 name = "flake8"
-version = "4.0.1"
+version = "5.0.0"
 description = "the modular source code checker: pep8 pyflakes and co"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.6.1"
 
 [package.dependencies]
-mccabe = ">=0.6.0,<0.7.0"
-pycodestyle = ">=2.8.0,<2.9.0"
-pyflakes = ">=2.4.0,<2.5.0"
+mccabe = ">=0.7.0,<0.8.0"
+pycodestyle = ">=2.9.0,<2.10.0"
+pyflakes = ">=2.5.0,<2.6.0"
 
 [[package]]
 name = "fsspec"
@@ -997,11 +997,11 @@ traitlets = "*"
 
 [[package]]
 name = "mccabe"
-version = "0.6.1"
+version = "0.7.0"
 description = "McCabe checker, plugin for flake8"
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [[package]]
 name = "mdit-py-plugins"
@@ -1626,11 +1626,11 @@ numpy = ">=1.16.6"
 
 [[package]]
 name = "pycodestyle"
-version = "2.8.0"
+version = "2.9.0"
 description = "Python style guide checker"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = ">=3.6"
 
 [[package]]
 name = "pycparser"
@@ -1671,11 +1671,11 @@ toml = ["toml"]
 
 [[package]]
 name = "pyflakes"
-version = "2.4.0"
+version = "2.5.0"
 description = "passive checker of Python programs"
 category = "dev"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+python-versions = ">=3.6"
 
 [[package]]
 name = "pygments"
@@ -2394,7 +2394,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "5f1ba45df83838aef0d7f83b4ce289930dbe93eef08df5d4654fae6dc6403889"
+content-hash = "4f75116e5ee7ea53e319ea6bd531cc677a2a3e811f3392d728f67f751a0f4897"
 
 [metadata.files]
 absolufy-imports = [
@@ -3009,8 +3009,8 @@ fiona = [
     {file = "Fiona-1.8.21.tar.gz", hash = "sha256:3a0edca2a7a070db405d71187214a43d2333a57b4097544a3fcc282066a58bfc"},
 ]
 flake8 = [
-    {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
-    {file = "flake8-4.0.1.tar.gz", hash = "sha256:806e034dda44114815e23c16ef92f95c91e4c71100ff52813adf7132a6ad870d"},
+    {file = "flake8-5.0.0-py2.py3-none-any.whl", hash = "sha256:f44e470195849d0596cb488c7bd769086fcbe987c10cc9daae9a13b4136abb24"},
+    {file = "flake8-5.0.0.tar.gz", hash = "sha256:503b06b6795189e55298a70b695b1eb4f6b8d479fae81352fc97c72ca242509e"},
 ]
 fsspec = [
     {file = "fsspec-2022.5.0-py3-none-any.whl", hash = "sha256:2c198c50eb541a80bbd03540b07602c4a957366f3fb416a1f270d34bd4ff0926"},
@@ -3251,8 +3251,8 @@ matplotlib-inline = [
     {file = "matplotlib_inline-0.1.3-py3-none-any.whl", hash = "sha256:aed605ba3b72462d64d475a21a9296f400a19c4f74a31b59103d2a99ffd5aa5c"},
 ]
 mccabe = [
-    {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
-    {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
+    {file = "mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e"},
+    {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
 mdit-py-plugins = [
     {file = "mdit-py-plugins-0.3.0.tar.gz", hash = "sha256:ecc24f51eeec6ab7eecc2f9724e8272c2fb191c2e93cf98109120c2cace69750"},
@@ -3580,8 +3580,8 @@ pyarrow = [
     {file = "pyarrow-8.0.0.tar.gz", hash = "sha256:4a18a211ed888f1ac0b0ebcb99e2d9a3e913a481120ee9b1fe33d3fedb945d4e"},
 ]
 pycodestyle = [
-    {file = "pycodestyle-2.8.0-py2.py3-none-any.whl", hash = "sha256:720f8b39dde8b293825e7ff02c475f3077124006db4f440dcbc9a20b76548a20"},
-    {file = "pycodestyle-2.8.0.tar.gz", hash = "sha256:eddd5847ef438ea1c7870ca7eb78a9d47ce0cdb4851a5523949f2601d0cbbe7f"},
+    {file = "pycodestyle-2.9.0-py2.py3-none-any.whl", hash = "sha256:289cdc0969d589d90752582bef6dff57c5fbc6949ee8b013ad6d6449a8ae9437"},
+    {file = "pycodestyle-2.9.0.tar.gz", hash = "sha256:beaba44501f89d785be791c9462553f06958a221d166c64e1f107320f839acc2"},
 ]
 pycparser = [
     {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
@@ -3629,8 +3629,8 @@ pydocstyle = [
     {file = "pydocstyle-6.1.1.tar.gz", hash = "sha256:1d41b7c459ba0ee6c345f2eb9ae827cab14a7533a88c5c6f7e94923f72df92dc"},
 ]
 pyflakes = [
-    {file = "pyflakes-2.4.0-py2.py3-none-any.whl", hash = "sha256:3bb3a3f256f4b7968c9c788781e4ff07dce46bdf12339dcda61053375426ee2e"},
-    {file = "pyflakes-2.4.0.tar.gz", hash = "sha256:05a85c2872edf37a4ed30b0cce2f6093e1d0581f8c19d7393122da7e25b2b24c"},
+    {file = "pyflakes-2.5.0-py2.py3-none-any.whl", hash = "sha256:4579f67d887f804e67edb544428f264b7b24f435b263c4614f384135cea553d2"},
+    {file = "pyflakes-2.5.0.tar.gz", hash = "sha256:491feb020dca48ccc562a8c0cbe8df07ee13078df59813b83959cbdada312ea3"},
 ]
 pygments = [
     {file = "Pygments-2.12.0-py3-none-any.whl", hash = "sha256:dc9c10fb40944260f6ed4c688ece0cd2048414940f1cea51b8b226318411c519"},
