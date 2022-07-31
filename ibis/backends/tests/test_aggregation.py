@@ -495,7 +495,7 @@ def test_approx_median(alltypes):
             L(":") + ":",
             "::",
             id="expr",
-            marks=mark.notyet(["duckdb", "impala", "mysql", "pyspark"]),
+            marks=mark.notyet(["duckdb", "mysql", "pyspark"]),
         ),
     ],
 )
