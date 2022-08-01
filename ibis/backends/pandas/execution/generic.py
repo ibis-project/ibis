@@ -983,6 +983,17 @@ def execute_node_contains_series_sequence(op, data, elements, **kwargs):
 
 
 @execute_node.register(
+    ops.Contains,
+    SeriesGroupBy,
+    (collections.abc.Sequence, collections.abc.Set, pd.Series),
+)
+def execute_node_contains_series_group_by_sequence(
+    op, data, elements, **kwargs
+):
+    return data.obj.isin(elements).groupby(data.grouper.groupings)
+
+
+@execute_node.register(
     ops.NotContains,
     pd.Series,
     (collections.abc.Sequence, collections.abc.Set, pd.Series),
