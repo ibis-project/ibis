@@ -237,6 +237,8 @@ def execute_group_concat_series_gb_mask(
     op, data, sep, mask, aggcontext=None, **kwargs
 ):
     def method(series, sep=sep):
+        if series.empty:
+            return pd.NA
         return sep.join(series.values.astype(str))
 
     return aggcontext.agg(
