@@ -46,21 +46,13 @@ def _get_semi_anti_join_filter(op, left, right, predicates, **kwargs):
         predicates,
         **kwargs,
     )
-    inner = pd.merge(
-        left,
-        right,
-        how="outer",
-        left_on=left_on,
-        right_on=right_on,
+    inner = left.merge(
+        right[right_on].drop_duplicates(),
+        on=left_on,
+        how="left",
         indicator=True,
-        suffixes=constants.JOIN_SUFFIXES,
     )
-    predicates = (
-        inner["_merge"]
-        .apply(lambda x: True if x == "both" else False)
-        .astype(bool)
-    )
-    return predicates
+    return (inner["_merge"] == "both").values
 
 
 @execute_node.register(ops.LeftSemiJoin, pd.DataFrame, pd.DataFrame, tuple)

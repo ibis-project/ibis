@@ -15,13 +15,8 @@ def _pandas_semi_join(left, right, on, **_):
 
 
 def _pandas_anti_join(left, right, on, **_):
-    assert len(on) == 1, str(on)
-    inner = pd.merge(left, right, how="outer", indicator=True, on=on)
-    return (
-        inner["_merge"]
-        .apply(lambda x: True if x == "both" else False)
-        .astype(bool)
-    )
+    inner = pd.merge(left, right, how="left", indicator=True, on=on)
+    return inner[inner["_merge"] == "left_only"]
 
 
 def _merge(
