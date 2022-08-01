@@ -25,6 +25,7 @@ from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.client import PandasTable
 from ibis.backends.pandas.core import (
     boolean_types,
+    date_types,
     execute,
     fixed_width_types,
     floating_types,
@@ -762,6 +763,18 @@ def execute_not_bool(_, data, **kwargs):
     return not data
 
 
+def _execute_binary_op_impl(op, left, right, **_):
+    op_type = type(op)
+    try:
+        operation = constants.BINARY_OPERATIONS[op_type]
+    except KeyError:
+        raise NotImplementedError(
+            f'Binary operation {op_type.__name__} not implemented'
+        )
+    else:
+        return operation(left, right)
+
+
 @execute_node.register(ops.Binary, pd.Series, pd.Series)
 @execute_node.register(
     (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
@@ -784,17 +797,16 @@ def execute_not_bool(_, data, **kwargs):
 @execute_node.register(ops.Multiply, integer_types, str)
 @execute_node.register(ops.Multiply, str, integer_types)
 @execute_node.register(ops.Comparison, pd.Series, timestamp_types)
-@execute_node.register(ops.Comparison, timestamp_types, pd.Series)
+@execute_node.register(ops.Comparison, timedelta_types, pd.Series)
 def execute_binary_op(op, left, right, **kwargs):
-    op_type = type(op)
-    try:
-        operation = constants.BINARY_OPERATIONS[op_type]
-    except KeyError:
-        raise NotImplementedError(
-            f'Binary operation {op_type.__name__} not implemented'
-        )
-    else:
-        return operation(left, right)
+    return _execute_binary_op_impl(op, left, right, **kwargs)
+
+
+@execute_node.register(ops.Comparison, pd.Series, date_types)
+def execute_binary_op_date(op, left, right, **kwargs):
+    return _execute_binary_op_impl(
+        op, pd.to_datetime(left), pd.to_datetime(right), **kwargs
+    )
 
 
 @execute_node.register(ops.Binary, SeriesGroupBy, SeriesGroupBy)
@@ -879,20 +891,36 @@ def execute_union_dataframe_dataframe(
     return result.drop_duplicates() if distinct else result
 
 
-@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame)
+@execute_node.register(ops.Intersection, pd.DataFrame, pd.DataFrame, bool)
 def execute_intersection_dataframe_dataframe(
-    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+    op,
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    distinct: bool,
+    **kwargs,
 ):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
     result = left.merge(right, on=list(left.columns), how="inner")
     return result
 
 
-@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame)
+@execute_node.register(ops.Difference, pd.DataFrame, pd.DataFrame, bool)
 def execute_difference_dataframe_dataframe(
-    op, left: pd.DataFrame, right: pd.DataFrame, **kwargs
+    op,
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    distinct: bool,
+    **kwargs,
 ):
+    if not distinct:
+        raise NotImplementedError(
+            "`distinct=False` is not supported by the pandas backend"
+        )
     merged = left.merge(
-        right, on=list(left.columns), how='outer', indicator=True
+        right, on=list(left.columns), how="outer", indicator=True
     )
     result = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
     return result

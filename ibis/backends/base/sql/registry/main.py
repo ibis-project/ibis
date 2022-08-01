@@ -227,6 +227,11 @@ def hash(translator, expr):
         raise NotImplementedError(how)
 
 
+def concat(translator, expr):
+    joined_args = ', '.join(map(translator.translate, expr.op().arg))
+    return f"concat({joined_args})"
+
+
 binary_infix_ops = {
     # Binary operations
     ops.Add: binary_infix.binary_infix_op('+'),
@@ -304,7 +309,7 @@ operation_registry = {
     ops.Count: aggregate.reduction('count'),
     ops.CountDistinct: aggregate.count_distinct,
     # string operations
-    ops.StringConcat: fixed_arity('concat', 2),
+    ops.StringConcat: concat,
     ops.StringLength: unary('length'),
     ops.StringAscii: unary('ascii'),
     ops.Lowercase: unary('lower'),

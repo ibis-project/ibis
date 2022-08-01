@@ -73,7 +73,7 @@ class BaseSQLBackend(BaseBackend):
             f"Backend {self.name} does not support .sql()"
         )
 
-    def raw_sql(self, query: str, results: bool = False) -> Any:
+    def raw_sql(self, query: str) -> Any:
         """Execute a query string.
 
         Could have unexpected results if the query modifies the behavior of

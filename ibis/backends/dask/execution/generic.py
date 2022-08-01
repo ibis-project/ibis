@@ -27,6 +27,7 @@ from ibis.backends.dask.execution.util import (
     register_types_to_dispatcher,
 )
 from ibis.backends.pandas.core import (
+    date_types,
     integer_types,
     numeric_types,
     simple_types,
@@ -34,6 +35,7 @@ from ibis.backends.pandas.core import (
 )
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.generic import (
+    _execute_binary_op_impl,
     execute_between,
     execute_cast_series_array,
     execute_cast_series_generic,
@@ -105,12 +107,15 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ],
     ops.Intersection: [
         (
-            (dd.DataFrame, dd.DataFrame),
+            (dd.DataFrame, dd.DataFrame, bool),
             execute_intersection_dataframe_dataframe,
         )
     ],
     ops.Difference: [
-        ((dd.DataFrame, dd.DataFrame), execute_difference_dataframe_dataframe)
+        (
+            (dd.DataFrame, dd.DataFrame, bool),
+            execute_difference_dataframe_dataframe,
+        )
     ],
     ops.DropNa: [((dd.DataFrame, tuple), execute_node_dropna_dataframe)],
     ops.FillNa: [
@@ -311,15 +316,14 @@ def execute_not_scalar_or_series(op, data, **kwargs):
 @execute_node.register(ops.Comparison, dd.Series, timestamp_types)
 @execute_node.register(ops.Comparison, timestamp_types, dd.Series)
 def execute_binary_op(op, left, right, **kwargs):
-    op_type = type(op)
-    try:
-        operation = constants.BINARY_OPERATIONS[op_type]
-    except KeyError:
-        raise NotImplementedError(
-            f'Binary operation {op_type.__name__} not implemented'
-        )
-    else:
-        return operation(left, right)
+    return _execute_binary_op_impl(op, left, right, **kwargs)
+
+
+@execute_node.register(ops.Comparison, dd.Series, date_types)
+def execute_binary_op_date_right(op, left, right, **kwargs):
+    return _execute_binary_op_impl(
+        op, dd.to_datetime(left), pd.to_datetime(right), **kwargs
+    )
 
 
 @execute_node.register(ops.Binary, ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)

@@ -37,8 +37,8 @@ def test_execute_exprs_default_backend(con_no_hdfs):
 
 def test_cursor_garbage_collection(con):
     for i in range(5):
-        con.raw_sql('select 1', True).fetchall()
-        con.raw_sql('select 1', True).fetchone()
+        con.raw_sql('select 1').fetchall()
+        con.raw_sql('select 1').fetchone()
 
 
 def test_raise_ibis_error_no_hdfs(con_no_hdfs):
@@ -72,7 +72,7 @@ def test_sql_with_limit(con):
 
 def test_raw_sql(con):
     query = 'SELECT * from functional_alltypes limit 10'
-    cur = con.raw_sql(query, results=True)
+    cur = con.raw_sql(query)
     rows = cur.fetchall()
     cur.release()
     assert len(rows) == 10
@@ -298,17 +298,17 @@ def con2(env):
 def test_rerelease_cursor(con2):
     # we use a separate `con2` fixture here because any connection pool
     # manipulation we want to happen independently of `con`
-    with con2.raw_sql('select 1', True) as cur1:
+    with con2.raw_sql('select 1') as cur1:
         pass
 
     cur1.release()
 
-    with con2.raw_sql('select 1', True) as cur2:
+    with con2.raw_sql('select 1') as cur2:
         pass
 
     cur2.release()
 
-    with con2.raw_sql('select 1', True) as cur3:
+    with con2.raw_sql('select 1') as cur3:
         pass
 
     assert cur1 == cur2
@@ -337,7 +337,7 @@ def test_datetime_to_int_cast(con):
 
 def test_set_option_with_dot(con):
     con.set_options({'request_pool': 'baz.quux'})
-    result = dict(row[:2] for row in con.raw_sql('set', True).fetchall())
+    result = dict(row[:2] for row in con.raw_sql('set').fetchall())
     assert result['REQUEST_POOL'] == 'baz.quux'
 
 

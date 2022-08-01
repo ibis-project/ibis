@@ -19,8 +19,8 @@ from ibis.backends.base.sql.compiler import (
     Select,
     SelectBuilder,
     TableSetFormatter,
-    Union,
 )
+from ibis.backends.base.sql.compiler.base import SetOp
 
 
 def _schema_to_sqlalchemy_columns(schema: sch.Schema) -> list[sa.Column]:
@@ -343,13 +343,14 @@ class AlchemySelectBuilder(SelectBuilder):
         return exprs
 
 
-class AlchemyUnion(Union):
-    def compile(self):
-        def reduce_union(left, right, distincts=iter(self.distincts)):
-            distinct = next(distincts)
-            sa_func = sa.union if distinct else sa.union_all
-            return sa_func(left, right)
+class AlchemySetOp(SetOp):
+    @classmethod
+    def reduce(cls, left, right, distincts):
+        distinct = next(distincts)
+        sa_func = cls.distinct_func if distinct else cls.non_distinct_func
+        return sa_func(left, right)
 
+    def compile(self):
         context = self.context
         selects = []
 
@@ -357,7 +358,25 @@ class AlchemyUnion(Union):
             table_set = context.get_compiled_expr(table)
             selects.append(table_set.cte().select())
 
-        return functools.reduce(reduce_union, selects)
+        return functools.reduce(
+            functools.partial(self.reduce, distincts=iter(self.distincts)),
+            selects,
+        )
+
+
+class AlchemyUnion(AlchemySetOp):
+    distinct_func = sa.union
+    non_distinct_func = sa.union_all
+
+
+class AlchemyIntersection(AlchemySetOp):
+    distinct_func = sa.intersect
+    non_distinct_func = sa.intersect_all
+
+
+class AlchemyDifference(AlchemySetOp):
+    distinct_func = sa.except_
+    non_distinct_func = sa.except_all
 
 
 class AlchemyCompiler(Compiler):
@@ -367,6 +386,8 @@ class AlchemyCompiler(Compiler):
     select_builder_class = AlchemySelectBuilder
     select_class = AlchemySelect
     union_class = AlchemyUnion
+    intersect_class = AlchemyIntersection
+    difference_class = AlchemyDifference
 
     @classmethod
     def to_sql(cls, expr, context=None, params=None, exists=False):
