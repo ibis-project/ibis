@@ -1,4 +1,3 @@
-import functools
 import operator
 
 import pandas as pd
@@ -47,16 +46,13 @@ def _get_semi_anti_join_filter(op, left, right, predicates, **kwargs):
         predicates,
         **kwargs,
     )
-    inner = pd.merge(
-        left,
-        right,
-        how="inner",
-        left_on=left_on,
-        right_on=right_on,
-        suffixes=constants.JOIN_SUFFIXES,
+    inner = left.merge(
+        right[right_on].drop_duplicates(),
+        on=left_on,
+        how="left",
+        indicator=True,
     )
-    predicates = [left.loc[:, key].isin(inner.loc[:, key]) for key in left_on]
-    return functools.reduce(operator.and_, predicates)
+    return (inner["_merge"] == "both").values
 
 
 @execute_node.register(ops.LeftSemiJoin, pd.DataFrame, pd.DataFrame, tuple)
