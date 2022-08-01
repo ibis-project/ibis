@@ -506,7 +506,7 @@ def test_approx_median(alltypes):
         param(
             lambda t: t.string_col.isin(['1', '7']),
             lambda t: t.string_col.isin(['1', '7']),
-            marks=mark.notimpl(["dask", "pandas"]),
+            marks=mark.notimpl(["dask"]),
             id='is_in',
         ),
     ],
