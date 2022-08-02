@@ -34,7 +34,7 @@ decli==0.5.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" a
 decorator==5.1.1; python_version >= "3.8"
 defusedxml==0.7.1; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 docstring-parser==0.14.1; python_version >= "3.7" and python_version < "4.0"
-duckdb-engine==0.2.0; python_full_version >= "3.6.1"
+duckdb-engine==0.3.0; python_full_version >= "3.6.1"
 duckdb==0.4.0
 dunamai==1.12.0; python_version >= "3.5" and python_version < "4.0"
 entrypoints==0.4; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
