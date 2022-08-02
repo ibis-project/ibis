@@ -427,7 +427,7 @@ numpy = ">=1.14"
 
 [[package]]
 name = "duckdb-engine"
-version = "0.2.0"
+version = "0.3.0"
 description = ""
 category = "main"
 optional = true
@@ -2412,7 +2412,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "71cc8b908ae71905980db4654130d3bfc55029e53565edaa14bb5de2b74974d1"
+content-hash = "abdb00f45d9e48af4ec4b356bff99d04340c9ec53ca53e9ca8a3e4116b4b78e3"
 
 [metadata.files]
 absolufy-imports = [
@@ -2990,8 +2990,8 @@ duckdb = [
     {file = "duckdb-0.4.0.tar.gz", hash = "sha256:569e5d618de871e21dd676925349a7a5e701b87ebda3433e0c1d57627a465c1c"},
 ]
 duckdb-engine = [
-    {file = "duckdb_engine-0.2.0-py3-none-any.whl", hash = "sha256:55215d1162c4fe858671aa66577e843d618670f02c55564bb7f4f4fdc3c4a134"},
-    {file = "duckdb_engine-0.2.0.tar.gz", hash = "sha256:a088b93ff63fd3efe4175d9cb810aaa9a7e96ea60a379ba66a57af16461462af"},
+    {file = "duckdb_engine-0.3.0-py3-none-any.whl", hash = "sha256:b27afc21fed04d97be4dd545e5144c725e5c00626f9b1af915510d64424ec093"},
+    {file = "duckdb_engine-0.3.0.tar.gz", hash = "sha256:824638a9326dc1ae9fcf586326c73449904b2a5b69a0da41c8b942f6ae0f75e7"},
 ]
 dunamai = [
     {file = "dunamai-1.12.0-py3-none-any.whl", hash = "sha256:00b9c1ef58d4950204f76c20f84afe7a28d095f77feaa8512dbb172035415e61"},
