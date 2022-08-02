@@ -343,3 +343,19 @@ def test_not_verify(alchemy_con, alchemy_backend):
 
     with pytest.warns(FutureWarning):
         assert not alchemy_backend.api.verify(expr)
+
+
+@pytest.mark.never(
+    ["postgres", "mysql"],
+    reason="postgres and mysql do not support in-memory tables",
+    raises=TypeError,
+)
+def test_in_memory(alchemy_backend):
+    con = getattr(ibis, alchemy_backend.name()).connect(path=":memory:")
+    table_name = f"t{guid()[:6]}"
+    con.raw_sql(f"CREATE TABLE {table_name} (x int)")
+    try:
+        assert table_name in con.list_tables()
+    finally:
+        con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        assert table_name not in con.list_tables()
