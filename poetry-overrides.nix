@@ -63,6 +63,12 @@ in
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.pdm-pep517 ];
   });
 
+  pkgutil-resolve-name = super.pkgutil-resolve-name.overrideAttrs (
+    attrs: lib.optionalAttrs (lib.versionOlder self.python.version "3.9") {
+      nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
+    }
+  );
+
   watchdog = super.watchdog.overrideAttrs (attrs: lib.optionalAttrs
     (stdenv.isDarwin && lib.versionAtLeast attrs.version "2")
     {
