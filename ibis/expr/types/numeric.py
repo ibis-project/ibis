@@ -663,7 +663,8 @@ class NumericColumn(Column, NumericValue):
         prefix: str = "",
         suffix: str = "",
     ) -> list[NumericScalar]:
-        """Compute a set of summary metrics from the input numeric value expression.
+        """Compute a set of summary metrics from the input numeric value
+        expression.
 
         Parameters
         ----------

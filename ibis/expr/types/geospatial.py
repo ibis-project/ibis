@@ -337,8 +337,8 @@ class GeoSpatialValue(NumericValue):
         return op.to_expr()
 
     def overlaps(self, right: GeoSpatialValue) -> ir.BooleanValue:
-        """Check if the geometries share space, have the same dimension, and are
-        not completely contained by each other.
+        """Check if the geometries share space, have the same dimension, and
+        are not completely contained by each other.
 
         Parameters
         ----------
@@ -356,8 +356,8 @@ class GeoSpatialValue(NumericValue):
         return op.to_expr()
 
     def touches(self, right: GeoSpatialValue) -> ir.BooleanValue:
-        """Check if the geometries have at least one point in common, but do not
-        intersect.
+        """Check if the geometries have at least one point in common, but do
+        not intersect.
 
         Parameters
         ----------
@@ -655,9 +655,9 @@ class GeoSpatialValue(NumericValue):
         return op.to_expr()
 
     def buffer(self, radius: float | ir.FloatingValue) -> GeoSpatialValue:
-        """Returns a geometry that represents all points whose distance from this
-        Geometry is less than or equal to distance. Calculations are in the
-        Spatial Reference System of this Geometry.
+        """Returns a geometry that represents all points whose distance from
+        this Geometry is less than or equal to distance. Calculations are in
+        the Spatial Reference System of this Geometry.
 
         Parameters
         ----------
@@ -719,8 +719,8 @@ class GeoSpatialValue(NumericValue):
         return op.to_expr()
 
     def azimuth(self, right: GeoSpatialValue) -> ir.FloatingValue:
-        """Return the angle in radians from the horizontal of the vector defined by
-        `self` and `right`.
+        """Return the angle in radians from the horizontal of the vector
+        defined by `self` and `right`.
 
         Angle is computed clockwise from down-to-up on the clock:
         12=0; 3=PI/2; 6=PI; 9=3PI/2.

@@ -237,7 +237,8 @@ class GroupedTable:
         )
 
     def over(self, window: _window.Window) -> GroupedTable:
-        """Add a window frame clause to be applied to child analytic expressions.
+        """Add a window frame clause to be applied to child analytic
+        expressions.
 
         Parameters
         ----------
