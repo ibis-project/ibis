@@ -466,7 +466,8 @@ class Value(Expr):
         sep: str = ",",
         where: ir.BooleanValue | None = None,
     ) -> ir.StringScalar:
-        """Concatenate values using the indicated separator to produce a string.
+        """Concatenate values using the indicated separator to produce a
+        string.
 
         Parameters
         ----------

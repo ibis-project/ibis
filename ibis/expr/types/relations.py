@@ -377,7 +377,7 @@ class Table(Expr):
         return ops.Distinct(self).to_expr()
 
     def limit(self, n: int, offset: int = 0) -> Table:
-        """Select the first `n` rows at beginning of table starting at `offset`.
+        """Select the first `n` rows starting at `offset`.
 
         Parameters
         ----------
