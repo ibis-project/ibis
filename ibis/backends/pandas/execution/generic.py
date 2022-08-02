@@ -1002,6 +1002,17 @@ def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     return ~(data.isin(elements))
 
 
+@execute_node.register(
+    ops.NotContains,
+    SeriesGroupBy,
+    (collections.abc.Sequence, collections.abc.Set, pd.Series),
+)
+def execute_node_not_contains_series_group_by_sequence(
+    op, data, elements, **kwargs
+):
+    return (~data.obj.isin(elements)).groupby(data.grouper.groupings)
+
+
 # Series, Series, Series
 # Series, Series, scalar
 @execute_node.register(ops.Where, pd.Series, pd.Series, pd.Series)
