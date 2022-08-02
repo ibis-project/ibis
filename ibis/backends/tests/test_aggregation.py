@@ -509,6 +509,12 @@ def test_approx_median(alltypes):
             marks=mark.notimpl(["dask"]),
             id='is_in',
         ),
+        param(
+            lambda t: t.string_col.notin(['1', '7']),
+            lambda t: ~t.string_col.isin(['1', '7']),
+            marks=mark.notimpl(["dask"]),
+            id='not_in',
+        ),
     ],
 )
 @mark.notimpl(["datafusion"])
