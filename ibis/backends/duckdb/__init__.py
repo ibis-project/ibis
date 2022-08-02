@@ -111,12 +111,13 @@ class Backend(BaseAlchemyBackend):
         read_only
             Whether the database is read-only
         """
-        if path != ":memory:":
+        if not (in_memory := path == ":memory:"):
             path = Path(path).absolute()
         super().do_connect(
             sa.create_engine(
                 f"duckdb:///{path}",
                 connect_args={"read_only": read_only},
+                poolclass=sa.pool.SingletonThreadPool if in_memory else None,
             )
         )
         self._meta = sa.MetaData(bind=self.con)
