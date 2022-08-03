@@ -46,7 +46,7 @@ import sources.nixpkgs {
         # subprocess invocations of `mkdocs` by `mike` to see Python dependencies.
         #
         # This shouldn't be necessary, but I think the nix wrappers may be
-        # indavertently preventing this.
+        # inadvertently preventing this.
         text = ''
           export PYTHONPATH TEMPDIR
 
@@ -55,26 +55,6 @@ import sources.nixpkgs {
 
           mike "$@"
         '';
-      };
-
-      aws-sdk-cpp = (super.aws-sdk-cpp.overrideAttrs (attrs: {
-        patches = (attrs.patches or [ ]) ++ [
-          # https://github.com/aws/aws-sdk-cpp/pull/1912
-          (pkgs.fetchpatch {
-            url = "https://github.com/aws/aws-sdk-cpp/commit/1884876d331f97e75e60a2f210b4ecd8401ecc8f.patch";
-            sha256 = "sha256-nea8TF6iJcHjwv0nsbrbw15ALQfLeB/DvRRpk35AWAU=";
-          })
-        ];
-      })).override {
-        apis = [
-          "cognito-identity"
-          "config"
-          "core"
-          "identity-management"
-          "s3"
-          "sts"
-          "transfer"
-        ];
       };
 
       changelog = pkgs.writeShellApplication {

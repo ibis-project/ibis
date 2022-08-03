@@ -55,7 +55,7 @@ graphviz = { version = ">=0.16,<0.21", optional = true }
 impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
 lz4 = { version = ">=3.1.10,<5", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pyarrow = { version = ">=1,<9", optional = true }
+pyarrow = { version = ">=1,<10", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
@@ -87,7 +87,7 @@ mkdocs-table-reader-plugin = ">=1.0.0,<2"
 mkdocstrings = ">=0.17.0,<0.18.0"
 mypy = ">=0.942,<1"
 poetry-dynamic-versioning = ">=0.14.0,<1"
-pyarrow = ">=1,<9"
+pyarrow = ">=1,<10"
 pydocstyle = ">=6.1.1,<7"
 pytest = ">=7.0.0,<8"
 pytest-benchmark = ">=3.4.1,<4"

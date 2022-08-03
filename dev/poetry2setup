@@ -1,5 +1,6 @@
 #!/usr/bin/env nix-shell
-#!nix-shell --pure -p python3Packages.black -p python3Packages.poetry-core -p bash -i bash
+#!nix-shell -I nixpkgs=channel:nixos-unstable-small --pure -p python3Packages.black -p python3Packages.poetry-core -p bash -i bash
+# shellcheck shell=bash
 # vim: filetype=sh
 
 set -euo pipefail

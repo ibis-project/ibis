@@ -49,12 +49,8 @@ let
 
   updateLockFiles = pkgs.writeShellApplication {
     name = "update-lock-files";
-    runtimeInputs = [ pythonEnv.pkgs.poetry ];
     text = ''
-      export PYTHONHASHSEED=42
-      poetry lock --no-update
-      poetry export --dev --without-hashes --no-ansi --extras all > requirements.txt
-      ./dev/poetry2setup -o setup.py
+      ${./dev/update-lock-files.sh} "$PWD"
     '';
   };
 in
