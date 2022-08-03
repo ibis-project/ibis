@@ -66,10 +66,9 @@ install_requires = [
 ]
 
 extras_require = {
-    'adbc': [
-        'adbc-driver-manager @ ../arrow-adbc/python/adbc_driver_manager',
-        'pyarrow>=1,<9',
-        'sqlalchemy>=1.4,<2.0',
+    'adbc': ['pyarrow>=1,<9', 'sqlalchemy>=1.4,<2.0'],
+    'adbc:python_version >= "3.10" and python_version < "4.0"': [
+        'adbc-driver-manager==0.0.1a0'
     ],
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',

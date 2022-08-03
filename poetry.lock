@@ -7,17 +7,12 @@ optional = false
 python-versions = ">=3.6.1"
 
 [[package]]
-name = "ADBC-Driver-Manager"
-version = "0.0.0"
+name = "adbc-driver-manager"
+version = "0.0.1a0"
 description = ""
 category = "main"
 optional = true
-python-versions = "*"
-develop = false
-
-[package.source]
-type = "directory"
-url = "../arrow-adbc/python/adbc_driver_manager"
+python-versions = ">=3.10,<4.0"
 
 [[package]]
 name = "appnope"
@@ -2434,14 +2429,17 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "2b5f155aa98da27330735621334d8cec4f1133c9f82e419bcac4dcb7a307d112"
+content-hash = "0a5d7630e398417af82ea8655577411b35b3cb320cc651e2cf4691f9c382ace5"
 
 [metadata.files]
 absolufy-imports = [
     {file = "absolufy_imports-0.3.1-py2.py3-none-any.whl", hash = "sha256:49bf7c753a9282006d553ba99217f48f947e3eef09e18a700f8a82f75dc7fc5c"},
     {file = "absolufy_imports-0.3.1.tar.gz", hash = "sha256:c90638a6c0b66826d1fb4880ddc20ef7701af34192c94faf40b95d32b59f9793"},
 ]
-ADBC-Driver-Manager = []
+adbc-driver-manager = [
+    {file = "adbc_driver_manager-0.0.1a0-cp310-cp310-manylinux_2_27_x86_64.whl", hash = "sha256:32c24da013097e0bdd05131c009a7b5a6cefb2301478bfd5c5d8cad23341ffe9"},
+    {file = "adbc_driver_manager-0.0.1a0.tar.gz", hash = "sha256:5b45293bf40311e42b5fdb3db1b664caabeda111553029fab1d52def541b47a5"},
+]
 appnope = [
     {file = "appnope-0.1.3-py2.py3-none-any.whl", hash = "sha256:265a455292d0bd8a72453494fa24df5a11eb18373a60c7c0430889f22548605e"},
     {file = "appnope-0.1.3.tar.gz", hash = "sha256:02bd91c4de869fbb1e1c50aafc4098827a7a54ab2f39d9dcba6c9547ed920e24"},
