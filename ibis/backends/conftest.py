@@ -243,9 +243,15 @@ def _get_backend_names() -> frozenset[str]:
 
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
-    conftest = importlib.import_module(
-        f"ibis.backends.{backend_str}.tests.conftest"
-    )
+    if backend_str.startswith("adbc_"):
+        driver = backend_str[5:]
+        conftest = importlib.import_module(
+            f"ibis.backends.adbc.tests.{driver}.conftest"
+        )
+    else:
+        conftest = importlib.import_module(
+            f"ibis.backends.{backend_str}.tests.conftest"
+        )
     return conftest.TestConf
 
 
@@ -331,14 +337,28 @@ def _get_backends_to_test(
     # spark is an alias for pyspark
     backends = backends.difference(("spark",))
 
-    return [
+    params = [
         pytest.param(
             backend,
             marks=[getattr(pytest.mark, backend), pytest.mark.backend],
             id=backend,
         )
         for backend in sorted(backends)
+        if backend != "adbc"
     ]
+
+    if "adbc" in backends:
+        params.extend(
+            [
+                pytest.param(
+                    "adbc_sqlite",
+                    marks=[pytest.mark.adbc_sqlite, pytest.mark.backend],
+                    id="adbc_sqlite",
+                )
+            ]
+        )
+
+    return params
 
 
 def pytest_runtest_call(item):
@@ -444,7 +464,6 @@ def backend(
     request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
     """Return an instance of BackendTest, loaded with data."""
-
     cls = _get_backend_conf(request.param)
     return cls.load_data(
         data_directory, script_directory, tmp_path_factory, worker_id

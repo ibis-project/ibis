@@ -3,9 +3,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import pytest
-import sqlalchemy as sa
-
 import ibis
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
@@ -34,6 +31,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
         )
 
     @property
-    def functional_alltypes(self) -> ir.Table:
+    def functional_alltypes(self):
         t = super().functional_alltypes
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
