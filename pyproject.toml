@@ -64,10 +64,12 @@ Shapely = { version = ">=1.6,<1.8.3", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
 
 [tool.poetry.dev-dependencies]
+Cython = ">=0.29,<1"
 absolufy-imports = ">=0.3.1,<1"
 black = ">=22.1.0,<23"
 click = ">=8.0.1,<9"
 commitizen = ">=2.20.3,<3"
+filelock = ">=3.7.0,<4"
 flake8 = ">=4.0.0,<6"
 ipdb = "^0.13.9"
 ipykernel = ">=6,<7"
@@ -98,7 +100,6 @@ pytest-profiling = ">=1.7.0,<2"
 pytest-randomly = ">=3.10.1,<4"
 pytest-repeat = ">=0.9.1,<0.10"
 pytest-xdist = ">=2.3.0,<3"
-filelock = ">=3.7.0,<4"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
 pyupgrade = ">=2.26.0,<3"
 requests = ">=2,<3"

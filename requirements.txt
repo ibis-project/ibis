@@ -27,7 +27,6 @@ colorama==0.4.5; platform_system == "Windows" and python_version >= "3.8" and py
 commitizen==2.29.3; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
 coverage==6.4.2; python_version >= "3.7"
-cython==0.29.32; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 dask==2022.7.1; python_version >= "3.8"
 datafusion==0.6.0; python_version >= "3.6"
 debugpy==1.6.2; python_version >= "3.7"
