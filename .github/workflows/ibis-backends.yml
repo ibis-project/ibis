@@ -25,6 +25,9 @@ jobs:
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ibis
     strategy:
       fail-fast: false
       matrix:
@@ -119,11 +122,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: apache/arrow-adbc
-          path: ./arrow-adbc
+          path: arrow-adbc
           ref: ef70af6aff8da61bbe2f19f14c607aa6c07caf33
-
-      - name: move arrow-adbc
-        run: mv arrow-adbc ..
 
       - name: install sqlite
         if: ${{ matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite' }}
@@ -137,6 +137,8 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v3
+        with:
+          path: ibis
 
       - name: start services
         if: ${{ matrix.backend.services != null }}
