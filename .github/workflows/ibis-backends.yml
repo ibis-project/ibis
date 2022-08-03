@@ -39,7 +39,7 @@ jobs:
             title: ADBC
             sys-deps:
               - cmake
-              - ninja
+              - ninja-build
           - name: dask
             title: Dask
           - name: duckdb
