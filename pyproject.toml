@@ -37,6 +37,7 @@ pydantic = ">=1.9.0,<2"
 regex = ">=2021.7.6"
 rich = ">=12.4.4,<13"
 toolz = ">=0.11,<0.13"
+adbc-driver-manager = { path = "../arrow-adbc/python/adbc_driver_manager", optional = true }
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<0.3", optional = true, extras = [
   "numpy"
@@ -129,7 +130,7 @@ all = [
   "Shapely",
   "sqlalchemy",
 ]
-adbc = ["pyarrow", "sqlalchemy"]
+adbc = ["adbc-driver-manager", "pyarrow", "sqlalchemy"]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]

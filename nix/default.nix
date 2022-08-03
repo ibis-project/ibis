@@ -98,6 +98,22 @@ import sources.nixpkgs {
           shfmt
         ];
       };
+
+      adbc-sqlite = pkgs.callPackage ./adbc.nix {
+        pname = "adbc-sqlite";
+        sourceRoot = "source/c/drivers/sqlite";
+      };
+
+      adbc-driver-manager = pkgs.callPackage ./adbc.nix {
+        pname = "adbc-driver-manager";
+        sourceRoot = "source/c/driver_manager";
+        doInstallCheck = true;
+        installCheckPhase = ''
+          runHook preInstallCheck
+          ctest
+          runHook postInstallCheck
+        '';
+      };
     } // super.lib.optionalAttrs super.stdenv.isDarwin {
       arrow-cpp = super.arrow-cpp.override {
         enableS3 = false;

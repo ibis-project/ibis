@@ -4,12 +4,13 @@ from setuptools import setup
 packages = [
     'ibis',
     'ibis.backends',
+    'ibis.backends.adbc',
+    'ibis.backends.adbc.tests',
     'ibis.backends.base',
     'ibis.backends.base.sql',
     'ibis.backends.base.sql.alchemy',
     'ibis.backends.base.sql.compiler',
     'ibis.backends.base.sql.registry',
-    'ibis.backends.adbc',
     'ibis.backends.clickhouse',
     'ibis.backends.clickhouse.tests',
     'ibis.backends.dask',
@@ -65,6 +66,11 @@ install_requires = [
 ]
 
 extras_require = {
+    'adbc': [
+        'adbc-driver-manager @ ../arrow-adbc/python/adbc_driver_manager',
+        'pyarrow>=1,<9',
+        'sqlalchemy>=1.4,<2.0',
+    ],
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',
         'clickhouse-driver[numpy]>=0.1,<0.3',

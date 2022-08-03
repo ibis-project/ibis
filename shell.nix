@@ -81,6 +81,7 @@ pkgs.mkShell {
   ]);
 
   PYTHONPATH = builtins.toPath ./.;
+  LD_LIBRARY_PATH = "${pkgs.adbc-sqlite}/lib";
   PGPASSWORD = "postgres";
   MYSQL_PWD = "ibis";
 }
