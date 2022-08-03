@@ -35,8 +35,8 @@ jobs:
           - "3.8"
           - "3.10"
         backend:
-          - name: adbc
-            title: ADBC
+          - name: adbc_sqlite
+            title: ADBC (SQLite driver)
           - name: dask
             title: Dask
           - name: duckdb
