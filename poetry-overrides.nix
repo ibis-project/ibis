@@ -89,14 +89,16 @@ in
 
   adbc-driver-manager = self.buildPythonPackage {
     pname = "adbc-driver-manager";
-    inherit (pkgs.adbc-sqlite) version src;
+    inherit (pkgs.adbc-driver-manager) version src;
     sourceRoot = "source/python/adbc_driver_manager";
     format = "setuptools";
 
     nativeBuildInputs = [ self.cython ];
     propagatedBuildInputs = [ self.pyarrow ];
 
-    LD_LIBRARY_PATH = "${pkgs.adbc-sqlite}/lib";
+    preCheck = ''
+      export LD_LIBRARY_PATH="${pkgs.adbc-sqlite}/lib"
+    '';
 
     checkInputs = [ self.pytest ];
     checkPhase = ''
