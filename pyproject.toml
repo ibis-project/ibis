@@ -242,7 +242,7 @@ markers = [
   "never: tests for functionality that a backend is likely to never implement",
   "broken: test has exposed existing broken functionality",
   "sqlalchemy_only: tests for SQLAlchemy based backends",
-  "adbc: ADBC tests",
+  "adbc_sqlite: ADBC tests (SQLite driver)",
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
