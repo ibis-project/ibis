@@ -35,6 +35,11 @@ jobs:
           - "3.8"
           - "3.10"
         backend:
+          - name: adbc
+            title: ADBC
+            sys-deps:
+              - cmake
+              - ninja
           - name: dask
             title: Dask
           - name: duckdb
@@ -109,6 +114,13 @@ jobs:
 
           sudo apt-get update -qq -y
           sudo apt-get install -qq -y build-essential python-dev ${{ join(matrix.backend.sys-deps, ' ') }}
+
+      - name: clone adbc
+        uses: actions/checkout@v3
+        with:
+          repository: apache/arrow-adbc
+          path: ../arrow-adbc
+          rev: ef70af6aff8da61bbe2f19f14c607aa6c07caf33
 
       - name: install sqlite
         if: ${{ matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite' }}
