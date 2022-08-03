@@ -25,9 +25,6 @@ jobs:
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: ibis
     strategy:
       fail-fast: false
       matrix:
