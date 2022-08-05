@@ -31,5 +31,6 @@
         * [Collections](api/expressions/collections.md)
         * [Geospatial](api/expressions/geospatial.md)
     * [Data Types](api/datatypes.md)
+    * [Schemas](api/schemas.md)
     * [Backend Interfaces](api/backends/)
     * [Configuration](api/config.md)

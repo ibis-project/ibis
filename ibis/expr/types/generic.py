@@ -130,9 +130,8 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> expr1 = None
-        >>> expr2 = 4
-        >>> result = ibis.coalesce(expr1, expr2, 5)
+        >>> ibis.coalesce(None, 4, 5)
+        Coalesce([ValueList(values=[None, 4, 5])])
         """
         import ibis.expr.operations as ops
 
@@ -197,9 +196,17 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table([('col', 'int64'), ('other_col', 'int64')])
+        >>> table = ibis.table(dict(col='int64', other_col='int64'))
         >>> result = table.col.fillna(5)
-        >>> result2 = table.col.fillna(table.other_col * 3)
+        r0 := UnboundTable: unbound_table_0
+          col       int64
+          other_col int64
+        IfNull(r0.col, ifnull_expr=5)
+        >>> table.col.fillna(table.other_col * 3)
+        r0 := UnboundTable: unbound_table_0
+          col       int64
+          other_col int64
+        IfNull(r0.col, ifnull_expr=r0.other_col * 3)
 
         Returns
         -------
@@ -272,12 +279,25 @@ class Value(Expr):
 
         Examples
         --------
+        Check whether a column's values are contained in a sequence
+
         >>> import ibis
-        >>> table = ibis.table([('string_col', 'string')])
-        >>> table2 = ibis.table([('other_string_col', 'string')])
-        >>> expr = table.string_col.isin(['foo', 'bar', 'baz'])
-        >>> expr2 = table.string_col.isin(table2.other_string_col)
-        """
+        >>> table = ibis.table(dict(string_col='string'))
+        >>> table.string_col.isin(['foo', 'bar', 'baz'])
+        r0 := UnboundTable: unbound_table_1
+          string_col string
+        Contains(value=r0.string_col, options=[ValueList(values=['foo', 'bar', 'baz'])])
+
+        Check whether a column's values are contained in another table's column
+
+        >>> table2 = ibis.table(dict(other_string_col='string'))
+        >>> table.string_col.isin(table2.other_string_col)
+        r0 := UnboundTable: unbound_table_3
+          other_string_col string
+        r1 := UnboundTable: unbound_table_1
+          string_col string
+        Contains(value=r1.string_col, options=r0.other_string_col)
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.Contains(self, values).to_expr()

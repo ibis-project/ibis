@@ -102,6 +102,7 @@ class Backend(BaseSQLBackend):
         >>> import pyspark
         >>> session = pyspark.sql.SparkSession.builder.getOrCreate()
         >>> ibis.pyspark.connect(session)
+        <ibis.backends.pyspark.Backend at 0x...>
         """
         self._context = session.sparkContext
         self._session = session

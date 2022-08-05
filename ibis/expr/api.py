@@ -245,13 +245,20 @@ def param(type: dt.DataType) -> ir.Scalar:
     Examples
     --------
     >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> start = ibis.param(dt.date)
-    >>> end = ibis.param(dt.date)
-    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
-    >>> t = ibis.table(schema)
+    >>> start = ibis.param('date')
+    >>> end = ibis.param('date')
+    >>> schema = dict(timestamp_col='timestamp', value='double')
+    >>> t = ibis.table(schema, name='t')
     >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
-    >>> expr = t.filter(predicates).value.sum()
+    >>> t.filter(predicates).value.sum()
+    r0 := UnboundTable: t
+      timestamp_col timestamp
+      value         float64
+    r1 := Selection[r0]
+      predicates:
+        r0.timestamp_col >= $(date)
+        r0.timestamp_col <= $(date)
+    sum: Sum(r1.value)
     """
     return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
@@ -277,7 +284,7 @@ def schema(
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
-    """Validate and return an Schema object.
+    """Validate and return a [`Schema`][ibis.expr.schema.Schema] object.
 
     Parameters
     ----------
@@ -344,13 +351,23 @@ def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('g', 'string')])
-    >>> result = t.group_by('g').size('count').sort_by(ibis.desc('count'))
+    >>> t = ibis.table(dict(g='string'), name='t')
+    >>> t.group_by('g').size('count').sort_by(ibis.desc('count'))
+    r0 := UnboundTable: t
+      g string
+    r1 := Aggregation[r0]
+      metrics:
+        count: Count(t)
+      by:
+        g: r0.g
+    Selection[r1]
+      sort_keys:
+        desc|r1.count
 
     Returns
     -------
-    ops.DeferredSortKey
-        A deferred sort key
+    ir.SortExpr | ops.DeferredSortKey
+        A sort expression or deferred sort key
     """
     if not isinstance(expr, Expr):
         return ops.DeferredSortKey(expr, ascending=False)
@@ -369,13 +386,23 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('g', 'string')])
-    >>> result = t.group_by('g').size('count').sort_by(ibis.asc('count'))
+    >>> t = ibis.table(dict(g='string'), name='t')
+    >>> t.group_by('g').size('count').sort_by(ibis.asc('count'))
+    r0 := UnboundTable: t
+      g string
+    r1 := Aggregation[r0]
+      metrics:
+        count: Count(t)
+      by:
+        g: r0.g
+    Selection[r1]
+      sort_keys:
+        asc|r1.count
 
     Returns
     -------
-    ops.DeferredSortKey
-        A deferred sort key
+    ir.SortExpr | ops.DeferredSortKey
+        A sort expression or deferred sort key
     """
     if not isinstance(expr, Expr):
         return ops.DeferredSortKey(expr)
@@ -607,17 +634,16 @@ def case() -> bl.SearchedCaseBuilder:
     >>> import ibis
     >>> cond1 = ibis.literal(1) == 1
     >>> cond2 = ibis.literal(2) == 1
-    >>> result1 = 3
-    >>> result2 = 4
-    >>> expr = (ibis.case()
-    ...         .when(cond1, result1)
-    ...         .when(cond2, result2).end())
+    >>> (ibis.case()
+    ...  .when(cond1, 3)
+    ...  .when(cond2, 4).end())
+    >>> SearchedCase(cases=[ValueList(values=[1 == 1, 2 == 1])], results=[ValueList(values=[3, 4])], default=Cast(None, to=int8))
 
     Returns
     -------
     SearchedCaseBuilder
         A builder object to use for constructing a case expression.
-    """
+    """  # noqa: E501
     return bl.SearchedCaseBuilder()
 
 

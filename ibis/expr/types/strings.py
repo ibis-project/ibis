@@ -294,17 +294,25 @@ class StringValue(Value):
         to_str
             Characters to use for replacement
 
-        Examples
-        --------
-        >>> import ibis
-        >>> table = ibis.table([('string_col', 'string')])
-        >>> expr = table.string_col.translate('a', 'b')
-        >>> expr = table.string_col.translate('a', 'bc')
-
         Returns
         -------
         StringValue
             Translated string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> table = ibis.table(dict(string_col='string'))
+        >>> expr = table.string_col.translate('a', 'b')
+        >>> expr
+        r0 := UnboundTable: unbound_table_0
+          string_col string
+        Translate(r0.string_col, from_str='a', to_str='b')
+        >>> expr = table.string_col.translate('a', 'bc')
+        >>> expr
+        r0 := UnboundTable: unbound_table_0
+          string_col string
+        Translate(r0.string_col, from_str='a', to_str='bc')
         """
         import ibis.expr.operations as ops
 
@@ -353,19 +361,27 @@ class StringValue(Value):
         pad
             Pad character
 
-        Examples
-        --------
-        >>> import ibis
-        >>> table = ibis.table([('strings', 'string')])
-        >>> expr = table.strings.lpad(5, '-')
-        >>> expr = ibis.literal('a').lpad(5, '-')  # 'a' becomes '----a'
-        >>> expr = ibis.literal('abcdefg').lpad(5, '-')  # 'abcdefg' becomes 'abcde'  # noqa: E501
-
         Returns
         -------
         StringValue
             Padded string
-        """
+
+        Examples
+        --------
+        >>> import ibis
+        >>> table = ibis.table(dict(strings='string'))
+        >>> expr = table.strings.lpad(5, '-')
+        >>> expr
+        r0 := UnboundTable: unbound_table_1
+          strings string
+        LPad(r0.strings, length=5, pad='-')
+        >>> expr = ibis.literal('a').lpad(5, '-')  # 'a' becomes '----a'
+        >>> expr
+        LPad('a', length=5, pad='-')
+        >>> expr = ibis.literal('abcdefg').lpad(5, '-')  # 'abcdefg' becomes 'abcde'
+        >>> expr
+        LPad('abcdefg', length=5, pad='-')
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.LPad(self, length, pad).to_expr()
@@ -389,16 +405,24 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table([('string_col', 'string')])
+        >>> table = ibis.table(dict(string_col='string'))
         >>> expr = table.string_col.rpad(5, '-')
+        >>> expr
+        r0 := UnboundTable: unbound_table_2
+          string_col string
+        RPad(r0.string_col, length=5, pad='-')
         >>> expr = ibis.literal('a').rpad(5, '-')  # 'a' becomes 'a----'
-        >>> expr = ibis.literal('abcdefg').rpad(5, '-')  # 'abcdefg' becomes 'abcde'  # noqa: E501
+        >>> expr
+        RPad('a', length=5, pad='-')
+        >>> expr = ibis.literal('abcdefg').rpad(5, '-')  # 'abcdefg' becomes 'abcde'
+        >>> expr
+        RPad('abcdefg', length=5, pad='-')
 
         Returns
         -------
         StringValue
             Padded string
-        """
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.RPad(self, length, pad).to_expr()
@@ -416,8 +440,12 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table([('strings', 'string')])
+        >>> table = ibis.table(dict(strings='string'))
         >>> result = table.strings.find_in_set(['a', 'b'])
+        >>> result
+        r0 := UnboundTable: unbound_table_0
+          strings string
+        FindInSet(needle=r0.strings, values=[ValueList(values=['a', 'b'])])
 
         Returns
         -------
@@ -434,8 +462,6 @@ class StringValue(Value):
 
         Parameters
         ----------
-        self
-            String expression
         strings
             Strings to join with `arg`
 
@@ -444,6 +470,8 @@ class StringValue(Value):
         >>> import ibis
         >>> sep = ibis.literal(',')
         >>> result = sep.join(['a', 'b', 'c'])
+        >>> result
+        StringJoin(sep=',', [ValueList(values=['a', 'b', 'c'])])
 
         Returns
         -------
@@ -627,14 +655,18 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table([('strings', 'string')])
-        >>> result = table.strings.replace('(b+)', r'<\1>')  # 'aaabbbaa' becomes 'aaa<bbb>aaa'  # noqa: E501
+        >>> table = ibis.table(dict(strings='string'))
+        >>> result = table.strings.replace('(b+)', r'<\1>')  # 'aaabbbaa' becomes 'aaa<bbb>aaa'
+        >>> result
+        r0 := UnboundTable: unbound_table_1
+          strings string
+        StringReplace(r0.strings, pattern='(b+)', replacement='<\\1>')
 
         Returns
         -------
         StringValue
             Modified string
-        """
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.RegexReplace(self, pattern, replacement).to_expr()
@@ -656,14 +688,18 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table([('strings', 'string')])
-        >>> result = table.strings.replace('aaa', 'foo')  # 'aaabbbaaa' becomes 'foobbbfoo'  # noqa: E501
+        >>> table = ibis.table(dict(strings='string'))
+        >>> result = table.strings.replace('aaa', 'foo')  # 'aaabbbaaa' becomes 'foobbbfoo'
+        >>> result
+        r0 := UnboundTable: unbound_table_1
+          strings string
+        StringReplace(r0.strings, pattern='aaa', replacement='foo')
 
         Returns
         -------
         StringVulae
             Replaced string
-        """
+        """  # noqa: E501
         import ibis.expr.operations as ops
 
         return ops.StringReplace(self, pattern, replacement).to_expr()
@@ -685,6 +721,8 @@ class StringValue(Value):
         >>> import ibis
         >>> date_as_str = ibis.literal('20170206')
         >>> result = date_as_str.to_timestamp('%Y%m%d')
+        >>> result
+        StringToTimestamp('20170206', format_str='%Y%m%d')
 
         Returns
         -------

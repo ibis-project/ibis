@@ -1,14 +1,7 @@
 # Complex Type Expressions
 
-These APIs are available on complex data types such as arrays, maps, and
-structs.
+These APIs are available on arrays, maps and structs.
 
-::: ibis.expr.types.arrays
-::: ibis.expr.types.maps
-
-<!-- prettier-ignore-start -->
-::: ibis.expr.types.structs
-    selection:
-      filters:
-        - "!^Destruct.*"
-<!-- prettier-ignore-end -->
+::: ibis.expr.types.arrays.ArrayValue
+::: ibis.expr.types.structs.StructValue
+::: ibis.expr.types.maps.MapValue
