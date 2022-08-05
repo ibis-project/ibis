@@ -983,8 +983,8 @@ class Backend(BaseSQLBackend):
         >>> table = 'my_table'
         >>> db = 'operations'
         >>> pool = 'op_4GB_pool'
-        >>> con.cache_table('my_table', database=db, pool=pool)  # noqa: E501 # doctest: +SKIP
-        """
+        >>> con.cache_table('my_table', database=db, pool=pool)  # doctest: +SKIP
+        """  # noqa: E501
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self.raw_sql(statement)
 

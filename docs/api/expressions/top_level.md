@@ -7,6 +7,7 @@ These methods and objects are available directly in the `ibis` module.
 `NA` is the null scalar.
 
 ::: ibis.array
+::: ibis.asc
 ::: ibis.case
 ::: ibis.coalesce
 ::: ibis.cumulative_window

@@ -237,16 +237,25 @@ class Table(Expr):
         Examples
         --------
         >>> import ibis
-        >>> pairs = [('a', 'int32'), ('b', 'timestamp'), ('c', 'double')]
-        >>> t = ibis.table(pairs)
-        >>> b1, b2 = t.a, t.b
-        >>> result = t.group_by([b1, b2]).aggregate(sum_of_c=t.c.sum())
+        >>> from ibis import _
+        >>> t = ibis.table(dict(a='int32', b='timestamp', c='double'), name='t')
+        >>> t.group_by([_.a, _.b]).aggregate(sum_of_c=_.c.sum())
+        r0 := UnboundTable: t
+          a int32
+          b timestamp
+          c float64
+        Aggregation[r0]
+          metrics:
+            sum_of_c: Sum(r0.c)
+          by:
+            a: r0.a
+            b: r0.b
 
         Returns
         -------
         GroupedTable
             A grouped table expression
-        """
+        """  # noqa: E501
         from ibis.expr.types.groupby import GroupedTable
 
         return GroupedTable(self, by, **additional_grouping_expressions)
@@ -431,8 +440,15 @@ class Table(Expr):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
-        >>> ab_sorted = t.sort_by([('a', True), ('b', False)])
+        >>> t = ibis.table(dict(a='int64', b='string'))
+        >>> t.sort_by(['a', ibis.desc('b')])
+        r0 := UnboundTable: unbound_table_0
+          a int64
+          b string
+        Selection[r0]
+          sort_keys:
+             asc|r0.a
+            desc|r0.b
 
         Returns
         -------
@@ -797,10 +813,28 @@ class Table(Expr):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+        >>> t = ibis.table(dict(a='int64', b='string'), name='t')
         >>> t = t.dropna()  # Drop all rows where any values are null
-        >>> t = t.dropna(how='all')  # Only drop rows where all values are null
-        >>> t = t.dropna(subset=['a'], how='all')  # Only drop rows where all values in column 'a' are null  # noqa: E501
+        >>> t
+        r0 := UnboundTable: t
+          a int64
+          b string
+        DropNa[r0]
+          how: 'any'
+        >>> t.dropna(how='all')  # Only drop rows where all values are null
+        r0 := UnboundTable: t
+          a int64
+          b string
+        r1 := DropNa[r0]
+          how: 'all'
+        >>> t.dropna(subset=['a'], how='all')  # Only drop rows where all values in column 'a' are null  # noqa: E501
+        r0 := UnboundTable: t
+          a int64
+          b string
+        DropNa[r0]
+          how: 'all'
+          subset:
+            r0.a
 
         Returns
         -------

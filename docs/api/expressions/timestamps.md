@@ -1,5 +1,9 @@
 # Temporal Expression APIs
 
-All timestamp operations are valid for both scalars and columns.
+All temporal operations are valid for both scalars and columns.
 
-::: ibis.expr.types.temporal
+::: ibis.expr.types.temporal.TemporalValue
+::: ibis.expr.types.temporal.TimestampValue
+::: ibis.expr.types.temporal.DateValue
+::: ibis.expr.types.temporal.TimeValue
+::: ibis.expr.types.temporal.IntervalValue

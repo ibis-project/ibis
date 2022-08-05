@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import collections
-from typing import Sequence
+from typing import TYPE_CHECKING, Iterable, Iterator, Mapping, Sequence
 
 from multipledispatch import Dispatcher
 
@@ -16,6 +16,9 @@ from ibis.common.validators import (
 )
 from ibis.expr import datatypes as dt
 from ibis.util import UnnamedMarker, deprecated, indent
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 convert = Dispatcher(
     'convert',
@@ -46,26 +49,17 @@ def datatype(arg, **kwargs):
 
 
 class Schema(Annotable, Comparable):
-
-    """An object for holding table schema information, i.e., column names and
-    types.
-
-    Parameters
-    ----------
-    names : Sequence[str]
-        A sequence of ``str`` indicating the name of each column.
-    types : Sequence[DataType]
-        A sequence of :class:`ibis.expr.datatypes.DataType` objects
-        representing type of each column.
-    """
+    """An object for holding table schema information."""
 
     __slots__ = ('_name_locs',)
 
     names: Sequence[str] = tuple_of(instance_of((str, UnnamedMarker)))
+    """A sequence of [`str`][str] indicating the name of each column."""
     types: Sequence[dt.DataType] = tuple_of(datatype)
+    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects representing type of each column."""  # noqa: E501
 
     @immutable_property
-    def _name_locs(self):
+    def _name_locs(self) -> dict[str, int]:
         # validate unique field names
         name_locs = {v: i for i, v in enumerate(self.names)}
         if len(name_locs) < len(self.names):
@@ -77,7 +71,7 @@ class Schema(Annotable, Comparable):
             )
         return name_locs
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
             indent(
@@ -89,26 +83,44 @@ class Schema(Annotable, Comparable):
             )
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.names)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[str]:
         return iter(self.names)
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         return name in self._name_locs
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> dt.DataType:
         return self.types[self._name_locs[name]]
 
-    def __equals__(self, other):
+    def __equals__(self, other: Schema) -> bool:
         return (
             self._hash == other._hash
             and self.names == other.names
             and self.types == other.types
         )
 
-    def equals(self, other):
+    def equals(self, other: Schema) -> bool:
+        """Return whether `other` is equal to `self`.
+
+        Parameters
+        ----------
+        other
+            Schema to compare `self` to.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> first = ibis.schema({"a": "int"})
+        >>> second = ibis.schema({"a": "int"})
+        >>> first.equals(second)
+        True
+        >>> third = ibis.schema({"a": "array<int>"})
+        >>> first.equals(third)
+        False
+        """
         if not isinstance(other, Schema):
             raise TypeError(
                 "invalid equality comparison between Schema and "
@@ -116,7 +128,23 @@ class Schema(Annotable, Comparable):
             )
         return self.__cached_equals__(other)
 
-    def delete(self, names_to_delete):
+    def delete(self, names_to_delete: Iterable[str]) -> Schema:
+        """Remove `names_to_delete` names from `self`.
+
+        Parameters
+        ----------
+        names_to_delete
+            Iterable of `str` to remove from the schema.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> sch = ibis.schema({"a": "int", "b": "string"})
+        >>> sch.delete({"a"})
+        ibis.Schema {
+          b  string
+        }
+        """
         for name in names_to_delete:
             if name not in self:
                 raise KeyError(name)
@@ -128,35 +156,143 @@ class Schema(Annotable, Comparable):
             new_names.append(name)
             new_types.append(type_)
 
-        return Schema(new_names, new_types)
+        return self.__class__(new_names, new_types)
 
     @classmethod
-    def from_tuples(cls, values):
+    def from_tuples(
+        cls,
+        values: Iterable[tuple[str, str | dt.DataType]],
+    ) -> Schema:
+        """Construct a `Schema` from an iterable of pairs.
+
+        Parameters
+        ----------
+        values
+            An iterable of pairs of name and type.
+
+        Returns
+        -------
+        Schema
+            A new schema
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.Schema.from_tuples([("a", "int"), ("b", "string")])
+        ibis.Schema {
+          a  int64
+          b  string
+        }
+        """
         if not isinstance(values, (list, tuple)):
             values = list(values)
 
         names, types = zip(*values) if values else ([], [])
-        return Schema(names, types)
+        return cls(names, types)
 
     @classmethod
-    def from_dict(cls, dictionary):
-        names, types = zip(*dictionary.items()) if dictionary else ([], [])
-        return Schema(names, types)
+    def from_dict(cls, dictionary: Mapping[str, str | dt.DataType]) -> Schema:
+        """Construct a `Schema` from a `Mapping`.
 
-    def __gt__(self, other):
+        Parameters
+        ----------
+        dictionary
+            Mapping from which to construct a `Schema` instance.
+
+        Returns
+        -------
+        Schema
+            A new schema
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.Schema.from_dict({"a": "int", "b": "string"})
+        ibis.Schema {
+          a  int64
+          b  string
+        }
+        """
+        names, types = zip(*dictionary.items()) if dictionary else ([], [])
+        return cls(names, types)
+
+    def __gt__(self, other: Schema) -> bool:
+        """Return whether `self` is a strict superset of `other`."""
         return set(self.items()) > set(other.items())
 
-    def __ge__(self, other):
+    def __ge__(self, other: Schema) -> bool:
+        """Return whether `self` is a superset of or equal to `other`."""
         return set(self.items()) >= set(other.items())
 
-    def append(self, schema):
-        return Schema(self.names + schema.names, self.types + schema.types)
+    def append(self, schema: Schema) -> Schema:
+        """Append `schema` to `self`.
 
-    def items(self):
+        Parameters
+        ----------
+        schema
+            Schema instance to append to `self`.
+
+        Returns
+        -------
+        Schema
+            A new schema appended with `schema`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> first = ibis.Schema.from_dict({"a": "int", "b": "string"})
+        >>> second = ibis.Schema.from_dict({"c": "float", "d": "int16"})
+        >>> first.append(second)
+        ibis.Schema {
+          a  int64
+          b  string
+          c  float64
+          d  int16
+        }
+        """
+        return self.__class__(
+            self.names + schema.names, self.types + schema.types
+        )
+
+    def items(self) -> Iterator[tuple[str, dt.DataType]]:
+        """Return an iterator of pairs of names and types.
+
+        Returns
+        -------
+        Iterator[tuple[str, dt.DataType]]
+            Iterator of schema components
+
+        Examples
+        --------
+        >>> import ibis
+        >>> sch = ibis.Schema.from_dict({"a": "int", "b": "string"})
+        >>> list(sch.items())
+        [('a', Int64(nullable=True)), ('b', String(nullable=True))]
+        """
         return zip(self.names, self.types)
 
-    def name_at_position(self, i):
-        """ """
+    def name_at_position(self, i: int) -> str:
+        """Return the name of a schema column at position `i`.
+
+        Parameters
+        ----------
+        i
+            The position of the column
+
+        Returns
+        -------
+        str
+            The name of the column in the schema at position `i`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> sch = ibis.Schema.from_dict({"a": "int", "b": "string"})
+        >>> sch.name_at_position(0)
+        'a'
+        >>> sch.name_at_position(1)
+        'b'
+        """
         upper = len(self.names) - 1
         if not 0 <= i <= upper:
             raise ValueError(
@@ -166,20 +302,72 @@ class Schema(Annotable, Comparable):
             )
         return self.names[i]
 
-    def apply_to(self, df):
-        """Applies the Ibis schema to a pandas DataFrame
+    def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Apply the schema `self` to a pandas `DataFrame`.
+
+        This method mutates the input `DataFrame`.
 
         Parameters
         ----------
-        df : pandas.DataFrame
+        df
+            Input DataFrame
 
         Returns
         -------
-        df : pandas.DataFrame
+        DataFrame
+            Type-converted DataFrame
 
-        Notes
-        -----
-        Mutates `df`
+        Examples
+        --------
+        Import the necessary modules
+
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> import ibis
+        >>> import ibis.expr.datatypes as dt
+
+        Construct a DataFrame with string timestamps and an `int8` column that
+        we're going to upcast.
+
+        >>> data = dict(
+        ...     times=[
+        ...         "2022-01-01 12:00:00",
+        ...         "2022-01-01 13:00:01",
+        ...         "2022-01-01 14:00:02",
+        ...     ],
+        ...     x=np.array([-1, 0, 1], dtype="int8")
+        ... )
+        >>> df = pd.DataFrame(data)
+        >>> df
+                         times  x
+        0  2022-01-01 12:00:00 -1
+        1  2022-01-01 13:00:01  0
+        2  2022-01-01 14:00:02  1
+        >>> df.dtypes
+        times    object
+        x          int8
+        dtype: object
+
+        Construct an ibis Schema that we want to cast to.
+
+        >>> sch = ibis.schema({"times": dt.timestamp, "x": "int16"})
+        >>> sch
+        ibis.Schema {
+          times  timestamp
+          x      int16
+        }
+
+        Apply the schema
+
+        >>> sch.apply_to(df)
+                        times  x
+        0 2022-01-01 12:00:00 -1
+        1 2022-01-01 13:00:01  0
+        2 2022-01-01 14:00:02  1
+        >>> df.dtypes  # `df` is mutated by the method
+        times    datetime64[ns]
+        x                 int16
+        dtype: object
         """
         schema_names = self.names
         data_columns = df.columns
