@@ -66,6 +66,17 @@ class Parameter(inspect.Parameter):
             return self.validator(arg, this=this)
 
 
+class Immutable(Hashable):
+
+    __slots__ = ()
+
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(
+            f"Attribute {name!r} cannot be assigned to immutable instance of "
+            f"type {type(self)}"
+        )
+
+
 class AnnotableMeta(BaseMeta):
     """
     Metaclass to turn class annotations into a validatable function signature.
@@ -132,7 +143,7 @@ class AnnotableMeta(BaseMeta):
         return super().__new__(metacls, clsname, bases, attribs)
 
 
-class Annotable(Base, Hashable, metaclass=AnnotableMeta):
+class Annotable(Base, Immutable, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
     __slots__ = ("args", "_hash")
@@ -181,12 +192,6 @@ class Annotable(Base, Hashable, metaclass=AnnotableMeta):
 
     def __eq__(self, other):
         return super().__eq__(other)
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(
-            f"Attribute {name!r} cannot be assigned to immutable instance of "
-            f"type {type(self)}"
-        )
 
     def __repr__(self) -> str:
         args = ", ".join(

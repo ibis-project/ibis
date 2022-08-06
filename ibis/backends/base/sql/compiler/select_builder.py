@@ -513,6 +513,11 @@ class SelectBuilder:
             self.table_set = table
             self.filters = filters
 
+    def _collect_PandasInMemoryTable(self, expr, toplevel=False):
+        if toplevel:
+            self.select_set = [expr]
+            self.table_set = expr
+
     def _convert_group_by(self, exprs):
         return list(range(len(exprs)))
 

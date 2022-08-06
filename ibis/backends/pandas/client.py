@@ -9,8 +9,11 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.base import Database
+from ibis.common.grounds import Immutable
 
 infer_pandas_dtype = pd.api.types.infer_dtype
 
@@ -296,6 +299,28 @@ def convert_array_to_series(in_dtype, out_dtype, column):
 
 dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
 sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
+
+
+class DataFrameProxy(Immutable):
+    __slots__ = ('_df', '_hash')
+
+    def __init__(self, df):
+        object.__setattr__(self, "_df", df)
+        object.__setattr__(self, "_hash", hash((type(df), id(df))))
+
+    def __getattr__(self, name):
+        return getattr(self._df, name)
+
+    def __hash__(self):
+        return self._hash
+
+    def __repr__(self):
+        df_repr = util.indent(repr(self._df), spaces=2)
+        return f"{self.__class__.__name__}:\n{df_repr}"
+
+
+class PandasInMemoryTable(ops.InMemoryTable):
+    data = rlz.instance_of(DataFrameProxy)
 
 
 class PandasTable(ops.DatabaseTable):

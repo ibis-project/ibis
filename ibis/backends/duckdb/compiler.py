@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.backends.base.sql.alchemy.datatypes as sat

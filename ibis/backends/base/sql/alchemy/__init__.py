@@ -9,6 +9,7 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
@@ -212,9 +213,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with self.begin() as bind:
             t.create(bind=bind, checkfirst=force)
             if expr is not None:
-                bind.execute(
-                    t.insert().from_select(list(expr.columns), expr.compile())
-                )
+                compiled = self.compile(expr)
+                insert = t.insert()
+                if isinstance(expr.op(), ops.InMemoryTable):
+                    compiled = compiled.get_final_froms()[0]
+                    sa_expr = insert.values(*compiled._data)
+                else:
+                    sa_expr = insert.from_select(list(expr.columns), compiled)
+                bind.execute(sa_expr)
 
     def _columns_from_schema(
         self, name: str, schema: sch.Schema

@@ -188,6 +188,7 @@ __all__ = (
     'least',
     'literal',
     'map',
+    'memtable',
     'NA',
     'negate',
     'now',
@@ -335,10 +336,10 @@ def schema(
 
 
 def table(
-    schema: SupportsSchema,
+    schema: SupportsSchema | None = None,
     name: str | None = None,
 ) -> ir.Table:
-    """Create an unbound table for building expressions without data.
+    """Create a table literal or an abstract table without data.
 
     Parameters
     ----------
@@ -350,10 +351,106 @@ def table(
     Returns
     -------
     Table
-        An unbound table expression
+        A table expression
+
+    Examples
+    --------
+    Create a table with no data backing it
+
+    >>> t = ibis.table(schema=dict(a="int", b="string"))
+    >>> t
+    UnboundTable: unbound_table_0
+      a int64
+      b string
     """
-    node = ops.UnboundTable(sch.schema(schema), name=name)
-    return node.to_expr()
+    if schema is not None:
+        schema = sch.schema(schema)
+    return ops.UnboundTable(schema=schema, name=name).to_expr()
+
+
+@functools.singledispatch
+def memtable(
+    data,
+    *,
+    columns: Iterable[str] | None = None,
+    schema: SupportsSchema | None = None,
+    name: str | None = None,
+) -> Table:
+    """Construct an ibis table expression from in-memory data.
+
+    Parameters
+    ----------
+    data
+        Any data accepted by the `pandas.DataFrame` constructor.
+
+        The use of `DataFrame` underneath should **not** be relied upon and is
+        free to change across non-major releases.
+    columns
+        Optional [`Iterable`][typing.Iterable] of [`str`][str] column names.
+    schema
+        Optional [`Schema`][ibis.expr.schema.Schema]. The functions use `data`
+        to infer a schema if not passed.
+    name
+        Optional name of the table.
+
+    Returns
+    -------
+    Table
+        A table expression backed by in-memory data.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.memtable([{"a": 1}, {"a": 2}])
+    >>> t
+
+    >>> t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}])
+    >>> t
+    PandasInMemoryTable
+      data:
+        ((1, 'foo'), (2, 'baz'))
+      schema:
+        a int8
+        b string
+
+    Create a table literal without column names embedded in the data and pass
+    `columns`
+
+    >>> t = ibis.memtable([(1, "foo"), (2, "baz")], columns=["a", "b"])
+    >>> t
+    PandasInMemoryTable
+      data:
+        ((1, 'foo'), (2, 'baz'))
+      schema:
+        a int8
+        b string
+    """
+    if columns is not None and schema is not None:
+        raise NotImplementedError(
+            "passing `columns` and schema` is ambiguous; "
+            "pass one or the other but not both"
+        )
+    df = pd.DataFrame(data, columns=columns)
+    if isinstance(data, (list, tuple)) and columns is None:
+        df = df.rename(columns={col: f"col{col:d}" for col in df.columns})
+    return memtable(df, name=name, schema=schema)
+
+
+@memtable.register(pd.DataFrame)
+def _memtable_from_dataframe(
+    df: pd.DataFrame,
+    *,
+    name: str | None = None,
+    schema: SupportsSchema | None = None,
+) -> Table:
+    from ibis.backends.pandas.client import DataFrameProxy, PandasInMemoryTable
+
+    op = PandasInMemoryTable(
+        name=name,
+        schema=sch.infer(df) if schema is None else schema,
+        data=DataFrameProxy(df),
+    )
+    return op.to_expr()
 
 
 def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:

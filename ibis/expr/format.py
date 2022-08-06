@@ -6,6 +6,8 @@ import textwrap
 import types
 from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 
+import rich.pretty
+
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -430,6 +432,20 @@ def _fmt_table_op_limit(op: ops.Limit, *, aliases: Aliases, **_: Any) -> str:
     return f"{op.__class__.__name__}[{', '.join(params)}]"
 
 
+@fmt_table_op.register
+def _fmt_table_op_in_memory_table(op: ops.InMemoryTable, **_: Any) -> str:
+    # arbitrary limit, but some value is needed to avoid a huge repr
+    max_length = 10
+    pretty_data = rich.pretty.pretty_repr(op.data, max_length=max_length)
+    return "\n".join(
+        [
+            op.__class__.__name__,
+            util.indent("data:", spaces=2),
+            util.indent(pretty_data, spaces=4),
+        ]
+    )
+
+
 @functools.singledispatch
 def fmt_selection_column(value_expr: ir.Value, **_: Any) -> str:
     assert False, (
@@ -651,6 +667,23 @@ def _fmt_value_table_node(
     example is `table.count()`.
     """
     return f"{aliases[op.table.op()]}"
+
+
+_JOIN_SYMS = {
+    ops.InnerJoin: "⋈",
+    ops.LeftJoin: "⟕",
+    ops.RightJoin: "⟖",
+    ops.OuterJoin: "⟗",
+    ops.CrossJoin: "×",
+}
+
+
+@fmt_value.register
+def _fmt_value_join(op: ops.Join, *, aliases: Aliases, **_: Any) -> str:
+    """Format a join as value."""
+    left = aliases[op.left.op()]
+    right = aliases[op.right.op()]
+    return f"{left} {_JOIN_SYMS[type(op)]} {right}"
 
 
 @fmt_value.register
