@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import itertools
+from abc import abstractmethod
 from functools import cached_property
 
 from public import public
@@ -94,6 +95,17 @@ class SQLQueryResult(TableNode, sch.HasSchema):
 
     def blocks(self):
         return True
+
+
+@public
+class InMemoryTable(TableNode, sch.HasSchema):
+    name = rlz.optional(rlz.instance_of(str))
+    schema = rlz.instance_of(sch.Schema)
+
+    @property
+    @abstractmethod
+    def data(self):
+        """Return the data of an in-memory table."""
 
 
 def _make_distinct_join_predicates(left, right, predicates):

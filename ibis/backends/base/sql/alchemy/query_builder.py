@@ -107,6 +107,10 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             )
             backend = ref_op.child._find_backend()
             backend._create_temp_view(view=result, definition=definition)
+        elif isinstance(ref_op, ops.InMemoryTable):
+            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            rows = list(ref_op.data.itertuples(index=False))
+            result = sa.values(*columns).data(rows)
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
@@ -194,7 +198,7 @@ class AlchemySelect(Select):
 
     def _compile_table_set(self):
         if self.table_set is not None:
-            helper = _AlchemyTableSetFormatter(self, self.table_set)
+            helper = self.table_set_formatter_class(self, self.table_set)
             result = helper.get_result()
             if isinstance(result, sql.selectable.Select):
                 return result.subquery()

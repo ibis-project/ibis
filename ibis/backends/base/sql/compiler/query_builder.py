@@ -116,6 +116,13 @@ class TableSetFormatter:
                 raise com.RelationError(f'Table did not have a name: {expr!r}')
             result = self._quote_identifier(name)
             is_subquery = False
+        elif isinstance(ref_op, ops.InMemoryTable):
+            rows = ", ".join(
+                f"({', '.join(map(repr, col))})"
+                for col in ref_op.data.itertuples(index=False)
+            )
+            result = f"(VALUES {rows})"
+            is_subquery = True
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):

@@ -351,25 +351,29 @@ def table(arg, *, schema=None, **kwargs):
 
     Parameters
     ----------
-    schema : Union[sch.Schema, List[Tuple[str, dt.DataType], None]
+    schema
         A validator for the table's columns. Only column subset validators are
         currently supported. Accepts any arguments that `sch.schema` accepts.
         See the example for usage.
-    arg : The validatable argument.
+    arg
+        An argument
 
-    Examples
-    --------
-    The following op will accept an argument named ``'table'``. Note that the
-    ``schema`` argument specifies rules for columns that are required to be in
-    the table: ``time``, ``group`` and ``value1``. These must match the types
-    specified in the column rules. Column ``value2`` is optional, but if
-    present it must be of the specified type. The table may have extra columns
-    not specified in the schema.
+    The following op will accept an argument named `'table'`. Note that the
+    `schema` argument specifies rules for columns that are required to be in
+    the table: `time`, `group` and `value1`. These must match the types
+    specified in the column rules. Column `value2` is optional, but if present
+    it must be of the specified type. The table may have extra columns not
+    specified in the schema.
     """
+    import ibis
+
     if not isinstance(arg, ir.Table):
-        raise com.IbisTypeError(
-            f'Argument is not a table; got type {type(arg).__name__}'
-        )
+        try:
+            return ibis.table(data=arg, schema=schema)
+        except Exception as e:
+            raise com.IbisTypeError(
+                f'Argument is not a table; got type {type(arg).__name__}'
+            ) from e
 
     if schema is not None:
         if arg.schema() >= sch.schema(schema):

@@ -558,3 +558,78 @@ def test_invalid_connect():
 def test_deprecated_path_argument(backend, tmp_path):
     with pytest.warns(UserWarning, match="The `path` argument is deprecated"):
         getattr(ibis, backend.name()).connect(path=str(tmp_path / "test.db"))
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected"),
+    [
+        param(
+            ibis.memtable([(1, 2.0, "3")], columns=list("abc")),
+            pd.DataFrame([(1, 2.0, "3")], columns=list("abc")),
+            id="simple",
+        ),
+        param(
+            ibis.memtable([(1, 2.0, "3")]),
+            pd.DataFrame([(1, 2.0, "3")], columns=["col0", "col1", "col2"]),
+            id="simple_auto_named",
+        ),
+        param(
+            ibis.memtable(
+                [(1, 2.0, "3")],
+                schema=ibis.schema(dict(a="int8", b="float32", c="string")),
+            ),
+            pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
+                {"a": "int8", "b": "float32"}
+            ),
+            id="simple_schema",
+        ),
+        param(
+            ibis.memtable(
+                pd.DataFrame({"a": [1], "b": [2.0], "c": ["3"]}).astype(
+                    {"a": "int8", "b": "float32"}
+                )
+            ),
+            pd.DataFrame([(1, 2.0, "3")], columns=list("abc")).astype(
+                {"a": "int8", "b": "float32"}
+            ),
+            id="dataframe",
+        ),
+    ],
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="ClickHouse doesn't support a VALUES construct",
+)
+@pytest.mark.notyet(
+    ["mysql", "sqlite"],
+    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
+    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_in_memory_table(backend, con, expr, expected):
+    result = con.execute(expr)
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "t",
+    [
+        param(
+            ibis.memtable([("a", 1.0)], columns=["a", "b"]),
+            id="python",
+        ),
+        param(
+            ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
+            id="pandas",
+        ),
+    ],
+)
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
+def test_create_from_in_memory_table(con, t):
+    tmp_name = guid()
+    con.create_table(tmp_name, t)
+    try:
+        assert tmp_name in con.list_tables()
+    finally:
+        con.drop_table(tmp_name)
+        assert tmp_name not in con.list_tables()
