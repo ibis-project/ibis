@@ -54,37 +54,43 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_posix',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "datafusion", "pyspark"]
+            ),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_posix',
-            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(["adbc_sqlite", "mysql", "pyspark"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_posix',
-            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "datafusion", "mysql", "pyspark"]
+            ),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.notimpl(["impala", "datafusion"]),
+            marks=pytest.mark.notimpl(["adbc_sqlite", "impala", "datafusion"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.notimpl(["impala", "mysql"]),
+            marks=pytest.mark.notimpl(["adbc_sqlite", "impala", "mysql"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.notimpl(["impala", "datafusion", "mysql"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "impala", "datafusion", "mysql"]
+            ),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -105,7 +111,9 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.translate('0', 'a'),
             lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "mysql"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "clickhouse", "datafusion", "mysql"]
+            ),
         ),
         param(
             lambda t: t.string_col.find('a'),
@@ -127,13 +135,17 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "datafusion", "pyspark", "sqlite"]
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "datafusion", "pyspark", "sqlite"]
+            ),
         ),
         param(
             lambda t: t.string_col.lower(),
@@ -149,13 +161,16 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
             id='reverse',
+            marks=pytest.mark.notimpl(["adbc_sqlite"]),
         ),
         param(
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
             # TODO(dask) - dtype - #2553
-            marks=pytest.mark.notimpl(["clickhouse", "dask", "datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["adbc_sqlite", "clickhouse", "dask", "datafusion"]
+            ),
         ),
         param(
             lambda t: t.string_col.length(),
@@ -193,7 +208,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb"]),
+            marks=pytest.mark.notimpl(["adbc_sqlite", "clickhouse", "duckdb"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
@@ -251,7 +266,14 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str.split('/'),
             id='split',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "impala", "mysql", "sqlite"]
+                [
+                    "adbc_sqlite",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "sqlite",
+                ]
             ),
         ),
         param(

@@ -407,7 +407,9 @@ def pytest_runtest_call(item):
     # Ibis hasn't exposed existing functionality
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notimpl"):
-        if backend in marker.args[0]:
+        if backend in marker.args[0] or (
+            backend.startswith("adbc_") and backend[5:] in marker.args[0]
+        ):
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
@@ -421,7 +423,9 @@ def pytest_runtest_call(item):
     # Functionality is unavailable upstream (but could be)
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notyet"):
-        if backend in marker.args[0]:
+        if backend in marker.args[0] or (
+            backend.startswith("adbc_") and backend[5:] in marker.args[0]
+        ):
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
@@ -434,7 +438,9 @@ def pytest_runtest_call(item):
             )
 
     for marker in item.iter_markers(name="never"):
-        if backend in marker.args[0]:
+        if backend in marker.args[0] or (
+            backend.startswith("adbc_") and backend[5:] in marker.args[0]
+        ):
             if "reason" not in marker.kwargs.keys():
                 raise ValueError("never requires a reason")
             item.add_marker(
@@ -447,7 +453,9 @@ def pytest_runtest_call(item):
     # imperative for a contributor to fix it just because they happened to
     # bring it to attention  -- USE SPARINGLY
     for marker in item.iter_markers(name="broken"):
-        if backend in marker.args[0]:
+        if backend in marker.args[0] or (
+            backend.startswith("adbc_") and backend[5:] in marker.args[0]
+        ):
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(

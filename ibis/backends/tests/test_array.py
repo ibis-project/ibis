@@ -16,7 +16,9 @@ except ImportError:
     duckdb = None
 
 pytestmark = [
-    pytest.mark.never(["sqlite", "mysql"], reason="No array support"),
+    pytest.mark.never(
+        ["adbc_sqlite", "sqlite", "mysql"], reason="No array support"
+    ),
 ]
 
 

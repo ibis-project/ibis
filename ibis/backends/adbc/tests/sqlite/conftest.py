@@ -30,6 +30,10 @@ class TestConf(BackendTest, RoundAwayFromZero):
             dialect="sqlite",
         )
 
+    @staticmethod
+    def name():
+        return "adbc_sqlite"
+
     @property
     def functional_alltypes(self):
         t = super().functional_alltypes
