@@ -26,7 +26,7 @@ def test_backends_tab_completion():
 
 
 def test_missing_backend():
-    msg = "If you are trying to access the 'foo' backend"
+    msg = "module 'ibis' has no attribute 'foo'."
     with pytest.raises(AttributeError, match=msg):
         ibis.foo
 
