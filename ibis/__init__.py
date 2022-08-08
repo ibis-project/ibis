@@ -20,6 +20,8 @@ __all__ += api.__all__
 
 __version__ = "3.1.0"
 
+_KNOWN_BACKENDS = ['bigquery', 'heavyai']
+
 
 def _get_backend_entrypoints() -> list[_importlib_metadata.EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints"""
@@ -56,11 +58,11 @@ def __getattr__(name: str) -> BaseBackend:
     entry_points = {ep for ep in _get_backend_entrypoints() if ep.name == name}
 
     if not entry_points:
-        raise AttributeError(
-            f"module 'ibis' has no attribute '{name}'. "
-            f"If you are trying to access the '{name}' backend, "
-            f"try installing it first with `pip install ibis-{name}`"
-        )
+        msg = f"module 'ibis' has no attribute '{name}'. "
+        if name in _KNOWN_BACKENDS:
+            msg += f"""If you are trying to access the '{name}' backend,
+                    try installing it first with `pip install ibis-{name}`"""
+        raise AttributeError(msg)
 
     if len(entry_points) > 1:
         raise RuntimeError(
