@@ -15,7 +15,7 @@ black==22.6.0; python_full_version >= "3.6.2"
 bleach==5.0.1; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 certifi==2022.6.15; python_version >= "3.8" and python_version < "4"
 cffi==1.15.1; implementation_name == "pypy" and python_version >= "3.7"
-charset-normalizer==2.1.0; python_version >= "3.7" and python_version < "4" and python_full_version >= "3.6.2" and python_full_version < "4.0.0"
+charset-normalizer==2.1.1; python_version >= "3.7" and python_version < "4" and python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 click-plugins==1.1.1; python_version >= "3.8"
 click==8.1.3; python_version >= "3.7"
 clickhouse-cityhash==1.0.2.3
