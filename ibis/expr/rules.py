@@ -1,5 +1,6 @@
 import enum
 import functools
+import operator
 from itertools import product, starmap
 
 import ibis.common.exceptions as com
@@ -294,12 +295,48 @@ def _promote_integral_binop(exprs, op):
     return dt.highest_precedence(dtypes)
 
 
+def _promote_decimal_dtype(args, op):
+
+    if len(args) != 2:
+        return highest_precedence_dtype(args)
+
+    # TODO: Add support for setting the maximum precision and maximum scale
+    lhs_prec = args[0].type().precision
+    lhs_scale = args[0].type().scale
+    rhs_prec = args[1].type().precision
+    rhs_scale = args[1].type().scale
+    max_prec = 31 if lhs_prec <= 31 and rhs_prec <= 31 else 63
+    max_scale = 31
+
+    if op is operator.mul:
+        return dt.Decimal(
+            min(max_prec, lhs_prec + rhs_prec),
+            min(max_scale, lhs_scale + rhs_scale),
+        )
+    if op is operator.add or op is operator.sub:
+        return dt.Decimal(
+            min(
+                max_prec,
+                max(
+                    lhs_prec - lhs_scale,
+                    rhs_prec - rhs_scale,
+                )
+                + max(lhs_scale, rhs_scale)
+                + 1,
+            ),
+            max(lhs_scale, rhs_scale),
+        )
+    return highest_precedence_dtype(args)
+
+
 def numeric_like(name, op):
     @immutable_property
     def output_dtype(self):
         args = getattr(self, name)
         if util.all_of(args, ir.IntegerValue):
             result = _promote_integral_binop(args, op)
+        elif util.all_of(args, ir.DecimalValue):
+            result = _promote_decimal_dtype(args, op)
         else:
             result = highest_precedence_dtype(args)
 
