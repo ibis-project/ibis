@@ -9,9 +9,6 @@ from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Value
 
-if TYPE_CHECKING:
-    import ibis.expr.operations as ops
-
 
 @public
 class StructField(Value):
