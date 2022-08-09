@@ -110,6 +110,7 @@ extras_require = {
         'fsspec>=2022.1.0',
         'impyla[kerberos]>=0.17,<0.19',
         'requests>=2,<3',
+        'sqlalchemy>=1.4,<2.0',
         'sqlglot>=4.5.0,<7',
     ],
     'mysql': ['pymysql>=1,<2', 'sqlalchemy>=1.4,<2.0', 'sqlglot>=4.5.0,<7'],

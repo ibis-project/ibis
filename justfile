@@ -6,6 +6,11 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
+lock:
+    poetry lock --no-update
+    poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
+    python dev/poetry2setup.py -o setup.py
+
 # show all backends
 @list-backends:
     yj -tj < pyproject.toml | \
