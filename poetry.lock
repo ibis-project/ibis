@@ -2131,12 +2131,12 @@ pymysql = ["pymysql (<1)", "pymysql"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
-name = "sqlparse"
-version = "0.4.2"
-description = "A non-validating SQL parser."
-category = "dev"
-optional = false
-python-versions = ">=3.5"
+name = "sqlglot"
+version = "4.3.0"
+description = "An easily customizable SQL parser and transpiler"
+category = "main"
+optional = true
+python-versions = "*"
 
 [[package]]
 name = "stack-data"
@@ -2391,7 +2391,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "745a6bfeaedd6abac70ffb3398eadf08f01ae211e9a54d148e09f28e7ab6289f"
+content-hash = "4cf4c6bbddbb8f0e48b603f4246170ea6b94636f04670f84a811f23b38a4d871"
 
 [metadata.files]
 absolufy-imports = [
@@ -4051,9 +4051,9 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.39-cp39-cp39-win_amd64.whl", hash = "sha256:8b773c9974c272aae0fa7e95b576d98d17ee65f69d8644f9b6ffc90ee96b4d19"},
     {file = "SQLAlchemy-1.4.39.tar.gz", hash = "sha256:8194896038753b46b08a0b0ae89a5d80c897fb601dd51e243ed5720f1f155d27"},
 ]
-sqlparse = [
-    {file = "sqlparse-0.4.2-py3-none-any.whl", hash = "sha256:48719e356bb8b42991bdbb1e8b83223757b93789c00910a616a071910ca4a64d"},
-    {file = "sqlparse-0.4.2.tar.gz", hash = "sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae"},
+sqlglot = [
+    {file = "sqlglot-4.3.0-py3-none-any.whl", hash = "sha256:219fe06ea78219bbaa69b571e89789af29ff6814ba62a7bc7f7e263c65e647b2"},
+    {file = "sqlglot-4.3.0.tar.gz", hash = "sha256:e3a1c189dc6ac10335299f56974d1ee0a0cbfda54a331868304043b7181d0b2b"},
 ]
 stack-data = [
     {file = "stack_data-0.3.0-py3-none-any.whl", hash = "sha256:aa1d52d14d09c7a9a12bb740e6bdfffe0f5e8f4f9218d85e7c73a8c37f7ae38d"},

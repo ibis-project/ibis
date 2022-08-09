@@ -530,15 +530,15 @@ def psql(
     expr
         Expression whose SQL will be printed
     reindent
-        Tell `sqlparse` to reindent the SQL string
+        Tell `sqlglot` to reindent the SQL string
     file
         File to write output to
     kwargs
-        `sqlparse.format` options
+        `sqlglot.transpile` options
     """
-    import sqlparse as sp
+    import sqlglot
 
     print(
-        sp.format(str(expr.compile()), reindent=reindent, **kwargs),
+        sqlglot.transpile(str(expr.compile()), pretty=reindent, **kwargs)[0],
         file=file,
     )
