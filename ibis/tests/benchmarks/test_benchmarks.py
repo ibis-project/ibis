@@ -44,31 +44,34 @@ def t():
 
 
 def make_base(t):
-    return (
-        (t.year > 2016)
-        | ((t.year == 2016) & (t.month > 6))
-        | ((t.year == 2016) & (t.month == 6) & (t.day > 6))
-        | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour > 6))
-        | (
-            (t.year == 2016)
-            & (t.month == 6)
-            & (t.day == 6)
-            & (t.hour == 6)
-            & (t.minute >= 5)
+    return t[
+        (
+            (t.year > 2016)
+            | ((t.year == 2016) & (t.month > 6))
+            | ((t.year == 2016) & (t.month == 6) & (t.day > 6))
+            | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour > 6))
+            | (
+                (t.year == 2016)
+                & (t.month == 6)
+                & (t.day == 6)
+                & (t.hour == 6)
+                & (t.minute >= 5)
+            )
         )
-    ) & (
-        (t.year < 2016)
-        | ((t.year == 2016) & (t.month < 6))
-        | ((t.year == 2016) & (t.month == 6) & (t.day < 6))
-        | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour < 6))
-        | (
-            (t.year == 2016)
-            & (t.month == 6)
-            & (t.day == 6)
-            & (t.hour == 6)
-            & (t.minute <= 5)
+        & (
+            (t.year < 2016)
+            | ((t.year == 2016) & (t.month < 6))
+            | ((t.year == 2016) & (t.month == 6) & (t.day < 6))
+            | ((t.year == 2016) & (t.month == 6) & (t.day == 6) & (t.hour < 6))
+            | (
+                (t.year == 2016)
+                & (t.month == 6)
+                & (t.day == 6)
+                & (t.hour == 6)
+                & (t.minute <= 5)
+            )
         )
-    )
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -76,8 +79,8 @@ def base(t):
     return make_base(t)
 
 
-def make_large_expr(t, base):
-    src_table = t[base]
+def make_large_expr(base):
+    src_table = base
     src_table = src_table.mutate(
         _timestamp=(src_table['_timestamp'] - src_table['_timestamp'] % 3600)
         .cast('int32')
@@ -116,8 +119,8 @@ def make_large_expr(t, base):
 
 
 @pytest.fixture(scope="module")
-def large_expr(t, base):
-    return make_large_expr(t, base)
+def large_expr(base):
+    return make_large_expr(base)
 
 
 @pytest.mark.benchmark(group="construction")
@@ -126,7 +129,7 @@ def large_expr(t, base):
     [
         pytest.param(lambda *_: make_t(), id="small"),
         pytest.param(lambda t, *_: make_base(t), id="medium"),
-        pytest.param(lambda t, base: make_large_expr(t, base), id="large"),
+        pytest.param(lambda _, base: make_large_expr(base), id="large"),
     ],
 )
 def test_construction(benchmark, construction_fn, t, base):
