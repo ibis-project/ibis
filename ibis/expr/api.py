@@ -21,7 +21,6 @@ import ibis.expr.types as ir
 from ibis.backends.base import connect
 from ibis.common.pretty import show_sql
 from ibis.expr.deferred import Deferred
-from ibis.expr.random import random
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa: F401
     ArrayColumn,
@@ -519,6 +518,20 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.SortKey(expr).to_expr()
 
 
+def random() -> ir.FloatingScalar:
+    """Return a random floating point number in the range [0.0, 1.0).
+
+    Similar to [`random.random`][random.random] in the Python standard library.
+
+    Returns
+    -------
+    FloatingScalar
+        Random float value expression
+    """
+    op = ops.RandomScalar()
+    return op.to_expr()
+
+
 @functools.singledispatch
 def timestamp(
     value,
@@ -737,7 +750,7 @@ def interval(
     value_type = literal(value).type()
     type = dt.Interval(unit, value_type=value_type)
 
-    return literal(value, type=type).op().to_expr()
+    return literal(value, type=type)
 
 
 def case() -> bl.SearchedCaseBuilder:
@@ -791,42 +804,6 @@ def row_number() -> ir.IntegerColumn:
 e = ops.E().to_expr()
 
 pi = ops.Pi().to_expr()
-
-
-def _add_methods(klass, method_table):
-    for k, v in method_table.items():
-        setattr(klass, k, v)
-
-
-coalesce = _deferred(ir.Value.coalesce)
-greatest = _deferred(ir.Value.greatest)
-least = _deferred(ir.Value.least)
-
-
-@_deferred
-def category_label(
-    arg: ir.CategoryValue,
-    labels: Sequence[str],
-    nulls: str | None = None,
-) -> ir.StringValue:
-    """Format a known number of categories as strings.
-
-    Parameters
-    ----------
-    arg
-        A category value
-    labels
-        Labels to use for formatting categories
-    nulls
-        How to label any null values among the categories
-
-    Returns
-    -------
-    StringValue
-        Labeled categories
-    """
-    op = ops.CategoryLabel(arg, labels, nulls)
-    return op.to_expr()
 
 
 geo_area = _deferred(ir.GeoSpatialValue.area)
@@ -884,14 +861,10 @@ geo_y_min = _deferred(ir.GeoSpatialValue.y_min)
 geo_unary_union = _deferred(ir.GeoSpatialColumn.unary_union)
 
 where = ifelse = _deferred(ir.BooleanValue.ifelse)
-
-# ----------------------------------------------------------------------
-# Category API
-
-
-_category_value_methods = {'label': category_label}
-
-_add_methods(ir.CategoryValue, _category_value_methods)
+coalesce = _deferred(ir.Value.coalesce)
+greatest = _deferred(ir.Value.greatest)
+least = _deferred(ir.Value.least)
+category_label = _deferred(ir.CategoryValue.label)
 
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
