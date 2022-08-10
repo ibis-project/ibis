@@ -2392,24 +2392,24 @@ docs = ["sphinx", "jaraco.packaging (>=9)", "rst.linker (>=1.9)", "jaraco.tideli
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.3)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
 
 [extras]
-all = ["clickhouse-cityhash", "clickhouse-driver", "dask", "datafusion", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "lz4", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "sqlalchemy"]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
+all = ["clickhouse-cityhash", "clickhouse-driver", "dask", "datafusion", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "lz4", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "sqlalchemy", "sqlglot"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
 geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
-impala = ["fsspec", "impyla", "requests"]
-mysql = ["sqlalchemy", "pymysql"]
+impala = ["fsspec", "impyla", "requests", "sqlglot"]
+mysql = ["sqlalchemy", "pymysql", "sqlglot"]
 pandas = []
-postgres = ["psycopg2", "sqlalchemy"]
+postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
-sqlite = ["sqlalchemy"]
+sqlite = ["sqlalchemy", "sqlglot"]
 visualization = ["graphviz"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "be2972988c4bde2099b261b99c175dc7e918455080b02eab62e679300c516ac7"
+content-hash = "733e26b9299acafb1de67d9084dad7ec6015eb2c2c8211a27df8b5b5cb469455"
 
 [metadata.files]
 absolufy-imports = [

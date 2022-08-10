@@ -19,6 +19,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import connect
+from ibis.common.pretty import show_sql
 from ibis.expr.deferred import Deferred
 from ibis.expr.random import random
 from ibis.expr.schema import Schema
@@ -199,6 +200,7 @@ __all__ = (
     'schema',
     'Schema',
     'sequence',
+    'show_sql',
     'struct',
     'table',
     'time',

@@ -23,6 +23,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.now
 ::: ibis.null
 ::: ibis.param
+::: ibis.show_sql
 ::: ibis.random
 ::: ibis.range_window
 ::: ibis.row_number

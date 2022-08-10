@@ -127,18 +127,19 @@ all = [
   "requests",
   "Shapely",
   "sqlalchemy",
+  "sqlglot",
 ]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["fsspec", "impyla", "requests"]
-mysql = ["sqlalchemy", "pymysql"]
+impala = ["fsspec", "impyla", "requests", "sqlglot"]
+mysql = ["sqlalchemy", "pymysql", "sqlglot"]
 pandas = []
-postgres = ["psycopg2", "sqlalchemy"]
+postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
-sqlite = ["sqlalchemy"]
+sqlite = ["sqlalchemy", "sqlglot"]
 visualization = ["graphviz"]
 
 [tool.poetry.plugins."ibis.backends"]

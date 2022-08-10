@@ -35,6 +35,13 @@ class SQL(BaseModel):
             "explicit limit. [`None`][None] means no limit."
         ),
     )
+    default_dialect: str = Field(
+        default="duckdb",
+        description=(
+            "Dialect to use for printing SQL when the backend cannot be "
+            "determined."
+        ),
+    )
 
 
 class Repr(BaseModel):
