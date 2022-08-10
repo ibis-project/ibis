@@ -30,6 +30,7 @@ Ibis provides tools for interacting with the following systems:
 - [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
 - [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
 - [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
+- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
 - [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)
 - [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
