@@ -21,7 +21,6 @@ import ibis.expr.types as ir
 from ibis.backends.base import connect
 from ibis.common.pretty import show_sql
 from ibis.expr.deferred import Deferred
-from ibis.expr.random import random
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa: F401
     ArrayColumn,
@@ -408,6 +407,20 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.SortKey(expr).to_expr()
 
 
+def random() -> ir.FloatingScalar:
+    """Return a random floating point number in the range [0.0, 1.0).
+
+    Similar to [`random.random`][random.random] in the Python standard library.
+
+    Returns
+    -------
+    FloatingScalar
+        Random float value expression
+    """
+    op = ops.RandomScalar()
+    return op.to_expr()
+
+
 @functools.singledispatch
 def timestamp(
     value,
@@ -616,7 +629,7 @@ def interval(
     value_type = literal(value).type()
     type = dt.Interval(unit, value_type=value_type)
 
-    return literal(value, type=type).op().to_expr()
+    return literal(value, type=type)
 
 
 def case() -> bl.SearchedCaseBuilder:
@@ -672,11 +685,6 @@ e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
 
-def _add_methods(klass, method_table):
-    for k, v in method_table.items():
-        setattr(klass, k, v)
-
-
 def where(
     boolean_expr: ir.BooleanValue,
     true_expr: ir.Value,
@@ -699,36 +707,6 @@ def where(
         An expression
     """
     op = ops.Where(boolean_expr, true_expr, false_null_expr)
-    return op.to_expr()
-
-
-coalesce = ir.Value.coalesce
-greatest = ir.Value.greatest
-least = ir.Value.least
-
-
-def category_label(
-    arg: ir.CategoryValue,
-    labels: Sequence[str],
-    nulls: str | None = None,
-) -> ir.StringValue:
-    """Format a known number of categories as strings.
-
-    Parameters
-    ----------
-    arg
-        A category value
-    labels
-        Labels to use for formatting categories
-    nulls
-        How to label any null values among the categories
-
-    Returns
-    -------
-    StringValue
-        Labeled categories
-    """
-    op = ops.CategoryLabel(arg, labels, nulls)
     return op.to_expr()
 
 
@@ -786,19 +764,14 @@ geo_y_max = ir.GeoSpatialValue.y_max
 geo_y_min = ir.GeoSpatialValue.y_min
 geo_unary_union = ir.GeoSpatialColumn.unary_union
 
+coalesce = ir.Value.coalesce
+greatest = ir.Value.greatest
+least = ir.Value.least
 ifelse = ir.BooleanValue.ifelse
-
-# ----------------------------------------------------------------------
-# Category API
-
-
-_category_value_methods = {'label': category_label}
-
-_add_methods(ir.CategoryValue, _category_value_methods)
-
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
 join = ir.Table.join
 asof_join = ir.Table.asof_join
+category_label = ir.CategoryValue.label
 
 _ = Deferred()
