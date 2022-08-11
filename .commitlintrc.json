@@ -21,6 +21,7 @@
         "build",
         "chore",
         "ci",
+        "depr",
         "docs",
         "feat",
         "fix",
@@ -51,6 +52,11 @@
             "description": "Documentation only changes",
             "title": "Documentation",
             "emoji": "📚"
+          },
+          "depr": {
+            "description": "Deprecated APIs and behaviors",
+            "title": "Deprecations",
+            "emoji": "⛔"
           },
           "style": {
             "description": "Changes that do not affect the meaning of the code (whitespace, formatting, missing semi-colons, etc)",

@@ -7,6 +7,8 @@ let
   devDeps = with pkgs; [
     # terminal markdown rendering
     glow
+    # json diffing, executable is jd
+    jd-diff-patch
     # used in the justfile
     jq
     yj

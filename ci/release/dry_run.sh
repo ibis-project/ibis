@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -I nixpkgs=channel:nixos-unstable-small --pure -p git nodejs nix -i bash
+#!nix-shell -I nixpkgs=channel:nixos-unstable-small --pure -p git jq nodejs nix -i bash
 # shellcheck shell=bash
 
 set -euo pipefail
@@ -21,6 +21,15 @@ trap cleanup EXIT ERR
 
 cd "$worktree" || exit 1
 
+node <<< 'console.log(JSON.stringify(require("./.releaserc.js")))' |
+  jq '.plugins |= [.[] | select(.[0] != "@semantic-release/github")]' > .releaserc.json
+
+git rm .releaserc.js
+
+git add .releaserc.json
+
+git commit -m 'test: semantic-release dry run' --no-verify --no-gpg-sign
+
 npx --yes \
   -p semantic-release \
   -p "@semantic-release/commit-analyzer" \
@@ -33,11 +42,5 @@ npx --yes \
   semantic-release \
   --ci \
   --dry-run \
-  --preset conventionalcommits \
-  --plugins \
-  --analyze-commits "@semantic-release/commit-analyzer" \
-  --generate-notes "@semantic-release/release-notes-generator" \
-  --verify-conditions "@semantic-release/changelog,@semantic-release/exec,@semantic-release/git" \
-  --prepare "@semantic-release/changelog,@semantic-release/exec,@google/semantic-release-replace-plugin" \
   --branches "$branch" \
   --repository-url "file://$PWD"

@@ -50,8 +50,6 @@ jobs:
 
   check_setuptools_install:
     runs-on: ubuntu-latest
-    needs:
-      - check_setup_py
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -108,18 +106,16 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
-      - name: install python
-        uses: actions/setup-python@v4
+      - name: install nix
+        uses: cachix/install-nix-action@v17
         with:
-          python-version: "3.10"
+          nix_path: nixpkgs=channel:nixos-unstable-small
 
-      - name: install poetry
-        run: pip install poetry
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
 
-      - name: run poetry lock
-        run: poetry lock --no-update
-        env:
-          PYTHONHASHSEED: "42"
-
-      - name: check whether poetry lockfile needs to be updated
-        run: git diff --exit-code poetry.lock
+      - name: verify lockfile
+        run: ./dev/lockfile_diff.sh
