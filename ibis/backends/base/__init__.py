@@ -3,8 +3,11 @@ from __future__ import annotations
 import abc
 import collections.abc
 import functools
+import importlib.metadata
 import keyword
 import re
+import sys
+import urllib.parse
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -14,6 +17,7 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    MutableMapping,
 )
 
 if TYPE_CHECKING:
@@ -276,6 +280,16 @@ class BaseBackend(abc.ABC):
         new_backend = self.__class__(*args, **kwargs)
         new_backend.reconnect()
         return new_backend
+
+    def _from_url(self, url: str) -> BaseBackend:
+        """Construct an ibis backend from a SQLAlchemy-conforming URL."""
+        raise NotImplementedError(
+            f"`_from_url` not implemented for the {self.name} backend"
+        )
+
+    @staticmethod
+    def _convert_kwargs(kwargs: MutableMapping) -> None:
+        """Manipulate keyword arguments to `.connect` method."""
 
     def reconnect(self) -> None:
         """Reconnect to the database already configured with connect."""
@@ -672,21 +686,60 @@ class BaseBackend(abc.ABC):
 _connect = RegexDispatcher("_connect")
 
 
-@_connect.register(r"(?P<backend>.+)://(?P<path>.*)", priority=10)
+@functools.lru_cache(maxsize=None)
+def _get_backend_names() -> frozenset[str]:
+    """Return the set of known backend names.
+
+    Notes
+    -----
+    This function returns a frozenset to prevent cache pollution.
+
+    If a `set` is used, then any in-place modifications to the set
+    are visible to every caller of this function.
+    """
+
+    if sys.version_info < (3, 10):
+        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
+    else:
+        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
+    return frozenset(ep.name for ep in entrypoints)
+
+
+_PATTERN = "|".join(
+    sorted(_get_backend_names().difference(("duckdb", "sqlite")))
+)
+
+
+@_connect.register(rf"(?P<backend>{_PATTERN})://.+", priority=12)
+def _(url: str, *, backend: str, **kwargs: Any) -> BaseBackend:
+    """Connect to given `backend` with `path`.
+
+    Examples
+    --------
+    >>> con = ibis.connect("postgres://user:pass@hostname:port/database")
+    >>> con = ibis.connect("mysql://user:pass@hostname:port/database")
+    """
+    instance: BaseBackend = getattr(ibis, backend)
+    backend += (backend == "postgres") * "ql"
+    params = "?" * bool(kwargs) + urllib.parse.urlencode(kwargs)
+    url += params
+    return instance._from_url(url)
+
+
+@_connect.register(r"(?P<backend>duckdb|sqlite)://(?P<path>.*)", priority=12)
 def _(_: str, *, backend: str, path: str, **kwargs: Any) -> BaseBackend:
     """Connect to given `backend` with `path`.
 
     Examples
     --------
     >>> con = ibis.connect("duckdb://relative/path/to/data.db")
-    >>> con = ibis.connect("postgres://user:pass@hostname:port/database")
+    >>> con = ibis.connect("sqlite:///absolute/path/to/data.db")
     """
-    instance = getattr(ibis, backend)
-    backend += (backend == "postgres") * "ql"
-    try:
-        return instance.connect(url=f"{backend}://{path}", **kwargs)
-    except TypeError:
-        return instance.connect(path, **kwargs)
+    instance: BaseBackend = getattr(ibis, backend)
+    params = "?" * bool(kwargs) + urllib.parse.urlencode(kwargs)
+    path += params
+    # extra slash for sqlalchemy
+    return instance._from_url(f"{backend}:///{path}")
 
 
 @_connect.register(r"file://(?P<path>.*)", priority=10)
@@ -716,7 +769,7 @@ def connect(resource: Path | str, **_: Any) -> BaseBackend:
 
     Examples
     --------
-    >>> con = ibis.connect("duckdb://relative/path/to/data.db")
+    >>> con = ibis.connect("duckdb:///absolute/path/to/data.db")
     >>> con = ibis.connect("relative/path/to/data.duckdb")
     """
     raise NotImplementedError(type(resource))
@@ -752,24 +805,15 @@ def _(
     Examples
     --------
     >>> con = ibis.connect("duckdb://relative/path/to/data.csv")
-    >>> con = ibis.connect("duckdb://relative/path/to/more/data.parquet")
+    >>> con = ibis.connect("duckdb:///absolute/path/to/more/data.parquet")
     """
     con = getattr(ibis, backend).connect(**kwargs)
     con.register(f"{extension}://{filename}")
     return con
 
 
-@_connect.register(
-    r"(?P<filename>.+\.(?P<extension>parquet|csv))",
-    priority=8,
-)
-def _(
-    _: str,
-    *,
-    filename: str,
-    extension: str,
-    **kwargs: Any,
-) -> BaseBackend:
+@_connect.register(r".+\.(?:parquet|csv)", priority=8)
+def _(filename: str, **kwargs: Any) -> BaseBackend:
     """Connect to `duckdb` and register a parquet or csv file.
 
     Examples
@@ -777,4 +821,4 @@ def _(
     >>> con = ibis.connect("relative/path/to/data.csv")
     >>> con = ibis.connect("relative/path/to/more/data.parquet")
     """
-    return _connect(f"duckdb://{filename}", **kwargs)
+    return _connect(f"duckdb:///{filename}", **kwargs)

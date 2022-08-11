@@ -20,6 +20,7 @@ import pytest
 
 import ibis
 import ibis.util as util
+from ibis.backends.base import _get_backend_names
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -221,28 +222,6 @@ def _random_identifier(suffix: str) -> str:
     return f"__ibis_test_{suffix}_{util.guid()}"
 
 
-@lru_cache(maxsize=None)
-def _get_backend_names() -> frozenset[str]:
-    """Return the set of known backend names.
-
-    Notes
-    -----
-    This function returns a frozenset to prevent cache pollution.
-
-    If a `set` is used, then any in-place modifications to the set
-    are visible to every caller of this function.
-    """
-    import sys
-
-    if sys.version_info < (3, 10):
-        entrypoints = list(importlib.metadata.entry_points()['ibis.backends'])
-    else:
-        entrypoints = list(
-            importlib.metadata.entry_points(group="ibis.backends")
-        )
-    return frozenset(ep.name for ep in entrypoints)
-
-
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
     conftest = importlib.import_module(
@@ -300,6 +279,8 @@ def pytest_ignore_collect(path, config):
 def pytest_collection_modifyitems(session, config, items):
     # add the backend marker to any tests are inside "ibis/backends"
     all_backends = _get_backend_names()
+    xdist_group_markers = []
+
     for item in items:
         parts = item.path.parts
         backend = _get_backend_from_parts(parts)
@@ -310,10 +291,16 @@ def pytest_collection_modifyitems(session, config, items):
             # anything else is a "core" test and is run by default
             item.add_marker(pytest.mark.core)
 
-        if "sqlite" in item.nodeid:
-            item.add_marker(pytest.mark.xdist_group(name="sqlite"))
-        if "duckdb" in item.nodeid:
-            item.add_marker(pytest.mark.xdist_group(name="duckdb"))
+        for name in ("duckdb", "sqlite"):
+            # build a list of markers so we're don't invalidate the item's
+            # marker iterator
+            for _ in item.iter_markers(name=name):
+                xdist_group_markers.append(
+                    (item, pytest.mark.xdist_group(name=name))
+                )
+
+    for item, marker in xdist_group_markers:
+        item.add_marker(marker)
 
 
 @lru_cache(maxsize=None)

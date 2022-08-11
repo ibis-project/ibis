@@ -49,6 +49,7 @@ plugins:
         python:
           import:
             - https://docs.python.org/3/objects.inv
+            - https://docs.sqlalchemy.org/objects.inv
           selection:
             docstring_style: numpy
             filters:
