@@ -5,6 +5,8 @@ import contextlib
 from functools import lru_cache
 from typing import Any, Mapping
 
+import sqlalchemy as sa
+
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -24,6 +26,33 @@ class BaseSQLBackend(BaseBackend):
     compiler = Compiler
     table_class = ops.DatabaseTable
     table_expr_class = ir.Table
+
+    def _from_url(self, url: str) -> BaseBackend:
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+        url = sa.engine.make_url(url)
+
+        kwargs = {
+            name: value
+            for name in ("host", "port", "database", "password")
+            if (value := getattr(url, name, None))
+        }
+        if username := url.username:
+            kwargs["user"] = username
+
+        kwargs.update(url.query)
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.

@@ -47,6 +47,7 @@ jobs:
             title: Datafusion
           - name: pyspark
             title: PySpark
+            parallel: false
           - name: mysql
             title: MySQL
             services:
@@ -80,6 +81,7 @@ jobs:
             backend:
               name: impala
               title: Impala
+              parallel: false
               services:
                 - impala
                 - kudu
@@ -93,6 +95,7 @@ jobs:
             backend:
               name: impala
               title: Impala
+              parallel: false
               services:
                 - impala
                 - kudu
@@ -158,12 +161,12 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - name: run parallel ${{ matrix.backend.name }} tests
-        if: ${{ matrix.backend.name != 'pyspark' && matrix.backend.name != 'impala' }}
+      - name: "run parallel tests: ${{ matrix.backend.name }}"
+        if: ${{ matrix.backend.parallel || matrix.backend.parallel == null }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
-      - name: run non-parallel ${{ matrix.backend.name }} tests
-        if: ${{ matrix.backend.name == 'pyspark' || matrix.backend.name == 'impala' }}
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: ${{ !matrix.backend.parallel }}
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_TEST_NN_HOST: localhost

@@ -1,3 +1,5 @@
+import platform
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -349,10 +351,10 @@ def test_not_verify(alchemy_con, alchemy_backend):
 @pytest.mark.never(
     ["postgres", "mysql"],
     reason="postgres and mysql do not support in-memory tables",
-    raises=TypeError,
+    raises=sa.exc.OperationalError,
 )
 def test_in_memory(alchemy_backend):
-    con = getattr(ibis, alchemy_backend.name()).connect(path=":memory:")
+    con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
     table_name = f"t{guid()[:6]}"
     con.raw_sql(f"CREATE TABLE {table_name} (x int)")
     try:
@@ -438,53 +440,62 @@ def test_connect_url(url):
     assert con.execute(one) == 1
 
 
+not_windows = pytest.mark.skipif(
+    condition=platform.system() == "Windows",
+    reason=(
+        "windows prevents two connections to the same duckdb file even in "
+        "the same process"
+    ),
+)
+
+
 @pytest.mark.backend
 @pytest.mark.parametrize(
     "url",
     [
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_path",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=0",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=0",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_int",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=1",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=1",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_only_int",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=False",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=False",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_upper",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=True",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=True",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_only_upper",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=false",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=false",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_lower",
         ),
         param(
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=true",
-            marks=mark.duckdb,
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=true",
+            marks=[mark.duckdb, not_windows],
             id="duckdb_read_only_lower",
         ),
         param("duckdb://", marks=mark.duckdb, id="duckdb_memory"),
         param(
-            "duckdb:///",
+            "duckdb://:memory:",
             marks=mark.duckdb,
-            id="duckdb_memory_three_slashes",
+            id="duckdb_memory_explicit",
         ),
         param(
-            "duckdb:///?read_only=1",
+            "duckdb://?read_only=1",
             marks=[
                 mark.duckdb,
                 pytest.mark.xfail(
@@ -495,15 +506,15 @@ def test_connect_url(url):
             id="duckdb_memory_read_only",
         ),
         param(
-            "sqlite:///ci/ibis-testing-data/ibis_testing.db",
+            "sqlite://ci/ibis-testing-data/ibis_testing.db",
             marks=mark.sqlite,
             id="sqlite_path",
         ),
         param("sqlite://", marks=mark.sqlite, id="sqlite_memory"),
         param(
-            "sqlite:///",
+            "sqlite://:memory:",
             marks=mark.sqlite,
-            id="sqlite_memory_three_slashes",
+            id="sqlite_memory_explicit",
         ),
     ],
 )
@@ -513,11 +524,12 @@ def test_connect_file_url(url):
     assert con.execute(one) == 1
 
 
+@not_windows
 def test_invalid_connect():
     pytest.importorskip("duckdb")
     url = "?".join(
         [
-            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb",
+            "duckdb://ci/ibis-testing-data/ibis_testing.ddb",
             "read_only=invalid_value",
         ]
     )

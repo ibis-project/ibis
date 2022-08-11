@@ -87,7 +87,17 @@ class RegexDispatcher:
             for r, func in self.funcs.items()
             if (match := r.match(s)) is not None
         )
-        return max(funcs, key=lambda pair: self.priorities.get(pair[0]))
+        priorities = self.priorities
+        value = max(
+            funcs,
+            key=lambda pair: priorities.get(pair[0]),
+            default=None,
+        )
+        if value is None:
+            raise NotImplementedError(
+                f"no pattern for `{self.name}` matches input string: {s!r}"
+            )
+        return value
 
     def __call__(self, s: str, *args: Any, **kwargs: Any) -> Any:
         func, match = self.dispatch(s)

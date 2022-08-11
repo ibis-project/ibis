@@ -96,7 +96,19 @@ class Backend(BaseSQLBackend):
             description="Treat NaNs in floating point expressions as NULL.",
         )
 
-    def do_connect(self, session: pyspark.sql.SparkSession) -> None:
+    def _from_url(self, url: str) -> Backend:
+        """Construct a PySpark backend from a URL `url`."""
+        url = sa.engine.make_url(url)
+        params = list(itertools.chain.from_iterable(url.query.items()))
+        if database := url.database:
+            params.append("spark.sql.warehouse.dir")
+            params.append(str(Path(database).absolute()))
+
+        builder = SparkSession.builder.config(*params)
+        session = builder.getOrCreate()
+        return self.connect(session)
+
+    def do_connect(self, session: SparkSession) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
         Parameters
