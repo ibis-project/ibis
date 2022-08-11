@@ -200,6 +200,7 @@ class BaseSQLBackend(BaseBackend):
         This method can be implemented by subclasses. The logging happens
         when `ibis.options.verbose` is `True`.
         """
+        util.log(sql)
 
     def compile(
         self,
