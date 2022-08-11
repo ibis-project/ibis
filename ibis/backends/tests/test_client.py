@@ -1,7 +1,8 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pytest import mark
+import sqlalchemy as sa
+from pytest import mark, param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -378,3 +379,147 @@ def test_unsigned_integer_type(alchemy_con, coltype):
         assert tname in alchemy_con.list_tables()
     finally:
         alchemy_con.drop_table(tname, force=True)
+
+
+@pytest.mark.backend
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(
+            "clickhouse://default@localhost:9000/ibis_testing",
+            marks=mark.clickhouse,
+            id="clickhouse",
+        ),
+        param(
+            "dask://",
+            marks=[mark.dask, mark.xfail(raises=NotImplementedError)],
+            id="dask",
+        ),
+        param(
+            "datafusion://",
+            marks=[mark.datafusion, mark.xfail(raises=NotImplementedError)],
+            id="datafusion",
+        ),
+        param(
+            "impala://localhost:21050/ibis_testing",
+            marks=mark.impala,
+            id="impala",
+        ),
+        param(
+            "mysql://ibis:ibis@localhost:3306/ibis_testing",
+            marks=mark.mysql,
+            id="mysql",
+        ),
+        param(
+            "pandas://",
+            marks=[mark.pandas, mark.xfail(raises=NotImplementedError)],
+            id="pandas",
+        ),
+        param(
+            "postgres://postgres:postgres@localhost:5432/ibis_testing",
+            marks=mark.postgres,
+            id="postgres",
+        ),
+        param(
+            "pyspark://?spark.app.name=test-pyspark",
+            marks=mark.pyspark,
+            id="pyspark",
+        ),
+        param(
+            "pyspark://my-warehouse-dir?spark.app.name=test-pyspark",
+            marks=mark.pyspark,
+            id="pyspark_with_warehouse",
+        ),
+    ],
+)
+def test_connect_url(url):
+    con = ibis.connect(url)
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
+
+
+@pytest.mark.backend
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb",
+            marks=mark.duckdb,
+            id="duckdb_path",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=0",
+            marks=mark.duckdb,
+            id="duckdb_read_write_int",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=1",
+            marks=mark.duckdb,
+            id="duckdb_read_only_int",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=False",
+            marks=mark.duckdb,
+            id="duckdb_read_write_upper",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=True",
+            marks=mark.duckdb,
+            id="duckdb_read_only_upper",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=false",
+            marks=mark.duckdb,
+            id="duckdb_read_write_lower",
+        ),
+        param(
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb?read_only=true",
+            marks=mark.duckdb,
+            id="duckdb_read_only_lower",
+        ),
+        param("duckdb://", marks=mark.duckdb, id="duckdb_memory"),
+        param(
+            "duckdb:///",
+            marks=mark.duckdb,
+            id="duckdb_memory_three_slashes",
+        ),
+        param(
+            "duckdb:///?read_only=1",
+            marks=[
+                mark.duckdb,
+                pytest.mark.xfail(
+                    reason="Read-only in-memory databases aren't supported",
+                    raises=sa.exc.DBAPIError,
+                ),
+            ],
+            id="duckdb_memory_read_only",
+        ),
+        param(
+            "sqlite:///ci/ibis-testing-data/ibis_testing.db",
+            marks=mark.sqlite,
+            id="sqlite_path",
+        ),
+        param("sqlite://", marks=mark.sqlite, id="sqlite_memory"),
+        param(
+            "sqlite:///",
+            marks=mark.sqlite,
+            id="sqlite_memory_three_slashes",
+        ),
+    ],
+)
+def test_connect_file_url(url):
+    con = ibis.connect(url)
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
+
+
+def test_invalid_connect():
+    pytest.importorskip("duckdb")
+    url = "?".join(
+        [
+            "duckdb:///ci/ibis-testing-data/ibis_testing.ddb",
+            "read_only=invalid_value",
+        ]
+    )
+    with pytest.raises(ValueError):
+        ibis.connect(url)
