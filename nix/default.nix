@@ -81,7 +81,7 @@ import sources.nixpkgs {
         name = "changelog";
         runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
         text = ''
-          conventional-changelog --preset conventionalcommits
+          conventional-changelog --config ./.conventionalcommits.js
         '';
       };
 
