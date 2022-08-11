@@ -209,7 +209,7 @@ class BaseSQLBackend(BaseBackend):
         params: Mapping[ir.Expr, Any] | None = None,
         timecontext: TimeContext | None = None,
     ) -> Any:
-        """Compille an Ibis expression.
+        """Compile an Ibis expression.
 
         Parameters
         ----------
