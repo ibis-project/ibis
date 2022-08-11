@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import sqlite3
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -49,15 +50,19 @@ class Backend(BaseAlchemyBackend):
         )
         return r
 
-    def do_connect(self, path: str | Path | None = None) -> None:
+    def do_connect(
+        self,
+        database: str | Path | None = None,
+        path: str | Path | None = None,
+    ) -> None:
         """Create an Ibis client connected to a SQLite database.
 
-        Multiple database files can be created using the `attach()` method
+        Multiple database files can be accessed using the `attach()` method.
 
         Parameters
         ----------
-        path
-            File path to the SQLite database file. If None, creates an
+        database
+            File path to the SQLite database file. If `None`, creates an
             in-memory transient database and you can use attach() to add more
             files
 
@@ -66,10 +71,16 @@ class Backend(BaseAlchemyBackend):
         >>> import ibis
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
+        if path is not None:
+            warnings.warn(
+                "The `path` argument is deprecated in 4.0. Use `database=...`"
+            )
+            database = path
+
         self.database_name = "main"
 
         engine = sa.create_engine(
-            f"sqlite:///{path if path is not None else ':memory:'}"
+            f"sqlite:///{database if database is not None else ':memory:'}"
         )
 
         sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
