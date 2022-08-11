@@ -1,17 +1,15 @@
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 import pyspark
+import sqlalchemy as sa
 from pydantic import Field
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.column import Column
-
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
-    import ibis.expr.operations as ops
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -34,6 +32,10 @@ from ibis.backends.pyspark.compiler import (
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
+
+if TYPE_CHECKING:
+    import ibis.expr.operations as ops
+    import ibis.expr.types as ir
 
 _read_csv_defaults = {
     'header': True,
@@ -119,8 +121,8 @@ class Backend(BaseSQLBackend):
         Examples
         --------
         >>> import ibis
-        >>> import pyspark
-        >>> session = pyspark.sql.SparkSession.builder.getOrCreate()
+        >>> from pyspark.sql import SparkSession
+        >>> session = SparkSession.builder.getOrCreate()
         >>> ibis.pyspark.connect(session)
         <ibis.backends.pyspark.Backend at 0x...>
         """
