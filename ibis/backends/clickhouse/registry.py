@@ -402,6 +402,11 @@ def _literal(translator, expr):
         return str(list(_tuple_to_list(value)))
     elif isinstance(expr, ir.SetScalar):
         return '({})'.format(', '.join(map(repr, value)))
+    elif isinstance(expr, ir.StructScalar):
+        fields = ", ".join(
+            f"{value} as `{key}`" for key, value in expr.op().value.items()
+        )
+        return f"tuple({fields})"
     else:
         raise NotImplementedError(type(expr))
 
