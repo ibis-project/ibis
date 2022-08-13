@@ -89,14 +89,18 @@ def _literal(_, expr):
     elif isinstance(value, collections.abc.Mapping):
         if isinstance(dtype, dt.Struct):
             placeholders = ", ".join(
-                f"{key!r}: :v{i}" for i, key in enumerate(value.keys())
+                f"{key} := :v{i}" for i, key in enumerate(value.keys())
             )
-            return sa.text(f"{{{placeholders}}}").bindparams(
+            text = sa.text(f"struct_pack({placeholders})")
+            bound_text = text.bindparams(
                 *(
                     sa.bindparam(f"v{i:d}", val)
                     for i, val in enumerate(value.values())
                 )
             )
+            name = expr.get_name() if expr.has_name() else "tmp"
+            params = {name: to_sqla_type(dtype)}
+            return bound_text.columns(**params).scalar_subquery()
         raise NotImplementedError(
             f"Ibis dtype `{dtype}` with mapping type "
             f"`{type(value).__name__}` isn't yet supported with the duckdb "
