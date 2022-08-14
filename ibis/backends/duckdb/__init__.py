@@ -104,7 +104,8 @@ class Backend(BaseAlchemyBackend):
 
     def do_connect(
         self,
-        path: str | Path = ":memory:",
+        database: str | Path = ":memory:",
+        path: str | Path = None,
         read_only: bool = False,
         **config: Any,
     ) -> None:
@@ -126,8 +127,14 @@ class Backend(BaseAlchemyBackend):
         >>> import ibis
         >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
         """
-        if not (in_memory := path == ":memory:"):
-            path = Path(path).absolute()
+        if path is not None:
+            warnings.warn(
+                "The `path` argument is deprecated in 4.0. Use `database=...` "
+                "instead."
+            )
+            database = path
+        if not (in_memory := database == ":memory:"):
+            database = Path(database).absolute()
         super().do_connect(
             sa.create_engine(
                 f"duckdb:///{database}",
