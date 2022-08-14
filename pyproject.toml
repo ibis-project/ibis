@@ -102,7 +102,7 @@ filelock = ">=3.7.0,<4"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
 pyupgrade = ">=2.26.0,<3"
 requests = ">=2,<3"
-setuptools = ">=57,<65"
+setuptools = ">=57,<66"
 sqlalchemy = ">=1.4,<2.0"
 tomli = ">=2.0.1,<3"
 

@@ -802,10 +802,10 @@ optional = false
 python-versions = ">=3.6.1,<4.0"
 
 [package.extras]
-pipfile_deprecated_finder = ["pipreqs", "requirementslib"]
-requirements_deprecated_finder = ["pipreqs", "pip-api"]
-colors = ["colorama (>=0.4.3,<0.5.0)"]
 plugins = ["setuptools"]
+colors = ["colorama (>=0.4.3,<0.5.0)"]
+requirements_deprecated_finder = ["pip-api", "pipreqs"]
+pipfile_deprecated_finder = ["requirementslib", "pipreqs"]
 
 [[package]]
 name = "jedi"
@@ -2406,7 +2406,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "f61a66cf37bfdb4f8818f9aa4e1edb3af92658661a57e2c04b3873e83336ac36"
+content-hash = "40b83a2f21199e4f6fac38d69a8ad95d18330a4a9b3601c60607efaf9d6c2203"
 
 [metadata.files]
 absolufy-imports = [
