@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import importlib.metadata
 import os
 import platform
@@ -10,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
 import _pytest
 import pandas as pd
 import sqlalchemy as sa
+from packaging.version import parse as vparse
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -343,7 +345,6 @@ def _get_backends_to_test(
 
 def pytest_runtest_call(item):
     """Dynamically add various custom markers."""
-    nodeid = item.nodeid
     backend = [
         backend.name()
         for key, backend in item.funcargs.items()
@@ -364,25 +365,31 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
-    for marker in item.iter_markers(name="skip_backends"):
-        if backend in marker.args[0]:
-            pytest.skip(f"skip_backends: {backend} {nodeid}")
+    for marker in item.iter_markers(name="min_version"):
+        kwargs = marker.kwargs
+        if backend not in kwargs:
+            continue
 
-    for marker in item.iter_markers(name='min_spark_version'):
-        min_version = marker.args[0]
-        if backend == 'pyspark':
-            from distutils.version import LooseVersion
-
-            import pyspark
-
-            if LooseVersion(pyspark.__version__) < LooseVersion(min_version):
-                item.add_marker(
-                    pytest.mark.xfail(
-                        reason=f'Require minimal spark version {min_version}, '
-                        f'but is {pyspark.__version__}',
-                        **marker.kwargs,
-                    )
+        min_version = kwargs.pop(backend)
+        reason = kwargs.pop("reason", None)
+        version = getattr(
+            importlib.import_module(backend), "__version__", None
+        )
+        if condition := version is None:  # pragma: no cover
+            if reason is None:
+                reason = (
+                    f"{backend} backend module has no __version__ attribute"
                 )
+        else:
+            condition = vparse(version) < vparse(min_version)
+            if reason is None:
+                reason = (
+                    f"test requires {backend}>={version}; "
+                    f"got version {version}"
+                )
+            else:
+                reason = f"{backend}@{version} (<{min_version}): {reason}"
+        item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
 
     # Ibis hasn't exposed existing functionality
     # This xfails so that you know when it starts to pass

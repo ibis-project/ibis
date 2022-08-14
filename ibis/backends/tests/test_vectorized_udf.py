@@ -496,7 +496,7 @@ def test_elementwise_udf_overwrite_destruct_and_assign(
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.min_spark_version('3.1')
+@pytest.mark.min_version(pyspark="3.1")
 def test_elementwise_udf_destruct_exact_once(udf_backend, udf_alltypes):
     with tempfile.TemporaryDirectory() as tempdir:
 

@@ -163,9 +163,6 @@ def test_filtering_join(backend, batting, awards_players, how):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.skip_backends(
-    ["dask", "pandas"], reason="insane memory explosion"
-)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="pyspark doesn't support joining on differing column names",
