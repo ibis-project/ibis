@@ -22,6 +22,11 @@ try:
 except ImportError:
     duckdb = None
 
+try:
+    import datafusion
+except ImportError:
+    datafusion = None
+
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
@@ -196,7 +201,23 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.parametrize(
     ('predicate_fn', 'expected_fn'),
     [
-        param(lambda t: t['bool_col'], lambda df: df['bool_col'], id="no_op"),
+        param(
+            lambda t: t['bool_col'],
+            lambda df: df['bool_col'],
+            id="no_op",
+            marks=pytest.mark.xfail(
+                (
+                    datafusion is not None
+                    and (
+                        # older versions of datafusion don't have a
+                        # `__version__` attribute
+                        not hasattr(datafusion, "__version__")
+                        or vparse(datafusion.__version__) < vparse("0.5.0")
+                    )
+                ),
+                reason="broken on datafusion < 0.5.0",
+            ),
+        ),
         param(
             lambda t: ~t['bool_col'], lambda df: ~df['bool_col'], id="negate"
         ),
