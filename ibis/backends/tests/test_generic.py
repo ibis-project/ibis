@@ -1,5 +1,4 @@
 import decimal
-import importlib
 import io
 import operator
 from contextlib import redirect_stdout
@@ -8,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import toolz
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -16,16 +14,6 @@ import ibis.common.exceptions as com
 import ibis.util as util
 from ibis import _
 from ibis import literal as L
-
-try:
-    import duckdb
-except ImportError:
-    duckdb = None
-
-try:
-    import datafusion
-except ImportError:
-    datafusion = None
 
 
 @pytest.mark.parametrize(
@@ -38,7 +26,7 @@ except ImportError:
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
-def test_fillna_nullif(backend, con, expr, expected):
+def test_fillna_nullif(con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
         # Example 1: Pandas returns np.nan while BigQuery returns None.
@@ -119,7 +107,7 @@ def test_fillna(backend, alltypes):
         ),
     ],
 )
-def test_coalesce(backend, con, expr, expected):
+def test_coalesce(con, expr, expected):
     result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
@@ -133,7 +121,7 @@ def test_coalesce(backend, con, expr, expected):
 
 # TODO(dask) - identicalTo - #2553
 @pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark"])
-def test_identical_to(backend, alltypes, con, sorted_df):
+def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.sort_by('id')
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
@@ -205,18 +193,7 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t['bool_col'],
             lambda df: df['bool_col'],
             id="no_op",
-            marks=pytest.mark.xfail(
-                (
-                    datafusion is not None
-                    and (
-                        # older versions of datafusion don't have a
-                        # `__version__` attribute
-                        not hasattr(datafusion, "__version__")
-                        or vparse(datafusion.__version__) < vparse("0.5.0")
-                    )
-                ),
-                reason="broken on datafusion < 0.5.0",
-            ),
+            marks=pytest.mark.min_version(datafusion="0.5.0"),
         ),
         param(
             lambda t: ~t['bool_col'], lambda df: ~df['bool_col'], id="negate"
@@ -306,10 +283,7 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["datafusion", "mysql", "sqlite"])
-@pytest.mark.xfail(
-    duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
-    reason="<0.3.3 does not support isnan/isinf properly",
-)
+@pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -587,25 +561,12 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     )
 
 
-DASK_WITH_FIXED_REPLACE = vparse("2022.01.1")
-
-
-def skip_if_dask_replace_is_broken(backend):
-    if (name := backend.name()) != "dask":
-        return
-    if (
-        version := vparse(importlib.import_module(name).__version__)
-    ) < DASK_WITH_FIXED_REPLACE:
-        pytest.skip(
-            f"{name}@{version} doesn't support this operation with later "
-            "versions of pandas"
-        )
-
-
 @pytest.mark.notimpl(["datafusion"])
+@pytest.mark.min_version(
+    dask="2022.01.1",
+    reason="unsupported operation with later versions of pandas",
+)
 def test_zeroifnull_column(backend, alltypes, df):
-    skip_if_dask_replace_is_broken(backend)
-
     expr = alltypes.int_col.nullif(1).zeroifnull()
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
