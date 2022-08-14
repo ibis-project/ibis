@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import ast
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, NamedTuple
+from typing import TYPE_CHECKING, Any, Iterator, MutableMapping
 
 import sqlalchemy as sa
 import toolz
@@ -22,12 +23,6 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
 from ibis.common.dispatch import RegexDispatcher
-
-
-class _ColumnMetadata(NamedTuple):
-    name: str
-    type: dt.DataType
-
 
 _generate_view_code = RegexDispatcher("_register")
 _dialect = sa.dialects.postgresql.dialect()
@@ -90,6 +85,16 @@ class Backend(BaseAlchemyBackend):
     def current_database(self) -> str:
         return "main"
 
+    @staticmethod
+    def _convert_kwargs(kwargs: MutableMapping) -> None:
+        read_only = kwargs.pop("read_only", "False").capitalize()
+        try:
+            kwargs["read_only"] = ast.literal_eval(read_only)
+        except ValueError as e:
+            raise ValueError(
+                f"invalid value passed to ast.literal_eval: {read_only!r}"
+            ) from e
+
     @property
     def version(self) -> str:
         # TODO: there is a `PRAGMA version` we could use instead
@@ -101,22 +106,32 @@ class Backend(BaseAlchemyBackend):
         self,
         path: str | Path = ":memory:",
         read_only: bool = False,
+        **config: Any,
     ) -> None:
         """Create an Ibis client connected to a DuckDB database.
 
         Parameters
         ----------
-        path
-            Path to a duckdb database
+        database
+            Path to a duckdb database.
         read_only
-            Whether the database is read-only
+            Whether the database is read-only.
+        config
+            DuckDB configuration parameters. See the [DuckDB configuration
+            documentation](https://duckdb.org/docs/sql/configuration) for
+            possible configuration values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
         """
         if not (in_memory := path == ":memory:"):
             path = Path(path).absolute()
         super().do_connect(
             sa.create_engine(
-                f"duckdb:///{path}",
-                connect_args={"read_only": read_only},
+                f"duckdb:///{database}",
+                connect_args=dict(read_only=read_only, config=config),
                 poolclass=sa.pool.SingletonThreadPool if in_memory else None,
             )
         )
@@ -157,15 +172,13 @@ class Backend(BaseAlchemyBackend):
         df = table.to_pandas(timestamp_as_object=True)
         return schema.apply_to(df)
 
-    def _metadata(self, query: str) -> Iterator[_ColumnMetadata]:
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         for name, type, null in toolz.pluck(
             ["column_name", "column_type", "null"],
             self.con.execute(f"DESCRIBE {query}"),
         ):
-            yield _ColumnMetadata(
-                name=name,
-                type=parse(type)(nullable=null.lower() == "yes"),
-            )
+            ibis_type = parse(type)
+            yield name, ibis_type(nullable=null.lower() == "yes")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a DuckDB SQL string."""
