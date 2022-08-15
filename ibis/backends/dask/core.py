@@ -349,6 +349,7 @@ def main_execute(
     scope=None,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
+    cache=None,
     **kwargs,
 ):
     """Execute an expression against data that are bound to it. If no data
@@ -394,6 +395,9 @@ def main_execute(
     if params is None:
         params = {}
 
+    if cache is None:
+        cache = {}
+
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
@@ -403,6 +407,7 @@ def main_execute(
         scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
+        cache=cache,
         **kwargs,
     )
 

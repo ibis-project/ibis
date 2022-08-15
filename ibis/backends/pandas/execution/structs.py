@@ -10,7 +10,9 @@ import ibis.expr.operations as ops
 from ibis.backends.pandas.dispatch import execute_node
 
 
-@execute_node.register(ops.StructField, collections.abc.Mapping)
+@execute_node.register(
+    ops.StructField, (collections.abc.Mapping, pd.DataFrame)
+)
 def execute_node_struct_field_dict(op, data, **kwargs):
     return data[op.field]
 
@@ -23,12 +25,6 @@ def execute_node_struct_field_none(op, data, **_):
     return pd.NA
 
 
-@execute_node.register(ops.StructField, pd.Series)
-def execute_node_struct_field_series(op, data, **kwargs):
-    field = op.field
-    return data.map(functools.partial(_safe_getter, field=field)).rename(field)
-
-
 def _safe_getter(value, field: str):
     if pd.isna(value):
         return pd.NA
@@ -36,12 +32,15 @@ def _safe_getter(value, field: str):
         return value[field]
 
 
+@execute_node.register(ops.StructField, pd.Series)
+def execute_node_struct_field_series(op, data, **kwargs):
+    getter = functools.partial(_safe_getter, field=op.field)
+    return data.map(getter).rename(op.field)
+
+
 @execute_node.register(ops.StructField, SeriesGroupBy)
 def execute_node_struct_field_series_group_by(op, data, **kwargs):
-    field = op.field
-
+    getter = functools.partial(_safe_getter, field=op.field)
     return (
-        data.obj.map(functools.partial(_safe_getter, field=field))
-        .rename(field)
-        .groupby(data.grouper.groupings)
+        data.obj.map(getter).rename(op.field).groupby(data.grouper.groupings)
     )
