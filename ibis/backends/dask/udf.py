@@ -63,29 +63,29 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(
         ops.ElementWiseVectorizedUDF, *(itertools.repeat(dd.Series, nargs))
     )
-    def execute_udf_node(op, *args, **kwargs):
+    def execute_udf_node(op, *args, cache=None, timecontext=None, **kwargs):
         # We have rewritten op.func to be a closure enclosing
         # the kwargs, and therefore, we do not need to pass
         # kwargs here. This is true for all udf execution in this
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
+        try:
+            return cache[(op, timecontext)]
+        except KeyError:
+            pass
+
         if isinstance(op.return_type, dt.Struct):
             meta = make_struct_op_meta(op)
 
             df = dd.map_partitions(op.func, *args, meta=meta)
-            return df
         else:
             name = args[0].name if len(args) == 1 else None
             meta = pandas.Series([], name=name, dtype=op.return_type.to_dask())
             df = dd.map_partitions(op.func, *args, meta=meta)
 
-            return df
+        cache[(op, timecontext)] = df
 
-    @execute_node.register(
-        ops.ElementWiseVectorizedUDF, *(itertools.repeat(object, nargs))
-    )
-    def execute_udf_node_non_dask(op, *args, **kwargs):
-        return op.func(*args)
+        return df
 
     return scope
 
