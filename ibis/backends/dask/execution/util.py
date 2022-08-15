@@ -12,9 +12,7 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.util
 from ibis.backends.dask.core import execute
-from ibis.backends.pandas.client import ibis_dtype_to_pandas
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
-from ibis.expr import datatypes as dt
 from ibis.expr import lineage as lin
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
@@ -127,42 +125,34 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = expr._safe_name
-    dataframe_exprs = (
-        ir.DestructColumn,
-        ir.StructColumn,
-        ir.DestructScalar,
-        ir.StructScalar,
-    )
-    if isinstance(expr, dataframe_exprs):
-        return _coerce_to_dataframe(
-            result, expr.type().names, expr.type().types
-        )
-    elif isinstance(result, (pd.Series, dd.Series)):
+    result_name = expr.get_name()
+
+    if isinstance(result, (pd.DataFrame, dd.DataFrame)):
+        result = result.map_partitions(pd.DataFrame.to_dict, orient='records')
+        return result.rename(result_name)
+
+    if isinstance(result, (pd.Series, dd.Series)):
         # Series from https://github.com/ibis-project/ibis/issues/2711
         return result.rename(result_name)
-    elif isinstance(expr, ir.Scalar):
-        if isinstance(result, dd.core.Scalar):
-            # wrap the scalar in a series
-            out_dtype = _pandas_dtype_from_dd_scalar(result)
-            out_len = 1 if index is None else len(index)
-            meta = make_meta_series(dtype=out_dtype, name=result_name)
-            # Specify `divisions` so that the created Dask object has
-            # known divisions (to be concatenatable with Dask objects
-            # created using `dd.from_pandas`)
-            series = dd.from_delayed(
-                _wrap_dd_scalar(result, result_name, out_len),
-                meta=meta,
-                divisions=(0, out_len - 1),
-            )
 
-            return series
-        else:
-            return dd.from_pandas(
-                pd_util.coerce_to_output(result, expr, index), npartitions=1
-            )
-    else:
-        raise ValueError(f"Cannot coerce_to_output. Result: {result}")
+    if isinstance(result, dd.core.Scalar):
+        # wrap the scalar in a series
+        out_dtype = _pandas_dtype_from_dd_scalar(result)
+        out_len = 1 if index is None else len(index)
+        meta = make_meta_series(dtype=out_dtype, name=result_name)
+        # Specify `divisions` so that the created Dask object has
+        # known divisions (to be concatenatable with Dask objects
+        # created using `dd.from_pandas`)
+        series = dd.from_delayed(
+            _wrap_dd_scalar(result, result_name, out_len),
+            meta=meta,
+            divisions=(0, out_len - 1),
+        )
+        return series
+
+    return dd.from_pandas(
+        pd_util.coerce_to_output(result, expr, index), npartitions=1
+    )
 
 
 @dask.delayed
@@ -175,92 +165,6 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
         return x.dtype
     except AttributeError:
         return pd.Series([x._meta]).dtype
-
-
-def _coerce_to_dataframe(
-    data: Any,
-    column_names: List[str],
-    types: List[dt.DataType],
-) -> dd.DataFrame:
-    """
-    Clone of ibis.util.coerce_to_dataframe that deals well with dask types
-
-    Coerce the following shapes to a DataFrame.
-
-    The following shapes are allowed:
-    (1) A list/tuple of Series -> each series is a column
-    (2) A list/tuple of scalars -> each scalar is a column
-    (3) A Dask Series of list/tuple -> each element inside becomes a column
-    (4) dd.DataFrame -> the data is unchanged
-
-    Examples
-    --------
-    Note: these examples demonstrate functionality with pandas objects in order
-    to make them more legible, but this works the same with dask.
-
-    >>> coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), ['b'])
-       b
-    0  1
-    1  2
-    2  3
-    >>> coerce_to_dataframe(pd.Series([[1, 2, 3]]), ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    >>> coerce_to_dataframe(pd.Series([range(3), range(3)]), ['a', 'b', 'c'])
-       a  b  c
-    0  0  1  2
-    1  0  1  2
-    >>> coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    >>>  coerce_to_dataframe([1, 2, 3], ['a', 'b', 'c'])
-       a  b  c
-    0  1  2  3
-    """
-    if isinstance(data, dd.DataFrame):
-        result = data
-
-    elif isinstance(data, dd.Series):
-        # This takes a series where the values are iterables and converts each
-        # value into its own row in a new dataframe.
-
-        # NOTE - We add a detailed meta here so we do not drop the key index
-        # downstream. This seems to be fixed in versions of dask > 2020.12.0
-        dtypes = map(ibis_dtype_to_pandas, types)
-        series = [
-            data.apply(
-                _select_item_in_iter,
-                selection=i,
-                meta=make_meta_series(
-                    dtype, meta_index=data._meta_nonempty.index
-                ),
-            )
-            for i, dtype in enumerate(dtypes)
-        ]
-
-        result = dd.concat(series, axis=1)
-
-    elif isinstance(data, (tuple, list)):
-        if len(data) == 0:
-            result = dd.from_pandas(
-                pd.DataFrame(columns=column_names), npartitions=1
-            )
-        elif isinstance(data[0], dd.Series):
-            result = dd.concat(data, axis=1)
-        else:
-            result = dd.from_pandas(
-                pd.concat([pd.Series([v]) for v in data], axis=1),
-                npartitions=1,
-            )
-    else:
-        raise ValueError(f"Cannot coerce to DataFrame: {data}")
-
-    result.columns = column_names
-    return result
-
-
-def _select_item_in_iter(t, selection):
-    return t[selection]
 
 
 def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:

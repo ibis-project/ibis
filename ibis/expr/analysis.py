@@ -12,11 +12,7 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.exceptions import (
-    ExpressionError,
-    IbisTypeError,
-    IntegrityError,
-)
+from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.expr.window import window
 
 # ---------------------------------------------------------------------
@@ -228,52 +224,19 @@ def get_mutation_exprs(
     # 1) overwriting_cols_to_expr, which maps a column name to its expr
     # if the expr contains a column that overwrites an existing table column.
     # All keys in this dict are columns in the original table that are being
-    # overwritten by an assignment expr. All values in this dict are either:
-    #     (a) The expr of the overwriting column. Note that in the case of
-    #     DestructColumn, this will specifically only happen for the first
-    #     overwriting column within that expr.
-    #     (b) None. This is the case for the second (and beyond) overwriting
-    #     column(s) inside the DestructColumn and is used as a flag to prevent
-    #     the same DestructColumn expr from being duplicated in the output.
+    # overwritten by an assignment expr.
     # 2) non_overwriting_exprs, which is a list of all exprs that do not do
     # any overwriting. That is, if an expr is in this list, then its column
     # name does not exist in the original table.
     # Given these two data structures, we can compute the mutation node exprs
     # based on whether any columns are being overwritten.
     # TODO issue #2649
-    # Due to a known limitation with how we treat DestructColumn
-    # in assignments, the ordering of op.selections may not exactly
-    # correspond with the column ordering we want (i.e. all new columns
-    # should appear at the end, but currently they are materialized
-    # directly after those overwritten columns).
     overwriting_cols_to_expr: dict[str, ir.Expr | None] = {}
     non_overwriting_exprs: list[ir.Expr] = []
     table_schema = table.schema()
     for expr in exprs:
-        is_first_overwrite = True
         expr_contains_overwrite = False
-        if isinstance(expr, ir.DestructColumn):
-            if expr.has_name():
-                raise ExpressionError(
-                    f"Cannot name a destruct column: {expr.get_name()}"
-                )
-            for name in expr.type().names:
-                if name in table_schema:
-                    # The below is necessary to ensure that:
-                    # A) all overwritten cols inside the DestructColumn are
-                    # accounted for, while
-                    # B) we don't repeat the same DestructColumn expr more
-                    # than once inside the final mutation node exprs.
-                    # This is both okay and necessary because DestructColumn
-                    # columns are all packaged together, so the expr should
-                    # appear exactly once in the mutation node exprs.
-                    if is_first_overwrite:
-                        overwriting_cols_to_expr[name] = expr
-                        is_first_overwrite = False
-                    else:
-                        overwriting_cols_to_expr[name] = None
-                    expr_contains_overwrite = True
-        elif isinstance(expr, ir.Value) and expr.get_name() in table_schema:
+        if isinstance(expr, ir.Value) and expr.get_name() in table_schema:
             overwriting_cols_to_expr[expr.get_name()] = expr
             expr_contains_overwrite = True
 
