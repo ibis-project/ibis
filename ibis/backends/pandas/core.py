@@ -372,9 +372,9 @@ def execute_until_in_scope(
         **kwargs,
     )
     computed = post_execute_(
-        op, result, timecontext=timecontext, aggcontext=aggcontext, **kwargs
+        node, result, timecontext=timecontext, aggcontext=aggcontext, **kwargs
     )
-    return Scope({op: computed}, timecontext)
+    return Scope({node: computed}, timecontext)
 
 
 execute = Dispatcher('execute')

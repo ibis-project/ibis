@@ -209,10 +209,10 @@ def compile_sort_key(t, op, **kwargs):
 
 def compile_nan_as_null(compile_func):
     @functools.wraps(compile_func)
-    def wrapper(t, expr, *args, **kwargs):
-        compiled = compile_func(t, expr, *args, **kwargs)
+    def wrapper(t, op, *args, **kwargs):
+        compiled = compile_func(t, op, *args, **kwargs)
         if options.pyspark.treat_nan_as_null and isinstance(
-            expr.type(), dt.Floating
+            op.output_dtype, dt.Floating
         ):
             return F.nanvl(compiled, F.lit(None))
         else:

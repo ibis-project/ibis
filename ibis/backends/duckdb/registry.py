@@ -96,8 +96,7 @@ def _literal(_, op):
                     for i, val in enumerate(value.values())
                 )
             )
-            name = expr.get_name() if expr.has_name() else "tmp"
-            params = {name: to_sqla_type(dtype)}
+            params = {op.name: to_sqla_type(dtype)}
             return bound_text.columns(**params).scalar_subquery()
         raise NotImplementedError(
             f"Ibis dtype `{dtype}` with mapping type "

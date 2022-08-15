@@ -118,15 +118,13 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = expr.get_name()
-
     if isinstance(result, pd.DataFrame):
         rows = result.to_dict(orient="records")
-        return pd.Series(rows, name=result_name)
+        return pd.Series(rows, name=node.name)
 
     # columnar result
     if isinstance(result, pd.Series):
         return result.rename(node.name)
 
     # Wrap `result` into a single-element Series.
-    return pd.Series([result], name=result_name)
+    return pd.Series([result], name=node.name)

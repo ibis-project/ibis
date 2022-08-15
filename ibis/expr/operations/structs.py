@@ -15,17 +15,15 @@ class StructField(Value):
 
     output_shape = rlz.shape_like("arg")
 
+    @property
+    def name(self) -> str:
+        return self.field
+
     @immutable_property
     def output_dtype(self) -> dt.DataType:
         struct_dtype = self.arg.output_dtype
         value_dtype = struct_dtype[self.field]
         return value_dtype
-
-    def resolve_name(self) -> str:
-        return self.field
-
-    def has_resolved_name(self) -> bool:
-        return True
 
 
 @public

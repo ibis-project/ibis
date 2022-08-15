@@ -375,9 +375,9 @@ def _literal(translator, op):
         return str(list(_tuple_to_list(value)))
     elif isinstance(op.output_dtype, dt.Set):
         return '({})'.format(', '.join(map(repr, value)))
-    elif isinstance(expr, ir.StructScalar):
+    elif isinstance(op.output_dtype, ir.StructScalar):
         fields = ", ".join(
-            f"{value} as `{key}`" for key, value in expr.op().value.items()
+            f"{value} as `{key}`" for key, value in op.value.items()
         )
         return f"tuple({fields})"
     else:
