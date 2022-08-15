@@ -476,20 +476,6 @@ def _fmt_selection_column_value_expr(
 
 
 @fmt_selection_column.register
-def _fmt_selection_column_destruct_value_expr(
-    expr: ir.DestructValue, *, aliases: Aliases, maxlen: int = 0
-) -> str:
-    # Destruct values can create one or more columns. The names of
-    # these columns are the names of the fields in the struct.
-    joined_field_names = ", ".join(expr.type().names)
-    name = f"({joined_field_names}):"
-    # the additional 1 is for the colon
-    aligned_name = f"{name:<{maxlen + 1}}"
-    value = fmt_value(expr, aliases=aliases)
-    return f"{aligned_name} {value}{type_info(expr.type())}"
-
-
-@fmt_selection_column.register
 def _fmt_selection_column_table_expr(
     expr: ir.Table, *, aliases: Aliases, **_: Any
 ) -> str:

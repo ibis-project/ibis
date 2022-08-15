@@ -92,13 +92,20 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
     @execute_node.register(
         ops.ElementWiseVectorizedUDF, *(itertools.repeat(object, nargs))
     )
-    def execute_udf_node(op, *args, **kwargs):
+    def execute_udf_node(op, *args, cache=None, timecontext=None, **kwargs):
         # We have rewritten op.func to be a closure enclosing
         # the kwargs, and therefore, we do not need to pass
         # kwargs here. This is true for all udf execution in this
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
-        return op.func(*args)
+
+        # prevent executing UDFs multiple times on different execution branches
+        try:
+            result = cache[(op, timecontext)]
+        except KeyError:
+            result = cache[(op, timecontext)] = op.func(*args)
+
+        return result
 
     return scope
 

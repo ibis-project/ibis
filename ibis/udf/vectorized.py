@@ -20,7 +20,7 @@ from ibis.expr.operations import (
 )
 
 
-def _coerce_to_tuple(
+def _coerce_to_dict(
     data: Union[List, np.ndarray, pd.Series],
     output_type: dt.Struct,
     index: Optional[pd.Index] = None,
@@ -31,7 +31,7 @@ def _coerce_to_tuple(
     (2) An np.ndarray
     (3) A Series
     """
-    return tuple(data)
+    return dict(zip(output_type.names, data))
 
 
 def _coerce_to_np_array(
@@ -197,8 +197,8 @@ class UserDefinedFunction:
             ):
                 return _coerce_to_dataframe
             else:
-                # Case 2: Struct output, reduction UDF -> coerce to tuple
-                return _coerce_to_tuple
+                # Case 2: Struct output, reduction UDF -> coerce to dictionary
+                return _coerce_to_dict
         # Case 3: Vector output, non-reduction UDF -> coerce to Series
         elif (
             self.func_type is ElementWiseVectorizedUDF

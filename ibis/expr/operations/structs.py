@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
-
 from public import public
 
 from ibis.common.validators import immutable_property
