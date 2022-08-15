@@ -704,6 +704,7 @@ def test_custom_window_udf(t, custom_window):
         window,
         *,
         scope,
+        cache,
         operand,
         parent,
         group_by,
