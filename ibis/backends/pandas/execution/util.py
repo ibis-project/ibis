@@ -1,7 +1,6 @@
 import operator
 from typing import Any, Optional, Union
 
-import numpy as np
 import pandas as pd
 import toolz
 
@@ -13,7 +12,6 @@ from ibis.backends.pandas.execution import constants
 from ibis.expr import operations as ops
 from ibis.expr import types as ir
 from ibis.expr.scope import Scope
-from ibis.udf.vectorized import _coerce_to_dataframe
 
 
 def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
@@ -118,30 +116,15 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = expr._safe_name
+    result_name = expr.get_name()
 
-    if isinstance(expr, (ir.DestructColumn, ir.StructColumn)):
-        return _coerce_to_dataframe(result, expr.type())
-    elif isinstance(expr, (ir.DestructScalar, ir.StructScalar)):
-        # Here there are two cases, if this is groupby aggregate,
-        # then the result e a Series of tuple/list, or
-        # if this is non grouped aggregate, then the result
-        return _coerce_to_dataframe(result, expr.type())
-    elif isinstance(result, pd.Series):
+    if isinstance(result, pd.DataFrame):
+        rows = result.to_dict(orient="records")
+        return pd.Series(rows, name=result_name)
+
+    # columnar result
+    if isinstance(result, pd.Series):
         return result.rename(result_name)
-    elif isinstance(expr, ir.Scalar):
-        if index is None:
-            # Wrap `result` into a single-element Series.
-            return pd.Series([result], name=result_name)
-        else:
-            # Broadcast `result` to a multi-element Series according to the
-            # given `index`.
-            return pd.Series(
-                np.repeat(result, len(index)),
-                index=index,
-                name=result_name,
-            )
-    elif isinstance(result, np.ndarray):
-        return pd.Series(result, name=result_name)
-    else:
-        raise ValueError(f"Cannot coerce_to_output. Result: {result}")
+
+    # Wrap `result` into a single-element Series.
+    return pd.Series([result], name=result_name)
