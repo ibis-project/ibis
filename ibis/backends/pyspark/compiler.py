@@ -162,23 +162,9 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
 
     for selection in op.selections:
         if isinstance(selection, ir.Table):
+            # TODO(kszucs): avoid converting to expr
             col_in_selection_order.extend(selection.columns)
-        elif isinstance(selection, ir.DestructColumn):
-            struct_col = t.translate(
-                selection, scope, adjusted_timecontext, **kwargs
-            )
-            # assign struct col and drop it later
-            # This is a work around to ensure that the struct_col
-            # is only executed once
-            struct_col_name = f"destruct_col_{guid()}"
-            result_table = result_table.withColumn(struct_col_name, struct_col)
-            col_to_drop.append(struct_col_name)
-            cols = [
-                result_table[struct_col_name][name].alias(name)
-                for name in selection.type().names
-            ]
-            col_in_selection_order.extend(cols)
-        elif isinstance(selection, (ir.Column, ir.Scalar)):
+        elif isinstance(selection, ir.Value):
             # If the selection is a straightforward projection of a table
             # column from the root table itself (i.e. excluding mutations and
             # renames), we can get the selection name directly.
@@ -227,7 +213,7 @@ def compile_nan_as_null(compile_func):
     def wrapper(t, expr, *args, **kwargs):
         compiled = compile_func(t, expr, *args, **kwargs)
         if options.pyspark.treat_nan_as_null and isinstance(
-            expr.type(), dtypes.Floating
+            expr.type(), dt.Floating
         ):
             return F.nanvl(compiled, F.lit(None))
         else:
@@ -242,6 +228,13 @@ def compile_column(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     table = t.translate(op.table, scope, timecontext, **kwargs)
     return table[op.name]
+
+
+@compiles(ops.StructField)
+def compile_struct_field(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext)
+    return arg[op.field]
 
 
 @compiles(ops.SelfReference)
