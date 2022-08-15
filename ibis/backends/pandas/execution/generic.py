@@ -7,11 +7,14 @@ import functools
 import math
 import numbers
 import operator
+import urllib.parse
 from collections.abc import Sized
 from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
+import pyarrow.dataset
+import pyarrow.fs
 import toolz
 from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
@@ -22,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.pandas import Backend as PandasBackend
 from ibis.backends.pandas import aggcontext as agg_ctx
-from ibis.backends.pandas.client import PandasFileTable, PandasTable
+from ibis.backends.pandas.client import PandasTable
 from ibis.backends.pandas.core import (
     boolean_types,
     date_types,
@@ -1085,18 +1088,34 @@ def execute_database_table_client(
     return df
 
 
-@execute_node.register(
-    PandasFileTable, tuple, ops.ParquetFileFormat, PandasBackend
-)
+@execute_node.register(ops.FileTable, tuple, PandasBackend)
 def execute_file_table_client(
     op,
     items,
-    file_format,
     client,
     timecontext: Optional[TimeContext],
     **kwargs,
 ):
-    df = pd.concat([pd.read_parquet(uri) for uri in items])
+    if isinstance(op.file_format, ops.ArrowFileFormat):
+        file_format = 'ipc'
+    elif isinstance(op.file_format, ops.CsvFileFormat):
+        file_format = pyarrow.dataset.CsvFileFormat(
+            delimiter=op.file_format.delimiter
+        )
+    elif isinstance(op.file_format, ops.OrcFileFormat):
+        file_format = 'orc'
+    elif isinstance(op.file_format, ops.ParquetFileFormat):
+        file_format = 'parquet'
+
+    filesystem, path = pyarrow.fs.FileSystem.from_uri(items[0])
+    paths = [path]
+    for item in items[1:]:
+        res = urllib.parse.urlparse(item)
+        paths.append(res.netloc + res.path)
+    ds = pyarrow.dataset.dataset(
+        paths, filesystem=filesystem, format=file_format
+    )
+    df = ds.to_table().to_pandas()
 
     if timecontext:
         begin, end = timecontext

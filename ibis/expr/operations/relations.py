@@ -8,6 +8,7 @@ from public import public
 
 from ibis import util
 from ibis.common import exceptions as com
+from ibis.common.grounds import Annotable, Comparable
 from ibis.expr import rules as rlz
 from ibis.expr import schema as sch
 from ibis.expr import types as ir
@@ -85,10 +86,21 @@ class DatabaseTable(PhysicalTable):
 
 
 @public
-class FileFormat(Node):
+class FileFormat(Annotable, Comparable):
     """
     Base class representing the format of files in a FileTable.
     """
+
+    def __equals__(self, other):
+        if self._hash != other._hash:
+            return False
+
+        # inlined from Node's definition
+
+        if len(self.args) != len(other.args):
+            return False
+
+        return all(a == b for a, b in zip(self.args, other.args))
 
 
 @public
@@ -96,6 +108,15 @@ class ArrowFileFormat(FileFormat):
     """
     Files of Arrow IPC format.
     """
+
+
+@public
+class CsvFileFormat(FileFormat):
+    """
+    Files of CSV (or other delimiter) format.
+    """
+
+    delimiter = rlz.instance_of(str)
 
 
 @public
@@ -124,6 +145,7 @@ class FileTable(TableNode, sch.HasSchema):
     items = rlz.tuple_of(rlz.uri)
     schema = rlz.instance_of(sch.Schema)
     file_format = rlz.instance_of(FileFormat)
+    source = rlz.optional(rlz.client)
 
 
 @public

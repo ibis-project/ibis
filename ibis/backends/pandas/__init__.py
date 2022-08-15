@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import importlib
 from functools import lru_cache
-from pathlib import Path
 from typing import Any, MutableMapping
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.dataset
+import pyarrow.fs
 from pydantic import Field
 
+import ibis.backends.pyarrow.datatypes as pa_dt
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
@@ -16,7 +19,6 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.client import (
     PandasDatabase,
-    PandasFileTable,
     PandasTable,
     ibis_schema_to_pandas,
 )
@@ -157,8 +159,9 @@ class BasePandasBackend(BaseBackend):
 
         Parameters
         ----------
-        files : list of str
-            A list of file paths.
+        files : str, or list of str
+            A (list of) file path(s), or a directory path, or a URI
+            pointing to a file or directory.
 
         schema : Schema, optional
             The schema of the data. If not given, it will be inferred
@@ -167,31 +170,18 @@ class BasePandasBackend(BaseBackend):
         if not files:
             raise ValueError("Must pass as least one file")
 
-        # TODO: it'd be nice to support things like directories and
-        # globs here (would probably require being able to assume
-        # PyArrow)
+        # Mostly defer to PyArrow for listing
+        ds = pyarrow.dataset.dataset(files)
+        if not schema:
+            schema = pa_dt.infer_pyarrow_schema(ds.schema)
 
-        items = []
-        for raw_path in files:
-            # Assume filesystem paths for now; in the future we could
-            # describe S3 paths, etc.
-            path = Path(raw_path).expanduser().resolve()
-            if not path.is_file():
-                raise ValueError(
-                    f"'{raw_path}' does not exist or is not a file!"
-                )
+        if isinstance(ds.filesystem, pa.fs.LocalFileSystem):
+            scheme = 'file'
+        else:
+            scheme = ds.filesystem.type_name
 
-            if not schema:
-                # It'd be nice to be able to assume PyArrow here to avoid
-                # reading the entire file
-                df = pd.read_parquet(path)
-                schema = sch.infer(df)
-
-            # N.B. the Pandas docs say this should be something like
-            # `file://localhost/path` but this doesn't actually work
-            items.append(f"file://{path}")
-
-        return PandasFileTable(
+        items = [f'{scheme}://{path}' for path in ds.files]
+        return ops.FileTable(
             items=items,
             schema=schema,
             file_format=ops.ParquetFileFormat(),

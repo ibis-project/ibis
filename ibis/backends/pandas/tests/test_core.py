@@ -2,6 +2,7 @@ from typing import Any
 
 import pandas as pd
 import pandas.testing as tm
+import pyarrow.fs
 import pytest
 from multipledispatch.conflict import ambiguities
 
@@ -202,7 +203,8 @@ def test_file_table(dataframe, tmp_path):
     dataframe.to_parquet(path)
     t = Backend().parquet_files([path])
 
-    assert t.op().items == (f'file://{path}',)
+    normalized_path = pyarrow.fs.LocalFileSystem().normalize_path(str(path))
+    assert t.op().items == (f'file://{normalized_path}',)
     assert t.op().file_format == ops.ParquetFileFormat()
     assert t.op().schema == ibis.schema(
         [

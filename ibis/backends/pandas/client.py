@@ -9,7 +9,6 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis.backends.base import Database
 
@@ -300,7 +299,3 @@ class PandasTable(ops.DatabaseTable):
 
 class PandasDatabase(Database):
     pass
-
-
-class PandasFileTable(ops.FileTable):
-    source = rlz.client

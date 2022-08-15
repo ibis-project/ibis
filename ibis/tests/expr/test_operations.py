@@ -115,14 +115,15 @@ def test_custom_table_expr():
 
 
 @pytest.mark.parametrize(
-    ['format_class', 'extension'],
+    ['file_format', 'extension'],
     [
-        (ops.ArrowFileFormat, 'arrow'),
-        (ops.OrcFileFormat, 'orc'),
-        (ops.ParquetFileFormat, 'parquet'),
+        (ops.ArrowFileFormat(), 'arrow'),
+        (ops.CsvFileFormat(delimiter=','), 'csv'),
+        (ops.OrcFileFormat(), 'orc'),
+        (ops.ParquetFileFormat(), 'parquet'),
     ],
 )
-def test_file_table(format_class, extension):
+def test_file_table(file_format, extension):
     node = ops.FileTable(
         items=[
             f's3://foo/2009/01/data.{extension}',
@@ -133,7 +134,7 @@ def test_file_table(format_class, extension):
                 ('a', 'int32'),
             ]
         ),
-        file_format=format_class(),
+        file_format=file_format,
     )
     assert str(node.to_expr())
 
@@ -141,8 +142,24 @@ def test_file_table(format_class, extension):
         node = ops.FileTable(
             items=[f'foo/bar/baz.{extension}'],
             schema=node.schema,
-            file_format=node.file_format,
+            file_format=file_format,
         )
+
+
+def test_file_table_format():
+    formats = [
+        ops.ArrowFileFormat(),
+        ops.CsvFileFormat(delimiter=','),
+        ops.CsvFileFormat(delimiter='\t'),
+        ops.OrcFileFormat(),
+        ops.ParquetFileFormat(),
+    ]
+    for idx1, format1 in enumerate(formats):
+        for idx2, format2 in enumerate(formats):
+            if idx1 == idx2:
+                assert format1 == format2
+            else:
+                assert format1 != format2
 
 
 @pytest.fixture(scope='session')
