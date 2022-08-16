@@ -70,7 +70,7 @@ extras_require = {
         'dask[array,dataframe]>=2021.10.0,<2022.8.0',
         'datafusion>=0.4,<0.7',
         'duckdb>=0.3.2,<0.5.0',
-        'duckdb-engine>=0.1.8,<0.4.0',
+        'duckdb-engine>=0.1.8,<0.5.0',
         'fsspec>=2022.1.0',
         'GeoAlchemy2>=0.6.3,<0.13',
         'geopandas>=0.6,<0.12',
@@ -94,7 +94,7 @@ extras_require = {
     'datafusion': ['datafusion>=0.4,<0.7'],
     'duckdb': [
         'duckdb>=0.3.2,<0.5.0',
-        'duckdb-engine>=0.1.8,<0.4.0',
+        'duckdb-engine>=0.1.8,<0.5.0',
         'sqlalchemy>=1.4,<2.0',
     ],
     'geospatial': [
