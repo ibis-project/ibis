@@ -12,7 +12,7 @@ git worktree add "$worktree"
 
 function cleanup() {
   cd "$curdir" || exit 1
-  git worktree remove "$worktree"
+  git worktree remove --force "$worktree"
   git worktree prune
   git branch -D "$branch"
 }
