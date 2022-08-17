@@ -67,7 +67,7 @@ extras_require = {
     'all': [
         'clickhouse-cityhash>=1.0.2,<2',
         'clickhouse-driver[numpy]>=0.1,<0.3',
-        'dask[array,dataframe]>=2021.10.0,<2022.8.0',
+        'dask[dataframe,array]>=2021.10.0,<2022.8.0',
         'datafusion>=0.4,<0.7',
         'duckdb>=0.3.2,<1',
         'duckdb-engine>=0.1.8,<1',
@@ -92,7 +92,7 @@ extras_require = {
         'lz4>=3.1.10,<5',
         'sqlglot>=4.5.0,<5',
     ],
-    'dask': ['dask[array,dataframe]>=2021.10.0,<2022.8.0', 'pyarrow>=1,<10'],
+    'dask': ['dask[dataframe,array]>=2021.10.0,<2022.8.0', 'pyarrow>=1,<10'],
     'datafusion': ['datafusion>=0.4,<0.7'],
     'duckdb': [
         'duckdb>=0.3.2,<1',

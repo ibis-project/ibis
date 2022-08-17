@@ -8,6 +8,7 @@ on:
       - README.md
       - poetry.lock
       - pyproject.toml
+      - requirements.txt
       - setup.py
       - .github/workflows/check-setup-py.yml
   pull_request:
@@ -17,6 +18,7 @@ on:
       - README.md
       - poetry.lock
       - pyproject.toml
+      - requirements.txt
       - setup.py
       - .github/workflows/check-setup-py.yml
 
