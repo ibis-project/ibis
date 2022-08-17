@@ -60,17 +60,8 @@ cases contributors do not have to remember to generate and commit these files.
         Run the following command
 
         ```sh
-        PYTHONHASHSEED=42 python ./dev/poetry2setup.py -o setup.py
+        python ./dev/poetry2setup.py -o setup.py
         ```
-
-        !!! question "Why do we need to set `PYTHONHASHSEED`?"
-
-            Dependencies' [`extras`](https://python-poetry.org/docs/pyproject/#extras) are stored
-            in-memory using a `frozenset`, the elements of which are arbitrarily ordered.
-
-            As of 2022-02-24 this is [fixed in the default
-            branch](https://github.com/python-poetry/poetry-core/pull/280) of
-            [`poetry-core`] but isn't yet released.
 
 Updates of minor and patch versions of dependencies are handled automatically by
 [`renovate`](https://github.com/renovatebot/renovate).
