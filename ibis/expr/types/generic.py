@@ -652,14 +652,32 @@ class Column(Value):
         return ops.ApproxMedian(self, where).to_expr().name("approx_median")
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
+        """Return the maximum of a column."""
         import ibis.expr.operations as ops
 
         return ops.Max(self, where).to_expr().name("max")
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
+        """Return the minimum of a column."""
         import ibis.expr.operations as ops
 
         return ops.Min(self, where).to_expr().name("min")
+
+    def argmax(
+        self, key: ir.Value, where: ir.BooleanValue | None = None
+    ) -> Scalar:
+        """Return the value of `self` that maximizes `key`."""
+        import ibis.expr.operations as ops
+
+        return ops.ArgMax(self, key=key, where=where).to_expr()
+
+    def argmin(
+        self, key: ir.Value, where: ir.BooleanValue | None = None
+    ) -> Scalar:
+        """Return the value of `self` that minimizes `key`."""
+        import ibis.expr.operations as ops
+
+        return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(
         self, where: ir.BooleanValue | None = None
