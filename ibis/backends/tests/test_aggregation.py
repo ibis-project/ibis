@@ -17,14 +17,12 @@ def mean_udf(s):
 aggregate_test_params = [
     param(
         lambda t: t.double_col.mean(),
-        lambda s: s.mean(),
-        'double_col',
+        lambda t: t.double_col.mean(),
         id='mean',
     ),
     param(
         lambda t: mean_udf(t.double_col),
-        lambda s: s.mean(),
-        'double_col',
+        lambda t: t.double_col.mean(),
         id='mean_udf',
         marks=[
             pytest.mark.notimpl(
@@ -35,55 +33,75 @@ aggregate_test_params = [
     ),
     param(
         lambda t: t.double_col.min(),
-        lambda s: s.min(),
-        'double_col',
+        lambda t: t.double_col.min(),
         id='min',
     ),
     param(
         lambda t: t.double_col.max(),
-        lambda s: s.max(),
-        'double_col',
+        lambda t: t.double_col.max(),
         id='max',
     ),
     param(
         lambda t: (t.double_col + 5).sum(),
-        lambda s: (s + 5).sum(),
-        'double_col',
+        lambda t: (t.double_col + 5).sum(),
         id='complex_sum',
     ),
     param(
         lambda t: t.timestamp_col.max(),
-        lambda s: s.max(),
-        'timestamp_col',
+        lambda t: t.timestamp_col.max(),
         id='timestamp_max',
     ),
 ]
 
+argidx_not_grouped_marks = [
+    "datafusion",
+    "impala",
+    "mysql",
+    "postgres",
+    "pyspark",
+    "sqlite",
+]
+argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
+
+
+def make_argidx_params(marks):
+    marks = pytest.mark.notyet(marks)
+    return [
+        param(
+            lambda t: t.timestamp_col.argmin(t.int_col),
+            lambda s: s.timestamp_col.iloc[s.int_col.argmin()],
+            id='argmin',
+            marks=marks,
+        ),
+        param(
+            lambda t: t.double_col.argmax(t.int_col),
+            lambda s: s.double_col.iloc[s.int_col.argmax()],
+            id='argmax',
+            marks=marks,
+        ),
+    ]
+
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn', 'expected_col'),
-    aggregate_test_params,
+    ('result_fn', 'expected_fn'),
+    aggregate_test_params + make_argidx_params(argidx_not_grouped_marks),
 )
-def test_aggregate(
-    backend, alltypes, df, result_fn, expected_fn, expected_col
-):
+def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
     expr = alltypes.aggregate(tmp=result_fn)
     result = expr.execute()
 
     # Create a single-row single-column dataframe with the Pandas `agg` result
     # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame({'tmp': [df[expected_col].agg(expected_fn)]})
+    expected = pd.DataFrame({'tmp': [expected_fn(df)]})
 
     backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn', 'expected_col'),
-    aggregate_test_params,
+    ('result_fn', 'expected_fn'),
+    aggregate_test_params + make_argidx_params(argidx_grouped_marks),
 )
-def test_aggregate_grouped(
-    backend, alltypes, df, result_fn, expected_fn, expected_col
-):
+def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     grouping_key_col = 'bigint_col'
 
     # Two (equivalent) variations:
@@ -96,8 +114,8 @@ def test_aggregate_grouped(
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col)[expected_col]
-        .agg(expected_fn)
+        df.groupby(grouping_key_col)
+        .apply(expected_fn)
         .rename('tmp')
         .reset_index()
     )
@@ -216,6 +234,26 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: t.double_col.max(where=where),
             lambda t, where: t.double_col[where].max(),
             id='max',
+        ),
+        param(
+            lambda t, where: t.double_col.argmin(t.int_col, where=where),
+            lambda t, where: t.double_col[where].iloc[
+                t.int_col[where].argmin()
+            ],
+            id='argmin',
+            marks=pytest.mark.notyet(
+                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+            ),
+        ),
+        param(
+            lambda t, where: t.double_col.argmax(t.int_col, where=where),
+            lambda t, where: t.double_col[where].iloc[
+                t.int_col[where].argmax()
+            ],
+            id='argmax',
+            marks=pytest.mark.notyet(
+                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+            ),
         ),
         param(
             lambda t, where: t.double_col.std(how='sample', where=where),
