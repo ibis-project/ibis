@@ -151,6 +151,32 @@ def parse(text: str) -> DataType:
             nullable=False,
         )
 
+    @p.generate
+    def enum_value():
+        yield dt.SPACES
+        key = yield dt.RAW_STRING
+        yield dt.spaceless_string('=')
+        value = yield p.digit.at_least(1).concat()
+        return (key, int(value))
+
+    @p.generate
+    def lowcardinality():
+        yield dt.spaceless_string('LowCardinality')
+        yield dt.LPAREN
+        r = yield ty
+        yield dt.RPAREN
+        return r
+
+    @p.generate
+    def enum():
+        yield dt.spaceless_string('enum')
+        enumsz = yield p.digit.at_least(1).concat()
+        enumsz = int(enumsz)
+        yield dt.LPAREN
+        yield enum_value.sep_by(dt.COMMA).map(dict)  # ignore values
+        yield dt.RPAREN
+        return dt.String(nullable=False)
+
     ty = (
         nullable
         | nested
@@ -160,6 +186,11 @@ def parse(text: str) -> DataType:
         | array
         | map
         | struct
+        | enum
+        | lowcardinality
+        | dt.spaceless_string("IPv4", "IPv6").result(dt.inet(nullable=False))
+        | dt.spaceless_string("Object('json')").result(dt.json(nullable=False))
+        | dt.spaceless_string("JSON").result(dt.json(nullable=False))
     )
     return ty.parse(text)
 
