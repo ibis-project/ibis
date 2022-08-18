@@ -30,6 +30,15 @@ def test_columns_types_with_additional_argument(con):
 @pytest.mark.parametrize(
     ('ch_type', 'ibis_type'),
     [
+        (
+            "Enum8('' = 0, 'CDMA' = 1, 'GSM' = 2, 'LTE' = 3, 'NR' = 4)",
+            dt.String(nullable=False),
+        ),
+        ('IPv4', dt.inet(nullable=False)),
+        ('IPv6', dt.inet(nullable=False)),
+        ('JSON', dt.json(nullable=False)),
+        ("Object('json')", dt.json(nullable=False)),
+        ('LowCardinality(String)', dt.String(nullable=False)),
         ('Array(Int8)', dt.Array(dt.Int8(nullable=False), nullable=False)),
         ('Array(Int16)', dt.Array(dt.Int16(nullable=False), nullable=False)),
         ('Array(Int32)', dt.Array(dt.Int32(nullable=False), nullable=False)),
