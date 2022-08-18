@@ -229,6 +229,8 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.GroupConcat: _string_agg,
         ops.StructColumn: _struct_column,
+        ops.ArgMin: reduction(sa.func.min_by),
+        ops.ArgMax: reduction(sa.func.max_by),
     }
 )
 
