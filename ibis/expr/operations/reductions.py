@@ -192,6 +192,20 @@ class Min(Filterable, Reduction):
 
 
 @public
+class ArgMax(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    key = rlz.column(rlz.any)
+    output_dtype = rlz.dtype_like("arg")
+
+
+@public
+class ArgMin(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    key = rlz.column(rlz.any)
+    output_dtype = rlz.dtype_like("arg")
+
+
+@public
 class ApproxCountDistinct(Filterable, Reduction):
     """Approximate number of unique values using HyperLogLog algorithm.
 
