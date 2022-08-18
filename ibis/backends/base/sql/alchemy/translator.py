@@ -56,30 +56,35 @@ class AlchemyExprTranslator(ExprTranslator):
     def get_sqla_type(self, data_type):
         return to_sqla_type(data_type, type_map=self._type_map)
 
-    def _reduction(self, sa_func, expr):
-        op = expr.op()
-        arg = op.arg
+    def _maybe_cast_bool(self, op, arg):
         if (
             self._bool_aggs_need_cast_to_int32
             and isinstance(op, (ops.Sum, ops.Mean, ops.Min, ops.Max))
-            and isinstance(
-                type := arg.type(),
-                dt.Boolean,
-            )
+            and isinstance(type := arg.type(), dt.Boolean)
         ):
-            arg = arg.cast(dt.Int32(nullable=type.nullable))
+            return arg.cast(dt.Int32(nullable=type.nullable))
+        return arg
 
+    def _reduction(self, sa_func, expr):
+        op = expr.op()
+
+        argtuple = (
+            self._maybe_cast_bool(op, arg)
+            for name, arg in zip(op.argnames, op.args)
+            if isinstance(arg, ir.Expr) and name != "where"
+        )
         if (where := op.where) is not None:
             if self._has_reduction_filter_syntax:
-                return sa_func(self.translate(arg)).filter(
-                    self.translate(where)
-                )
+                sa_args = tuple(map(self.translate, argtuple))
+                return sa_func(*sa_args).filter(self.translate(where))
             else:
-                sa_arg = self.translate(where.ifelse(arg, None))
+                sa_args = tuple(
+                    self.translate(where.ifelse(arg, None)) for arg in argtuple
+                )
         else:
-            sa_arg = self.translate(arg)
+            sa_args = tuple(map(self.translate, argtuple))
 
-        return sa_func(sa_arg)
+        return sa_func(*sa_args)
 
 
 rewrites = AlchemyExprTranslator.rewrites
