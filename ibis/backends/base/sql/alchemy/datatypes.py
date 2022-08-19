@@ -177,6 +177,14 @@ def sa_mysql_numeric(_, satype, nullable=True):
     )
 
 
+@dt.dtype.register(MySQLDialect, mysql.TINYBLOB)
+@dt.dtype.register(MySQLDialect, mysql.MEDIUMBLOB)
+@dt.dtype.register(MySQLDialect, mysql.BLOB)
+@dt.dtype.register(MySQLDialect, mysql.LONGBLOB)
+def sa_mysql_blob(_, satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
 @dt.dtype.register(Dialect, sa.types.Numeric)
 @dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
 def sa_numeric(_, satype, nullable=True):
