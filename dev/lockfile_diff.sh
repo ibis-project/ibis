@@ -12,7 +12,7 @@ new="$(mktemp --suffix=".yaml")"
 # go through the rigamarole of yj and dyff because poetry is sensitive to
 # PYTHONHASHSEED
 yj -ty < poetry.lock > "$old"
-poetry lock --no-update
+PYTHONHASHSEED=42 poetry lock --no-update
 yj -ty < poetry.lock > "$new"
 
 if ! dyff between "$old" "$new" --ignore-order-changes --omit-header --set-exit-code; then

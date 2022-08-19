@@ -10,6 +10,9 @@ dry_run="${1}"
 poetry check
 
 # verify that the lock file is up to date
+#
+# go through the rigamarole of yj and dyff because poetry is sensitive to
+# PYTHONHASHSEED
 bash ./dev/lockfile_diff.sh
 
 # verify that we have a token available to push to pypi using set -u
