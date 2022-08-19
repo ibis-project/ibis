@@ -3,6 +3,8 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+export PYTHONHASHSEED=42
+
 TOP="${1:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 
 pushd "${TOP}" > /dev/null || exit 1
