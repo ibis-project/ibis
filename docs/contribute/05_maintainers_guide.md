@@ -60,7 +60,7 @@ cases contributors do not have to remember to generate and commit these files.
         Run the following command
 
         ```sh
-        PYTHONHASHSEED=42 python ./dev/poetry2setup.py -o setup.py
+        PYTHONHASHSEED=0 python ./dev/poetry2setup.py -o setup.py
         ```
 
         !!! question "Why do we need to set `PYTHONHASHSEED`?"

@@ -12,4 +12,4 @@ dir="$(readlink -f "$(dirname "$0")")"
 # Because the `extras` data structure in poetry is a frozenset and therefore
 # arbitrarily ordered, regenerating setup.py without a fixed hash seed can
 # cause unnecessary reordering of extras.
-PYTHONHASHSEED=42 python "$dir/poetry2setup.py" "$@"
+PYTHONHASHSEED=0 python "$dir/poetry2setup.py" "$@"
