@@ -1,4 +1,4 @@
-CREATE TABLE diamonds (
+CREATE OR REPLACE TABLE diamonds (
     carat Nullable(Float64),
     cut Nullable(String),
     color Nullable(String),
@@ -11,7 +11,7 @@ CREATE TABLE diamonds (
     z Nullable(Float64)
 ) ENGINE = Memory;
 
-CREATE TABLE batting (
+CREATE OR REPLACE TABLE batting (
     `playerID` Nullable(String),
     `yearID` Nullable(Int64),
     stint Nullable(Int64),
@@ -36,7 +36,7 @@ CREATE TABLE batting (
     `GIDP` Nullable(Int64)
 ) ENGINE = Memory;
 
-CREATE TABLE awards_players (
+CREATE OR REPLACE TABLE awards_players (
     `playerID` Nullable(String),
     `awardID` Nullable(String),
     `yearID` Nullable(Int64),
@@ -45,7 +45,7 @@ CREATE TABLE awards_players (
     notes Nullable(String)
 ) ENGINE = Memory;
 
-CREATE TABLE functional_alltypes (
+CREATE OR REPLACE TABLE functional_alltypes (
     `index` Nullable(Int64),
     `Unnamed: 0` Nullable(Int64),
     id Nullable(Int32),
@@ -63,13 +63,13 @@ CREATE TABLE functional_alltypes (
     month Nullable(Int32)
 ) ENGINE = Memory;
 
-CREATE TABLE tzone (
+CREATE OR REPLACE TABLE tzone (
     ts Nullable(DateTime),
     key Nullable(String),
     value Nullable(Float64)
 ) ENGINE = Memory;
 
-CREATE TABLE IF NOT EXISTS array_types (
+CREATE OR REPLACE TABLE array_types (
     x Array(Nullable(Int64)),
     y Array(Nullable(String)),
     z Array(Nullable(Float64)),
@@ -87,7 +87,7 @@ INSERT INTO array_types VALUES
     ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]]);
 
 
-CREATE TABLE IF NOT EXISTS struct (
+CREATE OR REPLACE TABLE struct (
     abc Tuple(
         a Nullable(Float64),
         b Nullable(String),

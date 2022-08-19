@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 
-clickhouse_driver = pytest.importorskip("clickhouse_driver")
+clickhouse_driver = pytest.importorskip("requests")
 
 
 @pytest.fixture(scope='module')
@@ -432,7 +432,7 @@ def test_join_with_external_table_errors(con, alltypes, df):
         expr.execute(external_tables={'external': []})
 
 
-def test_join_with_external_table(con, alltypes, df):
+def test_join_with_external_table(alltypes, df):
     external_df = pd.DataFrame(
         [('alpha', 1, 'first'), ('beta', 2, 'second'), ('gamma', 3, 'third')],
         columns=['a', 'b', 'c'],

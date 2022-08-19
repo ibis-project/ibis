@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("requests")
 
 
 @pytest.mark.parametrize(

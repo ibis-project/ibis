@@ -2,7 +2,7 @@ import pytest
 
 import ibis
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("requests")
 
 
 def test_column_ref_quoting(translate):

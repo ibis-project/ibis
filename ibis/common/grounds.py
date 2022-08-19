@@ -165,7 +165,7 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         # construct the instance by passing the validated keyword arguments
         return super().__create__(**kwargs)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # kwargs are validated arguments
         # set the already validated fields using object.__setattr__ since we
         # treat the annotable instances as immutable objects
         for name, value in kwargs.items():
@@ -202,7 +202,8 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
 
     @classmethod
     def _reconstruct(cls, kwargs):
-        # bypass Annotable.__construct__() when deserializing
+        # TODO: ask kszucs about this
+        # bypass Annotable.__create__() when deserializing
         self = cls.__new__(cls)
         self.__init__(**kwargs)
         return self

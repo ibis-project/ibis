@@ -8,11 +8,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("requests")
 
 
 def test_run_sql(con):
-    query = 'SELECT * FROM ibis_testing.functional_alltypes'
+    query = 'SELECT * FROM functional_alltypes'
     table = con.sql(query)
 
     fa = con.table('functional_alltypes')
@@ -67,7 +67,7 @@ def test_verbose_log_queries(con):
         with config.option_context('verbose_log', logger):
             con.table('functional_alltypes')
 
-    expected = 'DESCRIBE ibis_testing.`functional_alltypes`'
+    expected = 'DESCRIBE functional_alltypes'
 
     assert len(queries) == 1
     assert queries[0] == expected
@@ -129,7 +129,8 @@ def test_insert(temporary_alltypes, df):
     assert len(temporary.execute()) == 0
     temporary.insert(records)
 
-    tm.assert_frame_equal(temporary.execute(), records)
+    result = temporary.execute()
+    tm.assert_frame_equal(result, records)
 
 
 def test_insert_with_less_columns(temporary_alltypes, df):
@@ -185,3 +186,12 @@ def test_list_tables_empty(con, worker_id):
     finally:
         con.raw_sql(f"USE {db}")
         con.raw_sql(f"DROP DATABASE IF EXISTS {dbname}")
+
+
+def test_select_one(con):
+    schema = con.get_schema("diamonds")
+    res = con.execute(ibis.literal(1))
+    print()
+    print(schema)
+    print(con.version)
+    print(res)

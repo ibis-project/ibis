@@ -65,8 +65,6 @@ install_requires = [
 
 extras_require = {
     'all': [
-        'clickhouse-cityhash>=1.0.2,<2',
-        'clickhouse-driver[numpy]>=0.1,<0.3',
         'dask[dataframe,array]>=2021.10.0,<2022.8.0',
         'datafusion>=0.4,<0.7',
         'duckdb>=0.3.2,<1',
@@ -76,7 +74,6 @@ extras_require = {
         'geopandas>=0.6,<0.12',
         'graphviz>=0.16,<0.21',
         'impyla[kerberos]>=0.17,<0.19',
-        'lz4>=3.1.10,<5',
         'psycopg2>=2.8.4,<3',
         'pyarrow>=1,<10',
         'pymysql>=1,<2',
@@ -86,12 +83,7 @@ extras_require = {
         'sqlalchemy>=1.4,<2.0',
         'sqlglot>=4.5.0,<6',
     ],
-    'clickhouse': [
-        'clickhouse-cityhash>=1.0.2,<2',
-        'clickhouse-driver[numpy]>=0.1,<0.3',
-        'lz4>=3.1.10,<5',
-        'sqlglot>=4.5.0,<6',
-    ],
+    'clickhouse': ['pyarrow>=1,<10', 'requests>=2,<3', 'sqlglot>=4.5.0,<6'],
     'dask': ['dask[dataframe,array]>=2021.10.0,<2022.8.0', 'pyarrow>=1,<10'],
     'datafusion': ['datafusion>=0.4,<0.7'],
     'duckdb': [

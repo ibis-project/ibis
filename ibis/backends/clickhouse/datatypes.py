@@ -219,7 +219,7 @@ def serialize_raw(ty: dt.DataType) -> str:
 
 @serialize_raw.register(dt.DataType)
 def _(ty: dt.DataType) -> str:
-    return type(ty).__name__.capitalize()
+    return type(ty).__name__
 
 
 @serialize_raw.register(dt.Array)
@@ -244,8 +244,4 @@ def _(ty: dt.Struct) -> str:
 
 @serialize_raw.register(dt.Timestamp)
 def _(ty: dt.Timestamp) -> str:
-    return (
-        "DateTime64(6)"
-        if ty.timezone is None
-        else f"DateTime64(6, {ty.timezone!r})"
-    )
+    return "DateTime" if ty.timezone is None else f"DateTime({ty.timezone!r})"

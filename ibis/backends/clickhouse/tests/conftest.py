@@ -1,7 +1,9 @@
+import io
 import os
 from pathlib import Path
 from typing import Callable
 
+import pyarrow as pa
 import pytest
 
 import ibis
@@ -14,7 +16,7 @@ from ibis.backends.tests.base import (
 )
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
+CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 8123))
 CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
 CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
@@ -48,34 +50,29 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        clickhouse_driver = pytest.importorskip("clickhouse_driver")
-
-        client = clickhouse_driver.Client(
+        con = ibis.clickhouse.connect(
+            user=user,
             host=host,
             port=port,
-            user=user,
             password=password,
+            database=database,
         )
 
-        client.execute(f"DROP DATABASE IF EXISTS {database}")
-        client.execute(f"CREATE DATABASE {database}")
-        client.execute(f"USE {database}")
-
+        con._post(f"DROP DATABASE IF EXISTS {database}")
+        con._post(f"CREATE DATABASE {database}")
         with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
             for stmt in filter(None, map(str.strip, schema.read().split(";"))):
-                client.execute(stmt)
-
-        for table, df in read_tables(TEST_TABLES, data_dir):
-            query = f"INSERT INTO {table} VALUES"
-            client.insert_dataframe(
-                query,
-                df.to_pandas(),
-                settings={"use_numpy": True},
-            )
+                con._post(stmt)
+        for table, t in read_tables(TEST_TABLES, data_dir):
+            query = f"INSERT INTO {table} FORMAT ArrowStream"
+            buf = io.BytesIO()
+            with pa.ipc.new_stream(buf, t.schema) as writer:
+                writer.write_table(t)
+            con._post(query, data=buf.getvalue())
 
     @staticmethod
     def connect(data_directory: Path):
-        pytest.importorskip("clickhouse_driver")
+        pytest.importorskip("requests")
         return ibis.clickhouse.connect(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,
@@ -112,13 +109,8 @@ def con(tmp_path_factory, data_directory, script_directory, worker_id):
 
 
 @pytest.fixture(scope='module')
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope='module')
-def alltypes(db):
-    return db.functional_alltypes
+def alltypes(con):
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture(scope='module')

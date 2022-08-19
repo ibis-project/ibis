@@ -7,7 +7,7 @@ import pytest
 
 from ibis import literal as L
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("requests")
 
 
 @pytest.mark.parametrize(

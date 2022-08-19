@@ -3,7 +3,7 @@ import pytest
 import ibis.expr.datatypes as dt
 from ibis.backends.clickhouse.datatypes import parse
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("requests")
 
 
 def test_column_types(alltypes):
