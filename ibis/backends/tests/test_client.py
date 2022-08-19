@@ -535,3 +535,21 @@ def test_invalid_connect():
     )
     with pytest.raises(ValueError):
         ibis.connect(url)
+
+
+@pytest.mark.never(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "impala",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+    ],
+    reason="backend isn't file-based",
+)
+def test_deprecated_path_argument(backend, tmp_path):
+    with pytest.warns(UserWarning, match="The `path` argument is deprecated"):
+        getattr(ibis, backend.name()).connect(path=str(tmp_path / "test.db"))
