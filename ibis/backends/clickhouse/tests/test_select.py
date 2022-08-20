@@ -221,7 +221,7 @@ def test_isnull_case_expr_rewrite_failure(db, alltypes):
 
     result = ibis.clickhouse.compile(reduction)
     expected = """\
-SELECT sum(CASE WHEN isNull(`string_col`) THEN 1 ELSE 0 END) AS `sum`
+SELECT sum(if(isNull(`string_col`), 1, 0)) AS `sum`
 FROM {0}.`functional_alltypes`"""
     assert result == expected.format(db.name)
 

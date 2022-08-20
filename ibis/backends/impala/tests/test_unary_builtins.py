@@ -161,11 +161,7 @@ def test_hash(table):
 def test_reduction_where(table, expr_fn, func_name):
     expr = expr_fn(table)
     result = translate(expr)
-    expected = (
-        f'{func_name}'
-        '(CASE WHEN `bigint_col` < 70 THEN `double_col` '
-        'ELSE NULL END)'
-    )
+    expected = f'{func_name}(if(`bigint_col` < 70, `double_col`, NULL))'
     assert result == expected
 
 

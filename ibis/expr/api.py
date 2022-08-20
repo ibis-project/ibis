@@ -681,31 +681,6 @@ def _add_methods(klass, method_table):
         setattr(klass, k, v)
 
 
-def where(
-    boolean_expr: ir.BooleanValue,
-    true_expr: ir.Value,
-    false_null_expr: ir.Value,
-) -> ir.Value:
-    """Return `true_expr` if `boolean_expr` is `True` else `false_null_expr`.
-
-    Parameters
-    ----------
-    boolean_expr
-        A boolean expression
-    true_expr
-        Value returned if `boolean_expr` is `True`
-    false_null_expr
-        Value returned if `boolean_expr` is `False` or `NULL`
-
-    Returns
-    -------
-    ir.Value
-        An expression
-    """
-    op = ops.Where(boolean_expr, true_expr, false_null_expr)
-    return op.to_expr()
-
-
 coalesce = ir.Value.coalesce
 greatest = ir.Value.greatest
 least = ir.Value.least
@@ -790,7 +765,7 @@ geo_y_max = ir.GeoSpatialValue.y_max
 geo_y_min = ir.GeoSpatialValue.y_min
 geo_unary_union = ir.GeoSpatialColumn.unary_union
 
-ifelse = ir.BooleanValue.ifelse
+where = ifelse = ir.BooleanValue.ifelse
 
 # ----------------------------------------------------------------------
 # Category API

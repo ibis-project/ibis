@@ -41,12 +41,12 @@ class BooleanValue(NumericValue):
         SELECT CASE WHEN `is_person` THEN 'yes' ELSE 'no' END AS `tmp`
         FROM t
         """
-        import ibis
+        import ibis.expr.operations as ops
 
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
         # must be used.
-        return ibis.case().when(self, true_expr).else_(false_expr).end()
+        return ops.Where(self, true_expr, false_expr).to_expr()
 
     def __and__(self, other: BooleanValue) -> BooleanValue:
         from ibis.expr import operations as ops

@@ -704,8 +704,7 @@ def test_where_with_timestamp():
     )
     result = ibis.impala.compile(expr)
     expected = """\
-SELECT `uuid`,
-       min(CASE WHEN `search_level` = 1 THEN `ts` ELSE NULL END) AS `min_date`
+SELECT `uuid`, min(if(`search_level` = 1, `ts`, NULL)) AS `min_date`
 FROM t
 GROUP BY 1"""
     assert result == expected
@@ -766,7 +765,7 @@ def test_nunique_where():
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     expr = t.key.nunique(where=t.value >= 1.0)
     expected = """\
-SELECT count(DISTINCT CASE WHEN `value` >= 1.0 THEN `key` ELSE NULL END) AS `nunique`
+SELECT count(DISTINCT if(`value` >= 1.0, `key`, NULL)) AS `nunique`
 FROM t0"""  # noqa: E501
     result = ibis.impala.compile(expr)
     assert result == expected

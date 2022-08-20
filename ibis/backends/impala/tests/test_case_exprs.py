@@ -37,12 +37,12 @@ def test_isnull_1_0(table):
     expr = table.g.isnull().ifelse(1, 0)
 
     result = translate(expr)
-    expected = 'CASE WHEN `g` IS NULL THEN 1 ELSE 0 END'
+    expected = 'if(`g` IS NULL, 1, 0)'
     assert result == expected
 
     # inside some other function
     result = translate(expr.sum())
-    expected = 'sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END)'
+    expected = 'sum(if(`g` IS NULL, 1, 0))'
     assert result == expected
 
 
