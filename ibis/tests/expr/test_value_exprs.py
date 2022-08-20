@@ -1566,3 +1566,38 @@ def test_array_length_scalar():
     value = ibis.literal(raw_value)
     expr = value.length()
     assert isinstance(expr.op(), ops.ArrayLength)
+
+
+@pytest.mark.parametrize(
+    ("func", "expected_type"),
+    [
+        param(
+            ibis.timestamp,
+            dt.timestamp,
+            id="timestamp",
+            marks=pytest.mark.xfail(
+                raises=NotImplementedError,
+                reason=(
+                    "`ibis.timestamp` isn't implemented for expression inputs"
+                ),
+            ),
+        ),
+        param(ibis.date, dt.date, id="date"),
+        param(ibis.time, dt.time, id="time"),
+        param(ibis.coalesce, dt.timestamp, id="coalesce"),
+        param(ibis.greatest, dt.timestamp, id="greatest"),
+        param(ibis.least, dt.timestamp, id="least"),
+    ]
+    + [
+        param(
+            lambda ts: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
+            dt.timestamp,
+            id=func.__name__,
+        )
+        for func in (ibis.ifelse, ibis.where)
+    ],
+)
+def test_deferred_function_call(func, expected_type):
+    t = ibis.table(dict(ts="timestamp"), name="t")
+    expr = t.select(col=func(_.ts))
+    assert expr["col"].type() == expected_type
