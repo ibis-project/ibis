@@ -61,7 +61,7 @@ jobs:
           set -euo pipefail
 
           sudo apt-get update -y -q
-          sudo apt-get install -y -q build-essential graphviz
+          sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
 
       - name: install ${{ matrix.os }} system dependencies
         if: ${{ matrix.os == 'windows-latest' }}
@@ -70,14 +70,22 @@ jobs:
       - run: python -m pip install --upgrade pip poetry
 
       - name: install ibis
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: poetry install --extras all
+
+      - name: install ibis
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: poetry install --extras visualization
 
       - uses: extractions/setup-just@v1
 
-      - name: run tests
-        # run all the core tests (i.e., non-backend)
+      - name: run core tests
+        run: just ci-check -m core
+
+      - name: run benchmarks once
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         # run benchmarks once to make sure they aren't broken
-        run: just ci-check -m "'core or benchmark'"
+        run: just ci-check -m benchmark
 
       - name: upload code coverage
         if: success()
