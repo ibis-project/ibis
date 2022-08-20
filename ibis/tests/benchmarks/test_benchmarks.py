@@ -16,6 +16,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.pandas.udf import udf
 
+pytestmark = pytest.mark.benchmark
+
 
 def make_t():
     return ibis.table(
@@ -606,7 +608,7 @@ def multiple_joins(table, num_joins):
         table = table.left_join(table, ["dummy"])[[table]]
 
 
-@pytest.mark.parametrize("num_joins", [1, 10, 100])
+@pytest.mark.parametrize("num_joins", [1, 10])
 @pytest.mark.parametrize("num_columns", [1, 10, 100])
 def test_multiple_joins(benchmark, num_joins, num_columns):
     table = ibis.table(

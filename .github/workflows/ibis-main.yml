@@ -75,7 +75,9 @@ jobs:
       - uses: extractions/setup-just@v1
 
       - name: run tests
-        run: just ci-check -m core
+        # run all the core tests (i.e., non-backend)
+        # run benchmarks once to make sure they aren't broken
+        run: just ci-check -m "'core or benchmark'"
 
       - name: upload code coverage
         if: success()

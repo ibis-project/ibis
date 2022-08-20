@@ -63,6 +63,7 @@ jobs:
 
   benchmarks:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -91,20 +92,19 @@ jobs:
       - name: install ibis
         run: poetry install --extras all
 
-      - run: mkdir .benchmarks
+      - name: make benchmark output dir
+        run: mkdir .benchmarks
 
       - name: benchmark
-        run: poetry run pytest --benchmark-only --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
+        run: poetry run pytest --benchmark-enable --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
 
       - uses: tibdex/github-app-token@v1
-        if: ${{ github.event_name == 'push' }}
         id: generate-token
         with:
           app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
       - uses: benchmark-action/github-action-benchmark@v1
-        if: ${{ github.event_name == 'push' }}
         with:
           tool: pytest
           github-token: ${{ steps.generate-token.outputs.token }}
@@ -114,8 +114,37 @@ jobs:
           comment-on-alert: true
           alert-threshold: "300%"
 
-  docs:
+  docs_pr:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'push' }}
+    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    steps:
+      - name: install nix
+        uses: cachix/install-nix-action@v17
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v10
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: build docs
+        run: nix run -f nix ibisDevEnv310 -- -m mkdocs build
+
+      - name: verify internal links
+        run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
+
+  docs_push:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
     concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
     needs:
       # wait on benchmarks to prevent a race condition when pushing to the
@@ -134,15 +163,8 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - name: checkout
-        uses: actions/checkout@v3
-        if: ${{ github.event_name != 'push' }}
-        with:
-          fetch-depth: 0
-
       - name: Generate a GitHub token
         uses: tibdex/github-app-token@v1
-        if: ${{ github.event_name == 'push' }}
         id: generate_token
         with:
           app_id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -150,21 +172,11 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v3
-        if: ${{ github.event_name == 'push' }}
         with:
           fetch-depth: 0
           token: ${{ steps.generate_token.outputs.token }}
 
-      - name: build docs
-        if: ${{ github.event_name != 'push' }}
-        run: nix run -f nix ibisDevEnv310 -- -m mkdocs build
-
-      - name: verify internal links
-        if: ${{ github.event_name != 'push' }}
-        run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
-
       - name: Configure git info
-        if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
 
@@ -172,7 +184,6 @@ jobs:
           git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
 
       - name: build and push dev docs
-        if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
 
