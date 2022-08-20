@@ -176,3 +176,23 @@ def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
         'std',
         ddof=variance_ddof[op.how],
     )
+
+
+@execute_node.register(
+    ops.ArgMax, dd.Series, dd.Series, (dd.Series, type(None))
+)
+def execute_argmax_series(op, data, key, mask, aggcontext=None, **kwargs):
+    idxmax = aggcontext.agg(
+        key[mask] if mask is not None else key, 'idxmax'
+    ).compute()
+    return data.loc[idxmax]
+
+
+@execute_node.register(
+    ops.ArgMin, dd.Series, dd.Series, (dd.Series, type(None))
+)
+def execute_argmin_series(op, data, key, mask, aggcontext=None, **kwargs):
+    idxmin = aggcontext.agg(
+        key[mask] if mask is not None else key, 'idxmin'
+    ).compute()
+    return data.loc[idxmin]
