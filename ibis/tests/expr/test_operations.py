@@ -8,6 +8,79 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
 
+t = ibis.table([('a', 'int64')], name='t')
+
+true = ir.literal(True)
+false = ir.literal(False)
+two = ir.literal(2)
+three = ir.literal(3)
+
+operations = [
+    ops.Cast(three, to='int64'),
+    ops.TypeOf(arg=2),
+    ops.Negate(4),
+    ops.Negate(4.0),
+    ops.NullIfZero(0),
+    ops.NullIfZero(1),
+    ops.IsNull(ir.null()),
+    ops.NotNull(ir.null()),
+    ops.ZeroIfNull(ir.null()),
+    ops.IfNull(1, ops.NullIfZero(0).to_expr()),
+    ops.NullIf(ir.null(), ops.NullIfZero(0).to_expr()),
+    ops.IsNan(np.nan),
+    ops.IsInf(np.inf),
+    ops.Ceil(4.5),
+    ops.Floor(4.5),
+    ops.Round(3.43456),
+    ops.Round(3.43456, 2),
+    ops.Round(3.43456, digits=1),
+    ops.Clip(123, lower=30),
+    ops.Clip(123, lower=30, upper=100),
+    ops.BaseConvert('EEE', from_base=16, to_base=10),
+    ops.Logarithm(100),
+    ops.Log(100),
+    ops.Log(100, base=2),
+    ops.Ln(100),
+    ops.Log2(100),
+    ops.Log10(100),
+    ops.Uppercase('asd'),
+    ops.Lowercase('asd'),
+    ops.Reverse('asd'),
+    ops.Strip('asd'),
+    ops.LStrip('asd'),
+    ops.RStrip('asd'),
+    ops.Capitalize('asd'),
+    ops.Substring('asd', start=1),
+    ops.Substring('asd', 1),
+    ops.Substring('asd', 1, length=2),
+    ops.StrRight('asd', nchars=2),
+    ops.Repeat('asd', times=4),
+    ops.StringFind('asd', 'sd', start=1),
+    ops.Translate('asd', from_str='bd', to_str='ce'),
+    ops.LPad('asd', length=2, pad='ss'),
+    ops.RPad('asd', length=2, pad='ss'),
+    ops.StringJoin(',', ['asd', 'bsdf']),
+    ops.FuzzySearch('asd', pattern='n'),
+    ops.StringSQLLike('asd', pattern='as', escape='asd'),
+    ops.RegexExtract('asd', pattern='as', index=1),
+    ops.RegexReplace('asd', 'as', 'a'),
+    ops.StringReplace('asd', 'as', 'a'),
+    ops.StringSplit('asd', 's'),
+    ops.StringConcat(['s', 'e']),
+    ops.StartsWith('asd', 'as'),
+    ops.EndsWith('asd', 'xyz'),
+    ops.Not(false),
+    ops.And(false, true),
+    ops.Or(false, true),
+    ops.GreaterEqual(three, two),
+    ops.Sum(t.a),
+]
+
+
+@pytest.fixture(scope='module', params=operations)
+def op(request):
+    return request.param
+
 
 def test_operation():
     class Log(ops.Node):
@@ -19,61 +92,9 @@ def test_operation():
     Log(arg=10)
 
 
-def test_ops_smoke():
-    expr = ir.literal(3)
-    ops.Cast(expr, to='int64')
-    ops.TypeOf(arg=2)
-    ops.Negate(4)
-    ops.Negate(4.0)
-    ops.NullIfZero(0)
-    ops.NullIfZero(1)
-    ops.IsNull(ir.null())
-    ops.NotNull(ir.null())
-    ops.ZeroIfNull(ir.null())
-    ops.IfNull(1, ops.NullIfZero(0).to_expr())
-    ops.NullIf(ir.null(), ops.NullIfZero(0).to_expr())
-    ops.IsNan(np.nan)
-    ops.IsInf(np.inf)
-    ops.Ceil(4.5)
-    ops.Floor(4.5)
-    ops.Round(3.43456)
-    ops.Round(3.43456, 2)
-    ops.Round(3.43456, digits=1)
-    ops.Clip(123, lower=30)
-    ops.Clip(123, lower=30, upper=100)
-    ops.BaseConvert('EEE', from_base=16, to_base=10)
-    ops.Logarithm(100)
-    ops.Log(100)
-    ops.Log(100, base=2)
-    ops.Ln(100)
-    ops.Log2(100)
-    ops.Log10(100)
-    ops.Uppercase('asd')
-    ops.Lowercase('asd')
-    ops.Reverse('asd')
-    ops.Strip('asd')
-    ops.LStrip('asd')
-    ops.RStrip('asd')
-    ops.Capitalize('asd')
-    ops.Substring('asd', start=1)
-    ops.Substring('asd', 1)
-    ops.Substring('asd', 1, length=2)
-    ops.StrRight('asd', nchars=2)
-    ops.Repeat('asd', times=4)
-    ops.StringFind('asd', 'sd', start=1)
-    ops.Translate('asd', from_str='bd', to_str='ce')
-    ops.LPad('asd', length=2, pad='ss')
-    ops.RPad('asd', length=2, pad='ss')
-    ops.StringJoin(',', ['asd', 'bsdf'])
-    ops.FuzzySearch('asd', pattern='n')
-    ops.StringSQLLike('asd', pattern='as', escape='asd')
-    ops.RegexExtract('asd', pattern='as', index=1)
-    ops.RegexReplace('asd', 'as', 'a')
-    ops.StringReplace('asd', 'as', 'a')
-    ops.StringSplit('asd', 's')
-    ops.StringConcat(['s', 'e'])
-    ops.StartsWith('asd', 'as')
-    ops.EndsWith('asd', 'xyz')
+def test_operation_nodes_are_slotted(op):
+    assert hasattr(op, "__slots__")
+    assert not hasattr(op, "__dict__")
 
 
 def test_instance_of_operation():
