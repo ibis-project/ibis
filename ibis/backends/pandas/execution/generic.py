@@ -585,6 +585,23 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
     return aggcontext.agg(data, how)
 
 
+@execute_node.register(
+    (ops.ArgMin, ops.ArgMax),
+    SeriesGroupBy,
+    SeriesGroupBy,
+    type(None),
+)
+def execute_reduction_series_groupby_argidx(
+    op, data, key, _, aggcontext=None, **kwargs
+):
+    method = operator.methodcaller(op.__class__.__name__.lower())
+
+    def reduce(data, key=key.obj, method=method):
+        return data.iloc[method(key.loc[data.index])]
+
+    return aggcontext.agg(data, reduce)
+
+
 def _filtered_reduction(mask, method, data):
     return method(data[mask[data.index]])
 
@@ -756,6 +773,20 @@ def execute_bit_xor_series(_, data, mask, aggcontext=None, **kwargs):
         data[mask] if mask is not None else data,
         np.bitwise_xor.reduce,
     )
+
+
+@execute_node.register(
+    (ops.ArgMin, ops.ArgMax),
+    pd.Series,
+    pd.Series,
+    (pd.Series, type(None)),
+)
+def execute_argmin_series_mask(op, data, key, mask, aggcontext=None, **kwargs):
+    method_name = op.__class__.__name__.lower()
+    masked_key = key[mask] if mask is not None else key
+    idx = aggcontext.agg(masked_key, method_name)
+    masked = data[mask] if mask is not None else data
+    return masked.iloc[idx]
 
 
 @execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
