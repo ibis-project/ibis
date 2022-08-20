@@ -135,6 +135,6 @@ def test_isnull_case_expr_rewrite_failure(alltypes):
 
     result = Compiler.to_sql(reduction)
     expected = """\
-SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
+SELECT sum(if(`g` IS NULL, 1, 0)) AS `sum`
 FROM alltypes"""
     assert result == expected
