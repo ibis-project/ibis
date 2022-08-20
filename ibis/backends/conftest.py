@@ -289,7 +289,8 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker(pytest.mark.backend)
         elif "backends" not in parts:
             # anything else is a "core" test and is run by default
-            item.add_marker(pytest.mark.core)
+            if not any(item.iter_markers(name="benchmark")):
+                item.add_marker(pytest.mark.core)
 
         for name in ("duckdb", "sqlite"):
             # build a list of markers so we're don't invalidate the item's
