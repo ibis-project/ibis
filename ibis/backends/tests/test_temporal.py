@@ -527,13 +527,13 @@ def test_interval_add_cast_column(backend, alltypes, df):
             '%Y%m%d',
             marks=[
                 pytest.mark.notimpl(["dask", "pandas", "postgres", "pyspark"]),
-                pytest.mark.notyet(["duckdb"]),
+                pytest.mark.notyet(["duckdb", "impala"]),
             ],
             id="column_format_str",
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala"])
+@pytest.mark.notimpl(["datafusion"])
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
