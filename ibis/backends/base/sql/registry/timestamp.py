@@ -1,4 +1,5 @@
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -105,3 +106,17 @@ def day_of_week_index(t, expr):
 def day_of_week_name(t, expr):
     (arg,) = expr.op().args
     return f'dayname({t.translate(arg)})'
+
+
+def strftime(t, expr):
+    import sqlglot as sg
+
+    op = expr.op()
+    arg = op.arg
+    raw_format_str = op.format_str.op().value
+    reverse_hive_mapping = {
+        v: k for k, v in sg.dialects.hive.Hive.time_mapping.items()
+    }
+    format_str = sg.time.format_time(raw_format_str, reverse_hive_mapping)
+    targ = t.translate(arg.cast(dt.string))
+    return f"from_unixtime(unix_timestamp({targ}), {format_str!r})"
