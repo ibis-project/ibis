@@ -398,5 +398,6 @@ operation_registry = {
     ops.NTile: window.ntile,
     ops.DayOfWeekIndex: timestamp.day_of_week_index,
     ops.DayOfWeekName: timestamp.day_of_week_name,
+    ops.Strftime: timestamp.strftime,
     **binary_infix_ops,
 }
