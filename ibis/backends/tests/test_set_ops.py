@@ -2,7 +2,20 @@ import pandas as pd
 import pytest
 from pytest import param
 
-import ibis
+from ibis import _
+
+
+@pytest.fixture
+def union_subsets(alltypes, df):
+    a = alltypes.filter((5200 <= _.id) & (_.id <= 5210))
+    b = alltypes.filter((5205 <= _.id) & (_.id <= 5215))
+    c = alltypes.filter((5213 <= _.id) & (_.id <= 5220))
+
+    da = df[(5200 <= df.id) & (df.id <= 5210)]
+    db = df[(5205 <= df.id) & (df.id <= 5215)]
+    dc = df[(5213 <= df.id) & (df.id <= 5220)]
+
+    return (a, b, c), (da, db, dc)
 
 
 @pytest.mark.parametrize(
@@ -10,20 +23,23 @@ import ibis
     [param(False, id="all"), param(True, id="distinct")],
 )
 @pytest.mark.notimpl(["datafusion"])
-def test_union(backend, alltypes, df, distinct):
-    default_limit = ibis.options.sql.default_limit
-    ibis.options.sql.default_limit = 15000
-    try:
-        expr = alltypes.union(alltypes, distinct=distinct).sort_by("id")
-        result = expr.execute().reset_index(drop=True)
-        expected = df if distinct else pd.concat([df, df], axis=0)
+def test_union(backend, union_subsets, distinct):
+    (a, b, c), (da, db, dc) = union_subsets
 
-        backend.assert_frame_equal(
-            result,
-            expected.sort_values("id").reset_index(drop=True),
-        )
-    finally:
-        ibis.options.sql.default_limit = default_limit
+    expr = (
+        a.union(b, distinct=distinct).union(c, distinct=distinct).sort_by("id")
+    )
+    result = expr.execute()
+
+    expected = (
+        pd.concat([da, db, dc], axis=0)
+        .sort_values("id")
+        .reset_index(drop=True)
+    )
+    if distinct:
+        expected = expected.drop_duplicates("id")
+
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -41,9 +57,29 @@ def test_union(backend, alltypes, df, distinct):
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
-def test_union_no_sort(backend, alltypes, df, distinct):
-    result = alltypes.union(alltypes, distinct=distinct).execute()
-    expected = df if distinct else pd.concat([df, df], axis=0)
+def test_union_no_sort(backend, union_subsets, distinct):
+    (a, b, c), (da, db, dc) = union_subsets
+
+    expr = a.union(b, distinct=distinct).union(c, distinct=distinct)
+    result = expr.execute()
+
+    expected = pd.concat([da, db, dc], axis=0)
+    if distinct:
+        expected = expected.drop_duplicates("id")
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_union_mixed_distinct(backend, union_subsets):
+    (a, b, c), (da, db, dc) = union_subsets
+
+    expr = a.union(b, distinct=True).union(c, distinct=False).sort_by("id")
+    result = expr.execute()
+    expected = pd.concat(
+        [pd.concat([da, db], axis=0).drop_duplicates("id"), dc], axis=0
+    ).sort_values("id")
+
     backend.assert_frame_equal(result, expected)
 
 
@@ -64,13 +100,27 @@ def test_union_no_sort(backend, alltypes, df, distinct):
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["impala"])
 def test_intersect(backend, alltypes, df, distinct):
-    expr = alltypes.intersect(alltypes, distinct=distinct).sort_by("id")
-    result = expr.execute()
-    expected = df
-    backend.assert_frame_equal(
-        result,
-        expected.sort_values("id").reset_index(drop=True),
+    a = alltypes.filter((5200 <= _.id) & (_.id <= 5210))
+    b = alltypes.filter((5205 <= _.id) & (_.id <= 5215))
+    c = alltypes.filter((5195 <= _.id) & (_.id <= 5208))
+
+    da = df[(5200 <= df.id) & (df.id <= 5210)]
+    db = df[(5205 <= df.id) & (df.id <= 5215)]
+    dc = df[(5195 <= df.id) & (df.id <= 5208)]
+
+    expr = (
+        a.intersect(b, distinct=distinct)
+        .intersect(c, distinct=distinct)
+        .sort_by("id")
     )
+    result = expr.execute()
+
+    index = da.index.intersection(db.index).intersection(dc.index)
+    expected = df.iloc[index].sort_values("id").reset_index(drop=True)
+    if distinct:
+        expected = expected.drop_duplicates()
+
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -89,12 +139,21 @@ def test_intersect(backend, alltypes, df, distinct):
 )
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["impala"])
-def test_difference(backend, alltypes, distinct):
-    expr = alltypes.difference(alltypes, distinct=distinct)
+def test_difference(backend, alltypes, df, distinct):
+    a = alltypes.filter((5200 <= _.id) & (_.id <= 5210))
+    b = alltypes.filter((5205 <= _.id) & (_.id <= 5215))
+    c = alltypes.filter((5195 <= _.id) & (_.id <= 5202))
+
+    da = df[(5200 <= df.id) & (df.id <= 5210)]
+    db = df[(5205 <= df.id) & (df.id <= 5215)]
+    dc = df[(5195 <= df.id) & (df.id <= 5202)]
+
+    expr = a.difference(b, distinct=distinct).difference(c, distinct=distinct)
     result = expr.execute()
 
-    dtypes = {
-        column: dtype.to_pandas() for column, dtype in expr.schema().items()
-    }
-    expected = pd.DataFrame(columns=alltypes.columns).astype(dtypes)
+    index = da.index.difference(db.index).difference(dc.index)
+    expected = df.iloc[index].sort_values("id").reset_index(drop=True)
+    if distinct:
+        expected = expected.drop_duplicates()
+
     backend.assert_frame_equal(result, expected)
