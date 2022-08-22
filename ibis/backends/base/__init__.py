@@ -706,7 +706,7 @@ def _get_backend_names() -> frozenset[str]:
 
 
 _PATTERN = "|".join(
-    sorted(_get_backend_names().difference(("duckdb", "sqlite")))
+    sorted(_get_backend_names().difference(("duckdb", "sqlite", "pyspark")))
 )
 
 
@@ -726,7 +726,10 @@ def _(url: str, *, backend: str, **kwargs: Any) -> BaseBackend:
     return instance._from_url(url)
 
 
-@_connect.register(r"(?P<backend>duckdb|sqlite)://(?P<path>.*)", priority=12)
+@_connect.register(
+    r"(?P<backend>duckdb|sqlite|pyspark)://(?P<path>.*)",
+    priority=12,
+)
 def _(_: str, *, backend: str, path: str, **kwargs: Any) -> BaseBackend:
     """Connect to given `backend` with `path`.
 
