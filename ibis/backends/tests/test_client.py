@@ -432,6 +432,11 @@ def test_unsigned_integer_type(alchemy_con, coltype):
             marks=mark.pyspark,
             id="pyspark_with_warehouse",
         ),
+        param(
+            "pyspark://my-warehouse-dir",
+            marks=mark.pyspark,
+            id="pyspark_with_warehouse_no_params",
+        ),
     ],
 )
 def test_connect_url(url):

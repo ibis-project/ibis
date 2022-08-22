@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
@@ -8,6 +7,7 @@ import pandas as pd
 import pyspark
 import sqlalchemy as sa
 from pydantic import Field
+from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.column import Column
 
@@ -101,12 +101,16 @@ class Backend(BaseSQLBackend):
     def _from_url(self, url: str) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
         url = sa.engine.make_url(url)
-        params = list(itertools.chain.from_iterable(url.query.items()))
-        if database := url.database:
-            params.append("spark.sql.warehouse.dir")
-            params.append(str(Path(database).absolute()))
 
-        builder = SparkSession.builder.config(*params)
+        conf = SparkConf().setAll(url.query.items())
+
+        if database := url.database:
+            conf = conf.set(
+                "spark.sql.warehouse.dir",
+                str(Path(database).absolute()),
+            )
+
+        builder = SparkSession.builder.config(conf=conf)
         session = builder.getOrCreate()
         return self.connect(session)
 
