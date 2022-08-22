@@ -344,39 +344,47 @@ class AlchemySelectBuilder(SelectBuilder):
 
 
 class AlchemySetOp(SetOp):
-    @classmethod
-    def reduce(cls, left, right, distincts):
-        distinct = next(distincts)
-        sa_func = cls.distinct_func if distinct else cls.non_distinct_func
-        return sa_func(left, right)
-
     def compile(self):
         context = self.context
         selects = []
+
+        def call(distinct, *args):
+            return (
+                self.distinct_func(*args)
+                if distinct
+                else self.non_distinct_func(*args)
+            )
 
         for table in self.tables:
             table_set = context.get_compiled_expr(table)
             selects.append(table_set.cte().select())
 
-        return functools.reduce(
-            functools.partial(self.reduce, distincts=iter(self.distincts)),
-            selects,
-        )
+        if len(set(self.distincts)) == 1:
+            # Use a single call when possible
+            return call(self.distincts[0], *selects)
+        else:
+            result = selects[0]
+            # We need to iteratively apply the set operations. Subqueries
+            # _must_ be converted using `.subquery().select()` to get
+            # sqlalchemy to put parenthesis in the proper places.
+            for select, distinct in zip(selects[1:], self.distincts):
+                result = call(distinct, result.subquery().select(), select)
+            return result
 
 
 class AlchemyUnion(AlchemySetOp):
-    distinct_func = sa.union
-    non_distinct_func = sa.union_all
+    distinct_func = staticmethod(sa.union)
+    non_distinct_func = staticmethod(sa.union_all)
 
 
 class AlchemyIntersection(AlchemySetOp):
-    distinct_func = sa.intersect
-    non_distinct_func = sa.intersect_all
+    distinct_func = staticmethod(sa.intersect)
+    non_distinct_func = staticmethod(sa.intersect_all)
 
 
 class AlchemyDifference(AlchemySetOp):
-    distinct_func = sa.except_
-    non_distinct_func = sa.except_all
+    distinct_func = staticmethod(sa.except_)
+    non_distinct_func = staticmethod(sa.except_all)
 
 
 class AlchemyCompiler(Compiler):
