@@ -305,26 +305,29 @@ class Table(Expr):
 
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, right: Table, distinct: bool = True) -> Table:
-        """Compute the set difference of two table expressions.
+    def difference(self, *tables: Table, distinct: bool = True) -> Table:
+        """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        right
-            Table expression
+        *tables
+            One or more table expressions
         distinct
             Only diff distinct rows not occurring in the calling table
 
         Returns
         -------
         Table
-            The rows present in `left` that are not present in `right`.
+            The rows present in `self` that are not present in `tables`.
         """
         from ibis.expr import operations as ops
 
-        return ops.Difference(self, right, distinct=distinct).to_expr()
+        left = self
+        for right in tables:
+            left = ops.Difference(left, right, distinct=distinct).to_expr()
+        return left
 
     def aggregate(
         self,
@@ -465,49 +468,55 @@ class Table(Expr):
 
     def union(
         self,
-        right: Table,
+        *tables: Table,
         distinct: bool = False,
     ) -> Table:
-        """Compute the set union of two table expressions.
+        """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        right
-            Table expression
+        *tables
+            One or more table expressions
         distinct
-            Only union distinct rows not occurring in the calling table
+            Only return distinct rows
 
         Returns
         -------
         Table
-            Union of table and `right`
+            A new table containing the union of all input tables.
         """
         from ibis.expr import operations as ops
 
-        return ops.Union(self, right, distinct=distinct).to_expr()
+        left = self
+        for right in tables:
+            left = ops.Union(left, right, distinct=distinct).to_expr()
+        return left
 
-    def intersect(self, right: Table, distinct: bool = True) -> Table:
-        """Compute the set intersection of two table expressions.
+    def intersect(self, *tables: Table, distinct: bool = True) -> Table:
+        """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        right
-            Table expression
+        *tables
+            One or more table expressions
         distinct
-            Only intersect distinct rows not occurring in the calling table
+            Only return distinct rows
 
         Returns
         -------
         Table
-            The rows common amongst `left` and `right`.
+            A new table containing the intersection of all input tables.
         """
         from ibis.expr import operations as ops
 
-        return ops.Intersection(self, right, distinct=distinct).to_expr()
+        left = self
+        for right in tables:
+            left = ops.Intersection(left, right, distinct=distinct).to_expr()
+        return left
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.

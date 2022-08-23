@@ -122,6 +122,7 @@ __all__ = (
     'cumulative_window',
     'date',
     'desc',
+    'difference',
     'asc',
     'e',
     'Expr',
@@ -181,6 +182,7 @@ __all__ = (
     'ifelse',
     'infer_dtype',
     'infer_schema',
+    'intersect',
     'interval',
     'join',
     'least',
@@ -207,6 +209,7 @@ __all__ = (
     'timestamp',
     'trailing_range_window',
     'trailing_window',
+    'union',
     'where',
     'window',
     '_',
@@ -802,5 +805,9 @@ aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
 join = ir.Table.join
 asof_join = ir.Table.asof_join
+
+union = ir.Table.union
+intersect = ir.Table.intersect
+difference = ir.Table.difference
 
 _ = Deferred()
