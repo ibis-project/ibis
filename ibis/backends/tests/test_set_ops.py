@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 from pytest import param
 
+import ibis
 from ibis import _
 
 
@@ -26,9 +27,7 @@ def union_subsets(alltypes, df):
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
 
-    expr = (
-        a.union(b, distinct=distinct).union(c, distinct=distinct).sort_by("id")
-    )
+    expr = ibis.union(a, b, c, distinct=distinct).sort_by("id")
     result = expr.execute()
 
     expected = (
@@ -82,11 +81,7 @@ def test_intersect(backend, alltypes, df, distinct):
     db = df[(5205 <= df.id) & (df.id <= 5215)]
     dc = df[(5195 <= df.id) & (df.id <= 5208)]
 
-    expr = (
-        a.intersect(b, distinct=distinct)
-        .intersect(c, distinct=distinct)
-        .sort_by("id")
-    )
+    expr = ibis.intersect(a, b, c, distinct=distinct).sort_by("id")
     result = expr.execute()
 
     index = da.index.intersection(db.index).intersection(dc.index)
@@ -124,11 +119,7 @@ def test_difference(backend, alltypes, df, distinct):
     db = df[(5205 <= df.id) & (df.id <= 5215)]
     dc = df[(5195 <= df.id) & (df.id <= 5202)]
 
-    expr = (
-        a.difference(b, distinct=distinct)
-        .difference(c, distinct=distinct)
-        .sort_by("id")
-    )
+    expr = ibis.difference(a, b, c, distinct=distinct).sort_by("id")
     result = expr.execute()
 
     index = da.index.difference(db.index).difference(dc.index)

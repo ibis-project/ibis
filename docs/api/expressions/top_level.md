@@ -13,8 +13,10 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.cumulative_window
 ::: ibis.date
 ::: ibis.desc
+::: ibis.difference
 ::: ibis.greatest
 ::: ibis.ifelse
+::: ibis.intersect
 ::: ibis.interval
 ::: ibis.least
 ::: ibis.literal
@@ -34,5 +36,6 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.timestamp
 ::: ibis.trailing_range_window
 ::: ibis.trailing_window
+::: ibis.union
 ::: ibis.where
 ::: ibis.window
