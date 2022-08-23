@@ -1064,6 +1064,15 @@ def test_unravel_compound_equijoin(table):
     assert_equal(joined, expected)
 
 
+@pytest.mark.parametrize("op", ["union", "intersect", "difference"])
+def test_setops_deprecated_right_kwarg(op, setops_table_foo, setops_table_bar):
+    # TODO: remove in 4.0
+    with pytest.warns(FutureWarning):
+        a = getattr(setops_table_foo, op)(right=setops_table_bar)
+    b = getattr(setops_table_foo, op)(setops_table_bar)
+    assert_equal(a, b)
+
+
 def test_union(
     setops_table_foo,
     setops_table_bar,

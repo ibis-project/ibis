@@ -76,6 +76,25 @@ def _regular_join_method(
     return f
 
 
+def _set_op_handle_deprecated_right_kwarg(
+    tables: tuple[Table], **kwargs: Any
+) -> tuple[Table]:
+    """Handle the deprecated `right` argument in union/intersect/difference
+
+    In 4.0 this can be deleted along with the kwargs argument in these methods.
+    """
+    if (right := kwargs.pop("right", None)) is not None:
+        warnings.warn(
+            "The `right` keyword argument has been deprecated and will "
+            "removed in 4.0. Pass tables in as positional arguments",
+            FutureWarning,
+        )
+        tables = (right, *tables)
+    if kwargs:
+        raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs)!r}")
+    return tables
+
+
 @public
 class Table(Expr):
     def __contains__(self, name):
@@ -305,7 +324,9 @@ class Table(Expr):
 
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, *tables: Table, distinct: bool = True) -> Table:
+    def difference(
+        self, *tables: Table, distinct: bool = True, **kwargs
+    ) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -325,6 +346,7 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
+        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Difference(left, right, distinct=distinct).to_expr()
         return left
@@ -466,11 +488,7 @@ class Table(Expr):
             sort_exprs = util.promote_list(sort_exprs)
         return self.op().sort_by(self, sort_exprs).to_expr()
 
-    def union(
-        self,
-        *tables: Table,
-        distinct: bool = False,
-    ) -> Table:
+    def union(self, *tables: Table, distinct: bool = False, **kwargs) -> Table:
         """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -490,11 +508,14 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
+        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Union(left, right, distinct=distinct).to_expr()
         return left
 
-    def intersect(self, *tables: Table, distinct: bool = True) -> Table:
+    def intersect(
+        self, *tables: Table, distinct: bool = True, **kwargs
+    ) -> Table:
         """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -514,6 +535,7 @@ class Table(Expr):
         from ibis.expr import operations as ops
 
         left = self
+        tables = _set_op_handle_deprecated_right_kwarg(tables, **kwargs)
         for right in tables:
             left = ops.Intersection(left, right, distinct=distinct).to_expr()
         return left
