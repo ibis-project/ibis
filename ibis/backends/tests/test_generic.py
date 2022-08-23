@@ -465,6 +465,21 @@ def test_sort_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
+)
+def test_sort_by_random(alltypes):
+    expr = alltypes.filter(_.id < 100).sort_by(ibis.random()).limit(5)
+    r1 = expr.execute()
+    r2 = expr.execute()
+    assert len(r1) == 5
+    assert len(r2) == 5
+    # Ensure that multiple executions returns different results
+    assert not r1.equals(r2)
+
+
 def check_table_info(buf, schema):
     info_str = buf.getvalue()
 

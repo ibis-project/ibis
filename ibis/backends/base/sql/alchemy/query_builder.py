@@ -143,7 +143,7 @@ def _can_lower_sort_column(table_set, expr):
     # aggregation so they appear in same query. It's generally for
     # cosmetics and doesn't really affect query semantics.
     bases = {op: op.to_expr() for op in expr.op().root_tables()}
-    if len(bases) > 1:
+    if len(bases) != 1:
         return False
 
     base = list(bases.values())[0]
