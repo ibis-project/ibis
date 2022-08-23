@@ -290,7 +290,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 @execute_node.register(ops.Limit, dd.DataFrame, integer_types, integer_types)
 def execute_limit_frame(op, data, nrows, offset, **kwargs):
     # NOTE: Dask Dataframes do not support iloc row based indexing
-    return data.loc[offset : offset + nrows]
+    return data.loc[offset : (offset + nrows) - 1]
 
 
 @execute_node.register(ops.Not, (dd.core.Scalar, dd.Series))

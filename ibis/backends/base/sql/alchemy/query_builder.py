@@ -330,11 +330,9 @@ class AlchemySelect(Select):
         if self.limit is None:
             return fragment
 
-        n, offset = self.limit['n'], self.limit['offset']
-        fragment = fragment.limit(n)
-        if offset is not None and offset != 0:
+        fragment = fragment.limit(self.limit.n)
+        if offset := self.limit.offset:
             fragment = fragment.offset(offset)
-
         return fragment
 
 

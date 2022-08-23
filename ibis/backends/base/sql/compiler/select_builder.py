@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import NamedTuple
+
 import toolz
 
 import ibis.common.exceptions as com
@@ -8,6 +12,11 @@ import ibis.util as util
 from ibis.backends.base.sql.compiler.base import (
     _extract_common_table_expressions,
 )
+
+
+class _LimitSpec(NamedTuple):
+    n: int
+    offset: int
 
 
 class _CorrelatedRefCheck:
@@ -438,11 +447,16 @@ class SelectBuilder:
             return
 
         op = expr.op()
+        n = op.n
+        offset = op.offset or 0
 
-        # Ignore "inner" limits, because they've been overrided by an exterior
-        # one
         if self.limit is None:
-            self.limit = {'n': op.n, 'offset': op.offset}
+            self.limit = _LimitSpec(n, offset)
+        else:
+            self.limit = _LimitSpec(
+                min(n, self.limit.n),
+                offset + self.limit.offset,
+            )
 
         self._collect(op.table, toplevel=toplevel)
 

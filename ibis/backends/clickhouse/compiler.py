@@ -50,8 +50,8 @@ class ClickhouseSelect(Select):
 
         buf = StringIO()
 
-        n, offset = self.limit['n'], self.limit['offset']
-        if offset is not None and offset != 0:
+        n = self.limit.n
+        if offset := self.limit.offset:
             buf.write(f'LIMIT {offset}, {n}')
         else:
             buf.write(f'LIMIT {n}')
