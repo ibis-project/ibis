@@ -953,7 +953,7 @@ def execute_difference_dataframe_dataframe(
     merged = left.merge(
         right, on=list(left.columns), how="outer", indicator=True
     )
-    result = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
+    result = merged[merged["_merge"] == "left_only"].drop("_merge", axis=1)
     return result
 
 

@@ -360,13 +360,15 @@ class AlchemySetOp(SetOp):
             selects.append(table_set.cte().select())
 
         if len(set(self.distincts)) == 1:
-            # Use a single call when possible
+            # distinct is either all True or all False, handle with a single
+            # call. This generates much more concise SQL.
             return call(self.distincts[0], *selects)
         else:
+            # We need to iteratively apply the set operations to handle
+            # disparate `distinct` values. Subqueries _must_ be converted using
+            # `.subquery().select()` to get sqlalchemy to put parenthesis in
+            # the proper places.
             result = selects[0]
-            # We need to iteratively apply the set operations. Subqueries
-            # _must_ be converted using `.subquery().select()` to get
-            # sqlalchemy to put parenthesis in the proper places.
             for select, distinct in zip(selects[1:], self.distincts):
                 result = call(distinct, result.subquery().select(), select)
             return result

@@ -42,34 +42,6 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    "distinct",
-    [
-        param(False, id="all"),
-        param(
-            True,
-            marks=pytest.mark.notimpl(
-                ["duckdb", "postgres"],
-                reason="Result order not guaranteed when distinct=True",
-            ),
-            id="distinct",
-        ),
-    ],
-)
-@pytest.mark.notimpl(["datafusion"])
-def test_union_no_sort(backend, union_subsets, distinct):
-    (a, b, c), (da, db, dc) = union_subsets
-
-    expr = a.union(b, distinct=distinct).union(c, distinct=distinct)
-    result = expr.execute()
-
-    expected = pd.concat([da, db, dc], axis=0)
-    if distinct:
-        expected = expected.drop_duplicates("id")
-
-    backend.assert_frame_equal(result, expected)
-
-
 @pytest.mark.notimpl(["datafusion"])
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
@@ -104,6 +76,8 @@ def test_intersect(backend, alltypes, df, distinct):
     b = alltypes.filter((5205 <= _.id) & (_.id <= 5215))
     c = alltypes.filter((5195 <= _.id) & (_.id <= 5208))
 
+    # Reset index to ensure simple RangeIndex, needed for computing `expected`
+    df = df.reset_index(drop=True)
     da = df[(5200 <= df.id) & (df.id <= 5210)]
     db = df[(5205 <= df.id) & (df.id <= 5215)]
     dc = df[(5195 <= df.id) & (df.id <= 5208)]
@@ -144,6 +118,8 @@ def test_difference(backend, alltypes, df, distinct):
     b = alltypes.filter((5205 <= _.id) & (_.id <= 5215))
     c = alltypes.filter((5195 <= _.id) & (_.id <= 5202))
 
+    # Reset index to ensure simple RangeIndex, needed for computing `expected`
+    df = df.reset_index(drop=True)
     da = df[(5200 <= df.id) & (df.id <= 5210)]
     db = df[(5205 <= df.id) & (df.id <= 5215)]
     dc = df[(5195 <= df.id) & (df.id <= 5202)]
