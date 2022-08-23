@@ -23,6 +23,10 @@ def _to_sort_key(key, *, table=None):
     else:
         sort_order = True
 
+    # # HACK: support `ORDER BY 1` / `ORDER BY 42.42`
+    # if isinstance(key, (int, float)):
+    # key = ibis.literal(key)
+
     if not isinstance(key, ir.Expr):
         if table is None:
             raise com.IbisTypeError("cannot resolve key with table=None")
@@ -43,8 +47,7 @@ def _maybe_convert_sort_keys(tables, exprs):
     exprs = util.promote_list(exprs)
     keys = exprs[:]
     for i, key in enumerate(exprs):
-        step = -1 if isinstance(key, (str, DeferredSortKey)) else 1
-        for table in tables[::step]:
+        for table in reversed(tables):
             try:
                 sort_key = _to_sort_key(key, table=table)
             except Exception:
