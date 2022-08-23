@@ -12,7 +12,7 @@ on:
       - labeled
 jobs:
   auto-rebase:
-    if: github.repository == 'ibis-framework/ibis'
+    if: github.repository == 'ibis-project/ibis'
     runs-on: ubuntu-latest
     steps:
       - uses: tibdex/github-app-token@v1
