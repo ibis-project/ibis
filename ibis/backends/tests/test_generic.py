@@ -431,6 +431,40 @@ def test_select_sort_sort(alltypes):
     query = query.sort_by(query.year).sort_by(query.bool_col)
 
 
+@pytest.mark.parametrize(
+    "key, df_kwargs",
+    [
+        param("id", {"by": "id"}),
+        param(_.id, {"by": "id"}),
+        param(lambda _: _.id, {"by": "id"}),
+        param(
+            ("id", False),
+            {"by": "id", "ascending": False},
+            marks=pytest.mark.notimpl(["dask"]),
+        ),
+        param(
+            ibis.desc("id"),
+            {"by": "id", "ascending": False},
+            marks=pytest.mark.notimpl(["dask"]),
+        ),
+        param(
+            ["id", "int_col"],
+            {"by": ["id", "int_col"]},
+            marks=pytest.mark.notimpl(["dask"]),
+        ),
+        param(
+            ["id", ("int_col", False)],
+            {"by": ["id", "int_col"], "ascending": [True, False]},
+            marks=pytest.mark.notimpl(["dask"]),
+        ),
+    ],
+)
+def test_sort_by(backend, alltypes, df, key, df_kwargs):
+    result = alltypes.filter(_.id < 100).sort_by(key).execute()
+    expected = df.loc[df.id < 100].sort_values(**df_kwargs)
+    backend.assert_frame_equal(result, expected)
+
+
 def check_table_info(buf, schema):
     info_str = buf.getvalue()
 

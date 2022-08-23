@@ -41,7 +41,7 @@ class TableNode(Node):
             expr,
             [],
             sort_keys=_maybe_convert_sort_keys(
-                [self.to_expr(), expr],
+                [expr],
                 sort_exprs,
             ),
         )
