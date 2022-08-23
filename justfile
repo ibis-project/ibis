@@ -78,12 +78,8 @@ bench +args='ibis/tests/benchmarks':
 # check for invalid links in a locally built version of the docs
 checklinks *args:
     #!/usr/bin/env bash
-    mapfile -t files < <(find site -name '*.html' \
-        -and \( -not \( -wholename 'site/SUMMARY/index.html' \
-                        -or -wholename 'site/user_guide/design/index.html' \
-                        -or -wholename 'site/overrides/main.html' \
-                        -or -wholename 'site/blog/Ibis-version-3.1.0-release/index.html' \) \))
-    lychee "${files[@]}" --base site --require-https {{ args }}
+    mapfile -t files < <(find site -name '*.html')
+    lychee "${files[@]}" {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
