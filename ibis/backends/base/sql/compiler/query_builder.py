@@ -9,7 +9,10 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
-from ibis.backends.base.sql.compiler.select_builder import SelectBuilder
+from ibis.backends.base.sql.compiler.select_builder import (
+    SelectBuilder,
+    _LimitSpec,
+)
 from ibis.backends.base.sql.compiler.translator import (
     ExprTranslator,
     QueryContext,
@@ -446,9 +449,9 @@ class Select(DML, Comparable):
 
         buf = StringIO()
 
-        n, offset = self.limit['n'], self.limit['offset']
+        n = self.limit.n
         buf.write(f'LIMIT {n}')
-        if offset is not None and offset != 0:
+        if offset := self.limit.offset:
             buf.write(f' OFFSET {offset}')
 
         return buf.getvalue()
@@ -584,9 +587,9 @@ class Compiler:
                     else:
                         query_limit = limit
                     if query_limit:
-                        query.limit = {'n': query_limit, 'offset': 0}
+                        query.limit = _LimitSpec(query_limit, offset=0)
                 elif limit is not None and limit != 'default':
-                    query.limit = {'n': limit, 'offset': query.limit['offset']}
+                    query.limit = _LimitSpec(limit, query.limit.offset)
 
         return query_ast
 

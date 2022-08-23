@@ -1335,7 +1335,7 @@ def test_multiple_limits(functional_alltypes):
     expr = t.limit(20).limit(10)
     stmt = get_query(expr)
 
-    assert stmt.limit['n'] == 10
+    assert stmt.limit.n == 10
 
 
 def test_self_join_filter_analysis_bug(filter_self_join_analysis_bug):

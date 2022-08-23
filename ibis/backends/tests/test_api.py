@@ -1,6 +1,8 @@
 import pytest
+from pytest import param
 
 import ibis
+import ibis.common.exceptions as exc
 
 
 def test_backend_name(backend):
@@ -79,3 +81,17 @@ def test_tables_accessor_tab_completion(con):
 
     keys = con.tables._ipython_key_completions_()
     assert 'functional_alltypes' in keys
+
+
+@pytest.mark.notimpl(["datafusion"], raises=exc.OperationNotDefinedError)
+@pytest.mark.parametrize(
+    "expr_fn",
+    [
+        param(lambda t: t.limit(5).limit(10), id="small_big"),
+        param(lambda t: t.limit(10).limit(5), id="big_small"),
+    ],
+)
+def test_limit_chain(alltypes, expr_fn):
+    expr = expr_fn(alltypes)
+    result = expr.execute()
+    assert len(result) == 5
