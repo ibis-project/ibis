@@ -124,7 +124,11 @@ def test_difference(backend, alltypes, df, distinct):
     db = df[(5205 <= df.id) & (df.id <= 5215)]
     dc = df[(5195 <= df.id) & (df.id <= 5202)]
 
-    expr = a.difference(b, distinct=distinct).difference(c, distinct=distinct)
+    expr = (
+        a.difference(b, distinct=distinct)
+        .difference(c, distinct=distinct)
+        .sort_by("id")
+    )
     result = expr.execute()
 
     index = da.index.difference(db.index).difference(dc.index)
