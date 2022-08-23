@@ -101,7 +101,7 @@ We can grab a small subset of the `tripdata` columns and then join them to the
 
 That's it!
 
-Ibis+duckdb currently support registering `parquet`, `csv`, and `csv.gz`.
+Ibis+duckdb currently supports registering `parquet`, `csv`, and `csv.gz`.
 
 You can pass in the filename and the filetype will be inferred from the extension, or you can pass it explicitly using a file URI, e.g.
 
