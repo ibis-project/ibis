@@ -23,10 +23,6 @@ def _to_sort_key(key, *, table=None):
     else:
         sort_order = True
 
-    # # HACK: support `ORDER BY 1` / `ORDER BY 42.42`
-    # if isinstance(key, (int, float)):
-    # key = ibis.literal(key)
-
     if not isinstance(key, ir.Expr):
         if table is None:
             raise com.IbisTypeError("cannot resolve key with table=None")
@@ -60,7 +56,7 @@ def _maybe_convert_sort_keys(tables, exprs):
 
 @public
 class SortKey(Node):
-    expr = rlz.column(rlz.any)
+    expr = rlz.any
     ascending = rlz.optional(
         rlz.map_to(
             {

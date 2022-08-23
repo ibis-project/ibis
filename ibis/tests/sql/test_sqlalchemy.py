@@ -439,6 +439,11 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
             lambda b: sa.select([b]).order_by(b.c.c, b.c.f.desc()),
             id="sort_by_mixed",
         ),
+        pytest.param(
+            lambda t: t.sort_by(ibis.random()),
+            lambda b: sa.select([b]).order_by(sa.func.random()),
+            id="sort_by_random",
+        ),
     ],
 )
 def test_sort_by(con, star1, sa_star1, expr_fn, expected_fn):

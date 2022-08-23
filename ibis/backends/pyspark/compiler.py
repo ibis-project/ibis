@@ -2134,3 +2134,8 @@ def compile_where(t, expr, scope, timecontext, **kwargs):
         t.translate(op.bool_expr, scope, timecontext, **kwargs),
         t.translate(op.true_expr, scope, timecontext, **kwargs),
     ).otherwise(t.translate(op.false_null_expr, scope, timecontext, **kwargs))
+
+
+@compiles(ops.RandomScalar)
+def compile_random(*args, **kwargs):
+    return F.rand()
