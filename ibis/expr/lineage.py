@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 from typing import Any, Callable, Iterable, Iterator
 
-import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 
 class Container:
@@ -60,9 +60,8 @@ halt = False
 
 
 def traverse(
-    fn: Callable[[ir.Expr], tuple[bool | Iterable, Any]],
-    expr: ir.Expr | Iterable[ir.Expr],
-    type: type = ir.Expr,
+    fn: Callable[[ops.Node], tuple[bool | Iterable, Any]],
+    node: ops.Node | Iterable[ops.Node],
     container: Container = Stack,
     dedup: bool = True,
 ) -> Iterator[Any]:
@@ -75,35 +74,33 @@ def traverse(
         controls the traversal, and the second is the result if its not `None`.
     expr
         The traversable expression or a list of expressions.
-    type
-        Only the instances if this type are traversed.
     container
         Defines the traversal order. Use `Stack` for depth-first order and
         `Queue` for breadth-first order.
     dedup
         Whether to allow expression traversal more than once
     """
-    args = expr if isinstance(expr, collections.abc.Iterable) else [expr]
-    todo = container(arg for arg in args if isinstance(arg, type))
+    args = node if isinstance(node, collections.abc.Iterable) else [node]
+    todo = container(arg for arg in args if isinstance(arg, ops.Node))
     seen = set()
 
     while todo:
-        expr = todo.get()
-        op = expr.op()
+        node = todo.get()
+        assert isinstance(node, ops.Node), type(node)
 
         if dedup:
-            if op in seen:
+            if node in seen:
                 continue
             else:
-                seen.add(op)
+                seen.add(node)
 
-        control, result = fn(expr)
+        control, result = fn(node)
         if result is not None:
             yield result
 
         if control is not halt:
             if control is proceed:
-                args = op.flat_args()
+                args = node.flat_args()
             elif isinstance(control, collections.abc.Iterable):
                 args = control
             else:
@@ -113,5 +110,5 @@ def traverse(
                 )
 
             todo.extend(
-                arg for arg in todo.visitor(args) if isinstance(arg, type)
+                arg for arg in todo.visitor(args) if isinstance(arg, ops.Node)
             )

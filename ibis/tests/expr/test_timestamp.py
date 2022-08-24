@@ -43,7 +43,7 @@ def test_extract_fields(field, expected_operation, expected_type, alltypes):
     assert result.get_name() == field
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), expected_operation)
+    assert isinstance(result.op().arg, expected_operation)
 
 
 def test_now():
@@ -78,19 +78,20 @@ def test_comparisons_string(alltypes):
     val = '2015-01-01 00:00:00'
     expr = alltypes.i > val
     op = expr.op()
-    assert isinstance(op.right, ir.StringScalar)
+    assert op.right.output_dtype is dt.string
 
     expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
-    assert isinstance(op.right, ir.StringScalar)
+    assert op.right.output_dtype is dt.string
 
 
 def test_comparisons_pandas_timestamp(alltypes):
     val = pd.Timestamp('2015-01-01 00:00:00')
     expr = alltypes.i > val
     op = expr.op()
-    assert isinstance(op.right, ir.TimestampScalar)
+    assert isinstance(op.right, ops.Literal)
+    assert isinstance(op.right.output_dtype, dt.Timestamp)
 
 
 def test_greater_comparison_pandas_timestamp(alltypes):
@@ -98,12 +99,13 @@ def test_greater_comparison_pandas_timestamp(alltypes):
     expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
-    assert isinstance(op.right, ir.TimestampScalar)
+    assert isinstance(op.right, ops.Literal)
+    assert isinstance(op.right.output_dtype, dt.Timestamp)
 
 
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
-    highest_type = rlz.highest_precedence_dtype([ibis.NA, ts])
+    highest_type = rlz.highest_precedence_dtype([ibis.NA.op(), ts.op()])
     assert highest_type == dt.timestamp
 
 
@@ -123,7 +125,7 @@ def test_timestamp_field_access_on_date(
     assert result.get_name() == field
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), expected_operation)
+    assert isinstance(result.op().arg, expected_operation)
 
 
 @pytest.mark.parametrize(
@@ -160,7 +162,7 @@ def test_timestamp_field_access_on_time(
     assert result.get_name() == field
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), expected_operation)
+    assert isinstance(result.op().arg, expected_operation)
 
 
 @pytest.mark.parametrize(

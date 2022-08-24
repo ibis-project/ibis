@@ -9,9 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
-    AlchemyExprTranslator,
     fixed_arity,
     reduction,
     sqlalchemy_operation_registry,
@@ -20,6 +18,7 @@ from ibis.backends.base.sql.alchemy import (
     varargs,
     variance_reduction,
 )
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import _clip, _gen_string_find
 
 operation_registry = sqlalchemy_operation_registry.copy()
@@ -29,83 +28,75 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 sqlite_cast = Dispatcher("sqlite_cast")
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.IntegerValue, dt.Timestamp)
-def _unixepoch(t, arg, _):
-    return sa.func.datetime(t.translate(arg), "unixepoch")
+@sqlite_cast.register(object, dt.Integer, dt.Timestamp)
+def _unixepoch(arg, from_, to):
+    return sa.func.datetime(arg, "unixepoch")
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.StringValue, dt.Timestamp)
-def _string_to_timestamp(t, arg, _):
-    return sa.func.strftime('%Y-%m-%d %H:%M:%f', t.translate(arg))
+@sqlite_cast.register(object, dt.String, dt.Timestamp)
+def _string_to_timestamp(arg, from_, to):
+    return sa.func.strftime('%Y-%m-%d %H:%M:%f', arg)
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.IntegerValue, dt.Date)
-def _integer_to_date(t, arg, _):
-    return sa.func.date(sa.func.datetime(t.translate(arg), "unixepoch"))
+@sqlite_cast.register(object, dt.Integer, dt.Date)
+def _integer_to_date(arg, from_, to):
+    return sa.func.date(sa.func.datetime(arg, "unixepoch"))
 
 
-@sqlite_cast.register(
-    AlchemyExprTranslator,
-    (ir.StringValue, ir.TimestampValue),
-    dt.Date,
-)
-def _string_or_timestamp_to_date(t, arg, _):
-    return sa.func.date(t.translate(arg))
+@sqlite_cast.register(object, (dt.String, dt.Timestamp), dt.Date)
+def _string_or_timestamp_to_date(arg, from_, to):
+    return sa.func.date(arg)
 
 
-@sqlite_cast.register(
-    AlchemyExprTranslator,
-    ir.Value,
-    (dt.Date, dt.Timestamp),
-)
-def _value_to_temporal(t, arg, _):
+@sqlite_cast.register(object, dt.DataType, (dt.Date, dt.Timestamp))
+def _value_to_temporal(arg, from_, to):
     raise com.UnsupportedOperationError(type(arg))
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.CategoryValue, dt.Int32)
-def _category_to_int(t, arg, _):
-    return t.translate(arg)
+@sqlite_cast.register(object, dt.Category, dt.Int32)
+def _category_to_int(arg, from_, to):
+    return arg
 
 
-@sqlite_cast.register(AlchemyExprTranslator, ir.Value, dt.DataType)
-def _default_cast_impl(t, arg, target_type):
-    return sa.cast(t.translate(arg), t.get_sqla_type(target_type))
+@sqlite_cast.register(object, dt.DataType, dt.DataType)
+def _default_cast_impl(arg, from_, to):
+    return sa.cast(arg, to_sqla_type(to))
 
 
-def _cast(t, expr):
-    op = expr.op()
-    return sqlite_cast(t, op.arg, op.to)
+# TODO(kszucs): don't dispatch on op.arg since that should be always an
+# instance of ops.Value
+def _cast(t, op):
+    arg = t.translate(op.arg)
+
+    return sqlite_cast(arg, op.arg.output_dtype, op.to)
 
 
-def _string_right(t, expr):
+def _string_right(t, op):
     f = sa.func.substr
 
-    arg, length = expr.op().args
-
-    sa_arg = t.translate(arg)
-    sa_length = t.translate(length)
+    sa_arg = t.translate(op.arg)
+    sa_length = t.translate(op.nchars)
 
     return f(sa_arg, -sa_length, sa_length)
 
 
-def _strftime(t, expr):
-    arg, format = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_format = t.translate(format)
+def _strftime(t, op):
+    sa_arg = t.translate(op.arg)
+    sa_format = t.translate(op.format_str)
     return sa.func.strftime(sa_format, sa_arg)
 
 
 def _strftime_int(fmt):
-    def translator(t, expr):
-        return t.translate(expr.op().arg.strftime(fmt).cast(dt.int32))
+    def translator(t, op):
+        # TODO(kszucs): avoid expr roundtrip, should be done in rewrite phase
+        new_expr = op.arg.to_expr().strftime(fmt).cast(dt.int32)
+        return t.translate(new_expr.op())
 
     return translator
 
 
-def _extract_quarter(t, expr):
-    (arg,) = expr.op().args
-
-    expr_new = ops.ExtractMonth(arg).to_expr()
+def _extract_quarter(t, op):
+    expr_new = ops.ExtractMonth(op.arg).to_expr()
     expr_new = (
         ibis.case()
         .when(expr_new.isin([1, 2, 3]), 1)
@@ -114,13 +105,13 @@ def _extract_quarter(t, expr):
         .else_(4)
         .end()
     )
-    return sa.cast(t.translate(expr_new), sa.Integer)
+    return sa.cast(t.translate(expr_new.op()), sa.Integer)
 
 
-def _extract_epoch_seconds(t, expr):
-    (arg,) = expr.op().args
+def _extract_epoch_seconds(t, op):
+
     # example: (julianday('now') - 2440587.5) * 86400.0
-    sa_expr = (sa.func.julianday(t.translate(arg)) - 2440587.5) * 86400.0
+    sa_expr = (sa.func.julianday(t.translate(op.arg)) - 2440587.5) * 86400.0
     return sa.cast(sa_expr, sa.BigInteger)
 
 
@@ -133,37 +124,35 @@ _truncate_modifiers = {
 
 
 def _truncate(func):
-    def translator(t, expr):
-        arg, unit = expr.op().args
-        sa_arg = t.translate(arg)
+    def translator(t, op):
+        sa_arg = t.translate(op.arg)
         try:
-            modifier = _truncate_modifiers[unit]
+            modifier = _truncate_modifiers[op.unit]
         except KeyError:
             raise com.UnsupportedOperationError(
-                f'Unsupported truncate unit {unit!r}'
+                f'Unsupported truncate unit {op.unit!r}'
             )
         return func(sa_arg, modifier)
 
     return translator
 
 
-def _millisecond(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
+def _millisecond(t, op):
+    sa_arg = t.translate(op.arg)
     fractional_second = sa.func.strftime('%f', sa_arg)
     return (fractional_second * 1000) % 1000
 
 
-def _log(t, expr):
-    arg, base = expr.op().args
-    sa_arg = t.translate(arg)
-    if base is None:
+def _log(t, op):
+    sa_arg = t.translate(op.arg)
+    if op.base is None:
         return sa.func._ibis_sqlite_ln(sa_arg)
-    return sa.func._ibis_sqlite_log(sa_arg, t.translate(base))
+    return sa.func._ibis_sqlite_log(sa_arg, t.translate(op.base))
 
 
-def _repeat(t, expr):
-    arg, times = map(t.translate, expr.op().args)
+def _repeat(t, op):
+    arg = t.translate(op.arg)
+    times = t.translate(op.times)
     f = sa.func
     return f.replace(
         f.substr(f.quote(f.zeroblob((times + 1) / 2)), 3, times), '0', arg
@@ -190,17 +179,17 @@ def _generic_pad(arg, length, pad):
     )
 
 
-def _lpad(t, expr):
-    arg, length, pad = map(t.translate, expr.op().args)
+def _lpad(t, op):
+    arg, length, pad = map(t.translate, op.args)
     return _generic_pad(arg, length, pad) + arg
 
 
-def _rpad(t, expr):
-    arg, length, pad = map(t.translate, expr.op().args)
+def _rpad(t, op):
+    arg, length, pad = map(t.translate, op.args)
     return arg + _generic_pad(arg, length, pad)
 
 
-def _extract_week_of_year(t, expr):
+def _extract_week_of_year(t, op):
     """ISO week of year.
 
     This solution is based on https://stackoverflow.com/a/15511864 and handle
@@ -242,38 +231,41 @@ def _extract_week_of_year(t, expr):
     Here the ISO week of year is `1` since the day occurs in a week with more
     days in the week occuring in the _next_ week's year.
     """
-    arg = t.translate(expr.op().arg)
-    return (
-        sa.func.strftime("%j", sa.func.date(arg, "-3 days", "weekday 4")) - 1
-    ) / 7 + 1
+    date = sa.func.date(t.translate(op.arg), "-3 days", "weekday 4")
+    return (sa.func.strftime("%j", date) - 1) / 7 + 1
 
 
-def _string_join(t, expr):
-    sep, elements = expr.op().args
+def _string_join(t, op):
+    # TODO(kszucs): use explicit argument names instead
+    sep, elements = op.args
     return functools.reduce(
         operator.add,
-        toolz.interpose(t.translate(sep), map(t.translate, elements)),
+        toolz.interpose(t.translate(sep), map(t.translate, elements.values)),
     )
 
 
-def _string_concat(t, expr):
+def _string_concat(t, op):
     # yes, `arg`. for variadic functions `arg` is the list of arguments.
     #
     # `args` is always the list of values of the fields declared in the
     # operation
-    args = expr.op().arg
-    return functools.reduce(operator.add, map(t.translate, args))
+    return functools.reduce(operator.add, map(t.translate, op.arg.values))
 
 
-def _date_from_ymd(t, expr):
-    y, m, d = map(t.translate, expr.op().args)
-    ymdstr = sa.func.printf('%04d-%02d-%02d', y, m, d)
+def _date_from_ymd(t, op):
+
+    ymdstr = sa.func.printf(
+        '%04d-%02d-%02d',
+        t.translate(op.year),
+        t.translate(op.month),
+        t.translate(op.day),
+    )
     return sa.func.date(ymdstr)
 
 
-def _timestamp_from_ymdhms(t, expr):
+def _timestamp_from_ymdhms(t, op):
     y, mo, d, h, m, s, *rest = (
-        t.translate(x) if x is not None else None for x in expr.op().args
+        t.translate(x) if x is not None else None for x in op.args
     )
     tz = rest[0] if rest else ''
     timestr = sa.func.printf(
@@ -282,9 +274,14 @@ def _timestamp_from_ymdhms(t, expr):
     return sa.func.datetime(timestr)
 
 
-def _time_from_hms(t, expr):
-    h, m, s = map(t.translate, expr.op().args)
-    timestr = sa.func.printf('%02d:%02d:%02d', h, m, s)
+def _time_from_hms(t, op):
+
+    timestr = sa.func.printf(
+        '%02d:%02d:%02d',
+        t.translate(op.hours),
+        t.translate(op.minutes),
+        t.translate(op.seconds),
+    )
     return sa.func.time(timestr)
 
 

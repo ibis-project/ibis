@@ -53,7 +53,7 @@ def test_timestamp_functions(case_func, expected_func):
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert execute(result) == expected
+    assert execute(result.op()) == expected
 
 
 @pytest.mark.parametrize(

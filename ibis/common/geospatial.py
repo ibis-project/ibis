@@ -1,8 +1,9 @@
 from typing import Iterable, List, TypeVar
 
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 from ibis.common import exceptions as ex
+
+# TODO(kszucs): move this module to the base sql backend
 
 NumberType = TypeVar('NumberType', int, float)
 # Geometry primitives (2D)
@@ -126,23 +127,23 @@ def translate_multipolygon(value: List) -> str:
     return f"MULTIPOLYGON ({_format_multipolygon_value(value)})"
 
 
-def translate_literal(expr, inline_metadata: bool = False) -> str:
-    op = expr.op()
+def translate_literal(op, inline_metadata: bool = False) -> str:
     value = op.value
+    dtype = op.output_dtype
 
     if isinstance(value, dt._WellKnownText):
         result = value.text
-    elif isinstance(expr, ir.PointScalar):
+    elif isinstance(dtype, dt.Point):
         result = translate_point(value)
-    elif isinstance(expr, ir.LineStringScalar):
+    elif isinstance(dtype, dt.LineString):
         result = translate_linestring(value)
-    elif isinstance(expr, ir.PolygonScalar):
+    elif isinstance(dtype, dt.Polygon):
         result = translate_polygon(value)
-    elif isinstance(expr, ir.MultiLineStringScalar):
+    elif isinstance(dtype, dt.MultiLineString):
         result = translate_multilinestring(value)
-    elif isinstance(expr, ir.MultiPointScalar):
+    elif isinstance(dtype, dt.MultiPoint):
         result = translate_multipoint(value)
-    elif isinstance(expr, ir.MultiPolygonScalar):
+    elif isinstance(dtype, dt.MultiPolygon):
         result = translate_multipolygon(value)
     else:
         raise ex.UnboundExpressionError('Geo Spatial type not supported.')

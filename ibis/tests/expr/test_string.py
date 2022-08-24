@@ -52,8 +52,8 @@ def test_substr(table):
 
     start, length = op.args[1:]
 
-    assert start.equals(literal(2))
-    assert length.equals(literal(4))
+    assert start == literal(2).op()
+    assert length == literal(4).op()
 
 
 def test_left_right(table):
@@ -64,7 +64,7 @@ def test_left_right(table):
     result = table.g.right(5)
     op = result.op()
     assert isinstance(op, ops.StrRight)
-    assert op.args[1].equals(literal(5))
+    assert op.args[1] == literal(5).op()
 
 
 def test_length(table):

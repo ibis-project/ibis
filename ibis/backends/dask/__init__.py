@@ -93,7 +93,16 @@ class Backend(BasePandasBackend):
         For the dask backend returns a dask graph that you can run ``.compute``
         on to get a pandas object.
         """
-        return execute_and_reset(query, params=params, **kwargs)
+        node = query.op()
+
+        if params is None:
+            params = {}
+        else:
+            params = {
+                k.op() if hasattr(k, 'op') else k: v for k, v in params.items()
+            }
+
+        return execute_and_reset(node, params=params, **kwargs)
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:

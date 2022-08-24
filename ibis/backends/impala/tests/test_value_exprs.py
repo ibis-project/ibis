@@ -64,8 +64,8 @@ def test_column_ref_table_aliases():
 
     table2 = ibis.table([('key2', 'string'), ('value and2', 'double')])
 
-    context.set_ref(table1, 't0')
-    context.set_ref(table2, 't1')
+    context.set_ref(table1.op(), 't0')
+    context.set_ref(table2.op(), 't1')
 
     expr = table1['value1'] - table2['value and2']
 
@@ -317,11 +317,17 @@ def test_timestamp_deltas(table, unit, compiled_unit):
 
     add_expr = table.i + offset
     result = translate(add_expr)
-    assert result == f'date_add({f}, INTERVAL {K} {compiled_unit})'
+    assert (
+        result
+        == f'date_add(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
+    )
 
     sub_expr = table.i - offset
     result = translate(sub_expr)
-    assert result == f'date_sub({f}, INTERVAL {K} {compiled_unit})'
+    assert (
+        result
+        == f'date_sub(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
+    )
 
 
 @pytest.mark.parametrize(
@@ -412,12 +418,12 @@ def test_correlated_predicate_subquery(table):
     expr = t0.g == t1.g
 
     ctx = ImpalaCompiler.make_context()
-    ctx.make_alias(t0)
+    ctx.make_alias(t0.op())
 
     # Grab alias from parent context
     subctx = ctx.subcontext()
-    subctx.make_alias(t1)
-    subctx.make_alias(t0)
+    subctx.make_alias(t1.op())
+    subctx.make_alias(t0.op())
 
     result = translate(expr, context=subctx)
     expected = "t0.`g` = t1.`g`"
