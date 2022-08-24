@@ -1,5 +1,3 @@
-import operator
-
 import pandas as pd
 
 import ibis.expr.analysis as an
@@ -9,14 +7,12 @@ from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import constants
 
 
-def _compute_join_column(column_expr, **kwargs):
-    column_op = column_expr.op()
-
-    if isinstance(column_op, ops.TableColumn):
-        new_column = column_op.name
+def _compute_join_column(column, **kwargs):
+    if isinstance(column, ops.TableColumn):
+        new_column = column.name
     else:
-        new_column = execute(column_expr, **kwargs)
-    root_table, *_ = an.find_immediate_parent_tables(column_expr)
+        new_column = execute(column, **kwargs)
+    root_table, *_ = an.find_immediate_parent_tables(column)
     return new_column, root_table
 
 
@@ -83,12 +79,9 @@ def execute_left_anti_join(op, left, right, predicates, **kwargs):
 
 
 def _construct_join_predicate_columns(op, predicates, **kwargs):
-    left_op = op.left.op()
-    right_op = op.right.op()
+    on = {op.left: [], op.right: []}
 
-    on = {left_op: [], right_op: []}
-
-    for predicate in map(operator.methodcaller('op'), predicates):
+    for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
@@ -102,7 +95,7 @@ def _construct_join_predicate_columns(op, predicates, **kwargs):
             predicate.right, **kwargs
         )
         on[right_pred_root].append(new_right_column)
-    return on[left_op], on[right_op]
+    return on[op.left], on[op.right]
 
 
 @execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame, tuple)
@@ -159,13 +152,13 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
 def _extract_predicate_names(predicates):
     lefts = []
     rights = []
-    for predicate in map(operator.methodcaller('op'), predicates):
+    for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
             )
-        left_name = predicate.left.get_name()
-        right_name = predicate.right.get_name()
+        left_name = predicate.left.resolve_name()
+        right_name = predicate.right.resolve_name()
         lefts.append(left_name)
         rights.append(right_name)
     return lefts, rights

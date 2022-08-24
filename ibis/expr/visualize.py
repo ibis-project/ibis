@@ -9,29 +9,26 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 
-def get_type(expr):
+def get_type(node):
     try:
-        return str(expr.type())
+        return str(node.output_dtype)
     except (AttributeError, NotImplementedError):
         pass
 
     try:
-        schema = expr.schema()
+        schema = node.schema
     except (AttributeError, NotImplementedError):
         try:
             # As a last resort try get the name of the output_type class
-            return expr.op().output_type.__name__
+            return node.output_type.__name__
         except (AttributeError, NotImplementedError):
             return '\u2205'  # empty set character
     except com.IbisError:
-        op = expr.op()
-        assert isinstance(op, ops.Join)
-        left_table_name = getattr(op.left.op(), 'name', None) or ops.genname()
-        left_schema = op.left.schema()
-        right_table_name = (
-            getattr(op.right.op(), 'name', None) or ops.genname()
-        )
-        right_schema = op.right.schema()
+        assert isinstance(node, ops.Join)
+        left_table_name = getattr(node.left, 'name', None) or ops.genname()
+        left_schema = node.left.schema
+        right_table_name = getattr(node.right, 'name', None) or ops.genname()
+        right_schema = node.right.schema
         pairs = [
             (f'{left_table_name}.{left_column}', type)
             for left_column, type in left_schema.items()
@@ -52,11 +49,8 @@ def get_type(expr):
     )
 
 
-def get_label(expr, argname=None):
-    import ibis.expr.operations as ops
-
-    node = expr.op()
-    typename = get_type(expr)  # Already an escaped string
+def get_label(node, argname=None):
+    typename = get_type(node)  # Already an escaped string
     name = type(node).__name__
     nodename = getattr(node, 'name', argname)
     if nodename is not None:
@@ -77,8 +71,13 @@ def get_label(expr, argname=None):
 DEFAULT_NODE_ATTRS = {'shape': 'box', 'fontname': 'Deja Vu Sans Mono'}
 
 
-def to_graph(expr, node_attr=None, edge_attr=None):
-    stack = [(expr, expr._safe_name)]
+def to_graph(op, node_attr=None, edge_attr=None):
+    if isinstance(op, ir.Expr):
+        return to_graph(op.op())
+    elif not isinstance(op, ops.Node):
+        raise TypeError(op)
+
+    stack = [(op, op.resolve_name() if op.has_resolved_name() else None)]
     seen = set()
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS, edge_attr=edge_attr or {}
@@ -87,26 +86,22 @@ def to_graph(expr, node_attr=None, edge_attr=None):
     g.attr(rankdir='BT')
 
     while stack:
-        e, ename = stack.pop()
-        vkey = e._key, ename
+        op, name = stack.pop()
 
-        if vkey not in seen:
-            seen.add(vkey)
+        if op not in seen:
+            seen.add(op)
 
-            vlabel = get_label(e, argname=ename)
-            vhash = str(hash(vkey))
+            vlabel = get_label(op, argname=name)
+            vhash = str(hash(op))
             g.node(vhash, label=vlabel)
 
-            op = e.op()
             for name, arg in zip(op.argnames, op.args):
-                if isinstance(arg, ir.Expr):
-                    u = arg, name
-                    ukey = arg._key, name
-                    uhash = str(hash(ukey))
+                if isinstance(arg, ops.Node):
+                    uhash = str(hash(arg))
                     ulabel = get_label(arg, argname=name)
                     g.node(uhash, label=ulabel)
                     g.edge(uhash, vhash)
-                    stack.append(u)
+                    stack.append((arg, name))
     return g
 
 

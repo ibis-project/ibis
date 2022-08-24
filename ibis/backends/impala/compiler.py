@@ -29,9 +29,8 @@ rewrites = ImpalaExprTranslator.rewrites
 
 
 @rewrites(ops.FloorDivide)
-def _floor_divide(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
+def _floor_divide(op):
+    return ops.Floor(ops.Divide(op.left, op.right))
 
 
 class ImpalaCompiler(Compiler):

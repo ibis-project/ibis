@@ -8,9 +8,9 @@ if TYPE_CHECKING:
 
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import _Negatable
 
@@ -63,8 +63,8 @@ class Comparison(Binary):
         """
         if not rlz.comparable(left, right):
             raise TypeError(
-                'Arguments with datatype {} and {} are '
-                'not comparable'.format(left.type(), right.type())
+                f'Arguments with datatype {left.output_dtype} and '
+                f'{right.output_dtype} are not comparable'
             )
         super().__init__(left=left, right=right)
 
@@ -116,13 +116,13 @@ class Between(Value):
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
             raise TypeError(
-                f'Argument with datatype {arg.type()} and lower bound '
-                f'with datatype {lower_bound.type()} are not comparable'
+                f'Argument with datatype {arg.output_dtype} and lower bound '
+                f'with datatype {lower_bound.output_dtype} are not comparable'
             )
         if not rlz.comparable(arg, upper_bound):
             raise TypeError(
-                f'Argument with datatype {arg.type()} and upper bound '
-                f'with datatype {upper_bound.type()} are not comparable'
+                f'Argument with datatype {arg.output_dtype} and upper bound '
+                f'with datatype {upper_bound.output_dtype} are not comparable'
             )
         super().__init__(
             arg=arg, lower_bound=lower_bound, upper_bound=upper_bound
@@ -135,9 +135,9 @@ class Contains(Value):
     options = rlz.one_of(
         [
             rlz.value_list_of(rlz.any),
-            rlz.set_,
             rlz.column(rlz.any),
-            rlz.array_of(rlz.any),
+            rlz.array,
+            rlz.set_,
         ]
     )
 
@@ -257,8 +257,12 @@ class UnresolvedExistsSubquery(_UnresolvedSubquery):
     def negate(self) -> UnresolvedNotExistsSubquery:
         return UnresolvedNotExistsSubquery(*self.args)
 
-    def _resolve(self, table: ir.Table) -> ExistsSubquery:
-        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+    def _resolve(self, table) -> ExistsSubquery:
+        from ibis.expr.operations.relations import TableNode
+
+        assert isinstance(table, TableNode)
+
+        (foreign_table,) = (t for t in self.tables if not t == table)
         return ExistsSubquery(foreign_table, self.predicates).to_expr()
 
 
@@ -268,5 +272,9 @@ class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
         return UnresolvedExistsSubquery(*self.args)
 
     def _resolve(self, table: ir.Table) -> NotExistsSubquery:
-        (foreign_table,) = (t for t in self.tables if not t.equals(table))
+        from ibis.expr.operations.relations import TableNode
+
+        assert isinstance(table, TableNode)
+
+        (foreign_table,) = (t for t in self.tables if not t == table)
         return NotExistsSubquery(foreign_table, self.predicates).to_expr()

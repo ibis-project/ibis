@@ -190,7 +190,7 @@ class Backend(BaseSQLBackend):
                 timecontext,
             )
         return PySparkExprTranslator().translate(
-            expr,
+            expr.op(),
             scope=scope,
             timecontext=timecontext,
             session=self._session,

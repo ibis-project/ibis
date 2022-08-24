@@ -470,7 +470,7 @@ TBLPROPERTIES (
 def translate(expr, context=None, named=False):
     if context is None:
         context = ImpalaCompiler.make_context()
-    translator = ImpalaExprTranslator(expr, context=context, named=named)
+    translator = ImpalaExprTranslator(expr.op(), context=context, named=named)
     return translator.get_result()
 
 

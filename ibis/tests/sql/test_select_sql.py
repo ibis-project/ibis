@@ -1394,11 +1394,11 @@ def test_join_filtered_tables_no_pushdown():
     )
 
     joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
-    result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
+    result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b].op()
 
-    join_op = result.op().table.op()
-    assert join_op.left.equals(tbl_a_filter)
-    assert join_op.right.equals(tbl_b_filter)
+    join_op = result.table
+    assert join_op.left == tbl_a_filter.op()
+    assert join_op.right == tbl_b_filter.op()
 
     result_sql = Compiler.to_sql(result)
     expected_sql = """\

@@ -1,11 +1,12 @@
 import itertools
 
 import ibis
+import ibis.expr.operations as ops
 
 
 def _reduction_format(translator, func_name, where, arg, *args):
     if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
+        arg = ops.Where(where, arg, ibis.NA)
 
     return '{}({})'.format(
         func_name,
@@ -14,8 +15,7 @@ def _reduction_format(translator, func_name, where, arg, *args):
 
 
 def reduction(func_name):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         *args, where = op.args
         return _reduction_format(translator, func_name, where, *args)
 
@@ -28,18 +28,17 @@ def variance_like(func_name):
         'pop': f'{func_name}_pop',
     }
 
-    def formatter(translator, expr):
-        arg, how, where = expr.op().args
-        return _reduction_format(translator, func_names[how], where, arg)
+    def formatter(translator, op):
+        return _reduction_format(
+            translator, func_names[op.how], op.where, op.arg
+        )
 
     return formatter
 
 
-def count_distinct(translator, expr):
-    arg, where = expr.op().args
-
-    if where is not None:
-        arg_formatted = translator.translate(where.ifelse(arg, None))
+def count_distinct(translator, op):
+    if op.where is not None:
+        arg_formatted = translator.translate(ops.Where(op.where, op.arg, None))
     else:
-        arg_formatted = translator.translate(arg)
+        arg_formatted = translator.translate(op.arg)
     return f'count(DISTINCT {arg_formatted})'

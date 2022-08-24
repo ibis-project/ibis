@@ -69,7 +69,7 @@ def test_string_temporal_compare(con, op, left, right, type):
 def test_binary_infix_operators(con, alltypes, translate, op, expected):
     a, b = alltypes.int_col, alltypes.tinyint_col
     expr = op(a, b)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -99,13 +99,13 @@ def test_binary_infix_parenthesization(con, alltypes, translate, op, expected):
     c = alltypes.double_col
 
     expr = op(a, b, c)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
 def test_between(con, alltypes, translate):
     expr = alltypes.int_col.between(0, 10)
-    assert translate(expr) == '`int_col` BETWEEN 0 AND 10'
+    assert translate(expr.op()) == '`int_col` BETWEEN 0 AND 10'
     assert len(con.execute(expr))
 
 
@@ -148,11 +148,11 @@ def test_field_in_literals(con, alltypes, translate, container):
     expected = tuple(values)
 
     expr = alltypes.string_col.isin(foobar)
-    assert translate(expr) == f"`string_col` IN {expected}"
+    assert translate(expr.op()) == f"`string_col` IN {expected}"
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.notin(foobar)
-    assert translate(expr) == f"`string_col` NOT IN {expected}"
+    assert translate(expr.op()) == f"`string_col` NOT IN {expected}"
     assert len(con.execute(expr))
 
 
@@ -160,7 +160,7 @@ def test_field_in_literals(con, alltypes, translate, container):
 def test_negate(con, alltypes, translate, column):
     # clickhouse represent boolean as UInt8
     expr = -getattr(alltypes, column)
-    assert translate(expr) == f'-`{column}`'
+    assert translate(expr.op()) == f'-`{column}`'
     assert len(con.execute(expr))
 
 
@@ -233,7 +233,7 @@ def test_simple_case(con, alltypes, translate):
   WHEN 'baz' THEN 'qux'
   ELSE 'default'
 END"""
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -252,7 +252,7 @@ def test_search_case(con, alltypes, translate):
   WHEN `float_col` < 0 THEN `int_col`
   ELSE 0
 END"""
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
