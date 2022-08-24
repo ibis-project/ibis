@@ -79,7 +79,7 @@ def make_selected_obj(gs: SeriesGroupBy) -> Union[dd.DataFrame, dd.Series]:
 
 
 def coerce_to_output(
-    result: Any, expr: ir.Expr, index: Optional[pd.Index] = None
+    result: Any, node: ops.Node, index: Optional[pd.Index] = None
 ) -> Union[dd.Series, dd.DataFrame]:
     """Cast the result to either a Series of DataFrame, renaming as needed.
 
@@ -90,8 +90,8 @@ def coerce_to_output(
     ----------
     result: Any
         The result to cast
-    expr: ibis.expr.types.Expr
-        The expression associated with the result
+    node: ibis.expr.operations.Node
+        The operation node associated with the result
     index: pd.Index
         Optional. If passed, scalar results will be broadcasted according
         to the index.
@@ -125,10 +125,10 @@ def coerce_to_output(
     0    [1, 2, 3]
     Name: result, dtype: object
     """
-    result_name = expr.get_name()
+    result_name = node.resolve_name()
 
     if isinstance(result, (pd.DataFrame, dd.DataFrame)):
-        result = result.map_partitions(pd.DataFrame.to_dict, orient='records')
+        result = result.apply(dict, axis=1)
         return result.rename(result_name)
 
     if isinstance(result, (pd.Series, dd.Series)):
@@ -151,7 +151,7 @@ def coerce_to_output(
         return series
 
     return dd.from_pandas(
-        pd_util.coerce_to_output(result, expr, index), npartitions=1
+        pd_util.coerce_to_output(result, node, index), npartitions=1
     )
 
 
@@ -220,20 +220,19 @@ def compute_sort_key(
     string or an expression. If ``by.get_name()`` raises an exception, we must
     ``execute`` the expression and sort by the new derived column.
     """
-    by = key.to_expr()
     name = ibis.util.guid()
     try:
-        if isinstance(by, str):
-            return name, data[by]
-        return name, data[by.get_name()]
+        if isinstance(key, str):
+            return name, data[key]
+        return name, data[key.resolve_name()]
     except com.ExpressionError:
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
             Scope({t: data}, timecontext)
-            for t in an.find_immediate_parent_tables(by)
+            for t in an.find_immediate_parent_tables(key)
         )
-        new_column = execute(by, scope=scope, **kwargs)
+        new_column = execute(key, scope=scope, **kwargs)
         new_column.name = name
         return name, new_column
 
@@ -245,7 +244,7 @@ def compute_sorted_frame(
     **kwargs,
 ) -> dd.DataFrame:
     sort_col_name, temporary_column = compute_sort_key(
-        order_by.op(), df, timecontext, **kwargs
+        order_by, df, timecontext, **kwargs
     )
     result = df.assign(**{sort_col_name: temporary_column})
     result = result.set_index(sort_col_name).reset_index(drop=True)
@@ -362,7 +361,7 @@ def add_partitioned_sorted_column(
     return df
 
 
-def is_row_order_preserving(exprs) -> bool:
+def is_row_order_preserving(nodes) -> bool:
     """Detects if the operation preserves row ordering.
 
     Certain operations we know will not affect the ordering of rows in the
@@ -371,10 +370,10 @@ def is_row_order_preserving(exprs) -> bool:
     into the parent dataframe.
     """
 
-    def _is_row_order_preserving(expr: ir.Expr):
-        if isinstance(expr.op(), (ops.Reduction, ops.Window)):
+    def _is_row_order_preserving(node: ops.Node):
+        if isinstance(node, (ops.Reduction, ops.Window)):
             return (lin.halt, False)
         else:
             return (lin.proceed, True)
 
-    return lin.traverse(_is_row_order_preserving, exprs)
+    return lin.traverse(_is_row_order_preserving, nodes)

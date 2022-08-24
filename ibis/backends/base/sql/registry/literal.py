@@ -1,6 +1,7 @@
 import datetime
 import math
 
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 
@@ -15,26 +16,22 @@ def _set_literal_format(translator, expr):
     return '(' + ', '.join(formatted) + ')'
 
 
-def _boolean_literal_format(translator, expr):
-    value = expr.op().value
-    return 'TRUE' if value else 'FALSE'
+def _boolean_literal_format(translator, op):
+    return 'TRUE' if op.value else 'FALSE'
 
 
-def _string_literal_format(translator, expr):
-    value = expr.op().value
-    return "'{}'".format(value.replace("'", "\\'"))
+def _string_literal_format(translator, op):
+    return "'{}'".format(op.value.replace("'", "\\'"))
 
 
-def _number_literal_format(translator, expr):
-    value = expr.op().value
-
-    if math.isfinite(value):
-        formatted = repr(value)
+def _number_literal_format(translator, op):
+    if math.isfinite(op.value):
+        formatted = repr(op.value)
     else:
-        if math.isnan(value):
+        if math.isnan(op.value):
             formatted_val = 'NaN'
-        elif math.isinf(value):
-            if value > 0:
+        elif math.isinf(op.value):
+            if op.value > 0:
                 formatted_val = 'Infinity'
             else:
                 formatted_val = '-Infinity'
@@ -43,22 +40,22 @@ def _number_literal_format(translator, expr):
     return formatted
 
 
-def _interval_literal_format(translator, expr):
+def _interval_literal_format(translator, op):
     return 'INTERVAL {} {}'.format(
-        expr.op().value, expr.type().resolution.upper()
+        op.value, op.output_dtype.resolution.upper()
     )
 
 
-def _date_literal_format(translator, expr):
-    value = expr.op().value
+def _date_literal_format(translator, op):
+    value = op.value
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
 
     return repr(value)
 
 
-def _timestamp_literal_format(translator, expr):
-    value = expr.op().value
+def _timestamp_literal_format(translator, op):
+    value = op.value
     if isinstance(value, datetime.datetime):
         value = value.isoformat()
 
@@ -76,26 +73,29 @@ literal_formatters = {
 }
 
 
-def literal(translator, expr):
+def literal(translator, op):
     """Return the expression as its literal value."""
-    if isinstance(expr, ir.BooleanValue):
+
+    dtype = op.output_dtype
+
+    if isinstance(dtype, dt.Boolean):
         typeclass = 'boolean'
-    elif isinstance(expr, ir.StringValue):
+    elif isinstance(dtype, dt.String):
         typeclass = 'string'
-    elif isinstance(expr, ir.NumericValue):
-        typeclass = 'number'
-    elif isinstance(expr, ir.DateValue):
+    elif isinstance(dtype, dt.Date):
         typeclass = 'date'
-    elif isinstance(expr, ir.TimestampValue):
+    elif isinstance(dtype, (dt.Integer, dt.Floating, dt.Decimal)):
+        typeclass = 'number'
+    elif isinstance(dtype, dt.Timestamp):
         typeclass = 'timestamp'
-    elif isinstance(expr, ir.IntervalValue):
+    elif isinstance(dtype, dt.Interval):
         typeclass = 'interval'
-    elif isinstance(expr, ir.SetValue):
+    elif isinstance(dtype, dt.Set):
         typeclass = 'set'
     else:
         raise NotImplementedError
 
-    return literal_formatters[typeclass](translator, expr)
+    return literal_formatters[typeclass](translator, op)
 
 
 def null_literal(translator, expr):

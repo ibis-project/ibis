@@ -71,7 +71,7 @@ def test_view_new_relation(table):
     # meaning when it comes to execution
     tview = table.view()
 
-    roots = L.find_immediate_parent_tables(tview)
+    roots = L.find_immediate_parent_tables(tview.op())
     assert len(roots) == 1
     assert roots[0] is tview.op()
 
@@ -341,24 +341,24 @@ def test_sort_by(table):
     #
     # Default is ascending for anything coercable to an expression,
     # and we'll have ascending/descending wrappers to help.
-    result = table.sort_by(['f'])
+    result = table.sort_by(['f']).op()
 
-    sort_key = result.op().sort_keys[0].op()
+    sort_key = result.sort_keys[0]
 
-    assert_equal(sort_key.expr, table.f)
+    assert_equal(sort_key.expr, table.f.op())
     assert sort_key.ascending
 
     # non-list input. per #150
-    result2 = table.sort_by('f')
+    result2 = table.sort_by('f').op()
     assert_equal(result, result2)
 
     result2 = table.sort_by([('f', False)])
     result3 = table.sort_by([('f', 'descending')])
     result4 = table.sort_by([('f', 0)])
 
-    key2 = result2.op().sort_keys[0].op()
-    key3 = result3.op().sort_keys[0].op()
-    key4 = result4.op().sort_keys[0].op()
+    key2 = result2.op().sort_keys[0]
+    key3 = result3.op().sort_keys[0]
+    key4 = result4.op().sort_keys[0]
 
     assert not key2.ascending
     assert not key3.ascending
@@ -416,7 +416,7 @@ def test_table_count(table):
     result = table.count()
     assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), ops.Count)
+    assert isinstance(result.op().arg, ops.Count)
     assert result.get_name() == 'count'
 
 
@@ -430,7 +430,7 @@ def test_sum_expr_basics(table, int_col):
     result = table[int_col].sum()
     assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), ops.Sum)
+    assert isinstance(result.op().arg, ops.Sum)
     assert result.get_name() == "sum"
 
 
@@ -439,7 +439,7 @@ def test_sum_expr_basics_floats(table, float_col):
     result = table[float_col].sum()
     assert isinstance(result, ir.FloatingScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), ops.Sum)
+    assert isinstance(result.op().arg, ops.Sum)
     assert result.get_name() == "sum"
 
 
@@ -447,7 +447,7 @@ def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
     assert isinstance(result, ir.FloatingScalar)
     assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg.op(), ops.Mean)
+    assert isinstance(result.op().arg, ops.Mean)
     assert result.get_name() == "mean"
 
 
@@ -619,7 +619,7 @@ def test_group_by_kwargs(table):
 def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table['a'].sum() / table['a'].mean()).name('foo')
-    assert L.is_reduction(compound_expr)
+    assert L.is_reduction(compound_expr.op())
 
     # Validates internally
     table.aggregate([compound_expr])
@@ -735,8 +735,8 @@ def test_asof_join():
         "time_y",
         "value2",
     ]
-    pred = joined.op().table.op().predicates[0].op()
-    assert pred.left.op().name == pred.right.op().name == 'time'
+    pred = joined.op().table.predicates[0]
+    assert pred.left.name == pred.right.name == 'time'
 
 
 def test_asof_join_with_by():
@@ -755,8 +755,8 @@ def test_asof_join_with_by():
         "key_y",
         "value2",
     ]
-    by = joined.op().table.op().by[0].op()
-    assert by.left.op().name == by.right.op().name == 'key'
+    by = joined.op().table.by[0]
+    assert by.left.name == by.right.name == 'key'
 
 
 @pytest.mark.parametrize(
@@ -785,14 +785,16 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
         [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
     )
 
-    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval)
-    tolerance = joined.op().table.op().tolerance
-    assert_equal(tolerance, ibis_interval)
+    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval).op()
+    tolerance = joined.table.tolerance
+    assert_equal(tolerance, ibis_interval.op())
 
-    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval)
-    tolerance = joined.op().table.op().tolerance
-    assert isinstance(tolerance, ir.IntervalScalar)
-    assert isinstance(tolerance.op(), ops.Literal)
+    joined = api.asof_join(
+        left, right, 'time', tolerance=timedelta_interval
+    ).op()
+    tolerance = joined.table.tolerance
+    assert isinstance(tolerance.to_expr(), ir.IntervalScalar)
+    assert isinstance(tolerance, ops.Literal)
 
 
 def test_equijoin_schema_merge():
@@ -1203,7 +1205,7 @@ def test_resolve_existence_predicate(
     op = expr.op()
     assert isinstance(op, ops.Selection)
 
-    pred = op.predicates[0]
+    pred = op.predicates[0].to_expr()
     assert isinstance(pred.op(), expected_type)
     assert isinstance((-pred).op(), expected_negated_type)
 
@@ -1403,15 +1405,17 @@ def test_mutate_chain():
     a, b = three.op().selections
 
     # we can't fuse these correctly yet
-    assert isinstance(a.op(), ops.Alias)
-    assert isinstance(a.op().arg.op(), ops.IfNull)
-    assert isinstance(b.op(), ops.TableColumn)
+    assert isinstance(a, ops.Alias)
+    assert isinstance(a.arg, ops.IfNull)
+    assert isinstance(b, ops.TableColumn)
 
-    expr = b.op().table.op().selections[1]
-    assert isinstance(expr.op(), ops.Alias)
-    assert isinstance(expr.op().arg.op(), ops.IfNull)
+    expr = b.table.selections[1]
+    assert isinstance(expr, ops.Alias)
+    assert isinstance(expr.arg, ops.IfNull)
 
 
+# TODO(kszucs): move this test case to ibis/tests/sql since it requires the
+# sql backend to be executed
 def test_multiple_dbcon():
     """
     Expr from multiple connections to same DB should be compatible.

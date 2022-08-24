@@ -95,12 +95,8 @@ class Schema(Annotable, Comparable):
     def __getitem__(self, name: str) -> dt.DataType:
         return self.types[self._name_locs[name]]
 
-    def __equals__(self, other: Schema) -> bool:
-        return (
-            self._hash == other._hash
-            and self.names == other.names
-            and self.types == other.types
-        )
+    def __equals__(self, other):
+        return self.args == other.args
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.

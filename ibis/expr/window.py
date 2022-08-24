@@ -9,14 +9,15 @@ import numpy as np
 import pandas as pd
 import toolz
 
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.util as util
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Comparable
-from ibis.expr import types as ir
-from ibis.util import is_iterable, promote_list
 
 
 def _sequence_to_tuple(x):
-    return tuple(x) if is_iterable(x) else x
+    return tuple(x) if util.is_iterable(x) else x
 
 
 class RowsWithMaxLookback(NamedTuple):
@@ -109,16 +110,23 @@ class Window(Comparable):
 
         self._group_by = tuple(
             toolz.unique(
-                promote_list([] if group_by is None else group_by),
+                (
+                    arg.op() if isinstance(arg, ir.Expr) else arg
+                    for arg in util.promote_list(group_by)
+                ),
                 key=lambda value: getattr(value, "_key", value),
             )
         )
 
         _order_by = []
-        for expr in promote_list([] if order_by is None else order_by):
+        for expr in util.promote_list(order_by):
+            try:
+                arg = expr.op()
+            except AttributeError:
+                arg = expr
             if isinstance(expr, ir.Expr) and not isinstance(expr, ir.SortExpr):
-                expr = ops.SortKey(expr).to_expr()
-            _order_by.append(expr)
+                arg = ops.SortKey(arg)
+            _order_by.append(arg)
 
         self._order_by = tuple(
             toolz.unique(
@@ -144,8 +152,8 @@ class Window(Comparable):
     def _hash(self) -> int:
         return hash(
             (
-                *(gb.op() for gb in self._group_by),
-                *(ob.op() for ob in self._order_by),
+                *self._group_by,
+                *self._order_by,
                 (
                     self.preceding.op()
                     if isinstance(self.preceding, ir.Expr)
@@ -252,9 +260,17 @@ class Window(Comparable):
 
         import ibis.expr.operations as ops
 
-        groups = [table._ensure_expr(expr) for expr in self._group_by]
+        groups = [
+            table._ensure_expr(
+                arg.to_expr() if isinstance(arg, ops.Node) else arg
+            ).op()
+            for arg in self._group_by
+        ]
         sorts = [
-            ops.sortkeys._to_sort_key(k, table=table) for k in self._order_by
+            ops.sortkeys._to_sort_key(
+                k.to_expr() if isinstance(k, ops.Node) else k, table=table
+            ).op()
+            for k in self._order_by
         ]
         return self._replace(group_by=groups, order_by=sorts)
 
@@ -275,7 +291,7 @@ class Window(Comparable):
         )
 
     def group_by(self, expr):
-        new_groups = self._group_by + tuple(promote_list(expr))
+        new_groups = self._group_by + tuple(util.promote_list(expr))
         return self._replace(group_by=new_groups)
 
     def _replace(self, **kwds):
@@ -290,7 +306,7 @@ class Window(Comparable):
         return Window(**new_kwds)
 
     def order_by(self, expr):
-        new_sorts = self._order_by + tuple(promote_list(expr))
+        new_sorts = self._order_by + tuple(util.promote_list(expr))
         return self._replace(order_by=new_sorts)
 
     def __equals__(self, other):
@@ -489,18 +505,17 @@ def trailing_range_window(preceding, order_by, group_by=None) -> Window:
     )
 
 
-def propagate_down_window(expr: ir.Value, window: Window):
+# TODO(kszucs): use ibis.expr.analysis.substitute instead
+def propagate_down_window(node: ops.Node, window: Window):
     import ibis.expr.operations as ops
-
-    op = expr.op()
 
     clean_args = []
     unchanged = True
-    for arg in op.args:
-        if isinstance(arg, ir.Expr) and not isinstance(op, ops.Window):
+    for arg in node.args:
+        if isinstance(arg, ops.Value) and not isinstance(node, ops.Window):
             new_arg = propagate_down_window(arg, window)
-            if isinstance(new_arg.op(), ops.Analytic):
-                new_arg = ops.Window(new_arg, window).to_expr()
+            if isinstance(new_arg, ops.Analytic):
+                new_arg = ops.Window(new_arg, window)
             if arg is not new_arg:
                 unchanged = False
             arg = new_arg
@@ -508,6 +523,6 @@ def propagate_down_window(expr: ir.Value, window: Window):
         clean_args.append(arg)
 
     if unchanged:
-        return expr
+        return node
     else:
-        return type(op)(*clean_args).to_expr()
+        return type(node)(*clean_args)

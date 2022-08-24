@@ -22,7 +22,7 @@ class MapValueForKey(Value):
 
     @immutable_property
     def output_dtype(self):
-        return self.arg.type().value_type
+        return self.arg.output_dtype.value_type
 
 
 @public
@@ -35,8 +35,8 @@ class MapValueOrDefaultForKey(Value):
 
     @property
     def output_dtype(self):
-        value_type = self.arg.type().value_type
-        default_type = self.default.type()
+        value_type = self.arg.output_dtype.value_type
+        default_type = self.default.output_dtype
 
         if not dt.same_kind(default_type, value_type):
             raise com.IbisTypeError(
@@ -53,7 +53,7 @@ class MapKeys(Unary):
 
     @immutable_property
     def output_dtype(self):
-        return dt.Array(self.arg.type().key_type)
+        return dt.Array(self.arg.output_dtype.key_type)
 
 
 @public
@@ -62,7 +62,7 @@ class MapValues(Unary):
 
     @immutable_property
     def output_dtype(self):
-        return dt.Array(self.arg.type().value_type)
+        return dt.Array(self.arg.output_dtype.value_type)
 
 
 @public

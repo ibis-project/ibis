@@ -14,7 +14,8 @@ class ArrayColumn(Value):
     output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, cols):
-        if len({col.type() for col in cols}) > 1:
+        unique_dtypes = {col.output_dtype for col in cols.values}
+        if len(unique_dtypes) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
                 f'{type(self).__name__} operation.'
@@ -23,7 +24,7 @@ class ArrayColumn(Value):
 
     @immutable_property
     def output_dtype(self):
-        first_dtype = self.cols[0].type()
+        first_dtype = self.cols.values[0].output_dtype
         return dt.Array(first_dtype)
 
 
@@ -54,7 +55,7 @@ class ArrayIndex(Value):
 
     @immutable_property
     def output_dtype(self):
-        return self.arg.type().value_type
+        return self.arg.output_dtype.value_type
 
 
 @public
@@ -66,12 +67,11 @@ class ArrayConcat(Value):
     output_shape = rlz.shape_like("args")
 
     def __init__(self, left, right):
-        left_dtype, right_dtype = left.type(), right.type()
-        if left_dtype != right_dtype:
+        if left.output_dtype != right.output_dtype:
             raise com.IbisTypeError(
                 'Array types must match exactly in a {} operation. '
                 'Left type {} != Right type {}'.format(
-                    type(self).__name__, left_dtype, right_dtype
+                    type(self).__name__, left.output_dtype, right.output_dtype
                 )
             )
         super().__init__(left=left, right=right)
@@ -92,6 +92,6 @@ class Unnest(Value):
 
     @immutable_property
     def output_dtype(self):
-        return self.arg.type().value_type
+        return self.arg.output_dtype.value_type
 
     output_shape = rlz.Shape.COLUMNAR

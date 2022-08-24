@@ -887,9 +887,9 @@ def test_no_cross_join(person, visited, survey):
     context = AlchemyContext(compiler=AlchemyCompiler)
     _ = AlchemyCompiler.to_sql(expr, context)
 
-    t0 = context.get_ref(person)
-    t1 = context.get_ref(survey)
-    t2 = context.get_ref(visited)
+    t0 = context.get_ref(person.op())
+    t1 = context.get_ref(survey.op())
+    t2 = context.get_ref(visited.op())
 
     from_ = t0.join(t1, t0.c.id == t1.c.person).join(t2, t2.c.id == t1.c.taken)
     ex = sa.select(
