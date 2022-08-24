@@ -12,7 +12,6 @@ from toolz import concatv
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
@@ -23,103 +22,122 @@ from ibis.backends.dask.execution.util import (
 )
 from ibis.backends.pandas.execution.selection import (
     build_df_from_selection,
-    compute_projection,
-    compute_projection_table_expr,
     map_new_column_names_to_data,
     remap_overlapping_column_names,
 )
 from ibis.backends.pandas.execution.util import get_join_suffix_for_op
+from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
 
-@compute_projection.register(ir.Scalar, ops.Selection, dd.DataFrame)
-def compute_projection_scalar_expr(
-    expr,
+# TODO(kszucs): deduplicate with pandas.compute_projection() since it is almost
+# an exact copy of that function
+def compute_projection(
+    node,
     parent,
     data,
-    scope: Scope,
+    scope: Scope = None,
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    name = expr.get_name()
-    assert name is not None, 'Scalar selection name is None'
+    """
+    Compute a projection.
 
-    parent_table_op = parent.table.op()
+    Parameters
+    ----------
+    node : Union[ops.Scalar, ops.Column, ops.TableNode]
+    parent : ops.Selection
+    data : pd.DataFrame
+    scope : Scope
+    timecontext:Optional[TimeContext]
 
-    data_columns = frozenset(data.columns)
-    scope = scope.merge_scopes(
-        Scope(
-            {
-                t: map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
-                )
-            },
-            timecontext,
+    Returns
+    -------
+    value : scalar, pd.Series, pd.DataFrame
+
+    Notes
+    -----
+    :class:`~ibis.expr.types.Scalar` instances occur when a specific column
+    projection is a window operation.
+    """
+    if isinstance(node, ops.TableNode):
+        if node == parent.table:
+            return data
+
+        assert isinstance(parent.table, ops.Join)
+        assert node == parent.table.left or node == parent.table.right
+
+        mapping = remap_overlapping_column_names(
+            parent.table,
+            root_table=node,
+            data_columns=frozenset(data.columns),
         )
-        for t in an.find_immediate_parent_tables(expr)
-    )
-    scalar = execute(expr, scope=scope, **kwargs)
-    return data.assign(**{name: scalar})[name]
+        return map_new_column_names_to_data(mapping, data)
+    elif isinstance(node, ops.Value):
+        name = node.resolve_name()
+        assert name is not None, 'Value selection name is None'
 
+        if node.output_shape is Shape.SCALAR:
+            data_columns = frozenset(data.columns)
 
-@compute_projection.register(ir.Column, ops.Selection, dd.DataFrame)
-def compute_projection_column_expr(
-    expr,
-    parent,
-    data,
-    scope: Scope,
-    timecontext: Optional[TimeContext],
-    **kwargs,
-):
-    result_name = expr._safe_name
-    op = expr.op()
-    parent_table_op = parent.table.op()
+            if scope is None:
+                scope = Scope()
 
-    if isinstance(op, ops.TableColumn):
-        # slightly faster path for simple column selection
-        name = op.name
-
-        if name in data:
-            return data[name].rename(result_name or name)
-
-        if not isinstance(parent_table_op, ops.Join):
-            raise KeyError(name)
-        suffix = get_join_suffix_for_op(op, parent_table_op)
-        return data.loc[:, name + suffix].rename(result_name or name)
-
-    data_columns = frozenset(data.columns)
-
-    scope = scope.merge_scopes(
-        Scope(
-            {
-                t: map_new_column_names_to_data(
-                    remap_overlapping_column_names(
-                        parent_table_op, t, data_columns
-                    ),
-                    data,
+            scope = scope.merge_scopes(
+                Scope(
+                    {
+                        t: map_new_column_names_to_data(
+                            remap_overlapping_column_names(
+                                parent.table, t, data_columns
+                            ),
+                            data,
+                        )
+                    },
+                    timecontext,
                 )
-            },
-            timecontext,
-        )
-        for t in an.find_immediate_parent_tables(expr)
-    )
+                for t in an.find_immediate_parent_tables(node)
+            )
+            scalar = execute(node, scope=scope, **kwargs)
+            return data.assign(**{name: scalar})[name]
+        else:
+            if isinstance(node, ops.TableColumn):
+                if name in data:
+                    return data[name].rename(name)
 
-    result = execute(expr, scope=scope, timecontext=timecontext, **kwargs)
-    result = coerce_to_output(result, expr, data.index)
-    return result
+                if not isinstance(parent.table, ops.Join):
+                    raise KeyError(name)
 
+                suffix = get_join_suffix_for_op(node, parent.table)
+                return data.loc[:, name + suffix].rename(name)
 
-compute_projection.register(ir.Table, ops.Selection, dd.DataFrame)(
-    compute_projection_table_expr
-)
+            data_columns = frozenset(data.columns)
+
+            scope = scope.merge_scopes(
+                Scope(
+                    {
+                        t: map_new_column_names_to_data(
+                            remap_overlapping_column_names(
+                                parent.table, t, data_columns
+                            ),
+                            data,
+                        )
+                    },
+                    timecontext,
+                )
+                for t in an.find_immediate_parent_tables(node)
+            )
+
+            result = execute(
+                node, scope=scope, timecontext=timecontext, **kwargs
+            )
+            return coerce_to_output(result, node, data.index)
+    else:
+        raise TypeError(node)
 
 
 def build_df_from_projection(
-    selection_exprs: List[ir.Expr],
+    selections: List[ops.Node],
     op: ops.Selection,
     data: dd.DataFrame,
     **kwargs,
@@ -129,11 +147,11 @@ def build_df_from_projection(
     for each expression.
     """
     # Fast path for when we're assigning columns into the same table.
-    if (selection_exprs[0] is op.table) and all(
-        is_row_order_preserving(selection_exprs[1:])
+    if (selections[0] is op.table) and all(
+        is_row_order_preserving(selections[1:])
     ):
-        for expr in selection_exprs[1:]:
-            projection = compute_projection(expr, op, data, **kwargs)
+        for node in selections[1:]:
+            projection = compute_projection(node, op, data, **kwargs)
             if isinstance(projection, dd.Series):
                 data = data.assign(**{projection.name: projection})
             else:
@@ -147,8 +165,7 @@ def build_df_from_projection(
     # used in dd.concat to merge the pieces back together.
     data = add_partitioned_sorted_column(data)
     data_pieces = [
-        compute_projection(expr, op, data, **kwargs)
-        for expr in selection_exprs
+        compute_projection(node, op, data, **kwargs) for node in selections
     ]
 
     return dd.concat(data_pieces, axis=1).reset_index(drop=True)
@@ -169,7 +186,7 @@ def execute_selection_dataframe(
 
     if predicates:
         predicates = _compute_predicates(
-            op.table.op(), predicates, data, scope, timecontext, **kwargs
+            op.table, predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         result = result.loc[predicate]
@@ -177,8 +194,8 @@ def execute_selection_dataframe(
     if selections:
         # if we are just performing select operations we can do a direct
         # selection
-        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
-            result = build_df_from_selection(selections, result, op.table.op())
+        if all(isinstance(s, ops.TableColumn) for s in selections):
+            result = build_df_from_selection(selections, result, op.table)
         else:
             result = build_df_from_projection(
                 selections,
@@ -197,7 +214,7 @@ def execute_selection_dataframe(
                 """
             )
         sort_key = sort_keys[0]
-        ascending = getattr(sort_key.op(), 'ascending', True)
+        ascending = getattr(sort_key, 'ascending', True)
         if not ascending:
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"

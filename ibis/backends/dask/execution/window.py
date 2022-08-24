@@ -1,6 +1,5 @@
 """Code for computing window functions in the dask backend."""
 
-import operator
 from typing import Any, Optional, Union
 
 import dask.dataframe as dd
@@ -91,7 +90,7 @@ def execute_window_op(
         )
 
     result = execute_with_scope(
-        expr=op.expr,
+        op.expr,
         scope=scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
@@ -112,11 +111,10 @@ def execute_grouped_window_op(
     **kwargs,
 ):
     # extract the parent
-    root = an.find_first_base_table(op.to_expr())
-    root_expr = root.to_expr()
+    root = an.find_first_base_table(op)
 
     root_data = execute(
-        root_expr,
+        root,
         scope=scope,
         timecontext=timecontext,
         clients=clients,
@@ -125,9 +123,7 @@ def execute_grouped_window_op(
     )
 
     group_by = window._group_by
-    grouping_keys = [
-        key_op.name for key_op in map(operator.methodcaller('op'), group_by)
-    ]
+    grouping_keys = [key.name for key in group_by]
 
     grouped_root_data = root_data.groupby(grouping_keys)
     scope = scope.merge_scopes(
@@ -139,7 +135,7 @@ def execute_grouped_window_op(
     )
 
     result = execute_with_scope(
-        expr=op.expr,
+        op.expr,
         scope=scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
@@ -148,7 +144,7 @@ def execute_grouped_window_op(
     )
     # If the grouped operation we performed is not an analytic UDF we have to
     # realign the output to the input.
-    if not isinstance(op.expr._arg, ops.AnalyticVectorizedUDF):
+    if not isinstance(op.expr, ops.AnalyticVectorizedUDF):
         result = dd.merge(
             root_data[result.index.name].to_frame(),
             result.to_frame(),

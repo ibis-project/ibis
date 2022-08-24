@@ -32,8 +32,7 @@ from ibis.config import options
 if TYPE_CHECKING:
     import pandas as pd
 
-    from ibis.expr import operations as ops
-    from ibis.expr import types as ir
+    import ibis.expr.operations as ops
 
     Graph = Mapping[ops.Node, Sequence[ops.Node]]
 
@@ -139,8 +138,10 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
     """
     if isinstance(val, list):
         return val
-    elif isinstance(val, tuple):
+    elif is_iterable(val):
         return list(val)
+    elif val is None:
+        return []
     else:
         return [val]
 
@@ -310,13 +311,11 @@ def convert_unit(value, unit, to, floor=True):
     assert factor > 1
 
     if i < j:
-        return value * factor
-
-    assert i > j
-    if floor:
-        return value // factor
+        op = operator.mul
     else:
-        return value / factor
+        assert i > j
+        op = operator.floordiv if floor else operator.truediv
+    return op(value.to_expr(), factor).op()
 
 
 def get_logger(
@@ -436,7 +435,7 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
-def to_op_dag(expr: ir.Expr) -> Graph:
+def to_op_dag(node: ops.Node) -> Graph:
     """Convert `expr` into a directed acyclic graph.
 
     Parameters
@@ -449,12 +448,21 @@ def to_op_dag(expr: ir.Expr) -> Graph:
     Graph
         A directed acyclic graph of ibis operations
     """
-    stack = [expr.op()]
+    import ibis.expr.operations as ops
+
+    assert isinstance(node, ops.Node), type(node)
+
+    stack = [node]
     dag = {}
 
     while stack:
         if (node := stack.pop()) not in dag:
-            dag[node] = children = node._flat_ops
+            # TODO(kszucs): use a more generic approach without filtering out
+            # node instances
+            children = [
+                arg for arg in node.flat_args() if isinstance(arg, ops.Node)
+            ]
+            dag[node] = children
             stack.extend(children)
     return dag
 

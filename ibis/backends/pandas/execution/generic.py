@@ -119,7 +119,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
     arg = op.arg
-    from_type = arg.type()
+    from_type = arg.output_dtype
 
     if from_type.equals(type):  # noop cast
         return data
@@ -152,7 +152,7 @@ def _normalize(values, original_index, name, timezone=None):
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
 def execute_cast_series_date(op, data, type, **kwargs):
     arg = op.args[0]
-    from_type = arg.type()
+    from_type = arg.output_dtype
 
     if from_type.equals(type):
         return data
@@ -475,27 +475,24 @@ def execute_aggregation_dataframe(
     columns: Dict[str, str] = {}
 
     if op.by:
-        grouping_key_pairs = list(
-            zip(by, map(operator.methodcaller('op'), by))
-        )
         grouping_keys = [
-            by_op.name
-            if isinstance(by_op, ops.TableColumn)
+            key.name
+            if isinstance(key, ops.TableColumn)
             else execute(
-                by, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(by.get_name())
-            for by, by_op in grouping_key_pairs
+                key, scope=scope, timecontext=timecontext, **kwargs
+            ).rename(key.resolve_name())
+            for key in by
         ]
         columns.update(
-            (by_op.name, by.get_name())
-            for by, by_op in grouping_key_pairs
-            if hasattr(by_op, 'name')
+            (key.name, key.resolve_name())
+            for key in by
+            if hasattr(key, 'name')
         )
         source = data.groupby(grouping_keys)
     else:
         source = data
 
-    scope = scope.merge_scope(Scope({op.table.op(): source}, timecontext))
+    scope = scope.merge_scope(Scope({op.table: source}, timecontext))
 
     pieces = [
         coerce_to_output(
@@ -1148,7 +1145,7 @@ def execute_node_log_number_number(op, value, base, **kwargs):
 @execute_node.register(ops.DropNa, pd.DataFrame, tuple)
 def execute_node_dropna_dataframe(op, df, subset, **kwargs):
     if subset is not None:
-        subset = [col.get_name() for col in subset]
+        subset = [col.resolve_name() for col in subset]
     return df.dropna(how=op.how, subset=subset)
 
 
@@ -1310,7 +1307,7 @@ def execute_table_array_view(op, _, **kwargs):
 
 @execute_node.register(ops.ZeroIfNull, pd.Series)
 def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.type().to_pandas().type(0)
+    zero = op.arg.output_dtype.to_pandas().type(0)
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
@@ -1320,5 +1317,5 @@ def execute_zero_if_null_series(op, data, **kwargs):
 )
 def execute_zero_if_null_scalar(op, data, **kwargs):
     if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.type().to_pandas().type(0)
+        return op.arg.output_dtype.to_pandas().type(0)
     return data

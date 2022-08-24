@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import itertools
-import operator
 from typing import Callable, Iterable, Iterator
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import (
     operation_registry,
     quote_identifier,
@@ -34,9 +32,9 @@ class QueryContext:
         self.query = None
         self.params = params if params is not None else {}
 
-    def _compile_subquery(self, expr):
+    def _compile_subquery(self, op):
         sub_ctx = self.subcontext()
-        return self._to_sql(expr, sub_ctx)
+        return self._to_sql(op, sub_ctx)
 
     def _to_sql(self, expr, ctx):
         return self.compiler.to_sql(expr, ctx)
@@ -66,45 +64,39 @@ class QueryContext:
     def set_always_alias(self):
         self.always_alias = True
 
-    def get_compiled_expr(self, expr):
-        this = self.top_context
-
-        key = self._get_table_key(expr)
+    def get_compiled_expr(self, node):
         try:
-            return this.subquery_memo[key]
+            return self.top_context.subquery_memo[node]
         except KeyError:
             pass
 
-        op = expr.op()
-        if isinstance(op, (ops.SQLQueryResult, ops.SQLStringView)):
-            result = op.query
+        if isinstance(node, (ops.SQLQueryResult, ops.SQLStringView)):
+            result = node.query
         else:
-            result = self._compile_subquery(expr)
+            result = self._compile_subquery(node)
 
-        this.subquery_memo[key] = result
+        self.top_context.subquery_memo[node] = result
         return result
 
-    def make_alias(self, expr):
+    def make_alias(self, node):
         i = len(self.table_refs)
-
-        key = self._get_table_key(expr)
 
         # Get total number of aliases up and down the tree at this point; if we
         # find the table prior-aliased along the way, however, we reuse that
         # alias
         for ctx in itertools.islice(self._contexts(), 1, None):
             try:
-                alias = ctx.table_refs[key]
+                alias = ctx.table_refs[node]
             except KeyError:
                 pass
             else:
-                self.set_ref(expr, alias)
+                self.set_ref(node, alias)
                 return
 
             i += len(ctx.table_refs)
 
         alias = f't{i:d}'
-        self.set_ref(expr, alias)
+        self.set_ref(node, alias)
 
     def need_aliases(self, expr=None):
         return self.always_alias or len(self.table_refs) > 1
@@ -120,35 +112,30 @@ class QueryContext:
             ctx = ctx.parent
             yield ctx
 
-    def has_ref(self, expr, parent_contexts=False):
-        key = self._get_table_key(expr)
+    def has_ref(self, node, parent_contexts=False):
         return any(
-            key in ctx.table_refs
+            node in ctx.table_refs
             for ctx in self._contexts(parents=parent_contexts)
         )
 
-    def set_ref(self, expr, alias):
-        key = self._get_table_key(expr)
-        self.table_refs[key] = alias
+    def set_ref(self, node, alias):
+        self.table_refs[node] = alias
 
-    def get_ref(self, expr):
+    def get_ref(self, node):
         """Return the alias used to refer to an expression."""
-        key = self._get_table_key(expr)
-        top = self.top_context
+        assert isinstance(node, ops.Node)
 
-        if self.is_extracted(expr):
-            return top.table_refs.get(key)
+        if self.is_extracted(node):
+            return self.top_context.table_refs.get(node)
 
-        return self.table_refs.get(key)
+        return self.table_refs.get(node)
 
-    def is_extracted(self, expr):
-        key = self._get_table_key(expr)
-        return key in self.top_context.extracted_subexprs
+    def is_extracted(self, node):
+        return node in self.top_context.extracted_subexprs
 
-    def set_extracted(self, expr):
-        key = self._get_table_key(expr)
-        self.extracted_subexprs.add(key)
-        self.make_alias(expr)
+    def set_extracted(self, node):
+        self.extracted_subexprs.add(node)
+        self.make_alias(node)
 
     def subcontext(self):
         return self.__class__(
@@ -163,23 +150,16 @@ class QueryContext:
     def set_query(self, query):
         self.query = query
 
-    def is_foreign_expr(self, expr):
+    def is_foreign_expr(self, op):
         from ibis.expr.analysis import shares_all_roots
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
-        if self.has_ref(expr, parent_contexts=True):
+        if self.has_ref(op, parent_contexts=True):
             return False
 
         parents = [self.query.table_set] + self.query.select_set
-        return not shares_all_roots(expr, parents)
-
-    def _get_table_key(self, table):
-        if isinstance(table, ir.Table):
-            return table.op()
-        elif isinstance(table, ops.TableNode):
-            return table
-        raise TypeError(f"invalid table expression: {type(table)}")
+        return not shares_all_roots(op, parents)
 
 
 class ExprTranslator:
@@ -188,8 +168,8 @@ class ExprTranslator:
     _registry = operation_registry
     _rewrites: dict[ops.Node, Callable] = {}
 
-    def __init__(self, expr, context, named=False, permit_subquery=False):
-        self.expr = expr
+    def __init__(self, node, context, named=False, permit_subquery=False):
+        self.node = node
         self.permit_subquery = permit_subquery
 
         assert context is not None, 'context is None in {}'.format(
@@ -200,16 +180,15 @@ class ExprTranslator:
         # For now, governing whether the result will have a name
         self.named = named
 
-    def _needs_name(self, expr):
+    def _needs_name(self, op):
         if not self.named:
             return False
 
-        op = expr.op()
         if isinstance(op, ops.TableColumn):
             # This column has been given an explicitly different name
-            return expr.get_name() != op.name
+            return False
 
-        return expr.get_name() is not unnamed
+        return op.resolve_name() is not unnamed
 
     def name(self, translated, name, force=True):
         return '{} AS {}'.format(
@@ -218,10 +197,10 @@ class ExprTranslator:
 
     def get_result(self):
         """Compile SQL expression into a string."""
-        translated = self.translate(self.expr)
-        if self._needs_name(self.expr):
+        translated = self.translate(self.node)
+        if self._needs_name(self.node):
             # TODO: this could fail in various ways
-            name = self.expr.get_name()
+            name = self.node.resolve_name()
             translated = self.name(translated, name)
         return translated
 
@@ -237,38 +216,36 @@ class ExprTranslator:
         """
         cls._registry[operation] = translate_function
 
-    def translate(self, expr):
-        # The operation node type the typed expression wraps
-        op = expr.op()
+    def translate(self, op):
+        assert isinstance(op, ops.Node), type(op)
 
         if type(op) in self._rewrites:  # even if type(op) is in self._registry
-            expr = self._rewrites[type(op)](expr)
-            op = expr.op()
+            op = self._rewrites[type(op)](op)
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
         if isinstance(op, ops.ScalarParameter):
-            return self._trans_param(expr)
+            return self._trans_param(op)
         elif isinstance(op, ops.TableNode):
             # HACK/TODO: revisit for more complex cases
             return '*'
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
-            return formatter(self, expr)
+            return formatter(self, op)
         else:
             raise com.OperationNotDefinedError(
                 f'No translation rule for {type(op)}'
             )
 
-    def _trans_param(self, expr):
-        raw_value = self.context.params[expr.op()]
-        dtype = expr.type()
+    def _trans_param(self, op):
+        raw_value = self.context.params[op]
+        dtype = op.output_dtype
         if isinstance(dtype, dt.Struct):
             literal = ibis.struct(raw_value, type=dtype)
         elif isinstance(dtype, dt.Map):
             literal = ibis.map(raw_value, type=dtype)
         else:
             literal = ibis.literal(raw_value, type=dtype)
-        return self.translate(literal)
+        return self.translate(literal.op())
 
     @classmethod
     def rewrites(cls, klass):
@@ -282,27 +259,29 @@ class ExprTranslator:
 rewrites = ExprTranslator.rewrites
 
 
+# TODO(kszucs): use analysis.substitute() instead of a custom rewriter
 @rewrites(ops.Bucket)
-def _bucket(expr):
-    op = expr.op()
+def _bucket(op):
+    # TODO(kszucs): avoid the expression roundtrip
+    expr = op.arg.to_expr()
     stmt = ibis.case()
 
     if op.closed == 'left':
-        l_cmp = operator.le
-        r_cmp = operator.lt
+        l_cmp = ops.LessEqual
+        r_cmp = ops.Less
     else:
-        l_cmp = operator.lt
-        r_cmp = operator.le
+        l_cmp = ops.Less
+        r_cmp = ops.LessEqual
 
     user_num_buckets = len(op.buckets) - 1
 
     bucket_id = 0
     if op.include_under:
         if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else r_cmp
+            cmp = ops.Less if op.close_extreme else r_cmp
         else:
-            cmp = operator.le if op.closed == 'right' else operator.lt
-        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
+            cmp = ops.LessEqual if op.closed == 'right' else ops.Less
+        stmt = stmt.when(cmp(op.arg, op.buckets[0]).to_expr(), bucket_id)
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
@@ -310,34 +289,40 @@ def _bucket(expr):
             (op.closed == 'right' and j == 0)
             or (op.closed == 'left' and j == (user_num_buckets - 1))
         ):
-            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper), bucket_id)
+            stmt = stmt.when(
+                ops.And(
+                    ops.LessEqual(lower, op.arg), ops.LessEqual(op.arg, upper)
+                ).to_expr(),
+                bucket_id,
+            )
         else:
             stmt = stmt.when(
-                l_cmp(lower, op.arg) & r_cmp(op.arg, upper), bucket_id
+                ops.And(l_cmp(lower, op.arg), r_cmp(op.arg, upper)).to_expr(),
+                bucket_id,
             )
         bucket_id += 1
 
     if op.include_over:
         if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else l_cmp
+            cmp = ops.Less if op.close_extreme else l_cmp
         else:
-            cmp = operator.lt if op.closed == 'right' else operator.le
+            cmp = ops.Less if op.closed == 'right' else ops.LessEqual
 
-        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
+        stmt = stmt.when(cmp(op.buckets[-1], op.arg).to_expr(), bucket_id)
         bucket_id += 1
 
     result = stmt.end()
     if expr.has_name():
         result = result.name(expr.get_name())
 
-    return result
+    return result.op()
 
 
 @rewrites(ops.CategoryLabel)
-def _category_label(expr):
-    op = expr.op()
-
-    stmt = op.args[0].case()
+def _category_label(op):
+    # TODO(kszucs): avoid the expression roundtrip
+    expr = op.to_expr()
+    stmt = op.args[0].to_expr().case()
     for i, label in enumerate(op.labels):
         stmt = stmt.when(i, label)
 
@@ -348,42 +333,43 @@ def _category_label(expr):
     if expr.has_name():
         result = result.name(expr.get_name())
 
-    return result
+    return result.op()
 
 
 @rewrites(ops.Any)
-def _any_expand(expr):
-    arg = expr.op().args[0]
-    return arg.max()
+def _any_expand(op):
+    return ops.Max(op.arg)
 
 
 @rewrites(ops.NotAny)
-def _notany_expand(expr):
-    arg = expr.op().args[0]
-    return arg.max() == ibis.literal(0, type=arg.type())
+def _notany_expand(op):
+    return ops.Equals(
+        ops.Max(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
+    )
 
 
 @rewrites(ops.All)
-def _all_expand(expr):
-    arg = expr.op().args[0]
-    return arg.min()
+def _all_expand(op):
+    return ops.Min(op.arg)
 
 
 @rewrites(ops.NotAll)
-def _notall_expand(expr):
-    arg = expr.op().args[0]
-    return arg.min() == ibis.literal(0, type=arg.type())
+def _notall_expand(op):
+    return ops.Equals(
+        ops.Min(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
+    )
 
 
 @rewrites(ops.Cast)
-def _rewrite_cast(expr):
-    arg, to = expr.op().args
-    if isinstance(to, dt.Interval) and isinstance(arg.type(), dt.Integer):
-        return arg.to_interval(unit=to.unit)
-    return expr
+def _rewrite_cast(op):
+    # TODO(kszucs): avoid the expression roundtrip
+    if isinstance(op.to, dt.Interval) and isinstance(
+        op.arg.output_dtype, dt.Integer
+    ):
+        return op.arg.to_expr().to_interval(unit=op.to.unit).op()
+    return op
 
 
 @rewrites(ops.StringContains)
-def _rewrite_string_contains(expr):
-    op = expr.op()
-    return op.haystack.find(op.needle) >= 0
+def _rewrite_string_contains(op):
+    return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)

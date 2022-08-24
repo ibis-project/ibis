@@ -1,12 +1,11 @@
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import ibis.util as util
 
 
 def extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
+    def extract_field_formatter(translator, op):
         arg = translator.translate(op.args[0])
 
         # This is pre-2.0 Impala-style, which did not used to support the
@@ -16,12 +15,11 @@ def extract_field(sql_attr):
     return extract_field_formatter
 
 
-def extract_epoch_seconds(t, expr):
-    (arg,) = expr.op().args
-    return f'unix_timestamp({t.translate(arg)})'
+def extract_epoch_seconds(t, op):
+    return f'unix_timestamp({t.translate(op.arg)})'
 
 
-def truncate(translator, expr):
+def truncate(translator, op):
     base_unit_names = {
         'Y': 'Y',
         'Q': 'Q',
@@ -31,7 +29,6 @@ def truncate(translator, expr):
         'h': 'HH',
         'm': 'MI',
     }
-    op = expr.op()
     arg, unit = op.args
 
     arg_formatted = translator.translate(arg)
@@ -45,28 +42,21 @@ def truncate(translator, expr):
     return f"trunc({arg_formatted}, '{unit}')"
 
 
-def interval_from_integer(translator, expr):
+def interval_from_integer(translator, op):
     # interval cannot be selected from impala
-    op = expr.op()
-    arg, unit = op.args
-    arg_formatted = translator.translate(arg)
-
-    return 'INTERVAL {} {}'.format(
-        arg_formatted, expr.type().resolution.upper()
-    )
+    arg = translator.translate(op.arg)
+    return f'INTERVAL {arg} {op.output_dtype.resolution.upper()}'
 
 
 def timestamp_op(func):
-    def _formatter(translator, expr):
-        op = expr.op()
-        left, right = op.args
-        formatted_left = translator.translate(left)
-        formatted_right = translator.translate(right)
+    def _formatter(translator, op):
+        formatted_left = translator.translate(op.left)
+        formatted_right = translator.translate(op.right)
 
-        if isinstance(left, (ir.TimestampScalar, ir.DateValue)):
+        if isinstance(op.left.output_dtype, (dt.Timestamp, dt.Date)):
             formatted_left = f'cast({formatted_left} as timestamp)'
 
-        if isinstance(right, (ir.TimestampScalar, ir.DateValue)):
+        if isinstance(op.right.output_dtype, (dt.Timestamp, dt.Date)):
             formatted_right = f'cast({formatted_right} as timestamp)'
 
         return f'{func}({formatted_left}, {formatted_right})'
@@ -74,12 +64,9 @@ def timestamp_op(func):
     return _formatter
 
 
-def timestamp_diff(translator, expr):
-    op = expr.op()
-    left, right = op.args
-
+def timestamp_diff(translator, op):
     return 'unix_timestamp({}) - unix_timestamp({})'.format(
-        translator.translate(left), translator.translate(right)
+        translator.translate(op.left), translator.translate(op.right)
     )
 
 
@@ -88,35 +75,27 @@ def _from_unixtime(translator, expr):
     return f'from_unixtime({arg}, "yyyy-MM-dd HH:mm:ss")'
 
 
-def timestamp_from_unix(translator, expr):
-    op = expr.op()
-
+def timestamp_from_unix(translator, op):
     val, unit = op.args
-    val = util.convert_unit(val, unit, 's').cast('int32')
-
+    val = util.convert_unit(val, unit, 's').to_expr().cast("int32").op()
     arg = _from_unixtime(translator, val)
     return f'CAST({arg} AS timestamp)'
 
 
-def day_of_week_index(t, expr):
-    (arg,) = expr.op().args
-    return f'pmod(dayofweek({t.translate(arg)}) - 2, 7)'
+def day_of_week_index(t, op):
+    return f'pmod(dayofweek({t.translate(op.arg)}) - 2, 7)'
 
 
-def day_of_week_name(t, expr):
-    (arg,) = expr.op().args
-    return f'dayname({t.translate(arg)})'
-
-
-def strftime(t, expr):
+def strftime(t, op):
     import sqlglot as sg
 
-    op = expr.op()
-    arg = op.arg
-    raw_format_str = op.format_str.op().value
     reverse_hive_mapping = {
         v: k for k, v in sg.dialects.hive.Hive.time_mapping.items()
     }
-    format_str = sg.time.format_time(raw_format_str, reverse_hive_mapping)
-    targ = t.translate(arg.cast(dt.string))
+    format_str = sg.time.format_time(op.format_str.value, reverse_hive_mapping)
+    targ = t.translate(ops.Cast(op.arg, to=dt.string))
     return f"from_unixtime(unix_timestamp({targ}), {format_str!r})"
+
+
+def day_of_week_name(t, op):
+    return f'dayname({t.translate(op.arg)})'

@@ -139,9 +139,9 @@ def custom_window():
 def test_lead(t, df, row_offset, default, row_window):
     expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute(-row_offset))
+    expected = df.dup_strings.shift(execute((-row_offset).op()))
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default))
+        expected = expected.fillna(execute(default.op()))
     tm.assert_series_equal(result, expected)
 
 
@@ -150,9 +150,9 @@ def test_lead(t, df, row_offset, default, row_window):
 def test_lag(t, df, row_offset, default, row_window):
     expr = t.dup_strings.lag(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(execute(row_offset))
+    expected = df.dup_strings.shift(execute(row_offset.op()))
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default))
+        expected = expected.fillna(execute(default.op()))
     tm.assert_series_equal(result, expected)
 
 
@@ -165,12 +165,12 @@ def test_lead_delta(t, df, range_offset, default, range_window):
         df[['plain_datetimes_naive', 'dup_strings']]
         .set_index('plain_datetimes_naive')
         .squeeze()
-        .shift(freq=execute(-range_offset))
+        .shift(freq=execute((-range_offset).op()))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default))
+        expected = expected.fillna(execute(default.op()))
     tm.assert_series_equal(result, expected)
 
 
@@ -183,12 +183,12 @@ def test_lag_delta(t, df, range_offset, default, range_window):
         df[['plain_datetimes_naive', 'dup_strings']]
         .set_index('plain_datetimes_naive')
         .squeeze()
-        .shift(freq=execute(range_offset))
+        .shift(freq=execute(range_offset.op()))
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
     if default is not ibis.NA:
-        expected = expected.fillna(execute(default))
+        expected = expected.fillna(execute(default.op()))
     tm.assert_series_equal(result, expected)
 
 
@@ -714,7 +714,7 @@ def test_custom_window_udf(t, custom_window):
             parent=parent,
             group_by=group_by,
             order_by=order_by,
-            output_type=operand.type(),
+            output_type=operand.output_dtype,
             max_lookback=window.max_lookback,
             preceding=window.preceding,
         )

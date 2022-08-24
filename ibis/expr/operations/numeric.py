@@ -2,11 +2,10 @@ import operator
 
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Binary, Unary, Value
 
 
@@ -30,7 +29,8 @@ class Multiply(NumericBinary):
 class Power(NumericBinary):
     @property
     def output_dtype(self):
-        if util.all_of(self.args, ir.IntegerValue):
+        dtypes = (arg.output_dtype for arg in self.args)
+        if util.all_of(dtypes, dt.Integer):
             return dt.float64
         else:
             return rlz.highest_precedence_dtype(self.args)
@@ -122,8 +122,8 @@ class Ceil(Unary):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg.type()
+        if isinstance(self.arg.output_dtype, dt.Decimal):
+            return self.arg.output_dtype
         else:
             return dt.int64
 
@@ -144,8 +144,8 @@ class Floor(Unary):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg.type()
+        if isinstance(self.arg.output_dtype, dt.Decimal):
+            return self.arg.output_dtype
         else:
             return dt.int64
 
@@ -159,8 +159,8 @@ class Round(Value):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg.type()
+        if isinstance(self.arg.output_dtype, dt.Decimal):
+            return self.arg.output_dtype
         elif self.digits is None:
             return dt.int64
         else:
@@ -193,20 +193,14 @@ class MathUnary(Unary):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg.type()
-        else:
-            return dt.double
+        return dt.higher_precedence(self.arg.output_dtype, dt.double)
 
 
 @public
 class ExpandingMathUnary(MathUnary):
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg.type(), dt.Decimal):
-            return self.arg.type().largest
-        else:
-            return dt.double
+        return dt.higher_precedence(self.arg.output_dtype.largest, dt.double)
 
 
 @public
