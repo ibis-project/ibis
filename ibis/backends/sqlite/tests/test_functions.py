@@ -24,9 +24,10 @@ sa = pytest.importorskip("sqlalchemy")
             lambda t: t.double_col.cast(dt.int8),
             lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
         ),
+        # TODO(kszucs): double check the validity of this test case
         (
             lambda t: t.string_col.cast(dt.float64),
-            lambda at: sa.cast(at.c.string_col, sa.REAL),
+            lambda at: sa.cast(at.c.string_col, sa.FLOAT),
         ),
         (
             lambda t: t.string_col.cast(dt.float32),
@@ -35,7 +36,8 @@ sa = pytest.importorskip("sqlalchemy")
     ],
 )
 def test_cast(alltypes, alltypes_sqla, translate, func, expected):
-    assert translate(func(alltypes)) == str(expected(alltypes_sqla))
+    expr = func(alltypes)
+    assert translate(expr.op()) == str(expected(alltypes_sqla))
 
 
 @pytest.mark.parametrize(
@@ -59,7 +61,7 @@ def test_timestamp_cast_noop(
     # See GH #592
     result = func(alltypes)
     expected = expected_func(alltypes_sqla)
-    assert translate(result) == sqla_compile(expected)
+    assert translate(result.op()) == sqla_compile(expected)
 
 
 def test_timestamp_functions(con):
@@ -231,7 +233,7 @@ def test_str_replace(con):
     ],
 )
 def test_math_functions(con, expr, expected):
-    assert con.execute(expr) == expected
+    assert con.execute(expr.op()) == expected
 
 
 NULL_STRING = L(None).cast(dt.string)

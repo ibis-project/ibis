@@ -70,12 +70,12 @@ def test_group_concat(functional_alltypes):
     expr = col.group_concat()
     assert isinstance(expr.op(), ops.GroupConcat)
     op = expr.op()
-    assert op.sep.equals(ibis.literal(','))
+    assert op.sep == ibis.literal(',').op()
     assert op.where is None
 
     expr = col.group_concat('|')
     op = expr.op()
-    assert op.sep.equals(ibis.literal('|'))
+    assert op.sep == ibis.literal('|').op()
     assert op.where is None
 
 
@@ -147,7 +147,7 @@ def test_round(functional_alltypes, lineitem):
 
     result = functional_alltypes.double_col.round(2)
     assert isinstance(result, ir.FloatingColumn)
-    assert result.op().args[1].equals(ibis.literal(2))
+    assert result.op().args[1] == ibis.literal(2).op()
 
     # Even integers are double (at least in Impala, check with other DB
     # implementations)

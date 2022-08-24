@@ -205,5 +205,5 @@ def test_ifelse_returning_bool():
     true = ibis.literal(True)
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
-    result = execute(expr)
+    result = execute(expr.op())
     assert result is True

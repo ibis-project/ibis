@@ -19,7 +19,7 @@ import ibis.expr.types as ir
 from ibis.common import exceptions as com
 from ibis.common.grounds import Singleton
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Node, Unary, Value
+from ibis.expr.operations.core import Unary, Value
 from ibis.util import frozendict
 
 try:
@@ -40,14 +40,12 @@ class TableColumn(Value):
     output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, table, name):
-        schema = table.schema()
-
         if isinstance(name, int):
-            name = schema.name_at_position(name)
+            name = table.schema.name_at_position(name)
 
-        if name not in schema:
+        if name not in table.schema:
             raise com.IbisTypeError(
-                f"value {name!r} is not a field in {table.columns}"
+                f"value {name!r} is not a field in {table.schema}"
             )
 
         super().__init__(table=table, name=name)
@@ -60,8 +58,7 @@ class TableColumn(Value):
 
     @property
     def output_dtype(self):
-        schema = self.table.schema()
-        return schema[self.name]
+        return self.table.schema[self.name]
 
 
 @public
@@ -92,12 +89,11 @@ class TableArrayView(Value):
 
     @property
     def output_dtype(self):
-        schema = self.table.schema()
-        return schema[self.name]
+        return self.table.schema[self.name]
 
     @property
     def name(self):
-        return self.table.schema().names[0]
+        return self.table.schema.names[0]
 
 
 @public
@@ -188,12 +184,7 @@ class CoalesceLike(Value):
 
     @immutable_property
     def output_dtype(self):
-        # filter out null types
-        non_null_exprs = [arg for arg in self.arg if arg.type() != dt.null]
-        if non_null_exprs:
-            return rlz.highest_precedence_dtype(non_null_exprs)
-        else:
-            return dt.null
+        return rlz.highest_precedence_dtype(self.arg.values)
 
 
 @public
@@ -344,19 +335,6 @@ class HashBytes(Value):
     output_shape = rlz.shape_like("arg")
 
 
-# TODO(kszucs): shouldn't we move this operation to either
-# analytic.py or reductions.py?
-@public
-class TopK(Node):
-    arg = rlz.column(rlz.any)
-    k = rlz.non_negative_integer
-    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
-    output_type = ir.TopK
-
-    def blocks(self):  # pragma: no cover
-        return True
-
-
 # TODO(kszucs): we should merge the case operations by making the
 # cases, results and default optional arguments like they are in
 # api.py
@@ -370,7 +348,7 @@ class SimpleCase(Value):
     output_shape = rlz.shape_like("base")
 
     def __init__(self, cases, results, **kwargs):
-        assert len(cases) == len(results)
+        assert len(cases.values) == len(results.values)
         super().__init__(cases=cases, results=results, **kwargs)
 
     @immutable_property
@@ -378,7 +356,7 @@ class SimpleCase(Value):
         # TODO(kszucs): we could extend the functionality of
         # rlz.shape_like to support varargs with .flat_args()
         # to define a subset of input arguments
-        values = [*self.results, self.default]
+        values = [*self.results.values, self.default]
         return rlz.highest_precedence_dtype(values)
 
 
@@ -391,12 +369,12 @@ class SearchedCase(Value):
     output_shape = rlz.shape_like("cases")
 
     def __init__(self, cases, results, default):
-        assert len(cases) == len(results)
+        assert len(cases.values) == len(results.values)
         super().__init__(cases=cases, results=results, default=default)
 
     @immutable_property
     def output_dtype(self):
-        exprs = [*self.results, self.default]
+        exprs = [*self.results.values, self.default]
         return rlz.highest_precedence_dtype(exprs)
 
 

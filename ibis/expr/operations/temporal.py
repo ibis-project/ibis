@@ -9,6 +9,7 @@ from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
 from ibis.expr.operations.core import Binary, Node, Unary, Value
+from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between
 
 
@@ -343,19 +344,17 @@ class ToIntervalUnit(Value):
     output_shape = rlz.shape_like("arg")
 
     def __init__(self, arg, unit):
-        dtype = arg.type()
+        dtype = arg.output_dtype
+
+        # TODO(kszucs): remove the expression wrapping required for arithmetic
+        # overloads
         if dtype.unit != unit:
             arg = util.convert_unit(arg, dtype.unit, unit)
         super().__init__(arg=arg, unit=unit)
 
     @immutable_property
     def output_dtype(self):
-        dtype = self.arg.type()
-        return dt.Interval(
-            unit=self.unit,
-            value_type=dtype.value_type,
-            nullable=dtype.nullable,
-        )
+        return self.arg.output_dtype.copy(unit=self.unit)
 
 
 @public
@@ -363,18 +362,14 @@ class IntervalBinary(Binary):
     @immutable_property
     def output_dtype(self):
         integer_args = [
-            arg.cast(arg.type().value_type)
-            if isinstance(arg.type(), dt.Interval)
+            Cast(arg, to=arg.output_dtype.value_type)
+            if isinstance(arg.output_dtype, dt.Interval)
             else arg
             for arg in self.args
         ]
         value_dtype = rlz._promote_integral_binop(integer_args, self.op)
-        left_dtype = self.left.type()
-        return dt.Interval(
-            unit=left_dtype.unit,
-            value_type=value_dtype,
-            nullable=left_dtype.nullable,
-        )
+
+        return self.left.output_dtype.copy(value_type=value_dtype)
 
 
 @public
@@ -414,7 +409,7 @@ class IntervalFromInteger(Value):
 
     @immutable_property
     def output_dtype(self):
-        return dt.Interval(self.unit, self.arg.type())
+        return dt.Interval(self.unit, value_type=self.arg.output_dtype)
 
     @property
     def resolution(self):

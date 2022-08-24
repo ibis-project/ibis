@@ -10,11 +10,12 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import (
     _extract_common_table_expressions,
 )
+from ibis.expr.rules import Shape
 
 
 class _LimitSpec(NamedTuple):
@@ -23,10 +24,10 @@ class _LimitSpec(NamedTuple):
 
 
 class _CorrelatedRefCheck:
-    def __init__(self, query, expr):
+    def __init__(self, query, node):
         self.query = query
         self.ctx = query.context
-        self.expr = expr
+        self.node = node
         self.query_roots = frozenset(
             L.find_immediate_parent_tables(self.query.table_set)
         )
@@ -34,39 +35,17 @@ class _CorrelatedRefCheck:
         self.has_query_root = False
 
     def get_result(self):
-        self.visit(self.expr)
+        self.visit(self.node, in_subquery=False)
         return self.has_query_root and self.has_foreign_root
 
-    def visit(
-        self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None
-    ):
-        if visit_cache is None:
-            visit_cache = set()
-
-        node = expr.op()
-        key = node, in_subquery
-        if key in visit_cache:
-            return
-
-        visit_cache.add(key)
-
+    def visit(self, node, in_subquery):
         in_subquery |= self.is_subquery(node)
 
         for arg in node.flat_args():
-            if isinstance(arg, ir.Table):
-                self.visit_table(
-                    arg,
-                    in_subquery=in_subquery,
-                    visit_cache=visit_cache,
-                    visit_table_cache=visit_table_cache,
-                )
-            elif isinstance(arg, ir.Expr):
-                self.visit(
-                    arg,
-                    in_subquery=in_subquery,
-                    visit_cache=visit_cache,
-                    visit_table_cache=visit_table_cache,
-                )
+            if isinstance(arg, ops.TableNode):
+                self.visit_table(arg, in_subquery=in_subquery)
+            elif isinstance(arg, ops.Node):
+                self.visit(arg, in_subquery=in_subquery)
 
     def is_subquery(self, node):
         return isinstance(
@@ -77,36 +56,18 @@ class _CorrelatedRefCheck:
                 ops.NotExistsSubquery,
             ),
         ) or (
-            isinstance(node, ops.TableColumn)
-            and not self.is_root(node.table.op())
+            isinstance(node, ops.TableColumn) and not self.is_root(node.table)
         )
 
-    def visit_table(
-        self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None
-    ):
-        if visit_table_cache is None:
-            visit_table_cache = set()
-
-        key = expr._key, in_subquery
-        if key in visit_table_cache:
-            return
-        visit_table_cache.add(key)
-
-        node = expr.op()
-
+    def visit_table(self, node, in_subquery):
         if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
             self.ref_check(node, in_subquery=in_subquery)
 
         for arg in node.flat_args():
-            if isinstance(arg, ir.Expr):
-                self.visit(
-                    arg,
-                    in_subquery=in_subquery,
-                    visit_cache=visit_cache,
-                    visit_table_cache=visit_table_cache,
-                )
+            if isinstance(arg, ops.Node):
+                self.visit(arg, in_subquery=in_subquery)
 
-    def ref_check(self, node, in_subquery: bool = False) -> None:
+    def ref_check(self, node, in_subquery) -> None:
         ctx = self.ctx
 
         is_root = self.is_root(node)
@@ -155,17 +116,17 @@ class SelectBuilder:
         self,
         select_class,
         table_set_formatter_class,
-        expr,
+        node,
         context,
         translator_class,
     ):
         self.select_class = select_class
         self.table_set_formatter_class = table_set_formatter_class
-        self.expr = expr
         self.context = context
         self.translator_class = translator_class
 
-        self.query_expr, self.result_handler = self._adapt_expr(self.expr)
+        self.op, self.result_handler = self._adapt_operation(node)
+        assert isinstance(self.op, ops.Node), type(self.op)
 
         self.table_set = None
         self.select_set = None
@@ -189,51 +150,49 @@ class SelectBuilder:
         return checker.get_result()
 
     @staticmethod
-    def _adapt_expr(expr):
+    def _adapt_operation(node):
         # Non-table expressions need to be adapted to some well-formed table
         # expression, along with a way to adapt the results to the desired
         # arity (whether array-like or scalar, for example)
         #
         # Canonical case is scalar values or arrays produced by some reductions
         # (simple reductions, or distinct, say)
+        if isinstance(node, ops.TableNode):
+            return node, toolz.identity
 
-        if isinstance(expr, ir.Table):
-            return expr, toolz.identity
+        elif isinstance(node, ops.Value):
+            if not node.has_resolved_name():
+                node = ops.Alias(node, name="tmp")
+            if node.output_shape is Shape.SCALAR:
+                if L.is_scalar_reduction(node):
+                    table_expr = L.reduction_to_aggregation(node)
+                    return table_expr.op(), _get_scalar(node.resolve_name())
+                else:
+                    return node, _get_scalar(node.resolve_name())
+            elif node.output_shape is Shape.COLUMNAR:
+                if isinstance(node, ops.TableColumn):
+                    table_expr = node.table.to_expr()[[node.name]]
+                    result_handler = _get_column(node.name)
+                else:
+                    table_expr = node.to_expr().to_projection()
+                    result_handler = _get_column(node.resolve_name())
 
-        if isinstance(expr, ir.Scalar):
-            if not expr.has_name():
-                expr = expr.name('tmp')
-
-            if L.is_scalar_reduction(expr):
-                table_expr = L.reduction_to_aggregation(expr)
-                return table_expr, _get_scalar(expr.get_name())
+                return table_expr.op(), result_handler
             else:
-                return expr, _get_scalar(expr.get_name())
+                raise com.TranslationError(
+                    f"Unexpected shape {node.output_shape}"
+                )
 
-        elif isinstance(expr, ir.Analytic):
-            return expr.to_aggregation(), toolz.identity
+        elif isinstance(node, (ops.Analytic, ops.TopK)):
+            return node.to_expr().to_aggregation().op(), toolz.identity
 
-        elif isinstance(expr, ir.Column):
-            op = expr.op()
-
-            if isinstance(op, ops.TableColumn):
-                table_expr = op.table[[op.name]]
-                result_handler = _get_column(op.name)
-            else:
-                if not expr.has_name():
-                    expr = expr.name('tmp')
-                table_expr = expr.to_projection()
-                result_handler = _get_column(expr.get_name())
-
-            return table_expr, result_handler
         else:
             raise com.TranslationError(
-                f'Do not know how to execute: {type(expr)}'
+                f'Do not know how to execute: {type(node)}'
             )
 
     def _build_result_query(self):
         self._collect_elements()
-
         self._analyze_select_exprs()
         self._analyze_subqueries()
         self._populate_context()
@@ -252,7 +211,7 @@ class SelectBuilder:
             order_by=self.sort_by,
             distinct=self.distinct,
             result_handler=self.result_handler,
-            parent_expr=self.query_expr,
+            parent_op=self.op,
         )
 
     def _populate_context(self):
@@ -277,22 +236,22 @@ class SelectBuilder:
             if needs_alias:
                 self.context.set_always_alias()
 
-    def _make_table_aliases(self, expr):
+    # TODO(kszucs): should be rewritten using lin.traverse()
+    def _make_table_aliases(self, node):
         ctx = self.context
-        node = expr.op()
+
         if isinstance(node, ops.Join):
             for arg in node.args:
-                if isinstance(arg, ir.Table):
+                if isinstance(arg, ops.TableNode):
                     self._make_table_aliases(arg)
+        elif not ctx.is_extracted(node):
+            ctx.make_alias(node)
         else:
-            if not ctx.is_extracted(expr):
-                ctx.make_alias(expr)
-            else:
-                # The compiler will apply a prefix only if the current context
-                # contains two or more table references. So, if we've extracted
-                # a subquery into a CTE, we need to propagate that reference
-                # down to child contexts so that they aren't missing any refs.
-                ctx.set_ref(expr, ctx.top_context.get_ref(expr))
+            # The compiler will apply a prefix only if the current context
+            # contains two or more table references. So, if we've extracted
+            # a subquery into a CTE, we need to propagate that reference
+            # down to child contexts so that they aren't missing any refs.
+            ctx.set_ref(node, ctx.top_context.get_ref(node))
 
     # ---------------------------------------------------------------------
     # Expr analysis / rewrites
@@ -300,73 +259,61 @@ class SelectBuilder:
     def _analyze_select_exprs(self):
         new_select_set = []
 
-        for expr in self.select_set:
-            new_expr = self._visit_select_expr(expr)
-            new_select_set.append(new_expr)
+        for op in self.select_set:
+            new_op = self._visit_select_expr(op)
+            new_select_set.append(new_op)
 
         self.select_set = new_select_set
 
-    def _visit_select_expr(self, expr):
-        op = expr.op()
-
+    # TODO(kszucs): this should be rewritten using analysis.substitute()
+    def _visit_select_expr(self, op):
         method = f'_visit_select_{type(op).__name__}'
         if hasattr(self, method):
             f = getattr(self, method)
-            return f(expr)
-
-        unchanged = True
-
-        if isinstance(op, ops.Value):
+            return f(op)
+        elif isinstance(op, ops.Value):
             new_args = []
             for arg in op.args:
-                if isinstance(arg, ir.Expr):
-                    new_arg = self._visit_select_expr(arg)
-                    if arg is not new_arg:
-                        unchanged = False
-                    new_args.append(new_arg)
-                else:
-                    new_args.append(arg)
+                if isinstance(arg, ops.Node):
+                    arg = self._visit_select_expr(arg)
+                new_args.append(arg)
 
-            if not unchanged:
-                new_op = type(op)(*new_args)
-                return new_op.to_expr()
-            else:
-                return expr
+            return type(op)(*new_args)
         else:
-            return expr
+            return op
 
-    def _visit_select_Histogram(self, expr):
-        op = expr.op()
-
+    # TODO(kszucs): avoid roundtripping between extpressions and operations
+    def _visit_select_Histogram(self, op):
+        assert isinstance(op, ops.Node), type(op)
         EPS = 1e-13
 
         if op.binwidth is None or op.base is None:
             aux_hash = op.aux_hash or util.guid()[:6]
-
             min_name = 'min_%s' % aux_hash
             max_name = 'max_%s' % aux_hash
 
-            minmax = self.table_set.aggregate(
-                [op.arg.min().name(min_name), op.arg.max().name(max_name)]
+            minmax = self.table_set.to_expr().aggregate(
+                [
+                    op.arg.to_expr().min().name(min_name),
+                    op.arg.to_expr().max().name(max_name),
+                ]
             )
-            self.table_set = self.table_set.cross_join(minmax)
+            self.table_set = self.table_set.to_expr().cross_join(minmax).op()
 
             if op.base is None:
                 base = minmax[min_name] - EPS
             else:
-                base = op.base
+                base = op.base.to_expr()
 
             binwidth = (minmax[max_name] - base) / (op.nbins - 1)
         else:
             # Have both a bin width and a base
-            binwidth = op.binwidth
-            base = op.base
+            binwidth = op.binwidth.to_expr()
+            base = op.base.to_expr()
 
-        bucket = ((op.arg - base) / binwidth).floor()
-        if expr.has_name():
-            bucket = bucket.name(expr.get_name())
+        bucket = ((op.arg.to_expr() - base) / binwidth).floor()
 
-        return bucket
+        return bucket.op()
 
     # ---------------------------------------------------------------------
     # Analysis of table set
@@ -379,64 +326,59 @@ class SelectBuilder:
         # expression that is being translated only depends on a single table
         # expression.
 
-        source_expr = self.query_expr
-
-        # hm, is this the best place for this?
-        root_op = source_expr.op()
-
-        if isinstance(root_op, ops.TableNode):
-            self._collect(source_expr, toplevel=True)
+        if isinstance(self.op, ops.TableNode):
+            self._collect(self.op, toplevel=True)
             assert self.table_set is not None
         else:
-            self.select_set = [source_expr]
+            self.select_set = [self.op]
 
-    def _collect(self, expr, toplevel=False):
-        op = expr.op()
+    def _collect(self, op, toplevel=False):
         method = f'_collect_{type(op).__name__}'
 
         if hasattr(self, method):
             f = getattr(self, method)
-            f(expr, toplevel=toplevel)
+            f(op, toplevel=toplevel)
         elif isinstance(op, (ops.PhysicalTable, ops.SQLQueryResult)):
-            self._collect_PhysicalTable(expr, toplevel=toplevel)
+            self._collect_PhysicalTable(op, toplevel=toplevel)
         elif isinstance(op, ops.Join):
-            self._collect_Join(expr, toplevel=toplevel)
+            self._collect_Join(op, toplevel=toplevel)
         else:
             raise NotImplementedError(type(op))
 
-    def _collect_Distinct(self, expr, toplevel=False):
+    def _collect_Distinct(self, op, toplevel=False):
         if toplevel:
             self.distinct = True
 
-        self._collect(expr.op().table, toplevel=toplevel)
+        self._collect(op.table, toplevel=toplevel)
 
-    def _collect_DropNa(self, expr, toplevel=False):
+    def _collect_DropNa(self, op, toplevel=False):
         if toplevel:
-            op = expr.op()
             if op.subset is None:
-                columns = [op.table[c] for c in op.table.columns]
+                columns = [
+                    ops.TableColumn(op.table, name)
+                    for name in op.table.schema.names
+                ]
             else:
                 columns = op.subset
             if columns:
                 filters = [
                     functools.reduce(
-                        operator.and_ if op.how == "any" else operator.or_,
-                        [c.notnull() for c in columns],
+                        ops.And if op.how == "any" else ops.Or,
+                        [ops.NotNull(c) for c in columns],
                     )
                 ]
             elif op.how == "all":
-                filters = [ibis.literal(False)]
+                filters = [ops.Literal(False, dtype=dt.bool)]
             else:
                 filters = []
             self.table_set = op.table
             self.select_set = [op.table]
             self.filters = filters
 
-    def _collect_Limit(self, expr, toplevel=False):
+    def _collect_Limit(self, op, toplevel=False):
         if not toplevel:
             return
 
-        op = expr.op()
         n = op.n
         offset = op.offset or 0
 
@@ -450,26 +392,25 @@ class SelectBuilder:
 
         self._collect(op.table, toplevel=toplevel)
 
-    def _collect_Union(self, expr, toplevel=False):
+    def _collect_Union(self, op, toplevel=False):
         if toplevel:
             raise NotImplementedError()
 
-    def _collect_Difference(self, expr, toplevel=False):
+    def _collect_Difference(self, op, toplevel=False):
         if toplevel:
             raise NotImplementedError()
 
-    def _collect_Intersection(self, expr, toplevel=False):
+    def _collect_Intersection(self, op, toplevel=False):
         if toplevel:
             raise NotImplementedError()
 
-    def _collect_Aggregation(self, expr, toplevel=False):
+    def _collect_Aggregation(self, op, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
         # duplicated in the group_by set. SQL translator can decide how to
         # format these depending on the database. Most likely the
         # GROUP BY 1, 2, ... style
         if toplevel:
-            subbed_expr = self._sub(expr)
-            sub_op = subbed_expr.op()
+            sub_op = L.substitute_parents(op)
 
             self.group_by = self._convert_group_by(sub_op.by)
             self.having = sub_op.having
@@ -478,14 +419,13 @@ class SelectBuilder:
             self.filters = sub_op.predicates
             self.sort_by = sub_op.sort_keys
 
-            self._collect(expr.op().table)
+            self._collect(op.table)
 
-    def _collect_Selection(self, expr, toplevel=False):
-        op = expr.op()
+    def _collect_Selection(self, op, toplevel=False):
         table = op.table
 
         if toplevel:
-            if isinstance(table.op(), ops.Join):
+            if isinstance(table, ops.Join):
                 self._collect_Join(table)
             else:
                 self._collect(table)
@@ -503,32 +443,28 @@ class SelectBuilder:
             self.table_set = table
             self.filters = filters
 
-    def _collect_PandasInMemoryTable(self, expr, toplevel=False):
+    def _collect_PandasInMemoryTable(self, node, toplevel=False):
         if toplevel:
-            self.select_set = [expr]
-            self.table_set = expr
+            self.select_set = [node]
+            self.table_set = node
 
-    def _convert_group_by(self, exprs):
-        return list(range(len(exprs)))
+    def _convert_group_by(self, nodes):
+        return list(range(len(nodes)))
 
-    def _collect_Join(self, expr, toplevel=False):
+    def _collect_Join(self, op, toplevel=False):
         if toplevel:
-            subbed = self._sub(expr)
+            subbed = L.substitute_parents(op)
             self.table_set = subbed
             self.select_set = [subbed]
 
-    def _collect_PhysicalTable(self, expr, toplevel=False):
+    def _collect_PhysicalTable(self, op, toplevel=False):
         if toplevel:
-            self.select_set = [expr]
-            self.table_set = expr
+            self.select_set = [op]
+            self.table_set = op
 
-    def _collect_SelfReference(self, expr, toplevel=False):
-        op = expr.op()
+    def _collect_SelfReference(self, op, toplevel=False):
         if toplevel:
             self._collect(op.table, toplevel=toplevel)
-
-    def _sub(self, what):
-        return L.substitute_parents(what)
 
     # --------------------------------------------------------------------
     # Subquery analysis / extraction
@@ -560,8 +496,8 @@ class SelectBuilder:
         )
 
         self.subqueries = []
-        for expr in subqueries:
+        for node in subqueries:
             # See #173. Might have been extracted already in a parent context.
-            if not self.context.is_extracted(expr):
-                self.subqueries.append(expr)
-                self.context.set_extracted(expr)
+            if not self.context.is_extracted(node):
+                self.subqueries.append(node)
+                self.context.set_extracted(node)

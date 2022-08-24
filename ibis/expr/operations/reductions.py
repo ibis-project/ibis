@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from public import public
 
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
 from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import _Negatable
 from ibis.util import deprecated
@@ -91,10 +90,10 @@ class Sum(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.BooleanValue):
+        if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.int64
         else:
-            return self.arg.type().largest
+            return self.arg.output_dtype.largest
 
 
 @public
@@ -103,10 +102,10 @@ class Mean(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type()
-        else:
+        if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.float64
+        else:
+            return dt.higher_precedence(self.arg.output_dtype, dt.float64)
 
 
 @public
@@ -138,8 +137,8 @@ class VarianceBase(Filterable, Reduction):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type().largest
+        if isinstance(self.arg.output_dtype, dt.Decimal):
+            return self.arg.output_dtype.largest
         else:
             return dt.float64
 
@@ -160,7 +159,7 @@ class Correlation(Filterable, Reduction):
 
     left = rlz.column(rlz.numeric)
     right = rlz.column(rlz.numeric)
-    how = rlz.isin({'sample', 'pop'})
+    how = rlz.optional(rlz.isin({'sample', 'pop'}), default='sample')
 
     output_dtype = dt.float64
 
@@ -274,7 +273,7 @@ class ArrayCollect(Reduction):
 
     @immutable_property
     def output_dtype(self):
-        return dt.Array(self.arg.type())
+        return dt.Array(self.arg.output_dtype)
 
 
 @public

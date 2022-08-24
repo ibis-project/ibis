@@ -17,10 +17,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def key(expr, name=None):
-    if name is None:
-        name = expr._safe_name
-    return str(hash((expr._key, name)))
+def key(node):
+    return str(hash(node))
 
 
 @pytest.mark.parametrize(
@@ -38,8 +36,8 @@ def key(expr, name=None):
 def test_exprs(table, expr_func):
     expr = expr_func(table)
     graph = viz.to_graph(expr)
-    assert key(table, 'table') in graph.source
-    assert key(expr) in graph.source
+    assert key(table.op()) in graph.source
+    assert key(expr.op()) in graph.source
 
 
 def test_custom_expr():
@@ -54,7 +52,7 @@ def test_custom_expr():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert key(expr) in graph.source
+    assert key(expr.op()) in graph.source
 
 
 def test_custom_expr_with_not_implemented_type():
@@ -76,7 +74,7 @@ def test_custom_expr_with_not_implemented_type():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert key(expr) in graph.source
+    assert key(expr.op()) in graph.source
 
 
 @pytest.fixture
@@ -96,7 +94,7 @@ def test_join(how):
     joined = left.join(right, left.b == right.b, how=how)
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
-    assert key(result) in graph.source
+    assert key(result.op()) in graph.source
 
 
 def test_sort_by():
@@ -105,7 +103,7 @@ def test_sort_by():
         t.groupby(t.b).aggregate(sum_a=t.a.sum().cast('double')).sort_by('b')
     )
     graph = viz.to_graph(expr)
-    assert key(expr) in graph.source
+    assert key(expr.op()) in graph.source
 
 
 @pytest.mark.skipif(
@@ -138,8 +136,8 @@ def test_between():
     source = graph.source
 
     # one for the node itself and one for the edge to between
-    assert key(lower_bound, 'lower_bound') in source
-    assert key(upper_bound, 'upper_bound') in source
+    assert key(lower_bound) in source
+    assert key(upper_bound) in source
 
 
 def test_asof_join():
@@ -150,7 +148,7 @@ def test_asof_join():
     joined = api.asof_join(left, right, 'time')
     result = joined[left, right.foo]
     graph = viz.to_graph(result)
-    assert key(result) in graph.source
+    assert key(result.op()) in graph.source
 
 
 def test_html_escape(with_graphviz):

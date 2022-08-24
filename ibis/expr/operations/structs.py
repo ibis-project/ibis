@@ -17,7 +17,7 @@ class StructField(Value):
 
     @immutable_property
     def output_dtype(self) -> dt.DataType:
-        struct_dtype = self.arg.type()
+        struct_dtype = self.arg.output_dtype
         value_dtype = struct_dtype[self.field]
         return value_dtype
 
@@ -37,6 +37,5 @@ class StructColumn(Value):
 
     @immutable_property
     def output_dtype(self) -> dt.DataType:
-        return dt.Struct.from_tuples(
-            zip(self.names, (value.type() for value in self.values))
-        )
+        dtypes = (value.output_dtype for value in self.values)
+        return dt.Struct.from_tuples(zip(self.names, dtypes))

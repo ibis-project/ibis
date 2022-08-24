@@ -81,7 +81,7 @@ class CategoryLabel(Value):
     output_shape = rlz.shape_like("arg")
 
     def __init__(self, arg, labels, **kwargs):
-        cardinality = arg.type().cardinality
+        cardinality = arg.output_dtype.cardinality
         if len(labels) != cardinality:
             raise ValueError(
                 'Number of labels must match number of '

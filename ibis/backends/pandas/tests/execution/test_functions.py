@@ -220,7 +220,7 @@ def test_execute_with_same_hash_value_in_scope(
     table = ibis.pandas.from_dataframe(df)
 
     expr = my_func(table.left, table.right)
-    result = execute(expr)
+    result = execute(expr.op())
     assert isinstance(result, pd.Series)
 
     result = result.tolist()
@@ -234,7 +234,7 @@ def test_ifelse_returning_bool():
     true = ibis.literal(True)
     false = ibis.literal(False)
     expr = ibis.ifelse(one + one == two, true, false)
-    result = execute(expr)
+    result = execute(expr.op())
     assert result is True
 
 
@@ -257,7 +257,7 @@ def test_signature_does_not_match_input_type(dtype, value):
     df = pd.DataFrame({"col": [value]})
     table = ibis.pandas.from_dataframe(df)
 
-    result = execute(table.col)
+    result = execute(table.col.op())
     assert isinstance(result, pd.Series)
 
     result = result.tolist()

@@ -114,7 +114,6 @@ from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.dask.dispatch import (
     execute_literal,
     execute_node,
@@ -135,8 +134,10 @@ from ibis.expr.typing import TimeContext
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 
 
+# TODO(kszucs): should deduplicate with pandas code since it is an exact copy
+# of pandas.execute_with_scope()
 def execute_with_scope(
-    expr,
+    node,
     scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
@@ -147,8 +148,8 @@ def execute_with_scope(
 
     Parameters
     ----------
-    expr : ibis.expr.types.Expr
-        The expression to execute.
+    node : ibis.expr.operations.Node
+        The operation node to execute.
     scope : Scope
         A Scope class, with dictionary mapping
         :class:`~ibis.expr.operations.Node` subclass instances to concrete
@@ -163,19 +164,17 @@ def execute_with_scope(
     -------
     result : scalar, pd.Series, pd.DataFrame
     """
-    op = expr.op()
-
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
     if clients is None:
-        clients = expr._find_backends()
+        clients = node.to_expr()._find_backends()
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
 
     pre_executed_scope = pre_execute(
-        op,
+        node,
         *clients,
         scope=scope,
         timecontext=timecontext,
@@ -184,7 +183,7 @@ def execute_with_scope(
     )
     new_scope = scope.merge_scope(pre_executed_scope)
     result = execute_until_in_scope(
-        expr,
+        node,
         new_scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
@@ -201,13 +200,15 @@ def execute_with_scope(
             **kwargs,
         ),
         **kwargs,
-    ).get_value(op, timecontext)
+    ).get_value(node, timecontext)
     return result
 
 
+# TODO(kszucs): should deduplicate with pandas code since it is an exact copy
+# of pandas.execute_until_in_scope()
 @trace
 def execute_until_in_scope(
-    expr,
+    node,
     scope: Scope,
     timecontext: Optional[TimeContext] = None,
     aggcontext=None,
@@ -219,7 +220,7 @@ def execute_until_in_scope(
 
     Parameters
     ----------
-    expr : ibis.expr.types.Expr
+    node : ibis.expr.operations.Node
     scope : Scope
     timecontext : Optional[TimeContext]
     aggcontext : Optional[AggregationContext]
@@ -233,16 +234,19 @@ def execute_until_in_scope(
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
-    op = expr.op()
-    if scope.get_value(op, timecontext) is not None:
+    if scope.get_value(node, timecontext) is not None:
         return scope
-    if isinstance(op, ops.Literal):
+    if isinstance(node, ops.Literal):
         # special case literals to avoid the overhead of dispatching
         # execute_node
         return Scope(
             {
-                op: execute_literal(
-                    op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
+                node: execute_literal(
+                    node,
+                    node.value,
+                    node.output_dtype,
+                    aggcontext=aggcontext,
+                    **kwargs,
                 )
             },
             timecontext,
@@ -251,13 +255,13 @@ def execute_until_in_scope(
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
-    computable_args = [arg for arg in op.inputs if is_computable_input(arg)]
+    computable_args = [arg for arg in node.inputs if is_computable_input(arg)]
 
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
     if timecontext:
         arg_timecontexts = compute_time_context(
-            op,
+            node,
             num_args=len(computable_args),
             timecontext=timecontext,
             clients=clients,
@@ -267,7 +271,7 @@ def execute_until_in_scope(
         arg_timecontexts = [None] * len(computable_args)
 
     pre_executed_scope = pre_execute(
-        op,
+        node,
         *clients,
         scope=scope,
         timecontext=timecontext,
@@ -279,7 +283,7 @@ def execute_until_in_scope(
 
     # Short circuit: if pre_execute puts op in scope, then we don't need to
     # execute its computable_args
-    if new_scope.get_value(op, timecontext) is not None:
+    if new_scope.get_value(node, timecontext) is not None:
         return new_scope
 
     # recursively compute each node's arguments until we've changed type.
@@ -289,7 +293,7 @@ def execute_until_in_scope(
     if len(arg_timecontexts) != len(computable_args):
         raise com.IbisError(
             'arg_timecontexts differ with computable_arg in length '
-            f'for type:\n{type(op).__name__}.'
+            f'for type:\n{type(node).__name__}.'
         )
 
     scopes = [
@@ -302,7 +306,7 @@ def execute_until_in_scope(
             clients=clients,
             **kwargs,
         )
-        if hasattr(arg, 'op')
+        if isinstance(arg, ops.Node)
         else Scope({arg: arg}, timecontext)
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
@@ -310,7 +314,7 @@ def execute_until_in_scope(
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
         raise com.UnboundExpressionError(
-            f'Unable to find data for expression:\n{repr(expr)}'
+            f'Unable to find data for node:\n{repr(node)}'
         )
 
     # there should be exactly one dictionary per computable argument
@@ -319,14 +323,14 @@ def execute_until_in_scope(
     new_scope = new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        new_scope.get_value(arg.op(), timecontext)
-        if hasattr(arg, 'op')
+        new_scope.get_value(arg, timecontext)
+        if isinstance(arg, ops.Node)
         else arg
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 
     result = execute_node(
-        op,
+        node,
         *data,
         scope=scope,
         timecontext=timecontext,
@@ -334,17 +338,17 @@ def execute_until_in_scope(
         clients=clients,
         **kwargs,
     )
-    computed = post_execute_(op, result, timecontext=timecontext)
-    return Scope({op: computed}, timecontext)
+    computed = post_execute_(node, result, timecontext=timecontext)
+    return Scope({node: computed}, timecontext)
 
 
 execute = Dispatcher('execute')
 
 
-@execute.register(ir.Expr)
+@execute.register(ops.Node)
 @trace
 def main_execute(
-    expr,
+    node,
     params=None,
     scope=None,
     timecontext: Optional[TimeContext] = None,
@@ -357,9 +361,9 @@ def main_execute(
 
     Parameters
     ----------
-    expr : ibis.expr.types.Expr
-        The expression to execute
-    params : Mapping[ibis.expr.types.Expr, object]
+    node : ibis.expr.operations.Node
+        The operation node to execute
+    params : Mapping[ibis.expr.operations.Node, object]
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
@@ -403,7 +407,7 @@ def main_execute(
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
     scope = scope.merge_scope(Scope(params, timecontext))
     return execute_with_scope(
-        expr,
+        node,
         scope,
         timecontext=timecontext,
         aggcontext=aggcontext,
@@ -413,7 +417,7 @@ def main_execute(
 
 
 def execute_and_reset(
-    expr,
+    node,
     params=None,
     scope=None,
     timecontext: Optional[TimeContext] = None,
@@ -429,9 +433,9 @@ def execute_and_reset(
     an index.
     Parameters
     ----------
-    expr : ibis.expr.types.Expr
-        The expression to execute
-    params : Mapping[ibis.expr.types.Expr, object]
+    node : ibis.expr.operations.Node
+        The operation node to execute
+    params : Mapping[ibis.expr.operations.Node, object]
         The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
         Additional scope, mapping ibis operations to data
@@ -457,7 +461,7 @@ def execute_and_reset(
         * If no data are bound to the input expression
     """
     result = execute(
-        expr,
+        node,
         params=params,
         scope=scope,
         timecontext=timecontext,
@@ -467,9 +471,8 @@ def execute_and_reset(
     # Note - if `result` has npartitions > 1 `reset_index` will not create
     # a monotonically increasing index.
     if isinstance(result, dd.DataFrame):
-        schema = expr.schema()
         df = result.reset_index()
-        return df[list(schema.names)]
+        return df[list(node.schema.names)]
     elif isinstance(result, dd.Series):
         return result.reset_index(drop=True)
     return result

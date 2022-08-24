@@ -859,7 +859,10 @@ class Backend(BaseSQLBackend):
         t = self.table(qualified_name)
         if not persist:
             self._temp_objects.add(
-                weakref.finalize(t, self._drop_table, qualified_name)
+                # weakref the op instead of the expression because the table is
+                # potentially collected after subsequent use when `_erase_expr`
+                # unwraps the Expr layer
+                weakref.finalize(t.op(), self._drop_table, qualified_name)
             )
 
         # Compute number of rows in table for better default query planning

@@ -56,7 +56,7 @@ def test_multiple_case_expr(table):
     op = expr.op()
     assert isinstance(expr, ir.FloatingColumn)
     assert isinstance(op, ops.SearchedCase)
-    assert op.default is default
+    assert op.default == default.op()
 
 
 def test_pickle_multiple_case_node(table):
@@ -87,9 +87,9 @@ def test_simple_case_null_else(table):
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
-    assert isinstance(op.default, ir.Value)
-    assert isinstance(op.default.op(), ops.Cast)
-    assert op.default.op().to == dt.string
+    assert isinstance(op.default.to_expr(), ir.Value)
+    assert isinstance(op.default, ops.Cast)
+    assert op.default.to == dt.string
 
 
 def test_multiple_case_null_else(table):
@@ -97,9 +97,9 @@ def test_multiple_case_null_else(table):
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
-    assert isinstance(op.default, ir.Value)
-    assert isinstance(op.default.op(), ops.Cast)
-    assert op.default.op().to == dt.string
+    assert isinstance(op.default.to_expr(), ir.Value)
+    assert isinstance(op.default, ops.Cast)
+    assert op.default.to == dt.string
 
 
 def test_case_mixed_type():
