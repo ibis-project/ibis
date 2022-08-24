@@ -518,16 +518,10 @@ def test_sa_default_numeric_precision_and_scale(
     con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "dask",
-        "datafusion",
-        "impala",
-        "pandas",
-        "pyspark",
-        "sqlite",
-    ]
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="clickhouse doesn't implement a [0.0, 1.0) random function",
 )
 def test_random(con):
     expr = ibis.random()
