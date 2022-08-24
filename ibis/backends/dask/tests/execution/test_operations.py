@@ -416,7 +416,7 @@ def test_null_if_zero(t, df, column):
 )
 def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
-    result = execute(expr)
+    result = execute(expr.op())
     if isinstance(result, (dd.Series, dd.DataFrame)):
         compare(result.compute(), expected(df).compute())
     else:

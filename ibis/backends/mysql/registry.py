@@ -7,7 +7,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     sqlalchemy_operation_registry,
@@ -23,18 +22,16 @@ operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
 
-def _capitalize(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
+def _capitalize(t, op):
+    sa_arg = t.translate(op.arg)
     return sa.func.concat(
         sa.func.ucase(sa.func.left(sa_arg, 1)), sa.func.substring(sa_arg, 2)
     )
 
 
 def _extract(fmt):
-    def translator(t, expr):
-        (arg,) = expr.op().args
-        sa_arg = t.translate(arg)
+    def translator(t, op):
+        sa_arg = t.translate(op.arg)
         if fmt == 'millisecond':
             return sa.extract('microsecond', sa_arg) % 1000
         return sa.extract(fmt, sa_arg)
@@ -53,47 +50,43 @@ _truncate_formats = {
 }
 
 
-def _truncate(t, expr):
-    arg, unit = expr.op().args
-    sa_arg = t.translate(arg)
+def _truncate(t, op):
+    sa_arg = t.translate(op.arg)
     try:
-        fmt = _truncate_formats[unit]
+        fmt = _truncate_formats[op.unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {unit}'
+            f'Unsupported truncate unit {op.unit}'
         )
     return sa.func.date_format(sa_arg, fmt)
 
 
-def _log(t, expr):
-    arg, base = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_base = t.translate(base)
+def _log(t, op):
+    sa_arg = t.translate(op.arg)
+    sa_base = t.translate(op.base)
     return sa.func.log(sa_base, sa_arg)
 
 
-def _round(t, expr):
-    arg, digits = expr.op().args
-    sa_arg = t.translate(arg)
+def _round(t, op):
+    sa_arg = t.translate(op.arg)
 
-    if digits is None:
+    if op.digits is None:
         sa_digits = 0
     else:
-        sa_digits = t.translate(digits)
+        sa_digits = t.translate(op.digits)
 
     return sa.func.round(sa_arg, sa_digits)
 
 
-def _interval_from_integer(t, expr):
-    arg, unit = expr.op().args
-    if unit in {'ms', 'ns'}:
+def _interval_from_integer(t, op):
+    if op.unit in {'ms', 'ns'}:
         raise com.UnsupportedOperationError(
             'MySQL does not allow operation '
-            'with INTERVAL offset {}'.format(unit)
+            'with INTERVAL offset {}'.format(op.unit)
         )
 
-    sa_arg = t.translate(arg)
-    text_unit = expr.type().resolution.upper()
+    sa_arg = t.translate(op.arg)
+    text_unit = op.output_dtype.resolution.upper()
 
     # XXX: Is there a better way to handle this? I.e. can we somehow use
     # the existing bind parameter produced by translate and reuse its name in
@@ -105,18 +98,16 @@ def _interval_from_integer(t, expr):
     return sa.text(f'INTERVAL {sa_arg} {text_unit}')
 
 
-def _timestamp_diff(t, expr):
-    left, right = expr.op().args
-    sa_left = t.translate(left)
-    sa_right = t.translate(right)
+def _timestamp_diff(t, op):
+    sa_left = t.translate(op.left)
+    sa_right = t.translate(op.right)
     return sa.func.timestampdiff(sa.text('SECOND'), sa_right, sa_left)
 
 
-def _string_to_timestamp(t, expr):
-    op = expr.op()
+def _string_to_timestamp(t, op):
     sa_arg = t.translate(op.arg)
     sa_format_str = t.translate(op.format_str)
-    if (op.timezone is not None) and op.timezone.op().value != "UTC":
+    if (op.timezone is not None) and op.timezone.value != "UTC":
         raise com.UnsupportedArgumentError(
             'MySQL backend only supports timezone UTC for converting'
             'string to timestamp.'
@@ -124,58 +115,55 @@ def _string_to_timestamp(t, expr):
     return sa.func.str_to_date(sa_arg, sa_format_str)
 
 
-def _literal(_, expr):
-    if isinstance(expr, ir.IntervalScalar):
-        if expr.type().unit in {'ms', 'ns'}:
+def _literal(_, op):
+    if isinstance(op.output_dtype, dt.Interval):
+        if op.output_dtype.unit in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
                 'MySQL does not allow operation '
-                'with INTERVAL offset {}'.format(expr.type().unit)
+                f'with INTERVAL offset {op.output_dtype.unit}'
             )
-        text_unit = expr.type().resolution.upper()
-        value = expr.op().value
-        return sa.text(f'INTERVAL :value {text_unit}').bindparams(value=value)
-    elif isinstance(expr, ir.SetScalar):
-        return list(map(sa.literal, expr.op().value))
+        text_unit = op.output_dtype.resolution.upper()
+        sa_text = sa.text(f'INTERVAL :value {text_unit}')
+        return sa_text.bindparams(value=op.value)
+    elif isinstance(op.output_dtype, dt.Set):
+        return list(map(sa.literal, op.value))
     else:
-        value = expr.op().value
+        value = op.value
         if isinstance(value, pd.Timestamp):
             value = value.to_pydatetime()
 
         lit = sa.literal(value)
-        if isinstance(dtype := expr.type(), dt.Timestamp):
-            return sa.cast(lit, to_sqla_type(dtype))
+        if isinstance(op.output_dtype, dt.Timestamp):
+            return sa.cast(lit, to_sqla_type(op.output_dtype))
         return lit
 
 
-def _group_concat(t, expr):
-    op = expr.op()
-    arg, sep, where = op.args
-    if where is not None:
-        case = where.ifelse(arg, ibis.NA)
+def _group_concat(t, op):
+    if op.where is not None:
+        # TODO(kszucs): avoid the expression roundtrip
+        case = op.where.to_expr().ifelse(op.arg, ibis.NA).op()
         arg = t.translate(case)
     else:
-        arg = t.translate(arg)
-    return sa.func.group_concat(arg.op('SEPARATOR')(t.translate(sep)))
+        arg = t.translate(op.arg)
+    sep = t.translate(op.sep)
+    return sa.func.group_concat(arg.op('SEPARATOR')(sep))
 
 
-def _day_of_week_index(t, expr):
-    (arg,) = expr.op().args
-    left = sa.func.dayofweek(t.translate(arg)) - 2
+def _day_of_week_index(t, op):
+    left = sa.func.dayofweek(t.translate(op.arg)) - 2
     right = 7
     return (left % right + right) % right
 
 
-def _day_of_week_name(t, expr):
-    (arg,) = expr.op().args
-    return sa.func.dayname(t.translate(arg))
+def _day_of_week_name(t, op):
+    return sa.func.dayname(t.translate(op.arg))
 
 
-def _find_in_set(t, expr):
-    op = expr.op()
+def _find_in_set(t, op):
     return (
         sa.func.find_in_set(
             t.translate(op.needle),
-            sa.func.concat_ws(",", *map(t.translate, op.values)),
+            sa.func.concat_ws(",", *map(t.translate, op.values.values)),
         )
         - 1
     )

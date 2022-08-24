@@ -5,7 +5,6 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 
 clickhouse_driver = pytest.importorskip("clickhouse_driver")
 
@@ -251,7 +250,11 @@ def test_non_equijoin(alltypes):
     t2 = t.view()
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
 
-    with pytest.raises(com.TranslationError):
+    # compilation should pass
+    expr.compile()
+
+    # while execution should fail since clickhouse doesn't support non-equijoin
+    with pytest.raises(Exception, match="Unsupported JOIN ON conditions"):
         expr.execute()
 
 
@@ -345,7 +348,7 @@ def test_where_use_if(con, alltypes, translate):
         alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col
     )
 
-    result = translate(expr)
+    result = translate(expr.op())
     expected = "if(`float_col` > 0, `int_col`, `bigint_col`)"
     assert result == expected
     con.execute(expr)

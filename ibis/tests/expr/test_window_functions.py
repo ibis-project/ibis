@@ -340,7 +340,7 @@ def test_combine_preserves_existing_window():
     w = ibis.cumulative_window(order_by=t.one)
     mut = t.group_by(t.three).mutate(four=t.two.sum().over(w))
 
-    assert mut.op().selections[1].op().arg.op().window.following == 0
+    assert mut.op().selections[1].arg.window.following == 0
 
 
 def test_quantile_shape():
@@ -353,6 +353,4 @@ def test_quantile_shape():
     expr = t.projection(projs)
     (b1,) = expr.op().selections
 
-    assert b1.op().output_shape == rlz.Shape.COLUMNAR
-
-    assert isinstance(b1, ir.Column)
+    assert b1.output_shape == rlz.Shape.COLUMNAR

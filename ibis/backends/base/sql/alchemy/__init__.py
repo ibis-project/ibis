@@ -27,7 +27,6 @@ from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     get_sqla_table,
-    infix_op,
     reduction,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
