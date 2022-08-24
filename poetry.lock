@@ -2150,7 +2150,7 @@ sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
 name = "sqlglot"
-version = "4.7.1"
+version = "5.1.0"
 description = "An easily customizable SQL parser and transpiler"
 category = "main"
 optional = true
@@ -2409,7 +2409,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "f1667ceb3a83cdfb9559d6f91a540b88d48b371138142ce8b92b05554da52ffd"
+content-hash = "2ea8484935e0f6130308c9dae95079b05f68eb9c807f91090670e9eb50b61982"
 
 [metadata.files]
 absolufy-imports = [
@@ -4166,8 +4166,8 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.40.tar.gz", hash = "sha256:44a660506080cc975e1dfa5776fe5f6315ddc626a77b50bf0eee18b0389ea265"},
 ]
 sqlglot = [
-    {file = "sqlglot-4.7.1-py3-none-any.whl", hash = "sha256:d19c0b308b9fd4b983880dacfe831d704a52d704ff06c7f342d04dd036382507"},
-    {file = "sqlglot-4.7.1.tar.gz", hash = "sha256:cb4a6dbf162de85182cb67ed1e24fca68e7efb40e19e948c88aaa2536c20e636"},
+    {file = "sqlglot-5.1.0-py3-none-any.whl", hash = "sha256:dac8b6c35170aab8f6b7eadf036ffde9ece971395b53686b2c280911970fa38b"},
+    {file = "sqlglot-5.1.0.tar.gz", hash = "sha256:8f90a0119aaf52cbb3c3cc589ca74661bc0a5be73b9cedaae0f00827f67beaf9"},
 ]
 stack-data = [
     {file = "stack_data-0.4.0-py3-none-any.whl", hash = "sha256:b94fed36d725cfabc6d09ed5886913e35eed9009766a1af1d5941b9da3a94aaa"},
