@@ -1,12 +1,14 @@
 from public import public
 
+import ibis.expr.operations as ops
+import ibis.expr.rules as rlz
+import ibis.expr.types as ir
 from ibis import util
 from ibis.common import exceptions as com
-from ibis.expr import rules as rlz
-from ibis.expr import types as ir
-from ibis.expr.operations.core import Node
+from ibis.expr.operations.core import Value
 
 
+# TODO(kszucs): rewrite to both receive operations and return with operations
 def _to_sort_key(key, *, table=None):
     if isinstance(key, DeferredSortKey):
         if table is None:
@@ -15,8 +17,12 @@ def _to_sort_key(key, *, table=None):
             )
         key = key.resolve(table)
 
+    # TODO(kszucs): refactor to only work with operation classes
     if isinstance(key, ir.SortExpr):
         return key
+
+    if isinstance(key, ops.SortKey):
+        return key.to_expr()
 
     if isinstance(key, (tuple, list)):
         key, sort_order = key
@@ -39,6 +45,7 @@ def _to_sort_key(key, *, table=None):
     return SortKey(key, ascending=sort_order).to_expr()
 
 
+# TODO(kszucs): rewrite to both receive operations and return with operations
 def _maybe_convert_sort_keys(tables, exprs):
     exprs = util.promote_list(exprs)
     keys = exprs[:]
@@ -51,11 +58,12 @@ def _maybe_convert_sort_keys(tables, exprs):
             else:
                 keys[i] = sort_key
                 break
-    return keys
+
+    return [k.op() for k in keys]
 
 
 @public
-class SortKey(Node):
+class SortKey(Value):
     expr = rlz.any
     ascending = rlz.optional(
         rlz.map_to(
@@ -70,9 +78,14 @@ class SortKey(Node):
     )
 
     output_type = ir.SortExpr
+    output_shape = rlz.Shape.COLUMNAR
 
     def resolve_name(self):
-        return self.expr.get_name()
+        return self.expr.resolve_name()
+
+    @property
+    def output_dtype(self):
+        return self.expr.output_dtype
 
 
 @public

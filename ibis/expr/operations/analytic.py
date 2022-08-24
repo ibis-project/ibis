@@ -6,7 +6,7 @@ from ibis.common.validators import immutable_property
 from ibis.expr import datatypes as dt
 from ibis.expr import rules as rlz
 from ibis.expr import types as ir
-from ibis.expr.operations.core import Value
+from ibis.expr.operations.core import Node, Value
 from ibis.expr.window import propagate_down_window
 
 
@@ -28,7 +28,7 @@ class Window(Value):
 
     @property
     def inputs(self):
-        return self.expr.op().inputs[0], self.window
+        return self.expr.inputs[0], self.window
 
 
 @public
@@ -145,10 +145,7 @@ class CumulativeSum(CumulativeOp):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.BooleanValue):
-            return dt.int64
-        else:
-            return self.arg.type().largest
+        return dt.higher_precedence(self.arg.output_dtype.largest, dt.int64)
 
 
 @public
@@ -159,10 +156,7 @@ class CumulativeMean(CumulativeOp):
 
     @immutable_property
     def output_dtype(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg.type().largest
-        else:
-            return dt.float64
+        return dt.higher_precedence(self.arg.output_dtype.largest, dt.float64)
 
 
 @public
@@ -235,6 +229,18 @@ class NthValue(Analytic):
     arg = rlz.column(rlz.any)
     nth = rlz.integer
     output_dtype = rlz.dtype_like("arg")
+
+
+# TODO(kszucs): should inherit from analytic base
+@public
+class TopK(Node):
+    arg = rlz.column(rlz.any)
+    k = rlz.non_negative_integer
+    by = rlz.one_of((rlz.function_of(rlz.base_table_of("arg")), rlz.any))
+    output_type = ir.TopK
+
+    def blocks(self):  # pragma: no cover
+        return True
 
 
 public(WindowOp=Window, AnalyticOp=Analytic)

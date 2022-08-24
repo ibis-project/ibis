@@ -79,13 +79,13 @@ def guid2(con):
 def test_cast(alltypes, at, translate, left_func, right_func):
     left = left_func(alltypes)
     right = right_func(at)
-    assert str(translate(left).compile()) == str(right.compile())
+    assert str(translate(left.op()).compile()) == str(right.compile())
 
 
 def test_date_cast(alltypes, at, translate):
     result = alltypes.date_string_col.cast('date')
     expected = sa.cast(at.c.date_string_col, sa.DATE)
-    assert str(translate(result)) == str(expected)
+    assert str(translate(result.op())) == str(expected)
 
 
 @pytest.mark.parametrize(
@@ -113,7 +113,7 @@ def test_noop_cast(alltypes, at, translate, column):
     result = col.cast(col.type())
     expected = at.c[column]
     assert result.equals(col)
-    assert str(translate(result)) == str(expected)
+    assert str(translate(result.op())) == str(expected)
 
 
 def test_timestamp_cast_noop(alltypes, at, translate):
@@ -127,8 +127,8 @@ def test_timestamp_cast_noop(alltypes, at, translate):
     expected1 = at.c.timestamp_col
     expected2 = sa.func.to_timestamp(at.c.int_col)
 
-    assert str(translate(result1)) == str(expected1)
-    assert str(translate(result2)) == str(expected2)
+    assert str(translate(result1.op())) == str(expected1)
+    assert str(translate(result2.op())) == str(expected2)
 
 
 @pytest.mark.parametrize(

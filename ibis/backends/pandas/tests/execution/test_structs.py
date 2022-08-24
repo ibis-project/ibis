@@ -50,11 +50,11 @@ def test_struct_field_literal(value):
     )
 
     expr = struct['fruit']
-    result = execute(expr)
+    result = execute(expr.op())
     assert result == "pear"
 
     expr = struct['weight']
-    result = execute(expr)
+    result = execute(expr.op())
     assert result == 0
 
 

@@ -229,7 +229,7 @@ def execute_cast_series_group_by(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, dd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
     arg = op.arg
-    from_type = arg.type()
+    from_type = arg.output_dtype
 
     if from_type.equals(type):  # noop cast
         return data
@@ -260,7 +260,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, dd.Series, dt.Date)
 def execute_cast_series_date(op, data, type, **kwargs):
     arg = op.args[0]
-    from_type = arg.type()
+    from_type = arg.output_dtype
 
     if from_type.equals(type):
         return data

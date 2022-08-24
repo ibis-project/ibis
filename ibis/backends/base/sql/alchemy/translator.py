@@ -5,8 +5,6 @@ import sqlalchemy as sa
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base.sql.alchemy.datatypes import (
     ibis_type_to_sqla,
     to_sqla_type,
@@ -60,26 +58,26 @@ class AlchemyExprTranslator(ExprTranslator):
         if (
             self._bool_aggs_need_cast_to_int32
             and isinstance(op, (ops.Sum, ops.Mean, ops.Min, ops.Max))
-            and isinstance(type := arg.type(), dt.Boolean)
+            and isinstance(dtype := arg.output_dtype, dt.Boolean)
         ):
-            return arg.cast(dt.Int32(nullable=type.nullable))
+            return ops.Cast(arg, dt.Int32(nullable=dtype.nullable))
         return arg
 
-    def _reduction(self, sa_func, expr):
-        op = expr.op()
-
+    def _reduction(self, sa_func, op):
         argtuple = (
             self._maybe_cast_bool(op, arg)
             for name, arg in zip(op.argnames, op.args)
-            if isinstance(arg, ir.Expr) and name != "where"
+            if isinstance(arg, ops.Node) and name != "where"
         )
         if (where := op.where) is not None:
             if self._has_reduction_filter_syntax:
                 sa_args = tuple(map(self.translate, argtuple))
                 return sa_func(*sa_args).filter(self.translate(where))
             else:
+                # TODO(kszucs): avoid expression roundtrips
                 sa_args = tuple(
-                    self.translate(where.ifelse(arg, None)) for arg in argtuple
+                    self.translate(where.to_expr().ifelse(arg, None).op())
+                    for arg in argtuple
                 )
         else:
             sa_args = tuple(map(self.translate, argtuple))
@@ -91,23 +89,25 @@ rewrites = AlchemyExprTranslator.rewrites
 
 
 @rewrites(ops.NullIfZero)
-def _nullifzero(expr):
-    arg = expr.op().args[0]
-    return (arg == 0).ifelse(ibis.NA, arg)
+def _nullifzero(op):
+    # TODO(kszucs): avoid rountripping to expr then back to op
+    expr = op.arg.to_expr()
+    new_expr = (expr == 0).ifelse(ibis.NA, expr)
+    return new_expr.op()
 
 
 # TODO This was previously implemented with the legacy `@compiles` decorator.
 # This definition should now be in the registry, but there is some magic going
 # on that things fail if it's not defined here (and in the registry
 # `operator.truediv` is used.
-def _true_divide(t, expr):
-    op = expr.op()
-    left, right = args = op.args
+def _true_divide(t, op):
+    if all(isinstance(arg.output_dtype, dt.Integer) for arg in op.args):
+        # TODO(kszucs): this should be done in the rewrite phase
+        right, left = op.right.to_expr(), op.left.to_expr()
+        new_expr = left.div(right.cast('double'))
+        return t.translate(new_expr.op())
 
-    if util.all_of(args, ir.IntegerValue):
-        return t.translate(left.div(right.cast('double')))
-
-    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+    return fixed_arity(lambda x, y: x / y, 2)(t, op)
 
 
 AlchemyExprTranslator._registry[ops.Divide] = _true_divide

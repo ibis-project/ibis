@@ -826,7 +826,9 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return self.concat(other)
+        import ibis.expr.operations as ops
+
+        return ops.StringConcat([self, other]).to_expr()
 
     def __radd__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -841,9 +843,9 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        import ibis.expr.rules as rlz
+        import ibis.expr.operations as ops
 
-        return rlz.string(other).concat(self)
+        return ops.StringConcat([other, self]).to_expr()
 
     def convert_base(
         self,

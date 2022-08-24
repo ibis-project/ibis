@@ -7,7 +7,6 @@ import pyarrow as pa
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.datafusion.datatypes import to_pyarrow_type
 
 
@@ -16,30 +15,25 @@ def translate(expr):
     raise NotImplementedError(expr)
 
 
-@translate.register(ir.Expr)
-def expression(expr):
-    return translate(expr.op(), expr)
-
-
 @translate.register(ops.Node)
-def operation(op, _):
+def operation(op):
     raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate.register(ops.DatabaseTable)
-def table(op, _):
+def table(op):
     name, _, client = op.args
     return client._context.table(name)
 
 
 @translate.register(ops.Alias)
-def alias(op, _):
+def alias(op):
     arg = translate(op.arg)
     return arg.alias(op.name)
 
 
 @translate.register(ops.Literal)
-def literal(op, _):
+def literal(op):
     if isinstance(op.value, (set, frozenset)):
         value = list(op.value)
     else:
@@ -52,15 +46,15 @@ def literal(op, _):
 
 
 @translate.register(ops.Cast)
-def cast(op, _):
+def cast(op):
     arg = translate(op.arg)
     typ = to_pyarrow_type(op.to)
     return arg.cast(to=typ)
 
 
 @translate.register(ops.TableColumn)
-def column(op, _):
-    table_op = op.table.op()
+def column(op):
+    table_op = op.table
 
     if hasattr(table_op, "name"):
         return df.column(f'{table_op.name}."{op.name}"')
@@ -69,34 +63,34 @@ def column(op, _):
 
 
 @translate.register(ops.SortKey)
-def sort_key(op, _):
+def sort_key(op):
     arg = translate(op.expr)
     return arg.sort(ascending=op.ascending)
 
 
 @translate.register(ops.Selection)
-def selection(op, expr):
+def selection(op):
     plan = translate(op.table)
 
     selections = []
-    for expr in op.selections or [op.table]:
+    for arg in op.selections or [op.table]:
         # TODO(kszucs) it would be nice if we wouldn't need to handle the
         # specific cases in the backend implementations, we could add a
         # new operator which retrieves all of the Table columns
         # (.e.g. Asterisk) so the translate() would handle this
         # automatically
-        if isinstance(expr, ir.Table):
-            for name in expr.columns:
-                column = expr.get_column(name)
+        if isinstance(arg, ops.TableNode):
+            for name in arg.schema.names:
+                column = ops.TableColumn(table=arg, name=name)
                 field = translate(column)
                 selections.append(field)
-        elif isinstance(expr, ir.Value):
-            field = translate(expr)
+        elif isinstance(arg, ops.Value):
+            field = translate(arg)
             selections.append(field)
         else:
             raise com.TranslationError(
                 "DataFusion backend is unable to compile selection with "
-                f"expression type of {type(expr)}"
+                f"operation type of {type(arg)}"
             )
 
     plan = plan.select(*selections)
@@ -114,14 +108,10 @@ def selection(op, expr):
 
 
 @translate.register(ops.Aggregation)
-def aggregation(op, expr):
+def aggregation(op):
     table = translate(op.table)
-    group_by = [translate(expr) for expr in op.by]
-
-    metrics = []
-    for expr in op.metrics:
-        agg = translate(expr)
-        metrics.append(agg)
+    group_by = [translate(arg) for arg in op.by]
+    metrics = [translate(arg) for arg in op.metrics]
 
     if op.predicates:
         table = table.filter(
@@ -135,45 +125,45 @@ def aggregation(op, expr):
 
 
 @translate.register(ops.Not)
-def invert(op, _):
+def invert(op):
     arg = translate(op.arg)
     return ~arg
 
 
 @translate.register(ops.And)
-def and_(op, _):
+def and_(op):
     left = translate(op.left)
     right = translate(op.right)
     return left & right
 
 
 @translate.register(ops.Or)
-def or_(op, _):
+def or_(op):
     left = translate(op.left)
     right = translate(op.right)
     return left | right
 
 
 @translate.register(ops.Abs)
-def abs(op, _):
+def abs(op):
     arg = translate(op.arg)
     return df.functions.abs(arg)
 
 
 @translate.register(ops.Ceil)
-def ceil(op, _):
+def ceil(op):
     arg = translate(op.arg)
     return df.functions.ceil(arg).cast(pa.int64())
 
 
 @translate.register(ops.Floor)
-def floor(op, _):
+def floor(op):
     arg = translate(op.arg)
     return df.functions.floor(arg).cast(pa.int64())
 
 
 @translate.register(ops.Round)
-def round(op, _):
+def round(op):
     arg = translate(op.arg)
     if op.digits is not None:
         raise com.UnsupportedOperationError(
@@ -183,101 +173,101 @@ def round(op, _):
 
 
 @translate.register(ops.Ln)
-def ln(op, _):
+def ln(op):
     arg = translate(op.arg)
     return df.functions.ln(arg)
 
 
 @translate.register(ops.Log2)
-def log2(op, _):
+def log2(op):
     arg = translate(op.arg)
     return df.functions.log2(arg)
 
 
 @translate.register(ops.Log10)
-def log10(op, _):
+def log10(op):
     arg = translate(op.arg)
     return df.functions.log10(arg)
 
 
 @translate.register(ops.Sqrt)
-def sqrt(op, _):
+def sqrt(op):
     arg = translate(op.arg)
     return df.functions.sqrt(arg)
 
 
 @translate.register(ops.Strip)
-def strip(op, _):
+def strip(op):
     arg = translate(op.arg)
     return df.functions.trim(arg)
 
 
 @translate.register(ops.LStrip)
-def lstrip(op, _):
+def lstrip(op):
     arg = translate(op.arg)
     return df.functions.ltrim(arg)
 
 
 @translate.register(ops.RStrip)
-def rstrip(op, _):
+def rstrip(op):
     arg = translate(op.arg)
     return df.functions.rtrim(arg)
 
 
 @translate.register(ops.Lowercase)
-def lower(op, _):
+def lower(op):
     arg = translate(op.arg)
     return df.functions.lower(arg)
 
 
 @translate.register(ops.Uppercase)
-def upper(op, _):
+def upper(op):
     arg = translate(op.arg)
     return df.functions.upper(arg)
 
 
 @translate.register(ops.Reverse)
-def reverse(op, _):
+def reverse(op):
     arg = translate(op.arg)
     return df.functions.reverse(arg)
 
 
 @translate.register(ops.StringLength)
-def strlen(op, _):
+def strlen(op):
     arg = translate(op.arg)
     return df.functions.character_length(arg)
 
 
 @translate.register(ops.Capitalize)
-def capitalize(op, _):
+def capitalize(op):
     arg = translate(op.arg)
     return df.functions.initcap(arg)
 
 
 @translate.register(ops.Substring)
-def substring(op, _):
+def substring(op):
     arg = translate(op.arg)
-    start = translate(op.start + 1)
+    start = translate(ops.Add(left=op.start, right=1))
     length = translate(op.length)
     return df.functions.substr(arg, start, length)
 
 
 @translate.register(ops.RegexExtract)
-def regex_extract(op, _):
+def regex_extract(op):
     arg = translate(op.arg)
     pattern = translate(op.pattern)
     return df.functions.regexp_match(arg, pattern)
 
 
 @translate.register(ops.Repeat)
-def repeat(op, _):
+def repeat(op):
     arg = translate(op.arg)
     times = translate(op.times)
     return df.functions.repeat(arg, times)
 
 
 @translate.register(ops.LPad)
-def lpad(op, _):
+def lpad(op):
     arg = translate(op.arg)
     length = translate(op.length)
     pad = translate(op.pad)
@@ -285,7 +275,7 @@ def lpad(op, _):
 
 
 @translate.register(ops.RPad)
-def rpad(op, _):
+def rpad(op):
     arg = translate(op.arg)
     length = translate(op.length)
     pad = translate(op.pad)
@@ -293,69 +283,69 @@ def rpad(op, _):
 
 
 @translate.register(ops.GreaterEqual)
-def ge(op, _):
+def ge(op):
     return translate(op.left) >= translate(op.right)
 
 
 @translate.register(ops.LessEqual)
-def le(op, _):
+def le(op):
     return translate(op.left) <= translate(op.right)
 
 
 @translate.register(ops.Greater)
-def gt(op, _):
+def gt(op):
     return translate(op.left) > translate(op.right)
 
 
 @translate.register(ops.Less)
-def lt(op, _):
+def lt(op):
     return translate(op.left) < translate(op.right)
 
 
 @translate.register(ops.Equals)
-def eq(op, _):
+def eq(op):
     return translate(op.left) == translate(op.right)
 
 
 @translate.register(ops.NotEquals)
-def ne(op, _):
+def ne(op):
     return translate(op.left) != translate(op.right)
 
 
 @translate.register(ops.Add)
-def add(op, _):
+def add(op):
     return translate(op.left) + translate(op.right)
 
 
 @translate.register(ops.Subtract)
-def sub(op, _):
+def sub(op):
     return translate(op.left) - translate(op.right)
 
 
 @translate.register(ops.Multiply)
-def mul(op, _):
+def mul(op):
     return translate(op.left) * translate(op.right)
 
 
 @translate.register(ops.Divide)
-def div(op, _):
+def div(op):
     return translate(op.left) / translate(op.right)
 
 
 @translate.register(ops.FloorDivide)
-def floordiv(op, _):
+def floordiv(op):
     return df.functions.floor(translate(op.left) / translate(op.right))
 
 
 @translate.register(ops.Modulus)
-def mod(op, _):
+def mod(op):
     return translate(op.left) % translate(op.right)
 
 
 @translate.register(ops.Count)
-def count(op, _):
+def count(op):
     op_arg = op.arg
-    if isinstance(op_arg, ir.Table):
+    if isinstance(op_arg, ops.TableNode):
         arg = df.literal(1)
     else:
         arg = translate(op_arg)
@@ -363,59 +353,50 @@ def count(op, _):
 
 
 @translate.register(ops.Sum)
-def sum(op, _):
+def sum(op):
     arg = translate(op.arg)
     return df.functions.sum(arg)
 
 
 @translate.register(ops.Min)
-def min(op, _):
+def min(op):
     arg = translate(op.arg)
     return df.functions.min(arg)
 
 
 @translate.register(ops.Max)
-def max(op, _):
+def max(op):
     arg = translate(op.arg)
     return df.functions.max(arg)
 
 
 @translate.register(ops.Mean)
-def mean(op, _):
+def mean(op):
     arg = translate(op.arg)
     return df.functions.avg(arg)
 
 
-def _prepare_contains_options(options):
-    if isinstance(options, ir.Scalar):
-        # TODO(kszucs): it would be better if we could pass an arrow
-        # ListScalar to datafusions in_list function
-        return [df.literal(v) for v in options.op().value]
-    else:
-        return translate(options)
-
-
 @translate.register(ops.ValueList)
-def value_list(op, _):
+def value_list(op):
     return list(map(translate, op.values))
 
 
 @translate.register(ops.Contains)
-def contains(op, _):
+def contains(op):
     value = translate(op.value)
-    options = _prepare_contains_options(op.options)
+    options = translate(op.options)
     return df.functions.in_list(value, options, negated=False)
 
 
 @translate.register(ops.NotContains)
-def not_contains(op, _):
+def not_contains(op):
     value = translate(op.value)
-    options = _prepare_contains_options(op.options)
+    options = translate(op.options)
     return df.functions.in_list(value, options, negated=True)
 
 
 @translate.register(ops.Negate)
-def negate(op, _):
+def negate(op):
     return df.lit(-1) * translate(op.arg)
 
 
@@ -425,26 +406,26 @@ def negate(op, _):
 @translate.register(ops.Cos)
 @translate.register(ops.Sin)
 @translate.register(ops.Tan)
-def trig(op, _):
+def trig(op):
     func_name = op.__class__.__name__.lower()
     func = getattr(df.functions, func_name)
     return func(translate(op.arg))
 
 
 @translate.register(ops.Atan2)
-def atan2(op, _):
+def atan2(op):
     y, x = map(translate, op.args)
     return df.functions.atan(y / x)
 
 
 @translate.register(ops.Cot)
-def cot(op, _):
+def cot(op):
     x = translate(op.arg)
     return df.functions.cos(x) / df.functions.sin(x)
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)
-def elementwise_udf(op, _):
+def elementwise_udf(op):
     udf = df.udf(
         op.func,
         input_types=list(map(to_pyarrow_type, op.input_type)),

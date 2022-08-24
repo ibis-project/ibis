@@ -13,42 +13,35 @@ from ibis.backends.clickhouse.identifiers import quote_identifier
 # TODO(kszucs): should inherit operation registry from the base compiler
 
 
-def _alias(translator, expr):
+def _alias(translator, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
-    op = expr.op()
     return translator.translate(op.arg)
 
 
-def _cast(translator, expr):
-    op = expr.op()
-    arg = op.arg
-    target = op.to
-    arg_ = translator.translate(arg)
-    type_ = serialize(target)
+def _cast(translator, op):
+    arg_ = translator.translate(op.arg)
+    type_ = serialize(op.to)
 
     return f'CAST({arg_!s} AS {type_!s})'
 
 
-def _between(translator, expr):
-    op = expr.op()
+def _between(translator, op):
     arg_, lower_, upper_ = map(translator.translate, op.args)
     return f'{arg_!s} BETWEEN {lower_!s} AND {upper_!s}'
 
 
-def _negate(translator, expr):
-    return f"-{_parenthesize(translator, expr.op().arg)}"
+def _negate(translator, op):
+    return f"-{_parenthesize(translator, op.arg)}"
 
 
-def _not(translator, expr):
-    return f"NOT {_parenthesize(translator, expr.op().arg)}"
+def _not(translator, op):
+    return f"NOT {_parenthesize(translator, op.arg)}"
 
 
-def _parenthesize(translator, expr):
-    op = expr.op()
-
+def _parenthesize(translator, op):
     # function calls don't need parens
-    what_ = translator.translate(expr)
+    what_ = translator.translate(op)
     if isinstance(op, (*_binary_infix_ops.keys(), *_unary_ops.keys())):
         return f"({what_})"
     else:
@@ -59,14 +52,12 @@ def _unary(func_name):
     return _fixed_arity(func_name, 1)
 
 
-def _extract_epoch_seconds(translator, expr):
-    op = expr.op()
+def _extract_epoch_seconds(translator, op):
     return _call(translator, 'toRelativeSecondNum', *op.args)
 
 
 def _fixed_arity(func_name, arity):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         arg_count = len(op.args)
         if arity != arg_count:
             msg = 'Incorrect number of args {0} instead of {1}'
@@ -76,43 +67,32 @@ def _fixed_arity(func_name, arity):
     return formatter
 
 
-def _array_index_op(translator, expr):
-    op = expr.op()
+def _array_index_op(translator, op):
+    arg_ = translator.translate(op.arg)
+    index_ = _parenthesize(translator, op.index)
 
-    arr = op.args[0]
-    idx = op.args[1]
+    correct_idx_ = f'if({index_} >= 0, {index_} + 1, {index_})'
 
-    arr_ = translator.translate(arr)
-    idx_ = _parenthesize(translator, idx)
-
-    correct_idx = f'if({idx_} >= 0, {idx_} + 1, {idx_})'
-
-    return f'arrayElement({arr_}, {correct_idx})'
+    return f'arrayElement({arg_}, {correct_idx_})'
 
 
-def _array_repeat_op(translator, expr):
-    op = expr.op()
-    arr, times = op.args
-
-    arr_ = _parenthesize(translator, arr)
-    times_ = _parenthesize(translator, times)
+def _array_repeat_op(translator, op):
+    arg_ = _parenthesize(translator, op.arg)
+    times_ = _parenthesize(translator, op.times)
 
     select = 'arrayFlatten(groupArray(arr))'
-    from_ = f'(select {arr_} as arr from system.numbers limit {times_})'
+    from_ = f'(select {arg_} as arr from system.numbers limit {times_})'
     return f'(select {select} from {from_})'
 
 
-def _array_slice_op(translator, expr):
-    op = expr.op()
-    arg, start, stop = op.args
-
-    start_ = _parenthesize(translator, start)
-    arg_ = translator.translate(arg)
+def _array_slice_op(translator, op):
+    start_ = _parenthesize(translator, op.start)
+    arg_ = translator.translate(op.arg)
 
     start_correct_ = f'if({start_} < 0, {start_}, {start_} + 1)'
 
-    if stop is not None:
-        stop_ = _parenthesize(translator, stop)
+    if op.stop is not None:
+        stop_ = _parenthesize(translator, op.stop)
 
         cast_arg_ = f'if({arg_} = [], CAST({arg_} AS Array(UInt8)), {arg_})'
         neg_start_ = f'(arrayCount({cast_arg_}) + {start_})'
@@ -129,8 +109,7 @@ def _array_slice_op(translator, expr):
 
 
 def _agg(func):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         where = getattr(op, "where", None)
         args = tuple(
             arg for arg in op.args if arg is not None and arg is not where
@@ -143,15 +122,14 @@ def _agg(func):
 def _agg_variance_like(func):
     variants = {'sample': f'{func}Samp', 'pop': f'{func}Pop'}
 
-    def formatter(translator, expr):
-        *args, how, where = expr.op().args
+    def formatter(translator, op):
+        *args, how, where = op.args
         return _aggregate(translator, variants[how], *args, where=where)
 
     return formatter
 
 
-def _corr(translator, expr):
-    op = expr.op()
+def _corr(translator, op):
     if op.how == "pop":
         raise ValueError(
             "ClickHouse only implements `sample` correlation coefficient"
@@ -171,23 +149,20 @@ def _aggregate(translator, func, *args, where=None):
         return _call(translator, func, *args)
 
 
-def _xor(translator, expr):
-    op = expr.op()
+def _xor(translator, op):
     left_ = _parenthesize(translator, op.left)
     right_ = _parenthesize(translator, op.right)
     return f'xor({left_}, {right_})'
 
 
 def _varargs(func_name):
-    def varargs_formatter(translator, expr):
-        op = expr.op()
-        return _call(translator, func_name, *op.arg)
+    def varargs_formatter(translator, op):
+        return _call(translator, func_name, *op.arg.values)
 
     return varargs_formatter
 
 
-def _arbitrary(translator, expr):
-    op = expr.op()
+def _arbitrary(translator, op):
     functions = {
         None: 'any',
         'first': 'any',
@@ -197,37 +172,35 @@ def _arbitrary(translator, expr):
     return _aggregate(translator, functions[op.how], op.arg, where=op.where)
 
 
-def _substring(translator, expr):
-    # arg_ is the formatted notation
-    op = expr.op()
-    arg, start, length = op.args
-    arg_, start_ = translator.translate(arg), translator.translate(start)
+def _substring(translator, op):
+    arg_, start_ = translator.translate(op.arg), translator.translate(op.start)
 
     # Clickhouse is 1-indexed
-    if length is None or isinstance(length.op(), ops.Literal):
-        if length is not None:
-            length_ = length.op().value
+    if op.length is None or isinstance(op.length, ops.Literal):
+        if op.length is not None:
+            length_ = op.length.value
             return f'substring({arg_}, {start_} + 1, {length_})'
         else:
             return f'substring({arg_}, {start_} + 1)'
     else:
-        length_ = translator.translate(length)
+        length_ = translator.translate(op.length)
         return f'substring({arg_}, {start_} + 1, {length_})'
 
 
-def _string_find(translator, expr):
-    op = expr.op()
-    arg, substr, start, _ = op.args
-    if start is not None:
+def _string_find(translator, op):
+    if op.start is not None:
         raise com.UnsupportedOperationError(
             "String find doesn't support start argument"
         )
+    if op.end is not None:
+        raise com.UnsupportedOperationError(
+            "String find doesn't support end argument"
+        )
 
-    return _call(translator, 'position', arg, substr) + ' - 1'
+    return _call(translator, 'position', op.arg, op.substr) + ' - 1'
 
 
-def _regex_extract(translator, expr):
-    op = expr.op()
+def _regex_extract(translator, op):
     arg_ = translator.translate(op.arg)
     pattern_ = translator.translate(op.pattern)
     index = op.index
@@ -238,58 +211,44 @@ def _regex_extract(translator, expr):
     return base
 
 
-def _parse_url(translator, expr):
-    op = expr.op()
-    arg, extract, key = op.args
-
-    if extract == 'HOST':
-        return _call(translator, 'domain', arg)
-    elif extract == 'PROTOCOL':
-        return _call(translator, 'protocol', arg)
-    elif extract == 'PATH':
-        return _call(translator, 'path', arg)
-    elif extract == 'QUERY':
-        if key is not None:
-            return _call(translator, 'extractURLParameter', arg, key)
+def _parse_url(translator, op):
+    if op.extract == 'HOST':
+        return _call(translator, 'domain', op.arg)
+    elif op.extract == 'PROTOCOL':
+        return _call(translator, 'protocol', op.arg)
+    elif op.extract == 'PATH':
+        return _call(translator, 'path', op.arg)
+    elif op.extract == 'QUERY':
+        if op.key is not None:
+            return _call(translator, 'extractURLParameter', op.arg, op.key)
         else:
-            return _call(translator, 'queryString', arg)
+            return _call(translator, 'queryString', op.arg)
     else:
         raise com.UnsupportedOperationError(
-            f'Parse url with extract {extract} is not supported'
+            f'Parse url with extract {op.extract} is not supported'
         )
 
 
-def _index_of(translator, expr):
-    op = expr.op()
-
-    arg, arr = op.args
-    arg_formatted = translator.translate(arg)
-    arr_formatted = ','.join(map(translator.translate, arr))
-    return f"indexOf([{arr_formatted}], {arg_formatted}) - 1"
+def _index_of(translator, op):
+    needle_ = translator.translate(op.needle)
+    values_ = ','.join(map(translator.translate, op.values.values))
+    return f"indexOf([{values_}], {needle_}) - 1"
 
 
-def _sign(translator, expr):
+def _sign(translator, op):
     """Workaround for missing sign function"""
-    op = expr.op()
-    (arg,) = op.args
-    arg_ = translator.translate(arg)
+    arg_ = translator.translate(op.arg)
     return 'intDivOrZero({0}, abs({0}))'.format(arg_)
 
 
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    if digits is not None:
-        return _call(translator, 'round', arg, digits)
+def _round(translator, op):
+    if op.digits is not None:
+        return _call(translator, 'round', op.arg, op.digits)
     else:
-        return _call(translator, 'round', arg)
+        return _call(translator, 'round', op.arg)
 
 
-def _hash(translator, expr):
-    op = expr.op()
-    arg, how = op.args
-
+def _hash(translator, op):
     algorithms = {
         'MD5',
         'halfMD5',
@@ -303,76 +262,69 @@ def _hash(translator, expr):
         'sipHash128',
     }
 
-    if how not in algorithms:
+    if op.how not in algorithms:
         raise com.UnsupportedOperationError(
-            f'Unsupported hash algorithm {how}'
+            f'Unsupported hash algorithm {op.how}'
         )
 
-    return _call(translator, how, arg)
+    return _call(translator, op.how, op.arg)
 
 
-def _log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-
-    if base is None:
+def _log(translator, op):
+    if op.base is None:
         func = 'log'
-    elif base._arg.value == 2:
+    elif op.base.value == 2:
         func = 'log2'
-    elif base._arg.value == 10:
+    elif op.base.value == 10:
         func = 'log10'
     else:
-        raise ValueError(f'Base {base} for logarithm not supported!')
+        raise ValueError(f'Base {op.base} for logarithm not supported!')
 
-    return _call(translator, func, arg)
+    return _call(translator, func, op.arg)
 
 
-def _value_list(translator, expr):
-    op = expr.op()
+def _value_list(translator, op):
     values_ = map(translator.translate, op.values)
     return '({})'.format(', '.join(values_))
 
 
-def _interval_format(translator, expr):
-    dtype = expr.type()
+def _interval_format(translator, op):
+    dtype = op.output_dtype
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
         )
 
-    return f'INTERVAL {expr.op().value} {dtype.resolution.upper()}'
+    return f'INTERVAL {op.value} {dtype.resolution.upper()}'
 
 
-def _interval_from_integer(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
-    dtype = expr.type()
+def _interval_from_integer(translator, op):
+    dtype = op.output_dtype
     if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
         )
 
-    arg_ = translator.translate(arg)
+    arg_ = translator.translate(op.arg)
     return f'INTERVAL {arg_} {dtype.resolution.upper()}'
 
 
-def _literal(translator, expr):
-    value = expr.op().value
-    if value is None and expr.type().nullable:
-        return _null_literal(translator, expr)
-    if isinstance(expr, ir.BooleanValue):
+def _literal(translator, op):
+    value = op.value
+    if value is None and op.output_dtype.nullable:
+        return _null_literal(translator, op)
+    if isinstance(op.output_dtype, dt.Boolean):
         return '1' if value else '0'
-    elif isinstance(expr, ir.INETValue):
+    elif isinstance(op.output_dtype, dt.INET):
         v = str(value)
         return f"toIPv6({v!r})" if ':' in v else f"toIPv4({v!r})"
-    elif isinstance(expr, ir.StringValue):
+    elif isinstance(op.output_dtype, dt.String):
         return "'{!s}'".format(value.replace("'", "\\'"))
-    elif isinstance(expr, ir.NumericValue):
+    elif isinstance(op.output_dtype, (dt.Integer, dt.Decimal, dt.Floating)):
         return repr(value)
-    elif isinstance(expr, ir.IntervalValue):
-        return _interval_format(translator, expr)
-    elif isinstance(expr, ir.TimestampValue):
+    elif isinstance(op.output_dtype, dt.Interval):
+        return _interval_format(translator, op)
+    elif isinstance(op.output_dtype, dt.Timestamp):
         func = "toDateTime"
         args = []
 
@@ -391,27 +343,27 @@ def _literal(translator, expr):
         else:
             args.append(str(value))
 
-        if (timezone := expr.type().timezone) is not None:
+        if (timezone := op.output_dtype.timezone) is not None:
             args.append(timezone)
 
         joined_args = ", ".join(map(repr, args))
         return f"{func}({joined_args})"
 
-    elif isinstance(expr, ir.DateValue):
+    elif isinstance(op.output_dtype, dt.Date):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
         return f"toDate('{value!s}')"
-    elif isinstance(expr, ir.ArrayValue):
+    elif isinstance(op.output_dtype, dt.Array):
         return str(list(_tuple_to_list(value)))
-    elif isinstance(expr, ir.SetScalar):
+    elif isinstance(op.output_dtype, dt.Set):
         return '({})'.format(', '.join(map(repr, value)))
-    elif isinstance(expr, ir.StructScalar):
+    elif isinstance(op.output_dtype, dt.Struct):
         fields = ", ".join(
-            f"{value} as `{key}`" for key, value in expr.op().value.items()
+            f"{value} as `{key}`" for key, value in op.value.items()
         )
         return f"tuple({fields})"
     else:
-        raise NotImplementedError(type(expr))
+        raise NotImplementedError(type(op))
 
 
 def _tuple_to_list(t: tuple):
@@ -432,7 +384,7 @@ class _CaseFormatter:
 
         # HACK
         self.indent = 2
-        self.multiline = len(cases) > 1
+        self.multiline = len(cases.values) > 1
         self.buf = StringIO()
 
     def _trans(self, expr):
@@ -446,7 +398,7 @@ class _CaseFormatter:
             base_str = self._trans(self.base)
             self.buf.write(f' {base_str}')
 
-        for case, result in zip(self.cases, self.results):
+        for case, result in zip(self.cases.values, self.results.values):
             self._next_case()
             case_str = self._trans(case)
             result_str = self._trans(result)
@@ -471,43 +423,34 @@ class _CaseFormatter:
             self.buf.write(' ')
 
 
-def _simple_case(translator, expr):
-    op = expr.op()
+def _simple_case(translator, op):
     formatter = _CaseFormatter(
         translator, op.base, op.cases, op.results, op.default
     )
     return formatter.get_result()
 
 
-def _searched_case(translator, expr):
-    op = expr.op()
+def _searched_case(translator, op):
     formatter = _CaseFormatter(
         translator, None, op.cases, op.results, op.default
     )
     return formatter.get_result()
 
 
-def _table_array_view(translator, expr):
+def _table_array_view(translator, op):
     ctx = translator.context
-    table = expr.op().table
-    query = ctx.get_compiled_expr(table)
+    query = ctx.get_compiled_expr(op.table)
     return f'(\n{util.indent(query, ctx.indent)}\n)'
 
 
-def _timestamp_from_unix(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
+def _timestamp_from_unix(translator, op):
+    if op.unit in {'ms', 'us', 'ns'}:
+        raise ValueError(f'`{op.unit}` unit is not supported!')
 
-    if unit in {'ms', 'us', 'ns'}:
-        raise ValueError(f'`{unit}` unit is not supported!')
-
-    return _call(translator, 'toDateTime', arg)
+    return _call(translator, 'toDateTime', op.arg)
 
 
-def _truncate(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
+def _truncate(translator, op):
     converters = {
         'Y': 'toStartOfYear',
         'M': 'toStartOfMonth',
@@ -519,17 +462,16 @@ def _truncate(translator, expr):
     }
 
     try:
-        converter = converters[unit]
+        converter = converters[op.unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {unit}'
+            f'Unsupported truncate unit {op.unit}'
         )
 
-    return _call(translator, converter, arg)
+    return _call(translator, converter, op.arg)
 
 
-def _exists_subquery(translator, expr):
-    op = expr.op()
+def _exists_subquery(translator, op):
     ctx = translator.context
 
     dummy = ir.literal(1).name(ir.core.unnamed)
@@ -549,8 +491,7 @@ def _exists_subquery(translator, expr):
     return f'{key} (\n{util.indent(subquery, ctx.indent)}\n)'
 
 
-def _table_column(translator, expr):
-    op = expr.op()
+def _table_column(translator, op):
     field_name = op.name
     quoted_name = quote_identifier(field_name, force=True)
     table = op.table
@@ -570,48 +511,41 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _string_split(translator, expr):
-    op = expr.op()
+def _string_split(translator, op):
     delim = translator.translate(op.delimiter)
     val = translator.translate(op.arg)
     return f"splitByString({delim}, CAST({val} AS String))"
 
 
-def _string_join(translator, expr):
-    sep, elements = expr.op().args
+def _string_join(translator, op):
+    sep, elements = op.args
     assert isinstance(
-        elements.op(), ops.ValueList
-    ), f'elements must be a ValueList, got {type(elements.op())}'
-    return 'arrayStringConcat([{}], {})'.format(
-        ', '.join(map(translator.translate, elements)),
-        translator.translate(sep),
-    )
+        elements, ops.ValueList
+    ), f'elements must be a ValueList, got {type(elements)}'
+    sep_ = translator.translate(sep)
+    elements_ = ', '.join(map(translator.translate, elements.values))
+    return f'arrayStringConcat([{elements_}], {sep_})'
 
 
-def _string_concat(translator, expr):
-    args = expr.op().arg
-    args_formatted = ", ".join(map(translator.translate, args))
+def _string_concat(translator, op):
+    args_formatted = ", ".join(map(translator.translate, op.arg.values))
     return f"arrayStringConcat([{args_formatted}])"
 
 
-def _string_like(translator, expr):
-    value, pattern = expr.op().args[:2]
+def _string_like(translator, op):
     return '{} LIKE {}'.format(
-        translator.translate(value), translator.translate(pattern)
+        translator.translate(op.arg), translator.translate(op.pattern)
     )
 
 
-def _string_ilike(translator, expr):
-    op = expr.op()
+def _string_ilike(translator, op):
     return 'lower({}) LIKE lower({})'.format(
         translator.translate(op.arg),
         translator.translate(op.pattern),
     )
 
 
-def _group_concat(translator, expr):
-    op = expr.op()
-
+def _group_concat(translator, op):
     arg = translator.translate(op.arg)
     sep = translator.translate(op.sep)
 
@@ -627,51 +561,46 @@ def _group_concat(translator, expr):
     return f"CASE WHEN empty({call}) THEN NULL ELSE {expr} END"
 
 
-def _string_right(translator, expr):
-    op = expr.op()
+def _string_right(translator, op):
     arg = translator.translate(op.arg)
     nchars = translator.translate(op.nchars)
     return f"substring({arg}, -({nchars}))"
 
 
-def _cotangent(translator, expr):
-    op = expr.op()
+def _cotangent(translator, op):
     arg = translator.translate(op.arg)
     return f"cos({arg}) / sin({arg})"
 
 
 def _bit_agg(func):
-    def compile(translator, expr):
-        op = expr.op()
-        raw_arg = op.arg
-        arg = translator.translate(raw_arg)
-        if not isinstance((type := raw_arg.type()), dt.UnsignedInteger):
+    def compile(translator, op):
+        arg_ = translator.translate(op.arg)
+        if not isinstance((type := op.arg.output_dtype), dt.UnsignedInteger):
             nbits = type._nbytes * 8
-            arg = f"reinterpretAsUInt{nbits}({arg})"
+            arg_ = f"reinterpretAsUInt{nbits}({arg_})"
 
         if (where := op.where) is not None:
-            return f"{func}If({arg}, {translator.translate(where)})"
+            return f"{func}If({arg_}, {translator.translate(where)})"
         else:
-            return f"{func}({arg})"
+            return f"{func}({arg_})"
 
     return compile
 
 
-def _array_column(translator, expr):
-    args = ", ".join(map(translator.translate, expr.op().cols))
+def _array_column(translator, op):
+    args = ", ".join(map(translator.translate, op.cols.values))
     return f"[{args}]"
 
 
-def _struct_column(translator, expr):
-    args = ", ".join(map(translator.translate, expr.op().values))
+def _struct_column(translator, op):
+    args = ", ".join(map(translator.translate, op.values))
     # ClickHouse struct types cannot be nullable
     # (non-nested fields can be nullable)
-    struct_type = serialize(expr.type()(nullable=False))
+    struct_type = serialize(op.output_dtype.copy(nullable=False))
     return f"CAST(({args}) AS {struct_type})"
 
 
-def _clip(translator, expr):
-    op = expr.op()
+def _clip(translator, op):
     arg = translator.translate(op.arg)
 
     if (upper := op.upper) is not None:
@@ -683,23 +612,25 @@ def _clip(translator, expr):
     return arg
 
 
-def _struct_field(translator, expr):
-    op = expr.op()
+def _struct_field(translator, op):
     return f"{translator.translate(op.arg)}.`{op.field}`"
 
 
-def _nth_value(translator, expr):
-    op = expr.op()
+def _nth_value(translator, op):
     arg = translator.translate(op.arg)
     nth = translator.translate(op.nth)
     return f"nth_value({arg}, ({nth}) + 1)"
 
 
-def _repeat(translator, expr):
-    op = expr.op()
+def _repeat(translator, op):
     arg = translator.translate(op.arg)
     times = translator.translate(op.times)
     return f"repeat({arg}, CAST({times} AS UInt64))"
+
+
+def _sort_key(translator, op):
+    sort_direction = " DESC" * (not op.ascending)
+    return f"{translator.translate(op.expr)}{sort_direction}"
 
 
 # TODO: clickhouse uses different string functions
@@ -731,6 +662,7 @@ _unary_ops = {ops.Negate: _negate, ops.Not: _not}
 
 operation_registry = {
     ops.Alias: _alias,
+    ops.SortKey: _sort_key,
     # Unary operations
     ops.TypeOf: _unary('toTypeName'),
     ops.IsNan: _unary('isNaN'),
@@ -885,34 +817,28 @@ operation_registry = {
 }
 
 
-def _raise_error(translator, expr, *args):
+def _raise_error(translator, op, *args):
     msg = "Clickhouse backend doesn't support {0} operation!"
-    op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
-def _null_literal(translator, expr):
+def _null_literal(translator, op):
     return 'Null'
 
 
-def _null_if_zero(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
+def _null_if_zero(translator, op):
+    arg_ = translator.translate(op.arg)
     return f'nullIf({arg_}, 0)'
 
 
-def _zero_if_null(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
+def _zero_if_null(translator, op):
+    arg_ = translator.translate(op.arg)
     return f'ifNull({arg_}, 0)'
 
 
-def _day_of_week_index(translator, expr):
-    (arg,) = expr.op().args
+def _day_of_week_index(translator, op):
     weekdays = 7
-    offset = f"toDayOfWeek({translator.translate(arg)})"
+    offset = f"toDayOfWeek({translator.translate(op.arg)})"
     return f"((({offset} - 1) % {weekdays:d}) + {weekdays:d}) % {weekdays:d}"
 
 

@@ -4,6 +4,7 @@ from itertools import chain
 import toolz
 
 import ibis.expr.analysis as an
+import ibis.expr.operations as ops
 import ibis.util as util
 
 
@@ -53,10 +54,12 @@ class QueryAST:
 
 
 class SetOp(DML):
-    def __init__(self, tables, expr, context, distincts):
+    def __init__(self, tables, node, context, distincts):
+        assert isinstance(node, ops.Node)
+        assert all(isinstance(table, ops.Node) for table in tables)
         self.context = context
         self.tables = tables
-        self.table_set = expr
+        self.table_set = node
         self.distincts = distincts
         self.filters = []
 
@@ -113,8 +116,10 @@ class SetOp(DML):
         return '\n'.join(buf)
 
 
-def _extract_common_table_expressions(exprs):
-    counts = an.find_subqueries(exprs)
-    duplicates = [op.to_expr() for op, count in counts.items() if count > 1]
+def _extract_common_table_expressions(nodes):
+    # filter out None values
+    nodes = list(filter(None, nodes))
+    counts = an.find_subqueries(nodes)
+    duplicates = [op for op, count in counts.items() if count > 1]
     duplicates.reverse()
     return duplicates

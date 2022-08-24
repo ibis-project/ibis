@@ -15,16 +15,14 @@ from ibis.backends.base.sql.registry import (
 from ibis.backends.base.sql.registry.literal import literal, null_literal
 
 
-def alias(translator, expr):
+def alias(translator, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
-    op = expr.op()
     return translator.translate(op.arg)
 
 
 def fixed_arity(func_name, arity):
-    def formatter(translator, expr):
-        op = expr.op()
+    def formatter(translator, op):
         if arity != len(op.args):
             raise com.IbisError('incorrect number of args')
         return helpers.format_call(translator, func_name, *op.args)
@@ -36,37 +34,36 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
+def not_null(translator, op):
+    formatted_arg = translator.translate(op.arg)
     return f'{formatted_arg} IS NOT NULL'
 
 
-def is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
+def is_null(translator, op):
+    formatted_arg = translator.translate(op.arg)
     return f'{formatted_arg} IS NULL'
 
 
-def not_(translator, expr):
-    (arg,) = expr.op().args
+def not_(translator, op):
+    (arg,) = op.args
     formatted_arg = translator.translate(arg)
     if helpers.needs_parens(arg):
         formatted_arg = helpers.parenthesize(formatted_arg)
     return f'NOT {formatted_arg}'
 
 
-def negate(translator, expr):
-    arg = expr.op().args[0]
+def negate(translator, op):
+    arg = op.args[0]
     formatted_arg = translator.translate(arg)
-    if isinstance(expr, ir.BooleanValue):
-        return not_(translator, expr)
+    if isinstance(op.output_dtype, dt.Boolean):
+        return not_(translator, op)
     else:
         if helpers.needs_parens(arg):
             formatted_arg = helpers.parenthesize(formatted_arg)
         return f'-{formatted_arg}'
 
 
-def ifnull_workaround(translator, expr):
-    op = expr.op()
+def ifnull_workaround(translator, op):
     a, b = op.args
 
     # work around per #345, #360
@@ -76,20 +73,19 @@ def ifnull_workaround(translator, expr):
     return helpers.format_call(translator, 'isnull', a, b)
 
 
-def sign(translator, expr):
-    (arg,) = expr.op().args
-    translated_arg = translator.translate(arg)
-    translated_type = helpers.type_to_sql_string(expr.type())
-    if expr.type() != dt.float32:
+def sign(translator, op):
+    translated_arg = translator.translate(op.arg)
+    dtype = op.output_dtype
+    translated_type = helpers.type_to_sql_string(dtype)
+    if not isinstance(dtype, dt.Float32):
         return f'CAST(sign({translated_arg}) AS {translated_type})'
     return f'sign({translated_arg})'
 
 
-def hashbytes(translator, expr):
-    op = expr.op()
-    arg, how = op.args
+def hashbytes(translator, op):
+    how = op.how
 
-    arg_formatted = translator.translate(arg)
+    arg_formatted = translator.translate(op.arg)
 
     if how == 'md5':
         return f'md5({arg_formatted})'
@@ -103,91 +99,87 @@ def hashbytes(translator, expr):
         raise NotImplementedError(how)
 
 
-def log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-    arg_formatted = translator.translate(arg)
+def log(translator, op):
+    arg_formatted = translator.translate(op.arg)
 
-    if base is None:
+    if op.base is None:
         return f'ln({arg_formatted})'
 
-    base_formatted = translator.translate(base)
+    base_formatted = translator.translate(op.base)
     return f'log({base_formatted}, {arg_formatted})'
 
 
-def value_list(translator, expr):
-    op = expr.op()
+def value_list(translator, op):
     formatted = [translator.translate(x) for x in op.values]
     return helpers.parenthesize(', '.join(formatted))
 
 
-def cast(translator, expr):
-    op = expr.op()
-    arg, target_type = op.args
-    arg_formatted = translator.translate(arg)
+def cast(translator, op):
+    arg_formatted = translator.translate(op.arg)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == dt.int32:
+    if isinstance(op.arg.output_dtype, dt.Category) and op.to == dt.int32:
         return arg_formatted
-    if isinstance(arg, ir.TemporalValue) and target_type == dt.int64:
+    if (
+        isinstance(op.arg.output_dtype, (dt.Timestamp, dt.Date, dt.Time))
+        and op.to == dt.int64
+    ):
         return f'1000000 * unix_timestamp({arg_formatted})'
     else:
-        sql_type = helpers.type_to_sql_string(target_type)
+        sql_type = helpers.type_to_sql_string(op.to)
         return f'CAST({arg_formatted} AS {sql_type})'
 
 
 def varargs(func_name):
-    def varargs_formatter(translator, expr):
-        op = expr.op()
-        return helpers.format_call(translator, func_name, *op.arg)
+    def varargs_formatter(translator, op):
+        return helpers.format_call(translator, func_name, *op.arg.values)
 
     return varargs_formatter
 
 
-def between(translator, expr):
-    op = expr.op()
-    comp, lower, upper = (translator.translate(x) for x in op.args)
+def between(translator, op):
+    comp = translator.translate(op.arg)
+    lower = translator.translate(op.lower_bound)
+    upper = translator.translate(op.upper_bound)
     return f'{comp} BETWEEN {lower} AND {upper}'
 
 
-def table_array_view(translator, expr):
+def table_array_view(translator, op):
     ctx = translator.context
-    table = expr.op().table
-    query = ctx.get_compiled_expr(table)
+    query = ctx.get_compiled_expr(op.table)
     return f'(\n{util.indent(query, ctx.indent)}\n)'
 
 
-def table_column(translator, expr):
-    op = expr.op()
-    field_name = op.name
-    quoted_name = helpers.quote_identifier(field_name, force=True)
+def table_column(translator, op):
+    quoted_name = helpers.quote_identifier(op.name, force=True)
 
-    table = op.table
     ctx = translator.context
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
-    if translator.permit_subquery and ctx.is_foreign_expr(table):
-        proj_expr = table.projection([field_name]).to_array()
+    if translator.permit_subquery and ctx.is_foreign_expr(op.table):
+        # TODO(kszucs): avoid the expression roundtrip
+        proj_expr = op.table.to_expr().projection([op.name]).to_array().op()
         return table_array_view(translator, proj_expr)
 
     if ctx.need_aliases():
-        alias = ctx.get_ref(table)
+        alias = ctx.get_ref(op.table)
         if alias is not None:
             quoted_name = f'{alias}.{quoted_name}'
 
     return quoted_name
 
 
-def exists_subquery(translator, expr):
-    op = expr.op()
+def exists_subquery(translator, op):
     ctx = translator.context
 
     dummy = ir.literal(1).name(ir.core.unnamed)
 
-    filtered = op.foreign_table.filter(op.predicates)
-    expr = filtered.projection([dummy])
+    filtered = op.foreign_table.to_expr().filter(
+        [pred.to_expr() for pred in op.predicates]
+    )
+    node = filtered.projection([dummy]).op()
 
-    subquery = ctx.get_compiled_expr(expr)
+    subquery = ctx.get_compiled_expr(node)
 
     if isinstance(op, ops.ExistsSubquery):
         key = 'EXISTS'
@@ -201,8 +193,7 @@ def exists_subquery(translator, expr):
 
 # XXX this is not added to operation_registry, but looks like impala is
 # using it in the tests, and it works, even if it's not imported anywhere
-def round(translator, expr):
-    op = expr.op()
+def round(translator, op):
     arg, digits = op.args
 
     arg_formatted = translator.translate(arg)
@@ -215,11 +206,10 @@ def round(translator, expr):
 
 # XXX this is not added to operation_registry, but looks like impala is
 # using it in the tests, and it works, even if it's not imported anywhere
-def hash(translator, expr):
-    op = expr.op()
-    arg, how = op.args
+def hash(translator, op):
+    how = op.how
 
-    arg_formatted = translator.translate(arg)
+    arg_formatted = translator.translate(op.arg)
 
     if how == 'fnv':
         return f'fnv_hash({arg_formatted})'
@@ -227,9 +217,14 @@ def hash(translator, expr):
         raise NotImplementedError(how)
 
 
-def concat(translator, expr):
-    joined_args = ', '.join(map(translator.translate, expr.op().arg))
+def concat(translator, op):
+    joined_args = ', '.join(map(translator.translate, op.arg.values))
     return f"concat({joined_args})"
+
+
+def sort_key(translator, op):
+    sort_direction = " DESC" * (not op.ascending)
+    return f"{translator.translate(op.expr)}{sort_direction}"
 
 
 binary_infix_ops = {
@@ -385,11 +380,11 @@ operation_registry = {
     ops.ExistsSubquery: exists_subquery,
     ops.NotExistsSubquery: exists_subquery,
     # RowNumber, and rank functions starts with 0 in Ibis-land
-    ops.RowNumber: lambda *args: 'row_number()',
-    ops.DenseRank: lambda *args: 'dense_rank()',
-    ops.MinRank: lambda *args: 'rank()',
-    ops.PercentRank: lambda *args: 'percent_rank()',
-    ops.CumeDist: lambda *args: 'cume_dist()',
+    ops.RowNumber: lambda *_: 'row_number()',
+    ops.DenseRank: lambda *_: 'dense_rank()',
+    ops.MinRank: lambda *_: 'rank()',
+    ops.PercentRank: lambda *_: 'percent_rank()',
+    ops.CumeDist: lambda *_: 'cume_dist()',
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
     ops.Lag: window.shift_like('lag'),
@@ -399,5 +394,6 @@ operation_registry = {
     ops.DayOfWeekIndex: timestamp.day_of_week_index,
     ops.DayOfWeekName: timestamp.day_of_week_name,
     ops.Strftime: timestamp.strftime,
+    ops.SortKey: sort_key,
     **binary_infix_ops,
 }
