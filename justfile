@@ -9,7 +9,7 @@ clean:
 lock:
     poetry lock --no-update
     poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
-    python dev/poetry2setup.py -o setup.py
+    PYTHONHASHSEED=0 python dev/poetry2setup.py -o setup.py
 
 # show all backends
 @list-backends:

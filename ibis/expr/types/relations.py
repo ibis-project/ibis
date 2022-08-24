@@ -14,8 +14,8 @@ import rich.table
 from public import public
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import util
-from ibis.common import exceptions as com
 from ibis.common.grounds import console
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
@@ -131,9 +131,6 @@ class Table(Expr):
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
 
-    def __setstate__(self, instance_dictionary):
-        self.__dict__ = instance_dictionary
-
     def __getattr__(self, key):
         try:
             schema = self.schema()
@@ -151,7 +148,6 @@ class Table(Expr):
     def __dir__(self):
         return sorted(frozenset(dir(type(self)) + self.columns))
 
-    # TODO(kszucs): should be removed
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
             return self[expr]
@@ -355,31 +351,21 @@ class Table(Expr):
         Table
             An aggregate table expression
         """
-        metrics = [] if metrics is None else util.promote_list(metrics)
+        metrics = [
+            self._ensure_expr(item)
+            for item in util.flatten_iterable(util.promote_list(metrics))
+        ]
         metrics.extend(
             self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
         )
 
         op = self.op().aggregate(
             self,
-            [
-                metric
-                if util.is_iterable(metric)
-                else self._ensure_expr(metric)
-                for metric in metrics
+            metrics=metrics,
+            by=[self._ensure_expr(item) for item in util.promote_list(by)],
+            having=[
+                self._ensure_expr(item) for item in util.promote_list(having)
             ],
-            by=list(
-                map(
-                    self._ensure_expr,
-                    util.promote_list(by if by is not None else []),
-                )
-            ),
-            having=list(
-                map(
-                    self._ensure_expr,
-                    util.promote_list(having if having is not None else []),
-                )
-            ),
         )
         return op.to_expr()
 
@@ -594,7 +580,7 @@ class Table(Expr):
             elif isinstance(expr, Deferred):
                 value = expr.resolve(self)
             else:
-                value = rlz.any(expr)
+                value = rlz.any(expr).to_expr()
             exprs.append(value.name(name))
 
         mutation_exprs = an.get_mutation_exprs(exprs, self)
@@ -770,8 +756,10 @@ class Table(Expr):
         for predicate, right in top_ks:
             table = table.semi_join(right, predicate)[table]
 
+        # FIXME(kszucs): handle operations here only
         predicates = [
-            an._rewrite_filter(pred.op(), pred) for pred in resolved_predicates
+            an._rewrite_filter(pred.op() if isinstance(pred, Expr) else pred)
+            for pred in resolved_predicates
         ]
         return an.apply_filter(table, predicates)
 
@@ -785,7 +773,7 @@ class Table(Expr):
         """
         from ibis.expr import operations as ops
 
-        return ops.Count(self, None).to_expr().name("count")
+        return ops.Count(self).to_expr().name("count")
 
     def dropna(
         self,
@@ -1051,9 +1039,8 @@ class Table(Expr):
             Left and right suffixes that will be used to rename overlapping
             columns.
         """
-        from ibis.expr import analysis as an
+
         from ibis.expr import operations as ops
-        from ibis.expr import types as ir
 
         _join_classes = {
             'inner': ops.InnerJoin,
@@ -1069,23 +1056,14 @@ class Table(Expr):
         }
 
         klass = _join_classes[how.lower()]
-        if isinstance(predicates, ir.Expr):
-            predicates = an.flatten_predicate(predicates)
-
-        op = klass(left, right, predicates)
-        expr = op.to_expr()
+        expr = klass(left, right, predicates).to_expr()
 
         # semi/anti join only give access to the left table's fields, so
         # there's never overlap
         if how in ("semi", "anti"):
             return expr
 
-        return ops.relations._dedup_join_columns(
-            expr,
-            left=op.left,
-            right=op.right,
-            suffixes=suffixes,
-        )
+        return ops.relations._dedup_join_columns(expr, suffixes=suffixes)
 
     def asof_join(
         left: Table,
@@ -1136,10 +1114,7 @@ class Table(Expr):
             tolerance=tolerance,
         )
         return ops.relations._dedup_join_columns(
-            op.to_expr(),
-            left=left,
-            right=right,
-            suffixes=suffixes,
+            op.to_expr(), suffixes=suffixes
         )
 
     def cross_join(
@@ -1193,16 +1168,13 @@ class Table(Expr):
         """
         from ibis.expr import operations as ops
 
-        expr = ops.CrossJoin(
+        op = ops.CrossJoin(
             left,
             functools.reduce(Table.cross_join, rest, right),
             [],
-        ).to_expr()
+        )
         return ops.relations._dedup_join_columns(
-            expr,
-            left=left,
-            right=right,
-            suffixes=suffixes,
+            op.to_expr(), suffixes=suffixes
         )
 
     inner_join = _regular_join_method("inner_join", "inner")
@@ -1321,7 +1293,7 @@ def _resolve_predicates(
     from ibis.expr import types as ir
 
     predicates = [
-        ir.relations.bind_expr(table, pred)
+        ir.relations.bind_expr(table, pred).op()
         for pred in util.promote_list(predicates)
     ]
     predicates = an.flatten_predicate(predicates)
@@ -1329,10 +1301,10 @@ def _resolve_predicates(
     resolved_predicates = []
     top_ks = []
     for pred in predicates:
-        if isinstance(pred, ir.TopK):
-            top_ks.append(pred._semi_join_components())
-        elif isinstance(pred_op := pred.op(), ops.logical._UnresolvedSubquery):
-            resolved_predicates.append(pred_op._resolve(table))
+        if isinstance(pred, ops.TopK):
+            top_ks.append(pred.to_expr()._semi_join_components())
+        elif isinstance(pred, ops.logical._UnresolvedSubquery):
+            resolved_predicates.append(pred._resolve(table.op()))
         else:
             resolved_predicates.append(pred)
 

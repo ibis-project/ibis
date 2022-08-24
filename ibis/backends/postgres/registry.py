@@ -14,7 +14,6 @@ import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 
 # used for literal translate
 from ibis.backends.base.sql.alchemy import (
@@ -35,25 +34,24 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _extract(fmt, output_type=sa.SMALLINT):
-    def translator(t, expr, output_type=output_type):
-        (arg,) = expr.op().args
-        sa_arg = t.translate(arg)
+    def translator(t, op, output_type=output_type):
+        sa_arg = t.translate(op.arg)
         return sa.cast(sa.extract(fmt, sa_arg), output_type)
 
     return translator
 
 
-def _second(t, expr):
+def _second(t, op):
     # extracting the second gives us the fractional part as well, so smash that
     # with a cast to SMALLINT
-    (sa_arg,) = map(t.translate, expr.op().args)
+    sa_arg = t.translate(op.arg)
     return sa.cast(sa.func.FLOOR(sa.extract('second', sa_arg)), sa.SMALLINT)
 
 
-def _millisecond(t, expr):
+def _millisecond(t, op):
     # we get total number of milliseconds including seconds with extract so we
     # mod 1000
-    (sa_arg,) = map(t.translate, expr.op().args)
+    sa_arg = t.translate(op.arg)
     return sa.cast(
         sa.func.floor(sa.extract('millisecond', sa_arg)) % 1000,
         sa.SMALLINT,
@@ -74,49 +72,44 @@ _truncate_precisions = {
 }
 
 
-def _timestamp_truncate(t, expr):
-    arg, unit = expr.op().args
-    sa_arg = t.translate(arg)
+def _timestamp_truncate(t, op):
+    sa_arg = t.translate(op.arg)
     try:
-        precision = _truncate_precisions[unit]
+        precision = _truncate_precisions[op.unit]
     except KeyError:
         raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {unit!r}'
+            f'Unsupported truncate unit {op.unit!r}'
         )
     return sa.func.date_trunc(precision, sa_arg)
 
 
-def _interval_from_integer(t, expr):
-    op = expr.op()
+def _interval_from_integer(t, op):
     sa_arg = t.translate(op.arg)
-    interval = sa.text(f"INTERVAL '1 {expr.type().resolution}'")
+    interval = sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
     return sa_arg * interval
 
 
-def _is_nan(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
+def _is_nan(t, op):
+    sa_arg = t.translate(op.arg)
     return sa_arg == float('nan')
 
 
-def _is_inf(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
+def _is_inf(t, op):
+    sa_arg = t.translate(op.arg)
     inf = float('inf')
     return sa.or_(sa_arg == inf, sa_arg == -inf)
 
 
-def _typeof(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
+def _typeof(t, op):
+    sa_arg = t.translate(op.arg)
     typ = sa.cast(sa.func.pg_typeof(sa_arg), sa.TEXT)
 
     # select pg_typeof('thing') returns unknown so we have to check the child's
     # type for nullness
     return sa.case(
         [
-            ((typ == 'unknown') & (arg.type() != dt.null), 'text'),
-            ((typ == 'unknown') & (arg.type() == dt.null), 'null'),
+            ((typ == 'unknown') & (op.arg.output_dtype != dt.null), 'text'),
+            ((typ == 'unknown') & (op.arg.output_dtype == dt.null), 'null'),
         ],
         else_=typ,
     )
@@ -268,22 +261,21 @@ def _reduce_tokens(tokens, arg):
     return reduced
 
 
-def _strftime(t, expr):
-    arg, pattern = map(t.translate, expr.op().args)
+def _strftime(t, op):
+    arg, pattern = map(t.translate, op.args)
     tokens, _ = _scanner.scan(pattern.value)
     reduced = _reduce_tokens(tokens, arg)
     return functools.reduce(sa.sql.ColumnElement.concat, reduced)
 
 
-def _find_in_set(t, expr):
+def _find_in_set(t, op):
     # TODO
     # this operation works with any type, not just strings. should the
     # operation itself also have this property?
-    op = expr.op()
     return (
         sa.func.coalesce(
             sa.func.array_position(
-                postgresql.array(list(map(t.translate, op.values))),
+                postgresql.array(list(map(t.translate, op.values.values))),
                 t.translate(op.needle),
             ),
             0,
@@ -292,15 +284,15 @@ def _find_in_set(t, expr):
     )
 
 
-def _regex_replace(t, expr):
-    string, pattern, replacement = map(t.translate, expr.op().args)
+def _regex_replace(t, op):
+    string, pattern, replacement = map(t.translate, op.args)
 
     # postgres defaults to replacing only the first occurrence
     return sa.func.regexp_replace(string, pattern, replacement, 'g')
 
 
-def _log(t, expr):
-    arg, base = expr.op().args
+def _log(t, op):
+    arg, base = op.args
     sa_arg = t.translate(arg)
     if base is not None:
         sa_base = t.translate(base)
@@ -308,13 +300,12 @@ def _log(t, expr):
             sa.func.log(
                 sa.cast(sa_base, sa.NUMERIC), sa.cast(sa_arg, sa.NUMERIC)
             ),
-            t.get_sqla_type(expr.type()),
+            t.get_sqla_type(op.output_dtype),
         )
     return sa.func.ln(sa_arg)
 
 
-def _regex_extract(t, expr):
-    op = expr.op()
+def _regex_extract(t, op):
     arg = t.translate(op.arg)
     pattern = t.translate(op.pattern)
     return sa.case(
@@ -339,9 +330,8 @@ def _cardinality(array):
     )
 
 
-def _array_repeat(t, expr):
+def _array_repeat(t, op):
     """Repeat an array."""
-    op = expr.op()
     arg = t.translate(op.arg)
     times = t.translate(op.times)
 
@@ -374,19 +364,15 @@ def _array_repeat(t, expr):
     )
 
 
-def _table_column(t, expr):
-    op = expr.op()
+def _table_column(t, op):
     ctx = t.context
     table = op.table
 
     sa_table = get_sqla_table(ctx, table)
-
     out_expr = get_col_or_deferred_col(sa_table, op.name)
 
-    expr_type = expr.type()
-
-    if isinstance(expr_type, dt.Timestamp):
-        timezone = expr_type.timezone
+    if isinstance(op.output_dtype, dt.Timestamp):
+        timezone = op.output_dtype.timezone
         if timezone is not None:
             out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
 
@@ -398,8 +384,8 @@ def _table_column(t, expr):
     return out_expr
 
 
-def _round(t, expr):
-    arg, digits = expr.op().args
+def _round(t, op):
+    arg, digits = op.args
     sa_arg = t.translate(arg)
 
     if digits is None:
@@ -409,23 +395,23 @@ def _round(t, expr):
     # number of digits (though simple truncation on doubles is allowed) so
     # we cast to numeric and then cast back if necessary
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
-    if digits is not None and isinstance(arg.type(), dt.Decimal):
+    if digits is not None and isinstance(arg.output_dtype, dt.Decimal):
         return result
     result = sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
     return result
 
 
-def _mod(t, expr):
-    left, right = map(t.translate, expr.op().args)
+def _mod(t, op):
+    left, right = map(t.translate, op.args)
 
     # postgres doesn't allow modulus of double precision values, so upcast and
     # then downcast later if necessary
-    if not isinstance(expr.type(), dt.Integer):
+    if not isinstance(op.output_dtype, dt.Integer):
         left = sa.cast(left, sa.NUMERIC)
         right = sa.cast(right, sa.NUMERIC)
 
     result = left % right
-    if expr.type().equals(dt.double):
+    if isinstance(op.output_dtype, dt.Float64):
         return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
     else:
         return result
@@ -441,8 +427,8 @@ def _neg_idx_to_pos(array, idx):
     )
 
 
-def _array_slice(t, expr):
-    arg, start, stop = expr.op().args
+def _array_slice(t, op):
+    arg, start, stop = op.args
     sa_arg = t.translate(arg)
     sa_start = t.translate(start)
 
@@ -456,9 +442,8 @@ def _array_slice(t, expr):
     return sa_arg[sa_start + 1 : sa_stop]
 
 
-def _literal(_, expr):
-    dtype = expr.type()
-    op = expr.op()
+def _literal(_, op):
+    dtype = op.output_dtype
     value = op.value
 
     if isinstance(dtype, dt.Interval):
@@ -466,10 +451,10 @@ def _literal(_, expr):
     elif isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
     # geo spatial data type
-    elif isinstance(expr, ir.GeoSpatialScalar):
+    elif isinstance(dtype, dt.GeoSpatial):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(
-            geo.translate_literal(expr, inline_metadata=True)
+            geo.translate_literal(op, inline_metadata=True)
         )
     elif isinstance(value, tuple):
         return sa.literal(value, type_=to_sqla_type(dtype))
@@ -477,56 +462,53 @@ def _literal(_, expr):
         return sa.literal(value)
 
 
-def _day_of_week_index(t, expr):
-    (sa_arg,) = map(t.translate, expr.op().args)
+def _day_of_week_index(t, op):
+    sa_arg = t.translate(op.arg)
     return sa.cast(
         sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
     )
 
 
-def _day_of_week_name(t, expr):
-    (sa_arg,) = map(t.translate, expr.op().args)
+def _day_of_week_name(t, op):
+    sa_arg = t.translate(op.arg)
     return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
 
 
-def _array_column(t, expr):
-    return postgresql.array(list(map(t.translate, expr.op().cols)))
+def _array_column(t, op):
+    return postgresql.array(list(map(t.translate, op.cols.values)))
 
 
-def _string_agg(t, expr):
-    op = expr.op()
+def _string_agg(t, op):
     agg = sa.func.string_agg(t.translate(op.arg), t.translate(op.sep))
     if (where := op.where) is not None:
         return agg.filter(t.translate(where))
     return agg
 
 
-def _corr(t, expr):
-    if expr.op().how == "sample":
+def _corr(t, op):
+    if op.how == "sample":
         raise ValueError(
             "PostgreSQL only implements population correlation coefficient"
         )
-    return _binary_variance_reduction(sa.func.corr)(t, expr)
+    return _binary_variance_reduction(sa.func.corr)(t, op)
 
 
-def _covar(t, expr):
+def _covar(t, op):
     suffix = {"sample": "samp", "pop": "pop"}
-    how = suffix.get(expr.op().how, "samp")
+    how = suffix.get(op.how, "samp")
     func = getattr(sa.func, f"covar_{how}")
-    return _binary_variance_reduction(func)(t, expr)
+    return _binary_variance_reduction(func)(t, op)
 
 
 def _binary_variance_reduction(func):
-    def variance_compiler(t, expr):
-        op = expr.op()
-
+    def variance_compiler(t, op):
         x = op.left
-        if isinstance(x_type := x.type(), dt.Boolean):
-            x = x.cast(dt.Int32(nullable=x_type.nullable))
+        if isinstance(x_type := x.output_dtype, dt.Boolean):
+            x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
 
         y = op.right
-        if isinstance(y_type := y.type(), dt.Boolean):
-            y = y.cast(dt.Int32(nullable=y_type.nullable))
+        if isinstance(y_type := y.output_dtype, dt.Boolean):
+            y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
         result = func(t.translate(x), t.translate(y))
 

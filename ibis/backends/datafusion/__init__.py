@@ -173,7 +173,7 @@ class Backend(BaseBackend):
             table = _to_pyarrow_table(frame)
             return table['tmp'].to_pandas()
         elif isinstance(expr, ir.Scalar):
-            if an.find_immediate_parent_tables(expr):
+            if an.find_immediate_parent_tables(expr.op()):
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
                 # plan
@@ -197,7 +197,7 @@ class Backend(BaseBackend):
         params: Mapping[ir.Expr, object] = None,
         **kwargs: Any,
     ):
-        return translate(expr)
+        return translate(expr.op())
 
     @classmethod
     @lru_cache

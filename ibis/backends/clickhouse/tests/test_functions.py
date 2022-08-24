@@ -34,7 +34,7 @@ pytest.importorskip("clickhouse_driver")
 )
 def test_cast_double_col(alltypes, translate, to_type, expected):
     expr = alltypes.double_col.cast(to_type)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
 
 
 @pytest.mark.parametrize(
@@ -60,7 +60,7 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
 )
 def test_cast_string_col(alltypes, translate, to_type, expected):
     expr = alltypes.string_col.cast(to_type)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ def test_noop_cast(alltypes, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    assert translate(result) == f'`{column}`'
+    assert translate(result.op()) == f'`{column}`'
 
 
 def test_timestamp_cast(alltypes, translate):
@@ -98,13 +98,13 @@ def test_timestamp_cast(alltypes, translate):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    assert translate(result1) == 'CAST(`timestamp_col` AS DateTime64(6))'
-    assert translate(result2) == 'CAST(`int_col` AS DateTime64(6))'
+    assert translate(result1.op()) == 'CAST(`timestamp_col` AS DateTime64(6))'
+    assert translate(result2.op()) == 'CAST(`int_col` AS DateTime64(6))'
 
 
 def test_timestamp_now(translate):
     expr = ibis.now()
-    assert translate(expr) == 'now()'
+    assert translate(expr.op()) == 'now()'
 
 
 @pytest.mark.parametrize(
@@ -220,11 +220,11 @@ def test_string_substring(con, op, expected):
 
 def test_string_column_substring(con, alltypes, translate):
     expr = alltypes.string_col.substr(2)
-    assert translate(expr) == 'substring(`string_col`, 2 + 1)'
+    assert translate(expr.op()) == 'substring(`string_col`, 2 + 1)'
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.substr(0, 3)
-    assert translate(expr) == 'substring(`string_col`, 0 + 1, 3)'
+    assert translate(expr.op()) == 'substring(`string_col`, 0 + 1, 3)'
     assert len(con.execute(expr))
 
 
@@ -282,7 +282,7 @@ def test_string_column_find_in_set(con, alltypes, translate):
     vals = list('abc')
 
     expr = s.find_in_set(vals)
-    assert translate(expr) == "indexOf(['a','b','c'], `string_col`) - 1"
+    assert translate(expr.op()) == "indexOf(['a','b','c'], `string_col`) - 1"
     assert len(con.execute(expr))
 
 
@@ -338,12 +338,12 @@ def test_string_find_like(con, expr, expected):
 
 def test_string_column_like(con, alltypes, translate):
     expr = alltypes.string_col.like('foo%')
-    assert translate(expr) == "`string_col` LIKE 'foo%'"
+    assert translate(expr.op()) == "`string_col` LIKE 'foo%'"
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.like(['foo%', '%bar'])
     expected = "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'"
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -351,11 +351,11 @@ def test_string_column_find(con, alltypes, translate):
     s = alltypes.string_col
 
     expr = s.find('a')
-    assert translate(expr) == "position(`string_col`, 'a') - 1"
+    assert translate(expr.op()) == "position(`string_col`, 'a') - 1"
     assert len(con.execute(expr))
 
     expr = s.find(s)
-    assert translate(expr) == "position(`string_col`, `string_col`) - 1"
+    assert translate(expr.op()) == "position(`string_col`, `string_col`) - 1"
     assert len(con.execute(expr))
 
 
@@ -381,7 +381,7 @@ def test_string_column_find(con, alltypes, translate):
 )
 def test_translate_math_functions(con, alltypes, translate, call, expected):
     expr = call(alltypes.double_col)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -425,21 +425,21 @@ def test_math_functions(con, expr, expected):
 def test_greatest(con, alltypes, translate):
     expr = ibis.greatest(alltypes.int_col, 10)
 
-    assert translate(expr) == "greatest(`int_col`, 10)"
+    assert translate(expr.op()) == "greatest(`int_col`, 10)"
     assert len(con.execute(expr))
 
     expr = ibis.greatest(alltypes.int_col, alltypes.bigint_col)
-    assert translate(expr) == "greatest(`int_col`, `bigint_col`)"
+    assert translate(expr.op()) == "greatest(`int_col`, `bigint_col`)"
     assert len(con.execute(expr))
 
 
 def test_least(con, alltypes, translate):
     expr = ibis.least(alltypes.int_col, 10)
-    assert translate(expr) == "least(`int_col`, 10)"
+    assert translate(expr.op()) == "least(`int_col`, 10)"
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, alltypes.bigint_col)
-    assert translate(expr) == "least(`int_col`, `bigint_col`)"
+    assert translate(expr.op()) == "least(`int_col`, `bigint_col`)"
     assert len(con.execute(expr))
 
 
@@ -475,7 +475,7 @@ def test_column_regexp_extract(con, alltypes, translate):
     expected = r"extractAll(CAST(`string_col` AS String), '[\d]+')[3 + 1]"
 
     expr = alltypes.string_col.re_extract(r'[\d]+', 3)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -483,7 +483,7 @@ def test_column_regexp_replace(con, alltypes, translate):
     expected = r"replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
 
     expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
 
@@ -520,7 +520,7 @@ def test_literal_none_to_nullable_colum(alltypes):
 def test_timestamp_from_integer(con, alltypes, translate):
     # timestamp_col has datetime type
     expr = alltypes.int_col.to_timestamp()
-    assert translate(expr) == 'toDateTime(`int_col`)'
+    assert translate(expr.op()) == 'toDateTime(`int_col`)'
     assert len(con.execute(expr))
 
 
@@ -557,4 +557,4 @@ def test_count_distinct_with_filter(alltypes):
 def test_group_concat(alltypes, sep, where_case, expected, translate):
     where = None if where_case is None else alltypes.bool_col == where_case
     expr = alltypes.string_col.group_concat(sep, where)
-    assert translate(expr) == expected
+    assert translate(expr.op()) == expected

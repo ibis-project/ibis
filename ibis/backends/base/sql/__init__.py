@@ -21,8 +21,7 @@ __all__ = [
 ]
 
 
-def _find_memtables(expr):
-    op = expr.op()
+def _find_memtables(op):
     return lin.proceed, op if isinstance(op, ops.InMemoryTable) else None
 
 
@@ -201,7 +200,7 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_tables(self, expr):
         if self.compiler.cheap_in_memory_tables:
-            for memtable in lin.traverse(_find_memtables, expr):
+            for memtable in lin.traverse(_find_memtables, expr.op()):
                 self._register_in_memory_table(memtable)
 
     @abc.abstractmethod
@@ -229,12 +228,12 @@ class BaseSQLBackend(BaseBackend):
             if `self.expr` doesn't have a schema.
         """
         dml = getattr(query_ast, 'dml', query_ast)
-        expr = getattr(dml, 'parent_expr', getattr(dml, 'table_set', None))
+        op = getattr(dml, 'parent_op', getattr(dml, 'table_set', None))
 
-        if isinstance(expr, (ir.Table, sch.HasSchema)):
-            return expr.schema()
-        elif isinstance(expr, ir.Value):
-            return sch.schema([(expr.get_name(), expr.type())])
+        if isinstance(op, ops.TableNode):
+            return op.schema
+        elif isinstance(op, ops.Value):
+            return sch.schema({op.resolve_name(): op.output_dtype})
         else:
             raise ValueError(
                 'Expression with type {} does not have a '

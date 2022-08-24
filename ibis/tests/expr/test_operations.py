@@ -115,9 +115,9 @@ def test_array_input():
 
     raw_value = [1.0, 2.0, 3.0]
     op = MyOp(raw_value)
-    result = op.value
+
     expected = ibis.literal(raw_value)
-    assert result.equals(expected)
+    assert op.value == expected.op()
 
 
 def test_custom_table_expr():

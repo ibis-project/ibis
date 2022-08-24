@@ -34,11 +34,11 @@ class TableSetFormatter:
         ops.CrossJoin: 'CROSS JOIN',
     }
 
-    def __init__(self, parent, expr, indent=2):
+    def __init__(self, parent, node, indent=2):
         # `parent` is a `Select` instance, not a `TableSetFormatter`
         self.parent = parent
         self.context = parent.context
-        self.expr = expr
+        self.node = node
         self.indent = indent
 
         self.join_tables = []
@@ -48,27 +48,23 @@ class TableSetFormatter:
     def _translate(self, expr):
         return self.parent._translate(expr)
 
+    # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
-        left = op.left.op()
-        right = op.right.op()
-
-        if util.all_of([left, right], ops.Join):
+        if util.all_of([op.left, op.right], ops.Join):
             raise NotImplementedError(
                 'Do not support joins between ' 'joins yet'
             )
-
-        self._validate_join_predicates(op.predicates)
 
         jname = self._get_join_type(op)
 
         # Read off tables and join predicates left-to-right in
         # depth-first order
-        if isinstance(left, ops.Join):
-            self._walk_join_tree(left)
+        if isinstance(op.left, ops.Join):
+            self._walk_join_tree(op.left)
             self.join_tables.append(self._format_table(op.right))
-        elif isinstance(right, ops.Join):
+        elif isinstance(op.right, ops.Join):
             self.join_tables.append(self._format_table(op.left))
-            self._walk_join_tree(right)
+            self._walk_join_tree(op.right)
         else:
             # Both tables
             self.join_tables.append(self._format_table(op.left))
@@ -76,23 +72,6 @@ class TableSetFormatter:
 
         self.join_types.append(jname)
         self.join_predicates.append(op.predicates)
-
-    # Placeholder; revisit when supporting other databases
-    _non_equijoin_supported = True
-
-    def _validate_join_predicates(self, predicates):
-        for pred in predicates:
-            op = pred.op()
-
-            if (
-                not isinstance(op, ops.Equals)
-                and not self._non_equijoin_supported
-            ):
-                raise com.TranslationError(
-                    'Non-equality join predicates, '
-                    'i.e. non-equijoins, are not '
-                    'supported'
-                )
 
     def _get_join_type(self, op):
         return self._join_names[type(op)]
@@ -112,44 +91,45 @@ class TableSetFormatter:
         rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
         return f"(VALUES {rows})"
 
-    def _format_table(self, expr):
+    def _format_table(self, op):
         # TODO: This could probably go in a class and be significantly nicer
         ctx = self.context
 
-        ref_expr = expr
-        op = ref_op = expr.op()
+        ref_op = op
         if isinstance(op, ops.SelfReference):
-            ref_expr = op.table
-            ref_op = ref_expr.op()
+            ref_op = op.table
 
         if isinstance(ref_op, ops.InMemoryTable):
             result = self._format_in_memory_table(ref_op)
             is_subquery = True
         elif isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
+            # TODO(kszucs): add a mandatory `name` field to the base
+            # PhyisicalTable instead of the child classes, this should prevent
+            # this error scenario
             if name is None:
-                raise com.RelationError(f'Table did not have a name: {expr!r}')
+                raise com.RelationError(f'Table did not have a name: {op!r}')
             result = self._quote_identifier(name)
             is_subquery = False
         else:
             # A subquery
-            if ctx.is_extracted(ref_expr):
+            if ctx.is_extracted(ref_op):
                 # Was put elsewhere, e.g. WITH block, we just need to grab its
                 # alias
-                alias = ctx.get_ref(expr)
+                alias = ctx.get_ref(op)
 
                 # HACK: self-references have to be treated more carefully here
                 if isinstance(op, ops.SelfReference):
-                    return f'{ctx.get_ref(ref_expr)} {alias}'
+                    return f'{ctx.get_ref(ref_op)} {alias}'
                 else:
                     return alias
 
-            subquery = ctx.get_compiled_expr(expr)
+            subquery = ctx.get_compiled_expr(op)
             result = f'(\n{util.indent(subquery, self.indent)}\n)'
             is_subquery = True
 
-        if is_subquery or ctx.need_aliases(expr):
-            result += f' {ctx.get_ref(expr)}'
+        if is_subquery or ctx.need_aliases(op):
+            result += f' {ctx.get_ref(op)}'
 
         return result
 
@@ -157,12 +137,12 @@ class TableSetFormatter:
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
         # and predicates onto a flat list, then format them
-        op = self.expr.op()
+        op = self.node
 
         if isinstance(op, ops.Join):
             self._walk_join_tree(op)
         else:
-            self.join_tables.append(self._format_table(self.expr))
+            self.join_tables.append(self._format_table(op))
 
         # TODO: Now actually format the things
         buf = StringIO()
@@ -217,7 +197,7 @@ class Select(DML, Comparable):
         distinct=False,
         indent=2,
         result_handler=None,
-        parent_expr=None,
+        parent_op=None,
     ):
         self.translator_class = translator_class
         self.table_set_formatter_class = table_set_formatter_class
@@ -227,7 +207,7 @@ class Select(DML, Comparable):
         self.table_set = table_set
         self.distinct = distinct
 
-        self.parent_expr = parent_expr
+        self.parent_op = parent_op
 
         self.where = where or []
 
@@ -335,17 +315,18 @@ class Select(DML, Comparable):
         # TODO:
         context = self.context
         formatted = []
-        for expr in self.select_set:
-            if isinstance(expr, ir.Value):
-                expr_str = self._translate(expr, named=True)
-            elif isinstance(expr, ir.Table):
+        for node in self.select_set:
+            if isinstance(node, ops.Value):
+                expr_str = self._translate(node, named=True)
+            elif isinstance(node, ops.TableNode):
                 # A * selection, possibly prefixed
-                if context.need_aliases(expr):
-                    alias = context.get_ref(expr)
-
+                if context.need_aliases(node):
+                    alias = context.get_ref(node)
                     expr_str = f'{alias}.*' if alias else '*'
                 else:
                     expr_str = '*'
+            else:
+                raise TypeError(node)
             formatted.append(expr_str)
 
         buf = StringIO()
@@ -448,8 +429,7 @@ class Select(DML, Comparable):
         buf.write('ORDER BY ')
 
         formatted = []
-        for expr in self.order_by:
-            key = expr.op()
+        for key in self.order_by:
             translated = self._translate(key.expr)
             if not key.ascending:
                 translated += ' DESC'
@@ -484,18 +464,16 @@ class Difference(SetOp):
     _keyword = "EXCEPT"
 
 
-def flatten_set_op(table: ir.Table):
+def flatten_set_op(op):
     """Extract all union queries from `table`.
-
     Parameters
     ----------
-    table : Table
-
+    table : ops.TableNode
     Returns
     -------
     Iterable[Union[Table, bool]]
     """
-    op = table.op()
+
     if isinstance(op, ops.SetOp):
         # For some reason mypy considers `op.left` and `op.right`
         # of `Argument` type, and fails the validation. While in
@@ -505,21 +483,18 @@ def flatten_set_op(table: ir.Table):
             [op.distinct],
             flatten_set_op(op.right),  # type: ignore
         )
-    return [table]
+    return [op]
 
 
-def flatten(table: ir.Table):
+def flatten(op: ops.TableNode):
     """Extract all intersection or difference queries from `table`.
-
     Parameters
     ----------
     table : Table
-
     Returns
     -------
     Iterable[Union[Table]]
     """
-    op = table.op()
     return list(
         toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right))
     )
@@ -545,35 +520,37 @@ class Compiler:
         for expr, value in params.items():
             op = expr.op()
             if isinstance(op, ops.Alias):
-                op = op.arg.op()
+                op = op.arg
             unaliased_params[op] = value
 
         return cls.context_class(compiler=cls, params=unaliased_params)
 
     @classmethod
-    def to_ast(cls, expr, context=None):
+    def to_ast(cls, node, context=None):
+        # TODO(kszucs): consider to support a single type only
+        if isinstance(node, ir.Expr):
+            node = node.op()
+
         if context is None:
             context = cls.make_context()
 
-        op = expr.op()
-
         # collect setup and teardown queries
-        setup_queries = cls._generate_setup_queries(expr, context)
-        teardown_queries = cls._generate_teardown_queries(expr, context)
+        setup_queries = cls._generate_setup_queries(node, context)
+        teardown_queries = cls._generate_teardown_queries(node, context)
 
         # TODO: any setup / teardown DDL statements will need to be done prior
         # to building the result set-generating statements.
-        if isinstance(op, ops.Union):
-            query = cls._make_union(expr, context)
-        elif isinstance(op, ops.Intersection):
-            query = cls._make_intersect(expr, context)
-        elif isinstance(op, ops.Difference):
-            query = cls._make_difference(expr, context)
+        if isinstance(node, ops.Union):
+            query = cls._make_union(node, context)
+        elif isinstance(node, ops.Intersection):
+            query = cls._make_intersect(node, context)
+        elif isinstance(node, ops.Difference):
+            query = cls._make_difference(node, context)
         else:
             query = cls.select_builder_class().to_select(
                 select_class=cls.select_class,
                 table_set_formatter_class=cls.table_set_formatter_class,
-                expr=expr,
+                node=node,
                 context=context,
                 translator_class=cls.translator_class,
             )
@@ -611,10 +588,16 @@ class Compiler:
         return query_ast
 
     @classmethod
-    def to_sql(cls, expr, context=None, params=None):
+    def to_sql(cls, node, context=None, params=None):
+        # TODO(kszucs): consider to support a single type only
+        if isinstance(node, ir.Expr):
+            node = node.op()
+
+        assert isinstance(node, ops.Node)
+
         if context is None:
             context = cls.make_context(params=params)
-        return cls.to_ast(expr, context).queries[0].compile()
+        return cls.to_ast(node, context).queries[0].compile()
 
     @staticmethod
     def _generate_setup_queries(expr, context):
@@ -625,9 +608,9 @@ class Compiler:
         return []
 
     @staticmethod
-    def _make_set_op(cls, expr, context):
+    def _make_set_op(cls, op, context):
         # flatten unions so that we can codegen them all at once
-        set_op_info = list(flatten_set_op(expr))
+        set_op_info = list(flatten_set_op(op))
 
         # since op is a union, we have at least 3 elements in union_info (left
         # distinct right) and if there is more than a single union we have an
@@ -643,18 +626,18 @@ class Compiler:
         # 2. every other object starting from 1 is a bool indicating the type
         #    of $set_op (distinct or not distinct)
         table_exprs, distincts = set_op_info[::2], set_op_info[1::2]
-        return cls(table_exprs, expr, distincts=distincts, context=context)
+        return cls(table_exprs, op, distincts=distincts, context=context)
 
     @classmethod
-    def _make_union(cls, expr, context):
-        return cls._make_set_op(cls.union_class, expr, context)
+    def _make_union(cls, op, context):
+        return cls._make_set_op(cls.union_class, op, context)
 
     @classmethod
-    def _make_intersect(cls, expr, context):
+    def _make_intersect(cls, op, context):
         # flatten intersections so that we can codegen them all at once
-        return cls._make_set_op(cls.intersect_class, expr, context)
+        return cls._make_set_op(cls.intersect_class, op, context)
 
     @classmethod
-    def _make_difference(cls, expr, context):
+    def _make_difference(cls, op, context):
         # flatten differences so that we can codegen them all at once
-        return cls._make_set_op(cls.difference_class, expr, context)
+        return cls._make_set_op(cls.difference_class, op, context)

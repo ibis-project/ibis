@@ -1,7 +1,6 @@
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.backends.base.sql.registry import identifiers
 
 
@@ -45,10 +44,9 @@ _NEEDS_PARENS_OPS = (
 )
 
 
-def needs_parens(expr: ir.Expr):
-    op = expr.op()
+def needs_parens(op: ops.Node):
     if isinstance(op, ops.Alias):
-        op = op.arg.op()
+        op = op.arg
     return isinstance(op, _NEEDS_PARENS_OPS)
 
 

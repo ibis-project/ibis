@@ -108,13 +108,13 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
 
     udf_node = _create_udf_node(name, udf_node_fields)
 
-    def _translate_udf(t, expr):
+    def _translate_udf(t, op):
         func_obj = sa.func
         if schema is not None:
             func_obj = getattr(func_obj, schema)
         func_obj = getattr(func_obj, name)
 
-        sa_args = [t.translate(arg) for arg in expr.op().args]
+        sa_args = [t.translate(arg) for arg in op.args]
 
         return func_obj(*sa_args)
 
