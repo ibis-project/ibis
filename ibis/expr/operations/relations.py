@@ -107,6 +107,9 @@ class InMemoryTable(TableNode, sch.HasSchema):
     def data(self):
         """Return the data of an in-memory table."""
 
+    def blocks(self):
+        return True
+
 
 def _make_distinct_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
