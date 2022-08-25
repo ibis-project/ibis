@@ -261,10 +261,6 @@ class ScalarParameter(Value):
     def __hash__(self):
         return hash((self.dtype, self.counter))
 
-    @property
-    def inputs(self):
-        return ()
-
 
 @public
 class ValueList(Value):
