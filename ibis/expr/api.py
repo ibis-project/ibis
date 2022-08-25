@@ -403,15 +403,21 @@ def memtable(
     >>> import ibis
     >>> t = ibis.memtable([{"a": 1}, {"a": 2}])
     >>> t
+    PandasInMemoryTable
+      data:
+        DataFrameProxy:
+             a
+          0  1
+          1  2
 
     >>> t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}])
     >>> t
     PandasInMemoryTable
       data:
-        ((1, 'foo'), (2, 'baz'))
-      schema:
-        a int8
-        b string
+        DataFrameProxy:
+             a    b
+          0  1  foo
+          1  2  baz
 
     Create a table literal without column names embedded in the data and pass
     `columns`
@@ -420,10 +426,22 @@ def memtable(
     >>> t
     PandasInMemoryTable
       data:
-        ((1, 'foo'), (2, 'baz'))
-      schema:
-        a int8
-        b string
+        DataFrameProxy:
+             a    b
+          0  1  foo
+          1  2  baz
+
+    Create a table literal without column names embedded in the data. Ibis
+    generates column names if none are provided.
+
+    >>> t = ibis.memtable([(1, "foo"), (2, "baz")])
+    >>> t
+    PandasInMemoryTable
+      data:
+        DataFrameProxy:
+             col0 col1
+          0     1  foo
+          1     2  baz
     """
     if columns is not None and schema is not None:
         raise NotImplementedError(
