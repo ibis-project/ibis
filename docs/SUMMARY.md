@@ -13,6 +13,7 @@
 * [Execution Backends](backends/)
 * [How To Guide](how_to/)
 * [Contribute](contribute/)
+* [Code of Conduct](CODE_OF_CONDUCT.md)
 * Community
     * [Blog](blog/)
     * [About](about/)
