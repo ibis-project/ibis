@@ -33,7 +33,11 @@ from typing import List, Optional
 
 import ibis.expr.operations as ops
 from ibis.backends.base import BaseBackend
-from ibis.backends.pandas.core import compute_time_context, is_computable_input
+from ibis.backends.pandas.core import (
+    compute_time_context,
+    get_node_arguments,
+    is_computable_input,
+)
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
 from ibis.expr.typing import TimeContext
@@ -48,7 +52,9 @@ def compute_time_context_asof_join(
     **kwargs
 ):
     new_timecontexts = [
-        timecontext for arg in op.inputs if is_computable_input(arg)
+        timecontext
+        for arg in get_node_arguments(op)
+        if is_computable_input(arg)
     ]
 
     if not timecontext:
@@ -72,7 +78,9 @@ def compute_time_context_window(
     **kwargs
 ):
     new_timecontexts = [
-        timecontext for arg in op.inputs if is_computable_input(arg)
+        timecontext
+        for arg in get_node_arguments(op)
+        if is_computable_input(arg)
     ]
 
     if not timecontext:
@@ -81,6 +89,6 @@ def compute_time_context_window(
     result = adjust_context(op, scope, timecontext)
 
     new_timecontexts = [
-        result for arg in op.inputs if is_computable_input(arg)
+        result for arg in get_node_arguments(op) if is_computable_input(arg)
     ]
     return new_timecontexts
