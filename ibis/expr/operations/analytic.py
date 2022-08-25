@@ -25,10 +25,6 @@ class Window(Value):
         new_window = self.window.combine(window)
         return Window(self.expr, new_window)
 
-    @property
-    def inputs(self):
-        return self.expr.inputs[0], self.window
-
 
 @public
 class Analytic(Value):

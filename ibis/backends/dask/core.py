@@ -124,6 +124,7 @@ from ibis.backends.dask.trace import trace
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.core import (
     compute_time_context,
+    get_node_arguments,
     is_computable_input,
     is_computable_input_arg,
 )
@@ -255,7 +256,9 @@ def execute_until_in_scope(
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
-    computable_args = [arg for arg in node.inputs if is_computable_input(arg)]
+    computable_args = [
+        arg for arg in get_node_arguments(node) if is_computable_input(arg)
+    ]
 
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg

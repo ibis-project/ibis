@@ -287,8 +287,9 @@ def execute_until_in_scope(
     # figure out what arguments we're able to compute on based on the
     # expressions inputs. things like expressions, None, and scalar types are
     # computable whereas ``list``s are not
-    # TODO(kszucs): node.inputs property should be removed
-    computable_args = [arg for arg in node.inputs if is_computable_input(arg)]
+    computable_args = [
+        arg for arg in get_node_arguments(node) if is_computable_input(arg)
+    ]
 
     # pre_executed_states is a list of states with same the length of
     # computable_args, these states are passed to each arg
@@ -554,4 +555,37 @@ def compute_time_context_default(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    return [timecontext for arg in node.inputs if is_computable_input(arg)]
+    return [
+        timecontext
+        for arg in get_node_arguments(node)
+        if is_computable_input(arg)
+    ]
+
+
+get_node_arguments = Dispatcher('get_node_arguments')
+
+
+@get_node_arguments.register(ops.Node)
+def get_node_arguments_default(node):
+    return node.args
+
+
+@get_node_arguments.register(ops.ScalarParameter)
+def get_node_arguments_parameter(node):
+    return ()
+
+
+@get_node_arguments.register(ops.Window)
+def get_node_arguments_window(node):
+    return [get_node_arguments(node.expr)[0], node.window]
+
+
+@get_node_arguments.register(
+    (
+        ops.ElementWiseVectorizedUDF,
+        ops.ReductionVectorizedUDF,
+        ops.AnalyticVectorizedUDF,
+    )
+)
+def get_node_arguments_udf(node):
+    return node.func_args
