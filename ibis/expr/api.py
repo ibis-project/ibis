@@ -431,8 +431,10 @@ def memtable(
             "pass one or the other but not both"
         )
     df = pd.DataFrame(data, columns=columns)
-    if isinstance(data, (list, tuple)) and columns is None:
-        df = df.rename(columns={col: f"col{col:d}" for col in df.columns})
+    if df.columns.inferred_type != "string":
+        df = df.rename(
+            columns={col: f"col{i:d}" for i, col in enumerate(df.columns)}
+        )
     return memtable(df, name=name, schema=schema)
 
 
