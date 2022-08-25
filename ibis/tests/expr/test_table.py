@@ -1544,3 +1544,10 @@ def test_python_table_ambiguous():
             schema=ibis.schema(dict(a="int8")),
             columns=["a"],
         )
+
+
+def test_memtable_filter():
+    # Mostly just a smoketest, this used to error on construction
+    t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
+    expr = t.filter(t.x > 1)
+    assert expr.columns == ["x", "y"]
