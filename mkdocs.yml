@@ -38,6 +38,7 @@ plugins:
       glob:
         - backends/template.md
         - backends/support_matrix.csv
+        - CONTRIBUTING.md
   - gen-files:
       scripts:
         - gen_matrix.py
