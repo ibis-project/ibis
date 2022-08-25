@@ -669,23 +669,6 @@ def _fmt_value_table_node(
     return f"{aliases[op.table.op()]}"
 
 
-_JOIN_SYMS = {
-    ops.InnerJoin: "⋈",
-    ops.LeftJoin: "⟕",
-    ops.RightJoin: "⟖",
-    ops.OuterJoin: "⟗",
-    ops.CrossJoin: "×",
-}
-
-
-@fmt_value.register
-def _fmt_value_join(op: ops.Join, *, aliases: Aliases, **_: Any) -> str:
-    """Format a join as value."""
-    left = aliases[op.left.op()]
-    right = aliases[op.right.op()]
-    return f"{left} {_JOIN_SYMS[type(op)]} {right}"
-
-
 @fmt_value.register
 def _fmt_value_string_sql_like(
     op: ops.StringSQLLike, *, aliases: Aliases
