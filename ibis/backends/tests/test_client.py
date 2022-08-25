@@ -594,6 +594,11 @@ def test_deprecated_path_argument(backend, tmp_path):
             ),
             id="dataframe",
         ),
+        param(
+            ibis.memtable([dict(a=1), dict(a=2)]),
+            pd.DataFrame({"a": [1, 2]}),
+            id="list_of_dicts",
+        ),
     ],
 )
 @pytest.mark.notyet(
