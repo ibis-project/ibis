@@ -1,64 +1,40 @@
 """Execution rules for ops.Where operations"""
 
 import dask.dataframe as dd
-import numpy as np
 
 import ibis.expr.operations as ops
 from ibis.backends.dask.dispatch import execute_node
-from ibis.backends.dask.execution.util import (
-    TypeRegistrationDict,
-    register_types_to_dispatcher,
+from ibis.backends.pandas.core import boolean_types, scalar_types, simple_types
+from ibis.backends.pandas.execution.generic import pd_where
+
+
+@execute_node.register(
+    ops.Where, (dd.Series, *boolean_types), dd.Series, dd.Series
 )
-from ibis.backends.pandas.core import boolean_types, scalar_types
-from ibis.backends.pandas.execution.generic import (
-    execute_node_where_scalar_scalar_scalar,
-    execute_node_where_series_series_series,
+@execute_node.register(
+    ops.Where, (dd.Series, *boolean_types), dd.Series, simple_types
 )
-
-DASK_DISPATCH_TYPES: TypeRegistrationDict = {
-    ops.Where: [
-        (
-            (dd.Series, dd.Series, dd.Series),
-            execute_node_where_series_series_series,
-        ),
-        (
-            (dd.Series, dd.Series, scalar_types),
-            execute_node_where_series_series_series,
-        ),
-        (
-            (
-                boolean_types,
-                dd.Series,
-                dd.Series,
-            ),
-            execute_node_where_scalar_scalar_scalar,
-        ),
-    ]
-}
-register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
+@execute_node.register(
+    ops.Where, (dd.Series, *boolean_types), simple_types, dd.Series
+)
+@execute_node.register(
+    ops.Where, (dd.Series, *boolean_types), type(None), type(None)
+)
+def execute_node_where(op, cond, true, false, **kwargs):
+    return dd.map_partitions(pd_where, cond, true, false)
 
 
-def execute_node_where_series_scalar_scalar(op, cond, true, false, **kwargs):
-    return dd.from_array(np.repeat(true, len(cond))).where(cond, other=false)
-
-
-for scalar_type in scalar_types:
-    execute_node.register(ops.Where, dd.Series, scalar_type, scalar_type)(
-        execute_node_where_series_scalar_scalar
-    )
-
-
-@execute_node.register(ops.Where, boolean_types, dd.Series, scalar_types)
-def execute_node_where_scalar_series_scalar(op, cond, true, false, **kwargs):
-    if cond:
-        return true
-    else:
-        # TODO double check this is the right way to do this
-        out = dd.from_array(np.repeat(false, len(true)))
-        out.index = true.index
-        return out
-
-
-@execute_node.register(ops.Where, boolean_types, scalar_types, dd.Series)
-def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
-    return dd.from_array(np.repeat(true, len(false))) if cond else false
+# For true/false as scalars, we only support identical type pairs + None to
+# limit the size of the dispatch table and not have to worry about type
+# promotion.
+for typ in (str, *scalar_types):
+    for cond_typ in (dd.Series, *boolean_types):
+        execute_node.register(ops.Where, cond_typ, typ, typ)(
+            execute_node_where
+        )
+        execute_node.register(ops.Where, cond_typ, type(None), typ)(
+            execute_node_where
+        )
+        execute_node.register(ops.Where, cond_typ, typ, type(None))(
+            execute_node_where
+        )

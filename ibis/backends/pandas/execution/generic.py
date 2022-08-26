@@ -1048,7 +1048,9 @@ def pd_where(cond, true, false):
     """Execute `where` following ibis's intended semantics"""
     if isinstance(cond, pd.Series):
         if not isinstance(true, pd.Series):
-            true = pd.Series(np.repeat(true, len(cond)), name=cond.name)
+            true = pd.Series(
+                np.repeat(true, len(cond)), name=cond.name, index=cond.index
+            )
         return true.where(cond, other=false)
     if cond:
         if isinstance(false, pd.Series) and not isinstance(true, pd.Series):
