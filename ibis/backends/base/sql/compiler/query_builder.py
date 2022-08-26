@@ -117,8 +117,9 @@ class TableSetFormatter:
             result = self._quote_identifier(name)
             is_subquery = False
         elif isinstance(ref_op, ops.InMemoryTable):
+            names = ref_op.schema.names
             rows = ", ".join(
-                f"({', '.join(map(repr, col))})"
+                f"({', '.join(map('{} AS {}'.format, col, names))})"
                 for col in ref_op.data.itertuples(index=False)
             )
             result = f"(VALUES {rows})"
