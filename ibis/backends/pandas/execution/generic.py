@@ -1044,57 +1044,52 @@ def execute_node_not_contains_series_group_by_sequence(
     return (~data.obj.isin(elements)).groupby(data.grouper.groupings)
 
 
-# Series, Series, Series
-# Series, Series, scalar
-@execute_node.register(ops.Where, pd.Series, pd.Series, pd.Series)
-@execute_node.register(ops.Where, pd.Series, pd.Series, scalar_types)
-def execute_node_where_series_series_series(op, cond, true, false, **kwargs):
-    # No need to turn false into a series, pandas will broadcast it
-    return true.where(cond, other=false)
+def pd_where(cond, true, false):
+    """Execute `where` following ibis's intended semantics"""
+    if isinstance(cond, pd.Series):
+        if not isinstance(true, pd.Series):
+            true = pd.Series(np.repeat(true, len(cond)), name=cond.name)
+        return true.where(cond, other=false)
+    if cond:
+        if isinstance(false, pd.Series) and not isinstance(true, pd.Series):
+            return pd.Series(np.repeat(true, len(false)))
+        return true
+    else:
+        if isinstance(true, pd.Series) and not isinstance(false, pd.Series):
+            return pd.Series(np.repeat(false, len(true)), index=true.index)
+        return false
 
 
-# Series, scalar, Series
-def execute_node_where_series_scalar_scalar(op, cond, true, false, **kwargs):
-    return pd.Series(np.repeat(true, len(cond))).where(cond, other=false)
+@execute_node.register(
+    ops.Where, (pd.Series, *boolean_types), pd.Series, pd.Series
+)
+@execute_node.register(
+    ops.Where, (pd.Series, *boolean_types), pd.Series, simple_types
+)
+@execute_node.register(
+    ops.Where, (pd.Series, *boolean_types), simple_types, pd.Series
+)
+@execute_node.register(
+    ops.Where, (pd.Series, *boolean_types), type(None), type(None)
+)
+def execute_node_where(op, cond, true, false, **kwargs):
+    return pd_where(cond, true, false)
 
 
-# Series, scalar, scalar
-for scalar_type in scalar_types:
-    execute_node_where_series_scalar_scalar = execute_node.register(
-        ops.Where, pd.Series, scalar_type, scalar_type
-    )(execute_node_where_series_scalar_scalar)
-
-
-# scalar, Series, Series
-@execute_node.register(ops.Where, boolean_types, pd.Series, pd.Series)
-def execute_node_where_scalar_scalar_scalar(op, cond, true, false, **kwargs):
-    # Note that it is not necessary to check that true and false are also
-    # scalars. This allows users to do things like:
-    # ibis.where(even_or_odd_bool, [2, 4, 6], [1, 3, 5])
-    return true if cond else false
-
-
-# scalar, scalar, scalar
-for scalar_type in scalar_types:
-    execute_node_where_scalar_scalar_scalar = execute_node.register(
-        ops.Where, boolean_types, scalar_type, scalar_type
-    )(execute_node_where_scalar_scalar_scalar)
-
-
-# scalar, Series, scalar
-@execute_node.register(ops.Where, boolean_types, pd.Series, scalar_types)
-def execute_node_where_scalar_series_scalar(op, cond, true, false, **kwargs):
-    return (
-        true
-        if cond
-        else pd.Series(np.repeat(false, len(true)), index=true.index)
-    )
-
-
-# scalar, scalar, Series
-@execute_node.register(ops.Where, boolean_types, scalar_types, pd.Series)
-def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
-    return pd.Series(np.repeat(true, len(false))) if cond else false
+# For true/false as scalars, we only support identical type pairs + None to
+# limit the size of the dispatch table and not have to worry about type
+# promotion.
+for typ in (str, *scalar_types):
+    for cond_typ in (pd.Series, *boolean_types):
+        execute_node.register(ops.Where, cond_typ, typ, typ)(
+            execute_node_where
+        )
+        execute_node.register(ops.Where, cond_typ, type(None), typ)(
+            execute_node_where
+        )
+        execute_node.register(ops.Where, cond_typ, typ, type(None))(
+            execute_node_where
+        )
 
 
 @execute_node.register(PandasTable, PandasBackend)
