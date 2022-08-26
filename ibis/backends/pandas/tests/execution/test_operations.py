@@ -594,12 +594,24 @@ def test_left_binary_op_gb(t, df, op, argfunc):
     tm.assert_frame_equal(result, expected)
 
 
-def test_where_series(t, df):
+@pytest.mark.parametrize(
+    "left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None]
+)
+@pytest.mark.parametrize(
+    "right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None]
+)
+def test_where_series(t, df, left_f, right_f):
     col_expr = t['plain_int64']
-    result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).execute()
+    result = ibis.where(
+        col_expr > col_expr.mean(), left_f(col_expr), right_f(col_expr)
+    ).execute()
 
     ser = df['plain_int64']
-    expected = ser.where(ser > ser.mean(), other=0.0)
+    cond = ser > ser.mean()
+    left = left_f(ser)
+    if not isinstance(left, pd.Series):
+        left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
+    expected = left.where(cond, right_f(ser))
 
     tm.assert_series_equal(result, expected)
 
