@@ -269,10 +269,7 @@ class AlchemySelect(Select):
         if not num_froms:
             return result.select_from(table_set)
 
-        # otherwise we expect a single FROM in `result`
-        # assert num_froms == 1, f"num_froms == {num_froms:d}"
-
-        # and then we need to replace every occurrence of `result`'s `FROM`
+        # we need to replace every occurrence of `result`'s `FROM`
         # with `table_set` to handle correlated EXISTs coming from
         # semi/anti-join
         #
@@ -281,7 +278,10 @@ class AlchemySelect(Select):
         #
         # sqlalchemy suggests using the functionality in sa.sql.visitors, but
         # that would effectively require reimplementing ClauseAdapter
-        return sa.sql.util.ClauseAdapter(table_set).traverse(result)
+        replaced = sa.sql.util.ClauseAdapter(table_set).traverse(result)
+        num_froms = len(replaced.get_final_froms())
+        assert num_froms == 1, f"num_froms == {num_froms:d}"
+        return replaced
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING
