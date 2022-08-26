@@ -100,6 +100,18 @@ class TableSetFormatter:
     def _quote_identifier(self, name):
         return quote_identifier(name)
 
+    def _format_in_memory_table(self, op):
+        names = op.schema.names
+        raw_rows = (
+            ", ".join(
+                f"{val!r} AS {self._quote_identifier(name)}"
+                for val, name in zip(row, names)
+            )
+            for row in op.data.itertuples(index=False)
+        )
+        rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
+        return f"(VALUES {rows})"
+
     def _format_table(self, expr):
         # TODO: This could probably go in a class and be significantly nicer
         ctx = self.context
@@ -117,12 +129,7 @@ class TableSetFormatter:
             result = self._quote_identifier(name)
             is_subquery = False
         elif isinstance(ref_op, ops.InMemoryTable):
-            names = ref_op.schema.names
-            rows = ", ".join(
-                f"({', '.join(map('{} AS {}'.format, col, names))})"
-                for col in ref_op.data.itertuples(index=False)
-            )
-            result = f"(VALUES {rows})"
+            result = self._format_in_memory_table(ref_op)
             is_subquery = True
         else:
             # A subquery
