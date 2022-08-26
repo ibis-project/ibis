@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import Any, Mapping
 
 import pandas as pd
 import pyspark
@@ -13,10 +13,13 @@ from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.config
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as types
+import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql import BaseSQLBackend
+from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
     CreateDatabase,
     DropTable,
@@ -32,10 +35,6 @@ from ibis.backends.pyspark.compiler import (
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
-
-if TYPE_CHECKING:
-    import ibis.expr.operations as ops
-    import ibis.expr.types as ir
 
 _read_csv_defaults = {
     'header': True,
@@ -87,7 +86,24 @@ class _PySparkCursor:
         """No-op for compatibility."""
 
 
+class PySparkTableSetFormatter(TableSetFormatter):
+    def _format_in_memory_table(self, op):
+        names = op.schema.names
+        rows = ", ".join(
+            f"({', '.join(map(repr, row))})"
+            for row in op.data.itertuples(index=False)
+        )
+        signature = ", ".join(map(self._quote_identifier, names))
+        name = self._quote_identifier(op.name or "_")
+        return f"(VALUES {rows} AS {name} ({signature}))"
+
+
+class PySparkCompiler(Compiler):
+    table_set_formatter_class = PySparkTableSetFormatter
+
+
 class Backend(BaseSQLBackend):
+    compiler = PySparkCompiler
     name = 'pyspark'
     table_class = PySparkDatabaseTable
     table_expr_class = PySparkTable
