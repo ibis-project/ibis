@@ -623,7 +623,6 @@ def test_zeroifnull_column(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"])
-@pytest.mark.broken(["dask"], reason="dask selection with ops.Where is broken")
 def test_where_select(backend, alltypes, df):
     table = alltypes
     table = table.select(

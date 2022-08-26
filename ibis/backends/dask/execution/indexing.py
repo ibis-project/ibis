@@ -21,7 +21,12 @@ from ibis.backends.pandas.execution.generic import pd_where
     ops.Where, (dd.Series, *boolean_types), type(None), type(None)
 )
 def execute_node_where(op, cond, true, false, **kwargs):
-    return dd.map_partitions(pd_where, cond, true, false)
+    if any(
+        isinstance(x, (dd.Series, dd.core.Scalar)) for x in (cond, true, false)
+    ):
+        return dd.map_partitions(pd_where, cond, true, false)
+    # All are immediate scalars, handle locally
+    return true if cond else false
 
 
 # For true/false as scalars, we only support identical type pairs + None to
