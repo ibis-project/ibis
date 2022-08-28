@@ -662,3 +662,22 @@ def test_where_column(backend, alltypes, df):
     )
 
     backend.assert_series_equal(result, expected)
+
+
+def test_select_filter(backend, alltypes, df):
+    t = alltypes
+
+    expr = t.select("int_col").filter(t.string_col == "4")
+    result = expr.execute()
+
+    expected = df.loc[df.string_col == "4", ["int_col"]].reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
+
+
+def test_select_filter_select(backend, alltypes, df):
+    t = alltypes
+    expr = t.select("int_col").filter(t.string_col == "4").int_col
+    result = expr.execute().rename("int_col")
+
+    expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)
+    backend.assert_series_equal(result, expected)

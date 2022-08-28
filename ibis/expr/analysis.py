@@ -12,7 +12,11 @@ import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.exceptions import ExpressionError, IbisTypeError
+from ibis.common.exceptions import (
+    ExpressionError,
+    IbisTypeError,
+    IntegrityError,
+)
 from ibis.expr.window import window
 
 # ---------------------------------------------------------------------
@@ -343,21 +347,31 @@ def _filter_selection(expr, predicates):
     # the parent tables in the join being projected
 
     op = expr.op()
-    if not op.blocks():
-        # Potential fusion opportunity. The predicates may need to be
-        # rewritten in terms of the child table. This prevents the broken
-        # ref issue (described in more detail in #59)
+    # Potential fusion opportunity. The predicates may need to be
+    # rewritten in terms of the child table. This prevents the broken
+    # ref issue (described in more detail in #59)
+    try:
         simplified_predicates = tuple(
             sub_for(predicate, [(expr, op.table)])
             if not is_reduction(predicate)
             else predicate
             for predicate in predicates
         )
-
-        if shares_all_roots(simplified_predicates, op.table):
+    except IntegrityError:
+        pass
+    else:
+        if shares_all_roots(simplified_predicates, op.table) and not any(
+            # we can't push down filters on unnest because unnest changes the
+            # shape and potential values of the data: unnest can potentially
+            # produce NULLs
+            #
+            # the getattr shenanigans is to handle Alias
+            isinstance(getattr(sel.op(), "arg", sel).op(), ops.Unnest)
+            for sel in op.selections
+        ):
             result = ops.Selection(
                 op.table,
-                [],
+                selections=op.selections,
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys,
             )

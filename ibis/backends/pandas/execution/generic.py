@@ -969,7 +969,10 @@ def execute_series_notnnull(op, data, **kwargs):
 
 @execute_node.register(ops.IsNan, (pd.Series, floating_types))
 def execute_isnan(op, data, **kwargs):
-    return np.isnan(data)
+    try:
+        return np.isnan(data)
+    except (TypeError, ValueError):
+        return data != data
 
 
 @execute_node.register(ops.IsInf, (pd.Series, floating_types))
