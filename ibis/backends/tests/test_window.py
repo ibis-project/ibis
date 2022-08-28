@@ -64,13 +64,19 @@ def calc_zscore(s):
                 )
             ).reset_index(drop=True, level=[0]),
             id='percent_rank',
-            marks=pytest.mark.notyet(["clickhouse"]),
+            marks=pytest.mark.notyet(
+                ["clickhouse"],
+                reason="clickhouse doesn't implement percent_rank",
+            ),
         ),
         param(
             lambda t, win: t.id.cume_dist().over(win),
             lambda t: t.id.rank(method='min') / t.id.transform(len),
             id='cume_dist',
-            marks=pytest.mark.notimpl(["clickhouse", "pyspark"]),
+            marks=[
+                pytest.mark.notimpl(["pyspark"]),
+                pytest.mark.notyet(["clickhouse"]),
+            ],
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
@@ -667,6 +673,9 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark"])
+@pytest.mark.notyet(
+    ["clickhouse"], reason="clickhouse doesn't implement percent_rank"
+)
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
