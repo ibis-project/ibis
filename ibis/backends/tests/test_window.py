@@ -30,16 +30,28 @@ def calc_zscore(s):
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
+            marks=pytest.mark.broken(
+                ["clickhouse"],
+                reason="upstream is broken; returns all nulls",
+            ),
         ),
         param(
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method='min').astype('int64') - 1,
             id='rank',
+            marks=pytest.mark.broken(
+                ["clickhouse"],
+                reason="upstream is broken",
+            ),
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method='dense').astype('int64') - 1,
             id='dense_rank',
+            marks=pytest.mark.broken(
+                ["clickhouse"],
+                reason="upstream is broken",
+            ),
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -52,12 +64,13 @@ def calc_zscore(s):
                 )
             ).reset_index(drop=True, level=[0]),
             id='percent_rank',
+            marks=pytest.mark.notyet(["clickhouse"]),
         ),
         param(
             lambda t, win: t.id.cume_dist().over(win),
             lambda t: t.id.rank(method='min') / t.id.transform(len),
             id='cume_dist',
-            marks=pytest.mark.notimpl(["pyspark"]),
+            marks=pytest.mark.notimpl(["clickhouse", "pyspark"]),
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
@@ -99,7 +112,13 @@ def calc_zscore(s):
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id='row_number',
-            marks=pytest.mark.notimpl(["pandas"]),
+            marks=[
+                pytest.mark.notimpl(["pandas"]),
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    reason="upstream implementation cannot handle subtraction",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.double_col.cumsum().over(win),
@@ -143,7 +162,14 @@ def calc_zscore(s):
             ),
             id='cumnotany',
             marks=pytest.mark.notyet(
-                ("duckdb", 'impala', 'postgres', 'mysql', 'sqlite'),
+                (
+                    "clickhouse",
+                    "duckdb",
+                    'impala',
+                    'postgres',
+                    'mysql',
+                    'sqlite',
+                ),
                 reason="notany() over window not supported",
             ),
         ),
@@ -167,7 +193,14 @@ def calc_zscore(s):
             ),
             id='cumnotall',
             marks=pytest.mark.notyet(
-                ("duckdb", 'impala', 'postgres', 'mysql', 'sqlite'),
+                (
+                    "clickhouse",
+                    "duckdb",
+                    'impala',
+                    'postgres',
+                    'mysql',
+                    'sqlite',
+                ),
                 reason="notall() over window not supported",
             ),
         ),
@@ -204,7 +237,7 @@ def calc_zscore(s):
         ),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -244,14 +277,21 @@ def test_grouped_bounded_expanding_window(
             id='mean_udf',
             marks=[
                 pytest.mark.notimpl(
-                    ["duckdb", "impala", "mysql", "postgres", "sqlite"]
+                    [
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                    ]
                 )
             ],
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -271,7 +311,7 @@ def test_ungrouped_bounded_expanding_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_grouped_bounded_following_window(backend, alltypes, df):
     window = ibis.window(
         preceding=0,
@@ -326,7 +366,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
 
@@ -363,7 +403,15 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             lambda gb: (gb.double_col.transform('mean')),
             id='mean_udf',
             marks=pytest.mark.notimpl(
-                ["dask", "duckdb", "impala", "mysql", "postgres", "sqlite"]
+                [
+                    "clickhouse",
+                    "dask",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "sqlite",
+                ]
             ),
         ),
     ],
@@ -377,7 +425,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
         param(False, id='unordered'),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_grouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -417,7 +465,12 @@ def test_grouped_unbounded_window(
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             True,
             id='ordered-mean',
-            marks=pytest.mark.notimpl(["dask", "impala", "pandas"]),
+            marks=[
+                pytest.mark.notimpl(["dask", "impala", "pandas"]),
+                pytest.mark.broken(
+                    ["clickhouse"], reason="upstream appears broken"
+                ),
+            ],
         ),
         param(
             lambda t, win: t.double_col.mean().over(win),
@@ -432,6 +485,7 @@ def test_grouped_unbounded_window(
             id='ordered-mean_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "clickhouse",
                     "dask",
                     "duckdb",
                     "impala",
@@ -448,7 +502,14 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-mean_udf',
             marks=pytest.mark.notimpl(
-                ["duckdb", "impala", "mysql", "postgres", "sqlite"]
+                [
+                    "clickhouse",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "sqlite",
+                ]
             ),
         ),
         # Analytic ops
@@ -471,14 +532,16 @@ def test_grouped_unbounded_window(
             lambda df: df.float_col.shift(-1),
             True,
             id='ordered-lead',
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.notimpl(["clickhouse", "dask"]),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
             lambda df: df.float_col.shift(-1),
             False,
             id='unordered-lead',
-            marks=pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "dask", "mysql", "pyspark"]
+            ),
         ),
         param(
             lambda t, win: calc_zscore(t.double_col).over(win),
@@ -487,6 +550,7 @@ def test_grouped_unbounded_window(
             id='ordered-zscore_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "clickhouse",
                     "dask",
                     "duckdb",
                     "impala",
@@ -504,13 +568,21 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-zscore_udf',
             marks=pytest.mark.notimpl(
-                ["duckdb", "impala", "mysql", "postgres", "pyspark", "sqlite"]
+                [
+                    "clickhouse",
+                    "duckdb",
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                ]
             ),
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["clickhouse", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
@@ -541,7 +613,11 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "impala", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",  # noqa: E501
+)
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
