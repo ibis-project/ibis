@@ -692,6 +692,13 @@ def _nth_value(translator, expr):
     return f"nth_value({arg}, ({nth}) + 1)"
 
 
+def _repeat(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    times = translator.translate(op.times)
+    return f"repeat({arg}, CAST({times} AS UInt64))"
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -789,7 +796,7 @@ operation_registry = {
     ops.LStrip: _unary('trimLeft'),
     ops.RStrip: _unary('trimRight'),
     ops.Strip: _unary('trimBoth'),
-    ops.Repeat: _fixed_arity("repeat", 2),
+    ops.Repeat: _repeat,
     ops.StringConcat: _string_concat,
     ops.RegexSearch: _fixed_arity('match', 2),
     ops.RegexExtract: _regex_extract,
