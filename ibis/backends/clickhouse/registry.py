@@ -6,7 +6,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.backends.base.sql.registry import binary_infix
+from ibis.backends.base.sql.registry import binary_infix, window
 from ibis.backends.clickhouse.datatypes import serialize
 from ibis.backends.clickhouse.identifiers import quote_identifier
 
@@ -685,6 +685,13 @@ def _struct_field(translator, expr):
     return f"{translator.translate(op.arg)}.`{op.field}`"
 
 
+def _nth_value(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    nth = translator.translate(op.nth)
+    return f"nth_value({arg}, ({nth}) + 1)"
+
+
 # TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
@@ -848,6 +855,17 @@ operation_registry = {
     ops.Clip: _clip,
     ops.StructField: _struct_field,
     ops.StructColumn: _struct_column,
+    ops.Window: window.window,
+    ops.RowNumber: lambda *args: 'row_number()',
+    ops.DenseRank: lambda *args: 'dense_rank()',
+    ops.MinRank: lambda *args: 'rank()',
+    ops.Lag: window.shift_like('lagInFrame'),
+    ops.Lead: window.shift_like('leadInFrame'),
+    ops.FirstValue: _unary('first_value'),
+    ops.LastValue: _unary('last_value'),
+    ops.NthValue: _nth_value,
+    ops.Window: window.window,
+    ops.NTile: window.ntile,
 }
 
 
@@ -896,28 +914,13 @@ _undocumented_operations = {
 
 
 _unsupported_ops_list = [
-    ops.Window,
     ops.DecimalPrecision,
     ops.DecimalScale,
     ops.BaseConvert,
-    ops.CumeDist,
-    ops.CumulativeSum,
-    ops.CumulativeMin,
-    ops.CumulativeMax,
-    ops.CumulativeMean,
-    ops.CumulativeAny,
-    ops.CumulativeAll,
     ops.IdenticalTo,
-    ops.RowNumber,
-    ops.DenseRank,
-    ops.MinRank,
+    ops.CumeDist,
     ops.PercentRank,
-    ops.FirstValue,
-    ops.LastValue,
-    ops.NthValue,
-    ops.Lag,
-    ops.Lead,
-    ops.NTile,
+    ops.ReductionVectorizedUDF,
 ]
 _unsupported_ops = {k: _raise_error for k in _unsupported_ops_list}
 
