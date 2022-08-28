@@ -63,10 +63,10 @@ class _CorrelatedRefCheck:
             self.ref_check(node, in_subquery=in_subquery)
 
         for arg in node.args:
-            # TODO(kszucs): shouldn't be required since ops.List is properly
-            # traversable, but otherwise there will be more table references
-            # than expected (probably has something to do with the traversal
-            # order)
+            # TODO(kszucs): shouldn't be required since ops.NodeList is
+            # properly traversable, but otherwise there will be more table
+            # references than expected (probably has something to do with the
+            # traversal order)
             if isinstance(arg, ops.NodeList):
                 for item in arg:
                     self.visit(item, in_subquery=in_subquery)
