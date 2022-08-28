@@ -366,7 +366,12 @@ def _filter_selection(expr, predicates):
             # produce NULLs
             #
             # the getattr shenanigans is to handle Alias
-            isinstance(getattr(sel.op(), "arg", sel).op(), ops.Unnest)
+            isinstance(
+                child_op.arg.op()
+                if isinstance(child_op := sel.op(), ops.Alias)
+                else child_op,
+                ops.Unnest,
+            )
             for sel in op.selections
         ):
             result = ops.Selection(
