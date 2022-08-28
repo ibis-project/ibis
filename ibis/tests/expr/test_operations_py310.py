@@ -35,7 +35,7 @@ def test_pattern_matching_list():
     s = ibis.sequence([1, 2, 3])
 
     match s.op():
-        case ops.List([first, second, third]):
+        case ops.NodeList([first, second, third]):
             assert first == one.op()
             assert second == two.op()
             assert third == three.op()
@@ -43,7 +43,7 @@ def test_pattern_matching_list():
             raise ValueError("Unable to match")
 
     match s.op():
-        case ops.List(values=[first, second, third]):
+        case ops.NodeList(values=[first, second, third]):
             assert first == one.op()
             assert second == two.op()
             assert third == three.op()
