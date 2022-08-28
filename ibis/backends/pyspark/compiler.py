@@ -148,6 +148,18 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
     col_in_selection_order = []
     col_to_drop = []
     result_table = src_table
+
+    for predicate in op.predicates:
+        col = t.translate(predicate, scope, timecontext, **kwargs)
+        # Due to an upstream Spark issue (SPARK-33057) we cannot
+        # directly use filter with a window operation. The workaround
+        # here is to assign a temporary column for the filter predicate,
+        # do the filtering, and then drop the temporary column.
+        filter_column = f'predicate_{guid()}'
+        result_table = result_table.withColumn(filter_column, col)
+        result_table = result_table.filter(F.col(filter_column))
+        result_table = result_table.drop(filter_column)
+
     for selection in op.selections:
         if isinstance(selection, types.Table):
             col_in_selection_order.extend(selection.columns)
@@ -186,17 +198,6 @@ def compile_selection(t, expr, scope, timecontext, **kwargs):
 
     if col_to_drop:
         result_table = result_table.drop(*col_to_drop)
-
-    for predicate in op.predicates:
-        col = t.translate(predicate, scope, timecontext, **kwargs)
-        # Due to an upstream Spark issue (SPARK-33057) we cannot
-        # directly use filter with a window operation. The workaround
-        # here is to assign a temporary column for the filter predicate,
-        # do the filtering, and then drop the temporary column.
-        filter_column = f'predicate_{guid()}'
-        result_table = result_table.withColumn(filter_column, col)
-        result_table = result_table.filter(F.col(filter_column))
-        result_table = result_table.drop(filter_column)
 
     if op.sort_keys:
         sort_cols = [
