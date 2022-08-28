@@ -1488,7 +1488,7 @@ def test_filter_predicates():
         expr = projected
 
     expected = """\
-SELECT t0.*
+SELECT *
 FROM (
   SELECT *
   FROM (
@@ -1496,8 +1496,9 @@ FROM (
     FROM t
     WHERE (lower(`color`) LIKE '%de%') AND
           (locate('de', lower(`color`)) - 1 >= 0)
-  ) t2
-) t0
-WHERE regexp_like(lower(t0.`color`), '.*ge.*')"""
+  ) t1
+  WHERE regexp_like(lower(`color`), '.*ge.*')
+) t0"""
 
-    assert Compiler.to_sql(expr) == expected
+    result = Compiler.to_sql(expr)
+    assert result == expected

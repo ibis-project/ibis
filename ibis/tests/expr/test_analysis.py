@@ -284,7 +284,7 @@ def test_select_filter_mutate_fusion():
     #
     # eventually we will bring this back, but we're trading off the ability
     # to remove materialize for some performance in the short term
-    assert len(first_selection.op().selections) == 0
+    assert len(first_selection.op().selections) == 1
     assert len(first_selection.op().predicates) == 1
 
 

@@ -229,19 +229,15 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT `a`, `b2`
+  SELECT t0.`a`, t0.`b2`
   FROM t0
+  WHERE t0.`a` < 100
 )
-SELECT t2.*
-FROM (
-  SELECT t1.*
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
   FROM t1
-  WHERE t1.`a` < 100
-) t2
-WHERE t2.`a` = (
-  SELECT max(t1.`a`) AS `blah`
-  FROM t1
-  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -259,19 +255,15 @@ WITH t0 AS (
   FROM my_table
 ),
 t1 AS (
-  SELECT `a`, `b2`
+  SELECT t0.`a`, t0.`b2`
   FROM t0
+  WHERE t0.`a` < 100
 )
-SELECT t2.*
-FROM (
-  SELECT t1.*
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
   FROM t1
-  WHERE t1.`a` < 100
-) t2
-WHERE t2.`a` = (
-  SELECT max(t1.`a`) AS `blah`
-  FROM t1
-  WHERE t1.`a` < 100
 )"""
     assert result == expected
 
@@ -358,8 +350,8 @@ FROM (
   FROM (
     SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
     FROM alltypes
+    WHERE `timestamp_col` < '20140101'
   ) t1
-  WHERE `timestamp_col` < '20140101'
   GROUP BY 1
 ) t0"""
     assert result == expected
