@@ -972,6 +972,9 @@ def execute_isnan(op, data, **kwargs):
     try:
         return np.isnan(data)
     except (TypeError, ValueError):
+        # if `data` contains `None` np.isnan will complain
+        # so we take advantage of NaN not equaling itself
+        # to do the correct thing
         return data != data
 
 

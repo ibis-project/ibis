@@ -167,27 +167,27 @@ def execute_selection_dataframe(
 ):
     result = data
 
-    if selections:
-        # if we are just performing select operations we can do a direct
-        # selection
-        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
-            result = build_df_from_selection(selections, data, op.table.op())
-        else:
-            result = build_df_from_projection(
-                selections,
-                op,
-                data,
-                scope=scope,
-                timecontext=timecontext,
-                **kwargs,
-            )
-
     if predicates:
         predicates = _compute_predicates(
             op.table.op(), predicates, data, scope, timecontext, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         result = result.loc[predicate]
+
+    if selections:
+        # if we are just performing select operations we can do a direct
+        # selection
+        if all(isinstance(s.op(), ops.TableColumn) for s in selections):
+            result = build_df_from_selection(selections, result, op.table.op())
+        else:
+            result = build_df_from_projection(
+                selections,
+                op,
+                result,
+                scope=scope,
+                timecontext=timecontext,
+                **kwargs,
+            )
 
     if sort_keys:
         if len(sort_keys) > 1:
