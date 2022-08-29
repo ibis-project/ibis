@@ -117,7 +117,10 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             execute_difference_dataframe_dataframe,
         )
     ],
-    ops.DropNa: [((dd.DataFrame, tuple), execute_node_dropna_dataframe)],
+    ops.DropNa: [
+        ((dd.DataFrame, tuple), execute_node_dropna_dataframe),
+        ((dd.DataFrame, type(None)), execute_node_dropna_dataframe),
+    ],
     ops.FillNa: [
         ((dd.DataFrame, simple_types), execute_node_fillna_dataframe_scalar),
         ((dd.DataFrame,), execute_node_fillna_dataframe_dict),

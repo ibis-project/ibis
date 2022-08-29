@@ -794,7 +794,7 @@ class DropNa(TableNode, sch.HasSchema):
 
     table = rlz.table
     how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.tuple_of(rlz.column_from("table")), default=())
+    subset = rlz.optional(rlz.tuple_of(rlz.column_from("table")), default=None)
 
     @property
     def schema(self):

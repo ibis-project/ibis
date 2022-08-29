@@ -11,7 +11,6 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.util as util
 from ibis import _
 from ibis import literal as L
 
@@ -385,45 +384,29 @@ def test_mutate_rename(alltypes):
     assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
 
 
+@pytest.mark.parametrize('how', ['any', 'all'])
 @pytest.mark.parametrize(
-    ('how', 'subset'),
-    [
-        ('any', None),
-        ('any', []),
-        ('any', ['int_col', 'na_col']),
-        ('all', None),
-        ('all', ['int_col', 'na_col']),
-        ('all', 'none_col'),
-    ],
+    'subset', [None, [], 'col_1', ['col_1', 'col_2'], ['col_1', 'col_3']]
 )
-@pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "impala",
-        "mysql",
-        "postgres",
-        "sqlite",
-    ]
-)
-@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
+@pytest.mark.notimpl(["datafusion"])
 def test_dropna_table(backend, alltypes, how, subset):
-    table = alltypes.mutate(na_col=np.nan)
-    table = table.mutate(none_col=None)
-    table = table.mutate(none_col=table['none_col'].cast('float64'))
+    is_two = alltypes.int_col == 2
+    is_four = alltypes.int_col == 4
+
+    table = alltypes.mutate(
+        col_1=is_two.ifelse(ibis.NA, alltypes.float_col),
+        col_2=is_four.ifelse(ibis.NA, alltypes.float_col),
+        col_3=(is_two | is_four).ifelse(ibis.NA, alltypes.float_col),
+    ).select("col_1", "col_2", "col_3")
+
     table_pandas = table.execute()
 
     result = table.dropna(subset, how).execute().reset_index(drop=True)
-    subset = util.promote_list(subset) if subset else table_pandas.columns
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(
         drop=True
     )
 
-    # check_dtype is False here because there are dtype diffs between
-    # Pyspark and Pandas on Java 8 - the 'bool_col' of an empty DataFrame
-    # is type object in Pyspark, and type bool in Pandas. This diff does
-    # not exist in Java 11.
-    backend.assert_frame_equal(result, expected, check_dtype=False)
+    backend.assert_frame_equal(result, expected)
 
 
 def test_select_sort_sort(alltypes):
