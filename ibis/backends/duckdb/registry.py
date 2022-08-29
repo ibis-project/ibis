@@ -231,6 +231,7 @@ operation_registry.update(
         ops.StructColumn: _struct_column,
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
+        ops.ArrayLength: fixed_arity(sa.func.array_length, 1),
     }
 )
 
