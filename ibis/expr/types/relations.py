@@ -874,9 +874,8 @@ class Table(Expr):
         """
         from ibis.expr import operations as ops
 
-        if subset is None:
-            subset = []
-        subset = util.promote_list(subset)
+        if subset is not None:
+            subset = util.promote_list(subset)
         return ops.DropNa(self, how, subset).to_expr()
 
     def fillna(

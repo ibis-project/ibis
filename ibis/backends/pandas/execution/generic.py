@@ -1144,9 +1144,11 @@ def execute_node_log_number_number(op, value, base, **kwargs):
     return math.log(value, base)
 
 
+@execute_node.register(ops.DropNa, pd.DataFrame, type(None))
 @execute_node.register(ops.DropNa, pd.DataFrame, tuple)
 def execute_node_dropna_dataframe(op, df, subset, **kwargs):
-    subset = [col.get_name() for col in subset] if subset else None
+    if subset is not None:
+        subset = [col.get_name() for col in subset]
     return df.dropna(how=op.how, subset=subset)
 
 

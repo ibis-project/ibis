@@ -1986,7 +1986,9 @@ def compile_not_null(t, expr, scope, timecontext, **kwargs):
 def compile_dropna_table(t, expr, scope, timecontext, **kwargs):
     op = expr.op()
     table = t.translate(op.table, scope, timecontext, **kwargs)
-    subset = [col.get_name() for col in op.subset] if op.subset else None
+    subset = op.subset
+    if subset is not None:
+        subset = [col.get_name() for col in subset]
     return table.dropna(how=op.how, subset=subset)
 
 

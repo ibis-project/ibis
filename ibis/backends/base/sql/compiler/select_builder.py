@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import functools
+import operator
 from typing import NamedTuple
 
 import toolz
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
@@ -441,6 +444,28 @@ class SelectBuilder:
             self.distinct = True
 
         self._collect(expr.op().table, toplevel=toplevel)
+
+    def _collect_DropNa(self, expr, toplevel=False):
+        if toplevel:
+            op = expr.op()
+            if op.subset is None:
+                columns = [op.table[c] for c in op.table.columns]
+            else:
+                columns = op.subset
+            if columns:
+                filters = [
+                    functools.reduce(
+                        operator.and_ if op.how == "any" else operator.or_,
+                        [c.notnull() for c in columns],
+                    )
+                ]
+            elif op.how == "all":
+                filters = [ibis.literal(False)]
+            else:
+                filters = []
+            self.table_set = op.table
+            self.select_set = [op.table]
+            self.filters = filters
 
     def _collect_Limit(self, expr, toplevel=False):
         if not toplevel:
