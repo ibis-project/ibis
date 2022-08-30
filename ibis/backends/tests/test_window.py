@@ -39,19 +39,13 @@ def calc_zscore(s):
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method='min').astype('int64') - 1,
             id='rank',
-            marks=pytest.mark.broken(
-                ["clickhouse"],
-                reason="upstream is broken",
-            ),
+            marks=pytest.mark.min_server_version(clickhouse="22.8"),
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method='dense').astype('int64') - 1,
             id='dense_rank',
-            marks=pytest.mark.broken(
-                ["clickhouse"],
-                reason="upstream is broken",
-            ),
+            marks=pytest.mark.min_server_version(clickhouse="22.8"),
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -120,10 +114,7 @@ def calc_zscore(s):
             id='row_number',
             marks=[
                 pytest.mark.notimpl(["pandas"]),
-                pytest.mark.broken(
-                    ["clickhouse"],
-                    reason="upstream implementation cannot handle subtraction",
-                ),
+                pytest.mark.min_server_version(clickhouse="22.8"),
             ],
         ),
         param(
