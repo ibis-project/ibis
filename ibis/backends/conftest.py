@@ -353,6 +353,34 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
+    for marker in item.iter_markers(name="min_server_version"):
+        kwargs = marker.kwargs
+        if backend not in kwargs:
+            continue
+
+        funcargs = item.funcargs
+        con = funcargs.get(
+            "con",
+            getattr(funcargs.get("backend"), "connection", None),
+        )
+
+        if con is None:
+            continue
+
+        min_server_version = kwargs.pop(backend)
+        server_version = con.version
+        condition = vparse(server_version) < vparse(min_server_version)
+        item.add_marker(
+            pytest.mark.xfail(
+                condition,
+                reason=(
+                    "unsupported functionality for server version "
+                    f"{server_version}"
+                ),
+                **kwargs,
+            )
+        )
+
     for marker in item.iter_markers(name="min_version"):
         kwargs = marker.kwargs
         if backend not in kwargs:
