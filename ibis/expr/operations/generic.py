@@ -4,6 +4,7 @@ import abc
 import datetime
 import decimal
 import enum
+import ipaddress
 import itertools
 import uuid
 from operator import attrgetter
@@ -255,6 +256,8 @@ class Literal(Value):
                     frozenset,
                     int,
                     frozendict,
+                    ipaddress.IPv4Address,
+                    ipaddress.IPv6Address,
                     np.generic,
                     np.ndarray,
                     pd.Timedelta,

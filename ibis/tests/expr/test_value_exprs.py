@@ -1,3 +1,4 @@
+import ipaddress
 import operator
 import uuid
 from collections import OrderedDict
@@ -57,6 +58,8 @@ def test_null():
         ('foo', 'string'),
         (b'fooblob', 'bytes'),
         ([1, 2, 3], 'array<int8>'),
+        (ipaddress.ip_address('1.2.3.4'), 'inet'),
+        (ipaddress.ip_address('::1'), 'inet'),
     ],
 )
 def test_literal_with_implicit_type(value, expected_type):
@@ -115,6 +118,8 @@ multipolygon1 = [polygon1, polygon2]
         (-2147483649, 'float64'),
         (1.5, 'float64'),
         ('foo', 'string'),
+        (ipaddress.ip_address('1.2.3.4'), 'inet'),
+        (ipaddress.ip_address('::1'), 'inet'),
         (list(pointA), 'point'),
         (tuple(pointA), 'point'),
         (list(lineAB), 'linestring'),
