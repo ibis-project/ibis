@@ -5,6 +5,7 @@ import collections
 import datetime
 import enum
 import functools
+import ipaddress
 import numbers
 import re
 import typing
@@ -1369,6 +1370,13 @@ def infer_boolean(value: bool) -> Boolean:
 @infer.register((type(None), Null))
 def infer_null(value: Null | None) -> Null:
     return null
+
+
+@infer.register((ipaddress.IPv4Address, ipaddress.IPv6Address))
+def infer_ipaddr(
+    _: ipaddress.IPv4Address | ipaddress.IPv6Address | None,
+) -> INET:
+    return inet
 
 
 if IS_SHAPELY_AVAILABLE:

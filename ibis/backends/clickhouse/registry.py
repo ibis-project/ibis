@@ -363,6 +363,9 @@ def _literal(translator, expr):
         return _null_literal(translator, expr)
     if isinstance(expr, ir.BooleanValue):
         return '1' if value else '0'
+    elif isinstance(expr, ir.INETValue):
+        v = str(value)
+        return f"toIPv6({v!r})" if ':' in v else f"toIPv4({v!r})"
     elif isinstance(expr, ir.StringValue):
         return "'{!s}'".format(value.replace("'", "\\'"))
     elif isinstance(expr, ir.NumericValue):
