@@ -173,3 +173,15 @@ def test_insert_with_more_columns(temporary_alltypes, df):
 def test_get_schema_using_query(con, query, expected_schema):
     result = con._get_schema_using_query(query)
     assert result == expected_schema
+
+
+def test_list_tables_empty(con, worker_id):
+    dbname = f"tmpdb_{worker_id}"
+    db = con.current_database
+    con.raw_sql(f"CREATE DATABASE IF NOT EXISTS {dbname}")
+    try:
+        con.raw_sql(f"USE {dbname}")
+        assert not con.list_tables()
+    finally:
+        con.raw_sql(f"USE {db}")
+        con.raw_sql(f"DROP DATABASE IF EXISTS {dbname}")
