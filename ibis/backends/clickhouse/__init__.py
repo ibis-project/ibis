@@ -109,11 +109,16 @@ class Backend(BaseSQLBackend):
 
     def list_databases(self, like=None):
         data, _ = self.raw_sql('SELECT name FROM system.databases')
+        # in theory this should never be empty
+        if not data:  # pragma: no cover
+            return []
         databases = list(data[0])
         return self._filter_with_like(databases, like)
 
     def list_tables(self, like=None, database=None):
         data, _ = self.raw_sql('SHOW TABLES')
+        if not data:
+            return []
         databases = list(data[0])
         return self._filter_with_like(databases, like)
 
