@@ -69,7 +69,7 @@ jobs:
         run: sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
 
       - name: install poetry
-        run: pip install poetry
+        run: pip install 'poetry<1.2'
 
       - name: generate requirements.txt
         run: poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
