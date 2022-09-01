@@ -25,7 +25,10 @@ from ibis.backends.base.sql.alchemy import (
     unary,
 )
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
-from ibis.backends.base.sql.alchemy.registry import get_col_or_deferred_col
+from ibis.backends.base.sql.alchemy.registry import (
+    _bitwise_op,
+    get_col_or_deferred_col,
+)
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -617,5 +620,6 @@ operation_registry.update(
         ops.Unnest: unary(sa.func.unnest),
         ops.Covariance: _covar,
         ops.Correlation: _corr,
+        ops.BitwiseXor: _bitwise_op("#"),
     }
 )
