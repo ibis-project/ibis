@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal, Sequence
 
 from public import public
 
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -764,6 +765,75 @@ class IntegerValue(NumericValue):
         from ibis.expr import operations as ops
 
         return ops.BaseConvert(self, from_base, to_base).to_expr()
+
+    def __and__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+        """Bitwise and `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseAnd, self, other)
+
+    __rand__ = __and__
+
+    def __or__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+        """Bitwise or `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseOr, self, other)
+
+    __ror__ = __or__
+
+    def __xor__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+        """Bitwise xor `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseXor, self, other)
+
+    __rxor__ = __xor__
+
+    def __lshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+        """Bitwise left shift `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseLeftShift, self, other)
+
+    def __rlshift__(
+        self, other: IntegerValue
+    ) -> IntegerValue | NotImplemented:
+        """Bitwise left shift `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseLeftShift, other, self)
+
+    def __rshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+        """Bitwise right shift `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseRightShift, self, other)
+
+    def __rrshift__(
+        self, other: IntegerValue
+    ) -> IntegerValue | NotImplemented:
+        """Bitwise right shift `self` with `other`."""
+        from ibis.expr import operations as ops
+
+        return _binop(ops.BitwiseRightShift, other, self)
+
+    def __invert__(self) -> IntegerValue:
+        """Bitwise not of `self`.
+
+        Returns
+        -------
+        IntegerValue
+            Inverted bits of `self`.
+        """
+        from ibis.expr import operations as ops
+
+        try:
+            node = ops.BitwiseNot(self)
+        except (IbisTypeError, NotImplementedError):
+            return NotImplemented
+        else:
+            return node.to_expr()
 
 
 @public

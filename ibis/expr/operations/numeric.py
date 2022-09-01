@@ -316,3 +316,41 @@ class Sin(TrigonometricUnary):
 @public
 class Tan(TrigonometricUnary):
     """Returns the tangent of x"""
+
+
+@public
+class BitwiseNot(Unary):
+    arg = rlz.integer
+    output_dtype = rlz.numeric_like("args", operator.invert)
+
+
+class BitwiseBinary(Binary):
+    left = rlz.integer
+    right = rlz.integer
+
+
+@public
+class BitwiseAnd(BitwiseBinary):
+    output_dtype = rlz.numeric_like("args", operator.and_)
+
+
+@public
+class BitwiseOr(BitwiseBinary):
+    output_dtype = rlz.numeric_like("args", operator.or_)
+
+
+@public
+class BitwiseXor(BitwiseBinary):
+    output_dtype = rlz.numeric_like("args", operator.xor)
+
+
+@public
+class BitwiseLeftShift(BitwiseBinary):
+    output_shape = rlz.shape_like("args")
+    output_dtype = dt.int64
+
+
+@public
+class BitwiseRightShift(BitwiseBinary):
+    output_shape = rlz.shape_like("args")
+    output_dtype = dt.int64
