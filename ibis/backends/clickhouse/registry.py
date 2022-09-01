@@ -876,6 +876,12 @@ operation_registry = {
     ops.NthValue: _nth_value,
     ops.Window: window.window,
     ops.NTile: window.ntile,
+    ops.BitwiseAnd: _fixed_arity('bitAnd', 2),
+    ops.BitwiseOr: _fixed_arity('bitOr', 2),
+    ops.BitwiseXor: _fixed_arity('bitXor', 2),
+    ops.BitwiseNot: _unary('bitNot'),
+    ops.BitwiseLeftShift: _fixed_arity('bitShiftLeft', 2),
+    ops.BitwiseRightShift: _fixed_arity('bitShiftRight', 2),
 }
 
 
