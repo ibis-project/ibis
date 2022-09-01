@@ -291,6 +291,16 @@ def _ibis_sqlite_radians(x):
     return None if x is None else math.radians(x)
 
 
+@udf
+def _ibis_sqlite_xor(x, y):
+    return None if x is None or y is None else x ^ y
+
+
+@udf
+def _ibis_sqlite_inv(x):
+    return None if x is None else ~x
+
+
 class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
