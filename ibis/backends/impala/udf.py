@@ -346,4 +346,6 @@ _impala_to_ibis_type = {
     'char': 'string',
     'timestamp': 'timestamp',
     'decimal': 'decimal',
+    'date': 'date',
+    'void': 'null',
 }

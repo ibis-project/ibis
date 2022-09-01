@@ -67,6 +67,8 @@ _HS2_TTypeId_to_dtype = {
     'BINARY': 'object',
     'VARCHAR': 'object',
     'CHAR': 'object',
+    'DATE': 'datetime64[ns]',
+    'VOID': None,
 }
 
 
