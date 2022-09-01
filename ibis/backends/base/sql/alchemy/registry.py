@@ -520,6 +520,25 @@ def _clip(*, min_func, max_func):
     return translate
 
 
+def _bitwise_op(operator):
+    def translate(t, expr):
+        op = expr.op()
+        left = t.translate(op.left)
+        right = t.translate(op.right)
+        return left.op(operator)(right)
+
+    return translate
+
+
+def _bitwise_not(t, expr):
+    op = expr.op()
+    arg = t.translate(op.arg)
+    return sa.sql.elements.UnaryExpression(
+        arg,
+        operator=sa.sql.operators.custom_op("~"),
+    )
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
@@ -645,6 +664,12 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
         ),
         3,
     ),
+    ops.BitwiseAnd: _bitwise_op("&"),
+    ops.BitwiseOr: _bitwise_op("|"),
+    ops.BitwiseXor: _bitwise_op("^"),
+    ops.BitwiseLeftShift: _bitwise_op("<<"),
+    ops.BitwiseRightShift: _bitwise_op(">>"),
+    ops.BitwiseNot: _bitwise_not,
 }
 
 
