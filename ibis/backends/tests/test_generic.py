@@ -1,7 +1,7 @@
 import decimal
 import io
-import operator
 from contextlib import redirect_stdout
+from operator import and_, invert, lshift, neg, or_, rshift, xor
 
 import numpy as np
 import pandas as pd
@@ -37,75 +37,91 @@ def test_fillna_nullif(con, expr, expected):
         assert con.execute(expr) == expected
 
 
-@pytest.mark.notimpl(
+na_none_cols = pytest.mark.parametrize(
+    "col",
     [
-        "clickhouse",
-        "datafusion",
-        "impala",
-        "mysql",
-        "postgres",
-        "sqlite",
-    ]
+        param(
+            "na_col",
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
+            id="na_col",
+        ),
+        param(
+            "none_col",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "datafusion",
+                        "impala",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                    ]
+                ),
+                pytest.mark.notyet(
+                    ["duckdb"], reason="non-finite value support"
+                ),
+            ],
+            id="none_col",
+        ),
+    ],
 )
-@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
-def test_isna(backend, alltypes):
+
+
+@na_none_cols
+def test_isna(backend, alltypes, col):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
     table = table.mutate(none_col=table['none_col'].cast('float64'))
     table_pandas = table.execute()
 
-    for col in ['na_col', 'none_col']:
-        result = table[table[col].isnan()].execute().reset_index(drop=True)
+    result = table[table[col].isnan()].execute().reset_index(drop=True)
+    expected = table_pandas[table_pandas[col].isna()].reset_index(drop=True)
 
-        expected = table_pandas[table_pandas[col].isna()].reset_index(
-            drop=True
-        )
-        backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "duckdb", "impala", "mysql", "postgres"]
+@pytest.mark.parametrize(
+    "col",
+    [
+        param(
+            "na_col",
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "duckdb", "impala", "postgres"]
+            ),
+        ),
+        "none_col",
+    ],
 )
-def test_fillna(backend, alltypes):
+@pytest.mark.notimpl(["datafusion", "mysql"])
+def test_fillna(backend, alltypes, col):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
     table = table.mutate(none_col=table['none_col'].cast('float64'))
     table_pandas = table.execute()
 
-    for col in ['na_col', 'none_col']:
-        result = (
-            table.mutate(filled=table[col].fillna(0.0))
-            .execute()
-            .reset_index(drop=True)
-        )
+    result = (
+        table.mutate(filled=table[col].fillna(0.0))
+        .execute()
+        .reset_index(drop=True)
+    )
 
-        expected = table_pandas.assign(
-            filled=table_pandas[col].fillna(0.0)
-        ).reset_index(drop=True)
+    expected = table_pandas.assign(
+        filled=table_pandas[col].fillna(0.0)
+    ).reset_index(drop=True)
 
-        backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        param(
-            ibis.coalesce(5, None, 4),
-            5,
-            marks=pytest.mark.notimpl(["datafusion"]),
-        ),
-        param(
-            ibis.coalesce(ibis.NA, 4, ibis.NA),
-            4,
-            marks=pytest.mark.notimpl(["datafusion"]),
-        ),
-        param(
-            ibis.coalesce(ibis.NA, ibis.NA, 3.14),
-            3.14,
-            marks=pytest.mark.notimpl(["datafusion"]),
-        ),
+        param(ibis.coalesce(5, None, 4), 5, id="generic"),
+        param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
+        param(ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14, id="non_null_last"),
     ],
 )
+@pytest.mark.notimpl(["datafusion"])
 def test_coalesce(con, expr, expected):
     result = con.execute(expr)
 
@@ -563,17 +579,17 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
     [
         param(True, True, toolz.identity, id="true_noop"),
         param(False, False, toolz.identity, id="false_noop"),
-        param(True, False, operator.invert, id="true_invert"),
-        param(False, True, operator.invert, id="false_invert"),
-        param(True, False, operator.neg, id="true_negate"),
-        param(False, True, operator.neg, id="false_negate"),
+        param(True, False, invert, id="true_invert"),
+        param(False, True, invert, id="false_invert"),
+        param(True, False, neg, id="true_negate"),
+        param(False, True, neg, id="false_negate"),
     ],
 )
 def test_logical_negation_literal(con, expr, expected, op):
     assert con.execute(op(ibis.literal(expr))) == expected
 
 
-@pytest.mark.parametrize("op", [toolz.identity, operator.invert, operator.neg])
+@pytest.mark.parametrize("op", [toolz.identity, invert, neg])
 def test_logical_negation_column(backend, alltypes, df, op):
     result = op(alltypes["bool_col"]).execute()
     expected = op(df["bool_col"])
@@ -664,3 +680,116 @@ def test_select_filter_select(backend, alltypes, df):
 
     expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)
     backend.assert_series_equal(result, expected)
+
+
+pyspark_no_bitshift = pytest.mark.notyet(
+    ["pyspark"], reason="pyspark doesn't implement bitshit operators"
+)
+
+
+@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    ("left_fn", "right_fn"),
+    [
+        param(lambda t: t.int_col, lambda t: t.int_col, id="col_col"),
+        param(lambda _: 3, lambda t: t.int_col, id="scalar_col"),
+        param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes))
+    result = con.execute(expr)
+
+    expected = op(left_fn(df), right_fn(df)).rename("tmp")
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("op", "left_fn", "right_fn"),
+    [
+        param(
+            lshift,
+            lambda t: t.int_col,
+            lambda t: t.int_col,
+            id="lshift_col_col",
+        ),
+        param(
+            lshift,
+            lambda _: 3,
+            lambda t: t.int_col,
+            marks=pytest.mark.broken(
+                ["impala"],
+                reason="impala's behavior differs from every other backend",
+            ),
+            id="lshift_scalar_col",
+        ),
+        param(
+            lshift, lambda t: t.int_col, lambda _: 3, id="lshift_col_scalar"
+        ),
+        param(
+            rshift,
+            lambda t: t.int_col,
+            lambda t: t.int_col,
+            id="rshift_col_col",
+        ),
+        param(
+            rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"
+        ),
+        param(
+            rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"
+        ),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pyspark_no_bitshift
+def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes))
+    result = expr.execute()
+
+    pandas_left = getattr(left := left_fn(df), "values", left)
+    pandas_right = getattr(right := right_fn(df), "values", right)
+    expected = pd.Series(
+        op(pandas_left, pandas_right),
+        name="tmp",
+        dtype="int64",
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        and_,
+        or_,
+        xor,
+        param(lshift, marks=pyspark_no_bitshift),
+        param(rshift, marks=pyspark_no_bitshift),
+    ],
+)
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_scalars(con, op, left, right):
+    expr = op(left, right)
+    result = con.execute(expr)
+    expected = op(4, 2)
+    assert result == expected
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_not_scalar(con):
+    expr = ~L(2)
+    result = con.execute(expr)
+    expected = -3
+    assert result == expected
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_not_col(backend, alltypes, df):
+    expr = ~alltypes.int_col
+    result = expr.execute()
+    expected = ~df.int_col
+    backend.assert_series_equal(result, expected.rename("tmp"))

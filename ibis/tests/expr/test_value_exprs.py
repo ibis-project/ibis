@@ -817,7 +817,6 @@ def test_substitute_dict():
         'string',
         'double',
         'float32',
-        'int64',
     ],
 )
 def test_not_without_boolean(typ):
@@ -825,6 +824,31 @@ def test_not_without_boolean(typ):
     c = t.a
     with pytest.raises(TypeError):
         ~c
+
+
+@pytest.mark.parametrize(
+    ("fn", "expected_op"),
+    [
+        param(lambda t: t.int_col & t.smallint_col, ops.BitwiseAnd, id="and"),
+        param(lambda t: t.int_col | t.smallint_col, ops.BitwiseOr, id="or"),
+        param(lambda t: t.int_col ^ t.smallint_col, ops.BitwiseXor, id="xor"),
+        param(
+            lambda t: t.int_col << t.smallint_col,
+            ops.BitwiseLeftShift,
+            id="lshift",
+        ),
+        param(
+            lambda t: t.int_col >> t.smallint_col,
+            ops.BitwiseRightShift,
+            id="rshift",
+        ),
+        param(lambda t: operator.inv(t.int_col), ops.BitwiseNot, id="not"),
+    ],
+)
+def test_bitwise_exprs(fn, expected_op):
+    t = ibis.table(dict(int_col="int32", smallint_col="int16"), name="t")
+    expr = fn(t)
+    assert isinstance(expr.op(), expected_op)
 
 
 @pytest.mark.parametrize(
