@@ -359,5 +359,8 @@ operation_registry.update(
         ops.Degrees: unary(sa.func._ibis_sqlite_degrees),
         ops.Radians: unary(sa.func._ibis_sqlite_radians),
         ops.Clip: _clip(min_func=sa.func.min, max_func=sa.func.max),
+        # sqlite doesn't implement a native xor operator
+        ops.BitwiseXor: fixed_arity(sa.func._ibis_sqlite_xor, 2),
+        ops.BitwiseNot: unary(sa.func._ibis_sqlite_inv),
     }
 )
