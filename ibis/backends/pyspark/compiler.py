@@ -2179,3 +2179,40 @@ def compile_in_memory_table(t, expr, scope, timecontext, session, **kwargs):
         data=op.data._df,
         schema=pt.StructType(fields),
     )
+
+
+@compiles(ops.BitwiseAnd)
+def compile_bitwise_and(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+
+    return left.bitwiseAND(right)
+
+
+@compiles(ops.BitwiseOr)
+def compile_bitwise_or(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+
+    return left.bitwiseOR(right)
+
+
+@compiles(ops.BitwiseXor)
+def compile_bitwise_xor(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+
+    left = t.translate(op.left, scope, timecontext, **kwargs)
+    right = t.translate(op.right, scope, timecontext, **kwargs)
+
+    return left.bitwiseXOR(right)
+
+
+@compiles(ops.BitwiseNot)
+def compile_bitwise_not(t, expr, scope, timecontext, **kwargs):
+    op = expr.op()
+    arg = t.translate(op.arg, scope, timecontext, **kwargs)
+    return F.bitwise_not(arg)
