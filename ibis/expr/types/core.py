@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import toolz
 from public import public
@@ -16,6 +16,8 @@ from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
 
 if TYPE_CHECKING:
+    import pyarrow as pa
+
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
@@ -304,6 +306,73 @@ class Expr(Immutable):
         """
         return self._find_backend().compile(
             self, limit=limit, timecontext=timecontext, params=params
+        )
+
+    def to_pyarrow_batches(
+        self,
+        *,
+        limit: int | str | None = None,
+        params: Mapping[ir.Value, Any] | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> Iterable[pa.RecordBatch]:
+        """Execute expression and return results in an iterator of pyarrow
+        record batches.
+
+        **Warning**: This method is eager and will execute the associated
+        expression immediately. This API is experimental and subject to change.
+
+        Parameters
+        ----------
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Number of rows in each returned record batch.
+
+        Returns
+        -------
+        record_batches
+            An iterator of pyarrow record batches.
+        """
+        return self._find_backend().to_pyarrow_batches(
+            self,
+            params=params,
+            limit=limit,
+            chunk_size=chunk_size,
+            **kwargs,
+        )
+
+    def to_pyarrow(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        """Execute expression and return results in as a pyarrow table.
+
+        **Warning**: This method is eager and will execute the associated
+        expression immediately. This API is experimental and subject to change.
+
+
+        Parameters
+        ----------
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+
+        Returns
+        -------
+        Table
+            A pyarrow table holding the results of the executed expression.
+        """
+        return self._find_backend().to_pyarrow(
+            self, params=params, limit=limit, **kwargs
         )
 
 

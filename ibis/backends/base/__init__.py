@@ -22,6 +22,7 @@ from typing import (
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 import ibis
 import ibis.common.exceptions as exc
@@ -206,7 +207,65 @@ class TablesAccessor(collections.abc.Mapping):
         return self._backend.list_tables()
 
 
-class BaseBackend(abc.ABC):
+# should have a better name
+class ResultHandler:
+    @staticmethod
+    def _import_pyarrow():
+        try:
+            import pyarrow
+        except ImportError:
+            raise ModuleNotFoundError(
+                "Exporting to arrow formats requires `pyarrow` but it is not installed"  # noqa: ignore
+            )
+        else:
+            return pyarrow
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        pa = self._import_pyarrow()
+        try:
+            # Can't construct an array from record batches
+            # so construct at one column table (if applicable)
+            # then return the column _from_ the table
+            table = pa.Table.from_batches(
+                self.to_pyarrow_batches(
+                    expr, params=params, limit=limit, **kwargs
+                )
+            )
+            if isinstance(expr, ir.Table):
+                return table
+            elif isinstance(expr, ir.Column):
+                # Column will be a ChunkedArray, `combine_chunks` will
+                # flatten it
+                return table.columns[0].combine_chunks()
+            elif isinstance(expr, ir.Scalar):
+                return table.columns[0].combine_chunks()[0]
+            else:
+                raise ValueError
+        except ValueError:
+            # The pyarrow batches iterator is empty so pass in an empty
+            # iterator and the pyarrow schema
+            return pa.Table.from_batches([], schema=expr.schema().to_pyarrow())
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> pa.RecordBatchReader:
+        raise NotImplementedError
+
+
+class BaseBackend(abc.ABC, ResultHandler):
     """Base backend class.
 
     All Ibis backends must subclass this class and implement all the

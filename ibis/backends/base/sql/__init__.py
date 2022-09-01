@@ -4,7 +4,7 @@ import abc
 import contextlib
 import os
 from functools import lru_cache
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
 
@@ -16,6 +16,9 @@ import ibis.util as util
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
 from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 __all__ = [
     'BaseSQLBackend',
@@ -127,8 +130,6 @@ class BaseSQLBackend(BaseBackend):
         Any
             Backend cursor
         """
-        # TODO results is unused, it can be removed
-        # (requires updating Impala tests)
         # TODO `self.con` is assumed to be defined in subclasses, but there
         # is nothing that enforces it. We should find a way to make sure
         # `self.con` is always a DBAPI2 connection, or raise an error
@@ -140,6 +141,55 @@ class BaseSQLBackend(BaseBackend):
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+    ) -> Iterable[list]:
+        query_ast = self.compiler.to_ast_ensure_limit(
+            expr, limit, params=params
+        )
+        sql = query_ast.compile()
+
+        with self._safe_raw_sql(sql) as cursor:
+            while batch := cursor.fetchmany(chunk_size):
+                yield batch
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> pa.RecordBatchReader:
+        pa = self._import_pyarrow()
+
+        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
+
+        if hasattr(expr, "schema"):
+            schema = expr.schema()
+        else:
+            # ColumnExpr has no schema method, define single-column schema
+            schema = sch.schema([(expr.get_name(), expr.type())])
+
+        def _batches():
+            for batch in self._cursor_batches(
+                expr, params=params, limit=limit, chunk_size=chunk_size
+            ):
+                struct_array = pa.array(
+                    map(tuple, batch),
+                    type=ibis_to_pyarrow_struct(schema),
+                )
+                yield pa.RecordBatch.from_struct_array(struct_array)
+
+        return pa.RecordBatchReader.from_batches(
+            schema.to_pyarrow(), _batches()
+        )
 
     def execute(
         self,
