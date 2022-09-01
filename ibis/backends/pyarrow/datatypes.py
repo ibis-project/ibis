@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from typing import Iterable
 
 import pyarrow as pa
 
@@ -24,6 +25,7 @@ _to_pyarrow_types = {
     dt.Binary: pa.binary(),
     dt.Boolean: pa.bool_(),
     dt.Timestamp: pa.timestamp('ns'),
+    dt.Date: pa.date64(),
 }
 
 
@@ -129,3 +131,20 @@ def infer_pyarrow_schema(schema: pa.Schema) -> sch.Schema:
     return sch.schema(
         [(f.name, dt.dtype(f.type, nullable=f.nullable)) for f in schema]
     )
+
+
+def _schema_to_pyarrow_schema_fields(schema: sch.Schema) -> Iterable[pa.Field]:
+    for name, dtype in schema.items():
+        yield pa.field(name, dtype.to_pyarrow(), nullable=dtype.nullable)
+
+
+def ibis_to_pyarrow_struct(schema: sch.Schema) -> pa.StructType:
+    return pa.struct(_schema_to_pyarrow_schema_fields(schema))
+
+
+def ibis_to_pyarrow_schema(schema: sch.Schema) -> pa.Schema:
+    return pa.schema(_schema_to_pyarrow_schema_fields(schema))
+
+
+dt.DataType.to_pyarrow = to_pyarrow_type  # type: ignore
+sch.Schema.to_pyarrow = ibis_to_pyarrow_schema  # type: ignore

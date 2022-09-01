@@ -2,10 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
-    import ibis.expr.window as win
-
 from public import public
 
 import ibis
@@ -14,6 +10,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.pretty import _format_value, _pretty_value
 from ibis.expr.types.core import Expr, _binop
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
+    import ibis.expr.window as win
 
 
 @public

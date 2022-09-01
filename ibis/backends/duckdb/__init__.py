@@ -7,9 +7,10 @@ import itertools
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, MutableMapping
+from typing import TYPE_CHECKING, Any, Iterator, Mapping, MutableMapping
 
 import pandas as pd
+import pyarrow as pa
 import pyarrow.types as pat
 import sqlalchemy as sa
 import toolz
@@ -19,10 +20,9 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
-    import ibis.expr.types as ir
-    import pyarrow as pa
 
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
@@ -213,6 +213,57 @@ class Backend(BaseAlchemyBackend):
 
         return self.table(table_name)
 
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+    ) -> Iterator[pa.RecordBatch]:
+        _ = self._import_pyarrow()
+        query_ast = self.compiler.to_ast_ensure_limit(
+            expr, limit, params=params
+        )
+        sql = query_ast.compile()
+
+        cursor = self.raw_sql(sql)
+
+        _reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
+        # Horrible hack to make sure cursor isn't garbage collected
+        # before batches are streamed out of the RecordBatchReader
+        batches = IbisRecordBatchReader(_reader, cursor)
+        return batches
+        # TODO: duckdb seems to not care about the `chunk_size` argument
+        # and returns batches in 1024 row chunks
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+    ) -> pa.Table:
+        _ = self._import_pyarrow()
+        query_ast = self.compiler.to_ast_ensure_limit(
+            expr, limit, params=params
+        )
+        sql = query_ast.compile()
+
+        cursor = self.raw_sql(sql)
+        table = cursor.cursor.fetch_arrow_table()
+
+        if isinstance(expr, ir.Table):
+            return table
+        elif isinstance(expr, ir.Column):
+            # Column will be a ChunkedArray, `combine_chunks` will
+            # flatten it
+            return table.columns[0].combine_chunks()
+        elif isinstance(expr, ir.Scalar):
+            return table.columns[0].combine_chunks()[0]
+        else:
+            raise ValueError
+
     def fetch_from_cursor(
         self,
         cursor: duckdb.DuckDBPyConnection,
@@ -294,3 +345,25 @@ class Backend(BaseAlchemyBackend):
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+
+
+class IbisRecordBatchReader(pa.RecordBatchReader):
+    def __init__(self, reader, cursor):
+        self.reader = reader
+        self.cursor = cursor
+
+    def close(self):
+        self.reader.close()
+        del self.cursor
+
+    def read_all(self):
+        return self.reader.read_all()
+
+    def read_next_batch(self):
+        return self.reader.read_next_batch()
+
+    def read_pandas(self):
+        return self.reader.read_pandas()
+
+    def schema(self):
+        return self.reader.schema

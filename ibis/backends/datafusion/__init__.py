@@ -20,6 +20,8 @@ try:
 except ImportError:
     from datafusion import SessionContext
 
+import datafusion
+
 
 def _to_pyarrow_table(frame):
     batches = frame.collect()
@@ -155,23 +157,19 @@ class Backend(BaseBackend):
         """
         self._context.register_parquet(name, str(path))
 
-    def execute(
+    def _get_frame(
         self,
         expr: ir.Expr,
-        params: Mapping[ir.Expr, object] = None,
-        limit: str = 'default',
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
-    ):
+    ) -> datafusion.DataFrame:
         if isinstance(expr, ir.Table):
-            frame = self.compile(expr, params, **kwargs)
-            table = _to_pyarrow_table(frame)
-            return table.to_pandas()
+            return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Column):
             # expression must be named for the projection
             expr = expr.name('tmp').to_projection()
-            frame = self.compile(expr, params, **kwargs)
-            table = _to_pyarrow_table(frame)
-            return table['tmp'].to_pandas()
+            return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Scalar):
             if an.find_immediate_parent_tables(expr.op()):
                 # there are associated datafusion tables so convert the expr
@@ -184,8 +182,43 @@ class Backend(BaseBackend):
                 # dummy datafusion table
                 compiled = self.compile(expr, params, **kwargs)
                 frame = self._context.empty_table().select(compiled)
-            table = _to_pyarrow_table(frame)
-            return table[0][0].as_py()
+            return frame
+        else:
+            raise com.IbisError(
+                f"Cannot execute expression of type: {type(expr)}"
+            )
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> pa.RecordBatchReader:
+        pa = self._import_pyarrow()
+        frame = self._get_frame(expr, params, limit, **kwargs)
+        return pa.RecordBatchReader.from_batches(
+            frame.schema(), frame.collect()
+        )
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, object] = None,
+        limit: int | str | None = "default",
+        **kwargs: Any,
+    ):
+        output = self.to_pyarrow(expr, params=params, limit=limit, **kwargs)
+        if isinstance(expr, ir.Table):
+            return output.to_pandas()
+        elif isinstance(expr, ir.Column):
+            series = output.to_pandas()
+            series.name = "tmp"
+            return series
+        elif isinstance(expr, ir.Scalar):
+            return output.as_py()
         else:
             raise com.IbisError(
                 f"Cannot execute expression of type: {type(expr)}"
