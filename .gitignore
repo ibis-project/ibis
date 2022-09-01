@@ -94,3 +94,4 @@ spark-warehouse
 docs/backends/support_matrix.csv
 __pycache__
 tags
+.DS_Store
