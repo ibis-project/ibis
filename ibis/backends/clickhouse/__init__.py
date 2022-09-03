@@ -7,7 +7,6 @@ from typing import Any, Mapping
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.json
 import requests
 from pydantic import Field
 
@@ -15,10 +14,9 @@ import ibis
 import ibis.config
 import ibis.expr.schema as sch
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.clickhouse.client import ClickhouseTable, fully_qualified_re
+from ibis.backends.clickhouse.client import ClickhouseTable
 from ibis.backends.clickhouse.compiler import ClickhouseCompiler
 from ibis.backends.clickhouse.datatypes import parse, serialize
-from ibis.backends.pyarrow.datatypes import to_pyarrow_type
 from ibis.config import options
 
 
@@ -153,7 +151,7 @@ class Backend(BaseSQLBackend):
 
     @property
     def version(self) -> str:
-        resp = self._get("SELECT VERSION() AS v")
+        resp = self._get("SELECT version() AS v")
         js = resp.json()
         [version] = js["data"]["v"]
         return version
@@ -182,17 +180,15 @@ class Backend(BaseSQLBackend):
                 )
             schema = sch.infer(df)
 
-            files[name] = df.to_json(
-                index=False,
-                orient="records",
-                lines=True,
-                date_format="epoch",
-                date_unit="ns",
-            )
-            data[f"{name}_format"] = "JSONEachRow"
-            data[f"{name}_types"] = ",".join(
-                serialize(typ) for typ in schema.types
-            )
+            t = pa.Table.from_pandas(df)
+
+            data = io.BytesIO()
+            with pa.RecordBatchStreamWriter(data, t.schema) as w:
+                w.write_table(t)
+
+            files[name] = data.getvalue()
+            data[f"{name}_format"] = "ArrowStream"
+            data[f"{name}_types"] = ",".join(map(serialize, schema.types))
 
         return files, data
 
@@ -226,18 +222,15 @@ class Backend(BaseSQLBackend):
             # map low cardinality columns to dictionary encoded columns
             output_format_arrow_low_cardinality_as_dictionary=1,
             # use arrow stream as the output format
-            default_format="JSONEachRow",
+            default_format="ArrowStream",
         )
         files, data = self._construct_external_tables(external_tables)
         ibis.util.log(query)
         resp = self._post(query, data=data, params=params, files=files)
 
         if content := resp.content:
-            t = pa.json.read_json(io.BytesIO(content))
-            return t
-        else:
-            breakpoint()
-            ...
+            t = pa.RecordBatchStreamReader(content)
+            return t.read_all()
 
     def fetch_from_cursor(self, cursor, schema):
         df = cursor.to_pandas()
