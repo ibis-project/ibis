@@ -2,7 +2,11 @@ self: super:
 let
   inherit (self) pkgs;
   inherit (pkgs) lib stdenv;
+
   numpyVersion = super.numpy.version;
+  cythonVersion = super.cython.version;
+  pandasVersion = super.pandas.version;
+
   parallelizeSetupPy = drv: drv.overridePythonAttrs (attrs: {
     format = "setuptools";
     enableParallelBuilding = true;
@@ -10,8 +14,21 @@ let
   });
   versionBetween = version: lower: upper:
     lib.versionAtLeast version lower && lib.versionOlder version upper;
+  customizeCython = (lib.versionAtLeast pandasVersion "1.4.4") && (lib.versionOlder cythonVersion "0.29.32");
 in
 {
+  cython = super.cython.overridePythonAttrs (
+    attrs: lib.optionalAttrs customizeCython rec {
+      version = "0.29.32";
+
+      src = self.fetchPypi {
+        pname = "Cython";
+        inherit version;
+        sha256 = "sha256-hzPPR1i3kwTypOOev6xekjQbzke8zrJsElQ5iy+MGvc=";
+      };
+    }
+  );
+
   # this patch only applies to macos and only with numpy versions >=1.21,<1.21.2
   # see https://github.com/numpy/numpy/issues/19624 for details
   numpy = super.numpy.overridePythonAttrs (
