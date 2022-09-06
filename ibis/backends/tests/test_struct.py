@@ -20,7 +20,8 @@ fields = pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notimpl(["dask"])
 @fields
 def test_single_field(backend, struct, struct_df, field):
-    result = struct.abc[field].execute()
+    expr = struct.abc[field]
+    result = expr.execute()
     expected = struct_df.abc.map(
         lambda value: value[field] if isinstance(value, dict) else value
     ).rename(field)
