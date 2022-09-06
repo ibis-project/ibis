@@ -93,7 +93,10 @@ ibis_type_to_sqla = {
     # Mantissa-based
     dt.Float16: sa.REAL,
     dt.Float32: sa.REAL,
-    dt.Float64: sa.FLOAT,
+    # precision is the number of bits in the mantissa
+    # without specifying this, some backends interpret the type as FLOAT, which
+    # means float32 (and precision == 24)
+    dt.Float64: sa.Float(precision=53),
     dt.Int8: sa.SmallInteger,
     dt.Int16: sa.SmallInteger,
     dt.Int32: sa.Integer,
@@ -185,6 +188,21 @@ def sa_mysql_blob(_, satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
 
+_FLOAT_PREC_TO_TYPE = {
+    11: dt.Float16,
+    24: dt.Float32,
+    53: dt.Float64,
+}
+
+
+@dt.dtype.register(Dialect, sa.types.Float)
+def sa_float(_, satype, nullable=True):
+    precision = satype.precision
+    if (typ := _FLOAT_PREC_TO_TYPE.get(precision)) is not None:
+        return typ(nullable=nullable)
+    return dt.Decimal(precision, satype.scale, nullable=nullable)
+
+
 @dt.dtype.register(Dialect, sa.types.Numeric)
 @dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
 def sa_numeric(_, satype, nullable=True):
@@ -212,7 +230,7 @@ def sa_bigint(_, satype, nullable=True):
 
 
 @dt.dtype.register(Dialect, sa.REAL)
-def sa_float(_, satype, nullable=True):
+def sa_real(_, satype, nullable=True):
     return dt.Float32(nullable=nullable)
 
 

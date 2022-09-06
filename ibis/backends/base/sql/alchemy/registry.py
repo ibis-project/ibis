@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 
@@ -468,7 +467,7 @@ def _zero_if_null(t, expr):
     arg = op.arg
     sa_arg = t.translate(op.arg)
     return sa.case(
-        [(sa_arg.is_(None), sa.cast(0, to_sqla_type(arg.type())))],
+        [(sa_arg.is_(None), sa.cast(0, t.get_sqla_type(arg.type())))],
         else_=sa_arg,
     )
 
