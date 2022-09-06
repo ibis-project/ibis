@@ -203,7 +203,7 @@ def literal(dtype, value, **kwargs):
     if isinstance(dtype, dt.Null):
         return ops.NullLiteral()
 
-    value = dt._normalize(dtype, value)
+    value = dt.normalize(dtype, value)
     return ops.Literal(value, dtype=dtype)
 
 

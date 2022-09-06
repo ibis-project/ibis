@@ -1,9 +1,8 @@
 from public import public
 
-from ibis.common import exceptions as com
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Unary, Value
 
 
@@ -14,7 +13,7 @@ class MapLength(Unary):
 
 
 @public
-class MapValueForKey(Value):
+class MapGet(Value):
     arg = rlz.mapping
     key = rlz.one_of([rlz.string, rlz.integer])
 
@@ -26,25 +25,14 @@ class MapValueForKey(Value):
 
 
 @public
-class MapValueOrDefaultForKey(Value):
-    arg = rlz.mapping
-    key = rlz.one_of([rlz.string, rlz.integer])
+class MapGetOr(MapGet):
     default = rlz.any
 
-    output_shape = rlz.shape_like("args")
-
-    @property
+    @immutable_property
     def output_dtype(self):
-        value_type = self.arg.output_dtype.value_type
-        default_type = self.default.output_dtype
-
-        if not dt.same_kind(default_type, value_type):
-            raise com.IbisTypeError(
-                "Default value\n{}\nof type {} cannot be cast to map's value "
-                "type {}".format(self.default, default_type, value_type)
-            )
-
-        return dt.highest_precedence((default_type, value_type))
+        return dt.higher_precedence(
+            self.default.output_dtype, self.arg.output_dtype.value_type
+        )
 
 
 @public
@@ -72,3 +60,6 @@ class MapConcat(Value):
 
     output_shape = rlz.shape_like("args")
     output_dtype = rlz.dtype_like("args")
+
+
+public(MapValueForKey=MapGet, MapValueOrDefaultForKey=MapGetOr)

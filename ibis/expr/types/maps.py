@@ -39,13 +39,14 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.get("a")
-        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='a', default=None)
+        MapGetOr(frozendict({'a': 1, 'b': 2}), key='a', default=None)
         >>> m.get("c", 3)
-        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='c', default=3)
+        MapGetOr(frozendict({'a': 1, 'b': 2}), key='c', default=3)
         >>> m.get("d")
-        MapValueOrDefaultForKey(frozendict({'a': 1, 'b': 2}), key='d', default=None)
+        MapGetOr(frozendict({'a': 1, 'b': 2}), key='d', default=None)
         """  # noqa: E501
-        return ops.MapValueOrDefaultForKey(self, key, default).to_expr()
+
+        return ops.MapGetOr(self, key, default).to_expr()
 
     def length(self) -> ir.IntegerValue:
         """Return the number of key-value pairs in the map.
@@ -91,7 +92,7 @@ class MapValue(Value):
         >>> m["c"]  # note that this does not fail on construction
         MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
         """  # noqa: E501
-        return ops.MapValueForKey(self, key).to_expr()
+        return ops.MapGet(self, key).to_expr()
 
     def keys(self) -> ir.ArrayValue:
         """Extract the keys of a map.

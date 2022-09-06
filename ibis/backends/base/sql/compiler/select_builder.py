@@ -9,7 +9,6 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.datatypes as dt
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import (
     _extract_common_table_expressions,
