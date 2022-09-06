@@ -237,6 +237,22 @@ def test_udf_error(t):
         error_udf(t.c).execute()
 
 
+def test_udf_no_reexecution(t2):
+    execution_count = 0
+    @udf.elementwise(input_type=[dt.double], output_type=dt.double)
+    def times_two_count_executions(x):
+        nonlocal execution_count
+        execution_count += 1
+        return x * 2.0
+
+    expr = t2.mutate(
+        doubled=times_two_count_executions(t2.a)
+    )
+    expr.execute()
+
+    assert execution_count == 1
+
+
 def test_compose_udfs(t2, df2):
     expr = times_two(add_one(t2.a))
     result = expr.execute()

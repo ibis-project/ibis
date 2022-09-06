@@ -989,10 +989,10 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
 
 
 @execute_node.register(ops.Alias, object)
-def execute_alias(op, _, **kwargs):
-    # just compile the underlying argument because the naming is handled
+def execute_alias(op, data, **kwargs):
+    # just return the underlying argument because the naming is handled
     # by the translator for the top level expression
-    return execute(op.arg, **kwargs)
+    return data
 
 
 @execute_node.register(ops.ValueList, collections.abc.Sequence)
