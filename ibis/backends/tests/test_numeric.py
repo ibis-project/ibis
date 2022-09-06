@@ -203,7 +203,7 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.atan(), np.arctan, id="atan"),
         param(_.dc.atan2(_.dc), lambda c: np.arctan2(c, c), id="atan2"),
         param(_.dc.cos(), np.cos, id="cos"),
-        param(_.dc.cot(), lambda c: np.cos(c) / np.sin(c), id="cot"),
+        param(_.dc.cot(), lambda c: 1.0 / np.tan(c), id="cot"),
         param(_.dc.sin(), np.sin, id="sin"),
         param(_.dc.tan(), np.tan, id="tan"),
     ],
@@ -217,12 +217,10 @@ def test_trig_functions_literals(con, expr, expected):
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
-    result = (
-        alltypes.mutate(dc=(_.double_col / dc_max).nullifzero())
-        .select([expr.name("tmp")])
-        .execute()
-        .tmp
+    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(
+        tmp=expr
     )
+    result = expr.tmp.execute()
     expected = expected_fn(
         (df.double_col / dc_max).replace(0.0, np.nan)
     ).rename("tmp")
