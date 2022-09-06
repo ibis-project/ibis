@@ -98,17 +98,20 @@ class SQLQueryResult(TableNode, sch.HasSchema):
 
 
 @public
-class InMemoryTable(TableNode, sch.HasSchema):
-    name = rlz.optional(rlz.instance_of(str))
+class InMemoryTable(PhysicalTable):
+    name = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
 
     @property
     @abstractmethod
-    def data(self):
+    def data(self) -> util.ToFrame:
         """Return the data of an in-memory table."""
 
-    def blocks(self):
+    def has_resolved_name(self):
         return True
+
+    def resolve_name(self):
+        return self.name
 
 
 def _make_distinct_join_predicates(left, right, predicates):

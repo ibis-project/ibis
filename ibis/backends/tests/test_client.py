@@ -634,6 +634,23 @@ def test_filter_memory_table(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="ClickHouse doesn't support a VALUES construct",
+)
+@pytest.mark.notyet(
+    ["mysql", "sqlite"],
+    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
+    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_agg_memory_table(con):
+    t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
+    expr = t.x.count()
+    result = con.execute(expr)
+    assert result == 3
+
+
 @pytest.mark.parametrize(
     "t",
     [

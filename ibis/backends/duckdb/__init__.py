@@ -191,6 +191,10 @@ class Backend(BaseAlchemyBackend):
         """Return an ibis Schema from a DuckDB SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
 
+    def _register_in_memory_table(self, table_op):
+        df = table_op.data.to_frame()
+        self.con.execute("register", (table_op.name, df))
+
     def _get_sqla_table(
         self,
         name: str,

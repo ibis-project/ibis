@@ -535,6 +535,8 @@ class Compiler:
     intersect_class = Intersection
     difference_class = Difference
 
+    cheap_in_memory_tables = False
+
     @classmethod
     def make_context(cls, params=None):
         params = params or {}

@@ -90,11 +90,10 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
         elif isinstance(ref_op, ops.UnboundTable):
-            # use SQLAlchemy's TableClause and ColumnClause for unbound tables
-            schema = ref_op.schema
+            # use SQLAlchemy's TableClause for unbound tables
             result = sa.table(
                 ref_op.name,
-                *_schema_to_sqlalchemy_columns(schema),
+                *_schema_to_sqlalchemy_columns(ref_op.schema),
             )
         elif isinstance(ref_op, ops.SQLQueryResult):
             columns = _schema_to_sqlalchemy_columns(ref_op.schema)
@@ -112,8 +111,14 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             backend._create_temp_view(view=result, definition=definition)
         elif isinstance(ref_op, ops.InMemoryTable):
             columns = _schema_to_sqlalchemy_columns(ref_op.schema)
-            rows = list(ref_op.data.itertuples(index=False))
-            result = sa.values(*columns).data(rows)
+
+            if self.context.compiler.cheap_in_memory_tables:
+                result = sa.table(ref_op.name, *columns)
+            else:
+                # this has horrendous performance for medium to large tables
+                # should we warn?
+                rows = list(ref_op.data.to_frame().itertuples(index=False))
+                result = sa.values(*columns).data(rows)
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):

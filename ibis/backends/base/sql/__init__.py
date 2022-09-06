@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 import sqlalchemy as sa
 
+import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -18,6 +19,11 @@ from ibis.expr.typing import TimeContext
 __all__ = [
     'BaseSQLBackend',
 ]
+
+
+def _find_memtables(expr):
+    op = expr.op()
+    return lin.proceed, op if isinstance(op, ops.InMemoryTable) else None
 
 
 class BaseSQLBackend(BaseBackend):
@@ -178,6 +184,12 @@ class BaseSQLBackend(BaseBackend):
 
         schema = self.ast_schema(query_ast, **kwargs)
 
+        # register all in memory tables if the backend supports cheap access
+        # to them
+        if self.compiler.cheap_in_memory_tables:
+            for memtable in lin.traverse(_find_memtables, expr):
+                self._register_in_memory_table(memtable)
+
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
 
@@ -185,6 +197,9 @@ class BaseSQLBackend(BaseBackend):
             result = query_ast.dml.result_handler(result)
 
         return result
+
+    def _register_in_memory_table(self, table_op):
+        raise NotImplementedError
 
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):

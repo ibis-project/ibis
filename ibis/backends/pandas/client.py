@@ -306,15 +306,12 @@ dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
 sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
 
 
-class DataFrameProxy(Immutable):
+class DataFrameProxy(Immutable, util.ToFrame):
     __slots__ = ('_df', '_hash')
 
     def __init__(self, df):
         object.__setattr__(self, "_df", df)
         object.__setattr__(self, "_hash", hash((type(df), id(df))))
-
-    def __getattr__(self, name):
-        return getattr(self._df, name)
 
     def __hash__(self):
         return self._hash
@@ -322,6 +319,9 @@ class DataFrameProxy(Immutable):
     def __repr__(self):
         df_repr = util.indent(repr(self._df), spaces=2)
         return f"{self.__class__.__name__}:\n{df_repr}"
+
+    def to_frame(self):
+        return self._df
 
 
 class PandasInMemoryTable(ops.InMemoryTable):
