@@ -22,11 +22,9 @@ from ibis.expr.operations.core import Named, Unary, Value
 from ibis.util import frozendict
 
 try:
-    import shapely
+    from shapely.geometry.base import BaseGeometry
 except ImportError:
     BaseGeometry = type(None)
-else:
-    BaseGeometry = shapely.geometry.base.BaseGeometry
 
 
 @public

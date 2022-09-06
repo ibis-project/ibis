@@ -69,7 +69,7 @@ def test_literal_with_implicit_type(value, expected_type):
     assert expr.type() == dt.dtype(expected_type)
 
     assert isinstance(expr.op(), ops.Literal)
-    assert expr.op().value == dt._normalize(expr.type(), value)
+    assert expr.op().value == dt.normalize(expr.type(), value)
 
 
 @pytest.mark.parametrize(
@@ -193,7 +193,7 @@ def test_literal_complex_types(value, expected_type, expected_class):
     assert expr_type.equals(dt.validate_type(expected_type))
     assert isinstance(expr, expected_class)
     assert isinstance(expr.op(), ops.Literal)
-    assert expr.op().value == dt._normalize(dt.dtype(expected_type), value)
+    assert expr.op().value == dt.normalize(dt.dtype(expected_type), value)
 
 
 def test_simple_map_operations():
@@ -207,17 +207,15 @@ def test_simple_map_operations():
     assert isinstance((expr2 + expr).op(), ops.MapConcat)
 
     default = ibis.literal([0.0])
-    assert isinstance(expr.get('d', default).op(), ops.MapValueOrDefaultForKey)
+    assert isinstance(expr.get('d', default).op(), ops.MapGet)
 
     # test for an invalid default type, nulls are ok
     with pytest.raises(IbisTypeError):
         expr.get('d', ibis.literal('foo'))
 
-    assert isinstance(
-        expr.get('d', ibis.literal(None)).op(), ops.MapValueOrDefaultForKey
-    )
+    assert isinstance(expr.get('d', ibis.null()).op(), ops.MapGet)
 
-    assert isinstance(expr['b'].op(), ops.MapValueForKey)
+    assert isinstance(expr['b'].op(), ops.MapGet)
     assert isinstance(expr.keys().op(), ops.MapKeys)
     assert isinstance(expr.values().op(), ops.MapValues)
 
@@ -1233,8 +1231,7 @@ def test_map_get_with_compatible_value_bigger():
 
 def test_map_get_with_incompatible_value_different_kind():
     value = ibis.literal({'A': 1000, 'B': 2000})
-    with pytest.raises(IbisTypeError):
-        value.get('C', 3.0)
+    assert value.get('C', 3.0).type() == dt.float64
 
 
 @pytest.mark.parametrize('null_value', [None, ibis.NA])
@@ -1242,8 +1239,8 @@ def test_map_get_with_null_on_not_nullable(null_value):
     map_type = dt.Map(dt.string, dt.Int16(nullable=False))
     value = ibis.literal({'A': 1000, 'B': 2000}).cast(map_type)
     assert value.type() == map_type
-    with pytest.raises(IbisTypeError):
-        assert value.get('C', null_value)
+    expr = value.get('C', null_value)
+    assert expr.type() == dt.Int16(nullable=True)
 
 
 @pytest.mark.parametrize('null_value', [None, ibis.NA])
