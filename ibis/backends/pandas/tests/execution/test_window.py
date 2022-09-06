@@ -612,10 +612,7 @@ def test_window_has_pre_execute_scope():
     # once in window op at the top to pickup any scope changes before computing
     # twice in window op when calling execute on the ops.Lag node at the
     # beginning of execute and once before the actual computation
-    #
-    # this process happens twice because of the pre_execute call on the Alias
-    # operation
-    assert called[0] == 3 + 3
+    assert called[0] == 3
 
 
 def test_window_grouping_key_has_scope(t, df):
