@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+import itertools
 from typing import Iterable, Mapping, Sequence
 from typing import Tuple as _Tuple
 from typing import TypeVar
@@ -450,10 +451,17 @@ def memtable(
         )
     df = pd.DataFrame(data, columns=columns)
     if df.columns.inferred_type != "string":
-        df = df.rename(
-            columns={col: f"col{i:d}" for i, col in enumerate(df.columns)}
+        cols = df.columns
+        newcols = getattr(
+            schema,
+            "names",
+            (f"col{i:d}" for i in range(len(cols))),
         )
+        df = df.rename(columns=dict(zip(cols, newcols)))
     return memtable(df, name=name, schema=schema)
+
+
+_gen_memtable_name = (f"_ibis_memtable{i:d}" for i in itertools.count())
 
 
 @memtable.register(pd.DataFrame)
@@ -466,7 +474,7 @@ def _memtable_from_dataframe(
     from ibis.backends.pandas.client import DataFrameProxy, PandasInMemoryTable
 
     op = PandasInMemoryTable(
-        name=name,
+        name=name if name is not None else next(_gen_memtable_name),
         schema=sch.infer(df) if schema is None else schema,
         data=DataFrameProxy(df),
     )

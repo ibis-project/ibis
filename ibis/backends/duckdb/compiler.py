@@ -57,4 +57,5 @@ def _no_op(expr):
 
 
 class DuckDBSQLCompiler(AlchemyCompiler):
+    cheap_in_memory_tables = True
     translator_class = DuckDBSQLExprTranslator

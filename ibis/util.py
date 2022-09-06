@@ -1,6 +1,7 @@
 """Ibis utility functions."""
 from __future__ import annotations
 
+import abc
 import collections
 import functools
 import itertools
@@ -27,6 +28,8 @@ import toolz
 from ibis.config import options
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     from ibis.expr import operations as ops
     from ibis.expr import types as ir
 
@@ -510,3 +513,13 @@ def toposort(graph: Graph) -> Iterator[ops.Node]:
 
     if any(in_degree.values()):
         raise ValueError("cycle in expression graph")
+
+
+class ToFrame(abc.ABC):
+    """Interface for in-memory objects that can be converted to a DataFrame."""
+
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def to_frame(self) -> pd.DataFrame:
+        ...

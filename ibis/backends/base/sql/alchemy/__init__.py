@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import getpass
+from operator import methodcaller
 from typing import Any, Literal
 
 import pandas as pd
@@ -206,21 +207,35 @@ class BaseAlchemyBackend(BaseSQLBackend):
             schema = expr.schema()
 
         self._schemas[self._fully_qualified_name(name, database)] = schema
-        t = self._table_from_schema(
+        table = self._table_from_schema(
             name, schema, database=database or self.current_database
         )
 
+        if has_expr := expr is not None:
+            # this has to happen outside the `begin` block, so that in-memory
+            # tables are visible inside the transaction created by it
+            self._register_in_memory_tables(expr)
+
         with self.begin() as bind:
-            t.create(bind=bind, checkfirst=force)
-            if expr is not None:
-                compiled = self.compile(expr)
-                insert = t.insert()
-                if isinstance(expr.op(), ops.InMemoryTable):
-                    compiled = compiled.get_final_froms()[0]
-                    sa_expr = insert.values(*compiled._data)
-                else:
-                    sa_expr = insert.from_select(list(expr.columns), compiled)
-                bind.execute(sa_expr)
+            table.create(bind=bind, checkfirst=force)
+            if has_expr:
+                method = self._get_insert_method(expr)
+                bind.execute(method(table.insert()))
+
+    def _get_insert_method(self, expr):
+        compiled = self.compile(expr)
+
+        # if in memory tables aren't cheap then try to pull out their data
+        # FIXME: queries that *select* from in memory tables are still broken
+        # for mysql/sqlite/postgres because the generated SQL is wrong
+        if not self.compiler.cheap_in_memory_tables and isinstance(
+            expr.op(), ops.InMemoryTable
+        ):
+            (from_,) = compiled.get_final_froms()
+            (rows,) = from_._data
+            return methodcaller("values", rows)
+
+        return methodcaller("from_select", list(expr.columns), compiled)
 
     def _columns_from_schema(
         self, name: str, schema: sch.Schema
