@@ -461,17 +461,18 @@ def test_temporal_binop_pandas_timedelta(
         operator.ne,
     ],
 )
-@pytest.mark.notimpl(["sqlite"])
 def test_timestamp_comparison_filter(
     backend, con, alltypes, df, comparison_fn
 ):
-    ts = pd.Timestamp('20100301', tz="UTC").to_pydatetime()
+    ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
     expr = alltypes.filter(
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
     )
+
     col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
     result = con.execute(expr)
+
     backend.assert_frame_equal(result, expected)
 
 
