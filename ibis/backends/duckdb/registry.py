@@ -1,4 +1,5 @@
 import collections
+import numbers
 import operator
 
 import numpy as np
@@ -86,6 +87,8 @@ def _literal(_, expr):
         return sa.cast(sa.func.list_value(*value), sqla_type)
     elif isinstance(value, np.ndarray):
         return sa.cast(sa.func.list_value(*value.tolist()), sqla_type)
+    elif isinstance(value, (numbers.Real, np.floating)) and np.isnan(value):
+        return sa.cast(sa.literal("NaN"), sqla_type)
     elif isinstance(value, collections.abc.Mapping):
         if isinstance(dtype, dt.Struct):
             placeholders = ", ".join(

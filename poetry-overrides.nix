@@ -102,15 +102,6 @@ in
       '';
     });
 
-  duckdb = super.duckdb.overrideAttrs (_: rec {
-    inherit (pkgs.duckdb) version src patches;
-    format = "setuptools";
-    preConfigure = ''
-      cd tools/pythonpkg
-    '';
-    SETUPTOOLS_SCM_PRETEND_VERSION = version;
-  });
-
   hatch-fancy-pypi-readme = super.buildPythonPackage rec {
     pname = "hatch-fancy-pypi-readme";
     version = "22.3.0";
