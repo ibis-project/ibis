@@ -74,7 +74,7 @@ class PySparkTable(ir.Table):
         for name in from_schema:
             lt = from_schema[name]
             rt = to_schema[name]
-            if not lt.castable(rt):
+            if not dt.castable(lt, rt):
                 raise com.IbisInputError(
                     f'Cannot safely cast {lt!r} to {rt!r}'
                 )

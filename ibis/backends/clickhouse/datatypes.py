@@ -1,52 +1,58 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING
 
-import parsy as p
-
-if TYPE_CHECKING:
-    from ibis.expr.datatypes import DataType
+import parsy
 
 import ibis.expr.datatypes as dt
+from ibis.common.parsing import (
+    COMMA,
+    FIELD,
+    LPAREN,
+    NUMBER,
+    PRECISION,
+    RAW_STRING,
+    RPAREN,
+    SCALE,
+    SPACES,
+    spaceless_string,
+)
 
 
-def parse(text: str) -> DataType:
-    @p.generate
+def parse(text: str) -> dt.DataType:
+    @parsy.generate
     def datetime():
-        yield dt.spaceless_string("datetime64", "datetime")
+        yield spaceless_string("datetime64", "datetime")
         timezone = yield parened_string.optional()
         return dt.Timestamp(timezone=timezone, nullable=False)
 
     primitive = (
         datetime
-        | dt.spaceless_string("null", "nothing").result(dt.null)
-        | dt.spaceless_string("bigint", "int64").result(
-            dt.Int64(nullable=False)
-        )
-        | dt.spaceless_string("double", "float64").result(
+        | spaceless_string("null", "nothing").result(dt.null)
+        | spaceless_string("bigint", "int64").result(dt.Int64(nullable=False))
+        | spaceless_string("double", "float64").result(
             dt.Float64(nullable=False)
         )
-        | dt.spaceless_string("float32", "float").result(
+        | spaceless_string("float32", "float").result(
             dt.Float32(nullable=False)
         )
-        | dt.spaceless_string("smallint", "int16", "int2").result(
+        | spaceless_string("smallint", "int16", "int2").result(
             dt.Int16(nullable=False)
         )
-        | dt.spaceless_string("date32", "date").result(dt.Date(nullable=False))
-        | dt.spaceless_string("time").result(dt.Time(nullable=False))
-        | dt.spaceless_string(
+        | spaceless_string("date32", "date").result(dt.Date(nullable=False))
+        | spaceless_string("time").result(dt.Time(nullable=False))
+        | spaceless_string(
             "tinyint", "int8", "int1", "boolean", "bool"
         ).result(dt.Int8(nullable=False))
-        | dt.spaceless_string("integer", "int32", "int4", "int").result(
+        | spaceless_string("integer", "int32", "int4", "int").result(
             dt.Int32(nullable=False)
         )
-        | dt.spaceless_string("uint64").result(dt.UInt64(nullable=False))
-        | dt.spaceless_string("uint32").result(dt.UInt32(nullable=False))
-        | dt.spaceless_string("uint16").result(dt.UInt16(nullable=False))
-        | dt.spaceless_string("uint8").result(dt.UInt8(nullable=False))
-        | dt.spaceless_string("uuid").result(dt.UUID(nullable=False))
-        | dt.spaceless_string(
+        | spaceless_string("uint64").result(dt.UInt64(nullable=False))
+        | spaceless_string("uint32").result(dt.UInt32(nullable=False))
+        | spaceless_string("uint16").result(dt.UInt16(nullable=False))
+        | spaceless_string("uint8").result(dt.UInt8(nullable=False))
+        | spaceless_string("uuid").result(dt.UUID(nullable=False))
+        | spaceless_string(
             "longtext",
             "mediumtext",
             "tinytext",
@@ -61,88 +67,88 @@ def parse(text: str) -> DataType:
         ).result(dt.String(nullable=False))
     )
 
-    @p.generate
+    @parsy.generate
     def parened_string():
-        yield dt.LPAREN
-        s = yield dt.RAW_STRING
-        yield dt.RPAREN
+        yield LPAREN
+        s = yield RAW_STRING
+        yield RPAREN
         return s
 
-    @p.generate
+    @parsy.generate
     def nullable():
-        yield dt.spaceless_string("nullable")
-        yield dt.LPAREN
+        yield spaceless_string("nullable")
+        yield LPAREN
         parsed_ty = yield ty
-        yield dt.RPAREN
+        yield RPAREN
         return parsed_ty(nullable=True)
 
-    @p.generate
+    @parsy.generate
     def fixed_string():
-        yield dt.spaceless_string("fixedstring")
-        yield dt.LPAREN
-        yield dt.NUMBER
-        yield dt.RPAREN
+        yield spaceless_string("fixedstring")
+        yield LPAREN
+        yield NUMBER
+        yield RPAREN
         return dt.String(nullable=False)
 
-    @p.generate
+    @parsy.generate
     def decimal():
-        yield dt.spaceless_string("decimal", "numeric")
-        precision, scale = yield dt.LPAREN.then(
-            p.seq(dt.PRECISION.skip(dt.COMMA), dt.SCALE)
-        ).skip(dt.RPAREN)
+        yield spaceless_string("decimal", "numeric")
+        precision, scale = yield LPAREN.then(
+            parsy.seq(PRECISION.skip(COMMA), SCALE)
+        ).skip(RPAREN)
         return dt.Decimal(precision, scale, nullable=False)
 
-    @p.generate
+    @parsy.generate
     def paren_type():
-        yield dt.LPAREN
+        yield LPAREN
         value_type = yield ty
-        yield dt.RPAREN
+        yield RPAREN
         return value_type
 
-    @p.generate
+    @parsy.generate
     def array():
-        yield dt.spaceless_string("array")
+        yield spaceless_string("array")
         value_type = yield paren_type
         return dt.Array(value_type, nullable=False)
 
-    @p.generate
+    @parsy.generate
     def map():
-        yield dt.spaceless_string("map")
-        yield dt.LPAREN
+        yield spaceless_string("map")
+        yield LPAREN
         key_type = yield ty
-        yield dt.COMMA
+        yield COMMA
         value_type = yield ty
-        yield dt.RPAREN
+        yield RPAREN
         return dt.Map(key_type, value_type, nullable=False)
 
-    at_least_one_space = p.regex(r"\s+")
+    at_least_one_space = parsy.regex(r"\s+")
 
-    @p.generate
+    @parsy.generate
     def nested():
-        yield dt.spaceless_string("nested")
-        yield dt.LPAREN
+        yield spaceless_string("nested")
+        yield LPAREN
 
         field_names_types = yield (
-            p.seq(dt.SPACES.then(dt.FIELD.skip(at_least_one_space)), ty)
+            parsy.seq(SPACES.then(FIELD.skip(at_least_one_space)), ty)
             .combine(lambda field, ty: (field, dt.Array(ty, nullable=False)))
-            .sep_by(dt.COMMA)
+            .sep_by(COMMA)
         )
-        yield dt.RPAREN
+        yield RPAREN
         return dt.Struct.from_tuples(field_names_types, nullable=False)
 
-    @p.generate
+    @parsy.generate
     def struct():
-        yield dt.spaceless_string("tuple")
-        yield dt.LPAREN
+        yield spaceless_string("tuple")
+        yield LPAREN
         field_names_types = yield (
-            p.seq(
-                dt.SPACES.then(dt.FIELD.skip(at_least_one_space).optional()),
+            parsy.seq(
+                SPACES.then(FIELD.skip(at_least_one_space).optional()),
                 ty,
             )
             .combine(lambda field, ty: (field, ty))
-            .sep_by(dt.COMMA)
+            .sep_by(COMMA)
         )
-        yield dt.RPAREN
+        yield RPAREN
         return dt.Struct.from_tuples(
             [
                 (field_name if field_name is not None else f"f{i:d}", typ)
@@ -151,30 +157,30 @@ def parse(text: str) -> DataType:
             nullable=False,
         )
 
-    @p.generate
+    @parsy.generate
     def enum_value():
-        yield dt.SPACES
-        key = yield dt.RAW_STRING
-        yield dt.spaceless_string('=')
-        value = yield p.digit.at_least(1).concat()
+        yield SPACES
+        key = yield RAW_STRING
+        yield spaceless_string('=')
+        value = yield parsy.digit.at_least(1).concat()
         return (key, int(value))
 
-    @p.generate
+    @parsy.generate
     def lowcardinality():
-        yield dt.spaceless_string('LowCardinality')
-        yield dt.LPAREN
+        yield spaceless_string('LowCardinality')
+        yield LPAREN
         r = yield ty
-        yield dt.RPAREN
+        yield RPAREN
         return r
 
-    @p.generate
+    @parsy.generate
     def enum():
-        yield dt.spaceless_string('enum')
-        enumsz = yield p.digit.at_least(1).concat()
+        yield spaceless_string('enum')
+        enumsz = yield parsy.digit.at_least(1).concat()
         enumsz = int(enumsz)
-        yield dt.LPAREN
-        yield enum_value.sep_by(dt.COMMA).map(dict)  # ignore values
-        yield dt.RPAREN
+        yield LPAREN
+        yield enum_value.sep_by(COMMA).map(dict)  # ignore values
+        yield RPAREN
         return dt.String(nullable=False)
 
     ty = (
@@ -188,9 +194,9 @@ def parse(text: str) -> DataType:
         | struct
         | enum
         | lowcardinality
-        | dt.spaceless_string("IPv4", "IPv6").result(dt.inet(nullable=False))
-        | dt.spaceless_string("Object('json')").result(dt.json(nullable=False))
-        | dt.spaceless_string("JSON").result(dt.json(nullable=False))
+        | spaceless_string("IPv4", "IPv6").result(dt.inet(nullable=False))
+        | spaceless_string("Object('json')").result(dt.json(nullable=False))
+        | spaceless_string("JSON").result(dt.json(nullable=False))
     )
     return ty.parse(text)
 

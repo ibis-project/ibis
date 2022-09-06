@@ -816,6 +816,8 @@ _NULL = None
 def null():
     """Create a NULL/NA scalar"""
 
+    # TODO(kszucs): NullLiteral is a singleton, so we should be able to remove
+    # the global _NULL variable
     global _NULL
     if _NULL is None:
         _NULL = ops.NullLiteral().to_expr()
@@ -898,7 +900,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
         try:
             # ensure type correctness: check that the inferred dtype is
             # implicitly castable to the explicitly given dtype and value
-            dtype = inferred_dtype.cast(explicit_dtype, value=value)
+            dtype = dt.cast(inferred_dtype, explicit_dtype, value=value)
         except com.IbisTypeError:
             raise TypeError(
                 f'Value {value!r} cannot be safely coerced to {type}'
@@ -916,7 +918,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     if isinstance(dtype, dt.Null):
         return null().cast(dtype)
     else:
-        value = dt._normalize(dtype, value)
+        value = dt.normalize(dtype, value)
         return ops.Literal(value, dtype=dtype).to_expr()
 
 

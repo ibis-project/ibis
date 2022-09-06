@@ -1,16 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import parsy as p
 import toolz
 
-if TYPE_CHECKING:
-    from ibis.expr.datatypes import DataType
-
-
 import ibis.util as util
-from ibis.expr.datatypes import (
+from ibis.common.parsing import (
     COMMA,
     FIELD,
     LANGLE,
@@ -21,7 +15,12 @@ from ibis.expr.datatypes import (
     RBRACKET,
     RPAREN,
     SCALE,
+    spaceless,
+    spaceless_string,
+)
+from ibis.expr.datatypes import (
     Array,
+    DataType,
     Decimal,
     Interval,
     Map,
@@ -37,8 +36,6 @@ from ibis.expr.datatypes import (
     int32,
     int64,
     json,
-    spaceless,
-    spaceless_string,
     string,
     time,
     uint8,

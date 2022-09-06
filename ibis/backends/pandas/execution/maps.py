@@ -20,7 +20,7 @@ def execute_map_length_dict(op, data, **kwargs):
     return None if data is None else len(data)
 
 
-@execute_node.register(ops.MapValueForKey, pd.Series, pd.Series)
+@execute_node.register(ops.MapGet, pd.Series, pd.Series)
 def execute_map_value_for_key_series_series(op, data, key, **kwargs):
     assert data.size == key.size, 'data.size != key.size'
     return data.map(
@@ -28,34 +28,32 @@ def execute_map_value_for_key_series_series(op, data, key, **kwargs):
     )
 
 
-@execute_node.register(ops.MapValueForKey, pd.Series, type(None))
+@execute_node.register(ops.MapGet, pd.Series, type(None))
 def execute_map_value_for_key_series_none(op, data, key, **kwargs):
     return pd.Series([None] * len(data))
 
 
-@execute_node.register(ops.MapValueForKey, pd.Series, object)
+@execute_node.register(ops.MapGet, pd.Series, object)
 def execute_map_value_for_key_series_scalar(op, data, key, **kwargs):
     return data.map(functools.partial(safe_get, key=key))
 
 
-@execute_node.register(ops.MapValueForKey, collections.abc.Mapping, pd.Series)
+@execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series)
 def execute_map_value_for_key_dict_series(op, data, key, **kwargs):
     return key.map(functools.partial(safe_get, data))
 
 
-@execute_node.register(ops.MapValueForKey, collections.abc.Mapping, object)
+@execute_node.register(ops.MapGet, collections.abc.Mapping, object)
 def execute_map_value_for_key_dict_scalar(op, data, key, **kwargs):
     return safe_get(data, key)
 
 
-@execute_node.register(ops.MapValueOrDefaultForKey, pd.Series, object, object)
+@execute_node.register(ops.MapGetOr, pd.Series, object, object)
 def map_value_default_series_scalar_scalar(op, data, key, default, **kwargs):
     return data.map(functools.partial(safe_get, key=key, default=default))
 
 
-@execute_node.register(
-    ops.MapValueOrDefaultForKey, pd.Series, object, pd.Series
-)
+@execute_node.register(ops.MapGetOr, pd.Series, object, pd.Series)
 def map_value_default_series_scalar_series(op, data, key, default, **kwargs):
     return data.map(
         lambda mapping, key=key, defaultiter=iter(default.values): safe_get(
@@ -64,9 +62,7 @@ def map_value_default_series_scalar_series(op, data, key, default, **kwargs):
     )
 
 
-@execute_node.register(
-    ops.MapValueOrDefaultForKey, pd.Series, pd.Series, object
-)
+@execute_node.register(ops.MapGetOr, pd.Series, pd.Series, object)
 def map_value_default_series_series_scalar(op, data, key, default, **kwargs):
     return data.map(
         lambda mapping, keyiter=iter(key.values), default=default: safe_get(
@@ -75,9 +71,7 @@ def map_value_default_series_series_scalar(op, data, key, default, **kwargs):
     )
 
 
-@execute_node.register(
-    ops.MapValueOrDefaultForKey, pd.Series, pd.Series, pd.Series
-)
+@execute_node.register(ops.MapGetOr, pd.Series, pd.Series, pd.Series)
 def execute_map_value_default_series_series_series(op, data, key, default):
     def get(
         mapping, keyiter=iter(key.values), defaultiter=iter(default.values)
@@ -87,9 +81,7 @@ def execute_map_value_default_series_series_series(op, data, key, default):
     return data.map(get)
 
 
-@execute_node.register(
-    ops.MapValueOrDefaultForKey, collections.abc.Mapping, object, object
-)
+@execute_node.register(ops.MapGetOr, collections.abc.Mapping, object, object)
 def execute_map_value_default_dict_scalar_scalar(
     op, data, key, default, **kwargs
 ):
@@ -97,7 +89,7 @@ def execute_map_value_default_dict_scalar_scalar(
 
 
 @execute_node.register(
-    ops.MapValueOrDefaultForKey, collections.abc.Mapping, object, pd.Series
+    ops.MapGetOr, collections.abc.Mapping, object, pd.Series
 )
 def execute_map_value_default_dict_scalar_series(
     op, data, key, default, **kwargs
@@ -106,7 +98,7 @@ def execute_map_value_default_dict_scalar_series(
 
 
 @execute_node.register(
-    ops.MapValueOrDefaultForKey, collections.abc.Mapping, pd.Series, object
+    ops.MapGetOr, collections.abc.Mapping, pd.Series, object
 )
 def execute_map_value_default_dict_series_scalar(
     op, data, key, default, **kwargs
@@ -117,7 +109,7 @@ def execute_map_value_default_dict_series_scalar(
 
 
 @execute_node.register(
-    ops.MapValueOrDefaultForKey, collections.abc.Mapping, pd.Series, pd.Series
+    ops.MapGetOr, collections.abc.Mapping, pd.Series, pd.Series
 )
 def execute_map_value_default_dict_series_series(
     op, data, key, default, **kwargs
