@@ -61,7 +61,7 @@ pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8.5", optional = true }
 sqlalchemy = { version = ">=1.4,<2.0", optional = true }
-sqlglot = { version = ">=4.5.0,<6", optional = true }
+sqlglot = { version = ">=4.5.0,<7", optional = true }
 
 [tool.poetry.dev-dependencies]
 absolufy-imports = ">=0.3.1,<1"
