@@ -18,7 +18,7 @@ let
 in
 {
   cython = super.cython.overridePythonAttrs (
-    attrs: lib.optionalAttrs customizeCython rec {
+    _: lib.optionalAttrs customizeCython rec {
       version = "0.29.32";
 
       src = self.fetchPypi {
