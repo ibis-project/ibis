@@ -96,6 +96,9 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 ref_op.name,
                 *_schema_to_sqlalchemy_columns(schema),
             )
+        elif isinstance(ref_op, ops.SQLQueryResult):
+            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.text(ref_op.query).columns(*columns)
         elif isinstance(ref_op, ops.SQLStringView):
             columns = _schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
