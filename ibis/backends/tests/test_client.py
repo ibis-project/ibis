@@ -602,10 +602,6 @@ def test_deprecated_path_argument(backend, tmp_path):
     ],
 )
 @pytest.mark.notyet(
-    ["clickhouse"],
-    reason="ClickHouse doesn't support a VALUES construct",
-)
-@pytest.mark.notyet(
     ["mysql", "sqlite"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
@@ -616,10 +612,6 @@ def test_in_memory_table(backend, con, expr, expected):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="ClickHouse doesn't support a VALUES construct",
-)
 @pytest.mark.notyet(
     ["mysql", "sqlite"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
@@ -634,10 +626,6 @@ def test_filter_memory_table(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="ClickHouse doesn't support a VALUES construct",
-)
 @pytest.mark.notyet(
     ["mysql", "sqlite"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",

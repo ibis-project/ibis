@@ -4,6 +4,7 @@ import json
 from typing import Any, Literal, Mapping
 
 import pandas as pd
+import toolz
 from clickhouse_driver.client import Client as _DriverClient
 from pydantic import Field
 
@@ -38,6 +39,13 @@ class Backend(BaseSQLBackend):
             description="Database to use for temporary objects.",
         )
 
+    def __init__(self, *args, external_tables=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._external_tables = external_tables or {}
+
+    def _register_in_memory_table(self, table_op):
+        self._external_tables[table_op.name] = table_op.data.to_frame()
+
     def do_connect(
         self,
         host: str = "localhost",
@@ -49,6 +57,7 @@ class Backend(BaseSQLBackend):
         compression: (
             Literal["lz4", "lz4hc", "quicklz", "zstd"] | bool
         ) = _default_compression,
+        external_tables=None,
         **kwargs: Any,
     ):
         """Create a ClickHouse client for use with Ibis.
@@ -92,6 +101,7 @@ class Backend(BaseSQLBackend):
             compression=compression,
             **kwargs,
         )
+        self._external_tables = external_tables or {}
 
     @property
     def version(self) -> str:
@@ -145,7 +155,9 @@ class Backend(BaseSQLBackend):
         external_tables_list = []
         if external_tables is None:
             external_tables = {}
-        for name, df in external_tables.items():
+        for name, df in toolz.merge(
+            self._external_tables, external_tables
+        ).items():
             if not isinstance(df, pd.DataFrame):
                 raise TypeError(
                     'External table is not an instance of pandas dataframe'
