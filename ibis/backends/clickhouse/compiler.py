@@ -75,6 +75,11 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
 
     _non_equijoin_supported = False
 
+    def _format_in_memory_table(self, op):
+        # We register in memory tables as external tables because clickhouse
+        # doesn't implement a generic VALUES statement
+        return op.name
+
 
 class ClickhouseExprTranslator(ExprTranslator):
     _registry = operation_registry
@@ -118,6 +123,7 @@ def day_of_week_name(expr):
 
 
 class ClickhouseCompiler(Compiler):
+    cheap_in_memory_tables = True
     translator_class = ClickhouseExprTranslator
     table_set_formatter_class = ClickhouseTableSetFormatter
     select_builder_class = ClickhouseSelectBuilder

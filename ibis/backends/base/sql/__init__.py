@@ -186,9 +186,7 @@ class BaseSQLBackend(BaseBackend):
 
         # register all in memory tables if the backend supports cheap access
         # to them
-        if self.compiler.cheap_in_memory_tables:
-            for memtable in lin.traverse(_find_memtables, expr):
-                self._register_in_memory_table(memtable)
+        self._register_in_memory_tables(expr)
 
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
@@ -200,6 +198,11 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_table(self, table_op):
         raise NotImplementedError
+
+    def _register_in_memory_tables(self, expr):
+        if self.compiler.cheap_in_memory_tables:
+            for memtable in lin.traverse(_find_memtables, expr):
+                self._register_in_memory_table(memtable)
 
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):
