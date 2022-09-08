@@ -84,3 +84,10 @@ checklinks *args:
                         -or -wholename 'site/overrides/main.html' \
                         -or -wholename 'site/blog/Ibis-version-3.1.0-release/index.html' \) \))
     lychee "${files[@]}" --base site --require-https {{ args }}
+
+# view the changelog for upcoming release (use --pretty to format with glow)
+view-changelog flags="":
+    #!/usr/bin/env bash
+    npx -y -p conventional-changelog-cli \
+        -- conventional-changelog --config ./.conventionalcommits.js \
+        | ([ "{{ flags }}" = "--pretty" ] && glow -p - || cat -)
