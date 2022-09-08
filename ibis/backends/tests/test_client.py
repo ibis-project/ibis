@@ -87,17 +87,17 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     assert schema.equals(expected)
 
 
-@mark.parametrize(
-    'sql',
-    [
-        'select * from functional_alltypes limit 10',
-        'select * from functional_alltypes \nlimit 10\n',
-    ],
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["sqlite"])
+@pytest.mark.never(
+    ["dask", "pandas"],
+    reason="dask and pandas do not support SQL",
 )
-@mark.notimpl(["datafusion", "duckdb", "mysql", "postgres", "sqlite"])
-def test_sql(ddl_con, sql):
+def test_sql(con):
     # execute the expression using SQL query
-    ddl_con.sql(sql).execute()
+    expr = con.sql("SELECT * FROM functional_alltypes LIMIT 10")
+    result = expr.execute()
+    assert len(result) == 10
 
 
 @mark.notimpl(["clickhouse", "datafusion"])
