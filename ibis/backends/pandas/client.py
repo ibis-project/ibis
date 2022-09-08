@@ -113,8 +113,13 @@ def from_pandas_tzdtype(value):
 
 
 @dt.dtype.register(CategoricalDtype)
-def from_pandas_categorical(value):
+def from_pandas_categorical(_):
     return dt.Category()
+
+
+@dt.dtype.register(pd.core.arrays.string_.StringDtype)
+def from_pandas_string(_):
+    return dt.String()
 
 
 @dt.infer.register(np.generic)
@@ -206,7 +211,7 @@ def infer_pandas_schema(df, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name, pandas_dtype in df.dtypes.iteritems():
+    for column_name in df.dtypes.keys():
         if not isinstance(column_name, str):
             raise TypeError(
                 'Column names must be strings to use the pandas backend'
