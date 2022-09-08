@@ -107,7 +107,7 @@ class TableSetFormatter:
                 f"{val!r} AS {self._quote_identifier(name)}"
                 for val, name in zip(row, names)
             )
-            for row in op.data.itertuples(index=False)
+            for row in op.data.to_frame().itertuples(index=False)
         )
         rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
         return f"(VALUES {rows})"
@@ -122,15 +122,15 @@ class TableSetFormatter:
             ref_expr = op.table
             ref_op = ref_expr.op()
 
-        if isinstance(ref_op, ops.PhysicalTable):
+        if isinstance(ref_op, ops.InMemoryTable):
+            result = self._format_in_memory_table(ref_op)
+            is_subquery = True
+        elif isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
             if name is None:
                 raise com.RelationError(f'Table did not have a name: {expr!r}')
             result = self._quote_identifier(name)
             is_subquery = False
-        elif isinstance(ref_op, ops.InMemoryTable):
-            result = self._format_in_memory_table(ref_op)
-            is_subquery = True
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
