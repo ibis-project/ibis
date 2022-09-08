@@ -130,6 +130,7 @@ def test_numpy_dtype(numpy_dtype, ibis_dtype):
             dt.Timestamp('US/Eastern'),
         ),
         (CategoricalDtype(), dt.Category()),
+        (pd.Series([], dtype="string").dtype, dt.String()),
     ],
 )
 def test_pandas_dtype(pandas_dtype, ibis_dtype):
@@ -206,6 +207,7 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
         (pd.Series([b'1', '2', 3.0]), dt.binary),
         # empty
         (pd.Series([], dtype='object'), dt.binary),
+        (pd.Series([], dtype="string"), dt.string),
     ],
 )
 def test_schema_infer(col_data, schema_type):
@@ -214,3 +216,10 @@ def test_schema_infer(col_data, schema_type):
     inferred = sch.infer(df)
     expected = ibis.schema([('col', schema_type)])
     assert inferred == expected
+
+
+def test_pyarrow_string():
+    pytest.importorskip("pyarrow")
+
+    s = pd.Series([], dtype="string[pyarrow]")
+    assert dt.dtype(s.dtype) == dt.String()
