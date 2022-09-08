@@ -2168,6 +2168,7 @@ def compile_random(*args, **kwargs):
     return F.rand()
 
 
+@compiles(ops.InMemoryTable)
 @compiles(PandasInMemoryTable)
 def compile_in_memory_table(t, expr, scope, timecontext, session, **kwargs):
     op = expr.op()
@@ -2175,10 +2176,8 @@ def compile_in_memory_table(t, expr, scope, timecontext, session, **kwargs):
         pt.StructField(name, ibis_dtype_to_spark_dtype(dtype), dtype.nullable)
         for name, dtype in op.schema.items()
     ]
-    return session.createDataFrame(
-        data=op.data._df,
-        schema=pt.StructType(fields),
-    )
+    schema = pt.StructType(fields)
+    return session.createDataFrame(data=op.data.to_frame(), schema=schema)
 
 
 @compiles(ops.BitwiseAnd)
