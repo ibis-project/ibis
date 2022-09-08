@@ -88,17 +88,15 @@ class _PySparkCursor:
 
 class PySparkTableSetFormatter(TableSetFormatter):
     def _format_in_memory_table(self, op):
-        names = op.schema.names
-        rows = ", ".join(
-            f"({', '.join(map(repr, row))})"
-            for row in op.data.itertuples(index=False)
-        )
-        signature = ", ".join(map(self._quote_identifier, names))
-        name = self._quote_identifier(op.name or "_")
-        return f"(VALUES {rows} AS {name} ({signature}))"
+        # we don't need to compile the table to a VALUES statement because the
+        # table has been registered already by createOrReplaceTempView.
+        #
+        # The only place where the SQL API is currently used is DDL operations
+        return op.name
 
 
 class PySparkCompiler(Compiler):
+    cheap_in_memory_tables = True
     table_set_formatter_class = PySparkTableSetFormatter
 
 
@@ -463,6 +461,8 @@ class Backend(BaseSQLBackend):
                     table_name, format=format, mode=mode
                 )
                 return
+            else:
+                self._register_in_memory_tables(obj)
 
             ast = self.compiler.to_ast(obj)
             select = ast.queries[0]
@@ -486,6 +486,10 @@ class Backend(BaseSQLBackend):
             raise com.IbisError('Must pass expr or schema')
 
         return self.raw_sql(statement.compile())
+
+    def _register_in_memory_table(self, table_op):
+        spark_df = self.compile(table_op.to_expr())
+        spark_df.createOrReplaceTempView(table_op.name)
 
     def create_view(
         self,
