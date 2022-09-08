@@ -56,6 +56,7 @@ na_none_cols = pytest.mark.parametrize(
                         "mysql",
                         "postgres",
                         "sqlite",
+                        "snowflake",
                     ]
                 ),
                 pytest.mark.notyet(
@@ -87,7 +88,7 @@ def test_isna(backend, alltypes, col):
         param(
             "na_col",
             marks=pytest.mark.notimpl(
-                ["clickhouse", "duckdb", "impala", "postgres"]
+                ["clickhouse", "duckdb", "impala", "postgres", "snowflake"]
             ),
         ),
         "none_col",
@@ -249,6 +250,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "mysql",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
@@ -368,6 +370,7 @@ def test_dropna_invalid(alltypes):
         "mysql",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 @pytest.mark.notyet(["duckdb"], reason="non-finite value support")
@@ -694,7 +697,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -758,9 +761,9 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 @pytest.mark.parametrize(
     "op",
     [
-        and_,
-        or_,
-        xor,
+        param(and_, marks=[pytest.mark.notimpl(["snowflake"])]),
+        param(or_, marks=[pytest.mark.notimpl(["snowflake"])]),
+        param(xor, marks=[pytest.mark.notimpl(["snowflake"])]),
         param(lshift, marks=pyspark_no_bitshift),
         param(rshift, marks=pyspark_no_bitshift),
     ],
@@ -777,7 +780,7 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -785,7 +788,7 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()
@@ -793,6 +796,9 @@ def test_bitwise_not_col(backend, alltypes, df):
     backend.assert_series_equal(result, expected.rename("tmp"))
 
 
+@pytest.mark.notimpl(
+    ["snowflake"], reason="snowflake doesn't implement timestamp subtraction"
+)
 def test_interactive(alltypes):
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),

@@ -57,6 +57,7 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
         "impala",
         "pandas",
         "pyspark",
+        "snowflake",
     ]
 )
 @pytest.mark.never(
@@ -77,6 +78,7 @@ def test_scalar_param_array(backend, con):
         "impala",
         "postgres",
         "pyspark",
+        "snowflake",
     ]
 )
 @pytest.mark.never(
@@ -98,6 +100,7 @@ def test_scalar_param_struct(backend, con):
         "duckdb",
         "impala",
         "pyspark",
+        "snowflake",
     ]
 )
 @pytest.mark.never(

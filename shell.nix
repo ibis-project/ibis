@@ -25,14 +25,16 @@ let
     cmake
     ninja
   ];
+  clickhouseDeps = [ pkgs.clickhouse ];
+  snowflakeDeps = [ pkgs.snowsql pkgs.openssl ];
   backendTestDeps = [ pkgs.docker-compose ];
   vizDeps = [ pkgs.graphviz-nox ];
   duckdbDeps = [ pkgs.duckdb ];
   mysqlDeps = [ pkgs.mariadb-client ];
   pysparkDeps = [ pkgs.openjdk11_headless ];
 
-  postgresDeps = [ pkgs.postgresql ]; # postgres client dependencies
-  geospatialDeps = with pkgs; [ gdal_2 proj ];
+  postgresDeps = [ pkgs.postgresql ];
+  geospatialDeps = [ pkgs.gdal_2 pkgs.proj ];
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
   libraryDevDeps = impalaUdfDeps
@@ -43,7 +45,9 @@ let
     ++ postgresDeps
     ++ sqliteDeps
     ++ duckdbDeps
-    ++ mysqlDeps;
+    ++ mysqlDeps
+    ++ snowflakeDeps
+    ++ clickhouseDeps;
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
 

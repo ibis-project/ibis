@@ -488,7 +488,8 @@ def _string_agg(t, op):
 def _corr(t, op):
     if op.how == "sample":
         raise ValueError(
-            "PostgreSQL only implements population correlation coefficient"
+            f"{t.__class__.__name__} only implements population correlation "
+            "coefficient"
         )
     return _binary_variance_reduction(sa.func.corr)(t, op)
 
@@ -513,7 +514,10 @@ def _binary_variance_reduction(func):
         result = func(t.translate(x), t.translate(y))
 
         if (where := op.where) is not None:
-            result = result.filter(t.translate(where))
+            if t._has_reduction_filter_syntax:
+                result = result.filter(t.translate(where))
+            else:
+                result = sa.case((t.translate(where), result), else_=sa.null())
 
         return result
 

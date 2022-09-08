@@ -16,6 +16,7 @@ import pytest
         "pandas",
         "postgres",
         "pyspark",
+        "snowflake",
     ]
 )
 def test_rowid(con):
@@ -41,6 +42,7 @@ def test_rowid(con):
         "pandas",
         "postgres",
         "pyspark",
+        "snowflake",
     ]
 )
 def test_named_rowid(con):

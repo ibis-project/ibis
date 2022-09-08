@@ -40,6 +40,9 @@ def test_list_tables(con):
 
 
 def test_tables_accessor_mapping(con):
+    if con.name == "snowflake":
+        pytest.skip("snowflake sometimes counts more tables than are around")
+
     assert isinstance(con.tables["functional_alltypes"], ibis.ir.Table)
 
     with pytest.raises(KeyError, match="doesnt_exist"):

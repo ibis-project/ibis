@@ -8,7 +8,6 @@ from ibis.expr.operations import Value
 @public
 class JSONGetItem(Value):
     arg = rlz.json
-
     index = rlz.one_of((rlz.string, rlz.integer))
 
     output_dtype = dt.json

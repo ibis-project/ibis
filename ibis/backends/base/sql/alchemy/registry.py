@@ -113,6 +113,7 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
 
     out_expr = get_col_or_deferred_col(sa_table, op.name)
+    out_expr.quote = t._always_quote_columns
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery

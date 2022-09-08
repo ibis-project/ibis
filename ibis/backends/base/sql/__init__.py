@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import contextlib
+import os
 from functools import lru_cache
 from typing import Any, Mapping
 
@@ -47,11 +48,14 @@ class BaseSQLBackend(BaseBackend):
         """
         url = sa.engine.make_url(url)
 
-        kwargs = {
-            name: value
-            for name in ("host", "port", "database", "password")
-            if (value := getattr(url, name, None))
-        }
+        kwargs = {}
+
+        for name in ("host", "port", "database", "password"):
+            if value := (
+                getattr(url, name, None)
+                or os.environ.get(f"{self.name.upper()}_{name.upper()}")
+            ):
+                kwargs[name] = value
         if username := url.username:
             kwargs["user"] = username
 

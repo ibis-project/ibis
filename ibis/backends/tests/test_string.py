@@ -54,37 +54,41 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_posix',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark"]),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_posix',
-            marks=pytest.mark.notimpl(["mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_posix',
-            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark"]),
+            marks=pytest.mark.notimpl(
+                ['datafusion', "mysql", "pyspark", "snowflake"]
+            ),
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.notimpl(["impala", "datafusion"]),
+            marks=pytest.mark.notimpl(["impala", "datafusion", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.notimpl(["impala", "mysql"]),
+            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.notimpl(["impala", "datafusion", "mysql"]),
+            marks=pytest.mark.notimpl(
+                ["impala", "datafusion", "mysql", "snowflake"]
+            ),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -127,13 +131,17 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "pyspark", "sqlite", "snowflake"]
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "pyspark", "sqlite", "snowflake"]
+            ),
         ),
         param(
             lambda t: t.string_col.lower(),
@@ -251,7 +259,14 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str.split('/'),
             id='split',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "impala", "mysql", "sqlite"]
+                [
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "sqlite",
+                    "snowflake",
+                ]
             ),
         ),
         param(

@@ -16,14 +16,6 @@ from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
 
 try:
-    import sqlalchemy as sa
-except ImportError:
-    sa = postgresql = mysql = None
-else:
-    from sqlalchemy.dialects import mysql, postgresql
-
-
-try:
     import duckdb
 except ImportError:
     duckdb = None
@@ -457,7 +449,15 @@ def test_floating_mod(backend, alltypes, df):
     ],
 )
 @pytest.mark.notyet(
-    ["datafusion", "duckdb", "mysql", "postgres", "pyspark", "sqlite"]
+    [
+        "datafusion",
+        "duckdb",
+        "mysql",
+        "postgres",
+        "pyspark",
+        "sqlite",
+        "snowflake",
+    ]
 )
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
@@ -471,12 +471,11 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 
 
 @pytest.mark.parametrize(
-    'dialects, default_precisions, default_scales',
+    ("default_precisions", "default_scales"),
     [
         (
-            {'postgres': postgresql, 'mysql': mysql},
-            {'postgres': None, 'mysql': 10},
-            {'postgres': None, 'mysql': 0},
+            {'postgres': None, 'mysql': 10, 'snowflake': 38},
+            {'postgres': None, 'mysql': 0, 'snowflake': 0},
         )
     ],
 )
@@ -486,21 +485,21 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     reason="Not SQLAlchemy backends",
 )
 def test_sa_default_numeric_precision_and_scale(
-    con, backend, dialects, default_precisions, default_scales
+    con, backend, default_precisions, default_scales
 ):
+    sa = pytest.importorskip("sqlalchemy")
     # TODO: find a better way to access ibis.sql.alchemy
     from ibis.backends.base.sql.alchemy import schema_from_table
 
-    dialect = dialects[backend.name()]
     default_precision = default_precisions[backend.name()]
     default_scale = default_scales[backend.name()]
 
     typespec = [
         # name, sqlalchemy type, ibis type
-        ('n1', dialect.NUMERIC, dt.Decimal(default_precision, default_scale)),
-        ('n2', dialect.NUMERIC(5), dt.Decimal(5, default_scale)),
-        ('n3', dialect.NUMERIC(None, 4), dt.Decimal(default_precision, 4)),
-        ('n4', dialect.NUMERIC(10, 2), dt.Decimal(10, 2)),
+        ('n1', sa.NUMERIC, dt.Decimal(default_precision, default_scale)),
+        ('n2', sa.NUMERIC(5), dt.Decimal(5, default_scale)),
+        ('n3', sa.NUMERIC(None, 4), dt.Decimal(default_precision, 4)),
+        ('n4', sa.NUMERIC(10, 2), dt.Decimal(10, 2)),
     ]
 
     sqla_types = []
@@ -514,19 +513,22 @@ def test_sa_default_numeric_precision_and_scale(
     table_name = 'test_sa_default_param_decimal'
     engine = con.con
     table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
+    table.create(bind=engine)
 
-    # Check that we can correctly recover the default precision and scale.
-    schema = schema_from_table(table)
-    expected = ibis.schema(ibis_types)
+    try:
+        # Check that we can correctly recover the default precision and scale.
+        schema = schema_from_table(table)
+        expected = ibis.schema(ibis_types)
 
-    assert_equal(schema, expected)
-    con.drop_table(table_name, force=True)
+        assert_equal(schema, expected)
+    finally:
+        con.drop_table(table_name, force=True)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite"])
 @pytest.mark.notyet(
-    ["clickhouse"],
-    reason="clickhouse doesn't implement a [0.0, 1.0) random function",
+    ["clickhouse", "snowflake"],
+    reason="backend doesn't implement a [0.0, 1.0) random function",
 )
 def test_random(con):
     expr = ibis.random()

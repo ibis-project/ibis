@@ -26,6 +26,7 @@ another kind of expression and typically have high-level APIs for execution.
 - [PostgreSQL](PostgreSQL.md)
 - [PySpark](PySpark.md)
 - [SQLite](SQLite.md)
+- [Snowflake](Snowflake.md)
 
 ## Direct Execution Backends
 
