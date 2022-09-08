@@ -173,6 +173,7 @@ def sa_boolean(_, satype, nullable=True):
 
 
 @dt.dtype.register(MySQLDialect, mysql.NUMERIC)
+@dt.dtype.register(MySQLDialect, sa.NUMERIC)
 def sa_mysql_numeric(_, satype, nullable=True):
     # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
     return dt.Decimal(

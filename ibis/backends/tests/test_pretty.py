@@ -50,6 +50,11 @@ array_literal = param(
             reason="array literals are not yet implemented",
             raises=NotImplementedError,
         ),
+        mark.notimpl(
+            ["snowflake"],
+            reason="Cannot render array literals",
+            raises=NotImplementedError,
+        ),
     ],
     id="array_literal",
 )
@@ -59,7 +64,7 @@ no_structs = mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["postgres"],
+    ["postgres", "snowflake"],
     reason="struct literals are not yet implemented",
 )
 not_sql = mark.never(

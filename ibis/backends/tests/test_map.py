@@ -7,7 +7,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["sqlite", "mysql"], reason="No map support"),
     pytest.mark.notimpl(
-        ["duckdb", "postgres", "impala", "datafusion", "pyspark"],
+        ["duckdb", "postgres", "impala", "datafusion", "pyspark", "snowflake"],
         reason="Not implemented yet",
     ),
 ]
@@ -23,6 +23,10 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ['1', '2'])
 
 
+@pytest.mark.notimpl(
+    ["snowflake"],
+    reason="snowflake doesn't implement map values",
+)
 def test_literal_map_values(con):
     mapping = ibis.literal({'1': 'a', '2': 'b'})
     expr = mapping.values().name('tmp')

@@ -387,16 +387,15 @@ class Decimal(Numeric):
 
     @property
     def _pretty_piece(self) -> str:
-        args = []
-
-        if (precision := self.precision) is not None:
-            args.append(str(precision))
-
-        if (scale := self.scale) is not None:
-            args.append(str(scale))
-
-        if not args:
+        precision = self.precision
+        scale = self.scale
+        if precision is None and scale is None:
             return ""
+
+        args = [str(precision) if precision is not None else "_"]
+
+        if scale is not None:
+            args.append(str(scale))
 
         return f"({', '.join(args)})"
 

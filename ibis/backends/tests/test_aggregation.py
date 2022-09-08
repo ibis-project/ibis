@@ -26,7 +26,14 @@ aggregate_test_params = [
         id='mean_udf',
         marks=[
             pytest.mark.notimpl(
-                ["datafusion", "postgres", "clickhouse", "impala", "duckdb"]
+                [
+                    "datafusion",
+                    "postgres",
+                    "clickhouse",
+                    "impala",
+                    "duckdb",
+                    "snowflake",
+                ]
             ),
             pytest.mark.never(["sqlite", "mysql"], reason="no udf support"),
         ],
@@ -60,6 +67,7 @@ argidx_not_grouped_marks = [
     "postgres",
     "pyspark",
     "sqlite",
+    "snowflake",
 ]
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
@@ -140,6 +148,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "postgres",
         "pyspark",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_aggregate_multikey_group_reduction(backend, alltypes, df):
@@ -242,7 +251,14 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             ],
             id='argmin',
             marks=pytest.mark.notyet(
-                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+                [
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                    "snowflake",
+                ]
             ),
         ),
         param(
@@ -252,7 +268,14 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             ],
             id='argmax',
             marks=pytest.mark.notyet(
-                ["impala", "mysql", "postgres", "pyspark", "sqlite"]
+                [
+                    "impala",
+                    "mysql",
+                    "postgres",
+                    "pyspark",
+                    "sqlite",
+                    "snowflake",
+                ]
             ),
         ),
         param(
@@ -285,7 +308,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite']
+                ['impala', 'postgres', 'mysql', 'sqlite', 'snowflake']
             ),
         ),
         param(
@@ -293,7 +316,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[-1],
             id='arbitrary_last',
             marks=pytest.mark.notimpl(
-                ['impala', 'postgres', 'mysql', 'sqlite']
+                ['impala', 'postgres', 'mysql', 'sqlite', 'snowflake']
             ),
         ),
         param(
@@ -312,6 +335,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
                     "postgres",
                     "pyspark",
                     "sqlite",
+                    "snowflake",
                 ],
             ),
         ),
@@ -320,7 +344,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id='bit_and',
             marks=[
-                pytest.mark.notimpl(["dask"]),
+                pytest.mark.notimpl(["dask", "snowflake"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -329,7 +353,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: np.bitwise_or.reduce(t.bigint_col[where].values),
             id='bit_or',
             marks=[
-                pytest.mark.notimpl(["dask"]),
+                pytest.mark.notimpl(["dask", "snowflake"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -338,7 +362,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: np.bitwise_xor.reduce(t.bigint_col[where].values),
             id='bit_xor',
             marks=[
-                pytest.mark.notimpl(["dask"]),
+                pytest.mark.notimpl(["dask", "snowflake"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -415,7 +439,14 @@ def test_reduction_ops(
             marks=[
                 pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
                 pytest.mark.notyet(
-                    ["duckdb", "impala", "mysql", "postgres", "sqlite"]
+                    [
+                        "duckdb",
+                        "impala",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                        "snowflake",
+                    ]
                 ),
             ],
         ),
@@ -459,6 +490,12 @@ def test_reduction_ops(
             lambda t: t.yearID.isin([2009, 2015]),
             lambda t: t.yearID.isin([2009, 2015]),
             id='cond',
+            marks=[
+                pytest.mark.broken(
+                    ["snowflake"],
+                    reason="snowflake doesn't allow quoted columns in groupby",
+                ),
+            ],
         ),
     ],
 )
@@ -491,6 +528,7 @@ def test_corr_cov(
         "pandas",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_approx_median(alltypes):
@@ -560,7 +598,7 @@ def test_approx_median(alltypes):
         ),
     ],
 )
-@mark.notimpl(["datafusion"])
+@mark.notimpl(["datafusion", "snowflake"])
 def test_group_concat(
     backend,
     alltypes,
@@ -647,6 +685,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
         "mysql",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
@@ -679,6 +718,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "mysql",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_aggregate_mixed(backend, alltypes, df):

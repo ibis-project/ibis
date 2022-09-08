@@ -16,11 +16,11 @@ except ImportError:
     duckdb = None
 
 pytestmark = [
-    pytest.mark.never(["sqlite", "mysql"], reason="No array support"),
+    pytest.mark.never(["sqlite", "mysql"], reason="No array support")
 ]
 
 
-@pytest.mark.notimpl(["impala", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -33,7 +33,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["impala"])
+@pytest.mark.notimpl(["impala", "snowflake"])
 def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -47,7 +47,7 @@ def test_array_scalar(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["impala", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -60,13 +60,13 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "datafusion"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr) == 3
 
 
-@pytest.mark.notimpl(["impala"])
+@pytest.mark.notimpl(["impala", "snowflake"])
 def test_list_literal(con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -77,7 +77,7 @@ def test_list_literal(con):
     assert np.array_equal(result, arr)
 
 
-@pytest.mark.notimpl(["impala"])
+@pytest.mark.notimpl(["impala", "snowflake"])
 def test_np_array_literal(con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
@@ -108,6 +108,10 @@ builtin_array = toolz.compose(
         ["mysql", "sqlite"],
         reason="array types are unsupported",
     ),
+    pytest.mark.never(
+        ["snowflake"],
+        reason="snowflake has an extremely specialized way of implementing arrays",  # noqa: E501
+    ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion", "dask"]),
     # unclear if thi will ever be supported
@@ -120,13 +124,13 @@ builtin_array = toolz.compose(
 
 unnest = toolz.compose(
     builtin_array,
-    pytest.mark.notimpl(["pandas"]),
+    pytest.mark.notimpl(["pandas", "snowflake"]),
 )
 
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "pandas", "pyspark"],
+    ["clickhouse", "pandas", "pyspark", "snowflake"],
     reason="backend does not flatten array types",
 )
 def test_array_discovery_postgres_duckdb(con):
@@ -146,7 +150,7 @@ def test_array_discovery_postgres_duckdb(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark"],
+    ["duckdb", "pandas", "postgres", "pyspark", "snowflake"],
     reason="backend supports nullable nested types",
 )
 def test_array_discovery_clickhouse(con):
@@ -182,6 +186,36 @@ def test_array_discovery_desired(con):
             grouper=dt.string,
             scalar_column=dt.float64,
             multi_dim=dt.Array(dt.Array(dt.int64)),
+        )
+    )
+    assert t.schema() == expected
+
+
+@pytest.mark.never(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "duckdb",
+        "impala",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ],
+    reason="backend does not implement arrays like snowflake",
+)
+def test_array_discovery_snowflake(con):
+    t = con.table("array_types")
+    expected = ibis.schema(
+        dict(
+            x=dt.Array(dt.json),
+            y=dt.Array(dt.json),
+            z=dt.Array(dt.json),
+            grouper=dt.string,
+            scalar_column=dt.float64,
+            multi_dim=dt.Array(dt.json),
         )
     )
     assert t.schema() == expected

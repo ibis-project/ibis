@@ -48,6 +48,7 @@ class AlchemyExprTranslator(ExprTranslator):
 
     integer_to_timestamp = sa.func.to_timestamp
     native_json_type = True
+    _always_quote_columns = False
 
     def name(self, translated, name, force=True):
         return translated.label(name)

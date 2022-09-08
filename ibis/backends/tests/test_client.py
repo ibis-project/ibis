@@ -35,6 +35,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     return temporary
 
 
+@pytest.mark.notimpl(["snowflake"])
 def test_load_data_sqlalchemy(
     alchemy_backend, alchemy_con, alchemy_temp_table
 ):
@@ -91,7 +92,7 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     assert schema.equals(expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 @pytest.mark.notyet(["sqlite"])
 @pytest.mark.never(
     ["dask", "pandas"],
@@ -124,6 +125,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         "pandas",
         "postgres",
         "sqlite",
+        "snowflake",
     ]
 )
 def test_rename_table(con, temp_table, new_schema):
@@ -161,7 +163,15 @@ def test_nullable_input_output(con, temp_table):
 
 
 @mark.notimpl(
-    ["clickhouse", "datafusion", "duckdb", "mysql", "postgres", "sqlite"]
+    [
+        "clickhouse",
+        "datafusion",
+        "duckdb",
+        "mysql",
+        "postgres",
+        "sqlite",
+        "snowflake",
+    ]
 )
 @mark.notyet(["pyspark"])
 def test_create_drop_view(ddl_con, temp_view):
@@ -193,9 +203,15 @@ def test_separate_database(
     assert tmp_db.name == alternate_current_database
 
 
+def _skip_snowflake(con, reason="snowflake can't drop tables"):
+    if con.name == "snowflake":
+        pytest.skip(reason)
+
+
 @pytest.fixture
 def employee_empty_temp_table(alchemy_con, test_employee_schema):
-    temp_table_name = f"temp_to_table_{guid()}"
+    _skip_snowflake(alchemy_con)
+    temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
@@ -213,7 +229,8 @@ def employee_data_1_temp_table(
     test_employee_schema,
     test_employee_data_1,
 ):
-    temp_table_name = f"temp_to_table_{guid()}"
+    _skip_snowflake(alchemy_con)
+    temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
@@ -232,7 +249,8 @@ def employee_data_2_temp_table(
     test_employee_schema,
     test_employee_data_2,
 ):
-    temp_table_name = f"temp_to_table_{guid()}"
+    _skip_snowflake(alchemy_con)
+    temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
@@ -321,14 +339,15 @@ def test_list_databases(alchemy_con):
         'postgres': ['postgres', 'ibis_testing'],
         'mysql': ['ibis_testing', 'information_schema'],
         'duckdb': ['information_schema', 'main', 'temp'],
+        'snowflake': ['ibis_testing', 'information_schema', 'public'],
     }
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
 
 @pytest.mark.never(
-    ["postgres", "mysql"],
+    ["postgres", "mysql", "snowflake"],
     reason="postgres and mysql do not support in-memory tables",
-    raises=sa.exc.OperationalError,
+    raises=(sa.exc.OperationalError, TypeError),
 )
 def test_in_memory(alchemy_backend):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
@@ -342,7 +361,9 @@ def test_in_memory(alchemy_backend):
 
 
 @pytest.mark.parametrize(
-    "coltype", [dt.uint8, dt.uint16, dt.uint32, dt.uint64]
+    "coltype",
+    [dt.uint8, dt.uint16, dt.uint32, dt.uint64],
+    ids=["uint8", "uint16", "uint32", "uint64"],
 )
 @pytest.mark.notyet(
     ["postgres", "mysql", "sqlite"],
@@ -350,7 +371,7 @@ def test_in_memory(alchemy_backend):
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
 def test_unsigned_integer_type(alchemy_con, coltype):
-    tname = guid()
+    tname = f"t{guid()[:6]}"
     alchemy_con.create_table(
         tname, schema=ibis.schema(dict(a=coltype)), force=True
     )
@@ -553,6 +574,7 @@ def test_invalid_connect():
         "pandas",
         "postgres",
         "pyspark",
+        "snowflake",
     ],
     reason="backend isn't file-based",
 )
@@ -654,8 +676,10 @@ def test_agg_memory_table(con):
     ],
 )
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
-def test_create_from_in_memory_table(con, t):
-    tmp_name = guid()
+def test_create_from_in_memory_table(backend, con, t):
+    if backend.name() == "snowflake":
+        pytest.skip("snowflake is unreliable here")
+    tmp_name = f"t{guid()[:6]}"
     con.create_table(tmp_name, t)
     try:
         assert tmp_name in con.list_tables()

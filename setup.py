@@ -32,6 +32,8 @@ packages = [
     'ibis.backends.pyarrow',
     'ibis.backends.pyspark',
     'ibis.backends.pyspark.tests',
+    'ibis.backends.snowflake',
+    'ibis.backends.snowflake.tests',
     'ibis.backends.sqlite',
     'ibis.backends.sqlite.tests',
     'ibis.backends.tests',
@@ -85,6 +87,7 @@ extras_require = {
         'Shapely>=1.6,<1.8.5',
         'sqlalchemy>=1.4,<2.0',
         'sqlglot>=4.5.0,<7',
+        'snowflake-sqlalchemy>=1.4.1,<2',
     ],
     'clickhouse': [
         'clickhouse-cityhash>=1.0.2,<2',
@@ -120,6 +123,7 @@ extras_require = {
         'sqlglot>=4.5.0,<7',
     ],
     'pyspark': ['pyarrow>=1,<10', 'pyspark>=3,<4'],
+    'snowflake': ['sqlglot>=4.5.0,<7', 'snowflake-sqlalchemy>=1.4.1,<2'],
     'sqlite': ['sqlalchemy>=1.4,<2.0', 'sqlglot>=4.5.0,<7'],
     'visualization': ['graphviz>=0.16,<0.21'],
 }
@@ -135,6 +139,7 @@ entry_points = {
         'pandas = ibis.backends.pandas',
         'postgres = ibis.backends.postgres',
         'pyspark = ibis.backends.pyspark',
+        'snowflake = ibis.backends.snowflake',
         'spark = ibis.backends.pyspark',
         'sqlite = ibis.backends.sqlite',
     ]

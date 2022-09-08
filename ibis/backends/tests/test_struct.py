@@ -17,7 +17,7 @@ pytestmark = [
 fields = pytest.mark.parametrize("field", ["a", "b", "c"])
 
 
-@pytest.mark.notimpl(["dask"])
+@pytest.mark.notimpl(["dask", "snowflake"])
 @fields
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
@@ -43,7 +43,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres"])
+@pytest.mark.notimpl(["postgres", "snowflake"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't support nullable nested types",
@@ -71,10 +71,9 @@ def test_literal(con, field, expr_fn, expected_fn):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres"])
-def test_struct_column(con):
-    t = con.table("functional_alltypes")
-    df = t.execute()
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "snowflake"])
+def test_struct_column(alltypes, df):
+    t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.int_col)).name("s")
     assert expr.type() == dt.Struct.from_dict(
         dict(a=dt.string, b=dt.int8, c=dt.int32)

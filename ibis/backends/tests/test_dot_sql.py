@@ -7,6 +7,10 @@ from ibis import util
 dot_sql_notimpl = pytest.mark.notimpl(
     ["clickhouse", "datafusion", "impala", "sqlite"]
 )
+dot_sql_notyet = pytest.mark.notyet(
+    ["snowflake"],
+    reason="snowflake column names are case insensitive",
+)
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas"],
     reason="dask and pandas do not accept SQL",
@@ -16,6 +20,7 @@ pytestmark = pytest.mark.xdist_group("dot_sql")
 
 
 @dot_sql_notimpl
+@dot_sql_notyet
 @dot_sql_never
 def test_dot_sql(backend, con):
     alltypes = con.table("functional_alltypes")
@@ -50,6 +55,7 @@ def test_dot_sql(backend, con):
 
 
 @dot_sql_notimpl
+@dot_sql_notyet
 @dot_sql_never
 def test_dot_sql_with_join(backend, con):
     alltypes = con.table("functional_alltypes")
@@ -95,6 +101,7 @@ def test_dot_sql_with_join(backend, con):
 
 
 @dot_sql_notimpl
+@dot_sql_notyet
 @dot_sql_never
 def test_dot_sql_repr(con):
     alltypes = con.table("functional_alltypes")

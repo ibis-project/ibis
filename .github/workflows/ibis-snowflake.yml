@@ -1,0 +1,85 @@
+# vim: filetype=yaml
+name: Snowflake Backend
+
+on:
+  push:
+    # Skip the backend suite if all changes are in the docs directory
+    paths-ignore:
+      - "docs/**"
+      - "mkdocs.yml"
+    branches:
+      - master
+      - "*.x.x"
+
+permissions:
+  # this allows extractions/setup-just to list releases for `just` at a higher
+  # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+  contents: read
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  test_backends:
+    name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.10"
+        backend:
+          - name: snowflake
+            title: Snowflake
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
+      - run: python -m pip install --upgrade pip 'poetry<1.2'
+
+      - name: install ibis
+        run: poetry install --extras ${{ matrix.backend.name }}
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
+
+      - name: "run parallel tests: ${{ matrix.backend.name }}"
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        env:
+          SNOWFLAKE_URL: ${{ secrets.SNOWFLAKE_URL }}
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit.xml
