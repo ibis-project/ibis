@@ -47,7 +47,8 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
         ('date', 'CAST(`string_col` AS Nullable(Date))'),
         (
             '!map<string, int64>',
-            'CAST(`string_col` AS Map(Nullable(String), Nullable(Int64)))',
+            # map key cannot be nullable
+            'CAST(`string_col` AS Map(String, Nullable(Int64)))',
         ),
         (
             '!struct<a: string, b: int64>',

@@ -216,6 +216,11 @@ def _(ty: dt.DataType) -> str:
     return ser_ty
 
 
+@serialize.register(dt.Map)
+def _(ty: dt.Map) -> str:
+    return serialize_raw(ty)
+
+
 @functools.singledispatch
 def serialize_raw(ty: dt.DataType) -> str:
     raise NotImplementedError(
@@ -235,7 +240,8 @@ def _(ty: dt.Array) -> str:
 
 @serialize_raw.register(dt.Map)
 def _(ty: dt.Map) -> str:
-    key_type = serialize(ty.key_type)
+    # nullable key type is not allowed inside maps
+    key_type = serialize_raw(ty.key_type)
     value_type = serialize(ty.value_type)
     return f"Map({key_type}, {value_type})"
 

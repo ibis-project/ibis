@@ -7,7 +7,7 @@ import functools
 import math
 import numbers
 import operator
-from collections.abc import Sized
+from collections.abc import Mapping, Sized
 from typing import Dict, Optional
 
 import numpy as np
@@ -412,6 +412,15 @@ def execute_cast_string_literal(op, data, type, **kwargs):
         raise TypeError(f"Don't know how to cast {data!r} to type {type}")
     else:
         return cast_function(data)
+
+
+@execute_node.register(ops.Cast, Mapping, dt.DataType)
+def execute_cast_mapping_literal(op, data, type, **kwargs):
+    data = (
+        (ops.Literal(k, type.key_type), ops.Literal(v, type.value_type))
+        for k, v in data.items()
+    )
+    return {execute(k, **kwargs): execute(v, **kwargs) for k, v in data}
 
 
 @execute_node.register(ops.Round, scalar_types, (int, type(None)))
@@ -992,6 +1001,15 @@ def execute_node_string_concat(op, args, **kwargs):
 @execute_node.register(ops.StringJoin, collections.abc.Sequence)
 def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
+
+
+@execute_node.register(
+    ops.Contains,
+    object,
+    (collections.abc.Sequence, collections.abc.Set, np.ndarray),
+)
+def execute_node_contains_value_sequence(op, data, elements, **kwargs):
+    return data in elements
 
 
 @execute_node.register(

@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Mapping
+from typing import TYPE_CHECKING
 
 from public import public
 
 import ibis.expr.operations as ops
-from ibis.expr.types.generic import Column, Scalar, Value, literal
-from ibis.expr.types.typing import K, V
+from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
 
 
@@ -39,14 +37,14 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.get("a")
-        MapGetOr(frozendict({'a': 1, 'b': 2}), key='a', default=None)
+        MapGet(frozendict({'a': 1, 'b': 2}), key='a', default=None)
         >>> m.get("c", 3)
-        MapGetOr(frozendict({'a': 1, 'b': 2}), key='c', default=3)
+        MapGet(frozendict({'a': 1, 'b': 2}), key='c', default=3)
         >>> m.get("d")
-        MapGetOr(frozendict({'a': 1, 'b': 2}), key='d', default=None)
+        MapGet(frozendict({'a': 1, 'b': 2}), key='d', default=None)
         """  # noqa: E501
 
-        return ops.MapGetOr(self, key, default).to_expr()
+        return ops.MapGet(self, key, default).to_expr()
 
     def length(self) -> ir.IntegerValue:
         """Return the number of key-value pairs in the map.
@@ -93,6 +91,23 @@ class MapValue(Value):
         MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
         """  # noqa: E501
         return ops.MapGet(self, key).to_expr()
+
+    def contains(
+        self, key: int | str | ir.IntegerValue | ir.StringValue
+    ) -> ir.BooleanValue:
+        """Return whether the map contains `key`.
+
+        Parameters
+        ----------
+        key
+            Mapping key for which to check
+
+        Returns
+        -------
+        BooleanValue
+            Boolean indicating the presence of `key` in the map expression
+        """
+        return ops.MapContains(self, key).to_expr()
 
     def keys(self) -> ir.ArrayValue:
         """Extract the keys of a map.
@@ -149,7 +164,7 @@ class MapValue(Value):
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
         """  # noqa: E501
-        return ops.MapConcat(self, other).to_expr()
+        return ops.MapMerge(self, other).to_expr()
 
     def __radd__(self, other: MapValue) -> MapValue:
         """Concatenate this map with another.
@@ -172,7 +187,7 @@ class MapValue(Value):
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
         """  # noqa: E501
-        return ops.MapConcat(self, other).to_expr()
+        return ops.MapMerge(self, other).to_expr()
 
 
 @public
@@ -186,25 +201,21 @@ class MapColumn(Column, MapValue):
 
 
 @public
-def map(
-    value: Iterable[tuple[K, V]] | Mapping[K, V],
-    type: str | dt.DataType | None = None,
-) -> MapValue:
+def map(keys, values) -> MapValue:
     """Create a map literal from a [`dict`][dict] or other mapping.
 
     Parameters
     ----------
-    value
-        the literal map value
-    type
-        An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the ibis type of `value`.
+    keys
+        Keys of the map
+    values
+        Values of the map
 
     Returns
     -------
-    MapScalar
-        An expression representing a literal map (associative array with
-        key/value pairs of fixed types)
+    MapValue
+        An expression representing either a map column or literal (associative
+        array with key/value pairs of fixed types)
 
     Examples
     --------
@@ -216,4 +227,4 @@ def map(
     >>> import ibis
     >>> t = ibis.map(dict(a=1, b=2), type='map<string, double>')
     """
-    return literal(dict(value), type=type)
+    return ops.Map(keys, values).to_expr()

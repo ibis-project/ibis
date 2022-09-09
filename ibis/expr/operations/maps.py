@@ -4,6 +4,22 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.validators import immutable_property
 from ibis.expr.operations.core import Unary, Value
+from ibis.expr.types.generic import null
+
+
+@public
+class Map(Value):
+    keys = rlz.array
+    values = rlz.array
+
+    output_shape = rlz.shape_like("args")
+
+    @immutable_property
+    def output_dtype(self):
+        return dt.Map(
+            self.keys.output_dtype.value_type,
+            self.values.output_dtype.value_type,
+        )
 
 
 @public
@@ -16,23 +32,24 @@ class MapLength(Unary):
 class MapGet(Value):
     arg = rlz.mapping
     key = rlz.one_of([rlz.string, rlz.integer])
+    default = rlz.optional(rlz.any, default=null())
 
     output_shape = rlz.shape_like("args")
-
-    @immutable_property
-    def output_dtype(self):
-        return self.arg.output_dtype.value_type
-
-
-@public
-class MapGetOr(MapGet):
-    default = rlz.any
 
     @immutable_property
     def output_dtype(self):
         return dt.higher_precedence(
             self.default.output_dtype, self.arg.output_dtype.value_type
         )
+
+
+@public
+class MapContains(Value):
+    arg = rlz.mapping
+    key = rlz.one_of([rlz.string, rlz.integer])
+
+    output_shape = rlz.shape_like("args")
+    output_dtype = dt.bool
 
 
 @public
@@ -54,7 +71,7 @@ class MapValues(Unary):
 
 
 @public
-class MapConcat(Value):
+class MapMerge(Value):
     left = rlz.mapping
     right = rlz.mapping
 
@@ -62,4 +79,6 @@ class MapConcat(Value):
     output_dtype = rlz.dtype_like("args")
 
 
-public(MapValueForKey=MapGet, MapValueOrDefaultForKey=MapGetOr)
+public(
+    MapValueForKey=MapGet, MapValueOrDefaultForKey=MapGet, MapConcat=MapMerge
+)
