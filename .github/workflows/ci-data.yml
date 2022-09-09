@@ -56,4 +56,9 @@ jobs:
           for table in workflows jobs; do
             gsuri="gs://ibis-workflow-data/${yesterday}/${table}.json"
             gsutil cp -Z "${table}.json" "${gsuri}"
+            bq load \
+              --autodetect=true \
+              --source_format=NEWLINE_DELIMITED_JSON \
+              "workflows_native.${table}" \
+              "${gsuri}"
           done
