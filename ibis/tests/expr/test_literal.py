@@ -137,9 +137,10 @@ def test_struct_literal_non_castable(value):
     ],
 )
 def test_map_literal(value):
-    typestr = "map<string, string>"
-    a = ibis.map(value, type=typestr)
-    assert a.op().value == value
+    typestr = "map<string, int8>"
+    a = ibis.map(["a", "b"], [1, 2])
+    assert a.op().keys.value == ("a", "b")
+    assert a.op().values.value == (1, 2)
     assert a.type() == datatypes.dtype(typestr)
 
 

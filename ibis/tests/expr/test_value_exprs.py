@@ -203,8 +203,8 @@ def test_simple_map_operations():
     expr2 = ibis.literal(value2)
     assert isinstance(expr, ir.MapValue)
     assert isinstance(expr.length().op(), ops.MapLength)
-    assert isinstance((expr + expr2).op(), ops.MapConcat)
-    assert isinstance((expr2 + expr).op(), ops.MapConcat)
+    assert isinstance((expr + expr2).op(), ops.MapMerge)
+    assert isinstance((expr2 + expr).op(), ops.MapMerge)
 
     default = ibis.literal([0.0])
     assert isinstance(expr.get('d', default).op(), ops.MapGet)

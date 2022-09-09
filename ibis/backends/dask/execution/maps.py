@@ -1,4 +1,4 @@
-import collections
+from collections.abc import Mapping
 
 import dask.dataframe as dd
 import numpy as np
@@ -11,17 +11,19 @@ from ibis.backends.dask.execution.util import (
     register_types_to_dispatcher,
 )
 from ibis.backends.pandas.execution.maps import (
-    execute_map_keys_series,
-    execute_map_value_default_dict_scalar_series,
-    execute_map_value_default_dict_series_scalar,
-    execute_map_value_default_dict_series_series,
-    execute_map_value_default_series_series_series,
-    execute_map_value_for_key_dict_series,
-    execute_map_value_for_key_series_scalar,
-    execute_map_values_series,
-    map_value_default_series_scalar_scalar,
-    map_value_default_series_scalar_series,
-    map_value_default_series_series_scalar,
+    map_contains_dict_series,
+    map_contains_series_object,
+    map_contains_series_series,
+    map_get_dict_scalar_series,
+    map_get_dict_series_scalar,
+    map_get_dict_series_series,
+    map_get_series_scalar_scalar,
+    map_get_series_scalar_series,
+    map_get_series_series_scalar,
+    map_get_series_series_series,
+    map_keys_series,
+    map_series_series,
+    map_values_series,
     safe_merge,
 )
 
@@ -30,112 +32,59 @@ from ibis.backends.pandas.execution.maps import (
 # meaningful. See https://multiple-dispatch.readthedocs.io/en/latest/resolution.html#ambiguities # noqa E501
 # for more detail.
 PANDAS_REGISTERED_TYPES = [
-    (
-        ops.MapValueOrDefaultForKey,
-        collections.abc.Mapping,
-        object,
-        pandas.Series,
-    ),
-    (
-        ops.MapValueOrDefaultForKey,
-        collections.abc.Mapping,
-        pandas.Series,
-        object,
-    ),
+    (ops.MapGet, Mapping, object, pandas.Series),
+    (ops.MapGet, Mapping, pandas.Series, object),
 ]
 for registered_type in PANDAS_REGISTERED_TYPES:
     del execute_node[registered_type]
 
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
-    ops.MapValueForKey: [
-        (
-            (
-                dd.Series,
-                object,
-            ),
-            execute_map_value_for_key_series_scalar,
-        ),
-        (
-            (
-                collections.abc.Mapping,
-                dd.Series,
-            ),
-            execute_map_value_for_key_dict_series,
-        ),
-    ],
-    ops.MapValueOrDefaultForKey: [
-        ((dd.Series, object, object), map_value_default_series_scalar_scalar),
-        (
-            (dd.Series, object, dd.Series),
-            map_value_default_series_scalar_series,
-        ),
-        (
-            (dd.Series, dd.Series, object),
-            map_value_default_series_series_scalar,
-        ),
+    ops.Map: [((dd.Series, dd.Series), map_series_series)],
+    ops.MapGet: [
+        ((dd.Series, object, object), map_get_series_scalar_scalar),
+        ((dd.Series, object, dd.Series), map_get_series_scalar_series),
+        ((dd.Series, dd.Series, object), map_get_series_series_scalar),
         (
             (dd.Series, dd.Series, dd.Series),
-            execute_map_value_default_series_series_series,
+            map_get_series_series_series,
         ),
         # This never occurs but we need to register it so multipledispatch
         # does not see below registrations as ambigious. See NOTE above.
         (
-            (
-                collections.abc.Mapping,
-                (dd.Series, pandas.Series),
-                (dd.Series, pandas.Series),
-            ),
-            execute_map_value_default_dict_series_series,
+            (Mapping, (dd.Series, pandas.Series), (dd.Series, pandas.Series)),
+            map_get_dict_series_series,
         ),
         (
-            (
-                collections.abc.Mapping,
-                object,
-                (dd.Series, pandas.Series),
-            ),
-            execute_map_value_default_dict_scalar_series,
+            (Mapping, object, (dd.Series, pandas.Series)),
+            map_get_dict_scalar_series,
         ),
         (
-            (
-                collections.abc.Mapping,
-                (dd.Series, pandas.Series),
-                object,
-            ),
-            execute_map_value_default_dict_series_scalar,
+            (Mapping, (dd.Series, pandas.Series), object),
+            map_get_dict_series_scalar,
         ),
     ],
-    ops.MapKeys: [((dd.Series,), execute_map_keys_series)],
-    ops.MapValues: [((dd.Series,), execute_map_values_series)],
+    ops.MapContains: [
+        ((Mapping, dd.Series), map_contains_dict_series),
+        ((dd.Series, dd.Series), map_contains_series_series),
+        ((dd.Series, object), map_contains_series_object),
+    ],
+    ops.MapKeys: [((dd.Series,), map_keys_series)],
+    ops.MapValues: [((dd.Series,), map_values_series)],
 }
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
 
 @execute_node.register(ops.MapLength, dd.Series)
-def execute_map_length_series(op, data, **kwargs):
+def map_length_series(op, data, **kwargs):
     return data.map(len, na_action='ignore')
-
-
-@execute_node.register(ops.MapValueForKey, dd.Series, dd.Series)
-def execute_map_value_for_key_series_series(op, data, key, **kwargs):
-    assert data.size == key.size, 'data.size != key.size'
-    return data.map(
-        lambda x, keyiter=iter(key.values): x.get(next(keyiter), None)
-    )
 
 
 def none_filled_dask_series(n):
     dd.from_array(np.full(n, None))
 
 
-@execute_node.register(ops.MapValueForKey, dd.Series, type(None))
-def execute_map_value_for_key_series_none(op, data, key, **kwargs):
-    return none_filled_dask_series(len(data))
-
-
-@execute_node.register(
-    ops.MapConcat, (collections.abc.Mapping, type(None)), dd.Series
-)
+@execute_node.register(ops.MapMerge, (Mapping, type(None)), dd.Series)
 def execute_map_concat_dict_series(op, lhs, rhs, **kwargs):
     if lhs is None:
         return none_filled_dask_series(len(rhs))
@@ -145,9 +94,7 @@ def execute_map_concat_dict_series(op, lhs, rhs, **kwargs):
     )
 
 
-@execute_node.register(
-    ops.MapConcat, dd.Series, (collections.abc.Mapping, type(None))
-)
+@execute_node.register(ops.MapMerge, dd.Series, (Mapping, type(None)))
 def execute_map_concat_series_dict(op, lhs, rhs, **kwargs):
     if rhs is None:
         return none_filled_dask_series(len(lhs))
@@ -157,7 +104,7 @@ def execute_map_concat_series_dict(op, lhs, rhs, **kwargs):
     )
 
 
-@execute_node.register(ops.MapConcat, dd.Series, dd.Series)
+@execute_node.register(ops.MapMerge, dd.Series, dd.Series)
 def execute_map_concat_series_series(op, lhs, rhs, **kwargs):
     return lhs.map(
         lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter)),
