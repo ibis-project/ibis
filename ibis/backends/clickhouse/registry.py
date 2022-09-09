@@ -67,7 +67,7 @@ def _fixed_arity(func_name, arity):
     return formatter
 
 
-def _array_index_op(translator, op):
+def _array_index(translator, op):
     arg_ = translator.translate(op.arg)
     index_ = _parenthesize(translator, op.index)
 
@@ -76,7 +76,7 @@ def _array_index_op(translator, op):
     return f'arrayElement({arg_}, {correct_idx_})'
 
 
-def _array_repeat_op(translator, op):
+def _array_repeat(translator, op):
     arg_ = _parenthesize(translator, op.arg)
     times_ = _parenthesize(translator, op.times)
 
@@ -85,7 +85,7 @@ def _array_repeat_op(translator, op):
     return f'(select {select} from {from_})'
 
 
-def _array_slice_op(translator, op):
+def _array_slice(translator, op):
     start_ = _parenthesize(translator, op.start)
     arg_ = translator.translate(op.arg)
 
@@ -106,6 +106,22 @@ def _array_slice_op(translator, op):
         return f'arraySlice({arg_}, {start_correct_}, {length_})'
 
     return f'arraySlice({arg_}, {start_correct_})'
+
+
+def _map(translator, op):
+    keys_ = translator.translate(op.keys)
+    values_ = translator.translate(op.values)
+    typ = serialize(op.output_dtype)
+
+    return f"CAST(({keys_}, {values_}), '{typ}')"
+
+
+def _map_get(translator, op):
+    arg_ = translator.translate(op.arg)
+    key_ = translator.translate(op.key)
+    default_ = translator.translate(op.default)
+
+    return f"if(mapContains({arg_}, {key_}), {arg_}[{key_}], {default_})"
 
 
 def _agg(func):
@@ -359,7 +375,11 @@ def _literal(translator, op):
             value = value.strftime('%Y-%m-%d')
         return f"toDate('{value!s}')"
     elif isinstance(op.output_dtype, dt.Array):
-        return str(list(_tuple_to_list(value)))
+        values = ", ".join(_array_literal_values(translator, op))
+        return f"[{values}]"
+    elif isinstance(op.output_dtype, dt.Map):
+        values = ", ".join(_map_literal_values(translator, op))
+        return f"map({values})"
     elif isinstance(op.output_dtype, dt.Set):
         return '({})'.format(', '.join(map(repr, value)))
     elif isinstance(op.output_dtype, dt.Struct):
@@ -371,12 +391,19 @@ def _literal(translator, op):
         raise NotImplementedError(type(op))
 
 
-def _tuple_to_list(t: tuple):
-    for element in t:
-        if util.is_iterable(element):
-            yield list(_tuple_to_list(element))
-        else:
-            yield element
+def _array_literal_values(translator, op):
+    value_type = op.output_dtype.value_type
+    for v in op.value:
+        value = ops.Literal(v, dtype=value_type)
+        yield _literal(translator, value)
+
+
+def _map_literal_values(translator, op):
+    value_type = op.output_dtype.value_type
+    for k, v in op.value.items():
+        value = ops.Literal(v, dtype=value_type)
+        yield repr(k)
+        yield _literal(translator, value)
 
 
 class _CaseFormatter:
@@ -788,10 +815,16 @@ operation_registry = {
     ops.ExistsSubquery: _exists_subquery,
     ops.NotExistsSubquery: _exists_subquery,
     ops.ArrayLength: _unary('length'),
-    ops.ArrayIndex: _array_index_op,
+    ops.ArrayIndex: _array_index,
     ops.ArrayConcat: _fixed_arity('arrayConcat', 2),
-    ops.ArrayRepeat: _array_repeat_op,
-    ops.ArraySlice: _array_slice_op,
+    ops.ArrayRepeat: _array_repeat,
+    ops.ArraySlice: _array_slice,
+    ops.Map: _map,
+    ops.MapGet: _map_get,
+    ops.MapContains: _fixed_arity('mapContains', 2),
+    ops.MapKeys: _unary('mapKeys'),
+    ops.MapValues: _unary('mapValues'),
+    ops.MapMerge: _fixed_arity('mapUpdate', 2),
     ops.Unnest: _unary("arrayJoin"),
     ops.BitAnd: _bit_agg("groupBitAnd"),
     ops.BitOr: _bit_agg("groupBitOr"),
