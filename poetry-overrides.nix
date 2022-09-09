@@ -102,21 +102,6 @@ in
       '';
     });
 
-  hatch-fancy-pypi-readme = super.buildPythonPackage rec {
-    pname = "hatch-fancy-pypi-readme";
-    version = "22.3.0";
-    format = "pyproject";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "hynek";
-      repo = "hatch-fancy-pypi-readme";
-      rev = version;
-      sha256 = "sha256-WtcGFMtYq1IAfaERRkUwCXNXy0S1K97vPM22h47XuQM=";
-    };
-
-    propagatedBuildInputs = [ self.hatchling ];
-  };
-
   jsonschema = super.jsonschema.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
       self.hatch-fancy-pypi-readme

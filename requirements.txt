@@ -62,7 +62,7 @@ ipython==8.5.0; python_version >= "3.8"
 isort==5.10.1; python_full_version >= "3.6.1" and python_version < "4.0"
 jedi==0.18.1; python_version >= "3.8"
 jinja2==3.1.2; python_full_version >= "3.7.1" and python_full_version < "4.0.0" and python_version >= "3.7" and python_version < "4"
-jsonschema==4.15.0; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.7.1"
+jsonschema==4.16.0; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.7.1"
 jupyter-client==7.3.5; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 jupyter-core==4.11.1; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 jupyterlab-pygments==0.2.2; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
@@ -161,14 +161,13 @@ questionary==1.10.0; python_version >= "3.6" and python_version < "4.0" and pyth
 regex==2022.8.17; python_version >= "3.6"
 requests==2.28.1; python_version >= "3.7" and python_version < "4"
 rich==12.5.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0"
-setuptools==65.3.0; python_version >= "3.7"
 shapely==1.8.4; python_version >= "3.6"
 six==1.16.0; python_full_version >= "3.7.1" and python_version >= "3.8" and python_version < "3.9" and (python_version >= "3.8" and python_full_version < "3.0.0" or python_full_version >= "3.3.0" and python_version >= "3.8")
 smmap==5.0.0; python_version >= "3.7"
 snowballstemmer==2.2.0; python_version >= "3.6"
 soupsieve==2.3.2.post1; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 sqlalchemy==1.4.41; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
-sqlglot==6.0.1
+sqlglot==6.0.2
 stack-data==0.5.0; python_version >= "3.8"
 tabulate==0.8.10; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 termcolor==1.1.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.5"
@@ -190,5 +189,4 @@ verspec==0.1.0
 watchdog==2.1.9; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.7.1"
 wcwidth==0.2.5; python_full_version >= "3.6.2" and python_version >= "3.8" and python_version < "4.0" and python_full_version < "4.0.0"
 webencodings==0.5.1; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
-wheel==0.37.1; python_version < "3.9" and python_version >= "3.7" and python_full_version >= "3.6.2"
 zipp==3.8.1; python_version < "3.9" and python_version >= "3.7" and python_full_version >= "3.7.1"
