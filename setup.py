@@ -52,6 +52,7 @@ package_data = {'': ['*']}
 
 install_requires = [
     'atpublic>=2.3,<4',
+    'egg @ git+https://github.com/kszucs/snake-egg.git@integration',
     'multipledispatch>=0.6,<0.7',
     'numpy>=1,<2',
     'packaging>=21.3,<22',

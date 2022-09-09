@@ -437,6 +437,21 @@ python-versions = ">=3.5,<4.0"
 packaging = ">=20.9"
 
 [[package]]
+name = "egg"
+version = "0.1.0"
+description = ""
+category = "main"
+optional = false
+python-versions = "*"
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/kszucs/snake-egg.git"
+reference = "integration"
+resolved_reference = "b654c266fab3d196de81d64c8375e251687553ab"
+
+[[package]]
 name = "entrypoints"
 version = "0.4"
 description = "Discover and load entry points from installed packages."
@@ -2403,7 +2418,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "e37974be394fb09d488a0adf59d2abf1dced215e5758f8438aa69f33c512f25e"
+content-hash = "2c47440425cfd46721334c5226b5520c4944299bdf635458b81a6fe3a2a5f765"
 
 [metadata.files]
 absolufy-imports = [
@@ -2989,6 +3004,7 @@ dunamai = [
     {file = "dunamai-1.13.0-py3-none-any.whl", hash = "sha256:9bc19b8c53c62f922f2835e210f2295089669ab18222601cef44eb8c3a51929e"},
     {file = "dunamai-1.13.0.tar.gz", hash = "sha256:5bf9e5baaa673b692a9613e4961b18b6d2d9743412f7bbcf4a39c84a979f47e2"},
 ]
+egg = []
 entrypoints = [
     {file = "entrypoints-0.4-py3-none-any.whl", hash = "sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f"},
     {file = "entrypoints-0.4.tar.gz", hash = "sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4"},

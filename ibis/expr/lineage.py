@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Any, Callable, Iterable, Iterator
+from typing import Any, Callable, Iterable, Iterator, Sequence
 
 import ibis.expr.operations as ops
 
@@ -100,7 +100,10 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                args = node.args
+                if isinstance(node, Sequence):
+                    args = tuple(node)
+                else:
+                    args = node.args
             elif isinstance(control, collections.abc.Iterable):
                 args = control
             else:

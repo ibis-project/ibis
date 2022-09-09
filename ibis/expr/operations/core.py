@@ -6,13 +6,13 @@ from typing import Sequence
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.grounds import Annotable, Comparable
+from ibis.common.grounds import Annotable, Comparable, Matchable, Pattern
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Annotable, Comparable):
+class Node(Comparable, Matchable, Annotable):
     @property
     def args(self):
         return self.__args__
@@ -145,8 +145,13 @@ class NodeList(Node, Sequence[Node]):
     def __create__(self, *args):
         return super().__create__(values=args)
 
+    @classmethod
+    def pattern(cls, *args):
+        params = cls.__signature__.apply(values=args)
+        return Pattern(cls, params['values'])
+
     @property
-    def args(self):
+    def __match_args__(self):
         return self.values
 
     def __len__(self):

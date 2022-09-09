@@ -452,7 +452,8 @@ def to_op_dag(node: ops.Node) -> Graph:
 
     while stack:
         if (node := stack.pop()) not in dag:
-            children = [arg for arg in node.args if isinstance(arg, ops.Node)]
+            args = tuple(node) if isinstance(node, Sequence) else node.args
+            children = [arg for arg in args if isinstance(arg, ops.Node)]
             dag[node] = children
             stack.extend(children)
     return dag

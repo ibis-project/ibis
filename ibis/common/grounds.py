@@ -113,7 +113,6 @@ class AnnotableMeta(BaseMeta):
         attribs["__signature__"] = signature
         attribs["__properties__"] = properties
         attribs["__argnames__"] = argnames
-        attribs["__match_args__"] = argnames
         return super().__new__(metacls, clsname, bases, attribs)
 
 
@@ -134,8 +133,12 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
 
+        # any supplemental custom code provided by descendant classes
+        self.__post_init__()
+
+    def __post_init__(self):
         # optimizations to store frequently accessed generic properties
-        args = tuple(kwargs[name] for name in self.__argnames__)
+        args = tuple(getattr(self, name) for name in self.__argnames__)
         object.__setattr__(self, "__args__", args)
         object.__setattr__(
             self, "__precomputed_hash__", hash((self.__class__, args))
@@ -145,12 +148,6 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         # immutable nature of annotable instances
         for name, prop in self.__properties__.items():
             object.__setattr__(self, name, prop(self))
-
-        # any supplemental custom code provided by descendant classes
-        self.__post_init__()
-
-    def __post_init__(self):
-        pass
 
     def __hash__(self):
         return self.__precomputed_hash__
@@ -245,3 +242,20 @@ class Comparable(Weakrefable):
             self.__cache__[key] = result
 
         return result
+
+
+class Pattern:
+    def __init__(self, type, args):
+        self.__match_type__ = type
+        self.__match_args__ = args
+
+
+class Matchable(Annotable):
+    @property
+    def __match_args__(self):
+        return self.__args__
+
+    @classmethod
+    def pattern(cls, *args, **kwargs):
+        params = cls.__signature__.apply(*args, **kwargs)
+        return Pattern(cls, tuple(params.values()))
