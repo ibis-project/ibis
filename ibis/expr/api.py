@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import functools
 import itertools
+import operator
 from typing import Iterable, Mapping, Sequence
 from typing import Tuple as _Tuple
 from typing import TypeVar
@@ -115,7 +116,9 @@ from ibis.expr.window import (
 
 __all__ = (
     'aggregate',
+    'and_',
     'array',
+    'asc',
     'case',
     'coalesce',
     'connect',
@@ -124,7 +127,6 @@ __all__ = (
     'date',
     'desc',
     'difference',
-    'asc',
     'e',
     'Expr',
     'geo_area',
@@ -194,6 +196,7 @@ __all__ = (
     'negate',
     'now',
     'null',
+    'or_',
     'param',
     'pi',
     'prevent_rewrite',
@@ -549,6 +552,44 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
         return ops.DeferredSortKey(expr)
     else:
         return ops.SortKey(expr).to_expr()
+
+
+def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
+    """Combine multiple predicates using `&`.
+
+    Parameters
+    ----------
+    predicates
+        Boolean value expressions
+
+    Returns
+    -------
+    BooleanValue
+        A new predicate that evaluates to True if all composing predicates are
+        True. If no predicates were provided, returns True.
+    """
+    if not predicates:
+        return literal(True)
+    return functools.reduce(operator.and_, predicates)
+
+
+def or_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
+    """Combine multiple predicates using `|`.
+
+    Parameters
+    ----------
+    predicates
+        Boolean value expressions
+
+    Returns
+    -------
+    BooleanValue
+        A new predicate that evaluates to True if any composing predicates are
+        True. If no predicates were provided, returns False.
+    """
+    if not predicates:
+        return literal(False)
+    return functools.reduce(operator.or_, predicates)
 
 
 @functools.singledispatch

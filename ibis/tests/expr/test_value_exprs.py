@@ -600,6 +600,26 @@ def test_boolean_logical_ops(table, operation):
     assert isinstance(result, ir.BooleanScalar)
 
 
+def test_and_(table):
+    p1 = table.a > 1
+    p2 = table.b > 1
+    p3 = table.c > 1
+    assert ibis.and_().equals(ibis.literal(True))
+    assert ibis.and_(p1).equals(p1)
+    assert ibis.and_(p1, p2).equals(p1 & p2)
+    assert ibis.and_(p1, p2, p3).equals(p1 & p2 & p3)
+
+
+def test_or_(table):
+    p1 = table.a > 1
+    p2 = table.b > 1
+    p3 = table.c > 1
+    assert ibis.or_().equals(ibis.literal(False))
+    assert ibis.or_(p1).equals(p1)
+    assert ibis.or_(p1, p2).equals(p1 | p2)
+    assert ibis.or_(p1, p2, p3).equals(p1 | p2 | p3)
+
+
 def test_null_column():
     t = ibis.table([('a', 'string')], name='t')
     s = t.mutate(b=ibis.NA)
