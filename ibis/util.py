@@ -4,10 +4,12 @@ from __future__ import annotations
 import abc
 import collections
 import functools
+import importlib.metadata as _importlib_metadata
 import itertools
 import logging
 import operator
 import os
+import sys
 import textwrap
 import types
 import warnings
@@ -523,3 +525,13 @@ class ToFrame(abc.ABC):
     @abc.abstractmethod
     def to_frame(self) -> pd.DataFrame:
         ...
+
+
+def backend_entry_points() -> list[_importlib_metadata.EntryPoint]:
+    """Get the list of installed `ibis.backend` entrypoints"""
+
+    if sys.version_info < (3, 10):
+        eps = _importlib_metadata.entry_points()["ibis.backends"]
+    else:
+        eps = _importlib_metadata.entry_points(group="ibis.backends")
+    return sorted(eps)
