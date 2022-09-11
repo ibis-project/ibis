@@ -1,8 +1,6 @@
 """Initialize Ibis module."""
 from __future__ import annotations
 
-import importlib.metadata as _importlib_metadata
-
 # Converting an Ibis schema to a pandas DataFrame requires registering
 # some type conversions that are currently registered in the pandas backend
 import ibis.backends.pandas
@@ -23,20 +21,10 @@ __version__ = "3.1.0"
 _KNOWN_BACKENDS = ['bigquery', 'heavyai']
 
 
-def _get_backend_entrypoints() -> list[_importlib_metadata.EntryPoint]:
-    """Get the list of installed `ibis.backend` entrypoints"""
-    import sys
-
-    if sys.version_info < (3, 10):
-        return list(_importlib_metadata.entry_points()['ibis.backends'])
-    else:
-        return list(_importlib_metadata.entry_points(group="ibis.backends"))
-
-
 def __dir__() -> list[str]:
     """Adds tab completion for ibis backends to the top-level module"""
     out = set(__all__)
-    out.update(ep.name for ep in _get_backend_entrypoints())
+    out.update(ep.name for ep in util.backend_entry_points())
     return sorted(out)
 
 
@@ -55,7 +43,9 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    entry_points = {ep for ep in _get_backend_entrypoints() if ep.name == name}
+    entry_points = {
+        ep for ep in util.backend_entry_points() if ep.name == name
+    }
 
     if not entry_points:
         msg = f"module 'ibis' has no attribute '{name}'. "
