@@ -222,6 +222,8 @@ filterwarnings = [
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
   # findspec
   "ignore: _SixMetaPathImporter.find_spec()",
+  # duckdb-engine
+  "ignore:duckdb-engine doesn't yet support reflection on indices:"
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [
