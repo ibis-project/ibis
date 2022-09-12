@@ -1551,3 +1551,14 @@ def test_memtable_filter():
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
     assert expr.columns == ["x", "y"]
+
+
+def test_default_backend_with_unbound_table():
+    t = ibis.table(dict(a="int"), name="t")
+    expr = t.a.sum()
+
+    with pytest.raises(
+        com.IbisError,
+        match="Expression contains unbound tables",
+    ):
+        assert expr.execute()

@@ -86,6 +86,31 @@ class Repr(BaseModel):
         return query_text_length
 
 
+_HAS_DUCKDB = True
+_DUCKDB_CON = None
+
+
+def _default_backend() -> Any:
+    global _HAS_DUCKDB, _DUCKDB_CON
+
+    if not _HAS_DUCKDB:
+        return None
+
+    if _DUCKDB_CON is not None:
+        return _DUCKDB_CON
+
+    try:
+        import duckdb as _  # noqa: F401
+    except ImportError:
+        _HAS_DUCKDB = False
+        return None
+
+    import ibis
+
+    _DUCKDB_CON = ibis.duckdb.connect(":memory:")
+    return _DUCKDB_CON
+
+
 class Options(BaseSettings):
     """Ibis configuration options."""
 
@@ -106,10 +131,15 @@ class Options(BaseSettings):
         default=False,
         description="Render expressions as GraphViz PNGs when running in a Jupyter notebook.",  # noqa: E501
     )
+
     default_backend: Any = Field(
         default=None,
-        description="The default backend to use for execution.",
+        description=(
+            "The default backend to use for execution. "
+            "Defaults to DuckDB if not set."
+        ),
     )
+
     context_adjustment: ContextAdjustment = Field(
         default=ContextAdjustment(),
         description=ContextAdjustment.__doc__,

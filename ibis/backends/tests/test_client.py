@@ -1,4 +1,5 @@
 import platform
+import re
 
 import pandas as pd
 import pandas.testing as tm
@@ -7,6 +8,7 @@ import sqlalchemy as sa
 from pytest import mark, param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.util import guid
 
@@ -661,3 +663,51 @@ def test_create_from_in_memory_table(con, t):
     finally:
         con.drop_table(tmp_name)
         assert tmp_name not in con.list_tables()
+
+
+def test_default_backend_no_duckdb(backend):
+    # backend is used to ensure that this test runs in CI in the setting
+    # where only the dependencies for a a given backend are installed
+
+    # if duckdb is available then this test won't fail and so we skip it
+    try:
+        import duckdb  # noqa: F401
+
+        pytest.skip(
+            "duckdb is installed; it will be used as the default backend"
+        )
+    except ImportError:
+        pass
+
+    df = pd.DataFrame({'a': [1, 2, 3]})
+    t = ibis.memtable(df)
+    expr = t.a.sum()
+
+    # run this twice to ensure that we hit the optimizations in
+    # `_default_backend`
+    for _ in range(2):
+        with pytest.raises(
+            com.IbisError,
+            match="Expression depends on no backends",
+        ):
+            expr.execute()
+
+
+@pytest.mark.duckdb
+def test_default_backend():
+    pytest.importorskip("duckdb")
+
+    df = pd.DataFrame({'a': [1, 2, 3]})
+    t = ibis.memtable(df)
+    expr = t.a.sum()
+    # run this twice to ensure that we hit the optimizations in
+    # `_default_backend`
+    for _ in range(2):
+        assert expr.execute() == df.a.sum()
+
+    sql = ibis.to_sql(expr)
+    rx = """\
+SELECT
+  SUM\\((\\w+)\\.a\\) AS sum
+FROM \\w+ AS \\1"""
+    assert re.match(rx, sql) is not None
