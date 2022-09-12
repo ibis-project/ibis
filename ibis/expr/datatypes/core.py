@@ -8,7 +8,7 @@ from public import public
 
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
-from ibis.common.grounds import Annotable, Comparable, Singleton
+from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
     all_of,
     instance_of,
@@ -33,7 +33,7 @@ def datatype(arg, **kwargs):
 
 
 @public
-class DataType(Annotable, Comparable):
+class DataType(Concrete):
     """Base class for all data types.
 
     [`DataType`][ibis.expr.datatypes.DataType] instances are
@@ -41,10 +41,6 @@ class DataType(Annotable, Comparable):
     """
 
     nullable = optional(instance_of(bool), default=True)
-
-    # TODO(kszucs): remove it in favor of copy()
-    def __call__(self, nullable: bool = True) -> DataType:
-        return self.copy(nullable=nullable)
 
     # TODO(kszucs): remove it, prefer to use Annotable.__repr__ instead
     @property
@@ -57,12 +53,12 @@ class DataType(Annotable, Comparable):
         """Return the name of the data type."""
         return self.__class__.__name__
 
+    def __call__(self, **kwargs):
+        return self.copy(**kwargs)
+
     def __str__(self) -> str:
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
-
-    def __equals__(self, other: Any) -> bool:
-        return self.__args__ == other.__args__
 
     def equals(self, other):
         if not isinstance(other, DataType):

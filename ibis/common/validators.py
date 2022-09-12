@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 from contextlib import suppress
 from typing import Callable
 
@@ -87,7 +88,7 @@ class Parameter(inspect.Parameter):
         return self._validator
 
     def validate(self, arg, *, this):
-        if self.validator is EMPTY:
+        if self._validator is EMPTY:
             return arg
         else:
             return self._validator(arg, this=this)
@@ -230,6 +231,19 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
     return type(inner(item, **kwargs) for item in arg)
 
 
+@validator
+def int_(arg, min=0, max=math.inf, **kwargs):
+    if not isinstance(arg, int):
+        raise IbisTypeError('Argument must be an integer')
+    if arg < min:
+        raise ValueError(f'Argument must be greater than {min}')
+    if arg > max:
+        raise ValueError(f'Argument must be less than {max}')
+    return arg
+
+
+str_ = instance_of(str)
+bool_ = instance_of(bool)
 list_of = container_of(type=list)
 tuple_of = container_of(type=tuple)
 

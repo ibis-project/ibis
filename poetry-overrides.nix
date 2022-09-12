@@ -75,7 +75,6 @@ in
   });
 
   pandas = parallelizeSetupPy super.pandas;
-  pydantic = parallelizeSetupPy super.pydantic;
 
   mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
     patches = attrs.patches or [ ] ++ [

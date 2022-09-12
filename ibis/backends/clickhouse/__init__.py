@@ -6,9 +6,9 @@ from typing import Any, Literal, Mapping
 import pandas as pd
 import toolz
 from clickhouse_driver.client import Client as _DriverClient
-from pydantic import Field
 
 import ibis
+import ibis.common.validators as rlz
 import ibis.config
 import ibis.expr.schema as sch
 from ibis.backends.base.sql import BaseSQLBackend
@@ -33,11 +33,16 @@ class Backend(BaseSQLBackend):
     table_expr_class = ClickhouseTable
     compiler = ClickhouseCompiler
 
-    class Options(ibis.config.BaseModel):
-        temp_db: str = Field(
-            default="__ibis_tmp",
-            description="Database to use for temporary objects.",
-        )
+    class Options(ibis.config.Config):
+        """Clickhouse options.
+
+        Attributes
+        ----------
+        temp_db : str
+            Database to use for temporary objects.
+        """
+
+        temp_db = rlz.optional(rlz.str_, default="__ibis_tmp")
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)

@@ -5,7 +5,6 @@ from functools import lru_cache
 from typing import Any, MutableMapping
 
 import pandas as pd
-from pydantic import Field
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -18,6 +17,7 @@ from ibis.backends.pandas.client import (
     PandasTable,
     ibis_schema_to_pandas,
 )
+from ibis.common.validators import instance_of, optional
 
 
 class BasePandasBackend(BaseBackend):
@@ -28,11 +28,8 @@ class BasePandasBackend(BaseBackend):
     name = "pandas"
     backend_table_type = pd.DataFrame
 
-    class Options(ibis.config.BaseModel):
-        enable_trace: bool = Field(
-            default=False,
-            description="Enable tracing for execution.",
-        )
+    class Options(ibis.config.Config):
+        enable_trace = optional(instance_of(bool), default=False)
 
     def do_connect(
         self,

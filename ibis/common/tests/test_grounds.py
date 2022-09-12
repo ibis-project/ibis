@@ -4,7 +4,15 @@ from inspect import Signature
 import pytest
 
 from ibis.common.caching import WeakCache
-from ibis.common.grounds import Annotable, Comparable, Parameter, Singleton
+from ibis.common.grounds import (
+    Annotable,
+    Base,
+    Comparable,
+    Concrete,
+    Immutable,
+    Parameter,
+    Singleton,
+)
 from ibis.common.validators import Optional, Validator, immutable_property
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
@@ -46,9 +54,6 @@ class Value(Op):
 class StringOp(Value):
     arg = InstanceOf(str)
 
-    def __eq__(self, other):
-        return self.__args__ == other.__args__
-
 
 def test_annotable():
     class Between(Annotable):
@@ -69,7 +74,6 @@ def test_annotable():
     assert obj.value == 10
     assert obj.lower == 2
     assert obj.upper is None
-    assert obj.__args__ == (10, 2, None)
     assert obj.__argnames__ == argnames
     assert obj.__slots__ == ("value", "lower", "upper")
     assert not hasattr(obj, "__dict__")
@@ -80,6 +84,41 @@ def test_annotable():
     assert not hasattr(obj, "__dict__")
 
 
+def test_annotable_is_mutable_by_default():
+    # TODO(kszucs): more exhaustive testing of mutability, e.g. setting
+    # optional value to None doesn't set to the default value
+    class Op(Annotable):
+        a = IsInt
+        b = IsInt
+
+    p = Op(1, 2)
+    assert p.a == 1
+    p.a = 3
+    assert p.a == 3
+    assert p == Op(a=3, b=2)
+
+
+def test_composition_of_annotable_and_immutable():
+    class AnnImm(Annotable, Immutable):
+        value = IsInt
+        lower = Optional(IsInt, default=0)
+        upper = Optional(IsInt, default=None)
+
+    class ImmAnn(Immutable, Annotable):
+        # this is the preferable method resolution order
+        value = IsInt
+        lower = Optional(IsInt, default=0)
+        upper = Optional(IsInt, default=None)
+
+    obj = AnnImm(3, lower=0, upper=4)
+    with pytest.raises(TypeError):
+        obj.value = 1
+
+    obj = ImmAnn(3, lower=0, upper=4)
+    with pytest.raises(TypeError):
+        obj.value = 1
+
+
 def test_composition_of_annotable_and_comparable():
     class Between(Comparable, Annotable):
         value = IsInt
@@ -87,12 +126,17 @@ def test_composition_of_annotable_and_comparable():
         upper = Optional(IsInt, default=None)
 
         def __equals__(self, other):
-            return self.__args__ == other.__args__
+            return (
+                self.value == other.value
+                and self.lower == other.lower
+                and self.upper == other.upper
+            )
 
     a = Between(3, lower=0, upper=4)
     b = Between(3, lower=0, upper=4)
     c = Between(2, lower=0, upper=4)
 
+    assert Between.__eq__ is Comparable.__eq__
     assert a == b
     assert b == a
     assert a != c
@@ -169,9 +213,6 @@ def test_positional_argument_reordering():
         horses = IsInt
         goats = IsInt
         chickens = IsInt
-
-        def __eq__(self, other):
-            return self.__args__ == other.__args__
 
     class NoHooves(Farm):
         horses = Optional(IsInt, default=0)
@@ -325,7 +366,7 @@ def test_multiple_inheritance_optional_argument_order():
 
 
 def test_immutability():
-    class Value(Annotable):
+    class Value(Annotable, Immutable):
         a = IsInt
 
     op = Value(1)
@@ -388,9 +429,6 @@ class Node(Comparable):
     def __init__(self, name):
         self.name = name
 
-    def __hash__(self):
-        return hash(self.name)
-
     def __str__(self):
         return self.name
 
@@ -414,7 +452,7 @@ def cache():
 
 def pair(a, b):
     # for same ordering with comparable
-    if hash(a) < hash(b):
+    if id(a) < id(b):
         return (a, b)
     else:
         return (b, a)
@@ -553,3 +591,96 @@ def test_singleton_with_argument():
     assert len(DataType.__instances__) == 1
     del dt2
     assert len(DataType.__instances__) == 0
+
+
+def test_composition_of_annotable_and_singleton():
+    class AnnSing(Annotable, Singleton):
+        value = ValidatorFunction(lambda x, this: int(x))
+
+    class SingAnn(Singleton, Annotable):
+        # this is the preferable method resolution order
+        value = ValidatorFunction(lambda x, this: int(x))
+
+    # arguments looked up after validation
+    obj = AnnSing("3")
+    assert AnnSing("3") is obj
+    assert AnnSing(3) is obj
+    assert AnnSing(3.0) is obj
+
+    # arguments looked up before validation
+    obj = SingAnn("3")
+    assert SingAnn("3") is obj
+    obj2 = SingAnn(3)
+    assert obj2 is not obj
+    assert SingAnn(3) is obj2
+
+
+def test_concrete():
+    class Between(Concrete):
+        value = IsInt
+        lower = Optional(IsInt, default=0)
+        upper = Optional(IsInt, default=None)
+
+        @immutable_property
+        def calculated(self):
+            return self.value + self.lower
+
+    assert Between.__mro__ == (
+        Between,
+        Concrete,
+        Immutable,
+        Comparable,
+        Annotable,
+        Base,
+        object,
+    )
+
+    assert Between.__create__.__func__ is Annotable.__create__.__func__
+    assert Between.__eq__ is Comparable.__eq__
+    assert Between.__argnames__ == ("value", "lower", "upper")
+
+    # annotable
+    obj = Between(10, lower=5, upper=15)
+    obj2 = Between(10, lower=5, upper=15)
+    assert obj.value == 10
+    assert obj.lower == 5
+    assert obj.upper == 15
+    assert obj.calculated == 15
+    assert obj == obj2
+    assert obj is not obj2
+    assert obj != (10, 5, 15)
+    assert obj.__args__ == (10, 5, 15)
+    assert obj.args == (10, 5, 15)
+    assert obj.argnames == ("value", "lower", "upper")
+
+    # immutable
+    with pytest.raises(TypeError):
+        obj.value = 11
+
+    # hashable
+    assert {obj: 1}.get(obj) == 1
+
+    # weakrefable
+    ref = weakref.ref(obj)
+    assert ref() == obj
+
+
+def test_composition_of_concrete_and_singleton():
+    class ConcSing(Concrete, Singleton):
+        value = ValidatorFunction(lambda x, this: int(x))
+
+    class SingConc(Singleton, Concrete):
+        value = ValidatorFunction(lambda x, this: int(x))
+
+    # arguments looked up after validation
+    obj = ConcSing("3")
+    assert ConcSing("3") is obj
+    assert ConcSing(3) is obj
+    assert ConcSing(3.0) is obj
+
+    # arguments looked up before validation
+    obj = SingConc("3")
+    assert SingConc("3") is obj
+    obj2 = SingConc(3)
+    assert obj2 is not obj
+    assert SingConc(3) is obj2

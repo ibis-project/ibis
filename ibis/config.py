@@ -1,89 +1,147 @@
+from __future__ import annotations
+
 import contextlib
-import operator
-from typing import Any, Callable, Iterator, Optional, Tuple
+from typing import Any, Callable
 
-from pydantic import BaseModel as PydanticBaseModel
-from pydantic import BaseSettings, Field, validator
+from public import public
 
-__all__ = [
-    "option_context",
-    "options",
-]
+import ibis.common.validators as rlz
+from ibis.common.grounds import Annotable
 
 
-class BaseModel(PydanticBaseModel):
-    class Config:
-        validate_assignment = True
+class Config(Annotable):
+    def get(self, key: str) -> Any:
+        value = self
+        for field in key.split("."):
+            value = getattr(value, field)
+        return value
+
+    def set(self, key: str, value: Any) -> None:
+        *prefix, key = key.split(".")
+        conf = self
+        for field in prefix:
+            conf = getattr(conf, field)
+        setattr(conf, key, value)
+
+    @contextlib.contextmanager
+    def _with_temporary(self, options):
+        try:
+            old = {}
+            for key, value in options.items():
+                old[key] = self.get(key)
+                self.set(key, value)
+            yield
+        finally:
+            for key, value in old.items():
+                self.set(key, value)
+
+    def __call__(self, options):
+        return self._with_temporary(options)
 
 
-class ContextAdjustment(BaseModel):
-    """Options related to time context adjustment."""
+class ContextAdjustment(Config):
+    """Options related to time context adjustment.
 
-    time_col: str = Field(
-        default="time",
-        description="Name of the timestamp col for execution with a timecontext See ibis.expr.timecontext for details.",  # noqa: E501
+    Attributes
+    ----------
+    time_col : str
+        Name of the timestamp column for execution with a `timecontext`. See
+        `ibis/expr/timecontext.py` for details.
+    """
+
+    time_col = rlz.optional(rlz.str_, default="time")
+
+
+class SQL(Config):
+    """SQL-related options.
+
+    Attributes
+    ----------
+    default_limit : int | None
+        Number of rows to be retrieved for a table expression without an
+        explicit limit. [`None`][None] means no limit.
+    default_dialect : str
+        Dialect to use for printing SQL when the backend cannot be determined.
+    """
+
+    default_limit = rlz.optional(rlz.int_(min=0), default=10_000)
+    default_dialect = rlz.optional(rlz.str_, default="duckdb")
+
+
+class Repr(Config):
+    """Expression printing options.
+
+    Attributes
+    ----------
+    depth : int
+        The maximum number of expression nodes to print when repring.
+    table_columns : int
+        The number of columns to show in leaf table expressions.
+    query_text_length : int
+        The maximum number of characters to show in the `query` field repr of
+        SQLQueryResult operations.
+    show_types : bool
+        Show the inferred type of value expressions in the repr.
+    """
+
+    depth = rlz.optional(rlz.int_(min=0))
+    table_columns = rlz.optional(rlz.int_(min=0))
+    query_text_length = rlz.optional(rlz.int_(min=0), default=80)
+    show_types = rlz.optional(rlz.bool_, default=False)
+
+
+config_ = rlz.instance_of(Config)
+
+
+class Options(Config):
+    """Ibis configuration options.
+
+    Attributes
+    ----------
+    interactive : bool
+        Show the first few rows of computing an expression when in a repl.
+    repr : Repr
+        Options controlling expression printing.
+    verbose : bool
+        Run in verbose mode if [`True`][True]
+    verbose_log: Callable[[str], None] | None
+        A callable to use when logging.
+    graphviz_repr : bool
+        Render expressions as GraphViz PNGs when running in a Jupyter notebook.
+    default_backend : Optional[str], default None
+        The default backend to use for execution, defaults to DuckDB if not
+        set.
+    context_adjustment : ContextAdjustment
+        Options related to time context adjustment.
+    sql: SQL
+        SQL-related options.
+    clickhouse : Config | None
+        Clickhouse specific options.
+    dask : Config | None
+        Dask specific options.
+    impala : Config | None
+        Impala specific options.
+    pandas : Config | None
+        Pandas specific options.
+    pyspark : Config | None
+        PySpark specific options.
+    """
+
+    interactive = rlz.optional(rlz.bool_, default=False)
+    repr = rlz.optional(rlz.instance_of(Repr), default=Repr())
+    verbose = rlz.optional(rlz.bool_, default=False)
+    verbose_log = rlz.optional(rlz.instance_of(Callable))
+    graphviz_repr = rlz.optional(rlz.bool_, default=False)
+    default_backend = rlz.optional(rlz.instance_of(object))
+    context_adjustment = rlz.optional(
+        rlz.instance_of(ContextAdjustment), default=ContextAdjustment()
     )
-
-
-class SQL(BaseModel):
-    """SQL-related options."""
-
-    default_limit: Optional[int] = Field(
-        default=10_000,
-        description=(
-            "Number of rows to be retrieved for a table expression without an "
-            "explicit limit. [`None`][None] means no limit."
-        ),
-    )
-    default_dialect: str = Field(
-        default="duckdb",
-        description=(
-            "Dialect to use for printing SQL when the backend cannot be "
-            "determined."
-        ),
-    )
-
-
-class Repr(BaseModel):
-    """Options controlling expression printing."""
-
-    depth: Optional[int] = Field(
-        default=None,
-        description="The maximum number of expression nodes to print when repring.",  # noqa: E501
-    )
-    table_columns: Optional[int] = Field(
-        default=None,
-        description="The number of columns to show in leaf table expressions.",
-    )
-    query_text_length: int = Field(
-        default=80,
-        description="The maximum number of characters to show in the `query` field repr of SQLQueryResult operations.",  # noqa: E501
-    )
-    show_types: bool = Field(
-        default=False,
-        description="Show the inferred type of value expressions in the repr.",
-    )
-
-    @validator("depth")
-    def depth_gt_zero_or_none(cls, depth: Optional[int]) -> Optional[int]:
-        if depth is not None and depth <= 0:
-            raise ValueError("must be None or greater than 0")
-        return depth
-
-    @validator("table_columns")
-    def table_columns_gt_zero_or_none(
-        cls,
-        table_columns: Optional[int],
-    ) -> Optional[int]:
-        if table_columns is not None and table_columns <= 0:
-            raise ValueError("must be None or greater than 0")
-        return table_columns
-
-    @validator("query_text_length")
-    def query_text_length_ge_zero(cls, query_text_length: int) -> int:
-        if query_text_length < 0:
-            raise ValueError("must be non-negative")
-        return query_text_length
+    sql = rlz.optional(rlz.instance_of(SQL), default=SQL())
+    clickhouse = rlz.optional(config_)
+    dask = rlz.optional(config_)
+    impala = rlz.optional(config_)
+    pandas = rlz.optional(config_)
+    pyspark = rlz.optional(config_)
 
 
 _HAS_DUCKDB = True
@@ -111,78 +169,12 @@ def _default_backend() -> Any:
     return _DUCKDB_CON
 
 
-class Options(BaseSettings):
-    """Ibis configuration options."""
-
-    interactive: bool = Field(
-        default=False,
-        description="Show the first few rows of computing an expression when in a repl.",  # noqa: E501
-    )
-    repr: Repr = Field(default=Repr(), description=Repr.__doc__)
-    verbose: bool = Field(
-        default=False,
-        description="Run in verbose mode if [`True`][True]",
-    )
-    verbose_log: Optional[Callable[[str], None]] = Field(
-        default=None,
-        description="A callable to use when logging.",
-    )
-    graphviz_repr: bool = Field(
-        default=False,
-        description="Render expressions as GraphViz PNGs when running in a Jupyter notebook.",  # noqa: E501
-    )
-
-    default_backend: Any = Field(
-        default=None,
-        description=(
-            "The default backend to use for execution. "
-            "Defaults to DuckDB if not set."
-        ),
-    )
-
-    context_adjustment: ContextAdjustment = Field(
-        default=ContextAdjustment(),
-        description=ContextAdjustment.__doc__,
-    )
-    sql: SQL = Field(default=SQL(), description=SQL.__doc__)
-
-    clickhouse: Optional[BaseModel] = None
-    dask: Optional[BaseModel] = None
-    impala: Optional[BaseModel] = None
-    pandas: Optional[BaseModel] = None
-    pyspark: Optional[BaseModel] = None
-
-    class Config:
-        validate_assignment = True
-
-
 options = Options()
 
 
-def _get_namespace(key: str) -> Tuple[Any, str]:
-    *prefix, field = key.split(".")
-    if prefix:
-        namespace = operator.attrgetter(".".join(prefix))(options)
-    else:
-        namespace = options
-    return namespace, field
+@public
+def option_context(key, new_value):
+    return options({key: new_value})
 
 
-@contextlib.contextmanager
-def option_context(key: str, new_value: Any) -> Iterator[None]:
-    """Set the option named `key` to `new_value` inside a context manager.
-
-    Parameters
-    ----------
-    key
-        The dotted option key
-    new_value
-        The value to set `key` to
-    """
-    namespace, field = _get_namespace(key)
-    value = getattr(namespace, field)
-    setattr(namespace, field, new_value)
-    try:
-        yield
-    finally:
-        setattr(namespace, field, value)
+public(options=options)
