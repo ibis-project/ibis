@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, Mapping, Sequence
 from multipledispatch import Dispatcher
 
 from ibis.common.exceptions import IntegrityError
-from ibis.common.grounds import Annotable, Comparable
+from ibis.common.grounds import Concrete
 from ibis.common.validators import (
     immutable_property,
     instance_of,
@@ -47,10 +47,8 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Annotable, Comparable):
+class Schema(Concrete):
     """An object for holding table schema information."""
-
-    __slots__ = ('_name_locs',)
 
     names: Sequence[str] = tuple_of(instance_of((str, UnnamedMarker)))
     """A sequence of [`str`][str] indicating the name of each column."""
@@ -93,9 +91,6 @@ class Schema(Annotable, Comparable):
 
     def __getitem__(self, name: str) -> dt.DataType:
         return self.types[self._name_locs[name]]
-
-    def __equals__(self, other):
-        return self.__args__ == other.__args__
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.

@@ -11,6 +11,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.validators import (  # noqa: F401
+    bool_,
     immutable_property,
     instance_of,
     isin,
@@ -18,6 +19,7 @@ from ibis.common.validators import (  # noqa: F401
     one_of,
     optional,
     ref,
+    str_,
     tuple_of,
     validator,
 )

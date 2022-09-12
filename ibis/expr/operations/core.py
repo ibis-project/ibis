@@ -6,23 +6,13 @@ from typing import Sequence
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.grounds import Annotable, Comparable
+from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Annotable, Comparable):
-    @property
-    def args(self):
-        return self.__args__
-
-    @property
-    def argnames(self):
-        return self.__argnames__
-
-    def __equals__(self, other):
-        return self.__args__ == other.__args__
+class Node(Concrete):
 
     # TODO(kszucs): move to comparable
     def equals(self, other):

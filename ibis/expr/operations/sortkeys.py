@@ -3,7 +3,7 @@ from typing import Callable
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.grounds import Annotable
+from ibis.common.grounds import Concrete
 from ibis.expr.operations.core import Value
 
 
@@ -41,6 +41,6 @@ class SortKey(Value):
 
 
 @public
-class DeferredSortKey(Annotable):
+class DeferredSortKey(Concrete):
     what = rlz.instance_of((int, str, Callable))
     ascending = rlz.instance_of(bool)

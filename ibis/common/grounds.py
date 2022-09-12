@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from abc import ABCMeta, abstractmethod
-from typing import Any, Hashable
+from typing import Any
 from weakref import WeakValueDictionary
 
 from rich.console import Console
@@ -31,22 +31,11 @@ class BaseMeta(ABCMeta):
 
 class Base(metaclass=BaseMeta):
 
-    __slots__ = ()
+    __slots__ = ('__weakref__',)
 
     @classmethod
     def __create__(cls, *args, **kwargs):
         return type.__call__(cls, *args, **kwargs)
-
-
-class Immutable(Hashable):
-
-    __slots__ = ()
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(
-            f"Attribute {name!r} cannot be assigned to immutable instance of "
-            f"type {type(self)}"
-        )
 
 
 class AnnotableMeta(BaseMeta):
@@ -117,10 +106,8 @@ class AnnotableMeta(BaseMeta):
         return super().__new__(metacls, clsname, bases, attribs)
 
 
-class Annotable(Base, Immutable, metaclass=AnnotableMeta):
+class Annotable(Base, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
-
-    __slots__ = ("__args__", "__precomputed_hash__")
 
     @classmethod
     def __create__(cls, *args, **kwargs):
@@ -129,68 +116,60 @@ class Annotable(Base, Immutable, metaclass=AnnotableMeta):
         return super().__create__(**kwargs)
 
     def __init__(self, **kwargs):
-        # set the already validated fields using object.__setattr__ since we
-        # treat the annotable instances as immutable objects
+        # set the already validated fields using object.__setattr__
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
+        # allow child classes to do some post-initialization
+        self.__post_init__()
 
-        # optimizations to store frequently accessed generic properties
-        args = tuple(kwargs[name] for name in self.__argnames__)
-        object.__setattr__(self, "__args__", args)
-        object.__setattr__(
-            self, "__precomputed_hash__", hash((self.__class__, args))
-        )
-
+    def __post_init__(self):
         # calculate special property-like objects only once due to the
         # immutable nature of annotable instances
         for name, prop in self.__properties__.items():
             object.__setattr__(self, name, prop(self))
 
-        # any supplemental custom code provided by descendant classes
-        self.__post_init__()
-
-    def __post_init__(self):
-        pass
-
-    def __hash__(self):
-        return self.__precomputed_hash__
-
-    def __eq__(self, other):
-        return super().__eq__(other)
+    def __setattr__(self, name, value):
+        param = self.__signature__.parameters[name]
+        if param.default is not None or value is not None:
+            value = param.validate(value, this=self.__getstate__())
+        super().__setattr__(name, value)
 
     def __repr__(self) -> str:
-        args = ", ".join(
-            f"{name}={value!r}"
-            for name, value in zip(self.__argnames__, self.__args__)
+        args = (f"{n}={getattr(self, n)!r}" for n in self.__argnames__)
+        argstring = ", ".join(args)
+        return f"{self.__class__.__name__}({argstring})"
+
+    def __eq__(self, other):
+        if type(self) is not type(other):
+            return NotImplemented
+
+        return all(
+            getattr(self, n) == getattr(other, n) for n in self.__argnames__
         )
-        return f"{self.__class__.__name__}({args})"
 
-    @classmethod
-    def _reconstruct(cls, kwargs):
-        # bypass Annotable.__construct__() when deserializing
-        self = cls.__new__(cls)
-        self.__init__(**kwargs)
-        return self
+    def __getstate__(self):
+        return {name: getattr(self, name) for name in self.__argnames__}
 
-    def __reduce__(self):
-        kwargs = dict(zip(self.__argnames__, self.__args__))
-        return (self._reconstruct, (kwargs,))
+    def __setstate__(self, state):
+        self.__init__(**state)
 
-    # TODO(kszucs): consider to make a separate mixin class for this
     def copy(self, **overrides):
-        kwargs = dict(zip(self.__argnames__, self.__args__))
-        newargs = {**kwargs, **overrides}
-        return self.__class__(**newargs)
+        kwargs = self.__getstate__()
+        kwargs.update(overrides)
+        return self.__class__(**kwargs)
 
 
-class Weakrefable(Base):
+class Immutable(Base):
+    __slots__ = ()
 
-    __slots__ = ('__weakref__',)
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(
+            f"Attribute {name!r} cannot be assigned to immutable instance of "
+            f"type {type(self)}"
+        )
 
 
-class Singleton(Weakrefable):
-    # NOTE: this only considers the input arguments, when combined with
-    # Annotable base class Singleton must come after in the MRO
+class Singleton(Base):
 
     __slots__ = ()
     __instances__ = WeakValueDictionary()
@@ -206,19 +185,16 @@ class Singleton(Weakrefable):
             return instance
 
 
-class Comparable(Weakrefable):
+class Comparable(Base):
 
     __slots__ = ()
     __cache__ = WeakCache()
-
-    def __hash__(self):
-        return super().__hash__()
 
     def __eq__(self, other):
         try:
             return self.__cached_equals__(other)
         except TypeError:
-            raise NotImplemented  # noqa: F901
+            return NotImplemented  # noqa: F901
 
     @abstractmethod
     def __equals__(self, other):
@@ -233,7 +209,7 @@ class Comparable(Weakrefable):
             return False
 
         # reduce space required for commutative operation
-        if hash(self) < hash(other):
+        if id(self) < id(other):
             key = (self, other)
         else:
             key = (other, self)
@@ -245,3 +221,30 @@ class Comparable(Weakrefable):
             self.__cache__[key] = result
 
         return result
+
+
+class Concrete(Immutable, Comparable, Annotable):
+
+    __slots__ = ("__args__", "__precomputed_hash__")
+
+    def __post_init__(self):
+        # optimizations to store frequently accessed generic properties
+        arguments = tuple(getattr(self, name) for name in self.__argnames__)
+        hashvalue = hash((self.__class__, arguments))
+        object.__setattr__(self, "__args__", arguments)
+        object.__setattr__(self, "__precomputed_hash__", hashvalue)
+        super().__post_init__()
+
+    def __hash__(self):
+        return self.__precomputed_hash__
+
+    def __equals__(self, other):
+        return self.__args__ == other.__args__
+
+    @property
+    def args(self):
+        return self.__args__
+
+    @property
+    def argnames(self):
+        return self.__argnames__

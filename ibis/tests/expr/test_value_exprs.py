@@ -1561,7 +1561,7 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
         (lambda t: ibis.where(t.a == 1, t.b, t.a.cast("string")), dt.string),
         (
             lambda t: ibis.where(t.a == 1, t.b, t.a.cast("!string")),
-            dt.string(nullable=False),
+            dt.string.copy(nullable=False),
         ),
         (lambda _: ibis.where(True, ibis.NA, ibis.NA), dt.null),
         (lambda _: ibis.where(False, ibis.NA, ibis.NA), dt.null),

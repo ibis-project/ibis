@@ -216,13 +216,25 @@ def test_primitive_from_string(spec, expected):
     assert dt.dtype(spec) == expected
 
 
-def test_singleton_classes():
+def test_singleton_null():
+    assert dt.null is dt.Null()
+
+
+def test_singleton_boolean():
+    assert dt.Boolean() == dt.boolean
     assert dt.Boolean() is dt.boolean
+    assert dt.Boolean() is dt.Boolean()
     assert dt.Boolean(nullable=True) is dt.boolean
     assert dt.Boolean(nullable=False) is not dt.boolean
     assert dt.Boolean(nullable=False) is dt.Boolean(nullable=False)
     assert dt.Boolean(nullable=True) is dt.Boolean(nullable=True)
     assert dt.Boolean(nullable=True) is not dt.Boolean(nullable=False)
+
+
+def test_singleton_primitive():
+    assert dt.Int64() is dt.int64
+    assert dt.Int64(nullable=False) is not dt.int64
+    assert dt.Int64(nullable=False) is dt.Int64(nullable=False)
 
 
 def test_literal_mixed_type_fails():

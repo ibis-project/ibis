@@ -27,8 +27,6 @@ from uuid import uuid4
 
 import toolz
 
-from ibis.config import options
-
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -168,6 +166,8 @@ def log(msg: str) -> None:
     ----------
     msg : string
     """
+    from ibis.config import options
+
     if options.verbose:
         (options.verbose_log or print)(msg)
 

@@ -15,7 +15,6 @@ from typing import Any, Literal
 import fsspec
 import numpy as np
 import pandas as pd
-from pydantic import Field
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -176,15 +175,20 @@ class Backend(BaseSQLBackend):
     table_expr_class = ImpalaTable
     compiler = ImpalaCompiler
 
-    class Options(ibis.config.BaseModel):
-        temp_db: str = Field(
-            default="__ibis_tmp",
-            description="Database to use for temporary objects.",
-        )
-        temp_hdfs_path: str = Field(
-            default="/tmp/hdfs",
-            description="HDFS path for storage of temporary data",
-        )
+    class Options(ibis.config.Config):
+        """
+        Impala specific options.
+
+        Parameters
+        ----------
+        temp_db : str, default "__ibis_tmp"
+            Database to use for temporary objects.
+        temp_hdfs_path : str, default "/tmp/ibis"
+            HDFS path for storage of temporary data.
+        """
+
+        temp_db = rlz.optional(rlz.str_, default="__ibis_tmp")
+        temp_hdfs_path = rlz.optional(rlz.str_, default="/tmp/hdfs")
 
     @staticmethod
     def hdfs_connect(

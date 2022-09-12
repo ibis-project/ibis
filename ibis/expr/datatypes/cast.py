@@ -33,9 +33,9 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
     nullable = left.nullable or right.nullable
 
     if castable(left, right, upcast=True):
-        return right(nullable=nullable)
+        return right.copy(nullable=nullable)
     elif castable(right, left, upcast=True):
-        return left(nullable=nullable)
+        return left.copy(nullable=nullable)
 
     raise IbisTypeError(
         f'Cannot compute precedence for `{left}` and `{right}` types'
