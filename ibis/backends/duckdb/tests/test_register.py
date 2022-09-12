@@ -107,3 +107,27 @@ def test_register_parquet(
 
     table = con.table(out_table_name)
     assert table.count().execute()
+
+
+def test_register_pandas():
+    pd = pytest.importorskip("pandas")
+    df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+
+    con = ibis.duckdb.connect()
+
+    t = con.register(df)
+    assert t.x.sum().execute() == 6
+
+    t = con.register(df, "my_table")
+    assert t.op().name == "my_table"
+    assert t.x.sum().execute() == 6
+
+
+def test_register_pyarrow_tables():
+    pa = pytest.importorskip("pyarrow")
+    pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+
+    con = ibis.duckdb.connect()
+
+    t = con.register(pa_t)
+    assert t.x.sum().execute() == 6

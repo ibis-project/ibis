@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import itertools
 import os
 import warnings
 from pathlib import Path
@@ -26,6 +27,8 @@ from ibis.common.dispatch import RegexDispatcher
 
 _generate_view_code = RegexDispatcher("_register")
 _dialect = sa.dialects.postgresql.dialect()
+
+_gen_table_names = (f"registered_table{i:d}" for i in itertools.count())
 
 
 def _name_from_path(path: Path) -> str:
@@ -146,28 +149,37 @@ class Backend(BaseAlchemyBackend):
 
     def register(
         self,
-        path: str | Path,
+        source: str | Path | Any,
         table_name: str | None = None,
     ) -> ir.Table:
-        """Register an external file as a table in the current connection
-        database
+        """Register a data source as a table in the current database.
 
         Parameters
         ----------
-        path
-            Name of the parquet or CSV file
+        source
+            The data source. May be a path to a file or directory of
+            parquet/csv files, a pandas dataframe, or a pyarrow table or
+            dataset.
         table_name
-            Name for the created table.  Defaults to filename if not given.
-            Any dashes in a user-provided or generated name will be
-            replaced with underscores.
+            An optional name to use for the created table. This defaults to the
+            filename if a path (with hyphens replaced with underscores), or
+            sequentially generated name otherwise.
 
         Returns
         -------
         ir.Table
             The just-registered table
         """
-        view, table_name = _generate_view_code(path, table_name=table_name)
-        self.con.execute(view)
+        if isinstance(source, (str, Path)):
+            sql, table_name = _generate_view_code(
+                source, table_name=table_name
+            )
+            self.con.execute(sql)
+        else:
+            if table_name is None:
+                table_name = next(_gen_table_names)
+            self.con.execute("register", (table_name, source))
+
         return self.table(table_name)
 
     def fetch_from_cursor(
