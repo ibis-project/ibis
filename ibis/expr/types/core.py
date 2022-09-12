@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, Any, Hashable, Mapping
 
 from public import public
 
-from ibis import config
 from ibis.common.exceptions import (
     ExpressionError,
     IbisError,
     IbisTypeError,
     TranslationError,
 )
+from ibis.config import _default_backend, options
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker, deprecated
 
@@ -33,7 +33,7 @@ class Expr:
         self._arg = arg
 
     def __repr__(self) -> str:
-        if not config.options.interactive:
+        if not options.interactive:
             return self._repr()
 
         try:
@@ -103,7 +103,7 @@ class Expr:
         return type(self), self._safe_name, self.op()
 
     def _repr_png_(self) -> bytes | None:
-        if config.options.interactive or not config.options.graphviz_repr:
+        if options.interactive or not options.graphviz_repr:
             return None
         try:
             import ibis.expr.visualize as viz
@@ -189,7 +189,7 @@ class Expr:
     def op(self) -> ops.Node:
         return self._arg
 
-    def _find_backends(self) -> list[BaseBackend]:
+    def _find_backends(self) -> tuple[list[BaseBackend], bool]:
         """Return the possible backends for an expression.
 
         Returns
@@ -197,6 +197,7 @@ class Expr:
         list[BaseBackend]
             A list of the backends found.
         """
+        import ibis.expr.operations as ops
         from ibis.backends.base import BaseBackend
 
         seen_backends: dict[
@@ -205,11 +206,13 @@ class Expr:
 
         stack = [self.op()]
         seen = set()
+        has_unbound = False
 
         while stack:
             node = stack.pop()
 
             if node not in seen:
+                has_unbound |= isinstance(node, ops.UnboundTable)
                 seen.add(node)
 
                 for arg in node.flat_args():
@@ -219,13 +222,36 @@ class Expr:
                     elif isinstance(arg, Expr):
                         stack.append(arg.op())
 
-        return list(seen_backends.values())
+        return list(seen_backends.values()), has_unbound
 
-    def _find_backend(self) -> BaseBackend:
-        backends = self._find_backends()
+    def _find_backend(self, *, use_default: bool = False) -> BaseBackend:
+        """Find the backend attached to an expression.
+
+        Parameters
+        ----------
+        use_default
+            If [`True`][True] and the default backend isn't set, initialize the
+            default backend and use that. This should only be set to `True` for
+            `.execute()`. For other contexts such as compilation, this option
+            doesn't make sense so the default value is [`False`][False].
+
+        Returns
+        -------
+        BaseBackend
+            A backend that is attached to the expression
+        """
+        backends, has_unbound = self._find_backends()
 
         if not backends:
-            default = config.options.default_backend
+            if has_unbound:
+                raise IbisError(
+                    "Expression contains unbound tables and therefore cannot "
+                    "be executed. Use ibis.<backend>.execute(expr) or "
+                    "assign a backend instance to "
+                    "`ibis.options.default_backend`."
+                )
+            if (default := options.default_backend) is None and use_default:
+                default = _default_backend()
             if default is None:
                 raise IbisError(
                     'Expression depends on no backends, and found no default'
@@ -262,7 +288,7 @@ class Expr:
         params
             Mapping of scalar parameter expressions to value
         """
-        return self._find_backend().execute(
+        return self._find_backend(use_default=True).execute(
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
         )
 
