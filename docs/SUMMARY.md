@@ -1,4 +1,5 @@
 * [Home](index.md)
+* [Blog](blog/)
 * Tutorial
     * [Introduction to Ibis](tutorial/01-Introduction-to-Ibis.ipynb)
     * [Aggregating and Joining](tutorial/02-Aggregates-Joins.ipynb)
@@ -15,7 +16,6 @@
 * [Contribute](contribute/)
 * [Code of Conduct](CODE_OF_CONDUCT.md)
 * Community
-    * [Blog](blog/)
     * [About](about/)
     * [Ask a question (StackOverflow)](https://stackoverflow.com/questions/tagged/ibis)
     * [Chat (Gitter)](https://gitter.im/ibis-dev/Lobby)
