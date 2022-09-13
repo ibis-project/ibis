@@ -36,6 +36,7 @@ from ibis.expr.datatypes import (
     int16,
     int32,
     int64,
+    json,
     spaceless,
     spaceless_string,
     string,
@@ -63,9 +64,14 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("double", "float8").result(float64)
         | spaceless_string("real", "float4", "float").result(float32)
         | spaceless_string("smallint", "int2", "short").result(int16)
-        | spaceless_string("timestamp", "datetime").result(
-            Timestamp(timezone="UTC")
-        )
+        | spaceless_string(
+            "timestamp_tz",
+            "timestamp_sec",
+            "timestamp_ms",
+            "timestamp_ns",
+            "timestamp",
+            "datetime",
+        ).result(Timestamp(timezone="UTC"))
         | spaceless_string("date").result(date)
         | spaceless_string("time").result(time)
         | spaceless_string("tinyint", "int1").result(int8)
@@ -82,6 +88,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
             "text",
             "string",
         ).result(string)
+        | spaceless_string("json").result(json)
     )
 
     @p.generate

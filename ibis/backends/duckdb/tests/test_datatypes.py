@@ -58,6 +58,11 @@ EXPECTED_SCHEMA = dict(
     ),
     T=dt.Array(dt.Array(dt.int32)),
     U=dt.Array(dt.Array(dt.int32)),
+    V=dt.Timestamp("UTC"),
+    W=dt.Timestamp("UTC"),
+    X=dt.Timestamp("UTC"),
+    Y=dt.Timestamp("UTC"),
+    Z=dt.json,
 )
 
 
@@ -113,6 +118,11 @@ EXPECTED_SCHEMA = dict(
             ("S", "STRUCT(a INT, b TEXT, c LIST<MAP<TEXT, LIST<FLOAT8>>>)"),
             ("T", "LIST<LIST<INTEGER>>"),
             ("U", "INTEGER[][]"),
+            ("V", "TIMESTAMP_TZ"),
+            ("W", "TIMESTAMP_SEC"),
+            ("X", "TIMESTAMP_MS"),
+            ("Y", "TIMESTAMP_NS"),
+            ("Z", "JSON"),
         ]
     ],
 )
