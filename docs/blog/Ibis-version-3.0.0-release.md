@@ -1,6 +1,6 @@
 # Ibis v3.0.0
 
-#### by: Marlene Mhangami
+**by Marlene Mhangami**
 
 The latest version of Ibis, version 3.0.0, has just been released! This post highlights some of the new features, breaking changes, and performance improvements that come with the new release. 3.0.0 is a major release and includes more changes than those listed in this post. A full list of the changes can be found in the project release notes [here](https://ibis-project.org/docs/dev/release_notes/).
 

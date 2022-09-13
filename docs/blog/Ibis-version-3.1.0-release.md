@@ -1,6 +1,6 @@
 # Ibis v3.1.0
 
-Marlene Mhangami
+**by Marlene Mhangami**
 
 25 July 2022
 

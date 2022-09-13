@@ -1,6 +1,6 @@
 # `ffill` and `bfill` using Ibis
 
-#### by: Patrick Clarke
+**by Patrick Clarke**
 
 Suppose you have a table of data mapping events and dates to values, and that this data contains gaps in values.
 
