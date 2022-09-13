@@ -1,5 +1,7 @@
 # Code of Conduct
 
+## Summary
+
 Ibis is governed by the
 [NumFOCUS code of conduct](https://numfocus.org/code-of-conduct):
 
@@ -17,3 +19,32 @@ Ibis is governed by the
 > or religion. We do not tolerate harassment of community members in any form.
 >
 > Thank you for helping make this a welcoming, friendly community for all.
+
+## Reporting and Enforcement Violations
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported by contacting the Ibis Code of Conduct committee at
+ibis-conduct@googlegroups.com. You can also report
+
+The committee currently consists of:
+
+- Phillip Cloud
+- Wes McKinney
+- Krisztián Szűcs
+- Jeff Reback
+
+All complaints will be reviewed and investigated and will result in a response
+that is deemed necessary and appropriate to the circumstances. The committee is
+obligated to maintain confidentiality with regard to the reporter of an
+incident. In addition, the online form allows you to submit a report
+anonymously. Further details of specific enforcement policies may be posted
+separately.
+
+Project maintainers who do not follow or enforce the Code of Conduct in good
+faith may face temporary or permanent repercussions as determined by other
+members of the project's leadership.
+
+## Attribution
+
+Parts of this CoC are adapated from the [Dask code of
+conduct](https://github.com/dask/governance/blob/main/code-of-conduct.md).
