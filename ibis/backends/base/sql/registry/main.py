@@ -342,6 +342,7 @@ operation_registry = {
     ops.ParseURL: string.parse_url,
     ops.StartsWith: string.startswith,
     ops.EndsWith: string.endswith,
+    ops.StringReplace: fixed_arity('replace', 3),
     # Timestamp operations
     ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
