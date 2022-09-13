@@ -49,6 +49,24 @@ def show_sql(
       t0.a * 2 AS c
     FROM t AS t0
     """
+    print(to_sql(expr, dialect=dialect), file=file)
+
+
+def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
+    """Return the formatted SQL string for an expression.
+
+    Parameters
+    ----------
+    expr
+        Ibis expression.
+    dialect
+        SQL dialect to use for compilation.
+
+    Returns
+    -------
+    str
+        Formatted SQL string
+    """
     import sqlglot
 
     # try to infer from a non-str expression or if not possible fallback to
@@ -87,4 +105,4 @@ def show_sql(
         write=write,
         pretty=True,
     )
-    print(pretty, file=file)
+    return pretty
