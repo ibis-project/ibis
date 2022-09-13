@@ -22,6 +22,7 @@ from ibis.backends.pandas.execution.strings import (
     execute_series_regex_replace,
     execute_series_regex_search,
     execute_series_right,
+    execute_series_string_replace,
     execute_series_translate_scalar_scalar,
     execute_series_translate_scalar_series,
     execute_series_translate_series_scalar,
@@ -80,6 +81,12 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ),
     ],
     ops.Reverse: [((dd.Series,), execute_string_reverse)],
+    ops.StringReplace: [
+        (
+            (dd.Series, (dd.Series, str), (dd.Series, str)),
+            execute_series_string_replace,
+        )
+    ],
     ops.Lowercase: [((dd.Series,), execute_string_lower)],
     ops.Uppercase: [((dd.Series,), execute_string_upper)],
     ops.Capitalize: [((dd.Series,), execute_string_capitalize)],
