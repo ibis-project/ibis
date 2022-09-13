@@ -278,6 +278,12 @@ def test_string_col_is_unicode(alltypes, df):
             id='concat_scalar_column',
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
+        param(
+            lambda t: t.string_col.replace("1", "42"),
+            lambda t: t.string_col.str.replace("1", "42"),
+            id="replace",
+            marks=pytest.mark.notimpl(["datafusion"]),
+        ),
     ],
 )
 def test_string(backend, alltypes, df, result_func, expected_func):
