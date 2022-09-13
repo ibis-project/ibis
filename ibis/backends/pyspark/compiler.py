@@ -1241,8 +1241,8 @@ def compile_regex_replace(t, expr, scope, timecontext, **kwargs):
 
 
 @compiles(ops.StringReplace)
-def compile_string_replace(t, expr, scope, timecontext, **kwargs):
-    return compile_regex_replace(t, expr)
+def compile_string_replace(*args, **kwargs):
+    return compile_regex_replace(*args, **kwargs)
 
 
 @compiles(ops.StringSplit)
