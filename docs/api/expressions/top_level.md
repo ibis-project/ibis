@@ -28,7 +28,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.or_
 ::: ibis.param
 ::: ibis.show_sql
-::: ibis.sql
+::: ibis.to_sql
 ::: ibis.random
 ::: ibis.range_window
 ::: ibis.row_number
