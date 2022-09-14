@@ -1580,19 +1580,16 @@ dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "poetry-dynamic-versioning"
-version = "0.18.0"
+version = "0.17.1"
 description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
 category = "dev"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.5,<4.0"
 
 [package.dependencies]
 dunamai = ">=1.12.0,<2.0.0"
-jinja2 = ">=2.11.1,<4"
+jinja2 = {version = ">=2.11.1,<4", markers = "python_version >= \"3.6\" and python_version < \"4.0\""}
 tomlkit = ">=0.4"
-
-[package.extras]
-plugin = ["poetry (>=1.2.0,<2.0.0)"]
 
 [[package]]
 name = "pprintpp"
@@ -2469,7 +2466,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "36f98cb3e1568df5710513b4de4e3fe31434e563416c66950e6ca2a10ed398c2"
+content-hash = "ce4365a6f35c876aa33487f2dd912bf36219557e6175109928739158531ea190"
 
 [metadata.files]
 absolufy-imports = [
@@ -3695,8 +3692,8 @@ pluggy = [
     {file = "pluggy-1.0.0.tar.gz", hash = "sha256:4224373bacce55f955a878bf9cfa763c1e360858e330072059e10bad68531159"},
 ]
 poetry-dynamic-versioning = [
-    {file = "poetry-dynamic-versioning-0.18.0.tar.gz", hash = "sha256:72ff0d3c1b2ccfacf9ef6642da3a57ccab224e396e8e3e42934afd9509289861"},
-    {file = "poetry_dynamic_versioning-0.18.0-py3-none-any.whl", hash = "sha256:a9120cd7a03fbf76f48216932901619692d70d7646ff9786eae99d51a2c89c68"},
+    {file = "poetry-dynamic-versioning-0.17.1.tar.gz", hash = "sha256:304eec793e8b71e3646b365671464c935626781e92dc029e35b01e8fe8c7530c"},
+    {file = "poetry_dynamic_versioning-0.17.1-py3-none-any.whl", hash = "sha256:647d41eb554496eb657c7745ab2321b77d1f9c7cf52f7deb6ff674736fbd8ea1"},
 ]
 pprintpp = [
     {file = "pprintpp-0.4.0-py2.py3-none-any.whl", hash = "sha256:b6b4dcdd0c0c0d75e4d7b2f21a9e933e5b2ce62b26e1a54537f9651ae5a5c01d"},
