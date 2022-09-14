@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-dry_run="${1}"
+dry_run="${1:-false}"
 
 # verify pyproject.toml
 poetry check
