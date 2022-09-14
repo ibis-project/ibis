@@ -107,4 +107,12 @@ in
       self.hatch-fancy-pypi-readme
     ];
   });
+
+  idna = super.idna.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
+  });
+
+  nbformat = super.nbformat.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
+  });
 }
