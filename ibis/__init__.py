@@ -16,7 +16,7 @@ from ibis.expr.api import *  # noqa: F401,F403
 __all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
 __all__ += api.__all__
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
 
 _KNOWN_BACKENDS = ['bigquery', 'heavyai']
 
