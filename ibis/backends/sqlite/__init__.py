@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import datetime
 import sqlite3
 import warnings
 from pathlib import Path
@@ -21,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 import sqlalchemy as sa
+from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -29,6 +31,36 @@ from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+
+
+def to_datetime(value: str | None) -> datetime.datetime | None:
+    """Convert a str to a datetime according to SQLite's rules, ignoring `None`
+    values"""
+    if value is None:
+        return None
+    if value.endswith("Z"):
+        # Parse and set the timezone as UTC
+        o = datetime.datetime.fromisoformat(value[:-1]).replace(
+            tzinfo=datetime.timezone.utc
+        )
+    else:
+        o = datetime.datetime.fromisoformat(value)
+        if o.tzinfo:
+            # Convert any aware datetime to UTC
+            return o.astimezone(datetime.timezone.utc)
+    return o
+
+
+class ISODATETIME(DATETIME):
+    """A thin datetime type to override sqlalchemy's datetime parsing to
+    support a wider range of timestamp formats accepted by SQLite.
+
+    See https://sqlite.org/lang_datefunc.html#time_values for the full
+    list of datetime formats SQLite accepts.
+    """
+
+    def result_processor(self, value, dialect):
+        return to_datetime
 
 
 class Backend(BaseAlchemyBackend):
@@ -92,7 +124,10 @@ class Backend(BaseAlchemyBackend):
 
         super().do_connect(engine)
 
-        self._meta = sa.MetaData(bind=self.con)
+        @sa.event.listens_for(self.meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            if type(column_info["type"]) is TIMESTAMP:
+                column_info["type"] = ISODATETIME()
 
     def attach(
         self,
