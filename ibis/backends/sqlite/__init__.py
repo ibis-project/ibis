@@ -26,11 +26,13 @@ from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
+    import ibis.expr.datatypes as dt
 
 from ibis.backends.base import Database
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+from ibis.expr.schema import datatype
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
@@ -86,6 +88,7 @@ class Backend(BaseAlchemyBackend):
         self,
         database: str | Path | None = None,
         path: str | Path | None = None,
+        type_map: dict[str, str | dt.DataType] | None = None,
     ) -> None:
         """Create an Ibis client connected to a SQLite database.
 
@@ -97,6 +100,10 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If `None`, creates an
             in-memory transient database and you can use attach() to add more
             files
+        type_map
+            An optional mapping from a string name of a SQLite "type" to the
+            corresponding ibis DataType that it represents. This can be used
+            to override schema inference for a given SQLite database.
 
         Examples
         --------
@@ -114,6 +121,24 @@ class Backend(BaseAlchemyBackend):
         engine = sa.create_engine(
             f"sqlite:///{database if database is not None else ':memory:'}"
         )
+
+        if type_map:
+            # Patch out ischema_names for the instantiated dialect. This
+            # attribute is required for all SQLAlchemy dialects, but as no
+            # public way of modifying it for a given dialect. Patching seems
+            # easier than subclassing the builtin SQLite dialect, and achieves
+            # the same desired behavior.
+            def _to_ischema_val(t):
+                sa_type = to_sqla_type(datatype(t))
+                if isinstance(sa_type, sa.types.TypeEngine):
+                    # SQLAlchemy expects a callable here, rather than an
+                    # instance. Use a lambda to work around this.
+                    return lambda: sa_type
+                return sa_type
+
+            overrides = {k: _to_ischema_val(v) for k, v in type_map.items()}
+            engine.dialect.ischema_names = engine.dialect.ischema_names.copy()
+            engine.dialect.ischema_names.update(overrides)
 
         sqlite3.register_adapter(pd.Timestamp, lambda value: value.isoformat())
 
