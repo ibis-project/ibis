@@ -36,6 +36,7 @@ def db(tmp_path_factory):
     con = sqlite3.connect(path)
     con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
     con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMP)")
+    con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
     with con:
         con.executemany(
             "INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS]
@@ -43,6 +44,15 @@ def db(tmp_path_factory):
         con.executemany(
             "INSERT INTO timestamps_tz VALUES (?)",
             [(t,) for t in TIMESTAMPS_TZ],
+        )
+        con.executemany(
+            "INSERT INTO weird VALUES (?, ?)",
+            [
+                ("a", "2022-01-01"),
+                ("b", "2022-01-02"),
+                ("c", "2022-01-03"),
+                ("d", "2022-01-04"),
+            ],
         )
     con.close()
     return path
@@ -58,4 +68,21 @@ def test_timestamps(db, table, data):
     assert t.ts.type() == dt.timestamp
     res = t.ts.execute()
     sol = pd.Series([to_datetime(s) for s in data]).dt.tz_localize(None)
+    assert res.equals(sol)
+
+
+def test_type_map(db):
+    con = ibis.sqlite.connect(
+        db, type_map={"STRING": dt.string, "ITSADATE": "date"}
+    )
+    t = con.tables.weird
+    expected_schema = ibis.schema({"str_col": "string", "date_col": "date"})
+    assert t.schema() == expected_schema
+    res = t.filter(t.str_col == "a").execute()
+    sol = pd.DataFrame(
+        {
+            "str_col": ["a"],
+            "date_col": pd.Series(["2022-01-01"], dtype="M8[ns]"),
+        }
+    )
     assert res.equals(sol)
