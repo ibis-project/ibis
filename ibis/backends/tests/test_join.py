@@ -81,9 +81,7 @@ def check_eq(left, right, how, **kwargs):
 @pytest.mark.notimpl(["datafusion"])
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == 'NL'].drop(
-        ['yearID', 'lgID']
-    )
+    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
 
     left_df = left.execute()
     right_df = right.execute()
@@ -135,9 +133,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 )
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == 'NL'].drop(
-        ['yearID', 'lgID']
-    )
+    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
 
     left_df = left.execute()
     right_df = right.execute()

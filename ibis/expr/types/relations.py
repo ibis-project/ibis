@@ -5,6 +5,7 @@ import functools
 import itertools
 import operator
 import sys
+import warnings
 from functools import cached_property
 from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 
@@ -685,7 +686,7 @@ class Table(Expr):
 
         return self.select(exprs)
 
-    def drop(self, fields: str | Sequence[str]) -> Table:
+    def drop(self, *fields: str) -> Table:
         """Remove fields from a table.
 
         Parameters
@@ -696,13 +697,19 @@ class Table(Expr):
         Returns
         -------
         Table
-            Expression without `fields`
+            A table with all columns in `fields` removed.
         """
         if not fields:
             # no-op if nothing to be dropped
             return self
 
-        fields = util.promote_list(fields)
+        if len(fields) == 1 and not isinstance(fields[0], str):
+            fields = util.promote_list(fields[0])
+            warnings.warn(
+                "Passing a sequence of fields to `drop` is deprecated and "
+                "will be removed in version 5.0, use `drop(*fields)` instead",
+                FutureWarning,
+            )
 
         schema = self.schema()
         field_set = frozenset(fields)
