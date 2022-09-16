@@ -7,7 +7,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.validators import immutable_property
-from ibis.expr.operations.core import Binary, Node, Unary, Value
+from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between
 
@@ -205,16 +205,6 @@ class DayOfWeekIndex(Unary):
 class DayOfWeekName(Unary):
     arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_dtype = dt.string
-
-
-@public
-class DayOfWeekNode(Node):
-    arg = rlz.one_of([rlz.date, rlz.timestamp])
-
-    def to_expr(self):
-        import ibis.expr.types as ir
-
-        return ir.DayOfWeek(self)
 
 
 @public

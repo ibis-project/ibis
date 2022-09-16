@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
 
@@ -72,15 +72,15 @@ class _DateComponentMixin:
 
     @property
     def day_of_week(self) -> DayOfWeek:
-        """Return a namespace containing methods for extracting day of week information.
+        """A namespace of methods for extracting day of week information.
 
         Returns
         -------
         DayOfWeek
             An namespace expression containing methods to use to extract
             information.
-        """  # noqa: E501
-        return ops.DayOfWeekNode(self).to_expr()
+        """
+        return DayOfWeek(self)
 
     def day_of_year(self) -> ir.IntegerValue:
         """Extract the day of the year component."""
@@ -578,7 +578,12 @@ class IntervalColumn(Column, IntervalValue):
 
 
 @public
-class DayOfWeek(Expr):
+class DayOfWeek:
+    """A namespace of methods for extracting day of week information."""
+
+    def __init__(self, expr):
+        self._expr = expr
+
     def index(self):
         """Get the index of the day of the week.
 
@@ -589,7 +594,7 @@ class DayOfWeek(Expr):
 
             !!! note "Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6."
         """  # noqa: E501
-        return ops.DayOfWeekIndex(self.op().arg).to_expr()
+        return ops.DayOfWeekIndex(self._expr).to_expr()
 
     def full_name(self):
         """Get the name of the day of the week.
@@ -599,4 +604,4 @@ class DayOfWeek(Expr):
         StringValue
             The name of the day of the week
         """
-        return ops.DayOfWeekName(self.op().arg).to_expr()
+        return ops.DayOfWeekName(self._expr).to_expr()
