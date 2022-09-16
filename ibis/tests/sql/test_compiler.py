@@ -274,7 +274,7 @@ def test_table_drop_with_filter():
         [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
     ).relabel({'c': 'C'})
     left = left.filter(left.C == datetime.datetime(2018, 1, 1))
-    left = left.drop(['C'])
+    left = left.drop('C')
     left = left.mutate(the_date=datetime.datetime(2018, 1, 1))
 
     right = ibis.table([('b', 'string')], name='s')
@@ -311,17 +311,10 @@ def test_table_drop_consistency():
     )
 
     expected = t.projection(["a", "c"])
-    result_1 = t.drop(["b"])
-    result_2 = t.drop("b")
+    result = t.drop("b")
 
-    assert expected.schema() == result_1.schema()
-    assert expected.schema() == result_2.schema()
-
-    assert expected.schema() != t.schema()
-
-    assert "b" not in expected.columns
-    assert "a" in result_1.columns
-    assert "c" in result_2.columns
+    assert expected.schema() == result.schema()
+    assert set(result.columns) == {"a", "c"}
 
 
 def test_subquery_where_location():

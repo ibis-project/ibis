@@ -1520,6 +1520,25 @@ def test_join_suffixes(how):
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
 
 
+def test_drop():
+    t = ibis.table(dict.fromkeys("abcd", "int"))
+
+    assert t.drop() is t
+
+    res = t.drop("a")
+    assert res.equals(t.select("b", "c", "d"))
+
+    res = t.drop("a", "b")
+    assert res.equals(t.select("c", "d"))
+
+    with pytest.raises(KeyError, match="Fields not in table"):
+        t.drop("missing")
+
+    with pytest.warns(FutureWarning, match="a sequence of fields"):
+        res = t.drop(["a", "b"])
+    assert res.equals(t.select("c", "d"))
+
+
 def test_python_table_ambiguous():
     with pytest.raises(NotImplementedError):
         ibis.memtable(

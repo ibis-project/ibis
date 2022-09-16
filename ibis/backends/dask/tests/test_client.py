@@ -79,7 +79,7 @@ def test_read_with_undiscoverable_type(client):
 
 def test_drop(table):
     table = table.mutate(c=table.a)
-    expr = table.drop(['a'])
+    expr = table.drop('a')
     result = expr.execute()
     expected = table[['b', 'c']].execute()
     tm.assert_frame_equal(result, expected)
