@@ -58,7 +58,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         )
 
         client.execute(f"DROP DATABASE IF EXISTS {database}")
-        client.execute(f"CREATE DATABASE {database}")
+        client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
         client.execute(f"USE {database}")
 
         with open(script_dir / 'schema' / 'clickhouse.sql') as schema:

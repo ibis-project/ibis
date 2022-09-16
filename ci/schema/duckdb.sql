@@ -1,6 +1,4 @@
-DROP TABLE IF EXISTS diamonds CASCADE;
-
-CREATE TABLE diamonds (
+CREATE OR REPLACE TABLE diamonds (
     carat FLOAT,
     cut TEXT,
     color TEXT,
@@ -13,9 +11,7 @@ CREATE TABLE diamonds (
     z FLOAT
 );
 
-DROP TABLE IF EXISTS batting CASCADE;
-
-CREATE TABLE batting (
+CREATE OR REPLACE TABLE batting (
     "playerID" TEXT,
     "yearID" BIGINT,
     stint BIGINT,
@@ -40,9 +36,7 @@ CREATE TABLE batting (
     "GIDP" BIGINT
 );
 
-DROP TABLE IF EXISTS awards_players CASCADE;
-
-CREATE TABLE awards_players (
+CREATE OR REPLACE TABLE awards_players (
     "playerID" TEXT,
     "awardID" TEXT,
     "yearID" BIGINT,
@@ -51,9 +45,7 @@ CREATE TABLE awards_players (
     notes TEXT
 );
 
-DROP TABLE IF EXISTS functional_alltypes CASCADE;
-
-CREATE TABLE functional_alltypes (
+CREATE OR REPLACE TABLE functional_alltypes (
     "index" BIGINT,
     "Unnamed: 0" BIGINT,
     id INTEGER,
@@ -71,9 +63,7 @@ CREATE TABLE functional_alltypes (
     month INTEGER
 );
 
-DROP TABLE IF EXISTS array_types CASCADE;
-
-CREATE TABLE IF NOT EXISTS array_types (
+CREATE OR REPLACE TABLE array_types (
     x BIGINT[],
     y TEXT[],
     z DOUBLE PRECISION[],
@@ -91,9 +81,7 @@ INSERT INTO array_types VALUES
     ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]]);
 
 
-DROP TABLE IF EXISTS struct CASCADE;
-
-CREATE TABLE IF NOT EXISTS struct (
+CREATE OR REPLACE TABLE struct (
     abc STRUCT(a DOUBLE, b STRING, c BIGINT)
 );
 
