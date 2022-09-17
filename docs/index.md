@@ -131,7 +131,7 @@ t.group_by("y").mutate(z=t.x.avg())
 #### Ibis builds on top of and works with existing Python tools.
 
 ```python
-t.semi_join(s, t.x == t.y).select([lambda t: t.a.exp().name("d")]).head(2)
+expr = t.semi_join(s, t.x == t.y).select([lambda t: t.a.exp().name("d")]).head(2)
 df = expr.execute()  # a pandas DataFrame!
 ```
 
