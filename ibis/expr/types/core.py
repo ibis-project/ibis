@@ -114,14 +114,24 @@ class Expr(Immutable):
                 # so fallback to the default text representation.
                 return None
 
-    def visualize(self, format: str = 'svg') -> None:
-        """Visualize an expression in the browser as an SVG image.
+    def visualize(
+        self,
+        format: str = "svg",
+        *,
+        label_edges: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        """Visualize an expression in the browser.
 
         Parameters
         ----------
         format
             Image output format. These are specified by the ``graphviz`` Python
             library.
+        label_edges
+            Show operation input names as edge labels
+        verbose
+            Print the graphviz DOT code to stderr if [`True`][True]
 
         Notes
         -----
@@ -135,7 +145,11 @@ class Expr(Immutable):
         """
         import ibis.expr.visualize as viz
 
-        path = viz.draw(viz.to_graph(self), format=format)
+        path = viz.draw(
+            viz.to_graph(self, label_edges=label_edges),
+            format=format,
+            verbose=verbose,
+        )
         webbrowser.open(f'file://{os.path.abspath(path)}')
 
     def pipe(self, f, *args: Any, **kwargs: Any) -> Expr:
