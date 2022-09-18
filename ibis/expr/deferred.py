@@ -20,6 +20,11 @@ class Deferred:
         ), f"resolve argument is not callable, got {type(resolve)}"
         self.resolve = resolve
 
+    def __hash__(self) -> int:
+        # every new instance can potentially be referring to something
+        # different so treat each instance as unique
+        return id(self)
+
     def _defer(self, func: Callable, *args: Any, **kwargs: Any) -> Deferred:
         """Wrap `func` in a `Deferred` instance."""
 

@@ -325,10 +325,9 @@ class AlchemySelect(Select):
             else:
                 arg = self._translate(sort_expr)
 
-            if not key.ascending:
-                arg = sa.desc(arg)
+            fn = sa.asc if key.ascending else sa.desc
 
-            clauses.append(arg)
+            clauses.append(fn(arg))
 
         return fragment.order_by(*clauses)
 

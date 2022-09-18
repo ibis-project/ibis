@@ -467,7 +467,6 @@ class Table(Expr):
         self,
         sort_exprs: str
         | ir.Column
-        | ir.SortKey
         | tuple[str | ir.Column, bool]
         | Sequence[tuple[str | ir.Column, bool]],
     ) -> Table:

@@ -54,7 +54,7 @@ def compute_sorted_frame(
 
     new_columns = {}
     computed_sort_keys = []
-    for i, key in enumerate(sort_keys):
+    for key in sort_keys:
         computed_sort_key, temporary_column = compute_sort_key(
             key, df, timecontext, **kwargs
         )

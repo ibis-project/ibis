@@ -431,8 +431,8 @@ class Select(DML, Comparable):
         formatted = []
         for key in self.order_by:
             translated = self._translate(key.expr)
-            if not key.ascending:
-                translated += ' DESC'
+            suffix = 'ASC' if key.ascending else 'DESC'
+            translated += f' {suffix}'
             formatted.append(translated)
 
         buf.write(', '.join(formatted))

@@ -362,9 +362,9 @@ def test_sort_by(table):
     key3 = result3.op().sort_keys[0]
     key4 = result4.op().sort_keys[0]
 
-    assert not key2.ascending
-    assert not key3.ascending
-    assert not key4.ascending
+    assert key2.descending
+    assert key3.descending
+    assert key4.descending
     assert_equal(result2, result3)
 
 

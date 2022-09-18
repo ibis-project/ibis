@@ -476,6 +476,14 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
+    def asc(self) -> ir.Value:
+        """Sort an expression ascending."""
+        return ops.SortKey(self, ascending=True).to_expr()
+
+    def desc(self) -> ir.Value:
+        """Sort an expression descending."""
+        return ops.SortKey(self, ascending=False).to_expr()
+
     def to_projection(self) -> ir.Table:
         """Promote this value expression to a projection."""
         from ibis.expr.analysis import find_immediate_parent_tables

@@ -1,4 +1,6 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from __future__ import annotations
+
+from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
 import dask.dataframe as dd
 import dask.delayed
@@ -38,8 +40,8 @@ def register_types_to_dispatcher(
 
 def make_meta_series(
     dtype: np.dtype,
-    name: Optional[str] = None,
-    meta_index: Optional[pd.Index] = None,
+    name: str | None = None,
+    meta_index: pd.Index | None = None,
 ):
     if isinstance(meta_index, pd.MultiIndex):
         index_names = meta_index.names
@@ -61,7 +63,7 @@ def make_meta_series(
     )
 
 
-def make_selected_obj(gs: SeriesGroupBy) -> Union[dd.DataFrame, dd.Series]:
+def make_selected_obj(gs: SeriesGroupBy) -> dd.DataFrame | dd.Series:
     """
     When you select a column from a `pandas.DataFrameGroupBy` the underlying
     `.obj` reflects that selection. This function emulates that behavior.
@@ -78,8 +80,8 @@ def make_selected_obj(gs: SeriesGroupBy) -> Union[dd.DataFrame, dd.Series]:
 
 
 def coerce_to_output(
-    result: Any, node: ops.Node, index: Optional[pd.Index] = None
-) -> Union[dd.Series, dd.DataFrame]:
+    result: Any, node: ops.Node, index: pd.Index | None = None
+) -> dd.Series | dd.DataFrame:
     """Cast the result to either a Series of DataFrame, renaming as needed.
 
     Reimplementation of `coerce_to_output` in the pandas backend, but
@@ -166,7 +168,7 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
         return pd.Series([x._meta]).dtype
 
 
-def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
+def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
     """
     Concat a list of `dd.Series` or `dd.DataFrame` objects into one DataFrame
 
@@ -207,7 +209,7 @@ def safe_concat(dfs: List[Union[dd.Series, dd.DataFrame]]) -> dd.DataFrame:
 def compute_sort_key(
     key: ops.SortKey,
     data: dd.DataFrame,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     scope: Scope = None,
     **kwargs,
 ):
@@ -236,8 +238,8 @@ def compute_sort_key(
 
 def compute_sorted_frame(
     df: dd.DataFrame,
-    order_by: ir.SortExpr,
-    timecontext: Optional[TimeContext] = None,
+    order_by: ir.Value,
+    timecontext: TimeContext | None = None,
     **kwargs,
 ) -> dd.DataFrame:
     sort_col_name, temporary_column = compute_sort_key(
@@ -262,7 +264,7 @@ def assert_identical_grouping_keys(*args):
 
 
 def add_partitioned_sorted_column(
-    df: Union[dd.DataFrame, dd.Series],
+    df: dd.DataFrame | dd.Series,
 ) -> dd.DataFrame:
     """Add a column that is already partitioned and sorted
     This columns acts as if we had a global index across the distributed data.
@@ -332,8 +334,8 @@ def add_partitioned_sorted_column(
         raise ValueError(f"Column {col_name} is already present in DataFrame")
 
     def helper(
-        df: Union[pd.Series, pd.DataFrame],
-        partition_info: Dict[str, Any],  # automatically injected by dask
+        df: pd.Series | pd.DataFrame,
+        partition_info: dict[str, Any],  # automatically injected by dask
         col_name: str,
     ):
         """Assigns a column with a unique id for each row"""

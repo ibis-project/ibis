@@ -206,13 +206,9 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
 
 
 @compiles(ops.SortKey)
-def compile_sort_key(t, op, **kwargs):
+def compile_sort_desc(t, op, **kwargs):
     col = t.translate(op.expr, **kwargs)
-
-    if op.ascending:
-        return col.asc()
-    else:
-        return col.desc()
+    return col.asc() if op.ascending else col.desc()
 
 
 def compile_nan_as_null(compile_func):
