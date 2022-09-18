@@ -179,6 +179,8 @@ def _cast(t, op):
         # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
         return sa.cast(sa_arg, sa.LargeBinary())
 
+    if isinstance(typ, dt.JSON) and not t.native_json_type:
+        return sa_arg
     return sa.cast(sa_arg, sa_type)
 
 
@@ -646,6 +648,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.BitwiseLeftShift: _bitwise_op("<<"),
     ops.BitwiseRightShift: _bitwise_op(">>"),
     ops.BitwiseNot: _bitwise_not,
+    ops.JSONGetItem: fixed_arity(lambda x, y: x.op("->")(y), 2),
 }
 
 

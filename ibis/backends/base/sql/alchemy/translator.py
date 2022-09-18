@@ -47,6 +47,7 @@ class AlchemyExprTranslator(ExprTranslator):
     _has_reduction_filter_syntax = False
 
     integer_to_timestamp = sa.func.to_timestamp
+    native_json_type = True
 
     def name(self, translated, name, force=True):
         return translated.label(name)

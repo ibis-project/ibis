@@ -169,6 +169,16 @@ def _find_in_set(t, op):
     )
 
 
+def _json_get_item(t, op):
+    arg = t.translate(op.arg)
+    index = t.translate(op.index)
+    if isinstance(op.index.output_dtype, dt.Integer):
+        path = "$[" + sa.cast(index, sa.TEXT) + "]"
+    else:
+        path = "$." + index
+    return sa.func.json_extract(arg, path)
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -211,5 +221,6 @@ operation_registry.update(
         ops.GroupConcat: _group_concat,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
+        ops.JSONGetItem: _json_get_item,
     }
 )
