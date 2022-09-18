@@ -378,6 +378,10 @@ class Selection(Projection):
 
         return Selection(self, [], sort_keys=keys)
 
+    @immutable_property
+    def _projection(self):
+        return Projection(self.table, self.selections)
+
 
 @public
 class Aggregation(TableNode):
