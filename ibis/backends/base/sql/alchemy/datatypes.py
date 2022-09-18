@@ -256,7 +256,7 @@ def sa_inet(_, satype, nullable=True):
     return dt.INET(nullable=nullable)
 
 
-@dt.dtype.register(PGDialect, postgresql.JSON)
+@dt.dtype.register(Dialect, sa.types.JSON)
 def sa_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
 

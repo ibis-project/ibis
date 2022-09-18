@@ -1,5 +1,6 @@
 """The pandas client implementation."""
 
+import json
 from collections.abc import Mapping, Sequence
 
 import numpy as np
@@ -300,6 +301,19 @@ def convert_struct_to_dict(_, out_dtype, column):
 @sch.convert.register(np.dtype, dt.Array, pd.Series)
 def convert_array_to_series(in_dtype, out_dtype, column):
     return column.map(lambda x: x if x is None else list(x))
+
+
+@sch.convert.register(np.dtype, dt.JSON, pd.Series)
+def convert_json_to_series(in_, out, col: pd.Series):
+    def try_json(x):
+        if x is None:
+            return x
+        try:
+            return json.loads(x)
+        except (TypeError, json.JSONDecodeError):
+            return x
+
+    return pd.Series(list(map(try_json, col)), dtype="object")
 
 
 dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
