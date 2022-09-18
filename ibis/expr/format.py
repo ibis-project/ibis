@@ -126,8 +126,8 @@ def _fmt_root_value_op(
     return f"{prefix}{value}{type_info(op.to_expr().type())}"
 
 
-@fmt_root.register
-def _fmt_foot_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
+@fmt_root.register(ops.SortKey)
+def _fmt_root_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
     return fmt_value(op, aliases=aliases)
 
 
@@ -635,8 +635,8 @@ def _fmt_value_scalar_parameter(op: ops.ScalarParameter, **_: Any) -> str:
 @fmt_value.register
 def _fmt_value_sort_key(op: ops.SortKey, *, aliases: Aliases) -> str:
     expr = fmt_value(op.expr, aliases=aliases)
-    sort_direction = " asc" if op.ascending else "desc"
-    return f"{sort_direction}|{expr}"
+    prefix = "asc" if op.ascending else "desc"
+    return f"{prefix} {expr}"
 
 
 @fmt_value.register

@@ -183,7 +183,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
 
 @execute_node.register(ops.SortKey, pd.Series, bool)
-def execute_sort_key_series_bool(op, data, ascending, **kwargs):
+def execute_sort_key_series(op, data, _, **kwargs):
     return data
 
 

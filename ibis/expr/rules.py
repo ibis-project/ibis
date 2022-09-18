@@ -124,12 +124,10 @@ def sort_key_from(table_ref, key, **kwargs):
     }
 
     if callable(key):
-        key = function_of(table_ref, key)
+        key = function_of(table_ref, key, **kwargs)
 
     if isinstance(key, ops.SortKey):
         return key
-    elif isinstance(key, ops.DeferredSortKey):
-        key, order = key.what, key.ascending
     elif isinstance(key, tuple):
         key, order = key
     else:

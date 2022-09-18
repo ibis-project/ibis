@@ -223,8 +223,8 @@ def concat(translator, op):
 
 
 def sort_key(translator, op):
-    sort_direction = " DESC" * (not op.ascending)
-    return f"{translator.translate(op.expr)}{sort_direction}"
+    suffix = "ASC" if op.ascending else "DESC"
+    return f"{translator.translate(op.expr)} {suffix}"
 
 
 def count_star(translator, op):

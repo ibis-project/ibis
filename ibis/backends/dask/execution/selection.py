@@ -211,7 +211,7 @@ def execute_selection_dataframe(
                 """
             )
         sort_key = op.sort_keys[0]
-        if not sort_key.ascending:
+        if sort_key.descending:
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"
             )

@@ -1212,7 +1212,7 @@ FROM t0
             """\
 SELECT *
 FROM star1
-ORDER BY `f`""",
+ORDER BY `f` ASC""",
             id="single_column",
         ),
         pytest.param(
@@ -1228,7 +1228,7 @@ ORDER BY `f` DESC""",
             """\
 SELECT *
 FROM star1
-ORDER BY `c`, `f` DESC""",
+ORDER BY `c` ASC, `f` DESC""",
             id="mixed_columns_ascending",
         ),
     ],
@@ -1325,7 +1325,7 @@ FROM (
   GROUP BY 1
   LIMIT 5
 ) t0
-ORDER BY `string_col`"""
+ORDER BY `string_col` ASC"""
     assert result == expected
 
 

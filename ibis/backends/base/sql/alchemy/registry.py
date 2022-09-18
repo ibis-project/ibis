@@ -421,10 +421,8 @@ def _ntile(t, op):
 
 
 def _sort_key(t, op):
-    # We need to define this for window functions that have an order by
-    by, ascending = op.args
-    sort_direction = sa.asc if ascending else sa.desc
-    return sort_direction(t.translate(by))
+    func = sa.asc if op.ascending else sa.desc
+    return func(t.translate(op.expr))
 
 
 def _string_join(t, op):

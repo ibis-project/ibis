@@ -481,7 +481,7 @@ def _memtable_from_dataframe(
     return op.to_expr()
 
 
-def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
+def desc(expr: ir.Column | str) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
@@ -507,16 +507,18 @@ def desc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
 
     Returns
     -------
-    ir.SortExpr | ops.DeferredSortKey
-        A sort expression or deferred sort key
+    ir.ValueExpr
+        An expression
     """
-    if isinstance(expr, Expr):
-        return ops.SortKey(expr, ascending=False).to_expr()
+    if isinstance(expr, str):
+        return _[expr].desc()
+    elif callable(expr):
+        return expr(_).desc()
     else:
-        return ops.DeferredSortKey(expr, ascending=False)
+        return expr.desc()
 
 
-def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
+def asc(expr: ir.Column | str) -> ir.Value:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
@@ -542,13 +544,15 @@ def asc(expr: ir.Column | str) -> ir.SortExpr | ops.DeferredSortKey:
 
     Returns
     -------
-    ir.SortExpr | ops.DeferredSortKey
-        A sort expression or deferred sort key
+    ir.ValueExpr
+        An expression
     """
-    if isinstance(expr, Expr):
-        return ops.SortKey(expr, ascending=True).to_expr()
+    if isinstance(expr, str):
+        return _[expr].asc()
+    elif callable(expr):
+        return expr(_).asc()
     else:
-        return ops.DeferredSortKey(expr, ascending=True)
+        return expr.asc()
 
 
 def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:

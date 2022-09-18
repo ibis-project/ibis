@@ -661,8 +661,8 @@ def _repeat(translator, op):
 
 
 def _sort_key(translator, op):
-    sort_direction = " DESC" * (not op.ascending)
-    return f"{translator.translate(op.expr)}{sort_direction}"
+    suffix = "ASC" if op.ascending else "DESC"
+    return f"{translator.translate(op.expr)} {suffix}"
 
 
 # TODO: clickhouse uses different string functions

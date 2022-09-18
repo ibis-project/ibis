@@ -62,7 +62,7 @@ from ibis.backends.pandas.execution.generic import (
     execute_series_clip,
     execute_series_isnull,
     execute_series_notnnull,
-    execute_sort_key_series_bool,
+    execute_sort_key_series,
     execute_table_column_df_or_df_groupby,
     execute_zero_if_null_series,
 )
@@ -74,7 +74,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, dt.DataType), execute_cast_series_generic),
         ((dd.Series, dt.Array), execute_cast_series_array),
     ],
-    ops.SortKey: [((dd.Series, bool), execute_sort_key_series_bool)],
+    ops.SortKey: [((dd.Series, bool), execute_sort_key_series)],
     ops.Clip: [
         (
             (

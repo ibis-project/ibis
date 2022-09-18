@@ -572,6 +572,6 @@ def test_group_by_with_window_preserves_range():
     result = ibis.impala.compile(expr)
     expected = """\
 SELECT *,
-       sum(`two`) OVER (PARTITION BY `three` ORDER BY `one` RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `four`
+       sum(`two`) OVER (PARTITION BY `three` ORDER BY `one` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `four`
 FROM my_data"""  # noqa: E501
     assert result == expected

@@ -45,7 +45,7 @@ SELECT *, lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `lag`,
        lead(`f`) OVER (PARTITION BY `g` ORDER BY `f`) - `f` AS `fwd_diff`,
        first_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `first`,
        last_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `last`,
-       lag(`f`) OVER (PARTITION BY `g` ORDER BY `d`) AS `lag2`
+       lag(`f`) OVER (PARTITION BY `g` ORDER BY `d` ASC) AS `lag2`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
@@ -109,7 +109,7 @@ def test_window_frame_specs(con, window, frame):
     t = con.table('alltypes')
 
     ex_template = """\
-SELECT sum(`d`) OVER (ORDER BY `f` {0}) AS `foo`
+SELECT sum(`d`) OVER (ORDER BY `f` ASC {0}) AS `foo`
 FROM ibis_testing.`alltypes`"""
 
     w2 = window.order_by(t.f)
@@ -157,8 +157,8 @@ def test_nested_analytic_function(alltypes):
     expr = (t.f - t.f.lag()).lag().over(w).name('foo')
     result = t.projection([expr])
     expected = """\
-SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f`)) \
-OVER (ORDER BY `f`) AS `foo`
+SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f` ASC)) \
+OVER (ORDER BY `f` ASC) AS `foo`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(result, expected)
 
@@ -265,7 +265,7 @@ def test_propagate_nested_windows(alltypes):
 
     expr = t.projection(col.over(w).name('foo'))
     expected = """\
-SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`)) \
-OVER (PARTITION BY `g` ORDER BY `f`) AS `foo`
+SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f` ASC)) \
+OVER (PARTITION BY `g` ORDER BY `f` ASC) AS `foo`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)

@@ -426,7 +426,7 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
     [
         pytest.param(
             lambda t: t.sort_by("f"),
-            lambda b: sa.select([b]).order_by(b.c.f),
+            lambda b: sa.select([b]).order_by(b.c.f.asc()),
             id="sort_by",
         ),
         pytest.param(
@@ -436,12 +436,12 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
         ),
         pytest.param(
             lambda t: t.sort_by(["c", ("f", 0)]),
-            lambda b: sa.select([b]).order_by(b.c.c, b.c.f.desc()),
+            lambda b: sa.select([b]).order_by(b.c.c.asc(), b.c.f.desc()),
             id="sort_by_mixed",
         ),
         pytest.param(
             lambda t: t.sort_by(ibis.random()),
-            lambda b: sa.select([b]).order_by(sa.func.random()),
+            lambda b: sa.select([b]).order_by(sa.func.random().asc()),
             id="sort_by_random",
         ),
     ],
