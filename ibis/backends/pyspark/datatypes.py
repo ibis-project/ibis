@@ -79,6 +79,7 @@ def spark_struct_dtype_to_ibis_dtype(spark_dtype_obj, nullable=True):
 _IBIS_DTYPE_TO_SPARK_DTYPE = {
     v: k for k, v in _SPARK_DTYPE_TO_IBIS_DTYPE.items()
 }
+_IBIS_DTYPE_TO_SPARK_DTYPE[dt.JSON] = pt.StringType
 
 spark_dtype = functools.singledispatch('spark_dtype')
 # from multipledispatch import Dispatcher

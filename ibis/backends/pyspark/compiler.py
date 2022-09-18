@@ -1890,3 +1890,14 @@ def compile_bitwise_xor(t, op, **kwargs):
 def compile_bitwise_not(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
     return F.bitwise_not(arg)
+
+
+@compiles(ops.JSONGetItem)
+def compile_json_getitem(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    index = t.translate(op.index, raw=True, **kwargs)
+    if isinstance(op.index.output_dtype, dt.Integer):
+        path = f"$[{index}]"
+    else:
+        path = f"$.{index}"
+    return F.get_json_object(arg, path)
