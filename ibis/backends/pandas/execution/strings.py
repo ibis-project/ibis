@@ -1,6 +1,7 @@
 import itertools
+import json
 import operator
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 import pandas as pd
@@ -438,4 +439,46 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
             for piece in haystack
             if hasattr(piece, 'grouper')
         )
+    )
+
+
+def try_getitem(value, key):
+    try:
+        # try to deserialize the value -> return None if it's None
+        if (js := json.loads(value)) is None:
+            return None
+    except (json.JSONDecodeError, TypeError):
+        # if there's an error related to decoding or a type error return None
+        return None
+
+    try:
+        # try to extract the value as an array element or mapping key
+        return js[key]
+    except (KeyError, IndexError, TypeError):
+        # KeyError: missing mapping key
+        # IndexError: missing sequence key
+        # TypeError: `js` doesn't implement __getitem__, either at all or for
+        # the type of `key`
+        return None
+
+
+@execute_node.register(ops.JSONGetItem, pd.Series, (str, int))
+def execute_json_getitem_series_str_int(_, data, key, **kwargs):
+    return pd.Series(
+        list(map(partial(try_getitem, key=key), data)), dtype="object"
+    )
+
+
+@execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
+def execute_json_getitem_series_series(_, data, key, **kwargs):
+    return pd.Series(
+        list(
+            map(
+                lambda value, keyiter=iter(key): try_getitem(
+                    value, next(keyiter)
+                ),
+                data,
+            )
+        ),
+        dtype="object",
     )
