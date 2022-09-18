@@ -72,6 +72,7 @@ class BackendTest(abc.ABC):
     supports_floating_modulus = True
     bool_is_int = False
     supports_structs = True
+    supports_json = True
 
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)
@@ -180,6 +181,15 @@ class BackendTest(abc.ABC):
             pytest.xfail(
                 f"{self.name()} backend does not support struct types"
             )
+
+    @property
+    def json_t(self) -> Optional[ir.Table]:
+        from ibis import _
+
+        if self.supports_json:
+            return self.connection.table("json_t").mutate(js=_.js.cast("json"))
+        else:
+            pytest.xfail(f"{self.name()} backend does not support json types")
 
     @property
     def api(self):

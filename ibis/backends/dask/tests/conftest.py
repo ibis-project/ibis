@@ -46,6 +46,18 @@ class TestConf(PandasTest):
                     pd.read_csv(str(data_directory / 'awards_players.csv')),
                     npartitions=NPARTITIONS,
                 ),
+                'json_t': pd.DataFrame(
+                    {
+                        "js": [
+                            '{"a": [1,2,3,4], "b": 1}',
+                            '{"a":null,"b":2}',
+                            '{"a":"foo", "c":null}',
+                            "null",
+                            "[42,47,55]",
+                            "[]",
+                        ]
+                    }
+                ),
             }
         )
 

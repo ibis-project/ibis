@@ -4,6 +4,7 @@ from ibis.expr.operations.core import *  # noqa: F401,F403
 from ibis.expr.operations.generic import *  # noqa: F401,F403
 from ibis.expr.operations.geospatial import *  # noqa: F401,F403
 from ibis.expr.operations.histograms import *  # noqa: F401,F403
+from ibis.expr.operations.json import *  # noqa: F401,F403
 from ibis.expr.operations.logical import *  # noqa: F401,F403
 from ibis.expr.operations.maps import *  # noqa: F401,F403
 from ibis.expr.operations.numeric import *  # noqa: F401,F403

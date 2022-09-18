@@ -27,6 +27,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
     bool_is_int = True
+    supports_json = False
 
     @staticmethod
     def _load_data(
@@ -60,6 +61,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         client.execute(f"DROP DATABASE IF EXISTS {database}")
         client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
         client.execute(f"USE {database}")
+        client.execute("SET allow_experimental_object_type = 1")
+        client.execute("SET output_format_json_named_tuples_as_objects = 1")
 
         with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
             for stmt in filter(None, map(str.strip, schema.read().split(";"))):

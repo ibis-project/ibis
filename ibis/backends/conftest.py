@@ -576,6 +576,11 @@ def alltypes(backend):
     return backend.functional_alltypes
 
 
+@pytest.fixture(scope="session")
+def json_t(backend):
+    return backend.json_t
+
+
 @pytest.fixture(scope='session')
 def struct(backend):
     return backend.struct

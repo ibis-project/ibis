@@ -292,6 +292,7 @@ time = value(dt.time)
 timestamp = value(dt.Timestamp)
 category = value(dt.category)
 temporal = one_of([timestamp, date, time])
+json = value(dt.json)
 
 strict_numeric = one_of([integer, floating, decimal])
 soft_numeric = one_of([integer, floating, decimal, boolean])
