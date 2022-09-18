@@ -17,6 +17,8 @@ from ibis.backends.dask.execution.util import (
 )
 from ibis.backends.pandas.core import integer_types, scalar_types
 from ibis.backends.pandas.execution.strings import (
+    execute_json_getitem_series_series,
+    execute_json_getitem_series_str_int,
     execute_series_join_scalar_sep,
     execute_series_regex_extract,
     execute_series_regex_replace,
@@ -160,6 +162,10 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.StrRight: [((dd.Series, integer_types), execute_series_right)],
     ops.StringJoin: [
         (((dd.Series, str), list), execute_series_join_scalar_sep),
+    ],
+    ops.JSONGetItem: [
+        ((dd.Series, (str, int)), execute_json_getitem_series_str_int),
+        ((dd.Series, dd.Series), execute_json_getitem_series_series),
     ],
 }
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
