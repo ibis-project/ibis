@@ -1,34 +1,36 @@
 from public import public
 
-from ibis.expr.types.binary import BinaryColumn, BinaryScalar, BinaryValue
-from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
+from ibis.expr.types import Column, Scalar, Value
 
 
 @public
-class JSONValue(StringValue):
+class JSONValue(Value):
+    def __getitem__(self, key):
+        import ibis.expr.operations as ops
+
+        return ops.JSONGetItem(self, key).to_expr()
+
+
+@public
+class JSONScalar(Scalar, JSONValue):
     pass  # noqa: E701,E302
 
 
 @public
-class JSONScalar(StringScalar, JSONValue):
+class JSONColumn(Column, JSONValue):
     pass  # noqa: E701,E302
 
 
 @public
-class JSONColumn(StringColumn, JSONValue):
+class JSONBValue(Value):
     pass  # noqa: E701,E302
 
 
 @public
-class JSONBValue(BinaryValue):
+class JSONBScalar(Scalar, JSONBValue):
     pass  # noqa: E701,E302
 
 
 @public
-class JSONBScalar(BinaryScalar, JSONBValue):
-    pass  # noqa: E701,E302
-
-
-@public
-class JSONBColumn(BinaryColumn, JSONBValue):
+class JSONBColumn(Column, JSONBValue):
     pass  # noqa: E701,E302

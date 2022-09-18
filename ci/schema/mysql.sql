@@ -72,3 +72,15 @@ CREATE TABLE functional_alltypes (
 ) DEFAULT CHARACTER SET = utf8;
 
 CREATE INDEX `ix_functional_alltypes_index` ON functional_alltypes (`index`);
+
+DROP TABLE IF EXISTS json_t CASCADE;
+
+CREATE TABLE IF NOT EXISTS json_t (js JSON);
+
+INSERT INTO json_t VALUES
+    ('{"a": [1,2,3,4], "b": 1}'),
+    ('{"a":null,"b":2}'),
+    ('{"a":"foo", "c":null}'),
+    ('null'),
+    ('[42,47,55]'),
+    ('[]');

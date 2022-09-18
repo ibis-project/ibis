@@ -73,3 +73,15 @@ CREATE TABLE diamonds (
     y FLOAT,
     z FLOAT
 );
+
+DROP TABLE IF EXISTS json_t;
+
+CREATE TABLE IF NOT EXISTS json_t (js JSON);
+
+INSERT INTO json_t VALUES
+    ('{"a": [1,2,3,4], "b": 1}'),
+    ('{"a":null,"b":2}'),
+    ('{"a":"foo", "c":null}'),
+    ('null'),
+    ('[42,47,55]'),
+    ('[]');

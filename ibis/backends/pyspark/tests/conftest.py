@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from datetime import datetime, timezone
 
@@ -227,6 +229,22 @@ def get_common_spark_testing_client(data_directory, connect):
         )
     )
     df_udf_random.createOrReplaceTempView('udf_random')
+
+    df_json_t = s.createDataFrame(
+        pd.DataFrame(
+            {
+                "js": [
+                    '{"a": [1,2,3,4], "b": 1}',
+                    '{"a":null,"b":2}',
+                    '{"a":"foo", "c":null}',
+                    "null",
+                    "[42,47,55]",
+                    "[]",
+                ]
+            }
+        )
+    )
+    df_json_t.createOrReplaceTempView("json_t")
 
     return _spark_testing_client
 

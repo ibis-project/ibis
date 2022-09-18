@@ -33,6 +33,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_divide_by_zero = True
     returned_timestamp_unit = 's'
     supports_structs = False
+    supports_json = False
 
     @staticmethod
     def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:

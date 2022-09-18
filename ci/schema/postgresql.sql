@@ -183,3 +183,15 @@ CREATE INDEX IF NOT EXISTS idx_geo_geo_linestring ON geo USING GIST (geo_linestr
 CREATE INDEX IF NOT EXISTS idx_geo_geo_multipolygon ON geo USING GIST (geo_multipolygon);
 CREATE INDEX IF NOT EXISTS idx_geo_geo_point ON geo USING GIST (geo_point);
 CREATE INDEX IF NOT EXISTS idx_geo_geo_polygon ON geo USING GIST (geo_polygon);
+
+DROP TABLE IF EXISTS json_t CASCADE;
+
+CREATE TABLE IF NOT EXISTS json_t (js JSON);
+
+INSERT INTO json_t VALUES
+    ('{"a": [1,2,3,4], "b": 1}'),
+    ('{"a":null,"b":2}'),
+    ('{"a":"foo", "c":null}'),
+    ('null'),
+    ('[42,47,55]'),
+    ('[]');
