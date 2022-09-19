@@ -24,6 +24,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import connect
 from ibis.common.pretty import show_sql, to_sql
+from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
 from ibis.expr.types import (  # noqa: F401
@@ -124,6 +125,7 @@ __all__ = (
     'cumulative_window',
     'date',
     'desc',
+    'decompile',
     'difference',
     'e',
     'Expr',
@@ -280,7 +282,7 @@ def param(type: dt.DataType) -> ir.Scalar:
         r0.timestamp_col <= $(date)
     sum: Sum(r1.value)
     """
-    return ops.ScalarParameter(dt.dtype(type)).to_expr()
+    return ops.ScalarParameter(type).to_expr()
 
 
 def sequence(values: Sequence[T | None]) -> ir.List:

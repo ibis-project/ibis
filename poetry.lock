@@ -127,7 +127,7 @@ python-versions = "*"
 name = "black"
 version = "22.10.0"
 description = "The uncompromising code formatter."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -1317,7 +1317,7 @@ reports = ["lxml"]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1496,7 +1496,7 @@ complete = ["blosc", "numpy (>=1.9.0)", "pandas (>=0.19.0)", "pyzmq"]
 name = "pathspec"
 version = "0.10.1"
 description = "Utility library for gitignore style pattern matching of file paths."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -1531,7 +1531,7 @@ python-versions = ">=3.6"
 name = "platformdirs"
 version = "2.5.2"
 description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -2393,7 +2393,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -2552,6 +2552,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
+decompiler = ["black"]
 duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
 geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
@@ -2567,7 +2568,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "73f72fd34605ac1aac1c00e455e8a170484045a87322b66145d3c3c72122225f"
+content-hash = "7a22fdce11b13894c59d5be4918fbbcb1806c3356d217adb1d2b267ee1f31f9f"
 
 [metadata.files]
 absolufy-imports = [
@@ -2833,6 +2834,19 @@ clickhouse-cityhash = [
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:aa1bae67f262046e2c362c3bdd39747bc3fd77e75b663501687a70827bf7201f"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win32.whl", hash = "sha256:14d1646e25595c63de3e228ead0a129e2a0b7959d159406321a217752c16dd49"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:b5a9f092d1a0d3c6b90699f94202b4bf8c3e5a51ce8cfd163ba686081152d506"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:67d0b09fbf8f1de1afcf6aac0347feb384ae76a2cef8a51c5a740046c319793f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ddf17e633cc2b28e5f597b6a63aed5e2c33917ae02b1b851ecd74cdfaba7913b"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:853408fa07bdc891c07794445a3cd401c3aed049698597e3a75d722e38aa099d"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:03e59cd528329a044f254b071134c957d4ea23bbdb8c45e758adc5f1b9034c6f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:18673ea9338969a33ce78c1300171d12bde07f4e9b882bd49adfadcc5f3692a7"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1f1dba048334908db83eaab73c3dd66dfaf2e61efd728afec6326fbb1f1d8c48"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:897891a4f7504e8238a4341abfad88bf0ca12ac0559833d6b135186101d87d0f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:02433adbf620af0fa906bc47e3472eda19af7da87a84e069cd6fbe970968f069"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_ppc64le.whl", hash = "sha256:0a6bb39c3124fdd5374507a036b0730ccba6535d18d53012c702efd5a9617e3e"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_s390x.whl", hash = "sha256:6701779e2ea422579d48df4467bbf7d6c2743b4a422e86ee5932f858a99539db"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:3879e029e7db87598c7e49319597d0af404baac85ab16f0ed29396f0019a974a"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win32.whl", hash = "sha256:f0c22f97d55665478c530ff035703bbcadf1aed21ed711da3762b53f7ca76d23"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:e960e510157bc657f632f3b6c58db0a632ff33024ffe54d5115240a81f757d20"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-macosx_10_6_intel.whl", hash = "sha256:94cb7234d6b27fb2a3d1042d8bf22c6b37ed0f4c22d496b255918f13e0db3515"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_i686.whl", hash = "sha256:23db430b9c3bd2f800d78efc19429586edf4b33fc25c88682de22bd9fd1be20e"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_x86_64.whl", hash = "sha256:d556ff29cb66e73fdadf75831761912d660634635c4e915a865da51c79a4aa87"},
@@ -3827,6 +3841,8 @@ psutil = [
 psycopg2 = [
     {file = "psycopg2-2.9.5-cp310-cp310-win32.whl", hash = "sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f"},
     {file = "psycopg2-2.9.5-cp310-cp310-win_amd64.whl", hash = "sha256:4cb9936316d88bfab614666eb9e32995e794ed0f8f6b3b718666c22819c1d7ee"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win32.whl", hash = "sha256:093e3894d2d3c592ab0945d9eba9d139c139664dcf83a1c440b8a7aa9bb21955"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win_amd64.whl", hash = "sha256:920bf418000dd17669d2904472efeab2b20546efd0548139618f8fa305d1d7ad"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win32.whl", hash = "sha256:b9ac1b0d8ecc49e05e4e182694f418d27f3aedcfca854ebd6c05bb1cffa10d6d"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win_amd64.whl", hash = "sha256:fc04dd5189b90d825509caa510f20d1d504761e78b8dfb95a0ede180f71d50e5"},
     {file = "psycopg2-2.9.5-cp37-cp37m-win32.whl", hash = "sha256:922cc5f0b98a5f2b1ff481f5551b95cd04580fd6f0c72d9b22e6c0145a4840e0"},

@@ -62,6 +62,7 @@ Shapely = { version = ">=1.6,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<2", optional = true }
 sqlglot = { version = ">=4.5.0,<11", optional = true }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
+black = { version = ">=22.1.0,<23", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 absolufy-imports = ">=0.3.1,<1"
@@ -77,6 +78,7 @@ poetry-dynamic-versioning = ">=0.18.0,<1"
 pyupgrade = ">=2.26.0,<4"
 
 [tool.poetry.group.test.dependencies]
+black = ">=22.1.0,<23"
 filelock = ">=3.7.0,<4"
 pyarrow = ">=1,<10"
 pytest = ">=7.0.0,<8"
@@ -125,6 +127,7 @@ pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
 sqlite = ["sqlalchemy", "sqlglot"]
 visualization = ["graphviz"]
+decompiler = ["black"]
 
 [tool.poetry.plugins."ibis.backends"]
 clickhouse = "ibis.backends.clickhouse"
