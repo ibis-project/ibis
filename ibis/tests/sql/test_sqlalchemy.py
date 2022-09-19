@@ -28,7 +28,7 @@ from ibis.backends.base.sql.alchemy import (
     to_sqla_type,
 )
 from ibis.tests.expr.mocks import MockAlchemyBackend
-from ibis.tests.util import assert_equal
+from ibis.tests.util import assert_decompile_roundtrip, assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
 
@@ -363,6 +363,7 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
     expected = sa.select([st]).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
     _check(expr, expected)
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 @pytest.mark.parametrize(
@@ -621,6 +622,7 @@ def test_lower_projection_sort_key(con, star1, star2, snapshot):
     expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
     _check(expr2, expected)
     snapshot.assert_match(to_sql(expr2), "out.sql")
+    assert_decompile_roundtrip(expr2, snapshot)
 
 
 def test_exists(con, foo_t, bar_t, snapshot):

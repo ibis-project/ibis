@@ -4,6 +4,7 @@ from pytest import param
 
 import ibis
 from ibis.tests.sql.conftest import get_query, to_sql
+from ibis.tests.util import assert_decompile_roundtrip
 
 
 def test_simple_scalar_aggregates(con, snapshot):
@@ -22,6 +23,7 @@ def test_simple_scalar_aggregates(con, snapshot):
     handler = query.result_handler
     output = pd.DataFrame({'sum': [5]})
     assert handler(output) == 5
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_scalar_aggregates_multiple_tables(snapshot):
@@ -42,6 +44,7 @@ def test_scalar_aggregates_multiple_tables(snapshot):
 
     expr = (fv_stat - uv_stat).name('tmp')
     snapshot.assert_match(to_sql(expr), "mean_sum.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_table_column_unbox(alltypes, snapshot):
@@ -57,6 +60,7 @@ def test_table_column_unbox(alltypes, snapshot):
     handler = query.result_handler
     output = pd.DataFrame({'g': ['foo', 'bar', 'baz']})
     assert (handler(output) == output['g']).all()
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_complex_array_expr_projection(alltypes, snapshot):
@@ -76,6 +80,8 @@ def test_complex_array_expr_projection(alltypes, snapshot):
 )
 def test_scalar_exprs_no_table_refs(expr, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
+    # the second case gets reduced to a python literal
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_isnull_case_expr_rewrite_failure(alltypes, snapshot):
@@ -83,3 +89,4 @@ def test_isnull_case_expr_rewrite_failure(alltypes, snapshot):
     # aggregation
     expr = alltypes.g.isnull().ifelse(1, 0).sum()
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)

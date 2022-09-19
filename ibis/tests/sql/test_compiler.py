@@ -3,36 +3,43 @@ import datetime
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
 from ibis.tests.sql.conftest import to_sql
+from ibis.tests.util import assert_decompile_roundtrip
 
 
 def test_union(union, snapshot):
     snapshot.assert_match(to_sql(union), "out.sql")
+    assert_decompile_roundtrip(union, snapshot)
 
 
 def test_union_project_column(union_all, snapshot):
     # select a column, get a subquery
     expr = union_all[[union_all.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_table_intersect(intersect, snapshot):
     snapshot.assert_match(to_sql(intersect), "out.sql")
+    assert_decompile_roundtrip(intersect, snapshot)
 
 
 def test_table_difference(difference, snapshot):
     snapshot.assert_match(to_sql(difference), "out.sql")
+    assert_decompile_roundtrip(difference, snapshot)
 
 
 def test_intersect_project_column(intersect, snapshot):
     # select a column, get a subquery
     expr = intersect[[intersect.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_difference_project_column(difference, snapshot):
     # select a column, get a subquery
     expr = difference[[difference.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_table_distinct(con, snapshot):
@@ -40,12 +47,14 @@ def test_table_distinct(con, snapshot):
 
     expr = t[t.string_col, t.int_col].distinct()
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_column_distinct(con, snapshot):
     t = con.table('functional_alltypes')
     expr = t[t.string_col].distinct()
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_count_distinct(con, snapshot):
@@ -54,6 +63,7 @@ def test_count_distinct(con, snapshot):
     metric = t.int_col.nunique().name('nunique')
     expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_multiple_count_distinct(con, snapshot):
@@ -68,6 +78,7 @@ def test_multiple_count_distinct(con, snapshot):
 
     expr = t.group_by('string_col').aggregate(metrics)
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_pushdown_with_or(snapshot):
@@ -106,6 +117,8 @@ def test_having_from_filter(snapshot):
     having = gb.having(filt.a.max() == 2)
     expr = having.aggregate(filt.a.sum().name('sum'))
     snapshot.assert_match(to_sql(expr), "out.sql")
+    # params get different auto incremented counter identifiers
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_simple_agg_filter(snapshot):
@@ -154,6 +167,7 @@ def test_table_drop_with_filter(snapshot):
     joined = joined[left.a]
     expr = joined.filter(joined.a < 1.0)
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_table_drop_consistency():
@@ -188,15 +202,19 @@ def test_subquery_where_location(snapshot):
     )
     out = Compiler.to_sql(expr, params={param: "20140101"})
     snapshot.assert_match(out, "out.sql")
+    # params get different auto incremented counter identifiers
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_column_expr_retains_name(snapshot):
     t = ibis.table([('int_col', 'int32')], name='int_col_table')
     expr = (t.int_col + 4).name('foo')
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_column_expr_default_name(snapshot):
     t = ibis.table([('int_col', 'int32')], name='int_col_table')
     expr = t.int_col + 4
     snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)
