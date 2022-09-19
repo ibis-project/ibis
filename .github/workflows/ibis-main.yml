@@ -19,6 +19,9 @@ on:
       - master
       - "*.x.x"
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -80,6 +83,8 @@ jobs:
         run: poetry install --extras visualization
 
       - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run core tests
         run: just ci-check -m core
