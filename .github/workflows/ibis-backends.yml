@@ -19,6 +19,11 @@ on:
       - master
       - "*.x.x"
 
+permissions:
+  # this allows extractions/setup-just to list releases for `just` at a higher
+  # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+  contents: read
+
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -156,6 +161,8 @@ jobs:
         run: poetry install --extras ${{ matrix.backend.name }} --extras geospatial
 
       - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: download backend data
         run: just download-data
@@ -253,6 +260,8 @@ jobs:
         run: poetry lock --no-update
 
       - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: install ibis
         if: ${{ matrix.backend.name != 'postgres' }}
