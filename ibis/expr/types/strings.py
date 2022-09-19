@@ -644,7 +644,7 @@ class StringValue(Value):
 
         Returns
         -------
-        StringVulae
+        StringValue
             Replaced string
         """  # noqa: E501
         return ops.StringReplace(self, pattern, replacement).to_expr()
