@@ -193,6 +193,8 @@ filterwarnings = [
   "ignore:The default dtype for empty Series will be 'object':FutureWarning",
   "ignore:the `interpolation=` argument to percentile was renamed to `method=`:DeprecationWarning",
   "ignore:Explicitly passing `name=None`:FutureWarning",
+  "ignore:In a future version of pandas, a length 1 tuple will be returned:FutureWarning",
+  "ignore:Not prepending group keys to the result index of transform-like apply:FutureWarning",
   # the warning suggestion to simply remove the argument in the call isn't correct
   "ignore:The 'check_less_precise' keyword in testing:FutureWarning",
   # numpy
