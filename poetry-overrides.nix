@@ -102,4 +102,8 @@ in
   nbformat = super.nbformat.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
   });
+
+  termcolor = super.termcolor.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatch-vcs ];
+  });
 }
