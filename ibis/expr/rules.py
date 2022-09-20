@@ -134,12 +134,7 @@ def sort_key_from(table_ref, key, **kwargs):
         key, order = key, True
 
     key = one_of(
-        (
-            function_of(table_ref),
-            column_from(table_ref),
-            column(any),
-            instance_of(ops.RandomScalar),
-        ),
+        (function_of(table_ref), column_from(table_ref), any),
         key,
         **kwargs,
     )

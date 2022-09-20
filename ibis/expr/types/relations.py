@@ -216,12 +216,15 @@ class Table(Expr):
 
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
+            # treat strings as column names
             return self[expr]
         elif isinstance(expr, (int, np.integer)):
+            # treat Python integers as a column index
             return self[self.schema().name_at_position(expr)]
         elif isinstance(expr, Deferred):
+            # resolve deferred expressions
             return expr.resolve(self)
-        elif not isinstance(expr, Expr):
+        elif callable(expr):
             return expr(self)
         else:
             return expr
