@@ -9,11 +9,12 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.config as config
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import literal as L
 from ibis.common.exceptions import RelationError
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
@@ -71,7 +72,7 @@ def test_view_new_relation(table):
     # meaning when it comes to execution
     tview = table.view()
 
-    roots = L.find_immediate_parent_tables(tview.op())
+    roots = an.find_immediate_parent_tables(tview.op())
     assert len(roots) == 1
     assert roots[0] is tview.op()
 
@@ -390,7 +391,22 @@ def test_sort_by_asc_deferred_sort_key(table):
     assert_equal(result, expected2)
 
 
-def test_slice_convenience(table):
+@pytest.mark.parametrize(
+    ("key", "expected"),
+    [
+        param(ibis.NA, ibis.NA.op(), id="na"),
+        param(ibis.random(), ibis.random().op(), id="random"),
+        param(1.0, L(1.0).op(), id="float"),
+        param(L("a"), L("a").op(), id="string"),
+        param(L([1, 2, 3]), L([1, 2, 3]).op(), id="array"),
+    ],
+)
+def test_sort_by_scalar(table, key, expected):
+    result = table.sort_by(key)
+    assert result.op().sort_keys == ops.NodeList(ops.SortKey(expected))
+
+
+def test_slice(table):
     expr = table[:5]
     expr2 = table[:5:1]
     assert_equal(expr, table.limit(5))
@@ -621,7 +637,7 @@ def test_group_by_kwargs(table):
 def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table['a'].sum() / table['a'].mean()).name('foo')
-    assert L.is_reduction(compound_expr.op())
+    assert an.is_reduction(compound_expr.op())
 
     # Validates internally
     table.aggregate([compound_expr])
