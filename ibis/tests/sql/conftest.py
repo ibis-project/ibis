@@ -1,3 +1,6 @@
+import functools
+from pathlib import Path
+
 import pytest
 
 import ibis
@@ -5,8 +8,36 @@ from ibis.backends.base.sql.compiler import Compiler, QueryContext
 from ibis.tests.expr.mocks import MockBackend
 
 
+def sql_golden_check(funcname, sql):
+    if not isinstance(sql, str):
+        sql = Compiler.to_sql(sql) + '\n'
+
+    p = Path(ibis.__file__).parent / "tests" / "sqlgolden" / f"{funcname}.sql"
+    if p.exists():
+        assert sql == p.read_text()
+    else:
+        p.write_text(sql)
+
+
+def sqlgolden(func):  # decorator
+    @functools.wraps(func)
+    def _decorated(*args, **kwargs):
+        sql_golden_check(func.__name__, func(*args, **kwargs))
+
+    return _decorated
+
+
+def sqlgoldens(func):  # decorator
+    @functools.wraps(func)
+    def _decorated(*args, **kwargs):
+        for i, expr in enumerate(func(*args, **kwargs)):
+            sql_golden_check(f"{func.__name__}{i}", expr)
+
+    return _decorated
+
+
 @pytest.fixture(scope="module")
-def con(request):
+def con():
     return MockBackend()
 
 
@@ -70,22 +101,8 @@ def get_query(expr):
     return ast.queries[0]
 
 
-@pytest.fixture(scope="module")
-def aggregate_having(star1):
-    # Filtering post-aggregation predicate
-    t1 = star1
-
-    total = t1.f.sum().name('total')
-    metrics = [total]
-
-    e1 = t1.aggregate(metrics, by=['foo_id'], having=[total > 10])
-    e2 = t1.aggregate(metrics, by=['foo_id'], having=[t1.count() > 100])
-
-    return e1, e2
-
-
-@pytest.fixture(scope="module")
-def multiple_joins(con, star1, star2, star3):
+@sqlgolden
+def test_multiple_joins(con, star1, star2, star3):
     t1 = star1
     t2 = star2
     t3 = star3
@@ -101,8 +118,8 @@ def multiple_joins(con, star1, star2, star3):
     return what
 
 
-@pytest.fixture(scope="module")
-def join_between_joins():
+@sqlgolden
+def test_join_between_joins():
     t1 = ibis.table(
         [('key1', 'string'), ('key2', 'string'), ('value1', 'double')],
         'first',
@@ -125,8 +142,8 @@ def join_between_joins():
     return joined.projection(exprs)
 
 
-@pytest.fixture(scope="module")
-def join_just_materialized(con, nation, region, customer):
+@sqlgolden
+def test_join_just_materialized(con, nation, region, customer):
     t1 = nation
     t2 = region
     t3 = customer
@@ -137,31 +154,8 @@ def join_just_materialized(con, nation, region, customer):
     )
 
 
-@pytest.fixture(scope="module")
-def semi_anti_joins(con, star1, star2):
-    t1 = star1
-    t2 = star2
-
-    sj = t1.semi_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
-    aj = t1.anti_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
-
-    return sj, aj
-
-
-@pytest.fixture(scope="module")
-def self_reference_simple(con, star1):
-    return star1.view()
-
-
-@pytest.fixture(scope="module")
-def self_reference_join(con, star1):
-    t1 = star1
-    t2 = t1.view()
-    return t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
-
-
-@pytest.fixture(scope="module")
-def join_projection_subquery_bug(nation, region, customer):
+@sqlgolden
+def test_join_projection_subquery_bug(nation, region, customer):
     # From an observed bug, derived from tpch tables
     geo = nation.inner_join(region, [('n_regionkey', 'r_regionkey')])[
         nation.n_nationkey,
@@ -175,14 +169,8 @@ def join_projection_subquery_bug(nation, region, customer):
     ]
 
 
-@pytest.fixture(scope="module")
-def where_simple_comparisons(con, star1):
-    t1 = star1
-    return t1.filter([t1.f > 0, t1.c < t1.f * 2])
-
-
-@pytest.fixture(scope="module")
-def where_with_join(con, star1, star2):
+@sqlgolden
+def test_where_with_join(con, star1, star2):
     t1 = star1
     t2 = star2
 
@@ -202,8 +190,8 @@ def where_with_join(con, star1, star2):
     return e1
 
 
-@pytest.fixture(scope="module")
-def subquery_used_for_self_join(con):
+@sqlgolden
+def test_subquery_used_for_self_join(con):
     # There could be cases that should look in SQL like
     # WITH t0 as (some subquery)
     # select ...
@@ -227,8 +215,9 @@ def subquery_used_for_self_join(con):
     return expr
 
 
-@pytest.fixture(scope="module")
-def subquery_factor_correlated_subquery(con):
+@sqlgolden
+def test_subquery_factor_correlated_subquery(con):
+    # #173, #183 and other issues
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
     customer = con.table('tpch_customer')
@@ -257,7 +246,7 @@ def subquery_factor_correlated_subquery(con):
     return tpch[amount_filter].limit(10)
 
 
-@pytest.fixture(scope="module")
+@sqlgolden
 def self_join_subquery_distinct_equal(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
@@ -275,21 +264,8 @@ def self_join_subquery_distinct_equal(con):
     return expr
 
 
-@pytest.fixture(scope="module")
-def cte_factor_distinct_but_equal(con):
-    t = con.table('alltypes')
-    tt = con.table('alltypes')
-
-    expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
-    expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
-
-    expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
-
-    return expr
-
-
-@pytest.fixture(scope="module")
-def tpch_self_join_failure(con):
+@sqlgolden
+def test_tpch_self_join_failure(con):
     # duplicating the integration test here
 
     region = con.table('tpch_region')
@@ -323,11 +299,11 @@ def tpch_self_join_failure(con):
     yoy = current.join(prior, current.year == (prior.year - 1))[
         current.region, current.year, yoy_change
     ]
-    return yoy
+    Compiler.to_sql(yoy)  # fail
 
 
-@pytest.fixture(scope="module")
-def subquery_in_filter_predicate(con, star1):
+@sqlgoldens
+def test_subquery_in_filter_predicate(con, star1):
     # E.g. comparing against some scalar aggregate value. See Ibis #43
     t1 = star1
 
@@ -342,8 +318,8 @@ def subquery_in_filter_predicate(con, star1):
     return expr, expr2
 
 
-@pytest.fixture(scope="module")
-def filter_subquery_derived_reduction(con, star1):
+@sqlgoldens
+def test_filter_subquery_derived_reduction(con, star1):
     t1 = star1
 
     # Reduction can be nested inside some scalar expression
@@ -356,8 +332,8 @@ def filter_subquery_derived_reduction(con, star1):
     return expr3, expr4
 
 
-@pytest.fixture(scope="module")
-def topk_operation(con):
+@sqlgoldens
+def test_topk_operation(con):
     # TODO: top K with filter in place
 
     table = ibis.table(
@@ -379,18 +355,6 @@ def topk_operation(con):
     e2 = table[what]
 
     return e1, e2
-
-
-@pytest.fixture(scope="module")
-def aggregate_count_joined(con):
-    # count on more complicated table
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
-    return (
-        region.inner_join(nation, region.r_regionkey == nation.n_regionkey)
-        .select([nation, region.r_name.name('region')])
-        .count()
-    )
 
 
 @pytest.fixture(scope="module")
@@ -419,40 +383,8 @@ def where_uncorrelated_subquery(foo, bar):
 
 
 @pytest.fixture(scope="module")
-def where_correlated_subquery(foo):
-    t1 = foo
-    t2 = t1.view()
-
-    stat = t2[t1.dept_id == t2.dept_id].y.mean()
-    return t1[t1.y > stat]
-
-
-@pytest.fixture(scope="module")
-def exists(foo_t, bar_t):
-    t1 = foo_t
-    t2 = bar_t
-    cond = (t1.key1 == t2.key1).any()
-    expr = t1[cond]
-
-    cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
-    expr2 = t1[cond2]
-
-    return expr, expr2
-
-
-@pytest.fixture(scope="module")
 def not_exists(foo_t, bar_t):
     return foo_t[-(foo_t.key1 == bar_t.key1).any()]
-
-
-@pytest.fixture(scope="module")
-def join_with_limited_table(con, star1, star2):
-    t1 = star1
-    t2 = star2
-
-    limited = t1.limit(100)
-    joined = limited.inner_join(t2, [limited.foo_id == t2.foo_id])[[limited]]
-    return joined
 
 
 @pytest.fixture(scope="module")
@@ -529,19 +461,7 @@ def search_case(con):
     return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
 
 
-@pytest.fixture(scope="module")
-def self_reference_in_exists(con):
-    t = con.table('functional_alltypes')
-    t2 = t.view()
-
-    cond = (t.string_col == t2.string_col).any()
-    semi = t[cond]
-    anti = t[-cond]
-
-    return semi, anti
-
-
-@pytest.fixture(scope="module")
+@sqlgolden
 def self_reference_limit_exists(con):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
@@ -549,27 +469,16 @@ def self_reference_limit_exists(con):
     return t[-((t.string_col == t2.string_col).any())]
 
 
-@pytest.fixture(scope="module")
-def limit_cte_extract(con):
+@sqlgolden
+def test_limit_cte_extract(con):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
     t2 = t.view()
     return t.join(t2).projection(t)
 
 
-@pytest.fixture(scope="module")
-def subquery_aliased(con, star1, star2):
-    t1 = star1
-    t2 = star2
-
-    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
-    what = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
-
-    return what
-
-
-@pytest.fixture(scope="module")
-def filter_self_join_analysis_bug(con):
+@sqlgolden
+def test_filter_self_join_analysis_bug(con):
     purchases = ibis.table(
         [
             ('region', 'string'),

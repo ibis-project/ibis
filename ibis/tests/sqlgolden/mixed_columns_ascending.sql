@@ -1,0 +1,3 @@
+SELECT *
+FROM star1
+ORDER BY `c` ASC, `f` DESC

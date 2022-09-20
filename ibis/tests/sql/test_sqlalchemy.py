@@ -28,6 +28,7 @@ from ibis.backends.base.sql.alchemy import (
     to_sqla_type,
 )
 from ibis.tests.expr.mocks import MockAlchemyBackend
+from ibis.tests.sql.conftest import sqlgolden, sqlgoldens
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
@@ -296,8 +297,13 @@ def test_joins(con, expr_fn, expected_fn):
     _check(expr, expected)
 
 
-def test_join_just_materialized(con, join_just_materialized):
-    joined = join_just_materialized
+def test_join_just_materialized(con, nation, region, customer):
+    t1 = nation
+    t2 = region
+    t3 = customer
+    joined = t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey).inner_join(
+        t3, t1.n_nationkey == t3.c_nationkey
+    )  # GH #491
 
     nt, rt, ct = (
         con.meta.tables[name].alias(f"t{i:d}")
@@ -362,13 +368,16 @@ def test_searched_case(sa_alltypes, alltypes, search_case):
     _check(expr, expected)
 
 
-def test_where_simple_comparisons(sa_star1, where_simple_comparisons):
-    expr = where_simple_comparisons
+@sqlgolden
+def test_where_simple_comparisons(sa_star1, star1):
+    t1 = star1
+    expr = t1.filter([t1.f > 0, t1.c < t1.f * 2])
     st = sa_star1.alias("t0")
     expected = sa.select([st]).where(
         sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2)))
     )
     _check(expr, expected)
+    return expr
 
 
 @pytest.mark.parametrize(
@@ -483,16 +492,22 @@ def test_limit_subquery(con, star1, sa_star1):
     _check(expr, expected)
 
 
+@sqlgolden
 def test_cte_factor_distinct_but_equal(
     con,
-    cte_factor_distinct_but_equal,
     sa_alltypes,
 ):
-    expr = cte_factor_distinct_but_equal
+    t = con.table('alltypes')
+    tt = con.table('alltypes')
 
-    alltypes = sa_alltypes
+    expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
+    expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
 
-    t2 = alltypes.alias('t2')
+    expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+
+    #
+
+    t2 = sa_alltypes.alias('t2')
     t0 = (
         sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
         .group_by(t2.c.g)
@@ -504,25 +519,35 @@ def test_cte_factor_distinct_but_equal(
     stmt = sa.select([t0]).select_from(table_set)
 
     _check(expr, stmt)
+    return expr
 
 
-def test_self_reference_join(con, self_reference_join, sa_star1):
+@sqlgolden
+def test_self_reference_join(con, star1, sa_star1):
+    t1 = star1
+    t2 = t1.view()
+    expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
+    #
     t0 = sa_star1.alias('t0')
     t1 = sa_star1.alias('t1')
 
-    case = self_reference_join
-
     table_set = t0.join(t1, t0.c.foo_id == t1.c.bar_id)
     expected = sa.select([t0]).select_from(table_set)
-    _check(case, expected)
+    _check(expr, expected)
+    return expr
 
 
+@sqlgoldens
 def test_self_reference_in_not_exists(
     con,
     sa_functional_alltypes,
-    self_reference_in_exists,
 ):
-    semi, anti = self_reference_in_exists
+    t = con.table('functional_alltypes')
+    t2 = t.view()
+
+    cond = (t.string_col == t2.string_col).any()
+    semi = t[cond]
+    anti = t[-cond]
 
     s1 = sa_functional_alltypes.alias('t0')
     s2 = sa_functional_alltypes.alias('t1')
@@ -538,24 +563,28 @@ def test_self_reference_in_not_exists(
 
     _check(semi, ex_semi)
     _check(anti, ex_anti)
+    return semi, anti
 
 
-def test_where_uncorrelated_subquery(
-    con, where_uncorrelated_subquery, foo, bar
-):
-    expr = where_uncorrelated_subquery
-
+def test_where_uncorrelated_subquery(con, foo, bar):
+    expr = foo[foo.job.isin(bar.job)]
+    #
     foo = con.meta.tables["foo"].alias("t0")
     bar = con.meta.tables["bar"]
 
     subq = sa.select([bar.c.job])
     stmt = sa.select([foo]).where(foo.c.job.in_(subq))
     _check(expr, stmt)
+    return expr
 
 
-def test_where_correlated_subquery(con, where_correlated_subquery, foo):
-    expr = where_correlated_subquery
+def test_where_correlated_subquery(con, foo):
+    t1 = foo
+    t2 = t1.view()
 
+    stat = t2[t1.dept_id == t2.dept_id].y.mean()
+    expr = t1[t1.y > stat]
+    #
     foo = con.meta.tables["foo"]
     t0 = foo.alias('t0')
     t1 = foo.alias('t1')
@@ -568,11 +597,17 @@ def test_where_correlated_subquery(con, where_correlated_subquery, foo):
         subq = subq.scalar_subquery()
     stmt = sa.select([t0]).where(t0.c.y > subq)
     _check(expr, stmt)
+    return expr
 
 
-def test_subquery_aliased(con, subquery_aliased, star1, star2):
-    expr = subquery_aliased
+@sqlgolden
+def test_subquery_aliased(con, star1, star2):
+    t1 = star1
+    t2 = star2
 
+    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
+    #
     s1 = con.meta.tables["star1"].alias("t2")
     s2 = con.meta.tables["star2"].alias("t1")
 
@@ -586,11 +621,17 @@ def test_subquery_aliased(con, subquery_aliased, star1, star2):
     expected = sa.select([agged, s2.c.value1]).select_from(joined)
 
     _check(expr, expected)
+    return expr
 
 
-def test_lower_projection_sort_key(con, subquery_aliased, star1, star2):
-    expr = subquery_aliased
+@sqlgolden
+def test_lower_projection_sort_key(con, star1, star2):
+    t1 = star1
+    t2 = star2
 
+    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
+    #
     t3 = con.meta.tables["star1"].alias("t3")
     t2 = con.meta.tables["star2"].alias("t2")
 
@@ -615,11 +656,19 @@ def test_lower_projection_sort_key(con, subquery_aliased, star1, star2):
 
     expr2 = expr[expr.total > 100].sort_by(ibis.desc('total'))
     _check(expr2, expected)
+    return expr2
 
 
-def test_exists(con, exists, t1, t2):
-    e1, e2 = exists
+@sqlgoldens
+def test_exists(con, foo_t, bar_t):
+    t1 = foo_t
+    t2 = bar_t
+    cond = (t1.key1 == t2.key1).any()
+    e1 = t1[cond]
 
+    cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
+    e2 = t1[cond2]
+    #
     t1 = con.meta.tables["foo_t"].alias("t0")
     t2 = con.meta.tables["bar_t"].alias("t1")
 
@@ -633,6 +682,7 @@ def test_exists(con, exists, t1, t2):
 
     _check(e1, ex1)
     _check(e2, ex2)
+    return e1, e2
 
 
 def test_not_exists(con, not_exists):
@@ -649,6 +699,7 @@ def test_not_exists(con, not_exists):
     )
 
     _check(expr, expected)
+    return expr
 
 
 @pytest.mark.parametrize(
