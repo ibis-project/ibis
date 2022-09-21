@@ -100,11 +100,27 @@ class Table(Expr):
         from rich.align import Align
         from rich.style import Style
 
-        nrows = ibis.options.repr.interactive.max_rows
-        result = self.limit(nrows + 1).execute()
+        columns_truncated = False
+        if console.width:
+            columns = []
+            remaining = console.width - 1  # 1 char for left boundary
+            for c in self.columns:
+                needed = len(c) + 3  # padding + 1 char for right boundary
+                if needed < remaining:
+                    columns.append(c)
+                    remaining -= needed
+                else:
+                    columns_truncated = True
 
-        schema = self.schema()
+        if columns_truncated:
+            expr = self.select(*columns)
+        else:
+            expr = self
+
+        schema = expr.schema()
         types = schema.types
+        nrows = ibis.options.repr.interactive.max_rows
+        result = expr.limit(nrows + 1).execute()
 
         table = rich.table.Table(
             row_styles=(
@@ -117,7 +133,6 @@ class Table(Expr):
             )
         )
 
-        columns = self.columns
         alignment = {}
         for column in columns:
             if isinstance(schema[column], dt.Numeric):
@@ -125,11 +140,28 @@ class Table(Expr):
             else:
                 justify = "none"
             table.add_column(
-                Align(column, align="left"), justify=justify, vertical="middle"
+                Align(column, align="left"),
+                justify=justify,
+                vertical="middle",
+                min_width=len(column),
             )
 
+        if columns_truncated:
+            table.add_column(
+                Align("…", align="left"),
+                justify="none",
+                vertical="middle",
+                min_width=1,
+            )
+
+            def add_row(*args, **kwargs):
+                table.add_row(*args, "…", **kwargs)
+
+        else:
+            add_row = table.add_row
+
         if ibis.options.repr.interactive.show_types:
-            table.add_row(
+            add_row(
                 *(
                     Align(_format_dtype(dtype), align="left")
                     for dtype in types
@@ -138,7 +170,7 @@ class Table(Expr):
             )
 
         for row in result.iloc[:nrows].itertuples(index=False):
-            table.add_row(
+            add_row(
                 *(
                     _pretty_value(_format_value(v), typ)
                     for v, typ in zip(row, types)
@@ -146,12 +178,7 @@ class Table(Expr):
             )
 
         if len(result) > nrows:
-            table.add_row(
-                *(
-                    Align(char, align=alignment.get(col, "center"))
-                    for col, char in zip(columns, "⋮" * len(columns))
-                )
-            )
+            table.add_row(*(Align("…", align="center") for _ in table.columns))
 
         return console.render(table, options=options)
 
