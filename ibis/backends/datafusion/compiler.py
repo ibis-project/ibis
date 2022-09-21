@@ -107,6 +107,13 @@ def selection(op):
     return plan
 
 
+@translate.register(ops.Limit)
+def limit(op):
+    if op.offset:
+        raise NotImplementedError("DataFusion does not support offset")
+    return translate(op.table).limit(op.n)
+
+
 @translate.register(ops.Aggregation)
 def aggregation(op):
     table = translate(op.table)
