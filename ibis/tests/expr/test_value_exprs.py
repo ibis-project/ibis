@@ -1628,3 +1628,18 @@ def test_deferred_function_call(func, expected_type):
     t = ibis.table(dict(ts="timestamp"), name="t")
     expr = t.select(col=func(_.ts))
     assert expr["col"].type() == expected_type
+
+
+def test_numpy_ufuncs_dont_cast_columns():
+    t = ibis.table(dict.fromkeys("abcd", "int"))
+
+    # Adding a numpy array doesn't implicitly compute
+    arr = np.array([1, 2, 3])
+    for left, right in [(t.a, arr), (arr, t.a)]:
+        with pytest.raises(TypeError):
+            left + right
+
+    # Adding a numpy scalar works and results in a new expr
+    x = np.int64(1)
+    for expr in [t.a + x, x + t.a]:
+        assert expr.equals(t.a + ibis.literal(x))
