@@ -2,7 +2,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as exc
 
 
 def test_backend_name(backend):
@@ -73,7 +72,6 @@ def test_tables_accessor_tab_completion(con):
     assert 'functional_alltypes' in keys
 
 
-@pytest.mark.notimpl(["datafusion"], raises=exc.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "expr_fn",
     [
