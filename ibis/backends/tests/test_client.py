@@ -429,51 +429,42 @@ not_windows = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(params=["duckdb", "sqlite"])
+def tmp_db(request, tmp_path):
+    api = request.param
+    mod = pytest.importorskip(api)
+    db = tmp_path / "test.db"
+    mod.connect(str(db)).execute(
+        "CREATE TABLE tmp_t AS SELECT 1 AS a"
+    ).fetchall()
+    return db
+
+
 @pytest.mark.backend
 @pytest.mark.parametrize(
     "url",
     [
         param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb",
+            "duckdb://{}",
             marks=[mark.duckdb, not_windows],
             id="duckdb_path",
         ),
         param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=0",
+            "duckdb://{}?read_only=0",
             marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_int",
         ),
         param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=1",
-            marks=[mark.duckdb, not_windows],
-            id="duckdb_read_only_int",
-        ),
-        param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=False",
+            "duckdb://{}?read_only=False",
             marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_upper",
         ),
         param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=True",
-            marks=[mark.duckdb, not_windows],
-            id="duckdb_read_only_upper",
-        ),
-        param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=false",
+            "duckdb://{}?read_only=false",
             marks=[mark.duckdb, not_windows],
             id="duckdb_read_write_lower",
         ),
-        param(
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb?read_only=true",
-            marks=[mark.duckdb, not_windows],
-            id="duckdb_read_only_lower",
-        ),
         param("duckdb://", marks=mark.duckdb, id="duckdb_memory"),
-        param(
-            "duckdb://:memory:",
-            marks=mark.duckdb,
-            id="duckdb_memory_explicit",
-        ),
         param(
             "duckdb://?read_only=1",
             marks=[
@@ -486,10 +477,11 @@ not_windows = pytest.mark.skipif(
             id="duckdb_memory_read_only",
         ),
         param(
-            "sqlite://ci/ibis-testing-data/ibis_testing.db",
-            marks=mark.sqlite,
-            id="sqlite_path",
+            "duckdb://:memory:",
+            marks=mark.duckdb,
+            id="duckdb_memory_explicit",
         ),
+        param("sqlite://{}", marks=mark.sqlite, id="sqlite_path"),
         param("sqlite://", marks=mark.sqlite, id="sqlite_memory"),
         param(
             "sqlite://:memory:",
@@ -498,10 +490,25 @@ not_windows = pytest.mark.skipif(
         ),
     ],
 )
-def test_connect_file_url(url):
-    con = ibis.connect(url)
+def test_connect_file_url(url, tmp_db):
+    con = ibis.connect(url.format(tmp_db))
     one = ibis.literal(1)
     assert con.execute(one) == 1
+
+
+@pytest.mark.duckdb
+@pytest.mark.parametrize(
+    "read_only",
+    [
+        param("True", marks=[not_windows], id="duckdb_read_only_upper"),
+        param("1", marks=[not_windows], id="duckdb_read_only_int"),
+        param("true", marks=[not_windows], id="duckdb_read_only_lower"),
+    ],
+)
+def test_connect_file_url_read_only(tmp_db, read_only):
+    url = f"duckdb://{tmp_db}?read_only={read_only}"
+    con = ibis.connect(url)
+    assert "tmp_t" in con.list_tables()
 
 
 @not_windows
