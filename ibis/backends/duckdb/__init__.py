@@ -48,7 +48,7 @@ def _parquet(_, path, table_name=None):
     table_name = table_name or _name_from_path(path)
     quoted_table_name = _quote(table_name)
     return (
-        f"CREATE VIEW {quoted_table_name} as SELECT * from read_parquet('{path}')",  # noqa: E501
+        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * from read_parquet('{path}')",  # noqa: E501
         table_name,
     )
 
@@ -59,7 +59,7 @@ def _csv(_, path, table_name=None):
     table_name = table_name or _name_from_path(path)
     quoted_table_name = _quote(table_name)
     return (
-        f"CREATE VIEW {quoted_table_name} as SELECT * from read_csv_auto('{path}')",  # noqa: E501
+        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * from read_csv_auto('{path}')",  # noqa: E501
         table_name,
     )
 
