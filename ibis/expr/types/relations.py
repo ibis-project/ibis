@@ -83,6 +83,9 @@ def _regular_join_method(
 
 @public
 class Table(Expr):
+    def __array__(self):
+        return self.execute().__array__()
+
     def __contains__(self, name):
         return name in self.schema()
 
