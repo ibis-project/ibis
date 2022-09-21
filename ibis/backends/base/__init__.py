@@ -751,15 +751,15 @@ def _(
     return con
 
 
-@_connect.register(r".+\.(?:parquet|csv)", priority=8)
-def _(filename: str, **kwargs: Any) -> BaseBackend:
-    """Connect to `duckdb` and register a parquet or csv file.
+@_connect.register(r".+\.(?:parquet|csv(?:\.gz)?)", priority=8)
+def _(filename: str, **_: Any) -> BaseBackend:
+    """Connect to the default backend (DuckDB) and return a table.
 
     Examples
     --------
-    >>> con = ibis.connect("relative/path/to/data.csv")
-    >>> con = ibis.connect("relative/path/to/more/data.parquet")
+    >>> table1 = ibis.connect("relative/path/to/file1.csv")
+    >>> table2 = ibis.connect("relative/path/to/file2.parquet")
+    >>> table3 = ibis.connect("relative/path/to/file3.csv.gz")
     """
     con = ibis.duckdb.connect()
-    con.register(filename)
-    return con
+    return con.register(filename)

@@ -11,6 +11,7 @@ from pytest import mark, param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis.util import guid
 
 
@@ -509,8 +510,9 @@ def test_connect_local_file(
     out_method, extension, test_employee_data_1, tmp_path
 ):
     getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
-    con = ibis.connect(tmp_path / f"out.{extension}")
-    assert con.list_tables()
+    t = ibis.connect(tmp_path / f"out.{extension}")
+    assert isinstance(t, ir.Table)
+    assert not t.head().execute().empty
 
 
 @pytest.mark.duckdb
