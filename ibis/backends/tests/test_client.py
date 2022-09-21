@@ -1,6 +1,7 @@
 import platform
 import re
 
+import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -691,3 +692,23 @@ SELECT
   SUM\\((\\w+)\\.a\\) AS sum
 FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
+
+
+def test_dunder_array_table(alltypes, df):
+    expr = alltypes.group_by("string_col").int_col.sum().sort_by("string_col")
+    result = np.array(expr)
+    expected = np.array(
+        df.groupby("string_col")
+        .int_col.sum()
+        .reset_index()
+        .sort_values(["string_col"])
+    )
+    np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.broken(["dask"], reason="Dask backend duplicates data")
+def test_dunder_array_column(alltypes, df):
+    expr = alltypes.sort_by("id").head(10).int_col
+    result = np.array(expr)
+    expected = df.sort_values(["id"]).head(10).int_col
+    np.testing.assert_array_equal(result, expected)

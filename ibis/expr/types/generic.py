@@ -513,6 +513,9 @@ class Scalar(Value):
 
 @public
 class Column(Value):
+    def __array__(self):
+        return self.execute().__array__()
+
     def _repr_html_(self) -> str | None:
         if not ibis.options.interactive:
             return None
