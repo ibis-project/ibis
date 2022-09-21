@@ -760,4 +760,6 @@ def _(filename: str, **kwargs: Any) -> BaseBackend:
     >>> con = ibis.connect("relative/path/to/data.csv")
     >>> con = ibis.connect("relative/path/to/more/data.parquet")
     """
-    return _connect(f"duckdb:///{filename}", **kwargs)
+    con = ibis.duckdb.connect()
+    con.register(filename)
+    return con
