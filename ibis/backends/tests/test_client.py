@@ -499,6 +499,22 @@ def test_connect_file_url(url, tmp_db):
 
 @pytest.mark.duckdb
 @pytest.mark.parametrize(
+    "out_method, extension",
+    [
+        ("to_csv", "csv"),
+        ("to_parquet", "parquet"),
+    ],
+)
+def test_connect_local_file(
+    out_method, extension, test_employee_data_1, tmp_path
+):
+    getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
+    con = ibis.connect(tmp_path / f"out.{extension}")
+    assert con.list_tables()
+
+
+@pytest.mark.duckdb
+@pytest.mark.parametrize(
     "read_only",
     [
         param("True", marks=[not_windows], id="duckdb_read_only_upper"),
