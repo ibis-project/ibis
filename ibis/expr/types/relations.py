@@ -83,6 +83,11 @@ def _regular_join_method(
 
 @public
 class Table(Expr):
+    # Higher than numpy & dask objects
+    __array_priority__ = 20
+
+    __array_ufunc__ = None
+
     def __array__(self):
         return self.execute().__array__()
 

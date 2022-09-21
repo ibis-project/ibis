@@ -2,6 +2,7 @@ import datetime
 import pickle
 import re
 
+import numpy as np
 import pandas as pd
 import pytest
 from pytest import param
@@ -1580,3 +1581,11 @@ def test_default_backend_with_unbound_table():
         match="Expression contains unbound tables",
     ):
         assert expr.execute()
+
+
+def test_numpy_ufuncs_dont_cast_tables():
+    t = ibis.table(dict.fromkeys("abcd", "int"))
+    for arg in [np.int64(1), np.array([1, 2, 3])]:
+        for left, right in [(t, arg), (arg, t)]:
+            with pytest.raises(TypeError):
+                left + right
