@@ -51,13 +51,13 @@ def test_repr_png_is_not_none_in_not_interactive(con):
 
 
 def test_default_limit(con):
-    table = con.table('functional_alltypes')
+    table = con.table('functional_alltypes').select("id", "bool_col")
 
     with config.option_context('interactive', True):
         repr(table)
 
     expected = """\
-SELECT *
+SELECT `id`, `bool_col`
 FROM functional_alltypes
 LIMIT 11"""
 
@@ -65,13 +65,13 @@ LIMIT 11"""
 
 
 def test_respect_set_limit(con):
-    table = con.table('functional_alltypes').limit(10)
+    table = con.table('functional_alltypes').select("id", "bool_col").limit(10)
 
     with config.option_context('interactive', True):
         repr(table)
 
     expected = """\
-SELECT *
+SELECT `id`, `bool_col`
 FROM functional_alltypes
 LIMIT 10"""
 
@@ -79,14 +79,14 @@ LIMIT 10"""
 
 
 def test_disable_query_limit(con):
-    table = con.table('functional_alltypes')
+    table = con.table('functional_alltypes').select("id", "bool_col")
 
     with config.option_context('interactive', True):
         with config.option_context('sql.default_limit', None):
             repr(table)
 
     expected = """\
-SELECT *
+SELECT `id`, `bool_col`
 FROM functional_alltypes
 LIMIT 11"""
 
