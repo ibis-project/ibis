@@ -712,3 +712,20 @@ def test_dunder_array_column(alltypes, df):
     result = np.array(expr)
     expected = df.sort_values(["id"]).head(10).int_col
     np.testing.assert_array_equal(result, expected)
+
+
+def test_repr_html(alltypes):
+    t = alltypes.limit(5)
+
+    assert t._repr_html_() is None
+    assert t.int_col._repr_html_() is None
+    assert t.int_col.sum()._repr_html_() is None
+
+    interactive = ibis.options.interactive
+    ibis.options.interactive = True
+    try:
+        assert 'table' in t._repr_html_()
+        assert 'table' in t.int_col._repr_html_()
+        assert t.int_col.sum()._repr_html_() is None
+    finally:
+        ibis.options.interactive = interactive

@@ -1403,26 +1403,6 @@ def test_repr_list_of_lists_in_table():
     repr(expr)
 
 
-# TODO(kszucs): should be marked as a pandas test case hence should be moved to
-# the pandas testing backend
-def test_repr_html():
-    con = ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
-    t = con.table("t")
-
-    assert t._repr_html_() is None
-    assert t.a._repr_html_() is None
-    assert t.a.sum()._repr_html_() is None
-
-    interactive = ibis.options.interactive
-    ibis.options.interactive = True
-    try:
-        assert 'table' in t._repr_html_()
-        assert 'table' in t.a._repr_html_()
-        assert t.a.sum()._repr_html_() is None
-    finally:
-        ibis.options.interactive = interactive
-
-
 @pytest.mark.parametrize(
     ("expr", "expected_type"),
     [
