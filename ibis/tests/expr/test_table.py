@@ -15,6 +15,7 @@ import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import _
 from ibis import literal as L
 from ibis.common.exceptions import RelationError
 from ibis.expr.types import Column, Table
@@ -1589,3 +1590,13 @@ def test_numpy_ufuncs_dont_cast_tables():
         for left, right in [(t, arg), (arg, t)]:
             with pytest.raises(TypeError):
                 left + right
+
+
+def test_array_string_compare():
+    t = ibis.table(schema=dict(by="string", words="array<string>"), name="t")
+    expr = (
+        t[t.by == "foo"]
+        .mutate(words=_.words.unnest())
+        .filter(_.words == "the")
+    )
+    assert expr is not None
