@@ -806,3 +806,8 @@ def test_interactive(alltypes):
         repr(expr)
     finally:
         ibis.options.interactive = orig
+
+
+def test_correlated_subquery(alltypes):
+    expr = alltypes[_.double_col > _.view().double_col]
+    assert expr.compile() is not None
