@@ -532,8 +532,13 @@ def _table_column(translator, op):
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
     if translator.permit_subquery and ctx.is_foreign_expr(table):
-        proj_expr = table.projection([field_name]).to_array()
-        return _table_array_view(translator, proj_expr)
+        proj = ops.TableArrayView(
+            ops.Selection(
+                table=table,
+                selections=[field_name],
+            )
+        )
+        return _table_array_view(translator, proj)
 
     if ctx.need_aliases():
         alias = ctx.get_ref(table)
