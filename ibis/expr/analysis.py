@@ -184,7 +184,7 @@ def substitute(fn, node):
 
     try:
         return node.__class__(*new_args)
-    except IbisTypeError:
+    except TypeError:
         return node
 
 
