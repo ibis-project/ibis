@@ -24,7 +24,7 @@ module.exports = {
             { type: "chore", hidden: true },
             { type: "docs", section: "Documentation" },
             { type: "style", hidden: true },
-            { type: "refactor", hidden: true },
+            { type: "refactor", section: "Refactors" },
             { type: "perf", section: "Performance" },
             { type: "test", hidden: true },
             { type: "depr", section: "Deprecations" },
