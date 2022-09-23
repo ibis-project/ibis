@@ -60,7 +60,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["clickhouse", "dask", "pandas", "sqlite"],
+                ["dask", "pandas", "sqlite"],
                 reason="backend doesn't support INTERSECT ALL",
             ),
             id="all",
@@ -98,7 +98,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["clickhouse", "dask", "pandas", "sqlite"],
+                ["dask", "pandas", "sqlite"],
                 reason="backend doesn't support EXCEPT ALL",
             ),
             id="all",
