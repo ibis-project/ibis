@@ -756,18 +756,48 @@ def test_dunder_array_column(alltypes, df):
     np.testing.assert_array_equal(result, expected)
 
 
-def test_repr_html(alltypes):
-    t = alltypes.limit(5)
+@pytest.mark.parametrize("interactive", [True, False])
+def test_repr(alltypes, interactive):
+    expr = alltypes.select("id", "int_col")
 
-    assert t._repr_html_() is None
-    assert t.int_col._repr_html_() is None
-    assert t.int_col.sum()._repr_html_() is None
+    val = str(alltypes.limit(5).id.execute().iloc[0])
 
-    interactive = ibis.options.interactive
-    ibis.options.interactive = True
+    old = ibis.options.interactive
+    ibis.options.interactive = interactive
     try:
-        assert 'table' in t._repr_html_()
-        assert 'table' in t.int_col._repr_html_()
-        assert t.int_col.sum()._repr_html_() is None
+        s = repr(expr)
+        # no control characters
+        assert all(c.isprintable() or c in "\n\r\t" for c in s)
+        assert "id" in s
+        if interactive:
+            assert val in s
+        else:
+            assert val not in s
     finally:
-        ibis.options.interactive = interactive
+        ibis.options.interactive = old
+
+
+@pytest.mark.parametrize("expr_type", ["table", "column"])
+@pytest.mark.parametrize("interactive", [True, False])
+def test_repr_mimebundle(alltypes, interactive, expr_type):
+    if expr_type == "column":
+        expr = alltypes.id
+    else:
+        expr = alltypes.select("id", "int_col")
+
+    val = str(alltypes.limit(5).id.execute().iloc[0])
+
+    old = ibis.options.interactive
+    ibis.options.interactive = interactive
+    try:
+        reprs = expr._repr_mimebundle_(
+            include=["text/plain", "text/html"], exclude=[]
+        )
+        for format in ["text/plain", "text/html"]:
+            assert "id" in reprs[format]
+            if interactive:
+                assert val in reprs[format]
+            else:
+                assert val not in reprs[format]
+    finally:
+        ibis.options.interactive = old

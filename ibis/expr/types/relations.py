@@ -19,18 +19,12 @@ from typing import (
 
 import numpy as np
 from public import public
+from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.pretty import (
-    _format_dtype,
-    _format_value,
-    _pretty_value,
-    console,
-)
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr
 
@@ -90,7 +84,7 @@ def _regular_join_method(
 
 
 @public
-class Table(Expr):
+class Table(Expr, JupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
@@ -102,97 +96,15 @@ class Table(Expr):
     def __contains__(self, name):
         return name in self.schema()
 
-    def _repr_html_(self) -> str | None:
-        if not ibis.options.interactive:
-            return None
-
-        return self.execute()._repr_html_()
-
     def __rich_console__(self, console, options):
-        import rich.table
-        from rich.align import Align
-        from rich.style import Style
+        from rich.text import Text
 
-        columns_truncated = False
-        if console.width:
-            columns = []
-            remaining = console.width - 1  # 1 char for left boundary
-            for c in self.columns:
-                needed = len(c) + 3  # padding + 1 char for right boundary
-                if needed < remaining:
-                    columns.append(c)
-                    remaining -= needed
-                else:
-                    columns_truncated = True
+        from ibis.expr.types.pretty import to_rich_table
 
-        if columns_truncated:
-            expr = self.select(*columns)
-        else:
-            expr = self
+        if not ibis.options.interactive:
+            return console.render(Text(self._repr()), options=options)
 
-        schema = expr.schema()
-        types = schema.types
-        nrows = ibis.options.repr.interactive.max_rows
-        result = expr.limit(nrows + 1).execute()
-
-        table = rich.table.Table(
-            row_styles=(
-                [Style(bgcolor=None), Style(bgcolor="grey7")]
-                if any(
-                    isinstance(typ, (dt.Struct, dt.Array, dt.Map))
-                    for typ in types
-                )
-                else None
-            )
-        )
-
-        alignment = {}
-        for column in columns:
-            if isinstance(schema[column], dt.Numeric):
-                alignment[column] = justify = "right"
-            else:
-                justify = "none"
-            table.add_column(
-                Align(column, align="left"),
-                justify=justify,
-                vertical="middle",
-                min_width=len(column),
-            )
-
-        if columns_truncated:
-            table.add_column(
-                Align("…", align="left"),
-                justify="none",
-                vertical="middle",
-                min_width=1,
-            )
-
-            def add_row(*args, **kwargs):
-                table.add_row(*args, "…", **kwargs)
-
-        else:
-            add_row = table.add_row
-
-        if ibis.options.repr.interactive.show_types:
-            add_row(
-                *(
-                    Align(_format_dtype(dtype), align="left")
-                    for dtype in types
-                ),
-                end_section=True,
-            )
-
-        for row in result.iloc[:nrows].itertuples(index=False):
-            add_row(
-                *(
-                    _pretty_value(_format_value(v), typ)
-                    for v, typ in zip(row, types)
-                )
-            )
-
-        if len(result) > nrows:
-            table.add_row(*(Align("…", align="center") for _ in table.columns))
-
+        table = to_rich_table(self, options.max_width)
         return console.render(table, options=options)
 
     def __getitem__(self, what):
@@ -1057,6 +969,8 @@ class Table(Expr):
         """
         import rich.table
         from rich.pretty import Pretty
+
+        from ibis.expr.types.pretty import console
 
         if buf is None:
             buf = sys.stdout

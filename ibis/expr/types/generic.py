@@ -7,12 +7,12 @@ if TYPE_CHECKING:
     import ibis.expr.window as win
 
 from public import public
+from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.pretty import _format_value, _pretty_value
 from ibis.expr.types.core import Expr, _binop
 
 
@@ -500,17 +500,15 @@ class Value(Expr):
 @public
 class Scalar(Value):
     def __rich_console__(self, console, options):
-        return console.render(
-            _pretty_value(_format_value(self.execute()), self.type()),
-            options=options,
-        )
+        from rich.text import Text
 
-    def _repr_html_(self) -> str | None:
-        return None
+        if not ibis.options.interactive:
+            return console.render(Text(self._repr()), options=options)
+        return console.render(repr(self.execute()), options=options)
 
 
 @public
-class Column(Value):
+class Column(Value, JupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
@@ -518,12 +516,6 @@ class Column(Value):
 
     def __array__(self):
         return self.execute().__array__()
-
-    def _repr_html_(self) -> str | None:
-        if not ibis.options.interactive:
-            return None
-
-        return self.execute().to_frame()._repr_html_()
 
     def __rich_console__(self, console, options):
         named = self.name(self.op().name)

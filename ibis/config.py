@@ -89,9 +89,9 @@ class Interactive(Config):
     """
 
     max_rows: int = 10
-    max_length: int = 5
+    max_length: int = 2
     max_string: int = 80
-    max_depth: int = 2
+    max_depth: int = 1
     show_types: bool = True
 
 
