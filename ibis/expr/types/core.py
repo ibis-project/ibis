@@ -11,7 +11,6 @@ import ibis.common.graph as g
 import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
-from ibis.common.pretty import console
 from ibis.config import _default_backend, options
 from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker
@@ -32,12 +31,14 @@ class Expr(Immutable):
         object.__setattr__(self, "_arg", arg)
 
     def __repr__(self) -> str:
+        from ibis.expr.types.pretty import simple_console
+
         if not options.interactive:
             return self._repr()
 
-        with console.capture() as capture:
+        with simple_console.capture() as capture:
             try:
-                console.print(self)
+                simple_console.print(self)
             except TranslationError as e:
                 lines = [
                     "Translation to backend failed",
