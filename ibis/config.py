@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from public import public
+from typing_extensions import Annotated
 
-import ibis.common.validators as rlz
 from ibis.common.grounds import Annotable
+from ibis.common.validators import min_
+
+PosInt = Annotated[int, min_(0)]
 
 
 class Config(Annotable):
@@ -49,7 +52,7 @@ class ContextAdjustment(Config):
         `ibis/expr/timecontext.py` for details.
     """
 
-    time_col = rlz.optional(rlz.str_, default="time")
+    time_col: str = "time"
 
 
 class SQL(Config):
@@ -64,8 +67,8 @@ class SQL(Config):
         Dialect to use for printing SQL when the backend cannot be determined.
     """
 
-    default_limit = rlz.optional(rlz.int_(min=0), default=10_000)
-    default_dialect = rlz.optional(rlz.str_, default="duckdb")
+    default_limit: Optional[PosInt] = 10_000
+    default_dialect: str = "duckdb"
 
 
 class Interactive(Config):
@@ -73,23 +76,23 @@ class Interactive(Config):
 
     Attributes
     ----------
-    max_rows
+    max_rows : int
         Maximum rows to pretty print.
-    max_length
+    max_length : int
         Maximum length for pretty-printed arrays and maps.
-    max_string
+    max_string : int
         Maximum length for pretty-printed strings.
-    max_depth
+    max_depth : int
         Maximum depth for nested data types.
-    show_types
+    show_types : bool
         Show the inferred type of value expressions in the interactive repr.
     """
 
-    max_rows = rlz.optional(rlz.int_, default=10)
-    max_length = rlz.optional(rlz.int_, default=5)
-    max_string = rlz.optional(rlz.int_, default=80)
-    max_depth = rlz.optional(rlz.int_, default=2)
-    show_types = rlz.optional(rlz.bool_, default=True)
+    max_rows: int = 10
+    max_length: int = 5
+    max_string: int = 80
+    max_depth: int = 2
+    show_types: bool = True
 
 
 class Repr(Config):
@@ -110,17 +113,11 @@ class Repr(Config):
         Options controlling the interactive repr.
     """
 
-    depth = rlz.optional(rlz.int_(min=0))
-    table_columns = rlz.optional(rlz.int_(min=0))
-    query_text_length = rlz.optional(rlz.int_(min=0), default=80)
-    show_types = rlz.optional(rlz.bool_, default=False)
-    interactive = rlz.optional(
-        rlz.instance_of(Interactive),
-        default=Interactive(),
-    )
-
-
-config_ = rlz.instance_of(Config)
+    depth: Optional[PosInt] = None
+    table_columns: Optional[PosInt] = None
+    query_text_length: PosInt = 80
+    show_types: bool = False
+    interactive: Interactive = Interactive()
 
 
 class Options(Config):
@@ -157,21 +154,19 @@ class Options(Config):
         PySpark specific options.
     """
 
-    interactive = rlz.optional(rlz.bool_, default=False)
-    repr = rlz.optional(rlz.instance_of(Repr), default=Repr())
-    verbose = rlz.optional(rlz.bool_, default=False)
-    verbose_log = rlz.optional(rlz.instance_of(Callable))
-    graphviz_repr = rlz.optional(rlz.bool_, default=False)
-    default_backend = rlz.optional(rlz.instance_of(object))
-    context_adjustment = rlz.optional(
-        rlz.instance_of(ContextAdjustment), default=ContextAdjustment()
-    )
-    sql = rlz.optional(rlz.instance_of(SQL), default=SQL())
-    clickhouse = rlz.optional(config_)
-    dask = rlz.optional(config_)
-    impala = rlz.optional(config_)
-    pandas = rlz.optional(config_)
-    pyspark = rlz.optional(config_)
+    interactive: bool = False
+    repr: Repr = Repr()
+    verbose: bool = False
+    verbose_log: Optional[Callable] = None
+    graphviz_repr: bool = False
+    default_backend: Optional[Any] = None
+    context_adjustment: ContextAdjustment = ContextAdjustment()
+    sql: SQL = SQL()
+    clickhouse: Optional[Config] = None
+    dask: Optional[Config] = None
+    impala: Optional[Config] = None
+    pandas: Optional[Config] = None
+    pyspark: Optional[Config] = None
 
 
 _HAS_DUCKDB = True

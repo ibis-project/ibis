@@ -21,7 +21,7 @@ fmt:
     absolufy-imports ibis/**/*.py
     black .
     isort .
-    pyupgrade --py38-plus ibis/**/*.py
+    pyupgrade --py38-plus --keep-runtime-typing ibis/**/*.py
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:

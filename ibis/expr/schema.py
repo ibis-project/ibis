@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 import collections
-from typing import TYPE_CHECKING, Iterable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Iterable, Iterator, Mapping
 
 from multipledispatch import Dispatcher
 
+import ibis.expr.datatypes as dt
+from ibis.common.annotations import initialized
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import (
-    immutable_property,
-    instance_of,
-    tuple_of,
-    validator,
-)
-from ibis.expr import datatypes as dt
+from ibis.common.validators import instance_of, tuple_of, validator
 from ibis.util import UnnamedMarker, indent
 
 if TYPE_CHECKING:
@@ -50,12 +46,12 @@ def datatype(arg, **kwargs):
 class Schema(Concrete):
     """An object for holding table schema information."""
 
-    names: Sequence[str] = tuple_of(instance_of((str, UnnamedMarker)))
+    names = tuple_of(instance_of((str, UnnamedMarker)))
     """A sequence of [`str`][str] indicating the name of each column."""
-    types: Sequence[dt.DataType] = tuple_of(datatype)
+    types = tuple_of(datatype)
     """A sequence of [DataType][ibis.expr.datatypes.DataType] objects representing type of each column."""  # noqa: E501
 
-    @immutable_property
+    @initialized
     def _name_locs(self) -> dict[str, int]:
         # validate unique field names
         name_locs = {v: i for i, v in enumerate(self.names)}

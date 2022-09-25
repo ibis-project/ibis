@@ -1,23 +1,11 @@
-from sre_constants import AT_NON_BOUNDARY
+from ibis.common.grounds import Annotable
+from ibis.common.validators import instance_of
 
-from ibis.common.grounds import Annotable, Validator
-
-
-class InstanceOf(Validator):
-    def __init__(self, typ):
-        self.typ = typ
-
-    def __call__(self, arg, **kwargs):
-        if not isinstance(arg, self.typ):
-            raise TypeError(self.typ)
-        return arg
-
-
-IsAny = InstanceOf(object)
-IsBool = InstanceOf(bool)
-IsFloat = InstanceOf(float)
-IsInt = InstanceOf(int)
-IsStr = InstanceOf(str)
+IsAny = instance_of(object)
+IsBool = instance_of(bool)
+IsFloat = instance_of(float)
+IsInt = instance_of(int)
+IsStr = instance_of(str)
 
 
 class Node(Annotable):
@@ -25,16 +13,16 @@ class Node(Annotable):
 
 
 class Literal(Node):
-    value = InstanceOf((int, float, bool, str))
-    dtype = InstanceOf(type)
+    value = instance_of((int, float, bool, str))
+    dtype = instance_of(type)
 
     def __add__(self, other):
         return Add(self, other)
 
 
 class BinaryOperation(Annotable):
-    left = InstanceOf(Node)
-    right = InstanceOf(Node)
+    left = instance_of(Node)
+    right = instance_of(Node)
 
 
 class Add(BinaryOperation):

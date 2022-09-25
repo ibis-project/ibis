@@ -37,24 +37,22 @@ def test_flatten_invalid_input(case):
         list(flat)
 
 
-def test_toposort_empty_graph():
-    assert not list(util.toposort({}))
+def test_dotdict():
+    d = util.DotDict({"a": 1, "b": 2, "c": 3})
+    assert d["a"] == d.a == 1
+    assert d["b"] == d.b == 2
 
+    d.b = 3
+    assert d.b == 3
+    assert d["b"] == 3
 
-def test_toposort_simple():
-    dag = {1: [2, 3], 2: [3], 3: []}
-    assert list(util.toposort(dag)) == [3, 2, 1]
+    del d.c
+    assert not hasattr(d, "c")
+    assert "c" not in d
 
+    assert repr(d) == "DotDict({'a': 1, 'b': 3})"
 
-def test_toposort_cycle():
-    # 1 depends on itself
-    dag = {1: [1, 2, 3], 2: [3], 3: []}
-    with pytest.raises(ValueError):
-        list(util.toposort(dag))
-
-
-def test_toposort_missing_key():
-    # 3 is a dependency but not a key
-    dag = {1: [1, 2, 3], 2: [3]}
     with pytest.raises(KeyError):
-        list(util.toposort(dag))
+        assert d['x']
+    with pytest.raises(AttributeError):
+        assert d.x

@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-import inspect
 from abc import ABCMeta, abstractmethod
 from typing import Any
 from weakref import WeakValueDictionary
 
-from ibis.common.caching import WeakCache
-from ibis.common.validators import (
-    ImmutableProperty,
-    Parameter,
+from ibis.common.annotations import (
+    Argument,
+    Attribute,
+    Default,
+    Initialized,
+    Mandatory,
     Signature,
-    Validator,
 )
+from ibis.common.caching import WeakCache
+from ibis.common.typing import evaluate_typehint
+from ibis.common.validators import Validator
 from ibis.util import frozendict
-
-EMPTY = inspect.Parameter.empty  # marker for missing argument
 
 
 class BaseMeta(ABCMeta):
@@ -41,65 +42,58 @@ class AnnotableMeta(BaseMeta):
 
     __slots__ = ()
 
-    def __new__(metacls, clsname, bases, dct):
-        # inherit from parent signatures
-        params = {}
-        properties = {}
+    def __new__(metacls, clsname, bases, dct, **kwargs):
+        # inherit signature from parent classes
+        signatures, attributes = [], {}
         for parent in bases:
             try:
-                params.update(parent.__signature__.parameters)
+                attributes.update(parent.__attributes__)
             except AttributeError:
                 pass
             try:
-                properties.update(parent.__properties__)
+                signatures.append(parent.__signature__)
             except AttributeError:
                 pass
 
-        # store the originally inherited keys so we can reorder later
-        inherited = set(params.keys())
+        # collection type annotations and convert them to validators
+        module = dct.get('__module__')
+        annots = dct.get('__annotations__', {})
+        for name, annot in annots.items():
+            typehint = evaluate_typehint(annot, module)
+            validator = Validator.from_annotation(typehint)
+            if name in dct:
+                dct[name] = Default(validator=validator, default=dct[name])
+            else:
+                dct[name] = Mandatory(validator=validator)
 
-        # collect the newly defined parameters
+        # collect the newly defined annotations
         slots = list(dct.pop('__slots__', []))
-        attribs = {}
+        attribs, args = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
-                # so we can set directly
-                params[name] = Parameter(name, validator=attrib)
-                slots.append(name)
-            elif isinstance(attrib, ImmutableProperty):
-                properties[name] = attrib
+                attrib = Mandatory(attrib)
+
+            if isinstance(attrib, Argument):
+                args[name] = attrib
+
+            if isinstance(attrib, Attribute):
+                attributes[name] = attrib
                 slots.append(name)
             else:
                 attribs[name] = attrib
 
-        # mandatory fields without default values must preceed the optional
-        # ones in the function signature, the partial ordering will be kept
-        new_args, new_kwargs = [], []
-        inherited_args, inherited_kwargs = [], []
-
-        for name, param in params.items():
-            if name in inherited:
-                if param.default is EMPTY:
-                    inherited_args.append(param)
-                else:
-                    inherited_kwargs.append(param)
-            else:
-                if param.default is EMPTY:
-                    new_args.append(param)
-                else:
-                    new_kwargs.append(param)
-
-        signature = Signature(
-            inherited_args + new_args + new_kwargs + inherited_kwargs
-        )
+        # merge the annotations with the parent annotations
+        signature = Signature.merge(*signatures, **args)
         argnames = tuple(signature.parameters.keys())
 
-        attribs["__slots__"] = tuple(slots)
-        attribs["__signature__"] = signature
-        attribs["__properties__"] = properties
-        attribs["__argnames__"] = argnames
-        attribs["__match_args__"] = argnames
-        return super().__new__(metacls, clsname, bases, attribs)
+        attribs.update(
+            __argnames__=argnames,
+            __attributes__=attributes,
+            __match_args__=argnames,
+            __signature__=signature,
+            __slots__=tuple(slots),
+        )
+        return super().__new__(metacls, clsname, bases, attribs, **kwargs)
 
 
 class Annotable(Base, metaclass=AnnotableMeta):
@@ -119,15 +113,13 @@ class Annotable(Base, metaclass=AnnotableMeta):
         self.__post_init__()
 
     def __post_init__(self):
-        # calculate special property-like objects only once due to the
-        # immutable nature of annotable instances
-        for name, prop in self.__properties__.items():
-            object.__setattr__(self, name, prop(self))
+        for name, field in self.__attributes__.items():
+            if isinstance(field, Initialized):
+                object.__setattr__(self, name, field.initialize(self))
 
     def __setattr__(self, name, value):
-        param = self.__signature__.parameters[name]
-        if param.default is not None or value is not None:
-            value = param.validate(value, this=self.__getstate__())
+        if field := self.__attributes__.get(name):
+            value = field.validate(value, this=self)
         super().__setattr__(name, value)
 
     def __repr__(self) -> str:
@@ -201,7 +193,7 @@ class Comparable(Base):
             return True
 
         # type comparison should be cheap
-        if type(self) != type(other):
+        if type(self) is not type(other):
             return False
 
         # reduce space required for commutative operation
@@ -219,15 +211,17 @@ class Comparable(Base):
         return result
 
 
+# TODO(kszucs): consider to move it somewhere else, like ibis/expr/core.py
 class Concrete(Immutable, Comparable, Annotable):
 
     __slots__ = ("__args__", "__precomputed_hash__")
 
     def __post_init__(self):
-        # optimizations to store frequently accessed generic properties
-        arguments = tuple(getattr(self, name) for name in self.__argnames__)
-        hashvalue = hash((self.__class__, arguments))
-        object.__setattr__(self, "__args__", arguments)
+        # optimizations to store frequently field values
+        argvalues = tuple(getattr(self, name) for name in self.__argnames__)
+        # precompute the hash value to avoid repeating expensive hashing
+        hashvalue = hash((self.__class__, argvalues))
+        object.__setattr__(self, "__args__", argvalues)
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
         super().__post_init__()
 

@@ -39,7 +39,9 @@ class _CorrelatedRefCheck:
     def visit(self, node, in_subquery):
         in_subquery |= self.is_subquery(node)
 
-        for arg in node.args:
+        args = node if isinstance(node, ops.NodeList) else node.args
+
+        for arg in args:
             if isinstance(arg, ops.TableNode):
                 self.visit_table(arg, in_subquery=in_subquery)
             elif isinstance(arg, ops.Node):

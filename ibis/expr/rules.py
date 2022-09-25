@@ -3,21 +3,22 @@ import enum
 import operator
 from itertools import product, starmap
 
-import toolz
-
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.common.annotations import (  # noqa: F401
+    initialized,
+    optional,
+    variadic,
+)
 from ibis.common.validators import (  # noqa: F401
     bool_,
-    immutable_property,
     instance_of,
     isin,
     map_to,
     one_of,
-    optional,
     ref,
     str_,
     tuple_of,
@@ -74,17 +75,14 @@ def comparable(left, right):
 
 
 class rule(validator):
+    __slots__ = ()
+
     def _erase_expr(self, value):
-        if isinstance(value, ir.Expr):
-            return value.op()
-        elif isinstance(value, tuple):
-            return tuple(map(self._erase_expr, value))
-        else:
-            return value
+        return value.op() if isinstance(value, ir.Expr) else value
 
     def __call__(self, *args, **kwargs):
         args = map(self._erase_expr, args)
-        kwargs = toolz.valmap(self._erase_expr, kwargs)
+        kwargs = {k: self._erase_expr(v) for k, v in kwargs.items()}
         result = super().__call__(*args, **kwargs)
         assert not isinstance(result, ir.Expr)
         return result
@@ -99,7 +97,6 @@ def just(arg):
     return lambda **_: arg
 
 
-# TODO(kszucs): perhaps rename to nodes_of
 @rule
 def nodes_of(inner, arg, **kwargs):
     import ibis.expr.operations as ops
@@ -329,7 +326,7 @@ def client(arg, **kwargs):
 
 
 def dtype_like(name):
-    @immutable_property
+    @initialized
     def output_dtype(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -339,7 +336,7 @@ def dtype_like(name):
 
 
 def shape_like(name):
-    @immutable_property
+    @initialized
     def output_shape(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -406,7 +403,7 @@ def _promote_decimal_binop(args, op):
 
 
 def numeric_like(name, op):
-    @immutable_property
+    @initialized
     def output_dtype(self):
         args = getattr(self, name)
         dtypes = [arg.output_dtype for arg in args]

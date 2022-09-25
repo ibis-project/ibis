@@ -6,8 +6,8 @@ from collections import Counter
 
 import toolz
 
+import ibis.common.graph as g
 import ibis.expr.datatypes as dt
-import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
@@ -45,8 +45,8 @@ def sub_for(node, substitutions):
             return substitutions[node]
         except KeyError:
             if isinstance(node, ops.TableNode):
-                return lin.halt
-            return lin.proceed
+                return g.halt
+            return g.proceed
 
     return substitute(fn, node)
 
@@ -152,11 +152,11 @@ def find_immediate_parent_tables(node):
 
     def finder(node):
         if isinstance(node, ops.TableNode):
-            return lin.halt, node
+            return g.halt, node
         else:
-            return lin.proceed, None
+            return g.proceed, None
 
-    return list(toolz.unique(lin.traverse(finder, node)))
+    return list(toolz.unique(g.traverse(finder, node)))
 
 
 def substitute(fn, node):
@@ -165,9 +165,9 @@ def substitute(fn, node):
     assert isinstance(node, ops.Node), type(node)
 
     result = fn(node)
-    if result is lin.halt:
+    if result is g.halt:
         return node
-    elif result is not lin.proceed:
+    elif result is not g.proceed:
         assert isinstance(result, ops.Node), type(result)
         return result
 
@@ -200,7 +200,7 @@ def substitute_parents(node):
     def fn(node):
         if isinstance(node, ops.Selection):
             # stop substituting child nodes
-            return lin.halt
+            return g.halt
         elif isinstance(node, ops.TableColumn):
             # For table column references, in the event that we're on top of a
             # projection, we need to check whether the ref comes from the base
@@ -218,7 +218,7 @@ def substitute_parents(node):
                         return ops.TableColumn(val, node.name)
 
         # keep looking for nodes to substitute
-        return lin.proceed
+        return g.proceed
 
     return substitute(fn, node)
 
@@ -400,10 +400,10 @@ class _PushdownValidate:
 
         def validate(node):
             if isinstance(node, ops.TableColumn):
-                return lin.proceed, self._validate_projection(node)
-            return lin.proceed, None
+                return g.proceed, self._validate_projection(node)
+            return g.proceed, None
 
-        return all(lin.traverse(validate, self.pred))  # , type=ir.Value))
+        return all(g.traverse(validate, self.pred))
 
     def _validate_projection(self, node):
         is_valid = False
@@ -413,8 +413,7 @@ class _PushdownValidate:
                 is_valid = True
             elif isinstance(val, ops.TableColumn) and node.name == val.name:
                 # Aliased table columns are no good
-                col_table = val.table
-                is_valid = col_table.equals(node.table)
+                is_valid = val.table == node.table
 
         return is_valid
 
@@ -595,44 +594,42 @@ class Projector:
 def find_first_base_table(node):
     def predicate(node):
         if isinstance(node, ops.TableNode):
-            return lin.halt, node
+            return g.halt, node
         else:
-            return lin.proceed, None
+            return g.proceed, None
 
     try:
-        return next(lin.traverse(predicate, node))
+        return next(g.traverse(predicate, node))
     except StopIteration:
         return None
 
 
 def _find_projections(node):
-    assert isinstance(node, ops.Node), type(node)
-
     if isinstance(node, ops.Selection):
         # remove predicates and sort_keys, so that child tables are considered
         # equivalent even if their predicates and sort_keys are not
-        return lin.proceed, node._projection
+        return g.proceed, node._projection
     elif isinstance(node, ops.SelfReference):
-        return lin.proceed, node
+        return g.proceed, node
     elif isinstance(node, ops.Join):
-        return lin.proceed, None
+        return g.proceed, None
     elif isinstance(node, ops.TableNode):
-        return lin.halt, node
+        return g.halt, node
     else:
-        return lin.proceed, None
+        return g.proceed, None
 
 
 def shares_all_roots(exprs, parents):
     # unique table dependencies of exprs and parents
-    exprs_deps = set(lin.traverse(_find_projections, exprs))
-    parents_deps = set(lin.traverse(_find_projections, parents))
+    exprs_deps = set(g.traverse(_find_projections, exprs))
+    parents_deps = set(g.traverse(_find_projections, parents))
     return exprs_deps <= parents_deps
 
 
 def shares_some_roots(exprs, parents):
     # unique table dependencies of exprs and parents
-    exprs_deps = set(lin.traverse(_find_projections, exprs))
-    parents_deps = set(lin.traverse(_find_projections, parents))
+    exprs_deps = set(g.traverse(_find_projections, exprs))
+    parents_deps = set(g.traverse(_find_projections, parents))
     return bool(exprs_deps & parents_deps)
 
 
@@ -669,21 +666,21 @@ def flatten_predicate(node):
 
     def predicate(node):
         if isinstance(node, ops.And):
-            return lin.proceed, None
+            return g.proceed, None
         else:
-            return lin.halt, node
+            return g.halt, node
 
-    return list(lin.traverse(predicate, node))
+    return list(g.traverse(predicate, node))
 
 
 def is_analytic(node):
     def predicate(node):
         if isinstance(node, (ops.Reduction, ops.Analytic)):
-            return lin.halt, True
+            return g.halt, True
         else:
-            return lin.proceed, None
+            return g.proceed, None
 
-    return any(lin.traverse(predicate, node))
+    return any(g.traverse(predicate, node))
 
 
 def is_reduction(node):
@@ -717,14 +714,14 @@ def is_reduction(node):
 
     def predicate(node):
         if isinstance(node, ops.Reduction):
-            return lin.halt, True
+            return g.halt, True
         elif isinstance(node, ops.TableNode):
             # don't go below any table nodes
-            return lin.halt, None
+            return g.halt, None
         else:
-            return lin.proceed, None
+            return g.proceed, None
 
-    return any(lin.traverse(predicate, node))
+    return any(g.traverse(predicate, node))
 
 
 def is_scalar_reduction(node):
@@ -747,12 +744,12 @@ def find_predicates(node, flatten=True):
             node.output_dtype, dt.Boolean
         ):
             if flatten and isinstance(node, ops.And):
-                return lin.proceed, None
+                return g.proceed, None
             else:
-                return lin.halt, node
-        return lin.proceed, None
+                return g.halt, node
+        return g.proceed, None
 
-    return list(lin.traverse(predicate, node))
+    return list(g.traverse(predicate, node))
 
 
 def find_subqueries(node: ops.Node) -> Counter:
@@ -762,32 +759,29 @@ def find_subqueries(node: ops.Node) -> Counter:
         if isinstance(node, ops.Join):
             return [node.left, node.right], None
         elif isinstance(node, ops.PhysicalTable):
-            return lin.halt, None
+            return g.halt, None
         elif isinstance(node, ops.SelfReference):
-            return lin.proceed, None
+            return g.proceed, None
         elif isinstance(node, (ops.Selection, ops.Aggregation)):
             counts[node] += 1
             return [node.table], None
         elif isinstance(node, ops.TableNode):
             counts[node] += 1
-            return lin.proceed, None
+            return g.proceed, None
         elif isinstance(node, ops.TableColumn):
             return node.table not in counts, None
         else:
-            return lin.proceed, None
+            return g.proceed, None
 
     # keep duplicates so we can determine where an expression is used
     # more than once
-    list(lin.traverse(finder, node, dedup=False))
+    list(g.traverse(finder, node, dedup=False))
 
     return counts
 
 
 # TODO(kszucs): move to types/logical.py
-def _make_any(
-    expr,
-    any_op_class: type[ops.Any] | type[ops.NotAny],
-):
+def _make_any(expr, any_op_class: type[ops.Any] | type[ops.NotAny]):
     assert isinstance(expr, ir.Expr)
 
     tables = find_immediate_parent_tables(expr.op())

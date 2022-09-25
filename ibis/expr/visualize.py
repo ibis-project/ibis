@@ -7,6 +7,7 @@ import graphviz as gv
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.common.graph import Graph
 
 
 def get_type(node):
@@ -80,7 +81,7 @@ DEFAULT_EDGE_ATTRS = {'fontname': 'Deja Vu Sans Mono'}
 
 
 def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
-    graph = ibis.util.to_op_dag(expr.op())
+    graph = Graph.from_bfs(expr.op())
 
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS,

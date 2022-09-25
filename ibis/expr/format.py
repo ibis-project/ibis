@@ -9,6 +9,7 @@ from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 import rich.pretty
 
 import ibis
+import ibis.common.graph as graph
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -40,7 +41,7 @@ def fmt(expr: ir.Expr) -> str:
     str
         Formatted expression
     """
-    *deps, root = util.toposort(util.to_op_dag(expr.op()))
+    *deps, root = graph.toposort(expr.op()).keys()
     deps = collections.deque(
         (Alias(alias), dep)
         for alias, dep in enumerate(

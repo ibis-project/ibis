@@ -1,97 +1,97 @@
-import inspect
+from typing import Dict, List, Optional, Tuple, Union
 
 import pytest
-from toolz import identity
+from typing_extensions import Annotated
 
-from ibis.common.validators import Optional, Parameter, Signature, Validator
-
-
-class InstanceOf(Validator):
-    def __init__(self, typ):
-        self.typ = typ
-
-    def __call__(self, arg, **kwargs):
-        if not isinstance(arg, self.typ):
-            raise TypeError(self.typ)
-        return arg
-
-
-IsInt = InstanceOf(int)
-
-
-@pytest.mark.parametrize(
-    ('default', 'expected'),
-    [(None, None), (0, 0), ('default', 'default'), (lambda: 3, 3)],
+from ibis.common.validators import (
+    Validator,
+    all_of,
+    any_of,
+    bool_,
+    dict_of,
+    instance_of,
+    int_,
+    isin,
+    list_of,
+    min_,
+    str_,
+    tuple_of,
 )
-def test_optional_argument(default, expected):
-    validator = Optional(lambda x: x, default=default)
-    assert validator(None) == expected
 
 
 @pytest.mark.parametrize(
     ('validator', 'value', 'expected'),
     [
-        (Optional(identity, default=None), None, None),
-        (Optional(identity, default=None), 'three', 'three'),
-        (Optional(identity, default=1), None, 1),
-        (Optional(identity, default=lambda: 8), 'cat', 'cat'),
-        (Optional(identity, default=lambda: 8), None, 8),
-        (Optional(int, default=11), None, 11),
-        (Optional(int, default=None), None, None),
-        (Optional(int, default=None), 18, 18),
-        (Optional(str, default=None), 'caracal', 'caracal'),
+        (bool_, True, True),
+        (str_, "foo", "foo"),
+        (int_, 8, 8),
+        (int_(min=10), 11, 11),
+        (min_(3), 5, 5),
+        (instance_of(int), 1, 1),
+        (instance_of(float), 1.0, 1.0),
+        (isin({"a", "b"}), "a", "a"),
+        (isin({"a": 1, "b": 2}), "a", 1),
+        (tuple_of(instance_of(int)), (1, 2, 3), (1, 2, 3)),
+        (list_of(instance_of(str)), ["a", "b"], ["a", "b"]),
+        (any_of((str_, int_(max=8))), "foo", "foo"),
+        (any_of((str_, int_(max=8))), 7, 7),
+        (all_of((int_, min_(3), min_(8))), 10, 10),
     ],
 )
-def test_valid_optional(validator, value, expected):
+def test_validators_passing(validator, value, expected):
     assert validator(value) == expected
 
 
 @pytest.mark.parametrize(
-    ('arg', 'value', 'expected'),
+    ('validator', 'value'),
     [
-        (Optional(IsInt, default=''), None, TypeError),
-        (Optional(IsInt), 'lynx', TypeError),
+        (bool_, "foo"),
+        (str_, True),
+        (int_, 8.1),
+        (int_(min=10), 9),
+        (min_(3), 2),
+        (instance_of(int), None),
+        (instance_of(float), 1),
+        (isin({"a", "b"}), "c"),
+        (isin({"a": 1, "b": 2}), "d"),
+        (tuple_of(instance_of(int)), (1, 2.0, 3)),
+        (list_of(instance_of(str)), ["a", "b", None]),
+        (any_of((str_, int_(max=8))), 3.14),
+        (any_of((str_, int_(max=8))), 9),
+        (all_of((int_, min_(3), min_(8))), 7),
     ],
 )
-def test_invalid_optional(arg, value, expected):
-    with pytest.raises(expected):
-        arg(value)
+def test_validators_failing(validator, value):
+    with pytest.raises((TypeError, ValueError)):
+        validator(value)
 
 
-def test_parameter():
-    def fn(x, this):
-        return int(x) + this['other']
-
-    p = Parameter('novalidator')
-    assert p.validate('value', this={}) == 'value'
-
-    p = Parameter('test', validator=fn)
-
-    assert p.validator is fn
-    assert p.default is inspect.Parameter.empty
-    assert p.validate('2', this={'other': 1}) == 3
-
-    with pytest.raises(TypeError):
-        p.validate({}, valid=inspect.Parameter.empty)
-
-    ofn = Optional(fn)
-    op = Parameter('test', validator=ofn)
-    assert op.validator is ofn
-    assert op.default is None
-    assert op.validate(None, this={'other': 1}) is None
+def short_str(x, this):
+    return len(x) > 3
 
 
-def test_signature():
-    def to_int(x, this):
-        return int(x)
+def endswith_d(x, this):
+    return x.endswith("d")
 
-    def add_other(x, this):
-        return int(x) + this['other']
 
-    other = Parameter('other', validator=to_int)
-    this = Parameter('this', validator=add_other)
-
-    sig = Signature(parameters=[other, this])
-    assert sig.validate(1, 2) == {'other': 1, 'this': 3}
-    assert sig.validate(other=1, this=2) == {'other': 1, 'this': 3}
-    assert sig.validate(this=2, other=1) == {'other': 1, 'this': 3}
+@pytest.mark.parametrize(
+    ("annot", "expected"),
+    [
+        (int, instance_of(int)),
+        (str, instance_of(str)),
+        (bool, instance_of(bool)),
+        (Optional[int], any_of((instance_of(int), instance_of(type(None))))),
+        (Union[int, str], any_of((instance_of(int), instance_of(str)))),
+        (Annotated[int, min_(3)], all_of((instance_of(int), min_(3)))),
+        (
+            Annotated[str, short_str, endswith_d],
+            all_of((instance_of(str), short_str, endswith_d)),
+        ),
+        (List[int], list_of(instance_of(int))),
+        (Tuple[int], tuple_of(instance_of(int))),
+        (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
+    ],
+)
+def test_validator_from_annotation(annot, expected):
+    validator = Validator.from_annotation(annot)
+    assert validator == expected

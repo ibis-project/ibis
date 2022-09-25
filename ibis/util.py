@@ -71,6 +71,22 @@ class frozendict(Mapping, Hashable):
         return self._hash
 
 
+class DotDict(dict):
+    __slots__ = ()
+
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({super().__repr__()})"
+
+
 class UnnamedMarker:
     pass
 
@@ -433,92 +449,6 @@ def deprecated(*, instead, version=''):
         return wrapper
 
     return decorator
-
-
-def to_op_dag(node: ops.Node) -> Graph:
-    """Convert `expr` into a directed acyclic graph.
-
-    Parameters
-    ----------
-    expr
-        An ibis expression
-
-    Returns
-    -------
-    Graph
-        A directed acyclic graph of ibis operations
-    """
-    import ibis.expr.operations as ops
-
-    assert isinstance(node, ops.Node), type(node)
-
-    stack = [node]
-    dag = {}
-
-    while stack:
-        if (node := stack.pop()) not in dag:
-            children = [arg for arg in node.args if isinstance(arg, ops.Node)]
-            dag[node] = children
-            stack.extend(children)
-    return dag
-
-
-def get_dependents(dependencies: Graph) -> Graph:
-    """Convert dependencies to dependents.
-
-    Parameters
-    ----------
-    dependencies
-        A mapping of [`ops.Node`][ibis.expr.operations.Node]s to a set of that
-        node's `ops.Node` dependencies.
-
-    Returns
-    -------
-    Graph
-        A mapping of [`ops.Node`][ibis.expr.operations.Node]s to a set of that
-        node's `ops.Node` dependents.
-    """
-    dependents = {src: [] for src in dependencies.keys()}
-    for src, dests in dependencies.items():
-        for dest in dests:
-            dependents[dest].append(src)
-    return dependents
-
-
-def toposort(graph: Graph) -> Iterator[ops.Node]:
-    """Topologically sort `graph` using Kahn's algorithm.
-
-    Parameters
-    ----------
-    graph
-        A DAG built from an ibis expression.
-
-    Yields
-    ------
-    Node
-        An operation node
-    """
-    if not graph:
-        return
-
-    dependents = get_dependents(graph)
-    in_degree = {
-        node: len(dependencies) for node, dependencies in graph.items()
-    }
-    queue = collections.deque(
-        node for node, count in in_degree.items() if not count
-    )
-    while queue:
-        dependency = queue.popleft()
-        yield dependency
-        for dependent in dependents[dependency]:
-            in_degree[dependent] -= 1
-
-            if not in_degree[dependent]:
-                queue.append(dependent)
-
-    if any(in_degree.values()):
-        raise ValueError("cycle in expression graph")
 
 
 class ToFrame(abc.ABC):

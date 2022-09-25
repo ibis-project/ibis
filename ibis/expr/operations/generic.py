@@ -16,8 +16,8 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common import exceptions as com
+from ibis.common.annotations import initialized
 from ibis.common.grounds import Singleton
-from ibis.common.validators import immutable_property
 from ibis.expr.operations.core import Named, Unary, Value
 from ibis.util import frozendict
 
@@ -327,7 +327,7 @@ class SimpleCase(Value):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, **kwargs)
 
-    @immutable_property
+    @initialized
     def output_dtype(self):
         values = [*self.results, self.default]
         return rlz.highest_precedence_dtype(values)
@@ -345,12 +345,12 @@ class SearchedCase(Value):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)
 
-    @immutable_property
+    @initialized
     def output_shape(self):
         # TODO(kszucs): can be removed after making Sequence iterable
         return rlz.highest_precedence_shape(self.cases)
 
-    @immutable_property
+    @initialized
     def output_dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)

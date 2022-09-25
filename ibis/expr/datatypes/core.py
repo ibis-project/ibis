@@ -7,6 +7,7 @@ from multipledispatch import Dispatcher
 from public import public
 
 import ibis.expr.types as ir
+from ibis.common.annotations import optional
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
@@ -14,7 +15,6 @@ from ibis.common.validators import (
     instance_of,
     isin,
     map_to,
-    optional,
     tuple_of,
     validator,
 )

@@ -48,7 +48,7 @@ packages = [
     'ibis.udf',
 ]
 
-package_data = {'': ['*']}
+package_data = {'': ['*'], 'ibis.tests': ['sqlgolden/*']}
 
 install_requires = [
     'atpublic>=2.3,<4',
@@ -60,6 +60,7 @@ install_requires = [
     'regex>=2021.7.6',
     'rich>=12.4.4,<13',
     'toolz>=0.11,<0.13',
+    'typing-extensions>=4.3.0,<5',
 ]
 
 extras_require = {

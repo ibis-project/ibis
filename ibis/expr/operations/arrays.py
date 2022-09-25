@@ -1,9 +1,9 @@
 from public import public
 
-from ibis.common import exceptions as com
-from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
+import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
+from ibis.common.annotations import initialized
 from ibis.expr.operations.core import Unary, Value
 
 
@@ -22,7 +22,7 @@ class ArrayColumn(Value):
             )
         super().__init__(cols=cols)
 
-    @immutable_property
+    @initialized
     def output_dtype(self):
         first_dtype = self.cols.values[0].output_dtype
         return dt.Array(first_dtype)
@@ -53,7 +53,7 @@ class ArrayIndex(Value):
 
     output_shape = rlz.shape_like("args")
 
-    @immutable_property
+    @initialized
     def output_dtype(self):
         return self.arg.output_dtype.value_type
 
@@ -90,7 +90,7 @@ class ArrayRepeat(Value):
 class Unnest(Value):
     arg = rlz.array
 
-    @immutable_property
+    @initialized
     def output_dtype(self):
         return self.arg.output_dtype.value_type
 

@@ -11,7 +11,6 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
-import ibis.common.validators as rlz
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -115,7 +114,7 @@ class Backend(BaseSQLBackend):
             Treat NaNs in floating point expressions as NULL.
         """
 
-        treat_nan_as_null = rlz.optional(rlz.bool_, default=False)
+        treat_nan_as_null: bool = False
 
     def _from_url(self, url: str) -> Backend:
         """Construct a PySpark backend from a URL `url`."""

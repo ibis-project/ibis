@@ -17,7 +17,6 @@ from ibis.backends.pandas.client import (
     PandasTable,
     ibis_schema_to_pandas,
 )
-from ibis.common.validators import instance_of, optional
 
 
 class BasePandasBackend(BaseBackend):
@@ -29,7 +28,7 @@ class BasePandasBackend(BaseBackend):
     backend_table_type = pd.DataFrame
 
     class Options(ibis.config.Config):
-        enable_trace = optional(instance_of(bool), default=False)
+        enable_trace: bool = False
 
     def do_connect(
         self,
