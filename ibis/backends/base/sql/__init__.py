@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 import sqlalchemy as sa
 
-import ibis.expr.lineage as lin
+import ibis.common.graph as graph
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -22,7 +22,7 @@ __all__ = [
 
 
 def _find_memtables(op):
-    return lin.proceed, op if isinstance(op, ops.InMemoryTable) else None
+    return graph.proceed, op if isinstance(op, ops.InMemoryTable) else None
 
 
 class BaseSQLBackend(BaseBackend):
@@ -200,7 +200,7 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_tables(self, expr):
         if self.compiler.cheap_in_memory_tables:
-            for memtable in lin.traverse(_find_memtables, expr.op()):
+            for memtable in graph.traverse(_find_memtables, expr.op()):
                 self._register_in_memory_table(memtable)
 
     @abc.abstractmethod

@@ -9,13 +9,13 @@ import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.backends.pandas.execution.util as pd_util
+import ibis.common.graph as graph
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.util
 from ibis.backends.dask.core import execute
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
-from ibis.expr import lineage as lin
-from ibis.expr import types as ir
 from ibis.expr.scope import Scope
 from ibis.expr.typing import TimeContext
 
@@ -371,8 +371,8 @@ def is_row_order_preserving(nodes) -> bool:
 
     def _is_row_order_preserving(node: ops.Node):
         if isinstance(node, (ops.Reduction, ops.Window)):
-            return (lin.halt, False)
+            return (graph.halt, False)
         else:
-            return (lin.proceed, True)
+            return (graph.proceed, True)
 
-    return lin.traverse(_is_row_order_preserving, nodes)
+    return graph.traverse(_is_row_order_preserving, nodes)

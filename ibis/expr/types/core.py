@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Mapping
 import toolz
 from public import public
 
-import ibis.expr.lineage as lin
+import ibis.common.graph as g
 import ibis.expr.operations as ops
 from ibis.common.exceptions import (
     ExpressionError,
@@ -220,11 +220,11 @@ class Expr(Immutable):
             backends = [
                 arg for arg in node.args if isinstance(arg, BaseBackend)
             ]
-            return lin.proceed, (backends, isinstance(node, ops.UnboundTable))
+            return g.proceed, (backends, isinstance(node, ops.UnboundTable))
 
         all_backends = []
         any_unbound = False
-        for backends, has_unbound in lin.traverse(finder, self.op()):
+        for backends, has_unbound in g.traverse(finder, self.op()):
             all_backends += backends
             any_unbound |= has_unbound
 

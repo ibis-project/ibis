@@ -354,10 +354,10 @@ def test_table_with_schema_invalid(table):
 def test_optional(validator, input):
     expected = validator(input)
     if isinstance(expected, ibis.Expr):
-        assert rlz.optional(validator)(input).equals(expected)
+        assert rlz.optional(validator).validate(input).equals(expected)
     else:
-        assert rlz.optional(validator)(input) == expected
-    assert rlz.optional(validator)(None) is None
+        assert rlz.optional(validator).validate(input) == expected
+    assert rlz.optional(validator).validate(None) is None
 
 
 def test_base_table_of_failure_mode():

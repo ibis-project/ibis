@@ -8,7 +8,6 @@ import toolz
 from clickhouse_driver.client import Client as _DriverClient
 
 import ibis
-import ibis.common.validators as rlz
 import ibis.config
 import ibis.expr.schema as sch
 from ibis.backends.base.sql import BaseSQLBackend
@@ -42,7 +41,7 @@ class Backend(BaseSQLBackend):
             Database to use for temporary objects.
         """
 
-        temp_db = rlz.optional(rlz.str_, default="__ibis_tmp")
+        temp_db: str = "__ibis_tmp"
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,19 +1,29 @@
+import itertools
 import weakref
-from inspect import Signature
 
 import pytest
 
+from ibis.common.annotations import (
+    Attribute,
+    Mandatory,
+    Optional,
+    Parameter,
+    Signature,
+    Variadic,
+    immutable_property,
+    initialized,
+)
 from ibis.common.caching import WeakCache
+from ibis.common.graph import Traversable
 from ibis.common.grounds import (
     Annotable,
     Base,
     Comparable,
     Concrete,
     Immutable,
-    Parameter,
     Singleton,
 )
-from ibis.common.validators import Optional, Validator, immutable_property
+from ibis.common.validators import Validator
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
@@ -30,6 +40,9 @@ class InstanceOf(Validator):
     def __init__(self, typ):
         self.typ = typ
 
+    def __repr__(self):
+        return f"Is{self.typ.__name__.capitalize()}"
+
     def __call__(self, arg, **kwargs):
         if not isinstance(arg, self.typ):
             raise TypeError(self.typ)
@@ -41,6 +54,7 @@ IsBool = InstanceOf(bool)
 IsFloat = InstanceOf(float)
 IsInt = InstanceOf(int)
 IsStr = InstanceOf(str)
+IsList = InstanceOf(list)
 
 
 class Op(Annotable):
@@ -84,10 +98,33 @@ def test_annotable():
     assert not hasattr(obj, "__dict__")
 
 
+def test_variadic_annotable():
+    class Test(Annotable):
+        value = IsInt
+        rest = Variadic(IsInt)
+
+    t = Test(1, 2, 3, 4)
+    assert t.value == 1
+    assert t.rest == (2, 3, 4)
+
+    class Test2(Test):
+        option = IsStr
+
+    with pytest.raises(TypeError):
+        Test2(1, 2, 3, 4, 'foo')
+
+    t2 = Test2(1, 2, 3, 4, option='foo')
+    assert t2.value == 1
+    assert t2.rest == (2, 3, 4)
+    assert t2.option == 'foo'
+
+
 def test_annotable_is_mutable_by_default():
     # TODO(kszucs): more exhaustive testing of mutability, e.g. setting
     # optional value to None doesn't set to the default value
     class Op(Annotable):
+        __slots__ = ("custom",)
+
         a = IsInt
         b = IsInt
 
@@ -96,6 +133,27 @@ def test_annotable_is_mutable_by_default():
     p.a = 3
     assert p.a == 3
     assert p == Op(a=3, b=2)
+
+    # test that non-annotable attributes can be set as well
+    p.custom = 1
+    assert p.custom == 1
+
+
+def test_annotable_with_type_annotations():
+    # TODO(kszucs): bar: str = None  # should raise
+    class Op(Annotable):
+        foo: int
+        bar: str = ""
+
+    p = Op(1)
+    assert p.foo == 1
+    assert p.bar == ""
+
+    class Op(Annotable):
+        bar: str = None
+
+    with pytest.raises(TypeError):
+        Op()
 
 
 def test_composition_of_annotable_and_immutable():
@@ -175,33 +233,33 @@ def test_signature_inheritance():
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter('left', validator=IsInt),
-            Parameter('right', validator=IsInt),
+            Parameter('left', annotation=Mandatory(IsInt)),
+            Parameter('right', annotation=Mandatory(IsInt)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter('left', validator=IsInt),
-            Parameter('right', validator=IsFloat),
+            Parameter('left', annotation=Mandatory(IsInt)),
+            Parameter('right', annotation=Mandatory(IsFloat)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter('left', validator=IsFloat),
-            Parameter('right', validator=IsFloat),
-            Parameter('clip_lower', validator=Optional(IsInt, default=0)),
-            Parameter('clip_upper', validator=Optional(IsInt, default=10)),
+            Parameter('left', annotation=Mandatory(IsFloat)),
+            Parameter('right', annotation=Mandatory(IsFloat)),
+            Parameter('clip_lower', annotation=Optional(IsInt, default=0)),
+            Parameter('clip_upper', annotation=Optional(IsInt, default=10)),
         ]
     )
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter('left', validator=IsInt),
-            Parameter('right', validator=IsInt),
-            Parameter('clip_lower', validator=Optional(IsInt, default=0)),
-            Parameter('clip_upper', validator=Optional(IsInt, default=10)),
+            Parameter('left', annotation=Mandatory(IsInt)),
+            Parameter('right', annotation=Mandatory(IsInt)),
+            Parameter('clip_lower', annotation=Optional(IsInt, default=0)),
+            Parameter('clip_upper', annotation=Optional(IsInt, default=10)),
         ]
     )
 
@@ -326,8 +384,8 @@ def test_multiple_inheritance():
 @pytest.mark.parametrize(
     "obj",
     [
+        StringOp("something"),
         StringOp(arg="something"),
-        Parameter("test"),
     ],
 )
 def test_pickling_support(obj):
@@ -347,7 +405,10 @@ def test_multiple_inheritance_argument_order():
     class Sum(VersionedOp, Reduction):
         where = Optional(IsBool, default=False)
 
-    assert str(Sum.__signature__) == "(arg, version, where=None)"
+    assert (
+        str(Sum.__signature__)
+        == "(arg: Mandatory(IsObject), version: Mandatory(IsInt), where: Optional(IsBool, default=False) = None)"  # noqa: E501
+    )
 
 
 def test_multiple_inheritance_optional_argument_order():
@@ -362,7 +423,10 @@ def test_multiple_inheritance_optional_argument_order():
         max = IsInt
         how = Optional(IsStr, default="strict")
 
-    assert str(Between.__signature__) == "(min, max, how=None, where=None)"
+    assert (
+        str(Between.__signature__)
+        == "(min: Mandatory(IsInt), max: Mandatory(IsInt), how: Optional(IsStr, default='strict') = None, where: Optional(IsBool, default=False) = None)"  # noqa: E501
+    )
 
 
 def test_immutability():
@@ -374,22 +438,43 @@ def test_immutability():
         op.a = 3
 
 
-def test_immutable_property_basics():
+def test_annotable_Attribute():
+    class Value(Annotable):
+        i = IsInt
+        j = Attribute(IsInt)
+
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        Value(1, 2)
+
+    v = Value(1)
+    assert v.__slots__ == ('i', 'j')
+    assert v.i == 1
+    assert not hasattr(v, 'j')
+    v.j = 2
+    assert v.j == 2
+
+    with pytest.raises(TypeError):
+        v.j = 'foo'
+
+
+def test_initialized_Attribute_basics():
     class Value(Annotable):
         a = IsInt
 
-        @immutable_property
+        @initialized
         def double_a(self):
             return 2 * self.a
 
     op = Value(1)
     assert op.a == 1
     assert op.double_a == 2
-    assert len(Value.__properties__) == 1
+    assert len(Value.__attributes__) == 2
     assert "double_a" in Value.__slots__
 
+    assert initialized is immutable_property
 
-def test_immutable_property_mixed_with_classvar():
+
+def test_initialized_Attribute_mixed_with_classvar():
     class Value(Annotable):
         arg = IsInt
 
@@ -400,7 +485,7 @@ def test_immutable_property_mixed_with_classvar():
         output_shape = "scalar"
 
     class Variadic(Value):
-        @immutable_property
+        @initialized
         def output_shape(self):
             if self.arg > 10:
                 return "columnar"
@@ -665,6 +750,41 @@ def test_concrete():
     assert ref() == obj
 
 
+def test_concrete_with_traversable_children():
+    class Bool(Concrete, Traversable):
+        @property
+        def __children__(self):
+            # actually this is the implementation of ops.Node
+            args, kwargs = self.__signature__.unbind(self)
+            children = itertools.chain(args, kwargs.values())
+            return tuple(c for c in children if isinstance(c, Traversable))
+
+    class Value(Bool):
+        value = IsBool
+
+    class Either(Bool):
+        left = InstanceOf(Bool)
+        right = InstanceOf(Bool)
+
+    class All(Bool):
+        arguments = Variadic(InstanceOf(Bool))
+        strict = IsBool
+
+    T, F = Value(True), Value(False)
+
+    node = All(T, F, strict=True)
+    assert node.__args__ == ((T, F), True)
+    assert node.__children__ == (T, F)
+
+    node = Either(T, F)
+    assert node.__args__ == (T, F)
+    assert node.__children__ == (T, F)
+
+    node = All(T, Either(T, Either(T, F)), strict=False)
+    assert node.__args__ == ((T, Either(T, Either(T, F))), False)
+    assert node.__children__ == (T, Either(T, Either(T, F)))
+
+
 def test_composition_of_concrete_and_singleton():
     class ConcSing(Concrete, Singleton):
         value = ValidatorFunction(lambda x, this: int(x))
@@ -684,3 +804,6 @@ def test_composition_of_concrete_and_singleton():
     obj2 = SingConc(3)
     assert obj2 is not obj
     assert SingConc(3) is obj2
+
+
+# TODO(kszucs): test that annotable subclasses can use __init_subclass__ kwargs

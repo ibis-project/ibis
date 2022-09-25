@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import inspect
 import math
 from contextlib import suppress
-from typing import Callable
+from typing import Any, Callable, Union
 
 import toolz
+from typing_extensions import Annotated, get_args, get_origin
 
 from ibis.common.exceptions import IbisTypeError
-from ibis.util import flatten_iterable, is_function, is_iterable
-
-EMPTY = inspect.Parameter.empty  # marker for missing argument
+from ibis.util import flatten_iterable, is_iterable
 
 
 class Validator(Callable):
@@ -18,41 +16,40 @@ class Validator(Callable):
     Abstract base class for defining argument validators.
     """
 
+    __slots__ = ()
 
-class Optional(Validator):
-    """
-    Validator to allow missing arguments.
+    @classmethod
+    def from_annotation(cls, annot):
+        # TODO(kszucs): cache the result of this function
+        origin_type = get_origin(annot)
 
-    Parameters
-    ----------
-    validator : Validator
-        Used to do the actual validation if the argument gets passed.
-    default : Any, default None
-        Value to return with in case of a missing argument.
-    """
-
-    __slots__ = ('validator', 'default')
-
-    def __init__(self, validator, default=None):
-        self.validator = validator
-        self.default = default
-
-    def __call__(self, arg, **kwargs):
-        if arg is None:
-            if self.default is None:
-                return None
-            elif is_function(self.default):
-                arg = self.default()
-            else:
-                arg = self.default
-
-        return self.validator(arg, **kwargs)
+        if origin_type is Union:
+            inners = map(cls.from_annotation, get_args(annot))
+            return any_of(tuple(inners))
+        elif origin_type is list:
+            (inner,) = map(cls.from_annotation, get_args(annot))
+            return list_of(inner)
+        elif origin_type is tuple:
+            (inner,) = map(cls.from_annotation, get_args(annot))
+            return tuple_of(inner)
+        elif origin_type is dict:
+            key_type, value_type = map(cls.from_annotation, get_args(annot))
+            return dict_of(key_type, value_type)
+        elif origin_type is Annotated:
+            annot, *extras = get_args(annot)
+            return all_of((instance_of(annot), *extras))
+        elif annot is Any:
+            return any_
+        else:
+            return instance_of(annot)
 
 
 class Curried(toolz.curry, Validator):
     """
     Enable convenient validator definition by decorating plain functions.
     """
+
+    __slots__ = ()
 
     def __repr__(self):
         return '{}({}{})'.format(
@@ -62,81 +59,7 @@ class Curried(toolz.curry, Validator):
         )
 
 
-class Parameter(inspect.Parameter):
-    """
-    Augmented Parameter class to additionally hold a validator object.
-    """
-
-    __slots__ = ('_validator',)
-
-    def __init__(
-        self,
-        name,
-        kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-        *,
-        validator=EMPTY,
-    ):
-        super().__init__(
-            name,
-            kind,
-            default=None if isinstance(validator, Optional) else EMPTY,
-        )
-        self._validator = validator
-
-    @property
-    def validator(self):
-        return self._validator
-
-    def validate(self, arg, *, this):
-        if self._validator is EMPTY:
-            return arg
-        else:
-            return self._validator(arg, this=this)
-
-
-class Signature(inspect.Signature):
-    """
-    Validatable signature.
-
-    Primarly used in the implementation of ibis.common.grounds.Annotable.
-    """
-
-    def apply(self, *args, **kwargs):
-        bound = self.bind(*args, **kwargs)
-        bound.apply_defaults()
-        return bound.arguments
-
-    def validate(self, *args, **kwargs):
-        # bind the signature to the passed arguments and apply the validators
-        # before passing the arguments, so self.__init__() receives already
-        # validated arguments as keywords
-        this = {}
-        for name, value in self.apply(*args, **kwargs).items():
-            param = self.parameters[name]
-            # TODO(kszucs): provide more error context on failure
-            this[name] = param.validate(value, this=this)
-
-        return this
-
-
-class ImmutableProperty(Callable):
-    """
-    Abstract base class for defining stored properties.
-    """
-
-    __slots__ = ("fn",)
-
-    def __init__(self, fn):
-        self.fn = fn
-
-    def __call__(self, instance):
-        return self.fn(instance)
-
-
-# aliases for convenience
-optional = Optional
 validator = Curried
-immutable_property = ImmutableProperty
 
 
 @validator
@@ -148,9 +71,15 @@ def ref(key, *, this):
 
 
 @validator
+def any_(arg, **kwargs):
+    return arg
+
+
+@validator
 def instance_of(klasses, arg, **kwargs):
     """Require that a value has a particular Python type."""
     if not isinstance(arg, klasses):
+        # TODO(kszucs): unify errors coming from various validators
         raise IbisTypeError(
             f'Given argument with type {type(arg)} '
             f'is not an instance of {klasses}'
@@ -159,7 +88,7 @@ def instance_of(klasses, arg, **kwargs):
 
 
 @validator
-def one_of(inners, arg, **kwargs):
+def any_of(inners, arg, **kwargs):
     """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(IbisTypeError, ValueError):
@@ -169,6 +98,9 @@ def one_of(inners, arg, **kwargs):
         "argument passes none of the following rules: "
         f"{', '.join(map(repr, inners))}"
     )
+
+
+one_of = any_of
 
 
 @validator
@@ -232,6 +164,14 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
 
 
 @validator
+def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
+    return type(
+        (key_inner(k, **kwargs), value_inner(v, **kwargs))
+        for k, v in arg.items()
+    )
+
+
+@validator
 def int_(arg, min=0, max=math.inf, **kwargs):
     if not isinstance(arg, int):
         raise IbisTypeError('Argument must be an integer')
@@ -242,10 +182,16 @@ def int_(arg, min=0, max=math.inf, **kwargs):
     return arg
 
 
+@validator
+def min_(min, arg, **kwargs):
+    if arg < min:
+        raise ValueError(f'Argument must be greater than {min}')
+    return arg
+
+
 str_ = instance_of(str)
 bool_ = instance_of(bool)
+none_ = instance_of(type(None))
+dict_of = mapping_of(type=dict)
 list_of = container_of(type=list)
 tuple_of = container_of(type=tuple)
-
-# TODO(kszucs): try to cache validator objects
-# TODO(kszucs): try a quicker curry implementation

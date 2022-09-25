@@ -1,18 +1,39 @@
 from __future__ import annotations
 
+import itertools
 from abc import ABC, abstractmethod
 from typing import Sequence
 
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.graph import Graph, Traversable
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Concrete):
+class Node(Concrete, Traversable):
+
+    __slots__ = ("__children__",)
+
+    def __post_init__(self):
+        # store the children objects to speed up traversals
+        args, kwargs = self.__signature__.unbind(self)
+        children = itertools.chain(args, kwargs.values())
+        children = tuple(c for c in children if isinstance(c, Node))
+        object.__setattr__(self, "__children__", children)
+        super().__post_init__()
+
+    def map(self, fn):
+        results = {}
+        for node in Graph.from_bfs(self).toposort():
+            args, kwargs = node.__signature__.unbind(node)
+            args = (results.get(v, v) for v in args)
+            kwargs = {k: results.get(v, v) for k, v in kwargs.items()}
+            results[node] = fn(node, *args, **kwargs)
+        return results
 
     # TODO(kszucs): move to comparable
     def equals(self, other):
@@ -129,15 +150,7 @@ class NodeList(Node, Sequence[Node]):
     # https://peps.python.org/pep-0653/#additions-to-the-object-model
     # TODO(kszucs): __match_container__ = MATCH_SEQUENCE
 
-    values = rlz.tuple_of(rlz.instance_of(Node))
-
-    @classmethod
-    def __create__(self, *args):
-        return super().__create__(values=args)
-
-    @property
-    def args(self):
-        return self.values
+    values = rlz.variadic(rlz.instance_of(Node))
 
     def __len__(self):
         return len(self.values)

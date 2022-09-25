@@ -187,8 +187,8 @@ class Backend(BaseSQLBackend):
             HDFS path for storage of temporary data.
         """
 
-        temp_db = rlz.optional(rlz.str_, default="__ibis_tmp")
-        temp_hdfs_path = rlz.optional(rlz.str_, default="/tmp/hdfs")
+        temp_db: str = "__ibis_tmp"
+        temp_hdfs_path: str = "/tmp/hdfs"
 
     @staticmethod
     def hdfs_connect(

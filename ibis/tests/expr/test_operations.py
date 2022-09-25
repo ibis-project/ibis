@@ -83,6 +83,69 @@ def op(request):
     return request.param
 
 
+def test_node_base():
+    class Expr:
+        def __init__(self, op):
+            self.op = op
+
+    class Base(ops.Node):
+        def to_expr(self):
+            return Expr(self)
+
+    class Name(Base):
+        name: str
+
+    class NamedValue(Base):
+        value: int
+        name: Name
+
+    class Values(Base):
+        lst = rlz.variadic(rlz.instance_of(ops.Node))
+
+    one = NamedValue(value=1, name=Name("one"))
+    two = NamedValue(value=2, name=Name("two"))
+    three = NamedValue(value=3, name=Name("three"))
+    values = Values(one, two, three)
+
+    assert one.__args__ == (1, Name("one"))
+    assert one.__children__ == (Name("one"),)
+
+    assert values.__args__ == ((one, two, three),)
+    assert values.__children__ == (one, two, three)
+
+    calls = []
+    returns = {
+        Name("one"): "Name_one",
+        Name("two"): "Name_two",
+        Name("three"): "Name_three",
+        NamedValue(1, Name("one")): "NamedValue_1_one",
+        NamedValue(2, Name("two")): "NamedValue_2_two",
+        NamedValue(3, Name("three")): "NamedValue_3_three",
+        values: "final",
+    }
+
+    def record(node, *args, **kwargs):
+        calls.append((node, args, kwargs))
+        return returns[node]
+
+    results = values.map(record)
+
+    assert results == returns
+    assert calls == [
+        (Name("one"), (), {"name": "one"}),
+        (Name("two"), (), {"name": "two"}),
+        (Name("three"), (), {"name": "three"}),
+        (one, (), {"value": 1, "name": "Name_one"}),
+        (two, (), {"value": 2, "name": "Name_two"}),
+        (three, (), {"value": 3, "name": "Name_three"}),
+        (
+            values,
+            ("NamedValue_1_one", "NamedValue_2_two", "NamedValue_3_three"),
+            {},
+        ),
+    ]
+
+
 def test_operation():
     class Logarithm(ir.Expr):
         pass

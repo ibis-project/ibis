@@ -1,8 +1,8 @@
 from public import public
 
-from ibis.common.validators import immutable_property
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
+from ibis.common.annotations import initialized
 from ibis.expr.operations.core import Unary, Value
 
 
@@ -129,9 +129,8 @@ class StringJoin(Value):
     arg = rlz.nodes_of(rlz.string, min_length=1)
 
     output_dtype = dt.string
-    # output_shape = rlz.shape_like("arg")
 
-    @immutable_property
+    @initialized
     def output_shape(self):
         return rlz.highest_precedence_shape(self.arg.values)
 
@@ -223,7 +222,7 @@ class StringConcat(Value):
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
 
-    @immutable_property
+    @initialized
     def output_shape(self):
         return rlz.highest_precedence_shape(self.arg.values)
 
