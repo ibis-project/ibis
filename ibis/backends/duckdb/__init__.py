@@ -20,6 +20,7 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 if TYPE_CHECKING:
     import duckdb
     import ibis.expr.types as ir
+    import pyarrow as pa
 
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -36,6 +37,10 @@ _gen_table_names = (f"registered_table{i:d}" for i in itertools.count())
 def _name_from_path(path: Path) -> str:
     base, *_ = path.name.partition(os.extsep)
     return base.replace("-", "_")
+
+
+def _name_from_dataset(dataset: pa.dataset.FileSystemDataset) -> str:
+    return _name_from_path(Path(os.path.commonprefix(dataset.files)))
 
 
 def _quote(name: str):
@@ -69,6 +74,17 @@ def _file(_, path, table_name=None):
     num_sep_chars = len(os.extsep)
     extension = "".join(Path(path).suffixes)[num_sep_chars:]
     return _generate_view_code(f"{extension}://{path}", table_name=table_name)
+
+
+@_generate_view_code.register(r"s3://.+", priority=10)
+def _s3(full_path, table_name=None):
+    # TODO: gate this import once the ResultHandler mixin is merged #4454
+    import pyarrow.dataset as ds
+
+    dataset = ds.dataset(full_path)
+    table_name = table_name or _name_from_dataset(dataset)
+    quoted_table_name = _quote(table_name)
+    return quoted_table_name, dataset
 
 
 @_generate_view_code.register(r".+", priority=1)
@@ -172,7 +188,20 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        if isinstance(source, (str, Path)):
+        if isinstance(source, str) and source.startswith("s3://"):
+            table_name, dataset = _generate_view_code(
+                source, table_name=table_name
+            )
+            # We don't create a view since DuckDB special cases Arrow Datasets
+            # so if we also create a view we end up with both a "lazy table"
+            # and a view with the same name
+            with self._safe_raw_sql("SELECT 1") as cursor:
+                # DuckDB normally auto-detects Arrow Datasets that are defined
+                # in local variables but the `dataset` variable won't be local
+                # by the time we execute against this so we register it
+                # explicitly.
+                cursor.cursor.c.register(table_name, dataset)
+        elif isinstance(source, (str, Path)):
             sql, table_name = _generate_view_code(
                 source, table_name=table_name
             )
