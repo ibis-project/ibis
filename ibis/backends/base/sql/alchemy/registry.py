@@ -87,8 +87,7 @@ def get_sqla_table(ctx, table):
 
 
 def get_col_or_deferred_col(sa_table, colname):
-    """
-    Get a `Column`, or create a "deferred" column.
+    """Get a `Column`, or create a "deferred" column.
 
     This is to handle the case when selecting a column from a join, which
     happens when a join expression is cached during join traversal
@@ -333,7 +332,6 @@ def _cumulative_to_window(translator, op, window):
 
 
 def _window(t, op):
-
     arg, window = op.args
     reduction = t.translate(arg)
 

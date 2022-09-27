@@ -20,9 +20,7 @@ from ibis.backends.pandas.client import (
 
 
 class BasePandasBackend(BaseBackend):
-    """
-    Base class for backends based on pandas.
-    """
+    """Base class for backends based on pandas."""
 
     name = "pandas"
     backend_table_type = pd.DataFrame

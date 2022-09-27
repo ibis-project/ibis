@@ -20,7 +20,7 @@ from ibis.backends.dask.execution.util import (
 
 
 def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
-    """Unpacks a dt.Struct into a DataFrame meta"""
+    """Unpacks a dt.Struct into a DataFrame meta."""
     return list(
         zip(
             op.return_type.names,

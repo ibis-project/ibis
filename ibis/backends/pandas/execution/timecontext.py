@@ -1,4 +1,4 @@
-""" Implementation of compute_time_context for time context related operations
+"""Implementation of compute_time_context for time context related operations.
 
 Time context of a node is computed at the beginning of execution phase.
 

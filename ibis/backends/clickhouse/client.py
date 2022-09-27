@@ -11,7 +11,7 @@ fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 
 class ClickhouseTable(ir.Table):
-    """References a physical table in Clickhouse"""
+    """References a physical table in Clickhouse."""
 
     @property
     def _qualified_name(self):

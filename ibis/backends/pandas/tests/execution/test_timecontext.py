@@ -143,7 +143,7 @@ def test_context_adjustment_window(
 
 
 def test_trim_window_result(time_df3):
-    """Unit test `trim_window_result` in Window execution"""
+    """Unit test `trim_window_result` in Window execution."""
     df = time_df3.copy()
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
@@ -249,10 +249,9 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     reason="https://github.com/pandas-dev/pandas/pull/44068",
 )
 def test_context_adjustment_window_groupby_id(time_table, time_df3):
-    """This test case is meant to test trim_window_result method
-    in pandas/execution/window.py to see if it could trim Series
-    correctly with groupby params
-    """
+    """This test case is meant to test trim_window_result method in
+    pandas/execution/window.py to see if it could trim Series correctly with
+    groupby params."""
     expected = (
         time_df3.set_index('time')
         .groupby('id')

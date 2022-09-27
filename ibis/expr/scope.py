@@ -1,38 +1,37 @@
-""" Module for scope
-    The motivation of Scope is to cache data for calculated ops.
+"""Module for scope The motivation of Scope is to cache data for calculated
+ops.
 
-    `scope` in Scope class is the main cache. It is a dictionary mapping
-    ibis node instances to concrete data, and the time context associate
-    with it (if any).
+`scope` in Scope class is the main cache. It is a dictionary mapping
+ibis node instances to concrete data, and the time context associate
+with it (if any).
 
-    When there are no time contexts associate with the cached result, getting
-    and setting values in Scope would be as simple as get and set in a normal
-    dictonary. With time contexts, we need the following logic for getting
-    and setting items in scope:
+When there are no time contexts associate with the cached result, getting
+and setting values in Scope would be as simple as get and set in a normal
+dictonary. With time contexts, we need the following logic for getting
+and setting items in scope:
 
-    Before setting the value op in scope we need to perform the following
-    check first:
+Before setting the value op in scope we need to perform the following
+check first:
 
-    Test if `op` is in `scope` yet
-    - No, then put `op` in `scope`, set 'timecontext' to be the current
-    `timecontext` (None if `timecontext` is not present), set 'value' to be
-    the actual data.
-    - Yes, then get the time context stored in `scope` for `op` as
-    `old_timecontext`, and compare it with current `timecontext`:
-    If current `timecontext` is a subset of `_timecontext`, that means we
-    already cached a larger range of data. Do nothing and we will trim data in
-    later execution process.
-    If current `timecontext` is a superset of `old_timecontext`, that means we
-    need to update cache. Set 'value' to be the current data and set
-    'timecontext' to be the current `timecontext` for `op`.
-    If current `timecontext` is neither a subset nor a superset of
-    `old_timcontext`, but they overlap, or not overlap at all (For example
-    when there is a window that looks forward, over a window that looks
-    back), in this case, we should not trust the data stored either because
-    the data stored in scope doesn't cover the current time context.
-    For simplicity, we update cache in this case, instead of merge data of
-    different time contexts.
-
+Test if `op` is in `scope` yet
+- No, then put `op` in `scope`, set 'timecontext' to be the current
+`timecontext` (None if `timecontext` is not present), set 'value' to be
+the actual data.
+- Yes, then get the time context stored in `scope` for `op` as
+`old_timecontext`, and compare it with current `timecontext`:
+If current `timecontext` is a subset of `_timecontext`, that means we
+already cached a larger range of data. Do nothing and we will trim data in
+later execution process.
+If current `timecontext` is a superset of `old_timecontext`, that means we
+need to update cache. Set 'value' to be the current data and set
+'timecontext' to be the current `timecontext` for `op`.
+If current `timecontext` is neither a subset nor a superset of
+`old_timcontext`, but they overlap, or not overlap at all (For example
+when there is a window that looks forward, over a window that looks
+back), in this case, we should not trust the data stored either because
+the data stored in scope doesn't cover the current time context.
+For simplicity, we update cache in this case, instead of merge data of
+different time contexts.
 """
 from collections import namedtuple
 from typing import Any, Dict, Iterable, Optional
@@ -50,9 +49,11 @@ class Scope:
         param: Dict[Node, Any] = None,
         timecontext: Optional[TimeContext] = None,
     ):
-        """Take a dict of `op`, `result`, create a new scope and save
-        those pairs in scope. Associate None as timecontext by default.
-        This is mostly used to init a scope with a set of given params.
+        """Take a dict of `op`, `result`, create a new scope and save those
+        pairs in scope.
+
+        Associate None as timecontext by default. This is mostly used to
+        init a scope with a set of given params.
         """
         self._items = (
             {op: ScopeItem(timecontext, value) for op, value in param.items()}
@@ -62,6 +63,7 @@ class Scope:
 
     def __contains__(self, op):
         """Given an `op`, return if `op` is present in Scope.
+
         Note that this `__contain__` method doesn't take `timecontext`
         as a parameter. This could be used to iterate all keys in
         current scope, or any case that doesn't care about value, just
@@ -110,7 +112,7 @@ class Scope:
     def get_value(
         self, op: Node, timecontext: Optional[TimeContext] = None
     ) -> Any:
-        """Given a op and timecontext, get the result from scope
+        """Given a op and timecontext, get the result from scope.
 
         Parameters
         ----------
@@ -155,7 +157,7 @@ class Scope:
         return None
 
     def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
-        """merge items in other_scope into this scope
+        """merge items in other_scope into this scope.
 
         Parameters
         ----------
@@ -188,7 +190,7 @@ class Scope:
     def merge_scopes(
         self, other_scopes: Iterable['Scope'], overwrite=False
     ) -> 'Scope':
-        """merge items in other_scopes into this scope
+        """merge items in other_scopes into this scope.
 
         Parameters
         ----------

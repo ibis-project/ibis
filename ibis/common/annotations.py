@@ -22,8 +22,7 @@ class Annotation:
 
 
 class Attribute(Annotation):
-    """
-    Annotation to mark a field in a class.
+    """Annotation to mark a field in a class.
 
     An optional validator can be provider to validate the field every time it
     is set.
@@ -50,8 +49,7 @@ class Attribute(Annotation):
 
 
 class Initialized(Attribute):
-    """
-    Annotation to initialize an attribute with a callable.
+    """Annotation to initialize an attribute with a callable.
 
     The callable is called et the end of the instantiation with the instance as
     the only argument. The return value of the callable is assigned to the
@@ -80,24 +78,19 @@ class Initialized(Attribute):
 
 
 class Argument(Attribute):
-    """
-    Base class for all fields which should be passed as arguments.
-    """
+    """Base class for all fields which should be passed as arguments."""
 
     __slots__ = ()
 
 
 class Mandatory(Argument):
-    """
-    Annotation to mark a mandatory argument.
-    """
+    """Annotation to mark a mandatory argument."""
 
     __slots__ = ()
 
 
 class Default(Argument):
-    """
-    Annotation to allow missing arguments with a default value.
+    """Annotation to allow missing arguments with a default value.
 
     Parameters
     ----------
@@ -122,8 +115,7 @@ class Default(Argument):
 
 
 class Optional(Default):
-    """
-    Annotation to allow and treat `None` values as missing arguments.
+    """Annotation to allow and treat `None` values as missing arguments.
 
     Parameters
     ----------
@@ -147,9 +139,7 @@ class Optional(Default):
 
 
 class Variadic(Argument):
-    """
-    Marker class for validating variadic arguments.
-    """
+    """Marker class for validating variadic arguments."""
 
     __slots__ = ()
 
@@ -158,9 +148,7 @@ class Variadic(Argument):
 
 
 class Parameter(inspect.Parameter):
-    """
-    Augmented Parameter class to additionally hold a validator object.
-    """
+    """Augmented Parameter class to additionally hold a validator object."""
 
     __slots__ = ()
 
@@ -195,10 +183,10 @@ class Parameter(inspect.Parameter):
 
 
 class Signature(inspect.Signature):
-    """
-    Validatable signature.
+    """Validatable signature.
 
-    Primarly used in the implementation of ibis.common.grounds.Annotable.
+    Primarly used in the implementation of
+    ibis.common.grounds.Annotable.
     """
 
     __slots__ = ()
@@ -239,8 +227,7 @@ class Signature(inspect.Signature):
         return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
 
     def unbind(self, this: Any):
-        """
-        Reverse bind of the parameters.
+        """Reverse bind of the parameters.
 
         Attempts to reconstructs the original arguments as positional and
         keyword arguments. Since keyword arguments are the preferred, the
@@ -270,8 +257,7 @@ class Signature(inspect.Signature):
         return args, kwargs
 
     def validate(self, *args, **kwargs):
-        """
-        Validate the arguments against the signature.
+        """Validate the arguments against the signature.
 
         Parameters
         ----------

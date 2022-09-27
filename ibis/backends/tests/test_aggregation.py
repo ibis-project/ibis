@@ -143,7 +143,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     ]
 )
 def test_aggregate_multikey_group_reduction(backend, alltypes, df):
-    """Tests .aggregate() on a multi-key groupby with a reduction operation"""
+    """Tests .aggregate() on a multi-key groupby with a reduction operation."""
 
     @reduction(
         input_type=[dt.double],
@@ -652,9 +652,9 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     """Tests .aggregate() where the result of an aggregation is a list-like.
 
-    We expect the list / np.array to be treated as a scalar (in other words,
-    the resulting table expression should have one element, which is the
-    list / np.array).
+    We expect the list / np.array to be treated as a scalar (in other
+    words, the resulting table expression should have one element, which
+    is the list / np.array).
     """
 
     udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(

@@ -22,9 +22,9 @@ from ibis.backends.impala.compat import HS2Error, impyla
 
 class ImpalaDatabase(Database):
     def create_table(self, table_name, obj=None, **kwargs):
-        """
-        Dispatch to ImpalaClient.create_table. See that function's docstring
-        for more
+        """Dispatch to ImpalaClient.create_table.
+
+        See that function's docstring for more
         """
         return self.client.create_table(
             table_name, obj=obj, database=self.name, **kwargs
@@ -213,7 +213,7 @@ class ImpalaCursor:
 
 
 class ImpalaTable(ir.Table):
-    """A physical table in the Impala-Hive metastore"""
+    """A physical table in the Impala-Hive metastore."""
 
     @property
     def _qualified_name(self):

@@ -3,8 +3,8 @@ from typing import Any
 
 
 def normalize(r):
-    """Normalize a regular expression by ensuring that it is wrapped with:
-    '^' and '$'
+    """Normalize a regular expression by ensuring that it is wrapped with: '^'
+    and '$'.
 
     Parameters
     ----------
@@ -21,8 +21,7 @@ def normalize(r):
 
 
 class RegexDispatcher:
-    """
-    Regular Expression Dispatcher
+    """Regular Expression Dispatcher.
 
     >>> f = RegexDispatcher('f')
 

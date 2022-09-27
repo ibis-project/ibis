@@ -10,8 +10,7 @@ class TypedCaseBuilder(Annotable):
         return rlz.highest_precedence_dtype(self.results)
 
     def else_(self, result_expr):
-        """
-        Specify
+        """Specify.
 
         Returns
         -------
@@ -51,8 +50,7 @@ class SimpleCaseBuilder(TypedCaseBuilder):
     default = rlz.optional(rlz.any)
 
     def when(self, case_expr, result_expr):
-        """
-        Add a new case-result pair.
+        """Add a new case-result pair.
 
         Parameters
         ----------
@@ -94,8 +92,7 @@ class SearchedCaseBuilder(TypedCaseBuilder):
     default = rlz.optional(rlz.any)
 
     def when(self, case_expr, result_expr):
-        """
-        Add a new case-result pair.
+        """Add a new case-result pair.
 
         Parameters
         ----------

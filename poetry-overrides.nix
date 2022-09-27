@@ -106,4 +106,12 @@ in
   termcolor = super.termcolor.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatch-vcs ];
   });
+
+  untokenize = super.untokenize.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
+  });
+
+  docformatter = super.docformatter.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
+  });
 }

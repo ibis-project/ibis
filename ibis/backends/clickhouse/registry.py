@@ -257,7 +257,7 @@ def _index_of(translator, op):
 
 
 def _sign(translator, op):
-    """Workaround for missing sign function"""
+    """Workaround for missing sign function."""
     arg_ = translator.translate(op.arg)
     return 'intDivOrZero({0}, abs({0}))'.format(arg_)
 

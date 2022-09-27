@@ -340,19 +340,19 @@ def execute_cast_null_to_anything(op, data, type, **kwargs):
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, **kwargs):
-    """Cast timestamps to strings"""
+    """Cast timestamps to strings."""
     return str(data)
 
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.Int64)
 def execute_cast_datetime_to_integer(op, data, type, **kwargs):
-    """Cast datetimes to integers"""
+    """Cast datetimes to integers."""
     return pd.Timestamp(data).value
 
 
 @execute_node.register(ops.Cast, pd.Timestamp, dt.Int64)
 def execute_cast_timestamp_to_integer(op, data, type, **kwargs):
-    """Cast timestamps to integers"""
+    """Cast timestamps to integers."""
     return data.value
 
 
@@ -378,13 +378,13 @@ def execute_cast_bool_to_interval(op, data, type, **kwargs):
 
 @execute_node.register(ops.Cast, integer_types + (str,), dt.Timestamp)
 def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
-    """Cast integer and strings to timestamps"""
+    """Cast integer and strings to timestamps."""
     return pd.Timestamp(data, tz=type.timezone)
 
 
 @execute_node.register(ops.Cast, pd.Timestamp, dt.Timestamp)
 def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
-    """Cast timestamps to other timestamps including timezone if necessary"""
+    """Cast timestamps to other timestamps including timezone if necessary."""
     input_timezone = data.tz
     target_timezone = type.timezone
 
@@ -1053,7 +1053,7 @@ def execute_node_not_contains_series_group_by_sequence(
 
 
 def pd_where(cond, true, false):
-    """Execute `where` following ibis's intended semantics"""
+    """Execute `where` following ibis's intended semantics."""
     if isinstance(cond, pd.Series):
         if not isinstance(true, pd.Series):
             true = pd.Series(

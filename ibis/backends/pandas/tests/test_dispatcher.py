@@ -33,7 +33,6 @@ class B3(B2):
 
 @pytest.fixture
 def foo_dispatchers():
-
     foo = TwoLevelDispatcher('foo', doc='Test dispatcher foo')
     foo_m = Dispatcher('foo_m', doc='Control dispatcher foo_m')
 
@@ -93,8 +92,8 @@ def test_cache(foo, mocker):
 
 
 def test_dispatch(foo, mocker):
-    """Test that calling dispatcher with a signature that is registered
-    does not trigger a linear search through dispatch_iter."""
+    """Test that calling dispatcher with a signature that is registered does
+    not trigger a linear search through dispatch_iter."""
 
     spy = mocker.spy(foo, 'dispatch_iter')
 

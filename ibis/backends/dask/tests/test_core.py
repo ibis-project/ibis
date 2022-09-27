@@ -45,10 +45,8 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
 
 
 def test_pre_execute_basic():
-    """
-    Test that pre_execute has intercepted execution and provided its own
-    scope dict
-    """
+    """Test that pre_execute has intercepted execution and provided its own
+    scope dict."""
 
     @pre_execute.register(ops.Add)
     def pre_execute_test(op, *clients, scope=None, **kwargs):

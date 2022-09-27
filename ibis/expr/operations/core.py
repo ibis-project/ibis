@@ -57,8 +57,7 @@ class Named(ABC):
     @property
     @abstractmethod
     def name(self):
-        """
-        Name of the operation.
+        """Name of the operation.
 
         Returns
         -------
@@ -81,8 +80,7 @@ class Value(Node, Named):
     @property
     @abstractmethod
     def output_dtype(self):
-        """
-        Ibis datatype of the produced value expression.
+        """Ibis datatype of the produced value expression.
 
         Returns
         -------
@@ -92,8 +90,7 @@ class Value(Node, Named):
     @property
     @abstractmethod
     def output_shape(self):
-        """
-        Shape of the produced value expression.
+        """Shape of the produced value expression.
 
         Possible values are: "scalar" and "columnar"
 
@@ -143,9 +140,7 @@ class Binary(Value):
 
 @public
 class NodeList(Node, Sequence[Node]):
-    """
-    Data structure for grouping arbitrary node objects.
-    """
+    """Data structure for grouping arbitrary node objects."""
 
     # https://peps.python.org/pep-0653/#additions-to-the-object-model
     # TODO(kszucs): __match_container__ = MATCH_SEQUENCE

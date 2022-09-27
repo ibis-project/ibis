@@ -10,8 +10,8 @@ from ibis.udf.vectorized import analytic, elementwise, reduction
 
 
 def _format_udf_return_type(func, result_formatter):
-    """Call the given udf and return its result according to the given
-    format (e.g. in the form of a list, pd.Series, np.array, etc.)"""
+    """Call the given udf and return its result according to the given format
+    (e.g. in the form of a list, pd.Series, np.array, etc.)"""
 
     def _wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
@@ -292,7 +292,7 @@ def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
 
 
 def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
-    """Test that summarization can handle empty data"""
+    """Test that summarization can handle empty data."""
     # First filter down to zero rows
     t = udf_alltypes[udf_alltypes['int_col'] > np.inf]
     result = (

@@ -1,4 +1,4 @@
-"""Impala backend"""
+"""Impala backend."""
 
 from __future__ import annotations
 
@@ -176,8 +176,7 @@ class Backend(BaseSQLBackend):
     compiler = ImpalaCompiler
 
     class Options(ibis.config.Config):
-        """
-        Impala specific options.
+        """Impala specific options.
 
         Parameters
         ----------
@@ -1186,7 +1185,7 @@ class Backend(BaseSQLBackend):
             return []
 
     def exists_udf(self, name: str, database: str | None = None) -> bool:
-        """Checks if a given UDF exists within a specified database"""
+        """Checks if a given UDF exists within a specified database."""
         return bool(self.list_udfs(database=database, like=name))
 
     def exists_uda(self, name: str, database: str | None = None) -> bool:

@@ -119,8 +119,7 @@ def _log_trace(func, start=None):
 
 def trace(func):
     """Return a function decorator that wraped the decorated function with
-    tracing.
-    """
+    tracing."""
     _trace_funcs.add(func.__name__)
 
     @functools.wraps(func)

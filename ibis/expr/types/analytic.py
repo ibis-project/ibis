@@ -46,9 +46,7 @@ class TopK(Analytic):
     def to_aggregation(
         self, metric_name=None, parent_table=None, backup_metric_name=None
     ):
-        """
-        Convert the TopK operation to a table aggregation
-        """
+        """Convert the TopK operation to a table aggregation."""
         from ibis.expr.analysis import find_first_base_table
 
         op = self.op()

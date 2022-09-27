@@ -1,5 +1,4 @@
-"""Constants for the pandas backend.
-"""
+"""Constants for the pandas backend."""
 
 import operator
 from typing import Dict, Type, Union

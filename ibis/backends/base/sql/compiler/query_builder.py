@@ -175,11 +175,9 @@ class TableSetFormatter:
 
 class Select(DML, Comparable):
 
-    """
-    A SELECT statement which, after execution, might yield back to the user a
-    table, array/list, or scalar value, depending on the expression that
-    generated it
-    """
+    """A SELECT statement which, after execution, might yield back to the user
+    a table, array/list, or scalar value, depending on the expression that
+    generated it."""
 
     def __init__(
         self,
@@ -250,10 +248,8 @@ class Select(DML, Comparable):
         )
 
     def compile(self):
-        """
-        This method isn't yet idempotent; calling multiple times may yield
-        unexpected results
-        """
+        """This method isn't yet idempotent; calling multiple times may yield
+        unexpected results."""
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
 

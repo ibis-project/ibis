@@ -63,7 +63,7 @@ class DatabaseTable(PhysicalTable):
 
 @public
 class SQLQueryResult(TableNode):
-    """A table sourced from the result set of a select query"""
+    """A table sourced from the result set of a select query."""
 
     query = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
@@ -504,8 +504,7 @@ class Aggregation(TableNode):
 
 @public
 class Distinct(TableNode):
-    """
-    Distinct is a table-level unique-ing operation.
+    """Distinct is a table-level unique-ing operation.
 
     In SQL, you might have:
 

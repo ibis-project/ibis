@@ -201,7 +201,7 @@ def get_aggcontext_window(
 def trim_window_result(
     data: Union[pd.Series, pd.DataFrame], timecontext: Optional[TimeContext]
 ):
-    """Trim data within time range defined by timecontext
+    """Trim data within time range defined by timecontext.
 
     This is a util function used in ``execute_window_op``, where time
     context might be adjusted for calculation. Data must be trimmed
@@ -218,7 +218,6 @@ def trim_window_result(
     ------
     a trimmed pd.Series or or pd.DataFrame with the same Multiindex
     as data's
-
     """
     # noop if timecontext is None
     if not timecontext:
@@ -494,8 +493,7 @@ def execute_series_lead_lag_timedelta(
     op, data, offset, default, aggcontext=None, **kwargs
 ):
     """An implementation of shifting a column relative to another one that is
-    in units of time rather than rows.
-    """
+    in units of time rather than rows."""
     # lagging adds time (delayed), leading subtracts time (moved up)
     func = operator.add if isinstance(op, ops.Lag) else operator.sub
     group_by = aggcontext.group_by

@@ -182,9 +182,7 @@ class CreateTable(_CreateDDL):
 
 class CTAS(CreateTable):
 
-    """
-    Create Table As Select
-    """
+    """Create Table As Select."""
 
     def __init__(
         self,
@@ -229,7 +227,7 @@ class CTAS(CreateTable):
 
 class CreateView(CTAS):
 
-    """Create a view"""
+    """Create a view."""
 
     def __init__(self, table_name, select, database=None, can_exist=False):
         super().__init__(

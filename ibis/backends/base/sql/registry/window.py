@@ -42,8 +42,7 @@ _cumulative_to_reduction = {
 
 
 def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
-    """
-    Good old Depth-First Search to identify the Interval and IntervalValue
+    """Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
 
     Parameters

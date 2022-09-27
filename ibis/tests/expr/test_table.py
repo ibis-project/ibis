@@ -1233,7 +1233,6 @@ def test_resolve_existence_predicate(
 
 
 def test_aggregate_metrics(table):
-
     functions = [
         lambda x: x.e.sum().name('esum'),
         lambda x: x.f.sum().name('fsum'),
@@ -1439,9 +1438,7 @@ def test_mutate_chain():
 # TODO(kszucs): move this test case to ibis/tests/sql since it requires the
 # sql backend to be executed
 def test_multiple_dbcon():
-    """
-    Expr from multiple connections to same DB should be compatible.
-    """
+    """Expr from multiple connections to same DB should be compatible."""
     con1 = MockBackend()
     con2 = MockBackend()
 

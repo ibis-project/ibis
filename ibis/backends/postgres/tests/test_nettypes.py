@@ -1,4 +1,4 @@
-""" Tests for macaddr and inet data types"""
+"""Tests for macaddr and inet data types."""
 
 import pytest
 from pytest import param

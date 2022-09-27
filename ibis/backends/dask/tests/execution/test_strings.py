@@ -100,7 +100,6 @@ from dask.dataframe.utils import tm  # noqa: E402
     ],
 )
 def test_string_ops(t, df, case_func, expected_func):
-
     # ignore matching UserWarnings
     with catch_warnings(record=True):
         expr = case_func(t.strings_with_space)

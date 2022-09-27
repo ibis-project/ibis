@@ -1,5 +1,4 @@
-"""Dispatching code for Selection operations.
-"""
+"""Dispatching code for Selection operations."""
 
 import functools
 import operator
@@ -29,8 +28,7 @@ def compute_projection(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    """
-    Compute a projection.
+    """Compute a projection.
 
     Parameters
     ----------
@@ -127,8 +125,8 @@ def compute_projection(
 
 
 def remap_overlapping_column_names(table, root_table, data_columns):
-    """Return a mapping of possibly-suffixed column names to
-    column names without suffixes.
+    """Return a mapping of possibly-suffixed column names to column names
+    without suffixes.
 
     Parameters
     ----------

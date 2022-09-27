@@ -193,8 +193,7 @@ def test_is_ancestor_analytic():
 # Pr 2635
 def test_mutation_fusion_no_overwrite():
     """Test fusion with chained mutation that doesn't overwrite existing
-    columns.
-    """
+    columns."""
     t = ibis.table(ibis.schema([('col', 'int32')]), 't')
 
     result = t

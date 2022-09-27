@@ -100,7 +100,7 @@ class IsInf(Unary):
 
 @public
 class Abs(Unary):
-    """Absolute value"""
+    """Absolute value."""
 
     arg = rlz.numeric
     output_dtype = rlz.dtype_like("arg")
@@ -108,8 +108,8 @@ class Abs(Unary):
 
 @public
 class Ceil(Unary):
-    """
-    Round up to the nearest integer value greater than or equal to this value
+    """Round up to the nearest integer value greater than or equal to this
+    value.
 
     Returns
     -------
@@ -130,8 +130,8 @@ class Ceil(Unary):
 
 @public
 class Floor(Unary):
-    """
-    Round down to the nearest integer value less than or equal to this value
+    """Round down to the nearest integer value less than or equal to this
+    value.
 
     Returns
     -------
@@ -232,27 +232,27 @@ class Log(Logarithm):
 
 @public
 class Ln(Logarithm):
-    """Natural logarithm"""
+    """Natural logarithm."""
 
 
 @public
 class Log2(Logarithm):
-    """Logarithm base 2"""
+    """Logarithm base 2."""
 
 
 @public
 class Log10(Logarithm):
-    """Logarithm base 10"""
+    """Logarithm base 10."""
 
 
 @public
 class Degrees(ExpandingMathUnary):
-    """Converts radians to degrees"""
+    """Converts radians to degrees."""
 
 
 @public
 class Radians(MathUnary):
-    """Converts degrees to radians"""
+    """Converts degrees to radians."""
 
 
 # TRIGONOMETRIC OPERATIONS
@@ -260,12 +260,12 @@ class Radians(MathUnary):
 
 @public
 class TrigonometricUnary(MathUnary):
-    """Trigonometric base unary"""
+    """Trigonometric base unary."""
 
 
 @public
 class TrigonometricBinary(Binary):
-    """Trigonometric base binary"""
+    """Trigonometric base binary."""
 
     left = rlz.numeric
     right = rlz.numeric
@@ -274,42 +274,42 @@ class TrigonometricBinary(Binary):
 
 @public
 class Acos(TrigonometricUnary):
-    """Returns the arc cosine of x"""
+    """Returns the arc cosine of x."""
 
 
 @public
 class Asin(TrigonometricUnary):
-    """Returns the arc sine of x"""
+    """Returns the arc sine of x."""
 
 
 @public
 class Atan(TrigonometricUnary):
-    """Returns the arc tangent of x"""
+    """Returns the arc tangent of x."""
 
 
 @public
 class Atan2(TrigonometricBinary):
-    """Returns the arc tangent of x and y"""
+    """Returns the arc tangent of x and y."""
 
 
 @public
 class Cos(TrigonometricUnary):
-    """Returns the cosine of x"""
+    """Returns the cosine of x."""
 
 
 @public
 class Cot(TrigonometricUnary):
-    """Returns the cotangent of x"""
+    """Returns the cotangent of x."""
 
 
 @public
 class Sin(TrigonometricUnary):
-    """Returns the sine of x"""
+    """Returns the sine of x."""
 
 
 @public
 class Tan(TrigonometricUnary):
-    """Returns the tangent of x"""
+    """Returns the tangent of x."""
 
 
 @public

@@ -37,7 +37,7 @@ from ibis.expr.schema import datatype
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
     """Convert a str to a datetime according to SQLite's rules, ignoring `None`
-    values"""
+    values."""
     if value is None:
         return None
     if value.endswith("Z"):

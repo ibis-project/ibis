@@ -22,7 +22,7 @@ _KNOWN_BACKENDS = ['bigquery', 'heavyai']
 
 
 def __dir__() -> list[str]:
-    """Adds tab completion for ibis backends to the top-level module"""
+    """Adds tab completion for ibis backends to the top-level module."""
     out = set(__all__)
     out.update(ep.name for ep in util.backend_entry_points())
     return sorted(out)

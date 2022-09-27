@@ -1,4 +1,4 @@
-"""Execution rules for ops.Where operations"""
+"""Execution rules for ops.Where operations."""
 
 import dask.dataframe as dd
 

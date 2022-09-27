@@ -1,5 +1,4 @@
-"""
-Reduces sequences
+"""Reduces sequences.
 
 NOTE: This file overwrite the pandas backend registered handlers for:
 

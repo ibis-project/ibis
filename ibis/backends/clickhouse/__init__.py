@@ -196,7 +196,7 @@ class Backend(BaseSQLBackend):
         return schema.apply_to(df)
 
     def close(self):
-        """Close Clickhouse connection and drop any temporary objects"""
+        """Close Clickhouse connection and drop any temporary objects."""
         self.con.disconnect()
 
     def _fully_qualified_name(self, name, database):

@@ -109,7 +109,6 @@ def _extract_quarter(t, op):
 
 
 def _extract_epoch_seconds(t, op):
-
     # example: (julianday('now') - 2440587.5) * 86400.0
     sa_expr = (sa.func.julianday(t.translate(op.arg)) - 2440587.5) * 86400.0
     return sa.cast(sa_expr, sa.BigInteger)
@@ -253,7 +252,6 @@ def _string_concat(t, op):
 
 
 def _date_from_ymd(t, op):
-
     ymdstr = sa.func.printf(
         '%04d-%02d-%02d',
         t.translate(op.year),
@@ -275,7 +273,6 @@ def _timestamp_from_ymdhms(t, op):
 
 
 def _time_from_hms(t, op):
-
     timestr = sa.func.printf(
         '%02d:%02d:%02d',
         t.translate(op.hours),

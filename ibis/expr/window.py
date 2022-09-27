@@ -468,7 +468,6 @@ def trailing_range_window(preceding, order_by, group_by=None) -> Window:
     -------
     Window
         A window frame
-
     """
     return Window(
         preceding=preceding,

@@ -36,8 +36,7 @@ def datatype(arg, **kwargs):
 class DataType(Concrete):
     """Base class for all data types.
 
-    [`DataType`][ibis.expr.datatypes.DataType] instances are
-    immutable.
+    [`DataType`][ibis.expr.datatypes.DataType] instances are immutable.
     """
 
     nullable = optional(instance_of(bool), default=True)
@@ -639,8 +638,8 @@ class JSON(String):
 class JSONB(Binary):
     """JSON data stored in a binary representation.
 
-    This representation eliminates whitespace, duplicate keys, and does not
-    preserve key ordering.
+    This representation eliminates whitespace, duplicate keys, and does
+    not preserve key ordering.
     """
 
     scalar = ir.JSONBScalar
@@ -712,8 +711,8 @@ class LineString(GeoSpatial):
 class Polygon(GeoSpatial):
     """A set of one or more closed line strings.
 
-    The first line string represents the shape (external ring) and the rest
-    represent holes in that shape (internal rings).
+    The first line string represents the shape (external ring) and the
+    rest represent holes in that shape (internal rings).
     """
 
     scalar = ir.PolygonScalar

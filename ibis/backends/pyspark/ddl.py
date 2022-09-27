@@ -49,7 +49,7 @@ def _format_properties(props):
 
 class CreateTable(CreateTable):
 
-    """Create a table"""
+    """Create a table."""
 
     def __init__(
         self,
@@ -80,9 +80,7 @@ class CreateTableWithSchema(CreateTableWithSchema):
 
 class CTAS(CTAS):
 
-    """
-    Create Table As Select
-    """
+    """Create Table As Select."""
 
     def __init__(
         self,
@@ -107,7 +105,7 @@ class CTAS(CTAS):
 
 class CreateView(CTAS):
 
-    """Create a view"""
+    """Create a view."""
 
     def __init__(
         self,

@@ -146,9 +146,9 @@ _type_mapping = {
 class _FieldFlags:
     """Flags used to disambiguate field types.
 
-    Gaps in the flag numbers are because we do not map in flags that are of no
-    use in determining the field's type, such as whether the field is a primary
-    key or not.
+    Gaps in the flag numbers are because we do not map in flags that are
+    of no use in determining the field's type, such as whether the field
+    is a primary key or not.
     """
 
     UNSIGNED = 1 << 5

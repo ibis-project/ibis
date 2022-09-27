@@ -65,10 +65,8 @@ class RowID(Value, Named):
 @public
 class TableArrayView(Value, Named):
 
-    """
-    (Temporary?) Helper operation class for SQL translation (fully formed table
-    subqueries to be viewed as arrays)
-    """
+    """(Temporary?) Helper operation class for SQL translation (fully formed
+    table subqueries to be viewed as arrays)"""
 
     table = rlz.table
 
@@ -118,7 +116,7 @@ class IsNull(Unary):
 
 @public
 class NotNull(Unary):
-    """Returns true if values are not null
+    """Returns true if values are not null.
 
     Returns
     -------
@@ -136,11 +134,9 @@ class ZeroIfNull(Unary):
 
 @public
 class IfNull(Value):
-    """
-    Equivalent to (but perhaps implemented differently):
+    """Equivalent to (but perhaps implemented differently):
 
-    case().when(expr.notnull(), expr)
-          .else_(null_substitute_expr)
+    case().when(expr.notnull(), expr)       .else_(null_substitute_expr)
     """
 
     arg = rlz.any
@@ -152,7 +148,7 @@ class IfNull(Value):
 
 @public
 class NullIf(Value):
-    """Set values to NULL if they equal the null_if_expr"""
+    """Set values to NULL if they equal the null_if_expr."""
 
     arg = rlz.any
     null_if_expr = rlz.any
@@ -230,7 +226,7 @@ class Literal(Value):
 
 @public
 class NullLiteral(Literal, Singleton):
-    """Typeless NULL literal"""
+    """Typeless NULL literal."""
 
     value = rlz.optional(type(None), default=None)
     dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)

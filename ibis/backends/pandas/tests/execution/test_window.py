@@ -39,8 +39,8 @@ class CustomInterval:
 
 
 class CustomWindow(ibis.expr.window.Window):
-    """This is a dummy custom window that return n preceding rows
-    where n is defined by CustomInterval.value."""
+    """This is a dummy custom window that return n preceding rows where n is
+    defined by CustomInterval.value."""
 
     def _replace(self, **kwds):
         new_kwds = {
