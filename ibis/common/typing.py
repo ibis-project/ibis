@@ -1,11 +1,11 @@
 import sys
 from typing import Any, ForwardRef
 
-from ibis.common.caching import memoize
+import toolz
 
 if sys.version_info >= (3, 9):
 
-    @memoize
+    @toolz.memoize
     def evaluate_typehint(hint, module_name) -> Any:
         if isinstance(hint, str):
             hint = ForwardRef(hint)
@@ -17,7 +17,7 @@ if sys.version_info >= (3, 9):
 
 else:
 
-    @memoize
+    @toolz.memoize
     def evaluate_typehint(hint, module_name) -> Any:
         if isinstance(hint, str):
             hint = ForwardRef(hint)

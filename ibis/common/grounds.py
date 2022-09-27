@@ -217,7 +217,7 @@ class Concrete(Immutable, Comparable, Annotable):
     __slots__ = ("__args__", "__precomputed_hash__")
 
     def __post_init__(self):
-        # optimizations to store frequently field values
+        # optimizations to store frequently accessed attributes
         argvalues = tuple(getattr(self, name) for name in self.__argnames__)
         # precompute the hash value to avoid repeating expensive hashing
         hashvalue = hash((self.__class__, argvalues))
