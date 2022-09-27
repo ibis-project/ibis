@@ -3,8 +3,6 @@ from __future__ import annotations
 import weakref
 from typing import MutableMapping
 
-from ibis.util import frozendict
-
 
 class WeakCache(MutableMapping):
 
@@ -49,24 +47,3 @@ class WeakCache(MutableMapping):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._data})"
-
-
-class Memoized:
-
-    __slots__ = ('_func', '_data')
-
-    def __init__(self, func):
-        self._func = func
-        self._data = {}
-
-    def __call__(self, *args, **kwargs):
-        key = (args, frozendict(kwargs))
-        try:
-            value = self._data[key]
-        except KeyError:
-            value = self._func(*args, **kwargs)
-            self._data[key] = value
-        return value
-
-
-memoize = Memoized
