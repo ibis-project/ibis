@@ -526,7 +526,8 @@ _BIN_OP_CHARS = {
 def fmt_value(obj, **_: Any) -> str:
     """Format a value expression or operation.
 
-    [`repr`][repr] the object if we don't have a specific formatting rule.
+    [`repr`][repr] the object if we don't have a specific formatting
+    rule.
     """
     return repr(obj)
 
@@ -644,8 +645,8 @@ def _fmt_value_sort_key(op: ops.SortKey, *, aliases: Aliases) -> str:
 def _fmt_value_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
     """Format a table as value.
 
-    This function is called when a table is used in a value expression. An
-    example is `table.count()`.
+    This function is called when a table is used in a value expression.
+    An example is `table.count()`.
     """
     return op.name
 
@@ -656,8 +657,8 @@ def _fmt_value_table_node(
 ) -> str:
     """Format a table as value.
 
-    This function is called when a table is used in a value expression. An
-    example is `table.count()`.
+    This function is called when a table is used in a value expression.
+    An example is `table.count()`.
     """
     return f"{aliases[op.table]}"
 

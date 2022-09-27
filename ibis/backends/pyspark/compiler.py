@@ -53,8 +53,7 @@ class PySparkExprTranslator:
         return decorator
 
     def translate(self, op, *, scope, timecontext, **kwargs):
-        """
-        Translate Ibis expression into a PySpark object.
+        """Translate Ibis expression into a PySpark object.
 
         All translated expressions are cached within scope. If an expression is
         found within scope, it's returned. Otherwise, the it's translated and
@@ -102,11 +101,9 @@ def compile_sql_query_result(t, op, **kwargs):
 
 
 def _can_be_replaced_by_column_name(column, table):
-    """
-    Return whether the given column_expr can be replaced by its literal
-    name, which is True when column_expr and table[column_expr.get_name()]
-    is semantically the same.
-    """
+    """Return whether the given column_expr can be replaced by its literal
+    name, which is True when column_expr and table[column_expr.get_name()] is
+    semantically the same."""
     # Each check below is necessary to distinguish a pure projection from
     # other valid selections, such as a mutation that assigns a new column
     # or changes the value of an existing column.
@@ -717,13 +714,13 @@ def compile_clip(t, op, **kwargs):
     )
 
     def column_min(value, limit):
-        """Given the minimum limit, return values that are greater
-        than or equal to this limit."""
+        """Given the minimum limit, return values that are greater than or
+        equal to this limit."""
         return F.when(value < limit, limit).otherwise(value)
 
     def column_max(value, limit):
-        """Given the maximum limit, return values that are less
-        than or equal to this limit."""
+        """Given the maximum limit, return values that are less than or equal
+        to this limit."""
         return F.when(value > limit, limit).otherwise(value)
 
     def clip(column, lower_value, upper_value):
@@ -1120,10 +1117,11 @@ def compile_distinct(t, op, **kwargs):
 
 
 def _canonicalize_interval(t, interval, **kwargs):
-    """Convert interval to integer timestamp of second
+    """Convert interval to integer timestamp of second.
 
-    When pyspark cast timestamp to integer type, it uses the number of seconds
-    since epoch. Therefore, we need cast ibis interval correspondingly.
+    When pyspark cast timestamp to integer type, it uses the number of
+    seconds since epoch. Therefore, we need cast ibis interval
+    correspondingly.
     """
     if isinstance(interval, ir.IntervalScalar):
         value = t.translate(interval.op(), **kwargs)

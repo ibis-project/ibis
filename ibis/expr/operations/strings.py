@@ -168,7 +168,7 @@ class StringSQLLike(FuzzySearch):
 
 @public
 class StringSQLILike(StringSQLLike):
-    """SQL ilike operation"""
+    """SQL ilike operation."""
 
 
 @public

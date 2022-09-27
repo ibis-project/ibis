@@ -477,7 +477,7 @@ class GeoSpatialValue(NumericValue):
         """Return the Nth point in a single linestring in the geometry.
         Negative values are counted backwards from the end of the LineString,
         so that -1 is the last point. Returns NULL if there is no linestring in
-        the geometry
+        the geometry.
 
         Parameters
         ----------
@@ -492,7 +492,7 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoPointN(self, n).to_expr()
 
     def n_points(self) -> ir.IntegerValue:
-        """Return the number of points in a geometry. Works for all geometries
+        """Return the number of points in a geometry. Works for all geometries.
 
         Returns
         -------

@@ -53,9 +53,8 @@ class Function(metaclass=abc.ABCMeta):
         return self._klass(*args).to_expr()
 
     def register(self, name, database):
-        """
-        Registers the given operation within the Ibis SQL translation
-        toolchain. Can also use add_operation API
+        """Registers the given operation within the Ibis SQL translation
+        toolchain. Can also use add_operation API.
 
         Parameters
         ----------
@@ -102,9 +101,7 @@ class ImpalaFunction:
 
 
 class ImpalaUDF(ScalarFunction, ImpalaFunction):
-    """
-    Feel free to customize my __doc__ or wrap in a nicer user API
-    """
+    """Feel free to customize my __doc__ or wrap in a nicer user API."""
 
     def __init__(
         self, inputs, output, so_symbol=None, lib_path=None, name=None
@@ -169,9 +166,8 @@ def wrap_uda(
     close_fn=None,
     name=None,
 ):
-    """
-    Creates a callable aggregation function object. Must be created in Impala
-    to be used
+    """Creates a callable aggregation function object. Must be created in
+    Impala to be used.
 
     Parameters
     ----------
@@ -212,9 +208,8 @@ def wrap_uda(
 
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
-    """
-    Creates a callable scalar function object. Must be created in Impala to be
-    used
+    """Creates a callable scalar function object. Must be created in Impala to
+    be used.
 
     Parameters
     ----------
@@ -235,8 +230,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
 
 
 def scalar_function(inputs, output, name=None):
-    """
-    Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings
@@ -254,8 +248,7 @@ def scalar_function(inputs, output, name=None):
 
 
 def aggregate_function(inputs, output, name=None):
-    """
-    Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings
@@ -273,8 +266,7 @@ def aggregate_function(inputs, output, name=None):
 
 
 def add_operation(op, func_name, db):
-    """
-    Registers the given operation within the Ibis SQL translation toolchain
+    """Registers the given operation within the Ibis SQL translation toolchain.
 
     Parameters
     ----------

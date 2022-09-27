@@ -8,7 +8,6 @@ three = ibis.literal(3)
 
 
 def test_pattern_matching():
-
     match one.op():
         case ops.Literal(value, dtype=dtype):
             assert value == 1

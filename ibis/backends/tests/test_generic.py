@@ -300,9 +300,9 @@ def test_case_where(backend, alltypes, df):
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
-    Before PR #2635, try_fusion in analysis.py would fuse these operations
-    together in a way that the order of the operations were wrong. (mutate
-    was executed before filter).
+    Before PR #2635, try_fusion in analysis.py would fuse these
+    operations together in a way that the order of the operations were
+    wrong. (mutate was executed before filter).
     """
     t = alltypes
 

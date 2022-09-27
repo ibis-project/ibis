@@ -209,8 +209,8 @@ class TablesAccessor(collections.abc.Mapping):
 class BaseBackend(abc.ABC):
     """Base backend class.
 
-    All Ibis backends must subclass this class and implement all the required
-    methods.
+    All Ibis backends must subclass this class and implement all the
+    required methods.
     """
 
     database_class = Database

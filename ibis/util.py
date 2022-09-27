@@ -226,7 +226,6 @@ def safe_index(elements: Sequence[int], value: int) -> int:
     1
     >>> safe_index(sequence, 4)
     -1
-
     """
     try:
         return elements.index(value)
@@ -260,7 +259,6 @@ def is_iterable(o: Any) -> bool:
     False
     >>> is_iterable([])
     True
-
     """
     return not isinstance(o, (str, bytes)) and isinstance(
         o, collections.abc.Iterable
@@ -300,7 +298,6 @@ def convert_unit(value, unit, to, floor=True):
     Traceback (most recent call last):
         ...
     ValueError: Cannot convert to or from variable length interval
-
     """
     # Don't do anything if from and to units are equivalent
     if unit == to:
@@ -422,8 +419,8 @@ def warn_deprecated(name, *, instead, version='', stacklevel=1):
 
 
 def deprecated(*, instead, version=''):
-    """Decorate deprecated function to warn of usage, with stacktrace, and
-    what to do instead."""
+    """Decorate deprecated function to warn of usage, with stacktrace, and what
+    to do instead."""
 
     def decorator(func):
         msg = deprecated_msg(func.__name__, instead=instead, version=version)
@@ -462,7 +459,7 @@ class ToFrame(abc.ABC):
 
 
 def backend_entry_points() -> list[_importlib_metadata.EntryPoint]:
-    """Get the list of installed `ibis.backend` entrypoints"""
+    """Get the list of installed `ibis.backend` entrypoints."""
 
     if sys.version_info < (3, 10):
         eps = _importlib_metadata.entry_points()["ibis.backends"]

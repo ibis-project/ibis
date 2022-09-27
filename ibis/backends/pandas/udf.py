@@ -1,6 +1,5 @@
 """APIs for creating user-defined element-wise, reduction and analytic
-functions.
-"""
+functions."""
 
 import itertools
 from typing import Tuple

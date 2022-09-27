@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 # TODO(kszucs): consider to subclass from Annotable with a single _arg field
 @public
 class Expr(Immutable):
-    """Base expression class"""
+    """Base expression class."""
 
     __slots__ = ("_arg",)
 
@@ -89,7 +89,7 @@ class Expr(Immutable):
     # TODO(kszucs): remove it entirely
     @cached_property
     def _safe_name(self) -> str | None:
-        """Get the name of an expression `expr` if one exists
+        """Get the name of an expression `expr` if one exists.
 
         Returns
         -------

@@ -116,8 +116,8 @@ def reduction_to_aggregation(node):
 
 
 def find_immediate_parent_tables(node):
-    """Find every first occurrence of a :class:`ibis.expr.types.Table`
-    object in `expr`.
+    """Find every first occurrence of a :class:`ibis.expr.types.Table` object
+    in `expr`.
 
     Parameters
     ----------
@@ -189,12 +189,10 @@ def substitute(fn, node):
 
 
 def substitute_parents(node):
-    """
-    Rewrite the input expression by replacing any table expressions part of a
-    "commutative table operation unit" (for lack of scientific term, a set of
+    """Rewrite the input expression by replacing any table expressions part of
+    a "commutative table operation unit" (for lack of scientific term, a set of
     operations that can be written down in any order and still yield the same
-    semantic result)
-    """
+    semantic result)"""
     assert isinstance(node, ops.Node), type(node)
 
     def fn(node):
@@ -496,12 +494,12 @@ def simplify_aggregation(agg):
 
 class Projector:
 
-    """
-    Analysis and validation of projection operation, taking advantage of
+    """Analysis and validation of projection operation, taking advantage of
     "projection fusion" opportunities where they exist, i.e. combining
-    compatible projections together rather than nesting them. Translation /
-    evaluation later will not attempt to do any further fusion /
-    simplification.
+    compatible projections together rather than nesting them.
+
+    Translation / evaluation later will not attempt to do any further
+    fusion / simplification.
     """
 
     def __init__(self, parent, proj_exprs):
@@ -684,8 +682,7 @@ def is_analytic(node):
 
 
 def is_reduction(node):
-    """
-    Check whether an expression contains a reduction or not
+    """Check whether an expression contains a reduction or not.
 
     Aggregations yield typed scalar expressions, since the result of an
     aggregation is a single value. When creating an table expression

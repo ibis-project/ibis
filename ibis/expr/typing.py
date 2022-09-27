@@ -1,4 +1,4 @@
-""" Define types for annotation """
+"""Define types for annotation."""
 
 from typing import Tuple
 

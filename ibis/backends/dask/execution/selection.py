@@ -1,5 +1,4 @@
-"""Dispatching code for Selection operations.
-"""
+"""Dispatching code for Selection operations."""
 
 
 import functools
@@ -41,8 +40,7 @@ def compute_projection(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    """
-    Compute a projection.
+    """Compute a projection.
 
     Parameters
     ----------
@@ -142,10 +140,8 @@ def build_df_from_projection(
     data: dd.DataFrame,
     **kwargs,
 ) -> dd.DataFrame:
-    """
-    Build up a df from individual pieces by dispatching to `compute_projection`
-    for each expression.
-    """
+    """Build up a df from individual pieces by dispatching to
+    `compute_projection` for each expression."""
     # Fast path for when we're assigning columns into the same table.
     if (selections[0] is op.table) and all(
         is_row_order_preserving(selections[1:])

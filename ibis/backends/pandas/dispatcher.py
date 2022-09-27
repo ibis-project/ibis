@@ -68,7 +68,6 @@ class TwoLevelDispatcher(Dispatcher):
     Because this implementation doesn't not trigger total reorder of signatures
     in dispatch_iter, ambiguity warning will trigger when user calls
     "ordering", instead of "dispatch".
-
     """
 
     def __init__(self, name, doc=None):

@@ -75,9 +75,8 @@ def ctx_col():
     ],
 )
 def test_context_adjustment_window_udf(alltypes, context, window, ctx_col):
-    """This test case aims to test context adjustment of
-    udfs in window method.
-    """
+    """This test case aims to test context adjustment of udfs in window
+    method."""
     expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))
     result = expr.execute(timecontext=context)
 

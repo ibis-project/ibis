@@ -48,7 +48,6 @@ class _PySparkCursor:
 
     This allows the Spark client to reuse machinery in
     `ibis/backends/base/sql/client.py`.
-
     """
 
     def __init__(self, query: DataFrame) -> None:
@@ -364,9 +363,8 @@ class Backend(BaseSQLBackend):
         return sch.infer(df)
 
     def _schema_from_csv(self, path, **kwargs):
-        """
-        Return a Schema object for the indicated csv file. Spark goes through
-        the file once to determine the schema. See documentation for
+        """Return a Schema object for the indicated csv file. Spark goes
+        through the file once to determine the schema. See documentation for
         `pyspark.sql.DataFrameReader` for kwargs.
 
         Parameters

@@ -279,7 +279,6 @@ def wrap_for_apply(
         args to be passed to function when it is called by Pandas `apply`
     kwargs : Optional[Dict[str, Any]]
         kwargs to be passed to function when it is called by Pandas `apply`
-
     """
     assert callable(function), f'function {function} is not callable'
 
@@ -334,7 +333,6 @@ def wrap_for_agg(
         args to be passed to function when it is called by Pandas `agg`
     kwargs : Dict[str, Any]
         kwargs to be passed to function when it is called by Pandas `agg`
-
     """
     assert callable(function), f'function {function} is not callable'
 
@@ -422,10 +420,10 @@ def compute_window_spec(dtype, obj):
 def compute_window_spec_none(_, obj):
     """Helper method only used for row-based windows:
 
-    Window spec in ibis is an inclusive window bound. A bound of 0 indicates
-    the current row.
-    Window spec in Pandas indicates window size. Therefore, we must add 1
-    to the ibis window bound to get the expected behavior.
+    Window spec in ibis is an inclusive window bound. A bound of 0
+    indicates the current row. Window spec in Pandas indicates window
+    size. Therefore, we must add 1 to the ibis window bound to get the
+    expected behavior.
     """
     return obj + 1
 

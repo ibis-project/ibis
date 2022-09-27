@@ -165,10 +165,10 @@ def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
 def infer_pandas_series(s):
     """Infer the type of a pd.Series.
 
-    Note that the returned datatype will be an array type, which corresponds
-    to the fact that a Series is a collection of elements. Please use
-    `_infer_pandas_series_contents` if you are interested in the datatype
-    of the **contents** of the Series.
+    Note that the returned datatype will be an array type, which
+    corresponds to the fact that a Series is a collection of elements.
+    Please use `_infer_pandas_series_contents` if you are interested in
+    the datatype of the **contents** of the Series.
     """
     return dt.Array(_infer_pandas_series_contents(s))
 
@@ -229,7 +229,7 @@ def infer_pandas_schema(df, schema=None):
 
 
 def ibis_dtype_to_pandas(ibis_dtype):
-    """Convert ibis dtype to the pandas / numpy alternative"""
+    """Convert ibis dtype to the pandas / numpy alternative."""
     assert isinstance(ibis_dtype, dt.DataType)
 
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:

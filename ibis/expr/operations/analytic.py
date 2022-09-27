@@ -62,9 +62,8 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    """
-    Compute position of first element within each equal-value group in sorted
-    order. Equivalent to SQL RANK().
+    """Compute position of first element within each equal-value group in
+    sorted order. Equivalent to SQL RANK().
 
     Examples
     --------
@@ -87,9 +86,8 @@ class MinRank(RankBase):
 
 @public
 class DenseRank(RankBase):
-    """
-    Compute position of first element within each equal-value group in sorted
-    order, ignoring duplicate values. Equivalent to SQL DENSE_RANK().
+    """Compute position of first element within each equal-value group in
+    sorted order, ignoring duplicate values. Equivalent to SQL DENSE_RANK().
 
     Examples
     --------
@@ -112,8 +110,7 @@ class DenseRank(RankBase):
 
 @public
 class RowNumber(RankBase):
-    """
-    Compute row number starting from 0 after sorting by column expression.
+    """Compute row number starting from 0 after sorting by column expression.
     Equivalent to SQL ROW_NUMBER().
 
     Examples
@@ -138,7 +135,10 @@ class CumulativeOp(Analytic):
 
 @public
 class CumulativeSum(CumulativeOp):
-    """Cumulative sum. Requires an ordering window."""
+    """Cumulative sum.
+
+    Requires an ordering window.
+    """
 
     arg = rlz.column(rlz.numeric)
 
@@ -149,7 +149,10 @@ class CumulativeSum(CumulativeOp):
 
 @public
 class CumulativeMean(CumulativeOp):
-    """Cumulative mean. Requires an order window."""
+    """Cumulative mean.
+
+    Requires an order window.
+    """
 
     arg = rlz.column(rlz.numeric)
 
@@ -160,7 +163,10 @@ class CumulativeMean(CumulativeOp):
 
 @public
 class CumulativeMax(CumulativeOp):
-    """Cumulative max. Requires an order window."""
+    """Cumulative max.
+
+    Requires an order window.
+    """
 
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like("arg")
@@ -168,7 +174,10 @@ class CumulativeMax(CumulativeOp):
 
 @public
 class CumulativeMin(CumulativeOp):
-    """Cumulative min. Requires an order window."""
+    """Cumulative min.
+
+    Requires an order window.
+    """
 
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like("arg")

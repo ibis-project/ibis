@@ -161,12 +161,10 @@ class NotContains(Contains):
 @public
 class Where(Value):
 
-    """
-    Ternary case expression, equivalent to
+    """Ternary case expression, equivalent to.
 
-    bool_expr.case()
-             .when(True, true_expr)
-             .else_(false_or_null_expr)
+    bool_expr.case()          .when(True, true_expr)
+    .else_(false_or_null_expr)
     """
 
     bool_expr = rlz.boolean

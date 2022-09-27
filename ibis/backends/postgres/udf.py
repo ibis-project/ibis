@@ -30,20 +30,20 @@ class PostgresUDFError(IbisError):
 
 
 def _ibis_to_pg_sa_type(ibis_type):
-    """Map an ibis DataType to a Postgres-compatible sqlalchemy type"""
+    """Map an ibis DataType to a Postgres-compatible sqlalchemy type."""
     return to_sqla_type(ibis_type, type_map=PostgreSQLExprTranslator._type_map)
 
 
 def _sa_type_to_postgres_str(sa_type):
     """Map a Postgres-compatible sqlalchemy type to a Postgres-appropriate
-    string"""
+    string."""
     if callable(sa_type):
         sa_type = sa_type()
     return sa_type.compile(dialect=dialect())
 
 
 def _ibis_to_postgres_str(ibis_type):
-    """Map an ibis DataType to a Postgres-appropriate string"""
+    """Map an ibis DataType to a Postgres-appropriate string."""
     return _sa_type_to_postgres_str(_ibis_to_pg_sa_type(ibis_type))
 
 
@@ -72,7 +72,7 @@ def _create_udf_node(
 
 def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     """Create an ibis function that refers to an existing Postgres UDF already
-    defined in database
+    defined in database.
 
     Parameters
     ----------

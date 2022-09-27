@@ -12,9 +12,7 @@ from ibis.util import flatten_iterable, is_iterable
 
 
 class Validator(Callable):
-    """
-    Abstract base class for defining argument validators.
-    """
+    """Abstract base class for defining argument validators."""
 
     __slots__ = ()
 
@@ -45,9 +43,7 @@ class Validator(Callable):
 
 
 class Curried(toolz.curry, Validator):
-    """
-    Enable convenient validator definition by decorating plain functions.
-    """
+    """Enable convenient validator definition by decorating plain functions."""
 
     __slots__ = ()
 
@@ -89,7 +85,7 @@ def instance_of(klasses, arg, **kwargs):
 
 @validator
 def any_of(inners, arg, **kwargs):
-    """At least one of the inner validators must pass"""
+    """At least one of the inner validators must pass."""
     for inner in inners:
         with suppress(IbisTypeError, ValueError):
             return inner(arg, **kwargs)

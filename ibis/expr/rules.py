@@ -42,7 +42,7 @@ def highest_precedence_shape(nodes):
 
 
 def highest_precedence_dtype(nodes):
-    """Return the highest precedence type from the passed expressions
+    """Return the highest precedence type from the passed expressions.
 
     Also verifies that there are valid implicit casts between any of the types
     and the selected highest precedence type.
@@ -62,7 +62,7 @@ def highest_precedence_dtype(nodes):
 
 
 def castable(source, target):
-    """Return whether source ir type is implicitly castable to target
+    """Return whether source ir type is implicitly castable to target.
 
     Based on the underlying datatypes and the value in case of Literals
     """
@@ -201,7 +201,7 @@ def literal(dtype, value, **kwargs):
 
 @rule
 def value(dtype, arg, **kwargs):
-    """Validates that the given argument is a Value with a particular datatype
+    """Validates that the given argument is a Value with a particular datatype.
 
     Parameters
     ----------

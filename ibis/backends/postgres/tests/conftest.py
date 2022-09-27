@@ -166,8 +166,7 @@ def translate():
 
 @pytest.fixture
 def temp_table(con) -> Generator[str, None, None]:
-    """
-    Return a temporary table name.
+    """Return a temporary table name.
 
     Parameters
     ----------

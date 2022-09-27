@@ -18,7 +18,7 @@ castable = Dispatcher('castable')
 def cast(
     source: str | dt.DataType, target: str | dt.DataType, **kwargs
 ) -> dt.DataType:
-    """Attempts to implicitly cast from source dtype to target dtype"""
+    """Attempts to implicitly cast from source dtype to target dtype."""
     source, target = dt.dtype(source), dt.dtype(target)
 
     if not castable(source, target, **kwargs):

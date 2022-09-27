@@ -19,10 +19,8 @@ from ibis.expr.types.core import Expr, _binop
 @public
 class Value(Expr):
 
-    """
-    Base class for a data generating expression having a fixed and known type,
-    either a single value (scalar)
-    """
+    """Base class for a data generating expression having a fixed and known
+    type, either a single value (scalar)"""
 
     def name(self, name):
         """Rename an expression to `name`.
@@ -825,7 +823,7 @@ _NULL = None
 
 @public
 def null():
-    """Create a NULL/NA scalar"""
+    """Create a NULL/NA scalar."""
 
     # TODO(kszucs): NullLiteral is a singleton, so we should be able to remove
     # the global _NULL variable

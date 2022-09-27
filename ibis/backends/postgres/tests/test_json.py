@@ -1,4 +1,4 @@
-""" Tests for json data types"""
+"""Tests for json data types."""
 import json
 
 import pytest

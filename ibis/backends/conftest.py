@@ -198,7 +198,7 @@ def read_tables(
     names: Iterable[str],
     data_dir: Path,
 ) -> Iterator[tuple[str, pa.Table]]:
-    """For each csv {names} in {data_dir} return a pyarrow.Table"""
+    """For each csv {names} in {data_dir} return a pyarrow.Table."""
 
     import pyarrow.csv as pac
 
@@ -506,7 +506,8 @@ def ddl_backend(
 ):
     """Set up the backends that are SQL-based.
 
-    (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark, impala)
+    (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark,
+    impala)
     """
     return _setup_backend(
         request, data_directory, script_directory, tmp_path_factory, worker_id
@@ -515,9 +516,7 @@ def ddl_backend(
 
 @pytest.fixture(scope='session')
 def ddl_con(ddl_backend):
-    """
-    Instance of Client, already connected to the db (if applies).
-    """
+    """Instance of Client, already connected to the db (if applies)."""
     return ddl_backend.connection
 
 
@@ -541,9 +540,7 @@ def alchemy_backend(
 
 @pytest.fixture(scope='session')
 def alchemy_con(alchemy_backend):
-    """
-    Instance of Client, already connected to the db (if applies).
-    """
+    """Instance of Client, already connected to the db (if applies)."""
     return alchemy_backend.connection
 
 
@@ -554,9 +551,7 @@ def alchemy_con(alchemy_backend):
 def udf_backend(
     request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
-    """
-    Runs the UDF-supporting backends
-    """
+    """Runs the UDF-supporting backends."""
     cls = _get_backend_conf(request.param)
     return cls.load_data(
         data_directory, script_directory, tmp_path_factory, worker_id
@@ -565,9 +560,7 @@ def udf_backend(
 
 @pytest.fixture(scope='session')
 def udf_con(udf_backend):
-    """
-    Instance of Client, already connected to the db (if applies).
-    """
+    """Instance of Client, already connected to the db (if applies)."""
     return udf_backend.connection
 
 
@@ -650,8 +643,7 @@ def geo_df(geo):
 
 @pytest.fixture
 def alchemy_temp_table(alchemy_con) -> str:
-    """
-    Return a temporary table name.
+    """Return a temporary table name.
 
     Parameters
     ----------
@@ -674,8 +666,7 @@ def alchemy_temp_table(alchemy_con) -> str:
 
 @pytest.fixture
 def temp_table(con) -> str:
-    """
-    Return a temporary table name.
+    """Return a temporary table name.
 
     Parameters
     ----------
@@ -729,8 +720,8 @@ def current_data_db(ddl_con) -> str:
 def alternate_current_database(
     ddl_con, ddl_backend, current_data_db: str
 ) -> str:
-    """Create a temporary database and yield its name.
-    Drops the created database upon completion.
+    """Create a temporary database and yield its name. Drops the created
+    database upon completion.
 
     Parameters
     ----------

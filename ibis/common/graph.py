@@ -1,6 +1,4 @@
-"""
-Various traversal utilities for the expression graph.
-"""
+"""Various traversal utilities for the expression graph."""
 from __future__ import annotations
 
 from abc import abstractmethod
@@ -111,7 +109,7 @@ def traverse(
     node: Iterable[Traversable],
     dedup: bool = True,
 ) -> Iterator[Any]:
-    """Utility for generic expression tree traversal
+    """Utility for generic expression tree traversal.
 
     Parameters
     ----------

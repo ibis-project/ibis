@@ -57,7 +57,6 @@ def execute_cross_join(op, left, right, predicates, **kwargs):
     We create a dummy column of all :data:`True` instances and use that as the
     join key. This results in the desired Cartesian product behavior guaranteed
     by cross join.
-
     """
     assert not predicates, "cross join should have an empty predicate set"
     # generate a unique name for the temporary join key

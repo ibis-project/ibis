@@ -322,8 +322,8 @@ def test_join_just_materialized(con, nation, region, customer):
 
 
 def test_full_outer_join(con):
-    """Testing full outer join separately due to previous issue with
-    outer join resulting in left outer join (issue #1773)"""
+    """Testing full outer join separately due to previous issue with outer join
+    resulting in left outer join (issue #1773)"""
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
 

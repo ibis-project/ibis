@@ -1,4 +1,4 @@
-""" Time context module
+"""Time context module.
 
 This is an implementation of time context extension without affecting the
 existing SQL-like execution model for backends.
@@ -58,18 +58,18 @@ def get_time_col():
 
 
 class TimeContextRelation(enum.Enum):
-    """Enum to classify the relationship between two time contexts
-    Assume that we have two timecontext `c1 (begin1, end1)`,
-    `c2(begin2, end2)`:
-        - SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or
-          equal to `begin2`, and `end1` is less than or equal to `end2`.
-        - SUPERSET means that `begin1` is earlier than `begin2`, and `end1`
-          is later than `end2`.
-        - If neither of the two contexts is a superset of each other, and they
-          share some time range in common, we called them OVERLAP.
-        - NONOVERLAP means the two contexts doesn't overlap at all, which
-          means `end1` is earlier than `begin2` or `end2` is earlier than
-          `begin1`.
+    """Enum to classify the relationship between two time contexts Assume that
+    we have two timecontext `c1 (begin1, end1)`, `c2(begin2, end2)`:
+
+    - SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or
+      equal to `begin2`, and `end1` is less than or equal to `end2`.
+    - SUPERSET means that `begin1` is earlier than `begin2`, and `end1`
+      is later than `end2`.
+    - If neither of the two contexts is a superset of each other, and they
+      share some time range in common, we called them OVERLAP.
+    - NONOVERLAP means the two contexts doesn't overlap at all, which
+      means `end1` is earlier than `begin2` or `end2` is earlier than
+      `begin1`.
     """
 
     SUBSET = 0
@@ -108,8 +108,10 @@ def compare_timecontext(
 def canonicalize_context(
     timecontext: Optional[TimeContext],
 ) -> Optional[TimeContext]:
-    """Convert a timecontext to canonical one with type pandas.Timestamp
-    for its begin and end time. Raise Exception for illegal inputs
+    """Convert a timecontext to canonical one with type pandas.Timestamp for
+    its begin and end time.
+
+    Raise Exception for illegal inputs
     """
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
@@ -151,7 +153,7 @@ def localize_context(timecontext: TimeContext, timezone: str) -> TimeContext:
 def construct_time_context_aware_series(
     series: pd.Series, frame: pd.DataFrame
 ) -> pd.Series:
-    """Construct a Series by adding 'time' in its MultiIndex
+    """Construct a Series by adding 'time' in its MultiIndex.
 
     In window execution, the result Series of udf may need
     to be trimmed by timecontext. In order to do so, 'time'

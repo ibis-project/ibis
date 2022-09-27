@@ -106,8 +106,8 @@ class BackendTest(abc.ABC):
         worker_id: str,
         **kwargs: Any,
     ) -> None:
-        """Load testdata from `data_directory` into
-        the backend using scripts in `script_directory`."""
+        """Load testdata from `data_directory` into the backend using scripts
+        in `script_directory`."""
         # handling for multi-processes pytest
 
         # get the temp directory shared by all workers

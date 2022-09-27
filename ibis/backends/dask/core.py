@@ -1,5 +1,5 @@
-"""The dask backend is a very close port of the pandas backend, and thus
-has the similar caveats.
+"""The dask backend is a very close port of the pandas backend, and thus has
+the similar caveats.
 
 The dask backend is a departure from the typical ibis backend in that it
 doesn't compile to anything and the execution of the ibis expression
@@ -359,8 +359,8 @@ def main_execute(
     cache=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data
-    are bound, raise an Exception.
+    """Execute an expression against data that are bound to it. If no data are
+    bound, raise an Exception.
 
     Parameters
     ----------

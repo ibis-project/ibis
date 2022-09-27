@@ -92,7 +92,6 @@ from ibis.backends.pandas.execution.strings import sql_like_to_regex
     ],
 )
 def test_string_ops(t, df, case_func, expected_func):
-
     # ignore matching UserWarnings
     with catch_warnings(record=True):
         expr = case_func(t.strings_with_space)

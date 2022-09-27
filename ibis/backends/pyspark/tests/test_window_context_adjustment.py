@@ -27,7 +27,7 @@ from pyspark.sql.window import Window  # noqa: E402
     indirect=['ibis_windows'],
 )
 def test_window_with_timecontext(client, ibis_windows, spark_range):
-    """Test context adjustment for trailing / range window
+    """Test context adjustment for trailing / range window.
 
     We expand context according to window sizes, for example, for a table of:
     time       value
@@ -79,7 +79,7 @@ def test_window_with_timecontext(client, ibis_windows, spark_range):
     indirect=['ibis_windows'],
 )
 def test_cumulative_window(client, ibis_windows, spark_range):
-    """Test context adjustment for cumulative window
+    """Test context adjustment for cumulative window.
 
     For cumulative window, by defination we should look back infinately.
     When data is trimmed by time context, we define the limit of looking
@@ -130,7 +130,7 @@ def test_cumulative_window(client, ibis_windows, spark_range):
     indirect=['ibis_windows'],
 )
 def test_multiple_trailing_window(client, ibis_windows, spark_range):
-    """Test context adjustment for multiple trailing window
+    """Test context adjustment for multiple trailing window.
 
     When there are multiple window ops, we need to verify contexts are
     adjusted correctly for all windows. In this tests we are constucting
@@ -183,7 +183,7 @@ def test_multiple_trailing_window(client, ibis_windows, spark_range):
     indirect=['ibis_windows'],
 )
 def test_chained_trailing_window(client, ibis_windows, spark_range):
-    """Test context adjustment for chained windows
+    """Test context adjustment for chained windows.
 
     When there are chained window ops, we need to verify contexts are
     adjusted correctly for all windows. In this tests we are constucting
@@ -241,7 +241,7 @@ def test_chained_trailing_window(client, ibis_windows, spark_range):
     indirect=['ibis_windows'],
 )
 def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
-    """Test context adjustment for rolling window and cumulative window
+    """Test context adjustment for rolling window and cumulative window.
 
     cumulative window should calculate only with in user's context,
     while rolling window should calculate on expanded context.
@@ -303,7 +303,7 @@ def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
     indirect=['ibis_windows'],
 )
 def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
-    """Test context adjustment for rolling window and non window ops
+    """Test context adjustment for rolling window and non window ops.
 
     non window ops should calculate only with in user's context,
     while rolling window should calculate on expanded context.
@@ -352,10 +352,9 @@ def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
 
 
 def test_complex_window(client):
-    """Test window with different sizes
-    mix context adjustment for window op that require context
-    adjustment and non window op that doesn't adjust context
-    """
+    """Test window with different sizes mix context adjustment for window op
+    that require context adjustment and non window op that doesn't adjust
+    context."""
     table = client.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),

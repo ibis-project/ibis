@@ -126,8 +126,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _to_geodataframe(df, schema):
         """Convert `df` to a `GeoDataFrame`.
 
-        Required libraries for geospatial support must be installed and a
-        geospatial column is present in the dataframe.
+        Required libraries for geospatial support must be installed and
+        a geospatial column is present in the dataframe.
         """
         import geopandas as gpd
         from geoalchemy2 import shape

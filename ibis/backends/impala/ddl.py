@@ -161,8 +161,9 @@ class CreateTableAvro(CreateTable):
 
 class LoadData(BaseDDL):
 
-    """
-    Generate DDL for LOAD DATA command. Cannot be cancelled
+    """Generate DDL for LOAD DATA command.
+
+    Cannot be cancelled
     """
 
     def __init__(

@@ -265,8 +265,7 @@ class Table(Expr):
             return expr
 
     def get_columns(self, iterable: Iterable[str]) -> list[Column]:
-        """
-        Get multiple columns from the table
+        """Get multiple columns from the table.
 
         Examples
         --------
@@ -290,8 +289,7 @@ class Table(Expr):
         return [self.get_column(x) for x in iterable]
 
     def get_column(self, name: str) -> Column:
-        """
-        Get a reference to a single column from the table
+        """Get a reference to a single column from the table.
 
         Returns
         -------
@@ -305,8 +303,7 @@ class Table(Expr):
         return list(self.schema().names)
 
     def schema(self) -> sch.Schema:
-        """
-        Get the schema for this table (if one is known)
+        """Get the schema for this table (if one is known)
 
         Returns
         -------
@@ -320,8 +317,7 @@ class Table(Expr):
         by=None,
         **additional_grouping_expressions: Any,
     ) -> GroupedTable:
-        """
-        Create a grouped table expression.
+        """Create a grouped table expression.
 
         Parameters
         ----------
@@ -648,7 +644,6 @@ class Table(Expr):
         >>> expr2 = table.mutate(new_columns)
         >>> expr.equals(expr2)
         True
-
         """
         import ibis.expr.analysis as an
         import ibis.expr.rules as rlz

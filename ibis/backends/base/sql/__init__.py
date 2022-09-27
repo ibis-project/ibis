@@ -243,8 +243,8 @@ class BaseSQLBackend(BaseBackend):
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.
 
-        This method can be implemented by subclasses. The logging happens
-        when `ibis.options.verbose` is `True`.
+        This method can be implemented by subclasses. The logging
+        happens when `ibis.options.verbose` is `True`.
         """
         util.log(sql)
 

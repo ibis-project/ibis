@@ -29,9 +29,10 @@ TypeRegistrationDict = Dict[
 def register_types_to_dispatcher(
     dispatcher: TraceTwoLevelDispatcher, types: TypeRegistrationDict
 ):
-    """
-    Many dask operations utilize the functions defined in the pandas backend
-    without modification. This function helps perform registrations in bulk
+    """Many dask operations utilize the functions defined in the pandas backend
+    without modification.
+
+    This function helps perform registrations in bulk
     """
     for ibis_op, registration_list in types.items():
         for types_to_register, fn in registration_list:
@@ -64,9 +65,10 @@ def make_meta_series(
 
 
 def make_selected_obj(gs: SeriesGroupBy) -> dd.DataFrame | dd.Series:
-    """
-    When you select a column from a `pandas.DataFrameGroupBy` the underlying
-    `.obj` reflects that selection. This function emulates that behavior.
+    """When you select a column from a `pandas.DataFrameGroupBy` the underlying
+    `.obj` reflects that selection.
+
+    This function emulates that behavior.
     """
     # TODO profile this for data shuffling
     # We specify drop=False in the case that we are grouping on the column
@@ -169,8 +171,8 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
 
 
 def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
-    """
-    Concat a list of `dd.Series` or `dd.DataFrame` objects into one DataFrame
+    """Concat a list of `dd.Series` or `dd.DataFrame` objects into one
+    DataFrame.
 
     This will use `DataFrame.concat` if all pieces are the same length.
     Otherwise we will iterratively join.
@@ -266,9 +268,9 @@ def assert_identical_grouping_keys(*args):
 def add_partitioned_sorted_column(
     df: dd.DataFrame | dd.Series,
 ) -> dd.DataFrame:
-    """Add a column that is already partitioned and sorted
-    This columns acts as if we had a global index across the distributed data.
-    Important properties:
+    """Add a column that is already partitioned and sorted This columns acts as
+    if we had a global index across the distributed data. Important properties:
+
     - Each row has a unique id (i.e. a value in this column)
     - IDs within each partition are already sorted
     - Any id in partition N_{t} is less than any id in partition N_{t+1}
@@ -338,7 +340,7 @@ def add_partitioned_sorted_column(
         partition_info: dict[str, Any],  # automatically injected by dask
         col_name: str,
     ):
-        """Assigns a column with a unique id for each row"""
+        """Assigns a column with a unique id for each row."""
         if len(df) > (2**31):
             raise ValueError(
                 f"Too many items in partition {partition_info} to add"
@@ -363,10 +365,10 @@ def add_partitioned_sorted_column(
 def is_row_order_preserving(nodes) -> bool:
     """Detects if the operation preserves row ordering.
 
-    Certain operations we know will not affect the ordering of rows in the
-    dataframe (for example elementwise operations on ungrouped dataframes).
-    In these cases we may be able to avoid expensive joins and assign directly
-    into the parent dataframe.
+    Certain operations we know will not affect the ordering of rows in
+    the dataframe (for example elementwise operations on ungrouped
+    dataframes). In these cases we may be able to avoid expensive joins
+    and assign directly into the parent dataframe.
     """
 
     def _is_row_order_preserving(node: ops.Node):

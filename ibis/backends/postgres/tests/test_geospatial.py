@@ -1,4 +1,4 @@
-""" Tests for geo spatial data types"""
+"""Tests for geo spatial data types."""
 import numpy as np
 import pytest
 from numpy import testing
@@ -450,7 +450,7 @@ def test_geo_dataframe(geotable):
     ],
 )
 def test_geo_literals_smoke(con, shape, value, modifier, expected):
-    """Smoke tests for geo spatial literals"""
+    """Smoke tests for geo spatial literals."""
     srid = f";{modifier['srid']}" if "srid" in modifier else ""
     geo_type = f":{modifier['geo_type']}" if "geo_type" in modifier else ""
     expr_type = f"{shape.upper()} {srid}{geo_type}"

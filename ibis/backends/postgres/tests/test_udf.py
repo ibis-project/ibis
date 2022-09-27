@@ -1,4 +1,4 @@
-"""Test support for already-defined UDFs in Postgres"""
+"""Test support for already-defined UDFs in Postgres."""
 
 import functools
 
@@ -103,7 +103,7 @@ def table(con_for_udf, table_name, test_schema):
 
 
 def test_existing_sql_udf(test_schema, table):
-    """Test creating ibis UDF object based on existing UDF in the database"""
+    """Test creating ibis UDF object based on existing UDF in the database."""
     # Create ibis UDF objects referring to UDFs already created in the database
     custom_length_udf = existing_udf(
         'custom_len',
@@ -134,14 +134,14 @@ def test_existing_plpython_udf(test_schema, table):
 
 
 def mult_a_b(a, b):
-    """Test function to be defined in-database as a UDF
-    and used via ibis UDF"""
+    """Test function to be defined in-database as a UDF and used via ibis
+    UDF."""
     return a * b
 
 
 def test_udf(con_for_udf, test_schema, table):
-    """Test creating a UDF in database based on Python function
-    and then creating an ibis UDF object based on that"""
+    """Test creating a UDF in database based on Python function and then
+    creating an ibis UDF object based on that."""
     mult_a_b_udf = udf(
         con_for_udf,
         mult_a_b,
@@ -166,11 +166,12 @@ def pysplit(text, split):
 
 
 def test_array_type(con_for_udf, test_schema, table):
-    """Test that usage of Array types work
-    Other scalar types can be represented either by the class or an instance,
-    but Array types work differently. Array types must be an instance,
-    because the Array class must be instantiated specifying the datatype
-    of the elements of the array.
+    """Test that usage of Array types work Other scalar types can be
+    represented either by the class or an instance, but Array types work
+    differently.
+
+    Array types must be an instance, because the Array class must be
+    instantiated specifying the datatype of the elements of the array.
     """
     pysplit_udf = udf(
         con_for_udf,
@@ -187,8 +188,8 @@ def test_array_type(con_for_udf, test_schema, table):
 
 
 def test_client_udf_api(con_for_udf, test_schema, table):
-    """Test creating a UDF in database based on Python function
-    using an ibis client method."""
+    """Test creating a UDF in database based on Python function using an ibis
+    client method."""
 
     def multiply(a, b):
         return a * b
@@ -214,9 +215,12 @@ def test_client_udf_api(con_for_udf, test_schema, table):
 
 def test_client_udf_decorator_fails(con_for_udf, test_schema):
     """Test that UDF creation fails when creating a UDF based on a Python
-    function that has been defined with decorators. Decorators are not
-    currently supported, because the decorators end up in the body of the UDF
-    but are not defined in the body, therefore causing a NameError."""
+    function that has been defined with decorators.
+
+    Decorators are not currently supported, because the decorators end
+    up in the body of the UDF but are not defined in the body, therefore
+    causing a NameError.
+    """
 
     def decorator(f):
         @functools.wraps(f)
