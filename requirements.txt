@@ -145,7 +145,7 @@ pyrsistent==0.18.1; python_version >= "3.7" and python_version < "4.0" and pytho
 pyspark==3.3.0; python_version >= "3.7"
 pytest-benchmark==3.4.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 pytest-clarity==1.0.1; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
-pytest-cov==3.0.0; python_version >= "3.6"
+pytest-cov==4.0.0; python_version >= "3.6"
 pytest-forked==1.4.0; python_version >= "3.6"
 pytest-mock==3.8.2; python_version >= "3.7"
 pytest-profiling==1.7.0
