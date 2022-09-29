@@ -249,12 +249,12 @@ class ParseURL(Value):
 
 
 @public
-class StringLength(Unary):
+class StringLength(StringUnary):
     output_dtype = dt.int32
 
 
 @public
-class StringAscii(Unary):
+class StringAscii(StringUnary):
     output_dtype = dt.int32
 
 

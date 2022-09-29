@@ -7,7 +7,15 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["sqlite", "mysql"], reason="No map support"),
     pytest.mark.notimpl(
-        ["duckdb", "postgres", "impala", "datafusion", "pyspark", "snowflake"],
+        [
+            "duckdb",
+            "postgres",
+            "impala",
+            "datafusion",
+            "pyspark",
+            "snowflake",
+            "polars",
+        ],
         reason="Not implemented yet",
     ),
 ]

@@ -79,6 +79,7 @@ def test_scalar_param_array(backend, con):
         "postgres",
         "pyspark",
         "snowflake",
+        "polars",
     ]
 )
 @pytest.mark.never(
@@ -101,6 +102,7 @@ def test_scalar_param_struct(backend, con):
         "impala",
         "pyspark",
         "snowflake",
+        "polars",
     ]
 )
 @pytest.mark.never(

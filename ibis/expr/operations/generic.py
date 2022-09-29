@@ -333,8 +333,6 @@ class SearchedCase(Value):
     results = rlz.nodes_of(rlz.any)
     default = rlz.any
 
-    # output_shape = rlz.shape_like("cases")
-
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)

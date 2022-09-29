@@ -159,7 +159,7 @@ _backends = tomli.loads(
 del _backends["spark"], _backends["pandas"]
 
 
-_XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark"}
+_XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark", "polars"}
 
 
 @pytest.mark.benchmark(group="compilation")

@@ -128,7 +128,7 @@ unnest = toolz.compose(
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "pandas", "pyspark", "snowflake"],
+    ["clickhouse", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
 )
 def test_array_discovery_postgres_duckdb(con):
@@ -148,7 +148,7 @@ def test_array_discovery_postgres_duckdb(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark", "snowflake"],
+    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars"],
     reason="backend supports nullable nested types",
 )
 def test_array_discovery_clickhouse(con):
@@ -198,6 +198,7 @@ def test_array_discovery_desired(con):
         "impala",
         "mysql",
         "pandas",
+        "polars",
         "postgres",
         "pyspark",
         "sqlite",
@@ -235,6 +236,7 @@ def test_unnest_simple(con):
 
 
 @unnest
+@pytest.mark.notimpl("polars")
 def test_unnest_complex(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -268,6 +270,7 @@ def test_unnest_complex(con):
     "clickhouse",
     reason="clickhouse throws away nulls in groupArray",
 )
+@pytest.mark.notimpl("polars")
 def test_unnest_idempotent(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -283,6 +286,7 @@ def test_unnest_idempotent(con):
 
 
 @unnest
+@pytest.mark.notimpl("polars")
 def test_unnest_no_nulls(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -306,6 +310,7 @@ def test_unnest_no_nulls(con):
 
 
 @unnest
+@pytest.mark.notimpl("polars")
 def test_unnest_default_name(con):
     array_types = con.table("array_types")
     df = array_types.execute()

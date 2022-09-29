@@ -123,4 +123,42 @@ in
     PYARROW_WITH_PLASMA = "0";
     PYARROW_WITH_S3 = "${if pkgs.arrow-cpp.enableS3 then "1" else "0"}";
   });
+
+  polars = super.polars.overridePythonAttrs (attrs:
+    let
+      inherit (attrs) version;
+      source = pkgs.fetchFromGitHub {
+        owner = "pola-rs";
+        repo = "polars";
+        rev = "py-v${version}";
+        sha256 = "sha256-4pXpU0QbUJv0OikOarBPsPqWZNEtpOhnEv6w4wMMSbs=";
+      };
+      sourceRoot = "source/py-polars";
+      nightlyRustPlatform =
+        let
+          rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+        in
+        pkgs.makeRustPlatform {
+          cargo = rustNightly;
+          rustc = rustNightly;
+        };
+    in
+    {
+      inherit version sourceRoot;
+
+      src = source;
+
+      patches = [ ./nix/patches/py-polars.patch ];
+
+      nativeBuildInputs = attrs.nativeBuildInputs or [ ]
+        ++ (with nightlyRustPlatform; [ cargoSetupHook maturinBuildHook ]);
+
+      cargoDeps = nightlyRustPlatform.fetchCargoTarball {
+        src = source;
+        inherit sourceRoot;
+        patches = [ ./nix/patches/py-polars.patch ];
+        name = "${attrs.pname}-${version}";
+        sha256 = "sha256-NdJ4p6DgtKzdPlc9f/2OsAK++s2Hm1F7OlbfAfxOs0o=";
+      };
+    });
 }

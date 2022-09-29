@@ -305,7 +305,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion"]),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
         ),
     ],
 )
@@ -429,7 +429,7 @@ def test_floating_mod(backend, alltypes, df):
         'smallint_col',
         'int_col',
         'bigint_col',
-        'float_col',
+        pytest.param('float_col', marks=pytest.mark.broken("polars", strict=False)),
         'double_col',
     ],
 )
@@ -466,7 +466,15 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 )
 @pytest.mark.notimpl(["sqlite", "duckdb"])
 @pytest.mark.never(
-    ["clickhouse", "dask", "datafusion", "impala", "pandas", "pyspark"],
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "impala",
+        "pandas",
+        "pyspark",
+        "polars",
+    ],
     reason="Not SQLAlchemy backends",
 )
 def test_sa_default_numeric_precision_and_scale(
@@ -510,7 +518,7 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
 @pytest.mark.notyet(
     ["clickhouse", "snowflake"],
     reason="backend doesn't implement a [0.0, 1.0) random function",
@@ -534,9 +542,10 @@ def test_random(con):
         (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
         (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
         (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
-        (
+        pytest.param(
             lambda x: x.clip(lower=x - 1, upper=x + 1),
             lambda x: x.clip(lower=x - 1, upper=x + 1),
+            marks=pytest.mark.notimpl("polars"),
         ),
         (
             lambda x: x.clip(lower=0, upper=1),
@@ -557,14 +566,7 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "pandas",
-        "pyspark",
-    ]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "pyspark", "polars"])
 def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n))

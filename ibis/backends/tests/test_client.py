@@ -71,7 +71,7 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
         ),
     ],
 )
-@mark.notimpl(["datafusion"])
+@mark.notimpl(["datafusion", "polars"])
 def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
 
@@ -87,7 +87,7 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     assert schema.equals(expected)
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "polars"])
 @pytest.mark.notyet(["sqlite"])
 @pytest.mark.never(
     ["dask", "pandas"],
@@ -100,7 +100,7 @@ def test_sql(con):
     assert len(result) == 10
 
 
-@mark.notimpl(["clickhouse", "datafusion"])
+@mark.notimpl(["clickhouse", "datafusion", "polars"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
@@ -121,6 +121,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         "postgres",
         "sqlite",
         "snowflake",
+        "polars",
     ]
 )
 def test_rename_table(con, temp_table, new_schema):
@@ -137,7 +138,7 @@ def test_rename_table(con, temp_table, new_schema):
         con.drop_table(temp_table, force=True)
 
 
-@mark.notimpl(["clickhouse", "datafusion"])
+@mark.notimpl(["clickhouse", "datafusion", "polars"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
@@ -166,6 +167,7 @@ def test_nullable_input_output(con, temp_table):
         "postgres",
         "sqlite",
         "snowflake",
+        "polars",
     ]
 )
 @mark.notyet(["pyspark"])
@@ -185,7 +187,7 @@ def test_create_drop_view(ddl_con, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.notimpl(["postgres", "mysql", "clickhouse", "datafusion"])
+@mark.notimpl(["postgres", "mysql", "clickhouse", "datafusion", "polars"])
 def test_separate_database(ddl_con, alternate_current_database, current_data_db):
     # using alternate_current_database switches "con" current
     #  database to a temporary one until a test is over
@@ -562,6 +564,7 @@ def test_invalid_connect():
         "postgres",
         "pyspark",
         "snowflake",
+        "polars",
     ],
     reason="backend isn't file-based",
 )
@@ -662,7 +665,7 @@ def test_agg_memory_table(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars"])
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")

@@ -1567,6 +1567,28 @@ jinja2 = {version = ">=2.11.1,<4", markers = "python_version >= \"3.6\" and pyth
 tomlkit = ">=0.4"
 
 [[package]]
+name = "polars"
+version = "0.14.17"
+description = "Blazingly fast DataFrame library"
+category = "main"
+optional = true
+python-versions = ">=3.7"
+
+[package.dependencies]
+typing_extensions = {version = ">=4.0.0", markers = "python_version < \"3.10\""}
+
+[package.extras]
+pandas = ["pyarrow (>=4.0.0)", "pandas"]
+connectorx = ["connectorx"]
+xlsx2csv = ["xlsx2csv (>=0.8.0)"]
+timezone = ["backports.zoneinfo", "tzdata"]
+matplotlib = ["matplotlib"]
+fsspec = ["fsspec"]
+numpy = ["numpy (>=1.16.0)"]
+all = ["polars"]
+pyarrow = ["pyarrow (>=4.0.0)"]
+
+[[package]]
 name = "pprintpp"
 version = "0.4.0"
 description = "A drop-in replacement for pprint that's actually pretty"
@@ -2502,7 +2524,7 @@ docs = ["sphinx", "jaraco.packaging (>=9)", "rst.linker (>=1.9)", "jaraco.tideli
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.3)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
 
 [extras]
-all = ["clickhouse-cityhash", "clickhouse-driver", "dask", "datafusion", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "lz4", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "snowflake-sqlalchemy", "sqlalchemy", "sqlglot"]
+all = ["clickhouse-cityhash", "clickhouse-driver", "dask", "datafusion", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "graphviz", "impyla", "lz4", "polars", "psycopg2", "pyarrow", "pymysql", "pyspark", "requests", "Shapely", "snowflake-sqlalchemy", "sqlalchemy", "sqlglot"]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
@@ -2511,6 +2533,7 @@ geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
 mysql = ["sqlalchemy", "pymysql", "sqlglot"]
 pandas = []
+polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
@@ -2520,7 +2543,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "66c7d5bceb8c7f35d7b6a7765cf0029151c401993d58efa3bfed99d5d7482d66"
+content-hash = "7fd776cd1d94d85780d85ac625210a24df822f02b97454935b2c224d5912d120"
 
 [metadata.files]
 absolufy-imports = [
@@ -3708,6 +3731,14 @@ pluggy = [
 poetry-dynamic-versioning = [
     {file = "poetry-dynamic-versioning-0.17.1.tar.gz", hash = "sha256:304eec793e8b71e3646b365671464c935626781e92dc029e35b01e8fe8c7530c"},
     {file = "poetry_dynamic_versioning-0.17.1-py3-none-any.whl", hash = "sha256:647d41eb554496eb657c7745ab2321b77d1f9c7cf52f7deb6ff674736fbd8ea1"},
+]
+polars = [
+    {file = "polars-0.14.17-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:cde5128f382f1c09eb0f98b91fef83fb721f067e8e7ac8652276855ddc8d6308"},
+    {file = "polars-0.14.17-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:0fdee605e6b4421fc5eaec32263164b22fc858b8a254bca8091f3865e11042bc"},
+    {file = "polars-0.14.17-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:58566bca74505052e0e01ac9d5319ab328bd0557bbd89620058baead9016032d"},
+    {file = "polars-0.14.17-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d33dcf81026ae50a7fa5265218f9150c8a117d22375cf8c140eef6aa97364c23"},
+    {file = "polars-0.14.17-cp37-abi3-win_amd64.whl", hash = "sha256:52e052d1b39082ed89d6861e78a48fe09a0cb58753119f7e5c8e4610d08c848d"},
+    {file = "polars-0.14.17.tar.gz", hash = "sha256:29d8e0428d9b36e77d1750b9ce2e4f19b0f88df826dfb362df5e778d552a6649"},
 ]
 pprintpp = [
     {file = "pprintpp-0.4.0-py2.py3-none-any.whl", hash = "sha256:b6b4dcdd0c0c0d75e4d7b2f21a9e933e5b2ce62b26e1a54537f9651ae5a5c01d"},

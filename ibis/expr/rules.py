@@ -29,6 +29,12 @@ class Shape(enum.IntEnum):
     COLUMNAR = 1
     # TABULAR = 2
 
+    def is_scalar(self):
+        return self == Shape.SCALAR
+
+    def is_columnar(self):
+        return self == Shape.COLUMNAR
+
 
 def highest_precedence_shape(nodes):
     if builtins.any(node.output_shape is Shape.COLUMNAR for node in nodes):

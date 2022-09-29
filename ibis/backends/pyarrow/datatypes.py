@@ -122,8 +122,8 @@ def from_pyarrow_timestamp(
     return dt.Timestamp(timezone=arrow_type.tz)
 
 
-@sch.infer.register(pa.Schema)  # type: ignore[misc]
-def infer_pyarrow_schema(schema: pa.Schema) -> sch.Schema:
+@sch.schema.register(pa.Schema)  # type: ignore[misc]
+def from_pyarrow_schema(schema: pa.Schema) -> sch.Schema:
     return sch.schema([(f.name, dt.dtype(f.type, nullable=f.nullable)) for f in schema])
 
 

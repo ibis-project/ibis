@@ -153,6 +153,7 @@ class Floor(Unary):
 @public
 class Round(Value):
     arg = rlz.numeric
+    # TODO(kszucs): the default should be 0 instead of being None
     digits = rlz.optional(rlz.numeric)
 
     output_shape = rlz.shape_like("arg")
@@ -318,6 +319,7 @@ class BitwiseNot(Unary):
     output_dtype = rlz.numeric_like("args", operator.invert)
 
 
+@public
 class BitwiseBinary(Binary):
     left = rlz.integer
     right = rlz.integer

@@ -17,7 +17,7 @@ pytest.importorskip("sqlglot")
     raises=(NotImplementedError, AssertionError),
 )
 @mark.notimpl(
-    ["datafusion", "pyspark"],
+    ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, AssertionError),
 )
@@ -73,7 +73,7 @@ not_sql = mark.never(
     reason="Not a SQL backend",
 )
 no_sql_extraction = mark.notimpl(
-    ["datafusion", "pyspark"],
+    ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
 )
 

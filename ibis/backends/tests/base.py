@@ -73,6 +73,7 @@ class BackendTest(abc.ABC):
     bool_is_int = False
     supports_structs = True
     supports_json = True
+    reduction_tolerance = 1e-7
 
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)

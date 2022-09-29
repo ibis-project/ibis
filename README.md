@@ -35,6 +35,7 @@ Ibis provides tools for interacting with the following systems:
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
 - [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
+- [Polars](https://ibis-project.org/docs/latest/backends/Polars/)
 - [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
 - [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
 - [Snowflake](https://ibis-project.org/docs/latest/backends/Snowflake) (experimental)
