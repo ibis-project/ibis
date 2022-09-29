@@ -119,7 +119,7 @@ class Backend(BaseBackend):
         catalog = self._context.catalog()
         database = catalog.database('public')
         table = database.table(name)
-        schema = sch.infer(table.schema)
+        schema = sch.schema(table.schema)
         return self.table_class(name, schema, self).to_expr()
 
     def register_csv(

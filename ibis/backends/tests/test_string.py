@@ -30,25 +30,25 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.like('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='like',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.like('6^%'),
             lambda t: t.string_col.str.contains('6%'),
             id='complex_like_escape',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.like('6^%%'),
             lambda t: t.string_col.str.contains('6%.*'),
             id='complex_like_escape_match',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.ilike('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
-            marks=pytest.mark.notimpl(["datafusion", "impala", "pyspark"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars"]),
         ),
         param(
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
@@ -105,13 +105,13 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.translate('0', 'a'),
             lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "mysql"]),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "mysql", "polars"]),
         ),
         param(
             lambda t: t.string_col.find('a'),
             lambda t: t.string_col.str.find('a'),
             id='find',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.lpad(10, 'a'),
@@ -127,13 +127,17 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite", "snowflake"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "pyspark", "sqlite", "snowflake", "polars"]
+            ),
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "sqlite", "snowflake"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "pyspark", "sqlite", "snowflake", "polars"]
+            ),
         ),
         param(
             lambda t: t.string_col.lower(),
@@ -155,7 +159,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
             # TODO(dask) - dtype - #2553
-            marks=pytest.mark.notimpl(["clickhouse", "dask", "datafusion"]),
+            marks=pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.length(),
@@ -221,21 +225,21 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str[-1:],
             id='expr_slice_begin',
             # TODO: substring #2553
-            marks=pytest.mark.notimpl(["dask", "pyspark"]),
+            marks=pytest.mark.notimpl(["dask", "pyspark", "polars"]),
         ),
         param(
             lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
             id='expr_slice_end',
             # TODO: substring #2553
-            marks=pytest.mark.notimpl(["dask", "pyspark"]),
+            marks=pytest.mark.notimpl(["dask", "pyspark", "polars"]),
         ),
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
             id='expr_empty_slice',
             # TODO: substring #2553
-            marks=pytest.mark.notimpl(["dask", "pyspark"]),
+            marks=pytest.mark.notimpl(["dask", "pyspark", "polars"]),
         ),
         param(
             lambda t: t.date_string_col[
@@ -244,7 +248,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str[-2:-1],
             id='expr_slice_begin_end',
             # TODO: substring #2553
-            marks=pytest.mark.notimpl(["dask", "pyspark"]),
+            marks=pytest.mark.notimpl(["dask", "pyspark", "polars"]),
         ),
         param(
             lambda t: t.date_string_col.split('/'),

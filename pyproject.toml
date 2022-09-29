@@ -54,6 +54,7 @@ geopandas = { version = ">=0.6,<0.12", optional = true }
 graphviz = { version = ">=0.16,<0.21", optional = true }
 impyla = { version = ">=0.17,<0.19", optional = true, extras = ["kerberos"] }
 lz4 = { version = ">=3.1.10,<5", optional = true }
+polars = { version = ">=0.14.12,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=1,<10", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
@@ -121,6 +122,7 @@ all = [
   "graphviz",
   "impyla",
   "lz4",
+  "polars",
   "psycopg2",
   "pyarrow",
   "pymysql",
@@ -139,6 +141,7 @@ geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
 mysql = ["sqlalchemy", "pymysql", "sqlglot"]
 pandas = []
+polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
@@ -153,6 +156,7 @@ duckdb = "ibis.backends.duckdb"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
 pandas = "ibis.backends.pandas"
+polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
@@ -267,6 +271,7 @@ markers = [
   "impala: Apache Impala tests",
   "mysql: MySQL tests",
   "pandas: Pandas tests",
+  "polars: Polars tests",
   "postgres: PostgreSQL tests",
   "pyspark: PySpark tests",
   "snowflake: Snowflake tests",

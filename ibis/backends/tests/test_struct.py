@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "pyspark"]),
+    pytest.mark.notimpl(["datafusion", "pyspark", "polars"]),
 ]
 
 

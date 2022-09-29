@@ -188,6 +188,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     "pyspark",
                     "sqlite",
                     "snowflake",
+                    "polars",
                 ]
             ),
         ),
@@ -249,14 +250,14 @@ def test_date_truncate(backend, alltypes, df, unit):
             'Y',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.notimpl(['dask']),
+            marks=pytest.mark.notimpl(['dask', 'polars']),
         ),
         param('Q', pd.offsets.DateOffset, marks=pytest.mark.xfail),
         param(
             'M',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.notimpl(['dask']),
+            marks=pytest.mark.notimpl(['dask', 'polars']),
         ),
         param(
             'W',
@@ -316,6 +317,7 @@ def test_integer_to_interval_timestamp(
         "pyspark",
         "sqlite",
         "snowflake",
+        "polars",
     ]
 )
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
@@ -439,7 +441,9 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
         param('10s', minus, marks=pytest.mark.notimpl(["mysql"])),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "sqlite", "snowflake"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "sqlite", "snowflake", "polars"]
+)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -528,7 +532,14 @@ def test_interval_add_cast_column(backend, alltypes, df):
             '%Y%m%d',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "postgres", "pyspark", "snowflake"]
+                    [
+                        "dask",
+                        "pandas",
+                        "postgres",
+                        "pyspark",
+                        "snowflake",
+                        "polars",
+                    ]
                 ),
                 pytest.mark.notyet(["duckdb", "impala"]),
             ],
@@ -600,7 +611,7 @@ def test_integer_to_timestamp(backend, con, unit):
             "UTC",
             id="pyspark_format",
             marks=pytest.mark.never(
-                ["mysql"], reason="datetime formatting style not supported"
+                ["mysql", "polars"], reason="datetime formatting style not supported"
             ),
         ),
     ],
@@ -641,6 +652,7 @@ def test_string_to_timestamp(alltypes, fmt, timezone):
         'impala',
         'datafusion',
         'snowflake',
+        'polars',
     ]
 )
 def test_string_to_timestamp_tz_error(alltypes):
@@ -740,7 +752,7 @@ def test_now(con):
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "polars"])
 def test_now_from_projection(alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
@@ -775,7 +787,9 @@ def test_timestamp_literal(con):
     assert result == '2022-02-04 16:20:00'
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake", "polars"]
+)
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)
@@ -854,8 +868,8 @@ def test_integer_cast_to_timestamp(backend, alltypes, df):
     ),
 )
 @pytest.mark.notimpl(
-    ["datafusion"],
-    reason="DataFusion backend assumes ns resolution timestamps",
+    ["datafusion", "polars"],
+    reason="Arrow backends assumes ns resolution timestamps",
 )
 @pytest.mark.notyet(
     ["pyspark"],

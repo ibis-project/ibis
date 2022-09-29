@@ -3,6 +3,7 @@ let
 in
 { ... }@args: import sources.nixpkgs ({
   overlays = [
+    (import sources.rust-overlay)
     (pkgs: _: {
       inherit (import sources."gitignore.nix" {
         inherit (pkgs) lib;

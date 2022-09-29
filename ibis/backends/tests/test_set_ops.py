@@ -23,7 +23,7 @@ def union_subsets(alltypes, df):
     "distinct",
     [param(False, id="all"), param(True, id="distinct")],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -37,7 +37,7 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -64,7 +64,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.notyet(["impala"])
 def test_intersect(backend, alltypes, df, distinct):
     a = alltypes.filter((5200 <= _.id) & (_.id <= 5210))
@@ -102,7 +102,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.notyet(["impala"])
 def test_difference(backend, alltypes, df, distinct):
     a = alltypes.filter((5200 <= _.id) & (_.id <= 5210))

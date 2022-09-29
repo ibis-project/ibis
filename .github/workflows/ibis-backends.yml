@@ -54,6 +54,8 @@ jobs:
             title: Datafusion
           - name: pyspark
             title: PySpark
+          - name: polars
+            title: Polars
           - name: mysql
             title: MySQL
             services:

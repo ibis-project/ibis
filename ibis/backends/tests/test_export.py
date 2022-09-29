@@ -113,9 +113,8 @@ def test_column_to_pyarrow_array(limit, backend, awards_players):
 
 @pytest.mark.parametrize("limit", no_limit)
 def test_empty_column_to_pyarrow(limit, backend, awards_players):
-    array = awards_players.filter(
-        awards_players.awardID == "DEADBEEF"
-    ).awardID.to_pyarrow(limit=limit)
+    expr = awards_players.filter(awards_players.awardID == "DEADBEEF").awardID
+    array = expr.to_pyarrow(limit=limit)
     assert isinstance(array, pa.Array)
     assert len(array) == 0
 
@@ -123,11 +122,8 @@ def test_empty_column_to_pyarrow(limit, backend, awards_players):
 @pytest.mark.notyet(["datafusion"], reason="DataFusion backend doesn't support sum")
 @pytest.mark.parametrize("limit", no_limit)
 def test_empty_scalar_to_pyarrow(limit, backend, awards_players):
-    array = (
-        awards_players.filter(awards_players.awardID == "DEADBEEF")
-        .yearID.sum()
-        .to_pyarrow(limit=limit)
-    )
+    expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.sum()
+    array = expr.to_pyarrow(limit=limit)
     assert isinstance(array, pa.Scalar)
 
 

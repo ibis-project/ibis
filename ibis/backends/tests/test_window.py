@@ -229,7 +229,7 @@ def calc_zscore(s):
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -284,7 +284,7 @@ def test_grouped_bounded_expanding_window(
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -304,7 +304,7 @@ def test_ungrouped_bounded_expanding_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
 def test_grouped_bounded_following_window(backend, alltypes, df):
     window = ibis.window(
         preceding=0,
@@ -359,7 +359,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
 
@@ -423,7 +423,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 def test_grouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -590,7 +590,7 @@ def test_grouped_unbounded_window(
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, con, result_fn, expected_fn, ordered
 ):
@@ -621,7 +621,7 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "snowflake"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "snowflake", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",  # noqa: E501
@@ -674,7 +674,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark"])
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark", "polars"])
 @pytest.mark.notyet(["clickhouse"], reason="clickhouse doesn't implement percent_rank")
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())

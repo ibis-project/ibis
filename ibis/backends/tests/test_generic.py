@@ -57,6 +57,7 @@ na_none_cols = pytest.mark.parametrize(
                         "postgres",
                         "sqlite",
                         "snowflake",
+                        "polars",
                     ]
                 ),
                 pytest.mark.notyet(["duckdb"], reason="non-finite value support"),
@@ -86,7 +87,7 @@ def test_isna(backend, alltypes, col):
         param(
             "na_col",
             marks=pytest.mark.notimpl(
-                ["clickhouse", "duckdb", "impala", "postgres", "snowflake"]
+                ["clickhouse", "duckdb", "impala", "postgres", "snowflake", "polars"]
             ),
         ),
         "none_col",
@@ -115,7 +116,12 @@ def test_fillna(backend, alltypes, col):
     [
         param(ibis.coalesce(5, None, 4), 5, id="generic"),
         param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
-        param(ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14, id="non_null_last"),
+        param(
+            ibis.coalesce(ibis.NA, ibis.NA, 3.14),
+            3.14,
+            id="non_null_last",
+            marks=pytest.mark.broken("polars"),
+        ),
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
@@ -132,7 +138,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark"])
+@pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "dask", "pyspark"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by('id')
     df = sorted_df
@@ -243,6 +249,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "postgres",
         "sqlite",
         "snowflake",
+        "polars",
     ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
@@ -384,7 +391,9 @@ def test_mutate_rename(alltypes):
     assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
 
 
-@pytest.mark.parametrize('how', ['any', 'all'])
+@pytest.mark.parametrize(
+    'how', ['any', pytest.param('all', marks=pytest.mark.notyet("polars"))]
+)
 @pytest.mark.parametrize(
     'subset', [None, [], 'col_1', ['col_1', 'col_2'], ['col_1', 'col_3']]
 )
@@ -446,7 +455,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
@@ -698,7 +707,12 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
             lambda t: t.int_col,
             id="rshift_col_col",
         ),
-        param(rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"),
+        param(
+            rshift,
+            lambda _: 3,
+            lambda t: t.int_col,
+            id="rshift_scalar_col",
+        ),
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )

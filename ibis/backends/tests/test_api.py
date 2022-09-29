@@ -17,7 +17,7 @@ def test_version(backend):
 # 2. list_databases() returns directories which don't make sense as HDF5
 #    databases
 @pytest.mark.never(["dask", "pandas"], reason="pass")
-@pytest.mark.notimpl(["datafusion", "duckdb"])
+@pytest.mark.notimpl(["datafusion", "duckdb", "polars"])
 def test_database_consistency(con):
     # every backend has a different set of databases, not testing the
     # exact names for now
