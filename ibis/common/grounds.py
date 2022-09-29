@@ -22,6 +22,11 @@ class BaseMeta(ABCMeta):
 
     __slots__ = ()
 
+    def __new__(metacls, clsname, bases, dct, **kwargs):
+        # enforce slot definitions
+        dct.setdefault("__slots__", ())
+        return super().__new__(metacls, clsname, bases, dct, **kwargs)
+
     def __call__(cls, *args, **kwargs):
         return cls.__create__(*args, **kwargs)
 
@@ -147,8 +152,6 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
 
 class Immutable(Base):
-    __slots__ = ()
-
     def __setattr__(self, name: str, _: Any) -> None:
         raise TypeError(
             f"Attribute {name!r} cannot be assigned to immutable instance of "
@@ -158,7 +161,6 @@ class Immutable(Base):
 
 class Singleton(Base):
 
-    __slots__ = ()
     __instances__ = WeakValueDictionary()
 
     @classmethod
@@ -174,7 +176,6 @@ class Singleton(Base):
 
 class Comparable(Base):
 
-    __slots__ = ()
     __cache__ = WeakCache()
 
     def __eq__(self, other):

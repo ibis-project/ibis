@@ -57,9 +57,8 @@ def fmt(expr: ir.Expr) -> str:
         formatted = fmt_table_op(node, aliases=aliases, deps=deps)
         pieces.append(f"{alias} := {formatted}")
 
-    pieces.append(
-        fmt_root(root, name=expr._safe_name, aliases=aliases, deps=deps)
-    )
+    name = expr.get_name() if expr.has_name() else None
+    pieces.append(fmt_root(root, name=name, aliases=aliases, deps=deps))
     depth = ibis.options.repr.depth or 0
     if depth and depth < len(pieces):
         return fmt_truncated(pieces, depth=depth)

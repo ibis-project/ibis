@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import itertools
-from functools import cached_property
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from public import public
@@ -96,17 +95,17 @@ class StructValue(Value):
             return self.__getitem__(name)
         raise AttributeError(name)
 
-    @cached_property
+    @property
     def names(self) -> Sequence[str]:
         """Return the field names of the struct."""
         return self.type().names
 
-    @cached_property
+    @property
     def types(self) -> Sequence[dt.DataType]:
         """Return the field types of the struct."""
         return self.type().types
 
-    @cached_property
+    @property
     def fields(self) -> Mapping[str, dt.DataType]:
         """Return a mapping from field name to field type of the struct."""
         return util.frozendict(self.type().pairs)

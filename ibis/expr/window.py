@@ -98,6 +98,16 @@ class Window(Comparable):
     Use 0 for `CURRENT ROW`.
     """
 
+    __slots__ = (
+        '_group_by',
+        '_order_by',
+        '_hash',
+        'preceding',
+        'following',
+        'max_lookback',
+        'how',
+    )
+
     def __init__(
         self,
         group_by=None,
@@ -133,9 +143,9 @@ class Window(Comparable):
         self.how = how
 
         self._validate_frame()
+        self._hash = self._compute_hash()
 
-    @functools.cached_property
-    def _hash(self) -> int:
+    def _compute_hash(self) -> int:
         return hash(
             (
                 *self._group_by,

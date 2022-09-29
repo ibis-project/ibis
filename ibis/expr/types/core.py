@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, Mapping
 
 import toolz
@@ -10,12 +9,7 @@ from public import public
 
 import ibis.common.graph as g
 import ibis.expr.operations as ops
-from ibis.common.exceptions import (
-    ExpressionError,
-    IbisError,
-    IbisTypeError,
-    TranslationError,
-)
+from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.pretty import console
 from ibis.config import _default_backend, options
@@ -81,25 +75,10 @@ class Expr(Immutable):
     __nonzero__ = __bool__
 
     def has_name(self):
-        return isinstance(self.op(), ops.Named)
+        return isinstance(self._arg, ops.Named)
 
     def get_name(self):
-        return self.op().name
-
-    # TODO(kszucs): remove it entirely
-    @cached_property
-    def _safe_name(self) -> str | None:
-        """Get the name of an expression `expr` if one exists.
-
-        Returns
-        -------
-        str | None
-            `str` if the Expr has a name, otherwise `None`
-        """
-        try:
-            return self.get_name()
-        except (ExpressionError, AttributeError):
-            return None
+        return self._arg.name
 
     def _repr_png_(self) -> bytes | None:
         if options.interactive or not options.graphviz_repr:
