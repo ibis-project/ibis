@@ -93,7 +93,7 @@ def test_cast_integer_to_temporal_type(t, df, column):
     expr = t.plain_int64.cast(column_type)
     result = expr.execute()
     expected = pd.Series(
-        pd.to_datetime(df.plain_int64.values, unit='ns').values,
+        pd.to_datetime(df.plain_int64.values, unit='s').values,
         index=df.index,
         name='plain_int64',
     ).dt.tz_localize(column_type.timezone)

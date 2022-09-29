@@ -77,7 +77,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value),
+        ('int64', lambda x: x.value // int(1e9)),
         param(
             'double',
             float,
@@ -101,7 +101,7 @@ def test_cast_timestamp_scalar_naive(to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value),
+        ('int64', lambda x: x.value // int(1e9)),
         param('double', float, marks=pytest.mark.notimpl(["dask"])),
         (
             dt.Timestamp('America/Los_Angeles'),

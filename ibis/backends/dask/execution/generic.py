@@ -255,6 +255,29 @@ def execute_cast_series_group_by(op, data, type, **kwargs):
     return result.groupby(data.index)
 
 
+def cast_scalar_to_timestamp(data, tz):
+    if isinstance(data, str):
+        return pd.Timestamp(data, tz=tz)
+    return pd.Timestamp(data, unit="s", tz=tz)
+
+
+@execute_node.register(ops.Cast, dd.core.Scalar, dt.Timestamp)
+def execute_cast_scalar_timestamp(op, data, type, **kwargs):
+    return dd.map_partitions(
+        cast_scalar_to_timestamp, data, tz=type.timezone, meta="datetime64[ns]"
+    )
+
+
+def cast_series_to_timestamp(data, tz):
+    if pd.api.types.is_string_dtype(data):
+        timestamps = to_datetime(data, infer_datetime_format=True)
+    else:
+        timestamps = to_datetime(data, unit="s")
+    if getattr(timestamps.dtype, "tz", None) is not None:
+        return timestamps.dt.tz_convert(tz)
+    return timestamps.dt.tz_localize(tz)
+
+
 @execute_node.register(ops.Cast, dd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
     arg = op.arg
@@ -264,22 +287,17 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         return data
 
     tz = type.timezone
+    dtype = 'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
 
     if from_type.is_timestamp() or from_type.is_date():
-        return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
+        return data.astype(dtype)
 
     if from_type.is_string() or from_type.is_integer():
-        timestamps = data.map_partitions(
-            to_datetime,
-            infer_datetime_format=True,
-            meta=(data.name, 'datetime64[ns]'),
+        return data.map_partitions(
+            cast_series_to_timestamp,
+            tz,
+            meta=(data.name, dtype),
         )
-        # TODO - is there a better way to do this
-        timestamps = timestamps.astype(timestamps.head(1).dtype)
-        if getattr(timestamps.dtype, "tz", None) is not None:
-            return timestamps.dt.tz_convert(tz)
-        else:
-            return timestamps.dt.tz_localize(tz)
 
     raise TypeError(f"Don't know how to cast {from_type} to {type}")
 
