@@ -731,7 +731,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 
 [[package]]
 name = "impyla"
-version = "0.17.0"
+version = "0.18.0"
 description = "Python client for the Impala distributed query engine"
 category = "main"
 optional = true
@@ -741,7 +741,7 @@ python-versions = "*"
 bitarray = "*"
 kerberos = {version = ">=1.3.0", optional = true, markers = "extra == \"kerberos\""}
 six = "*"
-thrift = "0.11.0"
+thrift = "0.16.0"
 thrift-sasl = "0.4.3"
 
 [package.extras]
@@ -2296,7 +2296,7 @@ tests = ["pytest-cov", "pytest"]
 
 [[package]]
 name = "thrift"
-version = "0.11.0"
+version = "0.16.0"
 description = "Python bindings for the Apache Thrift RPC system"
 category = "main"
 optional = true
@@ -2306,8 +2306,7 @@ python-versions = "*"
 six = ">=1.7.2"
 
 [package.extras]
-all = ["ipaddress", "backports.ssl_match_hostname (>=3.5)", "tornado (>=4.0)", "twisted"]
-ssl = ["ipaddress", "backports.ssl_match_hostname (>=3.5)"]
+all = ["tornado (>=4.0)", "twisted"]
 tornado = ["tornado (>=4.0)"]
 twisted = ["twisted"]
 
@@ -3275,8 +3274,8 @@ importlib-resources = [
     {file = "importlib_resources-5.9.0.tar.gz", hash = "sha256:5481e97fb45af8dcf2f798952625591c58fe599d0735d86b10f54de086a61681"},
 ]
 impyla = [
-    {file = "impyla-0.17.0-py2.py3-none-any.whl", hash = "sha256:3bf1a9aec0ce141a784962c5fc0db670df51ca08db59cb0eae01b74708377d9b"},
-    {file = "impyla-0.17.0.tar.gz", hash = "sha256:2e44c8f594d75f40706394aa300c1f1f93ffa592b37b6e2bd02e0396a9443306"},
+    {file = "impyla-0.18.0-py2.py3-none-any.whl", hash = "sha256:3c80dc32d0fd0b7311995d5903844ff32745647b9345e54c92e80d47df163e13"},
+    {file = "impyla-0.18.0.tar.gz", hash = "sha256:d5e301de056d9e53caa75ba0a6e5108b6078d87d10052824d2eb7a37bdcc52a4"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -4386,7 +4385,7 @@ termcolor = [
     {file = "termcolor-2.0.1.tar.gz", hash = "sha256:6b2cf769e93364a2676e1de56a7c0cff2cf5bd07f37e9cc80b0dd6320ebfe388"},
 ]
 thrift = [
-    {file = "thrift-0.11.0.tar.gz", hash = "sha256:7d59ac4fdcb2c58037ebd4a9da5f9a49e3e034bf75b3f26d9fe48ba3d8806e6b"},
+    {file = "thrift-0.16.0.tar.gz", hash = "sha256:2b5b6488fcded21f9d312aa23c9ff6a0195d0f6ae26ddbd5ad9e3e25dfc14408"},
 ]
 thrift-sasl = [
     {file = "thrift_sasl-0.4.3-py2.py3-none-any.whl", hash = "sha256:d24b49140115e6e2a96d08335cff225a27a28ea71866fb1b2bdb30ca5afca64e"},
