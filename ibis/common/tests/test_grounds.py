@@ -509,6 +509,7 @@ class Node(Comparable):
 
     # override the default cache object
     __cache__ = WeakCache()
+    __slots__ = ('name',)
     num_equal_calls = 0
 
     def __init__(self, name):
@@ -637,6 +638,7 @@ class OneAndOnly(Singleton):
 
 
 class DataType(Singleton):
+    __slots__ = ('nullable',)
     __instances__ = weakref.WeakValueDictionary()
 
     def __init__(self, nullable=True):

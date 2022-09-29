@@ -6,7 +6,6 @@ import itertools
 import operator
 import sys
 import warnings
-from functools import cached_property
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -307,9 +306,9 @@ class Table(Expr):
         """
         return ops.TableColumn(self, name).to_expr()
 
-    @cached_property
+    @property
     def columns(self):
-        return list(self.schema().names)
+        return list(self._arg.schema.names)
 
     def schema(self) -> sch.Schema:
         """Get the schema for this table (if one is known)
@@ -1108,7 +1107,7 @@ class Table(Expr):
         """
         expr = self._ensure_expr(expr)
 
-        if expr._safe_name != name:
+        if expr.get_name() != name:
             expr = expr.name(name)
 
         if name not in self:
