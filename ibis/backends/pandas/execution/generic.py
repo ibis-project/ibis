@@ -103,7 +103,13 @@ def execute_cast_series_group_by(op, data, type, **kwargs):
 
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 def execute_cast_series_generic(op, data, type, **kwargs):
-    return data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
+    out = data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
+    if type.is_integer():
+        if op.arg.output_dtype.is_timestamp():
+            return out.floordiv(int(1e9))
+        elif op.arg.output_dtype.is_date():
+            return out.floordiv(int(24 * 60 * 60 * 1e9))
+    return out
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Array)
@@ -132,7 +138,10 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
 
     if from_type.is_string() or from_type.is_integer():
-        timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
+        if from_type.is_integer():
+            timestamps = pd.to_datetime(data.values, unit="s")
+        else:
+            timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
         if getattr(timestamps.dtype, "tz", None) is not None:
             method_name = "tz_convert"
         else:
@@ -342,15 +351,10 @@ def execute_cast_datetime_or_timestamp_to_string(op, data, type, **kwargs):
 
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.Int64)
-def execute_cast_datetime_to_integer(op, data, type, **kwargs):
-    """Cast datetimes to integers."""
-    return pd.Timestamp(data).value
-
-
-@execute_node.register(ops.Cast, pd.Timestamp, dt.Int64)
 def execute_cast_timestamp_to_integer(op, data, type, **kwargs):
     """Cast timestamps to integers."""
-    return data.value
+    t = pd.Timestamp(data)
+    return pd.NA if pd.isna(t) else int(t.timestamp())
 
 
 @execute_node.register(ops.Cast, (np.bool_, bool), dt.Timestamp)
@@ -373,17 +377,25 @@ def execute_cast_bool_to_interval(op, data, type, **kwargs):
     )
 
 
-@execute_node.register(ops.Cast, integer_types + (str,), dt.Timestamp)
-def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
-    """Cast integer and strings to timestamps."""
+@execute_node.register(ops.Cast, integer_types, dt.Timestamp)
+def execute_cast_integer_to_timestamp(op, data, type, **kwargs):
+    """Cast integer to timestamp."""
+    return pd.Timestamp(data, unit="s", tz=type.timezone)
+
+
+@execute_node.register(ops.Cast, str, dt.Timestamp)
+def execute_cast_string_to_timestamp(op, data, type, **kwargs):
+    """Cast string to timestamp."""
     return pd.Timestamp(data, tz=type.timezone)
 
 
-@execute_node.register(ops.Cast, pd.Timestamp, dt.Timestamp)
+@execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
 def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
     """Cast timestamps to other timestamps including timezone if necessary."""
     input_timezone = data.tz
     target_timezone = type.timezone
+
+    data = pd.Timestamp(data)
 
     if input_timezone == target_timezone:
         return data
@@ -392,11 +404,6 @@ def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
         return data.tz_localize(target_timezone)
 
     return data.tz_convert(target_timezone)
-
-
-@execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
-def execute_cast_datetime_to_datetime(op, data, type, **kwargs):
-    return execute_cast_timestamp_to_timestamp(op, data, type, **kwargs).to_pydatetime()
 
 
 @execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)
