@@ -16,8 +16,8 @@ def test_select_sql(alltypes, star1, star2):
         agg_string_columns=lambda t=star1: t.aggregate(
             [t['f'].sum().name('total')], ['foo_id', 'bar_id']
         ),
-        single_column=lambda t=star1: t.sort_by("f"),
-        mixed_columns_ascending=lambda t=star1: t.sort_by(["c", ("f", 0)]),
+        single_column=lambda t=star1: t.order_by("f"),
+        mixed_columns_ascending=lambda t=star1: t.order_by(["c", ("f", 0)]),
         limit_simple=lambda t=star1: t.limit(10),
         limit_with_offset=lambda t=star1: t.limit(10, offset=5),
         filter_then_limit=lambda t=star1: t[t.f > 0].limit(10),
@@ -56,7 +56,7 @@ def test_simple_joins(star1, star2):
 
 
 @sqlgolden
-def multiple_joins(con, star1, star2, star3):
+def test_multiple_joins(con, star1, star2, star3):
     t1 = star1
     t2 = star2
     t3 = star3
@@ -161,7 +161,7 @@ def test_bug_duplicated_where(airlines):
     )
 
     tmp1 = expr[expr.dev.notnull()]
-    tmp2 = tmp1.sort_by(ibis.desc('dev'))
+    tmp2 = tmp1.order_by(ibis.desc('dev'))
     return tmp2.limit(10)
 
 
@@ -446,22 +446,22 @@ def test_filter_inside_exists():
 
 
 @sqlgolden
-def sort_by_on_limit_yield_subquery(functional_alltypes):
-    # x.limit(...).sort_by(...)
+def test_order_by_on_limit_yield_subquery(functional_alltypes):
+    # x.limit(...).order_by(...)
     #   is semantically different from
-    # x.sort_by(...).limit(...)
+    # x.order_by(...).limit(...)
     #   and will often yield different results
     t = functional_alltypes
     return (
         t.group_by('string_col')
         .aggregate([t.count().name('nrows')])
         .limit(5)
-        .sort_by('string_col')
+        .order_by('string_col')
     )
 
 
 @sqlgolden
-def join_with_limited_table(star1, star2):
+def test_join_with_limited_table(star1, star2):
     limited = star1.limit(100)
     return limited.inner_join(star2, [limited.foo_id == star2.foo_id])[
         [limited]

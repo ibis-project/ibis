@@ -884,7 +884,7 @@ def test_bitwise_exprs(fn, expected_op):
     'expr_func',
     [
         lambda t, args: t[args],
-        lambda t, args: t.sort_by(args),
+        lambda t, args: t.order_by(args),
         lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean()),
     ],
 )

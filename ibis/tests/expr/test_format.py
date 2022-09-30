@@ -127,7 +127,7 @@ def test_memoize_insert_sort_key(con):
         dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
     )
 
-    worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+    worst = expr[expr.dev.notnull()].order_by(ibis.desc('dev')).limit(10)
 
     result = repr(worst)
 

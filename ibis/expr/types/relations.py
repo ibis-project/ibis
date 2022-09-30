@@ -513,18 +513,36 @@ class Table(Expr):
         | tuple[str | ir.Column, bool]
         | Sequence[tuple[str | ir.Column, bool]],
     ) -> Table:
-        """Sort table by `sort_exprs`
+        """Deprecated.
+
+        Use `order_by` instead.
+        """
+        warnings.warn(
+            "`Table.sort_by` is deprecated and will be removed in version "
+            "5.0, use `Table.order_by` instead",
+            FutureWarning,
+        )
+        return self.order_by(sort_exprs)
+
+    def order_by(
+        self,
+        by: str
+        | ir.Column
+        | tuple[str | ir.Column, bool]
+        | Sequence[tuple[str | ir.Column, bool]],
+    ) -> Table:
+        """Sort a table by one or more expressions.
 
         Parameters
         ----------
-        sort_exprs
-            Sort specifications
+        by:
+            An expression (or expressions) to sort the table by.
 
         Examples
         --------
         >>> import ibis
         >>> t = ibis.table(dict(a='int64', b='string'))
-        >>> t.sort_by(['a', ibis.desc('b')])
+        >>> t.order_by(['a', ibis.desc('b')])
         r0 := UnboundTable: unbound_table_0
           a int64
           b string
@@ -538,13 +556,13 @@ class Table(Expr):
         Table
             Sorted table
         """
-        if isinstance(sort_exprs, tuple):
-            sort_exprs = [sort_exprs]
-        elif sort_exprs is None:
-            sort_exprs = []
+        if isinstance(by, tuple):
+            by = [by]
+        elif by is None:
+            by = []
         else:
-            sort_exprs = util.promote_list(sort_exprs)
-        return self.op().sort_by(sort_exprs).to_expr()
+            by = util.promote_list(by)
+        return self.op().order_by(by).to_expr()
 
     def union(self, *tables: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.

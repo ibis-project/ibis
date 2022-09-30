@@ -305,7 +305,7 @@ def test_batting_quantile(players, players_df):
 @pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
     ibis_method = methodcaller(f'cum{op}')
-    expr = ibis_method(batting.sort_by([batting.yearID]).G)
+    expr = ibis_method(batting.order_by([batting.yearID]).G)
     result = expr.execute().astype('float64')
 
     pandas_method = methodcaller(op)
@@ -816,7 +816,7 @@ def test_bfill(events):
     expr = (
         grouped.group_by([grouped.event_id, grouped.grouper])
         .mutate(bfill=grouped.measurement.max())
-        .sort_by("measured_on")
+        .order_by("measured_on")
     )
     result = expr.execute().reset_index(drop=True)
 

@@ -138,14 +138,14 @@ def test_coalesce(con, expr, expected):
 # TODO(dask) - identicalTo - #2553
 @pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark"])
 def test_identical_to(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.sort_by('id')
+    sorted_alltypes = alltypes.order_by('id')
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
 
     ident = sorted_alltypes.tinyint_col.identical_to(
         sorted_alltypes.double_col
     )
-    expr = sorted_alltypes['id', ident.name('tmp')].sort_by('id')
+    expr = sorted_alltypes['id', ident.name('tmp')].order_by('id')
     result = expr.execute().tmp
 
     expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
@@ -168,10 +168,10 @@ def test_identical_to(backend, alltypes, sorted_df):
     ],
 )
 def test_isin(backend, alltypes, sorted_df, column, elements):
-    sorted_alltypes = alltypes.sort_by('id')
+    sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
-    ].sort_by('id')
+    ].order_by('id')
     result = expr.execute().tmp
 
     expected = sorted_df[column].isin(elements)
@@ -191,10 +191,10 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
     ],
 )
 def test_notin(backend, alltypes, sorted_df, column, elements):
-    sorted_alltypes = alltypes.sort_by('id')
+    sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].notin(elements).name('tmp')
-    ].sort_by('id')
+    ].order_by('id')
     result = expr.execute().tmp
 
     expected = ~sorted_df[column].isin(elements)
@@ -233,8 +233,8 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
     ],
 )
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
-    sorted_alltypes = alltypes.sort_by('id')
-    table = sorted_alltypes[predicate_fn(sorted_alltypes)].sort_by('id')
+    sorted_alltypes = alltypes.order_by('id')
+    table = sorted_alltypes[predicate_fn(sorted_alltypes)].order_by('id')
     result = table.execute()
     expected = sorted_df[expected_fn(sorted_df)]
 
@@ -254,10 +254,10 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.sort_by('id')
+    sorted_alltypes = alltypes.order_by('id')
     table = sorted_alltypes
     window = ibis.window(group_by=table.id)
-    table = table.filter(lambda t: t['id'].mean().over(window) > 3).sort_by(
+    table = table.filter(lambda t: t['id'].mean().over(window) > 3).order_by(
         'id'
     )
     result = table.execute()
@@ -428,7 +428,7 @@ def test_dropna_table(backend, alltypes, how, subset):
 
 def test_select_sort_sort(alltypes):
     query = alltypes[alltypes.year, alltypes.bool_col]
-    query = query.sort_by(query.year).sort_by(query.bool_col)
+    query = query.order_by(query.year).order_by(query.bool_col)
 
 
 @pytest.mark.parametrize(
@@ -459,8 +459,8 @@ def test_select_sort_sort(alltypes):
         ),
     ],
 )
-def test_sort_by(backend, alltypes, df, key, df_kwargs):
-    result = alltypes.filter(_.id < 100).sort_by(key).execute()
+def test_order_by(backend, alltypes, df, key, df_kwargs):
+    result = alltypes.filter(_.id < 100).order_by(key).execute()
     expected = df.loc[df.id < 100].sort_values(**df_kwargs)
     backend.assert_frame_equal(result, expected)
 
@@ -470,8 +470,8 @@ def test_sort_by(backend, alltypes, df, key, df_kwargs):
     ["clickhouse"],
     reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
 )
-def test_sort_by_random(alltypes):
-    expr = alltypes.filter(_.id < 100).sort_by(ibis.random()).limit(5)
+def test_order_by_random(alltypes):
+    expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
     r2 = expr.execute()
     assert len(r1) == 5
@@ -569,7 +569,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     ],
 )
 def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
-    expr = alltypes[ibis_op].sort_by("id")
+    expr = alltypes[ibis_op].order_by("id")
     expected = df[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute()
     backend.assert_frame_equal(result, expected)

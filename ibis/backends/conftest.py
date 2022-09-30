@@ -581,7 +581,7 @@ def struct(backend):
 
 @pytest.fixture(scope='session')
 def sorted_alltypes(alltypes):
-    return alltypes.sort_by('id')
+    return alltypes.order_by('id')
 
 
 @pytest.fixture(scope='session')

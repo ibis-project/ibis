@@ -141,7 +141,7 @@ class SelectBuilder:
         self.having = None
         self.filters = []
         self.limit = None
-        self.sort_by = []
+        self.order_by = []
         self.subqueries = []
         self.distinct = False
 
@@ -213,7 +213,7 @@ class SelectBuilder:
             group_by=self.group_by,
             having=self.having,
             limit=self.limit,
-            order_by=self.sort_by,
+            order_by=self.order_by,
             distinct=self.distinct,
             result_handler=self.result_handler,
             parent_op=self.op,
@@ -424,7 +424,7 @@ class SelectBuilder:
             self.select_set = sub_op.by + sub_op.metrics
             self.table_set = sub_op.table
             self.filters = sub_op.predicates
-            self.sort_by = sub_op.sort_keys
+            self.order_by = sub_op.sort_keys
 
             self._collect(op.table)
 
@@ -445,7 +445,7 @@ class SelectBuilder:
                 # select *
                 selections = [table]
 
-            self.sort_by = sort_keys
+            self.order_by = sort_keys
             self.select_set = selections
             self.table_set = table
             self.filters = filters

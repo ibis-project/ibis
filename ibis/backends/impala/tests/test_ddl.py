@@ -382,7 +382,7 @@ def test_temp_table_concurrency(con, test_data_dir):
 
     def limit(con, hdfs_path, offset):
         t = con.parquet_file(hdfs_path)
-        return t.sort_by(t.r_regionkey).limit(1, offset=offset).execute()
+        return t.order_by(t.r_regionkey).limit(1, offset=offset).execute()
 
     nthreads = multiprocessing.cpu_count()
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')

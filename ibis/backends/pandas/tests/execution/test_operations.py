@@ -371,8 +371,8 @@ def test_series_limit(t, df, offset):
     'column',
     ['plain_datetimes_naive', 'plain_datetimes_ny', 'plain_datetimes_utc'],
 )
-def test_sort_by(t, df, column, key, pandas_by, pandas_ascending):
-    expr = t.sort_by(key(t, column))
+def test_order_by(t, df, column, key, pandas_by, pandas_ascending):
+    expr = t.order_by(key(t, column))
     result = expr.execute()
     expected = df.sort_values(
         pandas_by(column), ascending=pandas_ascending
@@ -380,8 +380,8 @@ def test_sort_by(t, df, column, key, pandas_by, pandas_ascending):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-def test_complex_sort_by(t, df):
-    expr = t.sort_by(
+def test_complex_order_by(t, df):
+    expr = t.order_by(
         [ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64]
     )
     result = expr.execute()

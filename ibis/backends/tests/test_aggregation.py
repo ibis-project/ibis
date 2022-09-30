@@ -546,7 +546,7 @@ def test_approx_median(alltypes):
                 .aggregate(
                     tmp=lambda t: t.string_col.group_concat(sep, where=where)
                 )
-                .sort_by('bigint_col')
+                .order_by('bigint_col')
             ),
             lambda t, where, sep: (
                 (
@@ -634,7 +634,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
-    t = alltypes.sort_by(alltypes.string_col)
+    t = alltypes.order_by(alltypes.string_col)
     df = df.sort_values('string_col')
     result = result_fn(t).execute()
     expected = expected_fn(df)
@@ -661,7 +661,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
-    t = alltypes.sort_by(alltypes.string_col)
+    t = alltypes.order_by(alltypes.string_col)
     df = df.sort_values('string_col')
     expr = result_fn(t)
     result = expr.execute()
@@ -765,7 +765,7 @@ def test_binds_are_cast(alltypes):
 
 def test_agg_sort(alltypes):
     query = alltypes.aggregate(count=alltypes.count())
-    query = query.sort_by(alltypes.year)
+    query = query.order_by(alltypes.year)
     query.execute()
 
 

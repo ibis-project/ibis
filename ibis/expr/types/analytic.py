@@ -79,7 +79,7 @@ class TopK(Analytic):
                 'Cross-table TopK; must provide a parent joined table'
             )
 
-        return agg.sort_by([(by.name, False)]).limit(op.k)
+        return agg.order_by([(by.name, False)]).limit(op.k)
 
 
 public(AnalyticExpr=Analytic, TopKExpr=TopK)

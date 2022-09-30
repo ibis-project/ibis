@@ -344,14 +344,15 @@ def test_limit(table):
     assert limited.op().offset == 5
 
 
-def test_sort_by(table):
-    # Commit to some API for ascending and descending
-    #
-    # table.sort_by(['g', expr1, desc(expr2), desc(expr3)])
-    #
-    # Default is ascending for anything coercable to an expression,
-    # and we'll have ascending/descending wrappers to help.
-    result = table.sort_by(['f']).op()
+def test_sort_by_deprecated(table):
+    with pytest.warns(FutureWarning):
+        x = table.sort_by("f")
+    y = table.order_by("f")
+    assert x.equals(y)
+
+
+def test_order_by(table):
+    result = table.order_by(['f']).op()
 
     sort_key = result.sort_keys[0]
 
@@ -359,12 +360,12 @@ def test_sort_by(table):
     assert sort_key.ascending
 
     # non-list input. per #150
-    result2 = table.sort_by('f').op()
+    result2 = table.order_by('f').op()
     assert_equal(result, result2)
 
-    result2 = table.sort_by([('f', False)])
-    result3 = table.sort_by([('f', 'descending')])
-    result4 = table.sort_by([('f', 0)])
+    result2 = table.order_by([('f', False)])
+    result3 = table.order_by([('f', 'descending')])
+    result4 = table.order_by([('f', 0)])
 
     key2 = result2.op().sort_keys[0]
     key3 = result3.op().sort_keys[0]
@@ -376,23 +377,23 @@ def test_sort_by(table):
     assert_equal(result2, result3)
 
 
-def test_sort_by_desc_deferred_sort_key(table):
-    result = table.group_by('g').size().sort_by(ibis.desc('count'))
+def test_order_by_desc_deferred_sort_key(table):
+    result = table.group_by('g').size().order_by(ibis.desc('count'))
 
     tmp = table.group_by('g').size()
-    expected = tmp.sort_by((tmp['count'], False))
-    expected2 = tmp.sort_by(ibis.desc(tmp['count']))
+    expected = tmp.order_by((tmp['count'], False))
+    expected2 = tmp.order_by(ibis.desc(tmp['count']))
 
     assert_equal(result, expected)
     assert_equal(result, expected2)
 
 
-def test_sort_by_asc_deferred_sort_key(table):
-    result = table.group_by('g').size().sort_by(ibis.asc('count'))
+def test_order_by_asc_deferred_sort_key(table):
+    result = table.group_by('g').size().order_by(ibis.asc('count'))
 
     tmp = table.group_by('g').size()
-    expected = tmp.sort_by(tmp['count'])
-    expected2 = tmp.sort_by(ibis.asc(tmp['count']))
+    expected = tmp.order_by(tmp['count'])
+    expected2 = tmp.order_by(ibis.asc(tmp['count']))
 
     assert_equal(result, expected)
     assert_equal(result, expected2)
@@ -408,8 +409,8 @@ def test_sort_by_asc_deferred_sort_key(table):
         param(L([1, 2, 3]), L([1, 2, 3]).op(), id="array"),
     ],
 )
-def test_sort_by_scalar(table, key, expected):
-    result = table.sort_by(key)
+def test_order_by_scalar(table, key, expected):
+    result = table.order_by(key)
     assert result.op().sort_keys == ops.NodeList(ops.SortKey(expected))
 
 
@@ -1289,23 +1290,23 @@ def test_filter(table):
     assert_equal(result, expected)
 
 
-def test_sort_by2(table):
+def test_order_by2(table):
     m = table.mutate(foo=table.e + table.f)
 
-    result = m.sort_by(lambda x: -x.foo)
-    expected = m.sort_by(-m.foo)
+    result = m.order_by(lambda x: -x.foo)
+    expected = m.order_by(-m.foo)
     assert_equal(result, expected)
 
-    result = m.sort_by(lambda x: ibis.desc(x.foo))
-    expected = m.sort_by(ibis.desc('foo'))
+    result = m.order_by(lambda x: ibis.desc(x.foo))
+    expected = m.order_by(ibis.desc('foo'))
     assert_equal(result, expected)
 
-    result = m.sort_by(ibis.desc(lambda x: x.foo))
-    expected = m.sort_by(ibis.desc('foo'))
+    result = m.order_by(ibis.desc(lambda x: x.foo))
+    expected = m.order_by(ibis.desc('foo'))
     assert_equal(result, expected)
 
-    result = m.sort_by(ibis.asc(lambda x: x.foo))
-    expected = m.sort_by('foo')
+    result = m.order_by(ibis.asc(lambda x: x.foo))
+    expected = m.order_by('foo')
     assert_equal(result, expected)
 
 
