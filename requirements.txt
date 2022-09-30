@@ -25,7 +25,7 @@ cloudpickle==2.2.0; python_version >= "3.8"
 colorama==0.4.5; platform_system == "Windows" and python_version >= "3.8" and python_full_version >= "3.6.2" and python_full_version < "4.0.0" and (python_version >= "3.8" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.8" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" or sys_platform == "win32" and python_version >= "3.7" and python_full_version >= "3.5.0") and (python_version >= "3.7" and python_full_version < "3.0.0" and sys_platform == "win32" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7") or sys_platform == "win32" and python_version >= "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.7") and (python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.7") and python_full_version >= "3.5.0")
 commitizen==2.34.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0"
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0")
-coverage==6.4.4; python_version >= "3.7"
+coverage==6.5.0; python_version >= "3.7"
 cryptography==36.0.2; python_version >= "3.7"
 dask==2022.7.1; python_version >= "3.8"
 datafusion==0.6.0; python_version >= "3.6"
@@ -37,7 +37,7 @@ docformatter==1.5.0; python_version >= "3.6" and python_version < "4.0"
 docstring-parser==0.13; python_version >= "3.6"
 duckdb-engine==0.6.4; python_full_version >= "3.6.1"
 duckdb==0.5.1
-dunamai==1.13.0; python_version >= "3.5" and python_version < "4.0"
+dunamai==1.13.1; python_version >= "3.5" and python_version < "4.0"
 entrypoints==0.4; python_full_version >= "3.7.1" and python_version < "4" and python_version >= "3.7"
 execnet==1.9.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.6"
 executing==1.0.0; python_version >= "3.8"
