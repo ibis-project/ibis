@@ -322,15 +322,20 @@ def test_filter_fusion_distinct_table_objects(con):
 
 
 def test_column_relabel(table):
-    # GH #551. Keeping the test case very high level to not presume that
-    # the relabel is necessarily implemented using a projection
-    types = ['int32', 'string', 'double']
-    table = api.table(zip(['foo', 'bar', 'baz'], types))
-    result = table.relabel({'foo': 'one', 'baz': 'three'})
+    table = api.table({"x": "int32", "y": "string", "z": "double"})
+    sol = api.schema({"x_1": "int32", "y_1": "string", "z": "double"})
 
-    schema = result.schema()
-    ex_schema = api.schema(zip(['one', 'bar', 'three'], types))
-    assert_equal(schema, ex_schema)
+    # Using a mapping
+    res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
+    assert_equal(res, sol)
+
+    # Using a function
+    res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
+    assert_equal(res, sol)
+
+    # Mapping with unknown columns errors
+    with pytest.raises(KeyError, match="is not an existing column"):
+        table.relabel({"missing": "oops"})
 
 
 def test_limit(table):

@@ -7,7 +7,16 @@ import operator
 import sys
 import warnings
 from functools import cached_property
-from typing import IO, TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Literal,
+    Mapping,
+    Sequence,
+)
 
 import numpy as np
 from public import public
@@ -753,13 +762,17 @@ class Table(Expr):
 
     projection = select
 
-    def relabel(self, substitutions: Mapping[str, str]) -> Table:
-        """Change table column names, otherwise leaving table unaltered.
+    def relabel(
+        self, substitutions: Mapping[str, str] | Callable[[str], str | None]
+    ) -> Table:
+        """Rename columns in the table.
 
         Parameters
         ----------
         substitutions
-            Name mapping
+            A mapping or function from old to new column names. If a column
+            isn't in the mapping (or if the callable returns None) it is left
+            with its original name.
 
         Returns
         -------
@@ -768,17 +781,23 @@ class Table(Expr):
         """
         observed = set()
 
+        if isinstance(substitutions, Mapping):
+            rename = substitutions.get
+        else:
+            rename = substitutions
+
         exprs = []
         for c in self.columns:
             expr = self[c]
-            if c in substitutions:
-                expr = expr.name(substitutions[c])
+            if (name := rename(c)) is not None:
+                expr = expr.name(name)
                 observed.add(c)
             exprs.append(expr)
 
-        for c in substitutions:
-            if c not in observed:
-                raise KeyError(f'{c!r} is not an existing column')
+        if isinstance(substitutions, Mapping):
+            for c in substitutions:
+                if c not in observed:
+                    raise KeyError(f"{c!r} is not an existing column")
 
         return self.select(exprs)
 
