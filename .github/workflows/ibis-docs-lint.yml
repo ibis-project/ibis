@@ -54,12 +54,12 @@ jobs:
       # run against a smaller shell for speed for pull requests
       - name: pre-commit checks pull_request
         if: ${{ github.event_name == 'pull_request' }}
-        run: nix develop -f nix preCommitShell --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop -f nix preCommitShell --keep-going -c pre-commit run --all-files
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks push
         if: ${{ github.event_name == 'push' }}
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop -f shell.nix --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
