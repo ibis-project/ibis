@@ -152,6 +152,15 @@ def test_asof_join():
     assert key(result.op()) in graph.source
 
 
+def test_filter():
+    # Smoketest that NodeList nodes are handled properly
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    expr = t.filter((t.a == 1) & (t.b == "x"))
+    graph = viz.to_graph(expr, label_edges=True)
+    assert "values[0]" in graph.source
+    assert "values[1]" in graph.source
+
+
 def test_html_escape(with_graphviz):
     # Check that we correctly escape HTML <> characters in the graphviz
     # representation. If an error is thrown, _repr_png_ returns None.
