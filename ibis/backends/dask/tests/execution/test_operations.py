@@ -506,8 +506,8 @@ def test_series_limit(t, df, offset):
     'column',
     ['plain_datetimes_naive', 'plain_datetimes_ny', 'plain_datetimes_utc'],
 )
-def test_sort_by(t, df, column, key, dask_by, dask_ascending):
-    expr = t.sort_by(key(t, column))
+def test_order_by(t, df, column, key, dask_by, dask_ascending):
+    expr = t.order_by(key(t, column))
     result = expr.compile()
     expected = (
         df.compute()
@@ -518,8 +518,8 @@ def test_sort_by(t, df, column, key, dask_by, dask_ascending):
 
 
 @pytest.mark.xfail(reason="TODO - sorting - #2553")
-def test_complex_sort_by(t, df):
-    expr = t.sort_by(
+def test_complex_order_by(t, df):
+    expr = t.order_by(
         [ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64]
     )
     result = expr.compile()

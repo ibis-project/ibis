@@ -82,7 +82,7 @@ def test_dot_sql_with_join(backend, con):
             ON l.s = r.s
             """
         )
-        .sort_by(["s", "yas"])
+        .order_by(["s", "yas"])
     )
 
     alltypes_df = alltypes.execute()

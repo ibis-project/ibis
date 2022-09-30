@@ -493,7 +493,7 @@ def desc(expr: ir.Column | str) -> ir.Value:
     --------
     >>> import ibis
     >>> t = ibis.table(dict(g='string'), name='t')
-    >>> t.group_by('g').size('count').sort_by(ibis.desc('count'))
+    >>> t.group_by('g').size('count').order_by(ibis.desc('count'))
     r0 := UnboundTable: t
       g string
     r1 := Aggregation[r0]
@@ -530,7 +530,7 @@ def asc(expr: ir.Column | str) -> ir.Value:
     --------
     >>> import ibis
     >>> t = ibis.table(dict(g='string'), name='t')
-    >>> t.group_by('g').size('count').sort_by(ibis.asc('count'))
+    >>> t.group_by('g').size('count').order_by(ibis.asc('count'))
     r0 := UnboundTable: t
       g string
     r1 := Aggregation[r0]

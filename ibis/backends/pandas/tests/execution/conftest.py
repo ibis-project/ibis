@@ -296,7 +296,7 @@ def sel_cols(batting):
 
 @pytest.fixture(scope='module')
 def players_base(batting, sel_cols):
-    return batting[sel_cols].sort_by(sel_cols[:3])
+    return batting[sel_cols].order_by(sel_cols[:3])
 
 
 @pytest.fixture(scope='module')

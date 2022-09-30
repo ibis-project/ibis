@@ -245,7 +245,7 @@ def test_unnest_complex(con):
         .mutate(x=lambda t: t.x.unnest())
         .groupby("grouper")
         .aggregate(count_flat=lambda t: t.x.count())
-        .sort_by("grouper")
+        .order_by("grouper")
     )
     expected = (
         df[["grouper", "x"]]
@@ -277,7 +277,7 @@ def test_unnest_idempotent(con):
         array_types.select(["scalar_column", array_types.x.unnest().name("x")])
         .group_by("scalar_column")
         .aggregate(x=lambda t: t.x.collect())
-        .sort_by("scalar_column")
+        .order_by("scalar_column")
     )
     result = expr.execute()
     expected = df[["scalar_column", "x"]]
@@ -293,7 +293,7 @@ def test_unnest_no_nulls(con):
         .filter(lambda t: t.y.notnull())
         .group_by("scalar_column")
         .aggregate(x=lambda t: t.y.collect())
-        .sort_by("scalar_column")
+        .order_by("scalar_column")
     )
     result = expr.execute()
     expected = (

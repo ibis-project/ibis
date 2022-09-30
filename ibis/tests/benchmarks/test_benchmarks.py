@@ -238,19 +238,21 @@ def multikey_group_by_with_mutate(t):
 
 
 def simple_sort(t):
-    return t.sort_by([t.key])
+    return t.order_by([t.key])
 
 
 def simple_sort_projection(t):
-    return t[['key', 'value']].sort_by(['key'])
+    return t[['key', 'value']].order_by(['key'])
 
 
 def multikey_sort(t):
-    return t.sort_by(['low_card_key', 'key'])
+    return t.order_by(['low_card_key', 'key'])
 
 
 def multikey_sort_projection(t):
-    return t[['low_card_key', 'key', 'value']].sort_by(['low_card_key', 'key'])
+    return t[['low_card_key', 'key', 'value']].order_by(
+        ['low_card_key', 'key']
+    )
 
 
 def low_card_rolling_window(t):
@@ -490,7 +492,7 @@ def tpc_h02(part, supplier, partsupp, nation, region):
         ]
     )
 
-    return q.sort_by(
+    return q.order_by(
         [
             ibis.desc(q.s_acctbal),
             q.n_name,

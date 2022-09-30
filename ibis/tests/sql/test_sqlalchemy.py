@@ -434,28 +434,28 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
     ("expr_fn", "expected_fn"),
     [
         pytest.param(
-            lambda t: t.sort_by("f"),
+            lambda t: t.order_by("f"),
             lambda b: sa.select([b]).order_by(b.c.f.asc()),
-            id="sort_by",
+            id="order_by",
         ),
         pytest.param(
-            lambda t: t.sort_by(("f", 0)),
+            lambda t: t.order_by(("f", 0)),
             lambda b: sa.select([b]).order_by(b.c.f.desc()),
-            id="sort_by_ascending",
+            id="order_by_ascending",
         ),
         pytest.param(
-            lambda t: t.sort_by(["c", ("f", 0)]),
+            lambda t: t.order_by(["c", ("f", 0)]),
             lambda b: sa.select([b]).order_by(b.c.c.asc(), b.c.f.desc()),
-            id="sort_by_mixed",
+            id="order_by_mixed",
         ),
         pytest.param(
-            lambda t: t.sort_by(ibis.random()),
+            lambda t: t.order_by(ibis.random()),
             lambda b: sa.select([b]).order_by(sa.func.random().asc()),
-            id="sort_by_random",
+            id="order_by_random",
         ),
     ],
 )
-def test_sort_by(con, star1, sa_star1, expr_fn, expected_fn):
+def test_order_by(con, star1, sa_star1, expr_fn, expected_fn):
     st = sa_star1.alias("t0")
     expr = expr_fn(star1)
     expected = expected_fn(st)
@@ -654,7 +654,7 @@ def test_lower_projection_sort_key(con, star1, star2):
         t0.c.total.desc()
     )
 
-    expr2 = expr[expr.total > 100].sort_by(ibis.desc('total'))
+    expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
     _check(expr2, expected)
     return expr2
 
@@ -756,7 +756,7 @@ def test_sort_aggregation_translation_failure(
     t = functional_alltypes
 
     agg = t.group_by('string_col').aggregate(t.double_col.max().name('foo'))
-    expr = agg.sort_by(ibis.desc('foo'))
+    expr = agg.order_by(ibis.desc('foo'))
 
     sat = sa_functional_alltypes.alias("t1")
     base = (
@@ -1121,7 +1121,7 @@ def h11():
     gq = q.group_by([q.ps_partkey])
     q = gq.aggregate(value=(q.ps_supplycost * q.ps_availqty).sum())
     q = q.filter([q.value > innerq.total * FRACTION])
-    q = q.sort_by(ibis.desc(q.value))
+    q = q.order_by(ibis.desc(q.value))
     return q
 
 

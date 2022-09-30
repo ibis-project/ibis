@@ -916,7 +916,7 @@ def test_analytic_shift_functions(alltypes, df, func, shift_amount):
     ('func', 'expected_index'), [('first', -1), ('last', 0)]
 )
 def test_first_last_value(alltypes, df, func, expected_index):
-    col = alltypes.sort_by(ibis.desc(alltypes.string_col)).double_col
+    col = alltypes.order_by(ibis.desc(alltypes.string_col)).double_col
     method = getattr(col, func)
     expr = method()
     result = expr.execute().rename('double_col')

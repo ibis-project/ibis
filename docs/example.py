@@ -17,5 +17,5 @@ expr = (
         ),
     )
     .mutate(acq_rate=lambda t: t.acq_ipos / t.num_investments)
-    .sort_by(ibis.desc(2))
+    .order_by(ibis.desc(2))
 )

@@ -409,7 +409,7 @@ def test_union(alltypes):
     expr = (
         t.group_by('string_col')
         .aggregate(t.double_col.sum().name('foo'))
-        .sort_by('string_col')
+        .order_by('string_col')
     )
 
     t1 = expr.limit(4)
@@ -585,7 +585,7 @@ def test_filter(alltypes, df):
     'column', [lambda t: 'float_col', lambda t: t['float_col']]
 )
 def test_column_access_after_sort(alltypes, df, column):
-    expr = alltypes.sort_by(column(alltypes)).head(10).string_col
+    expr = alltypes.order_by(column(alltypes)).head(10).string_col
     result = expr.execute()
     expected = (
         df.sort_values('float_col').string_col.head(10).reset_index(drop=True)
@@ -750,13 +750,13 @@ def test_compile_twice(dbpath):
     con1 = ibis.sqlite.connect(dbpath)
     t1 = con1.table('batting')
     sort_key1 = ibis.desc(t1.playerID)
-    sorted_table1 = t1.sort_by(sort_key1)
+    sorted_table1 = t1.order_by(sort_key1)
     expr1 = sorted_table1.count()
 
     con2 = ibis.sqlite.connect(dbpath)
     t2 = con2.table('batting')
     sort_key2 = ibis.desc(t2.playerID)
-    sorted_table2 = t2.sort_by(sort_key2)
+    sorted_table2 = t2.order_by(sort_key2)
     expr2 = sorted_table2.count()
 
     result1 = str(expr1.compile())
@@ -768,7 +768,7 @@ def test_compile_twice(dbpath):
 def test_count_on_order_by(con):
     t = con.table("batting")
     sort_key = ibis.desc(t.playerID)
-    sorted_table = t.sort_by(sort_key)
+    sorted_table = t.order_by(sort_key)
     expr = sorted_table.count()
     result = str(
         expr.compile().compile(compile_kwargs={'literal_binds': True})

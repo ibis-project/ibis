@@ -737,7 +737,7 @@ FROM \\w+ AS \\1"""
 
 
 def test_dunder_array_table(alltypes, df):
-    expr = alltypes.group_by("string_col").int_col.sum().sort_by("string_col")
+    expr = alltypes.group_by("string_col").int_col.sum().order_by("string_col")
     result = np.array(expr)
     expected = np.array(
         df.groupby("string_col")
@@ -750,7 +750,7 @@ def test_dunder_array_table(alltypes, df):
 
 @pytest.mark.broken(["dask"], reason="Dask backend duplicates data")
 def test_dunder_array_column(alltypes, df):
-    expr = alltypes.sort_by("id").head(10).int_col
+    expr = alltypes.order_by("id").head(10).int_col
     result = np.array(expr)
     expected = df.sort_values(["id"]).head(10).int_col
     np.testing.assert_array_equal(result, expected)

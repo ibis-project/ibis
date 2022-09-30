@@ -26,7 +26,7 @@ def genname():
 
 @public
 class TableNode(Node):
-    def sort_by(self, sort_exprs):
+    def order_by(self, sort_exprs):
         return Selection(self, [], sort_keys=sort_exprs)
 
     @property
@@ -362,7 +362,7 @@ class Selection(Projection):
             **kwargs,
         )
 
-    def sort_by(self, sort_exprs):
+    def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
         keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
@@ -484,7 +484,7 @@ class Aggregation(TableNode):
 
         return sch.Schema(names, types)
 
-    def sort_by(self, sort_exprs):
+    def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots
 
         keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
