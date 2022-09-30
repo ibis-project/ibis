@@ -38,7 +38,6 @@ repos:
     rev: v2.38.2
     hooks:
       - id: pyupgrade
-        exclude: setup.py
         entry: pyupgrade --py38-plus --keep-runtime-typing
         types:
           - python

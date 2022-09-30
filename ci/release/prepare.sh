@@ -9,8 +9,6 @@ version="${1}"
 # set version
 poetry version "$version"
 
-./dev/poetry2setup -o setup.py
-
 # build artifacts
 poetry build
 

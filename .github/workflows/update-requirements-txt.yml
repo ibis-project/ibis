@@ -1,15 +1,13 @@
-name: Update setup.py
+name: Update requirements.txt
 
 on:
   pull_request:
     paths:
-      - ./dev/poetry2setup
-      - ./dev/poetry2setup.py
       - pyproject.toml
       - poetry.lock
 
 jobs:
-  generate_setup_py:
+  generate_requirements_txt:
     # this can only run on pull requests made from branches in the main ibis
     # repository ano not forks, since the add-and-commit action requires the
     # ability to push commits to the PR branch
@@ -43,9 +41,6 @@ jobs:
           name: ibis
           extraPullNames: nix-community,poetry2nix
 
-      - name: generate setup.py
-        run: ./dev/poetry2setup -o setup.py
-
       - name: generate requirements.txt
         run: nix run -f nix poetry -- export --dev --extras all --without-hashes --no-ansi > requirements.txt
 
@@ -57,13 +52,13 @@ jobs:
           name: ibis-squawk-bot[bot]
           email: ibis-squawk-bot[bot]@users.noreply.github.com
 
-      - name: commit setup.py and push to PR
+      - name: commit requirements.txt and push to PR
         run: |
           set -euo pipefail
 
-          git add setup.py requirements.txt
+          git add requirements.txt
 
-          if git commit -m 'chore(setuptools-files): regenerate'; then
+          if git commit -m 'chore(requirements.txt): regenerate'; then
             # pull in case another commit happened in the meantime
             #
             # `ours` is actually the *other* changeset, not the current branch, per
