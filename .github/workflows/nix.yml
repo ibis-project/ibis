@@ -45,7 +45,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v17
         with:
-          nix_path: nixpkgs=channel:nixos-unstable-small
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: setup cachix
         uses: cachix/cachix-action@v10
