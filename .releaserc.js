@@ -81,7 +81,6 @@ module.exports = {
         assets: [
           "pyproject.toml",
           "docs/release_notes.md",
-          "setup.py",
           "ibis/__init__.py",
         ],
         message: "chore(release): ${nextRelease.version}",

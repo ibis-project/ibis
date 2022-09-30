@@ -303,5 +303,5 @@ channels = ["conda-forge"]
 dask = ">=2021.10.0"
 
 [build-system]
-requires = ["poetry-core>=1", "poetry-dynamic-versioning"]
+requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"

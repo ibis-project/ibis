@@ -3,53 +3,24 @@ name: Check Generated Files
 on:
   push:
     paths:
-      - ./dev/poetry2setup
-      - ./dev/poetry2setup.py
       - README.md
       - poetry.lock
       - pyproject.toml
       - requirements.txt
-      - setup.py
-      - .github/workflows/check-setup-py.yml
+      - .github/workflows/check-requirements-txt.yml
   pull_request:
     paths:
-      - ./dev/poetry2setup
-      - ./dev/poetry2setup.py
       - README.md
       - poetry.lock
       - pyproject.toml
       - requirements.txt
-      - setup.py
-      - .github/workflows/check-setup-py.yml
+      - .github/workflows/check-requirements-txt.yml
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
-  check_setup_py:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install nix
-        uses: cachix/install-nix-action@v17
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable-small
-
-      - name: setup cachix
-        uses: cachix/cachix-action@v10
-        with:
-          name: ibis
-          extraPullNames: nix-community,poetry2nix
-
-      - name: generate setup.py
-        run: ./dev/poetry2setup -o setup.py
-
-      - name: check whether setup.py needs to be regenerated
-        run: git diff --exit-code setup.py
-
   check_setuptools_install:
     runs-on: ubuntu-latest
     steps:
@@ -69,7 +40,7 @@ jobs:
         run: sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
 
       - name: install poetry
-        run: pip install 'poetry<1.2'
+        run: pip install 'poetry<1.2' 'poetry-core>=1.0.8'
 
       - name: generate requirements.txt
         run: poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt

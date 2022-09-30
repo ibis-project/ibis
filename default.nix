@@ -30,10 +30,6 @@ let
         import ./poetry-overrides.nix
       );
 
-      preConfigure = ''
-        rm setup.py
-      '';
-
       inherit buildInputs checkInputs;
 
       preCheck = ''

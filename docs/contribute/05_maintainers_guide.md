@@ -41,36 +41,6 @@ cases contributors do not have to remember to generate and commit these files.
 
 1.  Edit `pyproject.toml` as needed.
 2.  Run `poetry lock --no-update`
-3.  Regenerate `setup.py`:
-
-    !!! failure "Do not manually edit `setup.py`"
-
-        `setup.py` is [automatically
-        generated](https://github.com/ibis-project/ibis/blob/master/dev/poetry2setup.py)
-        from `pyproject.toml`
-
-    === "Nix"
-
-        ```sh
-        ./dev/poetry2setup -o setup.py
-        ```
-
-    === "Without Nix"
-
-        Run the following command
-
-        ```sh
-        PYTHONHASHSEED=0 python ./dev/poetry2setup.py -o setup.py
-        ```
-
-        !!! question "Why do we need to set `PYTHONHASHSEED`?"
-
-            Dependencies' [`extras`](https://python-poetry.org/docs/pyproject/#extras) are stored
-            in-memory using a `frozenset`, the elements of which are arbitrarily ordered.
-
-            As of 2022-02-24 this is [fixed in the default
-            branch](https://github.com/python-poetry/poetry-core/pull/280) of
-            [`poetry-core`] but isn't yet released.
 
 Updates of minor and patch versions of dependencies are handled automatically by
 [`renovate`](https://github.com/renovatebot/renovate).

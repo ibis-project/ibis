@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -I nixpkgs=channel:nixos-unstable-small --pure -p dyff git poetry yj -i bash
+#!nix-shell -I nixpkgs=channel:nixos-unstable --pure -p dyff git poetry yj -i bash
 # shellcheck shell=bash
 
 set -euo pipefail
