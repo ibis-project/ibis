@@ -25,8 +25,7 @@ let
     cmake
     ninja
   ];
-  clickhouseDeps = [ pkgs.clickhouse ];
-  snowflakeDeps = [ pkgs.snowsql pkgs.openssl ];
+  snowflakeDeps = [ pkgs.openssl ];
   backendTestDeps = [ pkgs.docker-compose ];
   vizDeps = [ pkgs.graphviz-nox ];
   duckdbDeps = [ pkgs.duckdb ];
@@ -46,8 +45,7 @@ let
     ++ sqliteDeps
     ++ duckdbDeps
     ++ mysqlDeps
-    ++ snowflakeDeps
-    ++ clickhouseDeps;
+    ++ snowflakeDeps;
 
   pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
 
