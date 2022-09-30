@@ -9,7 +9,6 @@ on:
       - "mkdocs.yml"
     branches:
       - master
-      - "*.x.x"
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher
