@@ -28,15 +28,16 @@ conda install ibis-framework -c conda-forge
 Ibis provides tools for interacting with the following systems:
 
 - [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
-- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
 - [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
-- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
 - [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)
+- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
+- [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
 - [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
 - [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
 - [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
+- [Snowflake](https://ibis-project.org/docs/latest/backends/Snowflake) (experimental)
 - [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
 
 Learn more about using the library at https://ibis-project.org.
