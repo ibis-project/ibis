@@ -8,7 +8,7 @@ from public import public
 import ibis.expr.rules as rlz
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
-from ibis.util import UnnamedMarker
+from ibis.util import UnnamedMarker, deprecated
 
 
 @public
@@ -19,6 +19,11 @@ class Node(Concrete):
                 "invalid equality comparison between Node and " f"{type(other)}"
             )
         return self.__cached_equals__(other)
+
+    @deprecated(version='4.0', instead='remove intermediate .op() calls')
+    def op(self):
+        'For a bit of backwards compatibility with code that uses Expr.op().'
+        return self
 
     @abstractmethod
     def to_expr(self):
