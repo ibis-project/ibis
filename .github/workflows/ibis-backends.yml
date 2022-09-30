@@ -68,6 +68,16 @@ jobs:
               - postgres
             sys-deps:
               - libgeos-dev
+          - name: impala
+            title: Impala
+            services:
+              - impala
+              - kudu
+            sys-deps:
+              - cmake
+              - ninja-build
+              - krb5-config
+              - libkrb5-dev
         exclude:
           - os: windows-latest
             backend:
@@ -81,33 +91,9 @@ jobs:
           - os: windows-latest
             backend:
               name: postgres
-        include:
-          - os: ubuntu-latest
-            python-version: "3.8"
+          - os: windows-latest
             backend:
               name: impala
-              title: Impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-                - krb5-config
-                - libkrb5-dev
-          - os: ubuntu-latest
-            python-version: "3.9"
-            backend:
-              name: impala
-              title: Impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-                - krb5-config
-                - libkrb5-dev
     steps:
       - name: update and install system dependencies
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null }}
