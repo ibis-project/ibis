@@ -10,7 +10,7 @@ import ibis.expr.rules as rlz
 from ibis.common.graph import Graph, Traversable
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
-from ibis.util import UnnamedMarker
+from ibis.util import UnnamedMarker, deprecated
 
 
 @public
@@ -43,6 +43,11 @@ class Node(Concrete, Traversable):
                 f"{type(other)}"
             )
         return self.__cached_equals__(other)
+
+    @deprecated(version='4.0', instead='remove intermediate .op() calls')
+    def op(self):
+        'For a bit of backwards compatibility with code that uses Expr.op().'
+        return self
 
     @abstractmethod
     def to_expr(self):
