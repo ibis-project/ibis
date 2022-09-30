@@ -114,10 +114,11 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
                 if not label_edges:
                     label = None
                 else:
-                    index = v.args.index(u)
                     if isinstance(v, ops.NodeList):
+                        index = v.values.index(u)
                         arg_name = f"values[{index}]"
                     else:
+                        index = v.args.index(u)
                         arg_name = v.argnames[index]
                     label = f"<.{arg_name}>"
 
