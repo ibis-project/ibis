@@ -1,7 +1,7 @@
 let
   sources = import ./sources.nix;
 in
-import sources.nixpkgs {
+{ ... }@args: import sources.nixpkgs ({
   overlays = [
     (pkgs: _: {
       inherit (import sources."gitignore.nix" {
@@ -16,6 +16,8 @@ import sources.nixpkgs {
         rev = "master";
         sha256 = "sha256-BZWi4kEumZemQeYoAtlUSw922p+R6opSWp/bmX0DjAo=";
       };
+
+      poetry-cli = pkgs.python3Packages.poetry;
 
       mkPoetryEnv = python: pkgs.poetry2nix.mkPoetryEnv {
         inherit python;
@@ -84,4 +86,4 @@ import sources.nixpkgs {
       };
     })
   ];
-}
+} // args)
