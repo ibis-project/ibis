@@ -171,11 +171,7 @@ class BaseSQLBackend(BaseBackend):
 
         from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
 
-        if hasattr(expr, "schema"):
-            schema = expr.schema()
-        else:
-            # ColumnExpr has no schema method, define single-column schema
-            schema = sch.schema([(expr.get_name(), expr.type())])
+        schema = self._table_or_column_schema(expr)
 
         def _batches():
             for batch in self._cursor_batches(
