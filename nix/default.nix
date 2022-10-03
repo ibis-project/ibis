@@ -80,9 +80,9 @@ in
           shfmt
         ];
       };
-    } // super.lib.optionalAttrs super.stdenv.isDarwin {
+
       arrow-cpp = super.arrow-cpp.override {
-        enableS3 = false;
+        enableS3 = !super.stdenv.isDarwin;
       };
     })
   ];
