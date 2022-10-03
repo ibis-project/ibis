@@ -23,6 +23,7 @@ from typing import (
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+    import ibis.expr.schema as sch
 
 import ibis
 import ibis.common.exceptions as exc
@@ -220,6 +221,16 @@ class ResultHandler:
         else:
             return pyarrow
 
+    @staticmethod
+    def _table_or_column_schema(expr: ir.Expr) -> sch.Schema:
+        from ibis.backends.pyarrow.datatypes import sch
+
+        if isinstance(expr, ir.Table):
+            return expr.schema()
+        else:
+            # ColumnExpr has no schema method, define single-column schema
+            return sch.schema([(expr.get_name(), expr.type())])
+
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -238,20 +249,25 @@ class ResultHandler:
                     expr, params=params, limit=limit, **kwargs
                 )
             )
-            if isinstance(expr, ir.Table):
-                return table
-            elif isinstance(expr, ir.Column):
-                # Column will be a ChunkedArray, `combine_chunks` will
-                # flatten it
-                return table.columns[0].combine_chunks()
-            elif isinstance(expr, ir.Scalar):
-                return table.columns[0][0]
-            else:
-                raise ValueError
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
-            # iterator and the pyarrow schema
-            return pa.Table.from_batches([], schema=expr.schema().to_pyarrow())
+            # iterator and a pyarrow schema
+            schema = self._table_or_column_schema(expr)
+            table = pa.Table.from_batches([], schema=schema.to_pyarrow())
+
+        if isinstance(expr, ir.Table):
+            return table
+        elif isinstance(expr, ir.Column):
+            # Column will be a ChunkedArray, `combine_chunks` will
+            # flatten it
+            if len(table.columns[0]):
+                return table.columns[0].combine_chunks()
+            else:
+                return pa.array(table.columns[0])
+        elif isinstance(expr, ir.Scalar):
+            return table.columns[0][0]
+        else:
+            raise ValueError
 
     def to_pyarrow_batches(
         self,

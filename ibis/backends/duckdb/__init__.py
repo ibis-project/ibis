@@ -258,7 +258,10 @@ class Backend(BaseAlchemyBackend):
         elif isinstance(expr, ir.Column):
             # Column will be a ChunkedArray, `combine_chunks` will
             # flatten it
-            return table.columns[0].combine_chunks()
+            if len(table.columns[0]):
+                return table.columns[0].combine_chunks()
+            else:
+                return pa.array(table.columns[0])
         elif isinstance(expr, ir.Scalar):
             return table.columns[0][0]
         else:
