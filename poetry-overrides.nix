@@ -114,4 +114,13 @@ in
   docformatter = super.docformatter.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
   });
+
+  pyarrow = super.pyarrow.overridePythonAttrs (_: {
+    PYARROW_WITH_DATASET = "1";
+    PYARROW_WITH_FLIGHT = "1";
+    PYARROW_WITH_HDFS = "0";
+    PYARROW_WITH_PARQUET = "1";
+    PYARROW_WITH_PLASMA = "0";
+    PYARROW_WITH_S3 = "1";
+  });
 }
