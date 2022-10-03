@@ -37,7 +37,7 @@ def test_udf(alltypes):
 
 
 def test_multiple_argument_udf(alltypes):
-    expr = my_add(alltypes.smallint_col, alltypes.int_col)
+    expr = my_add(alltypes.smallint_col, alltypes.int_col).name("tmp")
     result = expr.execute()
 
     df = alltypes[['smallint_col', 'int_col']].execute()
