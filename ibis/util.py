@@ -448,6 +448,34 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
+def experimental(func):
+    """Decorate experimental function to add warning about potential API
+    instability in docstring."""
+
+    msg = "This API is experimental and subject to change."
+
+    if docstr := func.__doc__:
+        preamble, *rest = docstr.split("\n\n", maxsplit=1)
+
+        leading_spaces = " " * sum(
+            1
+            for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
+        )
+
+        warning_doc = f'{leading_spaces}!!! warning "{msg}"'
+
+        docstr = "\n\n".join([preamble, warning_doc, *rest])
+    else:
+        docstr = f'!!! warning "{msg}"'
+    func.__doc__ = docstr
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 class ToFrame(abc.ABC):
     """Interface for in-memory objects that can be converted to a DataFrame."""
 
