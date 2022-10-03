@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+from copy import copy
 from typing import Any
 from weakref import WeakValueDictionary
 
@@ -136,19 +137,34 @@ class Annotable(Base, metaclass=AnnotableMeta):
             return NotImplemented
 
         return all(
-            getattr(self, n) == getattr(other, n) for n in self.__argnames__
+            getattr(self, n, None) == getattr(other, n, None)
+            for n in self.__attributes__.keys()
         )
 
     def __getstate__(self):
-        return {name: getattr(self, name) for name in self.__argnames__}
+        return {n: getattr(self, n, None) for n in self.__attributes__.keys()}
 
     def __setstate__(self, state):
         self.__init__(**state)
 
     def copy(self, **overrides):
-        kwargs = self.__getstate__()
-        kwargs.update(overrides)
-        return self.__class__(**kwargs)
+        """Return a copy of this object with the given overrides.
+
+        Parameters
+        ----------
+        overrides : dict
+
+        Returns
+        -------
+        copy : Annotable
+        """
+        this = copy(self)
+        for name, value in overrides.items():
+            if field := self.__attributes__.get(name):
+                value = field.validate(value, this=this)
+            object.__setattr__(this, name, value)
+        this.__post_init__()
+        return this
 
 
 class Immutable(Base):
@@ -230,6 +246,11 @@ class Concrete(Immutable, Comparable, Annotable):
 
     def __equals__(self, other):
         return self.__args__ == other.__args__
+
+    def __getstate__(self):
+        # assuming immutability and idempotency of the __init__ method, we can
+        # reconstruct the instance from the arguments
+        return {name: getattr(self, name) for name in self.__argnames__}
 
     @property
     def args(self):
