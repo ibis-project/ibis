@@ -9,7 +9,7 @@
   ]
 }:
 let
-  pkgs = import ./nix;
+  pkgs = import ./nix { };
   drv =
     { poetry2nix
     , python

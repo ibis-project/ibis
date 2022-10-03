@@ -1,6 +1,6 @@
 { python ? "3.10" }:
 let
-  pkgs = import ./nix;
+  pkgs = import ./nix { };
 
   pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
 
@@ -17,7 +17,6 @@ let
     lychee
     # packaging
     niv
-    pythonEnv.pkgs.poetry
   ];
 
   impalaUdfDeps = with pkgs; [
@@ -62,7 +61,7 @@ pkgs.mkShell {
   shellHook = ''
     export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
 
-    rsync \
+    ${pkgs.rsync}/bin/rsync \
       --chmod=Du+rwx,Fu+rw --archive --delete \
       "${pkgs.ibisTestingData}/" \
       "$IBIS_TEST_DATA_DIRECTORY"
@@ -71,13 +70,13 @@ pkgs.mkShell {
     TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
   '';
 
-  buildInputs = devDeps ++ libraryDevDeps ++ [
+  nativeBuildInputs = devDeps ++ libraryDevDeps ++ [
     pythonEnv
     updateLockFiles
   ] ++ pkgs.preCommitShell.buildInputs ++ (with pkgs; [
     changelog
     mic
-    rsync
+    poetry-cli
   ]);
 
   PYTHONPATH = builtins.toPath ./.;
