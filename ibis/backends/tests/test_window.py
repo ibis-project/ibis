@@ -245,7 +245,9 @@ def test_grouped_bounded_expanding_window(
     )
 
     result = expr.execute().set_index('id').sort_index()
-    column = expected_fn(df.sort_values('id').groupby('string_col'))
+    column = expected_fn(df.sort_values('id').groupby('string_col', group_keys=True))
+    if column.index.nlevels > 1:
+        column = column.droplevel(0)
     expected = df.assign(val=column).set_index('id').sort_index()
 
     left, right = result.val, expected.val

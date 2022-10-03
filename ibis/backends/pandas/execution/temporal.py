@@ -15,6 +15,7 @@ from ibis.backends.pandas.core import (
     timestamp_types,
 )
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
+from ibis.backends.pandas.execution.util import get_grouping
 from ibis.expr.scope import Scope
 
 
@@ -246,8 +247,8 @@ def execute_day_of_week_index_series(op, data, **kwargs):
 
 @execute_node.register(ops.DayOfWeekIndex, SeriesGroupBy)
 def execute_day_of_week_index_series_group_by(op, data, **kwargs):
-    groupings = data.grouper.groupings
-    return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings)
+    groupings = get_grouping(data.grouper.groupings)
+    return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings, group_keys=False)
 
 
 def day_name(obj):
@@ -280,7 +281,9 @@ def execute_day_of_week_name_series(op, data, **kwargs):
 
 @execute_node.register(ops.DayOfWeekName, SeriesGroupBy)
 def execute_day_of_week_name_series_group_by(op, data, **kwargs):
-    return day_name(data.obj.dt).groupby(data.grouper.groupings)
+    return day_name(data.obj.dt).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 @execute_node.register(ops.DateSub, date_types, timedelta_types)

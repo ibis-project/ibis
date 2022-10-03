@@ -13,6 +13,7 @@ import ibis.expr.operations as ops
 import ibis.util
 from ibis.backends.pandas.core import integer_types, scalar_types
 from ibis.backends.pandas.dispatch import execute_node
+from ibis.backends.pandas.execution.util import get_grouping
 
 
 @execute_node.register(ops.StringLength, pd.Series)
@@ -205,7 +206,7 @@ def execute_string_like_series_string(op, data, pattern, escape, **kwargs):
 def execute_string_like_series_groupby_string(op, data, pattern, escape, **kwargs):
     return execute_string_like_series_string(
         op, data.obj, pattern, escape, **kwargs
-    ).groupby(data.grouper.groupings)
+    ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.GroupConcat, pd.Series, str, (pd.Series, type(None)))
@@ -241,7 +242,9 @@ def execute_string_ascii(op, data, **kwargs):
 
 @execute_node.register(ops.StringAscii, SeriesGroupBy)
 def execute_string_ascii_group_by(op, data, **kwargs):
-    return execute_string_ascii(op, data, **kwargs).groupby(data.grouper.groupings)
+    return execute_string_ascii(op, data, **kwargs).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 @execute_node.register(ops.RegexSearch, pd.Series, str)
@@ -255,7 +258,7 @@ def execute_series_regex_search(op, data, pattern, **kwargs):
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
         op, data, getattr(pattern, 'obj', pattern), **kwargs
-    ).groupby(data.grouper.groupings)
+    ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.RegexExtract, pd.Series, (pd.Series, str), integer_types)
@@ -273,7 +276,7 @@ def execute_series_regex_extract(op, data, pattern, index, **kwargs):
 @execute_node.register(ops.RegexExtract, SeriesGroupBy, str, integer_types)
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(op, data.obj, pattern, index, **kwargs).groupby(
-        data.grouper.groupings
+        get_grouping(data.grouper.groupings), group_keys=False
     )
 
 
@@ -289,7 +292,7 @@ def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
         data.obj, pattern, replacement, **kwargs
-    ).groupby(data.grouper.groupings)
+    ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.Translate, pd.Series, pd.Series, pd.Series)
@@ -325,7 +328,9 @@ def execute_series_right(op, data, nchars, **kwargs):
 
 @execute_node.register(ops.StrRight, SeriesGroupBy, integer_types)
 def execute_series_right_gb(op, data, nchars, **kwargs):
-    return execute_series_right(op, data.obj, nchars).groupby(data.grouper.groupings)
+    return execute_series_right(op, data.obj, nchars).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 @execute_node.register(ops.StringReplace, pd.Series, (pd.Series, str), (pd.Series, str))
@@ -369,7 +374,7 @@ def execute_series_find_in_set(op, needle, haystack, **kwargs):
 def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
     pieces = [getattr(piece, 'obj', piece) for piece in haystack]
     return execute_series_find_in_set(op, needle.obj, pieces, **kwargs).groupby(
-        needle.grouper.groupings
+        get_grouping(needle.grouper.groupings), group_keys=False
     )
 
 
@@ -402,9 +407,14 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     assert issubclass(collection_type, SeriesGroupBy)
 
     return result.groupby(
-        toolz.first(
-            piece.grouper.groupings for piece in haystack if hasattr(piece, 'grouper')
-        )
+        get_grouping(
+            toolz.first(
+                piece.grouper.groupings
+                for piece in haystack
+                if hasattr(piece, 'grouper')
+            )
+        ),
+        group_keys=False,
     )
 
 
