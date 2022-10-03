@@ -231,6 +231,7 @@ class ResultHandler:
             # ColumnExpr has no schema method, define single-column schema
             return sch.schema([(expr.get_name(), expr.type())])
 
+    @util.experimental
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -239,6 +240,26 @@ class ResultHandler:
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        """Execute expression and return results in as a pyarrow table.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to pyarrow
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+
+        Returns
+        -------
+        Table
+            A pyarrow table holding the results of the executed expression.
+        """
         pa = self._import_pyarrow()
         try:
             # Can't construct an array from record batches
@@ -269,6 +290,7 @@ class ResultHandler:
         else:
             raise ValueError
 
+    @util.experimental
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
@@ -278,6 +300,29 @@ class ResultHandler:
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.RecordBatchReader:
+        """Execute expression and return results in an iterator of pyarrow
+        record batches.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to pyarrow
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Number of rows in each returned record batch.
+
+        Returns
+        -------
+        record_batches
+            An iterator of pyarrow record batches.
+        """
         raise NotImplementedError
 
 

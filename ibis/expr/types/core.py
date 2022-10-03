@@ -13,7 +13,7 @@ from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.expr.typing import TimeContext
-from ibis.util import UnnamedMarker
+from ibis.util import UnnamedMarker, experimental
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -308,6 +308,7 @@ class Expr(Immutable):
             self, limit=limit, timecontext=timecontext, params=params
         )
 
+    @experimental
     def to_pyarrow_batches(
         self,
         *,
@@ -319,8 +320,8 @@ class Expr(Immutable):
         """Execute expression and return results in an iterator of pyarrow
         record batches.
 
-        **Warning**: This method is eager and will execute the associated
-        expression immediately. This API is experimental and subject to change.
+        This method is eager and will execute the associated expression
+        immediately.
 
         Parameters
         ----------
@@ -345,6 +346,7 @@ class Expr(Immutable):
             **kwargs,
         )
 
+    @experimental
     def to_pyarrow(
         self,
         *,
@@ -354,17 +356,16 @@ class Expr(Immutable):
     ) -> pa.Table:
         """Execute expression and return results in as a pyarrow table.
 
-        **Warning**: This method is eager and will execute the associated
-        expression immediately. This API is experimental and subject to change.
-
+        This method is eager and will execute the associated expression
+        immediately.
 
         Parameters
         ----------
+        params
+            Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
-        params
-            Mapping of scalar parameter expressions to value.
 
         Returns
         -------

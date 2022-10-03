@@ -158,6 +158,7 @@ class BaseSQLBackend(BaseBackend):
             while batch := cursor.fetchmany(chunk_size):
                 yield batch
 
+    @util.experimental
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
@@ -167,6 +168,29 @@ class BaseSQLBackend(BaseBackend):
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.RecordBatchReader:
+        """Execute expression and return results in an iterator of pyarrow
+        record batches.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to pyarrow
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Number of rows in each returned record batch.
+
+        Returns
+        -------
+        record_batches
+            An iterator of pyarrow record batches.
+        """
         pa = self._import_pyarrow()
 
         from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
