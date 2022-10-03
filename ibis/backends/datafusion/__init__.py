@@ -215,7 +215,7 @@ class Backend(BaseBackend):
             return output.to_pandas()
         elif isinstance(expr, ir.Column):
             series = output.to_pandas()
-            series.name = "tmp"
+            series.name = expr.get_name()
             return series
         elif isinstance(expr, ir.Scalar):
             return output.as_py()
