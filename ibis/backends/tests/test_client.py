@@ -327,6 +327,26 @@ def test_insert_overwrite_from_expr(
     tm.assert_frame_equal(result, from_table.execute())
 
 
+def test_insert_overwrite_from_list(
+    alchemy_con,
+    employee_data_1_temp_table,
+):
+    def _emp(a, b, c, d):
+        return dict(first_name=a, last_name=b, department_name=c, salary=d)
+
+    alchemy_con.insert(
+        employee_data_1_temp_table,
+        [
+            _emp('Adam', 'Smith', 'Accounting', 50000.0),
+            _emp('Mohammed', 'Ali', 'Boxing', 150000),
+            _emp('María', 'Gonzalez', 'Engineering', 100000.0),
+        ],
+        overwrite=True,
+    )
+
+    assert len(alchemy_con.table(employee_data_1_temp_table).execute()) == 3
+
+
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
