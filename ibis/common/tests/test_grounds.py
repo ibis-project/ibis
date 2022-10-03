@@ -1,4 +1,5 @@
 import itertools
+import pickle
 import weakref
 
 import pytest
@@ -96,6 +97,10 @@ def test_annotable():
     obj = InBetween(10, lower=2)
     assert obj.__slots__ == tuple()
     assert not hasattr(obj, "__dict__")
+    assert obj == obj.copy()
+
+    obj2 = InBetween(10, lower=8)
+    assert obj.copy(lower=8) == obj2
 
 
 def test_variadic_annotable():
@@ -117,6 +122,11 @@ def test_variadic_annotable():
     assert t2.value == 1
     assert t2.rest == (2, 3, 4)
     assert t2.option == 'foo'
+
+    assert t2 == t2.copy()
+
+    t3 = t2.copy(rest=(5, 6, 7, 8))
+    assert t3 == Test2(1, 5, 6, 7, 8, option='foo')
 
 
 def test_annotable_is_mutable_by_default():
@@ -438,11 +448,12 @@ def test_immutability():
         op.a = 3
 
 
-def test_annotable_Attribute():
-    class Value(Annotable):
-        i = IsInt
-        j = Attribute(IsInt)
+class Value(Annotable):
+    i = IsInt
+    j = Attribute(IsInt)
 
+
+def test_annotable_attribute():
     with pytest.raises(TypeError, match="too many positional arguments"):
         Value(1, 2)
 
@@ -457,7 +468,25 @@ def test_annotable_Attribute():
         v.j = 'foo'
 
 
-def test_initialized_Attribute_basics():
+def test_annotable_mutability_and_serialization():
+    v_ = Value(1)
+    v = Value(1)
+    assert v_ == v
+
+    assert repr(v) == "Value(i=1)"
+    assert v.__getstate__() == {'i': 1, 'j': None}
+    w = pickle.loads(pickle.dumps(v))
+    assert v == w
+
+    v.j = 4
+    assert v_ != v
+    assert v.__getstate__() == {'i': 1, 'j': 4}
+    w = pickle.loads(pickle.dumps(v))
+    assert w == v
+    assert repr(w) == "Value(i=1)"
+
+
+def test_initialized_attribute_basics():
     class Value(Annotable):
         a = IsInt
 
@@ -474,7 +503,7 @@ def test_initialized_Attribute_basics():
     assert initialized is immutable_property
 
 
-def test_initialized_Attribute_mixed_with_classvar():
+def test_initialized_attribute_mixed_with_classvar():
     class Value(Annotable):
         arg = IsInt
 
@@ -702,16 +731,17 @@ def test_composition_of_annotable_and_singleton():
     assert SingAnn(3) is obj2
 
 
+class Between(Concrete):
+    value = IsInt
+    lower = Optional(IsInt, default=0)
+    upper = Optional(IsInt, default=None)
+
+    @immutable_property
+    def calculated(self):
+        return self.value + self.lower
+
+
 def test_concrete():
-    class Between(Concrete):
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
-
-        @immutable_property
-        def calculated(self):
-            return self.value + self.lower
-
     assert Between.__mro__ == (
         Between,
         Concrete,
@@ -751,6 +781,10 @@ def test_concrete():
     ref = weakref.ref(obj)
     assert ref() == obj
 
+    # serializable
+    assert obj.__getstate__() == {"value": 10, "lower": 5, "upper": 15}
+    assert pickle.loads(pickle.dumps(obj)) == obj
+
 
 def test_concrete_with_traversable_children():
     class Bool(Concrete, Traversable):
@@ -785,6 +819,9 @@ def test_concrete_with_traversable_children():
     node = All(T, Either(T, Either(T, F)), strict=False)
     assert node.__args__ == ((T, Either(T, Either(T, F))), False)
     assert node.__children__ == (T, Either(T, Either(T, F)))
+
+    copied = node.copy(arguments=(T, F))
+    assert copied == All(T, F, strict=False)
 
 
 def test_composition_of_concrete_and_singleton():
