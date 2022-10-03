@@ -72,7 +72,8 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 @fields
 def test_literal(con, field, expr_fn, expected_fn):
     query = expr_fn(field)
-    result = pd.Series([con.execute(query)]).replace(np.nan, None)
+    result = pd.Series([con.execute(query)])
+    result = result.replace({np.nan: None})
     expected = pd.Series([expected_fn(field)])
     tm.assert_series_equal(result, expected)
 

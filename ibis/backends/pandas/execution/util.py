@@ -10,6 +10,14 @@ from ibis.backends.pandas.execution import constants
 from ibis.expr.scope import Scope
 
 
+def get_grouping(grouper):
+    # this is such an annoying hack
+    assert isinstance(grouper, list)
+    if len(grouper) == 1:
+        return grouper[0]
+    return grouper
+
+
 def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
     (root_table,) = an.find_immediate_parent_tables(op)
     left_root, right_root = an.find_immediate_parent_tables(

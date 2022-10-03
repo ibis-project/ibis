@@ -4,31 +4,10 @@ let
   inherit (pkgs) lib stdenv;
 
   numpyVersion = super.numpy.version;
-  cythonVersion = super.cython.version;
-  pandasVersion = super.pandas.version;
-
-  parallelizeSetupPy = drv: drv.overridePythonAttrs (attrs: {
-    format = "setuptools";
-    enableParallelBuilding = true;
-    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
-  });
   versionBetween = version: lower: upper:
     lib.versionAtLeast version lower && lib.versionOlder version upper;
-  customizeCython = (lib.versionAtLeast pandasVersion "1.4.4") && (lib.versionOlder cythonVersion "0.29.32");
 in
 {
-  cython = super.cython.overridePythonAttrs (
-    _: lib.optionalAttrs customizeCython rec {
-      version = "0.29.32";
-
-      src = self.fetchPypi {
-        pname = "Cython";
-        inherit version;
-        sha256 = "sha256-hzPPR1i3kwTypOOev6xekjQbzke8zrJsElQ5iy+MGvc=";
-      };
-    }
-  );
-
   # this patch only applies to macos and only with numpy versions >=1.21,<1.21.2
   # see https://github.com/numpy/numpy/issues/19624 for details
   numpy = super.numpy.overridePythonAttrs (
@@ -41,7 +20,9 @@ in
             sha256 = "14g69vq7llkh6smpfrb50iqga7fd360dkcc0rlwb5k2cz8bsii5b";
           })
         ];
-      }
+      } // lib.optionalAttrs (lib.versionAtLeast numpyVersion "1.23.3") {
+      format = "setuptools";
+    }
   );
 
   datafusion = super.datafusion.overridePythonAttrs (attrs: rec {
@@ -74,7 +55,11 @@ in
     };
   });
 
-  pandas = parallelizeSetupPy super.pandas;
+  pandas = super.pandas.overridePythonAttrs (attrs: {
+    format = "setuptools";
+    enableParallelBuilding = true;
+    setupPyBuildFlags = attrs.setupPyBuildFlags or [ ] ++ [ "--parallel" "$NIX_BUILD_CORES" ];
+  });
 
   mkdocstrings = super.mkdocstrings.overridePythonAttrs (attrs: {
     patches = attrs.patches or [ ] ++ [
@@ -95,26 +80,6 @@ in
       '';
     });
 
-  idna = super.idna.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
-  });
-
-  nbformat = super.nbformat.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-core ];
-  });
-
-  termcolor = super.termcolor.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatch-vcs ];
-  });
-
-  untokenize = super.untokenize.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
-  });
-
-  docformatter = super.docformatter.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
-  });
-
   pyarrow = super.pyarrow.overridePythonAttrs (_: {
     PYARROW_WITH_DATASET = "1";
     PYARROW_WITH_FLIGHT = "1";
@@ -127,26 +92,20 @@ in
   polars = super.polars.overridePythonAttrs (attrs:
     let
       inherit (attrs) version;
-      source = pkgs.fetchFromGitHub {
+      src = pkgs.fetchFromGitHub {
         owner = "pola-rs";
         repo = "polars";
-        rev = "py-v${version}";
-        sha256 = "sha256-nXYQ7vwVD4WJrSsBATuqj5cGdpFKLvi1S4EpjBoSIKA=";
+        rev = "py-${version}";
+        sha256 = "sha256-u4mBAnX8pG2kb6ywlG+jkUpYG5Z/vvZdQSfz2pwQT6A=";
       };
       sourceRoot = "source/py-polars";
-      nightlyRustPlatform =
-        let
-          rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
-        in
-        pkgs.makeRustPlatform {
-          cargo = rustNightly;
-          rustc = rustNightly;
-        };
+      nightlyRustPlatform = pkgs.makeRustPlatform {
+        cargo = pkgs.rustNightly;
+        rustc = pkgs.rustNightly;
+      };
     in
     {
-      inherit version sourceRoot;
-
-      src = source;
+      inherit version src sourceRoot;
 
       patches = [ ./nix/patches/py-polars.patch ];
 
@@ -154,11 +113,27 @@ in
         ++ (with nightlyRustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
-        src = source;
-        inherit sourceRoot;
+        inherit src sourceRoot;
         patches = [ ./nix/patches/py-polars.patch ];
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-otUlYIR2HxTgkD0ZDgUkGfhstSbJVUWB05OR7f4PTlU=";
+        sha256 = "sha256-aQIWSDwwGYpJMUcUIYd68G7yFv87QwdvYevbeolTj88=";
       };
     });
+
+  mkdocs-table-reader-plugin = super.mkdocs-table-reader-plugin.overridePythonAttrs (attrs: {
+    propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.tabulate ];
+    postPatch = ''
+      substituteInPlace setup.py --replace "tabulate>=0.8.7" "tabulate"
+    '';
+  });
+
+  fiona = super.fiona.overridePythonAttrs (_: {
+    format = "setuptools";
+  });
+
+  backports-zoneinfo = super.backports-zoneinfo.overridePythonAttrs (attrs:
+    lib.optionalAttrs (self.pythonOlder "3.9") {
+      nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+    }
+  );
 }

@@ -8,7 +8,7 @@ clean:
 
 lock:
     poetry lock --no-update
-    poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
+    poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
 
 # show all backends
 @list-backends:

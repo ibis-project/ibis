@@ -10,55 +10,46 @@
 }:
 let
   pkgs = import ./nix { };
-  drv =
-    { poetry2nix
-    , python
-    , lib
-    }:
+  drv = { poetry2nix, python, lib }: poetry2nix.mkPoetryApplication rec {
+    inherit python;
 
-    let
-      buildInputs = with pkgs; [ gdal_2 graphviz-nox proj sqlite ];
-      checkInputs = buildInputs;
-    in
-    poetry2nix.mkPoetryApplication {
-      inherit python;
+    groups = [ ];
+    checkGroups = lib.optionals doCheck [ "test" ];
+    projectDir = ./.;
+    src = pkgs.gitignoreSource ./.;
 
-      projectDir = ./.;
-      src = pkgs.gitignoreSource ./.;
+    overrides = pkgs.poetry2nix.overrides.withDefaults (
+      import ./poetry-overrides.nix
+    );
 
-      overrides = pkgs.poetry2nix.overrides.withDefaults (
-        import ./poetry-overrides.nix
-      );
+    buildInputs = with pkgs; [ gdal graphviz-nox proj sqlite ];
+    checkInputs = buildInputs;
 
-      inherit buildInputs checkInputs;
+    preCheck = ''
+      set -euo pipefail
 
-      preCheck = ''
-        set -euo pipefail
+      export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
 
-        tempdir="$(mktemp -d)"
+      ${pkgs.rsync}/bin/rsync \
+        --chmod=Du+rwx,Fu+rw --archive --delete \
+        "${pkgs.ibisTestingData}/" \
+        "$IBIS_TEST_DATA_DIRECTORY"
+    '';
 
-        cp -r ${pkgs.ibisTestingData}/* "$tempdir"
+    checkPhase = ''
+      set -euo pipefail
 
-        find "$tempdir" -type f -exec chmod u+rw {} +
-        find "$tempdir" -type d -exec chmod u+rwx {} +
+      runHook preCheck
 
-        ln -s "$tempdir" ci/ibis-testing-data
-      '';
+      pytest --numprocesses auto --dist loadgroup -m '${lib.concatStringsSep " or " backends} or core'
 
-      checkPhase = ''
-        set -euo pipefail
+      runHook postCheck
+    '';
 
-        runHook preCheck
+    inherit doCheck;
 
-        pytest --numprocesses auto --dist loadgroup -m '${lib.concatStringsSep " or " backends} or core'
-
-        runHook postCheck
-      '';
-
-      inherit doCheck;
-
-      pythonImportsCheck = [ "ibis" ] ++ (map (backend: "ibis.backends.${backend}") backends);
-    };
+    pythonImportsCheck = [ "ibis" ] ++ (map (backend: "ibis.backends.${backend}") backends);
+  };
 in
 pkgs.callPackage drv {
   python = pkgs."python${builtins.replaceStrings [ "." ] [ "" ] python}";
