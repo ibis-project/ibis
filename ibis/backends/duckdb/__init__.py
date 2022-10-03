@@ -260,7 +260,7 @@ class Backend(BaseAlchemyBackend):
             # flatten it
             return table.columns[0].combine_chunks()
         elif isinstance(expr, ir.Scalar):
-            return table.columns[0].combine_chunks()[0]
+            return table.columns[0][0]
         else:
             raise ValueError
 
