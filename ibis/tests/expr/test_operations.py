@@ -83,30 +83,36 @@ def op(request):
     return request.param
 
 
+class Expr:
+    def __init__(self, op):
+        self.op = op
+
+
+class Base(ops.Node):
+    def to_expr(self):
+        return Expr(self)
+
+
+class Name(Base):
+    name: str
+
+
+class NamedValue(Base):
+    value: int
+    name: Name
+
+
+class Values(Base):
+    lst = rlz.variadic(rlz.instance_of(ops.Node))
+
+
+one = NamedValue(value=1, name=Name("one"))
+two = NamedValue(value=2, name=Name("two"))
+three = NamedValue(value=3, name=Name("three"))
+values = Values(one, two, three)
+
+
 def test_node_base():
-    class Expr:
-        def __init__(self, op):
-            self.op = op
-
-    class Base(ops.Node):
-        def to_expr(self):
-            return Expr(self)
-
-    class Name(Base):
-        name: str
-
-    class NamedValue(Base):
-        value: int
-        name: Name
-
-    class Values(Base):
-        lst = rlz.variadic(rlz.instance_of(ops.Node))
-
-    one = NamedValue(value=1, name=Name("one"))
-    two = NamedValue(value=2, name=Name("two"))
-    three = NamedValue(value=3, name=Name("three"))
-    values = Values(one, two, three)
-
     assert one.__args__ == (1, Name("one"))
     assert one.__children__ == (Name("one"),)
 
@@ -144,6 +150,20 @@ def test_node_base():
             {},
         ),
     ]
+
+
+def test_node_subtitution():
+    class Aliased(Base):
+        arg: ops.Node
+        name: str
+
+    ketto = Aliased(one, "ketto")
+    subs = {Name("one"): Name("zero"), two: ketto}
+
+    new_values = values.replace(subs)
+    expected = Values(NamedValue(value=1, name=Name("zero")), ketto, three)
+
+    assert expected == new_values
 
 
 def test_operation():

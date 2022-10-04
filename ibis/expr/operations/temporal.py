@@ -356,7 +356,7 @@ class IntervalBinary(Binary):
             Cast(arg, to=arg.output_dtype.value_type)
             if isinstance(arg.output_dtype, dt.Interval)
             else arg
-            for arg in self.args
+            for arg in (self.left, self.right)
         ]
         value_dtype = rlz._promote_integral_binop(integer_args, self.op)
 

@@ -152,8 +152,8 @@ class Parameter(inspect.Parameter):
 
     __slots__ = ()
 
-    def __init__(self, name, annotation, keyword=False):
-        kind = KEYWORD_ONLY if keyword else POSITIONAL_OR_KEYWORD
+    def __init__(self, name, annotation, keyword_only=False):
+        kind = KEYWORD_ONLY if keyword_only else POSITIONAL_OR_KEYWORD
         default = EMPTY
 
         if isinstance(annotation, Mandatory):
@@ -193,6 +193,22 @@ class Signature(inspect.Signature):
 
     @classmethod
     def merge(cls, *signatures, **annotations):
+        """Merge multiple signatures.
+
+        In addition to concatenating the parameters, it also reorders the
+        parameters so that optional arguments come after mandatory arguments.
+
+        Parameters
+        ----------
+        *signatures : Signature
+            Signature instances to merge.
+        **annotations : dict
+            Annotations to add to the merged signature.
+
+        Returns
+        -------
+        Signature
+        """
         params = {}
         inherited = set()
         is_variadic = False
@@ -203,7 +219,7 @@ class Signature(inspect.Signature):
                 inherited.add(name)
 
         for name, annot in annotations.items():
-            param = Parameter(name, annotation=annot, keyword=is_variadic)
+            param = Parameter(name, annotation=annot, keyword_only=is_variadic)
             is_variadic |= param.kind == VAR_POSITIONAL
             params[name] = param
 
@@ -225,36 +241,6 @@ class Signature(inspect.Signature):
                     new_kwargs.append(param)
 
         return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
-
-    def unbind(self, this: Any):
-        """Reverse bind of the parameters.
-
-        Attempts to reconstructs the original arguments as positional and
-        keyword arguments. Since keyword arguments are the preferred, the
-        positional arguments are filled only if the signature has variadic
-        args.
-
-        Parameters
-        ----------
-        this : Any
-            Object with attributes matching the signature parameters.
-
-        Returns
-        -------
-        args : (args, kwargs)
-            Tuple of positional and keyword arguments.
-        """
-        # does the reverse of bind, but doesn't apply defaults
-        args, kwargs = tuple(), {}
-
-        for name, param in self.parameters.items():
-            value = getattr(this, name)
-            if param.kind == VAR_POSITIONAL:
-                args = value
-            else:
-                kwargs[name] = value
-
-        return args, kwargs
 
     def validate(self, *args, **kwargs):
         """Validate the arguments against the signature.
@@ -284,6 +270,48 @@ class Signature(inspect.Signature):
             this[name] = param.validate(value, this=this)
 
         return this
+
+    def unbind(self, this: Any):
+        """Reverse bind of the parameters.
+
+        Attempts to reconstructs the original arguments as positional and
+        keyword arguments. Since keyword arguments are the preferred, the
+        positional arguments are filled only if the signature has variadic
+        args.
+
+        Parameters
+        ----------
+        this : Any
+            Object with attributes matching the signature parameters.
+
+        Returns
+        -------
+        args : (args, kwargs)
+            Tuple of positional and keyword arguments.
+        """
+        # does the reverse of bind, but doesn't apply defaults
+        args, kwargs = (), {}
+
+        for name, param in self.parameters.items():
+            value = getattr(this, name)
+            if param.kind == VAR_POSITIONAL:
+                # need to adjust due to the variadic argument: fn(a, b, *args)
+                # cannot be called again as fn(*args, a=..., b=...)
+                args = tuple(kwargs.values()) + value
+                kwargs = {}
+            else:
+                kwargs[name] = value
+
+        return args, kwargs
+
+    def unbind_positional(self, this: Any):
+        """Same as unbind but yields only positional arguments."""
+        for name, param in self.parameters.items():
+            value = getattr(this, name)
+            if param.kind == VAR_POSITIONAL:
+                yield from value
+            else:
+                yield value
 
 
 # aliases for convenience
