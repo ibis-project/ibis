@@ -317,6 +317,11 @@ exclude_lines = [
 ignore_errors = true
 omit = ["*_version.py", "*tests*"]
 
+[tool.distutils.bdist_wheel]
+# universal = true is for projects that support py2 and py3, and do not have C
+# extensions
+universal = false
+
 [build-system]
 requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
