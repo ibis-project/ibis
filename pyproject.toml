@@ -302,6 +302,21 @@ channels = ["conda-forge"]
 # use the array and dataframe extras from dask
 dask = ">=2021.10.0"
 
+[tool.coverage.run]
+branch = true
+source = ["ibis"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "if self.debug:",
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+ignore_errors = true
+omit = ["*_version.py", "*tests*"]
+
 [build-system]
 requires = ["poetry-core>=1.0.8", "poetry-dynamic-versioning"]
 build-backend = "poetry.core.masonry.api"
