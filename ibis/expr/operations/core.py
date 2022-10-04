@@ -1,49 +1,18 @@
 from __future__ import annotations
 
-import itertools
 from abc import ABC, abstractmethod
 from typing import Sequence
 
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.graph import Graph, Traversable
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Concrete, Traversable):
-
-    __slots__ = ("__children__",)
-
-    def __post_init__(self):
-        # store the children objects to speed up traversals
-        args, kwargs = self.__signature__.unbind(self)
-        children = itertools.chain(args, kwargs.values())
-        children = tuple(c for c in children if isinstance(c, Node))
-        object.__setattr__(self, "__children__", children)
-        super().__post_init__()
-
-    def map(self, fn):
-        results = {}
-        for node in Graph.from_bfs(self).toposort():
-            args, kwargs = node.__signature__.unbind(node)
-            args = (results.get(v, v) for v in args)
-            kwargs = {k: results.get(v, v) for k, v in kwargs.items()}
-            results[node] = fn(node, *args, **kwargs)
-        return results
-
-    # TODO(kszucs): move to comparable
-    def equals(self, other):
-        if not isinstance(other, Node):
-            raise TypeError(
-                "invalid equality comparison between Node and "
-                f"{type(other)}"
-            )
-        return self.__cached_equals__(other)
-
+class Node(Concrete, floor=True):
     @abstractmethod
     def to_expr(self):
         ...

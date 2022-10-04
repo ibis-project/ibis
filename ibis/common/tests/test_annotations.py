@@ -155,7 +155,7 @@ a = Parameter('a', annotation=Mandatory(as_float))
 b = Parameter('b', annotation=Mandatory(as_float))
 c = Parameter('c', annotation=Default(as_float))
 d = Parameter('d', annotation=Variadic(as_float))
-e = Parameter('e', annotation=Mandatory(as_float), keyword=True)
+e = Parameter('e', annotation=Mandatory(as_float), keyword_only=True)
 sig = Signature(parameters=[a, b, c, d, e])
 
 
@@ -164,8 +164,8 @@ def test_signature_unbind_with_empty_variadic():
     assert params == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': (), 'e': 4.0}
 
     args, kwargs = sig.unbind(params)
-    assert args == ()
-    assert kwargs == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'e': 4.0}
+    assert args == (1.0, 2.0, 3.0)
+    assert kwargs == {'e': 4.0}
     params_again = sig.validate(*args, **kwargs)
     assert params_again == params
 
@@ -181,8 +181,7 @@ def test_signature_unbind_nonempty_variadic():
     }
 
     args, kwargs = sig.unbind(params)
-    assert args == (10, 11, 12, 13, 14)
-    assert kwargs == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'e': 4.0}
-    # note that in this case the bind-unbind-bind roundtrip is not possible
-    # but the returned args and kwargs can be used to call a user function
-    # with the expected arguments just with different order
+    assert args == (1.0, 2.0, 3.0, 10, 11, 12, 13, 14)
+    assert kwargs == {'e': 4.0}
+    params_again = sig.validate(*args, **kwargs)
+    assert params_again == params

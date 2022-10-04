@@ -1,4 +1,3 @@
-import itertools
 import pickle
 import weakref
 
@@ -749,6 +748,7 @@ def test_concrete():
         Comparable,
         Annotable,
         Base,
+        Traversable,
         object,
     )
 
@@ -787,13 +787,8 @@ def test_concrete():
 
 
 def test_concrete_with_traversable_children():
-    class Bool(Concrete, Traversable):
-        @property
-        def __children__(self):
-            # actually this is the implementation of ops.Node
-            args, kwargs = self.__signature__.unbind(self)
-            children = itertools.chain(args, kwargs.values())
-            return tuple(c for c in children if isinstance(c, Traversable))
+    class Bool(Concrete):
+        pass
 
     class Value(Bool):
         value = IsBool
