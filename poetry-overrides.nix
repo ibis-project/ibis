@@ -121,6 +121,6 @@ in
     PYARROW_WITH_HDFS = "0";
     PYARROW_WITH_PARQUET = "1";
     PYARROW_WITH_PLASMA = "0";
-    PYARROW_WITH_S3 = "1";
+    PYARROW_WITH_S3 = "${if pkgs.arrow-cpp.enableS3 then "1" else "0"}";
   });
 }
