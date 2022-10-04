@@ -2021,7 +2021,7 @@ tzdata = {version = "*", markers = "python_version >= \"3.6\""}
 
 [[package]]
 name = "pyupgrade"
-version = "2.38.0"
+version = "3.0.0"
 description = "A tool to automatically upgrade syntax for newer versions."
 category = "dev"
 optional = false
@@ -2520,7 +2520,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "d2c37844aaef23dffade26d913e59dfb19b7cff7021a101ce36c2d437d17354d"
+content-hash = "66c7d5bceb8c7f35d7b6a7765cf0029151c401993d58efa3bfed99d5d7482d66"
 
 [metadata.files]
 absolufy-imports = [
@@ -4003,8 +4003,8 @@ pytz-deprecation-shim = [
     {file = "pytz_deprecation_shim-0.1.0.post0.tar.gz", hash = "sha256:af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d"},
 ]
 pyupgrade = [
-    {file = "pyupgrade-2.38.0-py2.py3-none-any.whl", hash = "sha256:e68e033603de3b4b675c7bd733723fb2bb7930a1898b6da61fb503643322e2f9"},
-    {file = "pyupgrade-2.38.0.tar.gz", hash = "sha256:7d03766fb5d68e9b0ec86b7d48c3cc29462b0031ff48ceece34bd224708553c0"},
+    {file = "pyupgrade-3.0.0-py2.py3-none-any.whl", hash = "sha256:f9ba6cb58713e7249f4f0486e425969618e953062a5fc805da9d21602a2d1441"},
+    {file = "pyupgrade-3.0.0.tar.gz", hash = "sha256:6ec1e2762d887cab94a5714b2ea7e944843d8c2de36c449d443e52ffac8ab14f"},
 ]
 pywin32 = [
     {file = "pywin32-304-cp310-cp310-win32.whl", hash = "sha256:3c7bacf5e24298c86314f03fa20e16558a4e4138fc34615d7de4070c23e65af3"},

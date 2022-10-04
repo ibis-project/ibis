@@ -157,7 +157,7 @@ python-dateutil==2.8.2; python_full_version >= "3.7.1" and python_version >= "3.
 pytkdocs==0.16.1; python_version >= "3.7"
 pytz-deprecation-shim==0.1.0.post0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.6.0"
 pytz==2022.2.1; python_version >= "3.8" and python_version < "4"
-pyupgrade==2.38.0; python_version >= "3.7"
+pyupgrade==3.0.0; python_version >= "3.7"
 pywin32==304; sys_platform == "win32" and platform_python_implementation != "PyPy" and python_version >= "3.7" and python_full_version >= "3.7.1" and python_version < "4"
 pyyaml-env-tag==0.1; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.7.1"
 pyyaml==6.0; python_full_version >= "3.7.1" and python_full_version < "4.0.0" and python_version >= "3.8" and python_version < "4.0"

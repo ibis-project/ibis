@@ -102,7 +102,7 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-xdist = ">=2.3.0,<3"
 filelock = ">=3.7.0,<4"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
-pyupgrade = ">=2.26.0,<3"
+pyupgrade = ">=2.26.0,<4"
 requests = ">=2,<3"
 sqlalchemy = ">=1.4,<2.0"
 tomli = ">=2.0.1,<3"
