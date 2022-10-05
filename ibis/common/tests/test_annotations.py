@@ -3,13 +3,7 @@ import inspect
 import pytest
 from toolz import identity
 
-from ibis.common.annotations import (
-    Argument,
-    Attribute,
-    Initialized,
-    Parameter,
-    Signature,
-)
+from ibis.common.annotations import Argument, Attribute, Parameter, Signature
 from ibis.common.validators import instance_of, option
 
 is_int = instance_of(int)
@@ -56,7 +50,7 @@ def test_valid_optional(argument, value, expected):
         (Argument.optional(is_int), 'lynx', TypeError),
     ],
 )
-def test_invalid_optional(arg, value, expected):
+def test_invalid_optional_argument(arg, value, expected):
     with pytest.raises(expected):
         arg(value)
 
@@ -65,11 +59,14 @@ def test_initialized():
     class Foo:
         a = 10
 
-    field = Initialized(lambda self: self.a)
+    field = Attribute.default(lambda self: self.a + 10)
     assert field == field
-    assert field.initialize(Foo) == 10
 
-    field2 = Initialized(lambda self: self.a, validator=lambda x, this: str(x))
+    assert field.initialize(Foo) == 20
+
+    field2 = Attribute(
+        validator=lambda x, this: str(x), default=lambda self: self.a
+    )
     assert field != field2
     assert field2.initialize(Foo) == '10'
 

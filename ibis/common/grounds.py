@@ -5,7 +5,7 @@ from copy import copy
 from typing import Any
 from weakref import WeakValueDictionary
 
-from ibis.common.annotations import Argument, Attribute, Initialized, Signature
+from ibis.common.annotations import Argument, Attribute, Signature
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Graph, Traversable
 from ibis.common.typing import evaluate_typehint
@@ -67,32 +67,33 @@ class AnnotableMeta(BaseMeta):
 
         # collect the newly defined annotations
         slots = list(dct.pop('__slots__', []))
-        attribs, args = {}, {}
+        namespace, arguments = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
                 attrib = Argument.mandatory(attrib)
 
             if isinstance(attrib, Argument):
-                args[name] = attrib
-
-            if isinstance(attrib, Attribute):
+                arguments[name] = attrib
+                attributes[name] = attrib
+                slots.append(name)
+            elif isinstance(attrib, Attribute):
                 attributes[name] = attrib
                 slots.append(name)
             else:
-                attribs[name] = attrib
+                namespace[name] = attrib
 
         # merge the annotations with the parent annotations
-        signature = Signature.merge(*signatures, **args)
+        signature = Signature.merge(*signatures, **arguments)
         argnames = tuple(signature.parameters.keys())
 
-        attribs.update(
+        namespace.update(
             __argnames__=argnames,
             __attributes__=attributes,
             __match_args__=argnames,
             __signature__=signature,
             __slots__=tuple(slots),
         )
-        return super().__new__(metacls, clsname, bases, attribs, **kwargs)
+        return super().__new__(metacls, clsname, bases, namespace, **kwargs)
 
 
 class Annotable(Base, metaclass=AnnotableMeta):
@@ -113,8 +114,10 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
     def __post_init__(self) -> None:
         for name, field in self.__attributes__.items():
-            if isinstance(field, Initialized):
-                object.__setattr__(self, name, field.initialize(self))
+            if isinstance(field, Attribute):
+                value = field.initialize(self)
+                if value is not None:
+                    object.__setattr__(self, name, value)
 
     def __setattr__(self, name, value) -> None:
         if field := self.__attributes__.get(name):

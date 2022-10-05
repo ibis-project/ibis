@@ -6,7 +6,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between
@@ -343,14 +343,14 @@ class ToIntervalUnit(Value):
             arg = util.convert_unit(arg, dtype.unit, unit)
         super().__init__(arg=arg, unit=unit)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return self.arg.output_dtype.copy(unit=self.unit)
 
 
 @public
 class IntervalBinary(Binary):
-    @initialized
+    @attribute.default
     def output_dtype(self):
         integer_args = [
             Cast(arg, to=arg.output_dtype.value_type)
@@ -398,7 +398,7 @@ class IntervalFromInteger(Value):
 
     output_shape = rlz.shape_like("arg")
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.Interval(self.unit, value_type=self.arg.output_dtype)
 

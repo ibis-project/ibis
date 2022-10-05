@@ -12,7 +12,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
 
@@ -310,7 +310,7 @@ class Projection(TableNode):
         )
     )
 
-    @initialized
+    @attribute.default
     def schema(self):
         # Resolve schema and initialize
 
@@ -378,7 +378,7 @@ class Selection(Projection):
 
         return Selection(self, [], sort_keys=keys)
 
-    @initialized
+    @attribute.default
     def _projection(self):
         return Projection(self.table, self.selections)
 
@@ -473,7 +473,7 @@ class Aggregation(TableNode):
             sort_keys=sort_keys,
         )
 
-    @initialized
+    @attribute.default
     def schema(self):
         names = []
         types = []
@@ -584,7 +584,7 @@ class SQLStringView(PhysicalTable):
     name = rlz.instance_of(str)
     query = rlz.instance_of(str)
 
-    @initialized
+    @attribute.default
     def schema(self):
         # TODO(kszucs): avoid converting to expression
         backend = self.child.to_expr()._find_backend()

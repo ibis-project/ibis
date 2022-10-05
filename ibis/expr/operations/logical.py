@@ -10,7 +10,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Binary, NodeList, Unary, Value
 from ibis.expr.operations.generic import _Negatable
 
@@ -144,7 +144,7 @@ class Contains(Value):
 
     output_dtype = dt.boolean
 
-    @initialized
+    @attribute.default
     def output_shape(self):
         if isinstance(self.options, NodeList):
             args = [self.value, *self.options]
@@ -171,7 +171,7 @@ class Where(Value):
     true_expr = rlz.any
     false_null_expr = rlz.any
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return rlz.highest_precedence_dtype(
             [

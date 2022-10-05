@@ -4,7 +4,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import _Negatable
 from ibis.util import deprecated
@@ -94,7 +94,7 @@ class BitXor(Filterable, Reduction):
 class Sum(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.int64
@@ -106,7 +106,7 @@ class Sum(Filterable, Reduction):
 class Mean(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         if isinstance(self.arg.output_dtype, dt.Boolean):
             return dt.float64
@@ -141,7 +141,7 @@ class VarianceBase(Filterable, Reduction):
     arg = rlz.column(rlz.numeric)
     how = rlz.isin({'sample', 'pop'})
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         if isinstance(self.arg.output_dtype, dt.Decimal):
             return self.arg.output_dtype.largest
@@ -278,7 +278,7 @@ class CountDistinct(Filterable, Reduction):
 class ArrayCollect(Reduction):
     arg = rlz.column(rlz.any)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.Array(self.arg.output_dtype)
 

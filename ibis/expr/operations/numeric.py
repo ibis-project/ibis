@@ -5,7 +5,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Binary, Unary, Value
 
 
@@ -191,14 +191,14 @@ class BaseConvert(Value):
 class MathUnary(Unary):
     arg = rlz.numeric
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.higher_precedence(self.arg.output_dtype, dt.double)
 
 
 @public
 class ExpandingMathUnary(MathUnary):
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.higher_precedence(self.arg.output_dtype.largest, dt.double)
 

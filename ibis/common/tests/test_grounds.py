@@ -4,11 +4,10 @@ import weakref
 import pytest
 
 from ibis.common.annotations import (
-    Attribute,
     Parameter,
     Signature,
+    attribute,
     immutable_property,
-    initialized,
     mandatory,
     optional,
     variadic,
@@ -427,7 +426,13 @@ def test_immutability():
 
 class Value(Annotable):
     i = is_int
-    j = Attribute(is_int)
+    j = attribute(is_int)
+
+
+class Value2(Value):
+    @attribute.default
+    def k(self):
+        return 3
 
 
 def test_annotable_attribute():
@@ -443,6 +448,17 @@ def test_annotable_attribute():
 
     with pytest.raises(TypeError):
         v.j = 'foo'
+
+
+def test_annotable_attribute_init():
+    assert Value2.__slots__ == ('k',)
+    v = Value2(1)
+
+    assert v.i == 1
+    assert not hasattr(v, 'j')
+    v.j = 2
+    assert v.j == 2
+    assert v.k == 3
 
 
 def test_annotable_mutability_and_serialization():
@@ -467,7 +483,7 @@ def test_initialized_attribute_basics():
     class Value(Annotable):
         a = is_int
 
-        @initialized
+        @attribute.default
         def double_a(self):
             return 2 * self.a
 
@@ -477,7 +493,7 @@ def test_initialized_attribute_basics():
     assert len(Value.__attributes__) == 2
     assert "double_a" in Value.__slots__
 
-    assert initialized is immutable_property
+    assert attribute.default == immutable_property
 
 
 def test_initialized_attribute_mixed_with_classvar():
@@ -491,7 +507,7 @@ def test_initialized_attribute_mixed_with_classvar():
         output_shape = "scalar"
 
     class variadic(Value):
-        @initialized
+        @attribute.default
         def output_shape(self):
             if self.arg > 10:
                 return "columnar"

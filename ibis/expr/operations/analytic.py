@@ -4,7 +4,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Node, Value
 from ibis.expr.window import propagate_down_window
 
@@ -142,7 +142,7 @@ class CumulativeSum(CumulativeOp):
 
     arg = rlz.column(rlz.numeric)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.higher_precedence(self.arg.output_dtype.largest, dt.int64)
 
@@ -156,7 +156,7 @@ class CumulativeMean(CumulativeOp):
 
     arg = rlz.column(rlz.numeric)
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.higher_precedence(self.arg.output_dtype.largest, dt.float64)
 

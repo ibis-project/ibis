@@ -8,11 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.common.annotations import (  # noqa: F401
-    initialized,
-    optional,
-    variadic,
-)
+from ibis.common.annotations import attribute, optional, variadic  # noqa: F401
 from ibis.common.validators import (  # noqa: F401
     bool_,
     instance_of,
@@ -326,7 +322,7 @@ def client(arg, **kwargs):
 
 
 def dtype_like(name):
-    @initialized
+    @attribute.default
     def output_dtype(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -336,7 +332,7 @@ def dtype_like(name):
 
 
 def shape_like(name):
-    @initialized
+    @attribute.default
     def output_shape(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -403,7 +399,7 @@ def _promote_decimal_binop(args, op):
 
 
 def numeric_like(name, op):
-    @initialized
+    @attribute.default
     def output_dtype(self):
         args = getattr(self, name)
         dtypes = [arg.output_dtype for arg in args]
