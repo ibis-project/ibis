@@ -43,7 +43,7 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Concrete, floor=True):
+class Schema(Concrete):
     """An object for holding table schema information."""
 
     names = tuple_of(instance_of((str, UnnamedMarker)))
@@ -87,6 +87,30 @@ class Schema(Concrete, floor=True):
 
     def __getitem__(self, name: str) -> dt.DataType:
         return self.types[self._name_locs[name]]
+
+    def equals(self, other: Schema) -> bool:
+        """Return whether `other` is equal to `self`.
+        Parameters
+        ----------
+        other
+            Schema to compare `self` to.
+        Examples
+        --------
+        >>> import ibis
+        >>> first = ibis.schema({"a": "int"})
+        >>> second = ibis.schema({"a": "int"})
+        >>> first.equals(second)
+        True
+        >>> third = ibis.schema({"a": "array<int>"})
+        >>> first.equals(third)
+        False
+        """
+        if not isinstance(other, Schema):
+            raise TypeError(
+                "invalid equality comparison between Schema and "
+                f"{type(other)}"
+            )
+        return self.__cached_equals__(other)
 
     def delete(self, names_to_delete: Iterable[str]) -> Schema:
         """Remove `names_to_delete` names from `self`.

@@ -12,7 +12,15 @@ from ibis.util import UnnamedMarker
 
 
 @public
-class Node(Concrete, floor=True):
+class Node(Concrete):
+    def equals(self, other):
+        if not isinstance(other, Node):
+            raise TypeError(
+                "invalid equality comparison between Node and "
+                f"{type(other)}"
+            )
+        return self.__cached_equals__(other)
+
     @abstractmethod
     def to_expr(self):
         ...
@@ -113,6 +121,8 @@ class NodeList(Node, Sequence[Node]):
 
     # https://peps.python.org/pep-0653/#additions-to-the-object-model
     # TODO(kszucs): __match_container__ = MATCH_SEQUENCE
+    # TODO(kszucs): should be able to remove this class with some additional
+    # work on the pandas backend
 
     values = rlz.variadic(rlz.instance_of(Node))
 

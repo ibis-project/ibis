@@ -525,3 +525,24 @@ def test_struct_datatype_subclass_from_tuples():
 
 def test_parse_null():
     assert dt.parse("null") == dt.null
+
+
+def test_traversal_map():
+    dtype = dt.Struct.from_tuples([('a', 'int64'), ('b', dt.Array('int64'))])
+    results = dtype.map(lambda dtype, *args, **kwargs: str(dtype))
+    assert results == {
+        dt.int64: 'int64',
+        dt.Array(dt.int64): 'array<int64>',
+        dtype: 'struct<a: int64, b: array<int64>>',
+    }
+
+
+def test_traversal_replace():
+    dtype = dt.Struct.from_tuples([('a', 'int64'), ('b', dt.Array('string'))])
+    subs = {dt.string: dt.timestamp, dt.int64: dt.bool}
+
+    result = dtype.replace(subs)
+    expected = dt.Struct.from_tuples(
+        [('a', 'bool'), ('b', dt.Array('timestamp'))]
+    )
+    assert result == expected
