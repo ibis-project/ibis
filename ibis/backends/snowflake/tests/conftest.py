@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
@@ -42,8 +41,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
         schema = (script_dir / 'schema' / 'snowflake.sql').read_text()
 
         stage = "ibis_testing_stage"
-        eng = sa.create_engine(os.environ["SNOWFLAKE_URL"])
-        with eng.connect() as con:
+        con = TestConf.connect(data_dir)
+        with con.con.connect() as con:
             con.execute(
                 """\
 CREATE OR REPLACE FILE FORMAT ibis_csv_fmt
@@ -72,4 +71,6 @@ CREATE OR REPLACE STAGE ibis_testing_stage
     @staticmethod
     @functools.lru_cache(maxsize=None)
     def connect(data_directory: Path) -> BaseBackend:
-        return ibis.connect(os.environ["SNOWFLAKE_URL"])  # type: ignore
+        if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
+            return ibis.connect(snowflake_url)  # type: ignore
+        pytest.skip("SNOWFLAKE_URL environment variable is not defined")

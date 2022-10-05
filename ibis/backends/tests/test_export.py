@@ -43,7 +43,6 @@ limit = [
                     "impala",
                     "pandas",
                     "pyspark",
-                    "snowflake",
                 ]
             ),
         ],
@@ -61,7 +60,6 @@ no_limit = [
                     "dask",
                     "impala",
                     "pyspark",
-                    "snowflake",
                 ]
             ),
         ],
