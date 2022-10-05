@@ -5,14 +5,7 @@ from copy import copy
 from typing import Any
 from weakref import WeakValueDictionary
 
-from ibis.common.annotations import (
-    Argument,
-    Attribute,
-    Default,
-    Initialized,
-    Mandatory,
-    Signature,
-)
+from ibis.common.annotations import Argument, Attribute, Initialized, Signature
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Graph, Traversable
 from ibis.common.typing import evaluate_typehint
@@ -68,16 +61,16 @@ class AnnotableMeta(BaseMeta):
             typehint = evaluate_typehint(annot, module)
             validator = Validator.from_annotation(typehint)
             if name in dct:
-                dct[name] = Default(validator=validator, default=dct[name])
+                dct[name] = Argument.default(dct[name], validator)
             else:
-                dct[name] = Mandatory(validator=validator)
+                dct[name] = Argument.mandatory(validator)
 
         # collect the newly defined annotations
         slots = list(dct.pop('__slots__', []))
         attribs, args = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
-                attrib = Mandatory(attrib)
+                attrib = Argument.mandatory(attrib)
 
             if isinstance(attrib, Argument):
                 args[name] = attrib

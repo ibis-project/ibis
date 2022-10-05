@@ -5,13 +5,13 @@ import pytest
 
 from ibis.common.annotations import (
     Attribute,
-    Mandatory,
-    Optional,
     Parameter,
     Signature,
-    Variadic,
     immutable_property,
     initialized,
+    mandatory,
+    optional,
+    variadic,
 )
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Traversable
@@ -23,38 +23,16 @@ from ibis.common.grounds import (
     Immutable,
     Singleton,
 )
-from ibis.common.validators import Validator
+from ibis.common.validators import instance_of, validator
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
-
-class ValidatorFunction(Validator):
-    def __init__(self, fn):
-        self.fn = fn
-
-    def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
-
-
-class InstanceOf(Validator):
-    def __init__(self, typ):
-        self.typ = typ
-
-    def __repr__(self):
-        return f"Is{self.typ.__name__.capitalize()}"
-
-    def __call__(self, arg, **kwargs):
-        if not isinstance(arg, self.typ):
-            raise TypeError(self.typ)
-        return arg
-
-
-IsAny = InstanceOf(object)
-IsBool = InstanceOf(bool)
-IsFloat = InstanceOf(float)
-IsInt = InstanceOf(int)
-IsStr = InstanceOf(str)
-IsList = InstanceOf(list)
+is_any = instance_of(object)
+is_bool = instance_of(bool)
+is_float = instance_of(float)
+is_int = instance_of(int)
+is_str = instance_of(str)
+is_list = instance_of(list)
 
 
 class Op(Annotable):
@@ -62,18 +40,18 @@ class Op(Annotable):
 
 
 class Value(Op):
-    arg = InstanceOf(object)
+    arg = instance_of(object)
 
 
 class StringOp(Value):
-    arg = InstanceOf(str)
+    arg = instance_of(str)
 
 
 def test_annotable():
     class Between(Annotable):
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
+        value = is_int
+        lower = optional(is_int, default=0)
+        upper = optional(is_int, default=None)
 
     class InBetween(Between):
         pass
@@ -104,15 +82,15 @@ def test_annotable():
 
 def test_variadic_annotable():
     class Test(Annotable):
-        value = IsInt
-        rest = Variadic(IsInt)
+        value = is_int
+        rest = variadic(is_int)
 
     t = Test(1, 2, 3, 4)
     assert t.value == 1
     assert t.rest == (2, 3, 4)
 
     class Test2(Test):
-        option = IsStr
+        option = is_str
 
     with pytest.raises(TypeError):
         Test2(1, 2, 3, 4, 'foo')
@@ -134,8 +112,8 @@ def test_annotable_is_mutable_by_default():
     class Op(Annotable):
         __slots__ = ("custom",)
 
-        a = IsInt
-        b = IsInt
+        a = is_int
+        b = is_int
 
     p = Op(1, 2)
     assert p.a == 1
@@ -167,15 +145,15 @@ def test_annotable_with_type_annotations():
 
 def test_composition_of_annotable_and_immutable():
     class AnnImm(Annotable, Immutable):
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
+        value = is_int
+        lower = optional(is_int, default=0)
+        upper = optional(is_int, default=None)
 
     class ImmAnn(Immutable, Annotable):
         # this is the preferable method resolution order
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
+        value = is_int
+        lower = optional(is_int, default=0)
+        upper = optional(is_int, default=None)
 
     obj = AnnImm(3, lower=0, upper=4)
     with pytest.raises(TypeError):
@@ -188,9 +166,9 @@ def test_composition_of_annotable_and_immutable():
 
 def test_composition_of_annotable_and_comparable():
     class Between(Comparable, Annotable):
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
+        value = is_int
+        lower = optional(is_int, default=0)
+        upper = optional(is_int, default=None)
 
         def __equals__(self, other):
             return (
@@ -216,9 +194,9 @@ def test_composition_of_annotable_and_comparable():
 
 def test_maintain_definition_order():
     class Between(Annotable):
-        value = IsInt
-        lower = Optional(IsInt, default=0)
-        upper = Optional(IsInt, default=None)
+        value = is_int
+        lower = optional(is_int, default=0)
+        upper = optional(is_int, default=None)
 
     param_names = list(Between.__signature__.parameters.keys())
     assert param_names == ['value', 'lower', 'upper']
@@ -226,65 +204,65 @@ def test_maintain_definition_order():
 
 def test_signature_inheritance():
     class IntBinop(Annotable):
-        left = IsInt
-        right = IsInt
+        left = is_int
+        right = is_int
 
     class FloatAddRhs(IntBinop):
-        right = IsFloat
+        right = is_float
 
     class FloatAddClip(FloatAddRhs):
-        left = IsFloat
-        clip_lower = Optional(IsInt, default=0)
-        clip_upper = Optional(IsInt, default=10)
+        left = is_float
+        clip_lower = optional(is_int, default=0)
+        clip_upper = optional(is_int, default=10)
 
     class IntAddClip(FloatAddClip, IntBinop):
         pass
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter('left', annotation=Mandatory(IsInt)),
-            Parameter('right', annotation=Mandatory(IsInt)),
+            Parameter('left', annotation=mandatory(is_int)),
+            Parameter('right', annotation=mandatory(is_int)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter('left', annotation=Mandatory(IsInt)),
-            Parameter('right', annotation=Mandatory(IsFloat)),
+            Parameter('left', annotation=mandatory(is_int)),
+            Parameter('right', annotation=mandatory(is_float)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=Mandatory(IsFloat)),
-            Parameter('right', annotation=Mandatory(IsFloat)),
-            Parameter('clip_lower', annotation=Optional(IsInt, default=0)),
-            Parameter('clip_upper', annotation=Optional(IsInt, default=10)),
+            Parameter('left', annotation=mandatory(is_float)),
+            Parameter('right', annotation=mandatory(is_float)),
+            Parameter('clip_lower', annotation=optional(is_int, default=0)),
+            Parameter('clip_upper', annotation=optional(is_int, default=10)),
         ]
     )
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=Mandatory(IsInt)),
-            Parameter('right', annotation=Mandatory(IsInt)),
-            Parameter('clip_lower', annotation=Optional(IsInt, default=0)),
-            Parameter('clip_upper', annotation=Optional(IsInt, default=10)),
+            Parameter('left', annotation=mandatory(is_int)),
+            Parameter('right', annotation=mandatory(is_int)),
+            Parameter('clip_lower', annotation=optional(is_int, default=0)),
+            Parameter('clip_upper', annotation=optional(is_int, default=10)),
         ]
     )
 
 
 def test_positional_argument_reordering():
     class Farm(Annotable):
-        ducks = IsInt
-        donkeys = IsInt
-        horses = IsInt
-        goats = IsInt
-        chickens = IsInt
+        ducks = is_int
+        donkeys = is_int
+        horses = is_int
+        goats = is_int
+        chickens = is_int
 
     class NoHooves(Farm):
-        horses = Optional(IsInt, default=0)
-        goats = Optional(IsInt, default=0)
-        donkeys = Optional(IsInt, default=0)
+        horses = optional(is_int, default=0)
+        goats = optional(is_int, default=0)
+        donkeys = optional(is_int, default=0)
 
     f1 = Farm(1, 2, 3, 4, 5)
     f2 = Farm(1, 2, goats=4, chickens=5, horses=3)
@@ -302,13 +280,13 @@ def test_positional_argument_reordering():
 
 def test_keyword_argument_reordering():
     class Alpha(Annotable):
-        a = IsInt
-        b = IsInt
+        a = is_int
+        b = is_int
 
     class Beta(Alpha):
-        c = IsInt
-        d = Optional(IsInt, default=0)
-        e = IsInt
+        c = is_int
+        d = optional(is_int, default=0)
+        e = is_int
 
     obj = Beta(1, 2, 3, 4)
     assert obj.a == 1
@@ -326,7 +304,7 @@ def test_not_copy_default():
     default = tuple()
 
     class Op(Annotable):
-        arg = Optional(InstanceOf(tuple), default=default)
+        arg = optional(instance_of(tuple), default=default)
 
     op = Op()
     assert op.arg is default
@@ -335,17 +313,17 @@ def test_not_copy_default():
 def test_slots_are_inherited_and_overridable():
     class Op(Annotable):
         __slots__ = ('_cache',)  # first definition
-        arg = ValidatorFunction(lambda x: x)
+        arg = validator(lambda x: x)
 
     class StringOp(Op):
-        arg = ValidatorFunction(str)  # new overridden slot
+        arg = validator(str)  # new overridden slot
 
     class StringSplit(StringOp):
-        sep = ValidatorFunction(str)  # new slot
+        sep = validator(str)  # new slot
 
     class StringJoin(StringOp):
         __slots__ = ('_memoize',)  # new slot
-        sep = ValidatorFunction(str)  # new overridden slot
+        sep = validator(str)  # new overridden slot
 
     assert Op.__slots__ == ('_cache', 'arg')
     assert StringOp.__slots__ == ('arg',)
@@ -361,28 +339,28 @@ def test_multiple_inheritance():
         __slots__ = ('_hash',)
 
     class Value(Annotable):
-        arg = InstanceOf(object)
+        arg = instance_of(object)
 
     class Reduction(Value):
         pass
 
     class UDF(Value):
-        func = ValidatorFunction(lambda fn, this: fn)
+        func = validator(lambda fn, this: fn)
 
     class UDAF(UDF, Reduction):
-        arity = IsInt
+        arity = is_int
 
     class A(Annotable):
-        a = IsInt
+        a = is_int
 
     class B(Annotable):
-        b = IsInt
+        b = is_int
 
     msg = "multiple bases have instance lay-out conflict"
     with pytest.raises(TypeError, match=msg):
 
         class AB(A, B):
-            ab = IsInt
+            ab = is_int
 
     assert UDAF.__slots__ == ('arity',)
     strlen = UDAF(arg=2, func=lambda value: len(str(value)), arity=1)
@@ -403,20 +381,20 @@ def test_pickling_support(obj):
 
 def test_multiple_inheritance_argument_order():
     class Value(Annotable):
-        arg = IsAny
+        arg = is_any
 
     class VersionedOp(Value):
-        version = IsInt
+        version = is_int
 
     class Reduction(Annotable):
         pass
 
     class Sum(VersionedOp, Reduction):
-        where = Optional(IsBool, default=False)
+        where = optional(is_bool, default=False)
 
     assert (
         str(Sum.__signature__)
-        == "(arg: Mandatory(IsObject), version: Mandatory(IsInt), where: Optional(IsBool, default=False) = None)"  # noqa: E501
+        == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
     )
 
 
@@ -425,22 +403,22 @@ def test_multiple_inheritance_optional_argument_order():
         pass
 
     class ConditionalOp(Annotable):
-        where = Optional(IsBool, default=False)
+        where = optional(is_bool, default=False)
 
     class Between(Value, ConditionalOp):
-        min = IsInt
-        max = IsInt
-        how = Optional(IsStr, default="strict")
+        min = is_int
+        max = is_int
+        how = optional(is_str, default="strict")
 
     assert (
         str(Between.__signature__)
-        == "(min: Mandatory(IsInt), max: Mandatory(IsInt), how: Optional(IsStr, default='strict') = None, where: Optional(IsBool, default=False) = None)"  # noqa: E501
+        == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
     )
 
 
 def test_immutability():
     class Value(Annotable, Immutable):
-        a = IsInt
+        a = is_int
 
     op = Value(1)
     with pytest.raises(TypeError):
@@ -448,8 +426,8 @@ def test_immutability():
 
 
 class Value(Annotable):
-    i = IsInt
-    j = Attribute(IsInt)
+    i = is_int
+    j = Attribute(is_int)
 
 
 def test_annotable_attribute():
@@ -487,7 +465,7 @@ def test_annotable_mutability_and_serialization():
 
 def test_initialized_attribute_basics():
     class Value(Annotable):
-        a = IsInt
+        a = is_int
 
         @initialized
         def double_a(self):
@@ -504,7 +482,7 @@ def test_initialized_attribute_basics():
 
 def test_initialized_attribute_mixed_with_classvar():
     class Value(Annotable):
-        arg = IsInt
+        arg = is_int
 
         output_shape = "like-arg"
         output_dtype = "like-arg"
@@ -512,7 +490,7 @@ def test_initialized_attribute_mixed_with_classvar():
     class Reduction(Value):
         output_shape = "scalar"
 
-    class Variadic(Value):
+    class variadic(Value):
         @initialized
         def output_shape(self):
             if self.arg > 10:
@@ -524,11 +502,11 @@ def test_initialized_attribute_mixed_with_classvar():
     assert r.output_shape == "scalar"
     assert "output_shape" not in r.__slots__
 
-    v = Variadic(1)
+    v = variadic(1)
     assert v.output_shape == "scalar"
     assert "output_shape" in v.__slots__
 
-    v = Variadic(100)
+    v = variadic(100)
     assert v.output_shape == "columnar"
     assert "output_shape" in v.__slots__
 
@@ -710,11 +688,11 @@ def test_singleton_with_argument():
 
 def test_composition_of_annotable_and_singleton():
     class AnnSing(Annotable, Singleton):
-        value = ValidatorFunction(lambda x, this: int(x))
+        value = validator(lambda x, this: int(x))
 
     class SingAnn(Singleton, Annotable):
         # this is the preferable method resolution order
-        value = ValidatorFunction(lambda x, this: int(x))
+        value = validator(lambda x, this: int(x))
 
     # arguments looked up after validation
     obj = AnnSing("3")
@@ -731,9 +709,9 @@ def test_composition_of_annotable_and_singleton():
 
 
 class Between(Concrete):
-    value = IsInt
-    lower = Optional(IsInt, default=0)
-    upper = Optional(IsInt, default=None)
+    value = is_int
+    lower = optional(is_int, default=0)
+    upper = optional(is_int, default=None)
 
     @immutable_property
     def calculated(self):
@@ -791,15 +769,15 @@ def test_concrete_with_traversable_children():
         pass
 
     class Value(Bool):
-        value = IsBool
+        value = is_bool
 
     class Either(Bool):
-        left = InstanceOf(Bool)
-        right = InstanceOf(Bool)
+        left = instance_of(Bool)
+        right = instance_of(Bool)
 
     class All(Bool):
-        arguments = Variadic(InstanceOf(Bool))
-        strict = IsBool
+        arguments = variadic(instance_of(Bool))
+        strict = is_bool
 
     T, F = Value(True), Value(False)
 
@@ -821,10 +799,10 @@ def test_concrete_with_traversable_children():
 
 def test_composition_of_concrete_and_singleton():
     class ConcSing(Concrete, Singleton):
-        value = ValidatorFunction(lambda x, this: int(x))
+        value = validator(lambda x, this: int(x))
 
     class SingConc(Singleton, Concrete):
-        value = ValidatorFunction(lambda x, this: int(x))
+        value = validator(lambda x, this: int(x))
 
     # arguments looked up after validation
     obj = ConcSing("3")
