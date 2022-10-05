@@ -23,7 +23,7 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
         super().__init__(mapping, **kwargs)
 
     @classmethod
-    def from_bfs(cls, root: Traversable) -> Graph:
+    def from_bfs(cls, root: Traversable, filter=Traversable) -> Graph:
         if not isinstance(root, Traversable):
             raise TypeError('node must be an instance of Traversable')
 
@@ -32,13 +32,16 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while queue:
             if (node := queue.popleft()) not in graph:
-                graph[node] = node.__children__
-                queue.extend(node.__children__)
+                children = [
+                    c for c in node.__children__ if isinstance(c, filter)
+                ]
+                graph[node] = children
+                queue.extend(children)
 
         return graph
 
     @classmethod
-    def from_dfs(cls, root: Traversable) -> Graph:
+    def from_dfs(cls, root: Traversable, filter=Traversable) -> Graph:
         if not isinstance(root, Traversable):
             raise TypeError('node must be an instance of Traversable')
 
@@ -47,8 +50,11 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while stack:
             if (node := stack.pop()) not in graph:
-                graph[node] = node.__children__
-                stack.extend(node.__children__)
+                children = [
+                    c for c in node.__children__ if isinstance(c, filter)
+                ]
+                graph[node] = children
+                stack.extend(children)
 
         return cls(reversed(graph.items()))
 
@@ -108,6 +114,7 @@ def traverse(
     fn: Callable[[Traversable], tuple[bool | Iterable, Any]],
     node: Iterable[Traversable],
     dedup: bool = True,
+    filter=Traversable,
 ) -> Iterator[Any]:
     """Utility for generic expression tree traversal.
 
@@ -122,7 +129,7 @@ def traverse(
         Whether to allow expression traversal more than once
     """
     args = reversed(node) if isinstance(node, Iterable) else [node]
-    todo = deque(args)
+    todo = deque(arg for arg in args if isinstance(arg, filter))
     seen = set()
 
     while todo:
@@ -140,7 +147,7 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                args = node.__children__
+                args = [c for c in node.__children__ if isinstance(c, filter)]
             elif isinstance(control, Iterable):
                 args = control
             else:

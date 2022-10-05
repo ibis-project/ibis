@@ -242,35 +242,6 @@ class Signature(inspect.Signature):
 
         return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
 
-    def validate(self, *args, **kwargs):
-        """Validate the arguments against the signature.
-
-        Parameters
-        ----------
-        args : tuple
-            Positional arguments.
-        kwargs : dict
-            Keyword arguments.
-
-        Returns
-        -------
-        validated : dict
-            Dictionary of validated arguments.
-        """
-        # bind the signature to the passed arguments and apply the validators
-        # before passing the arguments, so self.__init__() receives already
-        # validated arguments as keywords
-        bound = self.bind(*args, **kwargs)
-        bound.apply_defaults()
-
-        this = DotDict()
-        for name, value in bound.arguments.items():
-            param = self.parameters[name]
-            # TODO(kszucs): provide more error context on failure
-            this[name] = param.validate(value, this=this)
-
-        return this
-
     def unbind(self, this: Any):
         """Reverse bind of the parameters.
 
@@ -304,14 +275,34 @@ class Signature(inspect.Signature):
 
         return args, kwargs
 
-    def unbind_positional(self, this: Any):
-        """Same as unbind but yields only positional arguments."""
-        for name, param in self.parameters.items():
-            value = getattr(this, name)
-            if param.kind == VAR_POSITIONAL:
-                yield from value
-            else:
-                yield value
+    def validate(self, *args, **kwargs):
+        """Validate the arguments against the signature.
+
+        Parameters
+        ----------
+        args : tuple
+            Positional arguments.
+        kwargs : dict
+            Keyword arguments.
+
+        Returns
+        -------
+        validated : dict
+            Dictionary of validated arguments.
+        """
+        # bind the signature to the passed arguments and apply the validators
+        # before passing the arguments, so self.__init__() receives already
+        # validated arguments as keywords
+        bound = self.bind(*args, **kwargs)
+        bound.apply_defaults()
+
+        this = DotDict()
+        for name, value in bound.arguments.items():
+            param = self.parameters[name]
+            # TODO(kszucs): provide more error context on failure
+            this[name] = param.validate(value, this=this)
+
+        return this
 
 
 # aliases for convenience

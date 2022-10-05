@@ -81,7 +81,7 @@ DEFAULT_EDGE_ATTRS = {'fontname': 'Deja Vu Sans Mono'}
 
 
 def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
-    graph = Graph.from_bfs(expr.op())
+    graph = Graph.from_bfs(expr.op(), filter=ops.Node)
 
     g = gv.Digraph(
         node_attr=node_attr or DEFAULT_NODE_ATTRS,

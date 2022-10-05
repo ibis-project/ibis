@@ -17,7 +17,7 @@ from ibis.common.caching import WeakCache
 from ibis.common.graph import Graph, Traversable
 from ibis.common.typing import evaluate_typehint
 from ibis.common.validators import Validator
-from ibis.util import frozendict
+from ibis.util import frozendict, recursive_get, recursive_iter
 
 
 class BaseMeta(ABCMeta):
@@ -232,27 +232,18 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     """Opinionated base class for immutable data classes."""
 
     __slots__ = ("__args__", "__children__", "__precomputed_hash__")
-    __floor__ = None  # being set after the class definition
-
-    def __init_subclass__(cls, floor=False, **kwargs) -> None:
-        super().__init_subclass__(**kwargs)
-        if floor:
-            cls.__floor__ = cls
 
     def __post_init__(self) -> None:
         # optimizations to store frequently accessed attributes
         args = tuple(getattr(self, name) for name in self.__argnames__)
-        object.__setattr__(self, "__args__", args)
-
+        # precompute children for faster traversal
+        children = (c for c in recursive_iter(args) if isinstance(c, Concrete))
         # precompute the hash value to avoid repeating expensive hashing
         hashvalue = hash((self.__class__, args))
+        # actually set the attributes
+        object.__setattr__(self, "__args__", args)
+        object.__setattr__(self, "__children__", tuple(children))
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
-
-        # store the children objects to speed up traversals
-        children = self.__signature__.unbind_positional(self)
-        children = tuple(c for c in children if isinstance(c, self.__floor__))
-        object.__setattr__(self, "__children__", children)
-
         # initialize the remaining attributes
         super().__post_init__()
 
@@ -267,14 +258,6 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     def __equals__(self, other):
         return self.__args__ == other.__args__
 
-    def equals(self, other):
-        if not isinstance(other, self.__floor__):
-            raise TypeError(
-                f"invalid equality comparison between {type(self)} and "
-                f"{type(other)}"
-            )
-        return self.__cached_equals__(other)
-
     @property
     def args(self):
         return self.__args__
@@ -283,23 +266,24 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     def argnames(self):
         return self.__argnames__
 
-    def map(self, fn):
+    def map(self, fn, filter=None):
+        if filter is None:
+            filter = Concrete
+
         results = {}
-        for node in Graph(self).toposort():
+        for node in Graph.from_bfs(self, filter=filter).toposort():
             args, kwargs = node.__signature__.unbind(node)
-            args = (results.get(v, v) for v in args)
-            kwargs = {k: results.get(v, v) for k, v in kwargs.items()}
+            args = recursive_get(args, results)
+            kwargs = recursive_get(kwargs, results)
             results[node] = fn(node, *args, **kwargs)
+
         return results
 
-    def replace(self, subs):
+    def replace(self, subs, filter=None):
         def fn(node, *args, **kwargs):
             try:
                 return subs[node]
             except KeyError:
                 return node.__class__(*args, **kwargs)
 
-        return self.map(fn)[self]
-
-
-Concrete.__floor__ = Concrete
+        return self.map(fn, filter=filter)[self]

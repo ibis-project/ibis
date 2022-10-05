@@ -33,7 +33,7 @@ def datatype(arg, **kwargs):
 
 
 @public
-class DataType(Concrete, floor=True):
+class DataType(Concrete):
     """Base class for all data types.
 
     [`DataType`][ibis.expr.datatypes.DataType] instances are immutable.
@@ -58,6 +58,14 @@ class DataType(Concrete, floor=True):
     def __str__(self) -> str:
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
+
+    def equals(self, other):
+        if not isinstance(other, DataType):
+            raise TypeError(
+                "invalid equality comparison between DataType and "
+                f"{type(other)}"
+            )
+        return super().__cached_equals__(other)
 
     def cast(self, other):
         # TODO(kszucs): remove it or deprecate it?

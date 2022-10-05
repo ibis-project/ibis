@@ -387,6 +387,36 @@ def consume(iterator: Iterator[T], n: int | None = None) -> None:
         next(itertools.islice(iterator, n, n), None)
 
 
+def recursive_get(obj, mapping):
+    if isinstance(obj, tuple):
+        return tuple(recursive_get(o, mapping) for o in obj)
+    elif isinstance(obj, dict):
+        return {k: recursive_get(v, mapping) for k, v in obj.items()}
+    else:
+        return mapping.get(obj, obj)
+
+
+def recursive_iter(obj):
+    """Flatten a tuple of tuples/dicts into a single tuple.
+
+    Parameters
+    ----------
+    iterable : tuple
+
+    Returns
+    -------
+    tuple
+    """
+    if isinstance(obj, tuple):
+        for item in obj:
+            yield from recursive_iter(item)
+    elif isinstance(obj, dict):
+        for item in obj.values():
+            yield from recursive_iter(item)
+    else:
+        yield obj
+
+
 def flatten_iterable(iterable):
     """Recursively flatten the iterable `iterable`."""
     if not is_iterable(iterable):
