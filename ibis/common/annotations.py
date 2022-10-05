@@ -19,7 +19,15 @@ def _noop(arg, **kwargs):
 class Annotation:
     """Base class for all annotations."""
 
-    __slots__ = ()
+    __slots__ = ('_validator',)
+
+    def __init__(self, validator=None):
+        self._validator = validator
+
+    def validate(self, arg, **kwargs):
+        if self._validator is None:
+            return arg
+        return self._validator(arg, **kwargs)
 
 
 class Attribute(Annotation):
@@ -34,63 +42,47 @@ class Attribute(Annotation):
         Validator to validate the field.
     """
 
-    __slots__ = ('_validator',)
+    __slots__ = ('_default',)
 
-    def __init__(self, validator=_noop):
+    def __init__(self, validator=None, default=EMPTY):
+        self._default = default
         self._validator = validator
 
-    def __eq__(self, other):
-        return (
-            type(self) is type(other) and self._validator == other._validator
-        )
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self._validator!r})"
-
-    def validate(self, arg, **kwargs):
-        return self._validator(arg, **kwargs)
-
-
-class Initialized(Attribute):
-    """Annotation to initialize an attribute with a callable.
-
-    The callable is called et the end of the instantiation with the instance as
-    the only argument. The return value of the callable is assigned to the
-    field.
-
-    Parameters
-    ----------
-    initializer : Callable
-        Callable to initialize the field, similar to a property.
-    validator : Validator, default noop
-        Validator to validate the field every time it is set.
-    """
-
-    __slots__ = ('_initializer',)
-
-    def __init__(self, initializer, validator=_noop):
-        super().__init__(validator)
-        self._initializer = initializer
+    @classmethod
+    def default(self, fn):
+        return Attribute(default=fn)
 
     def __eq__(self, other):
         return (
-            super().__eq__(other) and self._initializer == other._initializer
+            type(self) is type(other)
+            and self._default == other._default
+            and self._validator == other._validator
         )
 
     def initialize(self, this):
-        value = self._initializer(this)
-        return self._validator(value, this=this)
+        if self._default is EMPTY:
+            return None
+        value = self._default(this)
+        return self.validate(value, this=this)
 
 
-class Argument(Attribute):
+class Argument(Annotation):
     """Base class for all fields which should be passed as arguments."""
 
     __slots__ = ('_kind', '_default')
 
-    def __init__(self, kind, default=EMPTY, validator=EMPTY):
-        super().__init__(validator)
+    def __init__(self, kind, default=EMPTY, validator=None):
         self._kind = kind
         self._default = default
+        self._validator = validator
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other)
+            and self._kind == other._kind
+            and self._default == other._default
+            and self._validator == other._validator
+        )
 
     def replace(self, **kwargs):
         return self.__class__(
@@ -100,33 +92,33 @@ class Argument(Attribute):
         )
 
     @classmethod
-    def mandatory(cls, validator=EMPTY):
+    def mandatory(cls, validator=None):
         """Annotation to mark a mandatory argument."""
         return cls(POSITIONAL_OR_KEYWORD, validator=validator)
 
     @classmethod
-    def mandatory_keyword(cls, validator=EMPTY):
+    def mandatory_keyword(cls, validator=None):
         """Annotation to mark a mandatory keyword only argument."""
         return cls(KEYWORD_ONLY, validator=validator)
 
     @classmethod
-    def default(cls, default, validator=EMPTY):
+    def default(cls, default, validator=None):
         """Annotation to allow missing arguments with a default value."""
         return cls(POSITIONAL_OR_KEYWORD, default=default, validator=validator)
 
     @classmethod
-    def optional(cls, validator=EMPTY, default=None):
+    def optional(cls, validator=None, default=None):
         """Annotation to allow and treat `None` values as missing arguments."""
-        if validator is EMPTY:
+        if validator is None:
             validator = option(_noop, default=default)
         else:
             validator = option(validator, default=default)
         return cls(POSITIONAL_OR_KEYWORD, default=None, validator=validator)
 
     @classmethod
-    def variadic(cls, validator=EMPTY):
+    def variadic(cls, validator=None):
         """Annotation variadic positional arguments."""
-        if validator is EMPTY:
+        if validator is None:
             validator = tuple_of(_noop)
         else:
             validator = tuple_of(validator)
@@ -151,7 +143,7 @@ class Parameter(inspect.Parameter):
         )
 
     def validate(self, arg, *, this):
-        if self.annotation is EMPTY:
+        if self.annotation is None:
             return arg
         return self.annotation(arg, this=this)
 
@@ -282,14 +274,12 @@ class Signature(inspect.Signature):
 
 
 # aliases for convenience
-# default = Default
-immutable_property = Initialized
-initialized = Initialized
-
+attribute = Attribute
 mandatory = Argument.mandatory
 optional = Argument.optional
 variadic = Argument.variadic
 default = Argument.default
+immutable_property = Attribute.default
 
 
 # TODO(kszucs): try to cache validator objects

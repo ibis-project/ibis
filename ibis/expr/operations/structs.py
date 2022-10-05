@@ -4,7 +4,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Value
 
 
@@ -15,7 +15,7 @@ class StructField(Value):
 
     output_shape = rlz.shape_like("arg")
 
-    @initialized
+    @attribute.default
     def output_dtype(self) -> dt.DataType:
         struct_dtype = self.arg.output_dtype
         value_dtype = struct_dtype[self.field]
@@ -33,7 +33,7 @@ class StructColumn(Value):
 
     output_shape = rlz.Shape.COLUMNAR
 
-    @initialized
+    @attribute.default
     def output_dtype(self) -> dt.DataType:
         dtypes = (value.output_dtype for value in self.values)
         return dt.Struct.from_tuples(zip(self.names, dtypes))

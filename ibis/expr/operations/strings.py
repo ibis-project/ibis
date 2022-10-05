@@ -2,7 +2,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
 
 
@@ -130,7 +130,7 @@ class StringJoin(Value):
 
     output_dtype = dt.string
 
-    @initialized
+    @attribute.default
     def output_shape(self):
         return rlz.highest_precedence_shape(self.arg.values)
 
@@ -222,7 +222,7 @@ class StringConcat(Value):
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
 
-    @initialized
+    @attribute.default
     def output_shape(self):
         return rlz.highest_precedence_shape(self.arg.values)
 

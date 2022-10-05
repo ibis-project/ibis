@@ -2,7 +2,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
 from ibis.expr.types.generic import null
 
@@ -14,7 +14,7 @@ class Map(Value):
 
     output_shape = rlz.shape_like("args")
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.Map(
             self.keys.output_dtype.value_type,
@@ -36,7 +36,7 @@ class MapGet(Value):
 
     output_shape = rlz.shape_like("args")
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.higher_precedence(
             self.default.output_dtype, self.arg.output_dtype.value_type
@@ -56,7 +56,7 @@ class MapContains(Value):
 class MapKeys(Unary):
     arg = rlz.mapping
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.Array(self.arg.output_dtype.key_type)
 
@@ -65,7 +65,7 @@ class MapKeys(Unary):
 class MapValues(Unary):
     arg = rlz.mapping
 
-    @initialized
+    @attribute.default
     def output_dtype(self):
         return dt.Array(self.arg.output_dtype.value_type)
 

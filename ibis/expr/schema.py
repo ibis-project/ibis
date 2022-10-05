@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, Mapping
 from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import initialized
+from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.validators import instance_of, tuple_of, validator
@@ -51,7 +51,7 @@ class Schema(Concrete):
     types = tuple_of(datatype)
     """A sequence of [DataType][ibis.expr.datatypes.DataType] objects representing type of each column."""  # noqa: E501
 
-    @initialized
+    @attribute.default
     def _name_locs(self) -> dict[str, int]:
         # validate unique field names
         name_locs = {v: i for i, v in enumerate(self.names)}
