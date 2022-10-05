@@ -6,32 +6,17 @@ from toolz import identity
 from ibis.common.annotations import (
     Argument,
     Attribute,
-    Default,
     Initialized,
-    Mandatory,
-    Optional,
     Parameter,
     Signature,
-    Variadic,
 )
-from ibis.common.validators import Validator
+from ibis.common.validators import instance_of, option
 
-
-class InstanceOf(Validator):
-    def __init__(self, typ):
-        self.typ = typ
-
-    def __call__(self, arg, **kwargs):
-        if not isinstance(arg, self.typ):
-            raise TypeError(self.typ)
-        return arg
-
-
-IsInt = InstanceOf(int)
+is_int = instance_of(int)
 
 
 def test_default_argument():
-    annotation = Default(validator=int, default=3)
+    annotation = Argument.default(validator=int, default=3)
     assert annotation.validate(1) == 1
     with pytest.raises(TypeError):
         annotation.validate(None)
@@ -42,22 +27,22 @@ def test_default_argument():
     [(None, None), (0, 0), ('default', 'default'), (lambda: 3, 3)],
 )
 def test_optional_argument(default, expected):
-    annotation = Optional(default=default)
+    annotation = Argument.optional(default=default)
     assert annotation.validate(None) == expected
 
 
 @pytest.mark.parametrize(
     ('argument', 'value', 'expected'),
     [
-        (Optional(identity, default=None), None, None),
-        (Optional(identity, default=None), 'three', 'three'),
-        (Optional(identity, default=1), None, 1),
-        (Optional(identity, default=lambda: 8), 'cat', 'cat'),
-        (Optional(identity, default=lambda: 8), None, 8),
-        (Optional(int, default=11), None, 11),
-        (Optional(int, default=None), None, None),
-        (Optional(int, default=None), 18, 18),
-        (Optional(str, default=None), 'caracal', 'caracal'),
+        (Argument.optional(identity, default=None), None, None),
+        (Argument.optional(identity, default=None), 'three', 'three'),
+        (Argument.optional(identity, default=1), None, 1),
+        (Argument.optional(identity, default=lambda: 8), 'cat', 'cat'),
+        (Argument.optional(identity, default=lambda: 8), None, 8),
+        (Argument.optional(int, default=11), None, 11),
+        (Argument.optional(int, default=None), None, None),
+        (Argument.optional(int, default=None), 18, 18),
+        (Argument.optional(str, default=None), 'caracal', 'caracal'),
     ],
 )
 def test_valid_optional(argument, value, expected):
@@ -67,8 +52,8 @@ def test_valid_optional(argument, value, expected):
 @pytest.mark.parametrize(
     ('arg', 'value', 'expected'),
     [
-        (Optional(IsInt, default=''), None, TypeError),
-        (Optional(IsInt), 'lynx', TypeError),
+        (Argument.optional(is_int, default=''), None, TypeError),
+        (Argument.optional(is_int), 'lynx', TypeError),
     ],
 )
 def test_invalid_optional(arg, value, expected):
@@ -93,23 +78,25 @@ def test_parameter():
     def fn(x, this):
         return int(x) + this['other']
 
-    annot = Argument(fn)
+    annot = Argument.mandatory(fn)
     p = Parameter('test', annotation=annot)
 
-    assert p.annotation is annot
+    assert p.annotation is fn
     assert p.default is inspect.Parameter.empty
     assert p.validate('2', this={'other': 1}) == 3
 
     with pytest.raises(TypeError):
         p.validate({}, valid=inspect.Parameter.empty)
 
-    ofn = Optional(fn)
+    ofn = Argument.optional(fn)
     op = Parameter('test', annotation=ofn)
-    assert op.annotation is ofn
+    assert op.annotation == option(fn, default=None)
     assert op.default is None
     assert op.validate(None, this={'other': 1}) is None
 
-    with pytest.raises(TypeError, match="Invalid annotation type"):
+    with pytest.raises(
+        TypeError, match="annotation must be an instance of Argument"
+    ):
         Parameter("wrong", annotation=Attribute("a"))
 
 
@@ -120,8 +107,8 @@ def test_signature():
     def add_other(x, this):
         return int(x) + this['other']
 
-    other = Parameter('other', annotation=Mandatory(to_int))
-    this = Parameter('this', annotation=Mandatory(add_other))
+    other = Parameter('other', annotation=Argument.mandatory(to_int))
+    this = Parameter('this', annotation=Argument.mandatory(add_other))
 
     sig = Signature(parameters=[other, this])
     assert sig.validate(1, 2) == {'other': 1, 'this': 3}
@@ -136,8 +123,8 @@ def test_signature_unbind():
     def add_other(x, this):
         return int(x) + this['other']
 
-    other = Parameter('other', annotation=Mandatory(to_int))
-    this = Parameter('this', annotation=Mandatory(add_other))
+    other = Parameter('other', annotation=Argument.mandatory(to_int))
+    this = Parameter('this', annotation=Argument.mandatory(add_other))
 
     sig = Signature(parameters=[other, this])
     params = sig.validate(1, this=2)
@@ -151,11 +138,11 @@ def as_float(x, this):
     return float(x)
 
 
-a = Parameter('a', annotation=Mandatory(as_float))
-b = Parameter('b', annotation=Mandatory(as_float))
-c = Parameter('c', annotation=Default(as_float))
-d = Parameter('d', annotation=Variadic(as_float))
-e = Parameter('e', annotation=Mandatory(as_float), keyword_only=True)
+a = Parameter('a', annotation=Argument.mandatory(as_float))
+b = Parameter('b', annotation=Argument.mandatory(as_float))
+c = Parameter('c', annotation=Argument.default(as_float))
+d = Parameter('d', annotation=Argument.variadic(as_float))
+e = Parameter('e', annotation=Argument.mandatory_keyword(as_float))
 sig = Signature(parameters=[a, b, c, d, e])
 
 

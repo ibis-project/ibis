@@ -8,7 +8,7 @@ import toolz
 from typing_extensions import Annotated, get_args, get_origin
 
 from ibis.common.exceptions import IbisTypeError
-from ibis.util import flatten_iterable, is_iterable
+from ibis.util import flatten_iterable, is_function, is_iterable
 
 
 class Validator(Callable):
@@ -69,6 +69,18 @@ def ref(key, *, this):
 @validator
 def any_(arg, **kwargs):
     return arg
+
+
+@validator
+def option(inner, arg, *, default=None, **kwargs):
+    if arg is None:
+        if default is None:
+            return None
+        elif is_function(default):
+            arg = default()
+        else:
+            arg = default
+    return inner(arg, **kwargs)
 
 
 @validator
