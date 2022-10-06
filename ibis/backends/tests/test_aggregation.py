@@ -113,9 +113,9 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     grouping_key_col = 'bigint_col'
 
     # Two (equivalent) variations:
-    #  1) `groupby` then `aggregate`
+    #  1) `group_by` then `aggregate`
     #  2) `aggregate` with `by`
-    expr1 = alltypes.groupby(grouping_key_col).aggregate(tmp=result_fn)
+    expr1 = alltypes.group_by(grouping_key_col).aggregate(tmp=result_fn)
     expr2 = alltypes.aggregate(tmp=result_fn, by=grouping_key_col)
     result1 = expr1.execute()
     result2 = expr2.execute()
@@ -152,7 +152,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     ]
 )
 def test_aggregate_multikey_group_reduction(backend, alltypes, df):
-    """Tests .aggregate() on a multi-key groupby with a reduction operation."""
+    """Tests .aggregate() on a multi-key group_by with a reduction
+    operation."""
 
     @reduction(
         input_type=[dt.double],
@@ -163,7 +164,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
 
     grouping_key_cols = ['bigint_col', 'int_col']
 
-    expr1 = alltypes.groupby(grouping_key_cols).aggregate(
+    expr1 = alltypes.group_by(grouping_key_cols).aggregate(
         mean_and_std(alltypes['double_col']).destructure()
     )
 
@@ -493,7 +494,9 @@ def test_reduction_ops(
             marks=[
                 pytest.mark.broken(
                     ["snowflake"],
-                    reason="snowflake doesn't allow quoted columns in groupby",
+                    reason=(
+                        "snowflake doesn't allow quoted columns in group_by"
+                    ),
                 ),
             ],
         ),
@@ -542,7 +545,7 @@ def test_approx_median(alltypes):
     [
         param(
             lambda t, where, sep: (
-                t.groupby('bigint_col')
+                t.group_by('bigint_col')
                 .aggregate(
                     tmp=lambda t: t.string_col.group_concat(sep, where=where)
                 )

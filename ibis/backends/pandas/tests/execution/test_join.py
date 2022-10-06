@@ -245,7 +245,7 @@ def test_join_with_window_function(
     # this should be semi_join
     tbl = batting.left_join(players, ['playerID'])
     t = tbl[batting.G, batting.playerID, batting.teamID]
-    expr = t.groupby(t.teamID).mutate(
+    expr = t.group_by(t.teamID).mutate(
         team_avg=lambda d: d.G.mean(),
         demeaned_by_player=lambda d: d.G - d.G.mean(),
     )

@@ -218,7 +218,7 @@ def pt():
 
 
 def high_card_group_by(t):
-    return t.groupby(t.key).aggregate(avg_value=t.value.mean())
+    return t.group_by(t.key).aggregate(avg_value=t.value.mean())
 
 
 def cast_to_dates(t):
@@ -232,7 +232,7 @@ def cast_to_dates_from_strings(t):
 def multikey_group_by_with_mutate(t):
     return (
         t.mutate(dates=t.timestamps.cast('date'))
-        .groupby(['low_card_key', 'dates'])
+        .group_by(['low_card_key', 'dates'])
         .aggregate(avg_value=lambda t: t.value.mean())
     )
 

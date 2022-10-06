@@ -243,7 +243,7 @@ def test_unnest_complex(con):
     expr = (
         array_types.select(["grouper", "x"])
         .mutate(x=lambda t: t.x.unnest())
-        .groupby("grouper")
+        .group_by("grouper")
         .aggregate(count_flat=lambda t: t.x.count())
         .order_by("grouper")
     )

@@ -65,9 +65,9 @@ def test_aggregation(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_groupby(client):
+def test_group_by(client):
     table = client.table('basic_table')
-    result = table.groupby('id').aggregate(table['id'].max()).compile()
+    result = table.group_by('id').aggregate(table['id'].max()).compile()
     expected = table.compile().groupby('id').agg(F.max('id').alias('max'))
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())

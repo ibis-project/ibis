@@ -109,7 +109,7 @@ def test_string_ops(t, df, case_func, expected_func):
 
 
 def test_grouped_string_re_search(t, df):
-    expr = t.groupby(t.dup_strings).aggregate(
+    expr = t.group_by(t.dup_strings).aggregate(
         sum=t.strings_with_space.re_search('(ab)+').cast('int64').sum()
     )
 

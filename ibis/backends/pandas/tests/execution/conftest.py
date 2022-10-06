@@ -301,7 +301,7 @@ def players_base(batting, sel_cols):
 
 @pytest.fixture(scope='module')
 def players(players_base):
-    return players_base.groupby('playerID')
+    return players_base.group_by('playerID')
 
 
 @pytest.fixture(scope='module')

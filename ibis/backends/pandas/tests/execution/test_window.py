@@ -205,7 +205,7 @@ def test_last(t, df):
 
 
 def test_group_by_mutate_analytic(t, df):
-    gb = t.groupby(t.dup_strings)
+    gb = t.group_by(t.dup_strings)
     expr = gb.mutate(
         first_value=t.plain_int64.first(),
         last_value=t.plain_strings.last(),
@@ -450,7 +450,7 @@ def test_mutate_with_window_after_join(sort_kind):
 
     joined = left.outer_join(right, left.ints == right.group)
     proj = joined[left, right.value]
-    expr = proj.groupby('ints').mutate(sum=proj.value.sum())
+    expr = proj.group_by('ints').mutate(sum=proj.value.sum())
     result = expr.execute()
     expected = pd.DataFrame(
         {

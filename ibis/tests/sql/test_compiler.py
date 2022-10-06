@@ -188,7 +188,7 @@ def test_subquery_where_location():
         t[["float_col", "timestamp_col", "int_col", "string_col"]][
             lambda t: t.timestamp_col < param
         ]
-        .groupby("string_col")
+        .group_by("string_col")
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
     )

@@ -723,7 +723,7 @@ def test_day_of_week_column(backend, alltypes, df):
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
-    expr = alltypes.groupby('string_col').aggregate(
+    expr = alltypes.group_by('string_col').aggregate(
         day_of_week_result=day_of_week_expr
     )
     schema = expr.schema()

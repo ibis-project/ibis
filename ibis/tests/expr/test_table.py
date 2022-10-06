@@ -99,6 +99,26 @@ def test_getitem_attribute(table):
     assert not isinstance(view.schema, Column)
 
 
+def test_getitem_missing_column(table):
+    with pytest.raises(com.IbisTypeError, match="oops"):
+        table["oops"]
+
+
+def test_getattr_missing_column(table):
+    with pytest.raises(AttributeError, match="oops"):
+        table.oops
+
+
+def test_typo_method_name_recommendation(table):
+    with pytest.raises(AttributeError, match="order_by"):
+        table.sort("a")
+
+    # Existing columns take precedence over raising an error
+    # for a common method typo
+    table2 = table.relabel({"a": "sort"})
+    assert isinstance(table2.sort, Column)
+
+
 def test_projection(table):
     cols = ['f', 'a', 'h']
 
@@ -529,10 +549,9 @@ def test_aggregate_keywords(table):
 
 
 def test_groupby_alias(table):
-    t = table
-
-    result = t.groupby('g').size()
-    expected = t.group_by('g').size()
+    expected = table.group_by('g').size()
+    with pytest.warns(FutureWarning, match="deprecated"):
+        result = table.groupby('g').size()
     assert_equal(result, expected)
 
 
@@ -1414,7 +1433,7 @@ def test_pickle_asof_join():
 
 def test_group_by_key_function():
     t = ibis.table([('a', 'timestamp'), ('b', 'string'), ('c', 'double')])
-    expr = t.groupby(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
+    expr = t.group_by(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
     assert expr.columns == ['new_key', 'foo']
 
 

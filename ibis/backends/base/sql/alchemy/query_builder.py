@@ -182,7 +182,7 @@ class AlchemySelect(Select):
         frag = self._compile_table_set()
         steps = [
             self._add_select,
-            self._add_groupby,
+            self._add_group_by,
             self._add_where,
             self._add_order_by,
             self._add_limit,
@@ -285,7 +285,7 @@ class AlchemySelect(Select):
         assert num_froms == 1, f"num_froms == {num_froms:d}"
         return replaced
 
-    def _add_groupby(self, fragment):
+    def _add_group_by(self, fragment):
         # GROUP BY and HAVING
         if not len(self.group_by):
             return fragment

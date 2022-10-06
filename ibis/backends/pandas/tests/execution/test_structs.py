@@ -68,7 +68,7 @@ def test_struct_field_series(struct_table):
 
 def test_struct_field_series_group_by_key(struct_table):
     t = struct_table
-    expr = t.groupby(t.s['fruit']).aggregate(total=t.value.sum())
+    expr = t.group_by(t.s['fruit']).aggregate(total=t.value.sum())
     result = expr.execute()
     expected = pd.DataFrame(
         [("apple", 1), ("pear", 5)], columns=["fruit", "total"]
@@ -78,7 +78,7 @@ def test_struct_field_series_group_by_key(struct_table):
 
 def test_struct_field_series_group_by_value(struct_table):
     t = struct_table
-    expr = t.groupby(t.key).aggregate(total=t.s['weight'].sum())
+    expr = t.group_by(t.key).aggregate(total=t.s['weight'].sum())
     result = expr.execute()
     # these are floats because we have a NULL value in the input data
     expected = pd.DataFrame([("a", 0.0), ("b", 1.0)], columns=["key", "total"])

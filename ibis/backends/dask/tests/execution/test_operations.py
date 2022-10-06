@@ -224,7 +224,7 @@ def test_group_by_with_having(t, df):
 
 
 def test_group_by_rename_key(t, df):
-    expr = t.groupby(t.dup_strings.name('foo')).aggregate(
+    expr = t.group_by(t.dup_strings.name('foo')).aggregate(
         dup_string_count=t.dup_strings.count()
     )
 
@@ -442,7 +442,7 @@ def test_nullif_inf(npartitions):
 
 
 def test_group_concat(t, df):
-    expr = t.groupby(t.dup_strings).aggregate(
+    expr = t.group_by(t.dup_strings).aggregate(
         foo=t.plain_int64.group_concat(',')
     )
     result = expr.compile()
@@ -565,7 +565,7 @@ def test_table_count(t, df):
 
 
 def test_weighted_average(t, df):
-    expr = t.groupby(t.dup_strings).aggregate(
+    expr = t.group_by(t.dup_strings).aggregate(
         avg=(t.plain_float64 * t.plain_int64).sum() / t.plain_int64.sum()
     )
     result = expr.compile()
@@ -584,7 +584,7 @@ def test_weighted_average(t, df):
 
 
 def test_group_by_multiple_keys(t, df):
-    expr = t.groupby([t.dup_strings, t.dup_ints]).aggregate(
+    expr = t.group_by([t.dup_strings, t.dup_ints]).aggregate(
         avg_plain_float64=t.plain_float64.mean()
     )
     result = expr.compile()
@@ -600,7 +600,7 @@ def test_group_by_multiple_keys(t, df):
 
 
 def test_mutate_after_group_by(t, df):
-    gb = t.groupby(t.dup_strings).aggregate(
+    gb = t.group_by(t.dup_strings).aggregate(
         avg_plain_float64=t.plain_float64.mean()
     )
     expr = gb.mutate(x=gb.avg_plain_float64)
@@ -617,8 +617,8 @@ def test_mutate_after_group_by(t, df):
     )
 
 
-def test_groupby_with_unnamed_arithmetic(t, df):
-    expr = t.groupby(t.dup_strings).aggregate(
+def test_group_by_with_unnamed_arithmetic(t, df):
+    expr = t.group_by(t.dup_strings).aggregate(
         naive_variance=(
             (t.plain_float64**2).sum() - t.plain_float64.mean() ** 2
         )
@@ -680,7 +680,7 @@ def test_notin(t, df, elements):
 
 
 def test_cast_on_group_by(t, df):
-    expr = t.groupby(t.dup_strings).aggregate(
+    expr = t.group_by(t.dup_strings).aggregate(
         casted=(t.float64_with_zeros == 0).cast('int64').sum()
     )
 
@@ -730,7 +730,7 @@ def test_left_binary_op(t, df, op, args):
 )
 @pytest.mark.parametrize('argfunc', [lambda c: (1.0, c), lambda c: (c, 1.0)])
 def test_left_binary_op_gb(t, df, op, argfunc):
-    expr = t.groupby('dup_strings').aggregate(
+    expr = t.group_by('dup_strings').aggregate(
         foo=op(*argfunc(t.float64_with_zeros)).sum()
     )
     result = expr.compile()
@@ -801,7 +801,7 @@ def test_round(t, df):
     raises=NotImplementedError,
     reason="MultiQuantile is not implemented for the dask backend",
 )
-def test_quantile_groupby(batting, batting_df):
+def test_quantile_group_by(batting, batting_df):
     def q_fun(x, quantile, interpolation):
         res = x.quantile(quantile, interpolation=interpolation).tolist()
         return [res for _ in range(len(x))]
@@ -809,7 +809,7 @@ def test_quantile_groupby(batting, batting_df):
     frac = 0.2
     intp = 'linear'
     result = (
-        batting.groupby('teamID')
+        batting.group_by('teamID')
         .mutate(res=lambda x: x.RBI.quantile([frac, 1 - frac], intp))
         .res.compile()
     )
@@ -840,7 +840,7 @@ def test_summary_numeric(batting, batting_df):
 
 
 def test_summary_numeric_group_by(batting, batting_df):
-    expr = batting.groupby('teamID').G.summary()
+    expr = batting.group_by('teamID').G.summary()
     result = expr.execute()
     expected = (
         batting_df.groupby('teamID')
@@ -881,7 +881,7 @@ def test_summary_non_numeric(batting, batting_df):
 
 
 def test_summary_non_numeric_group_by(batting, batting_df):
-    expr = batting.groupby('teamID').playerID.summary()
+    expr = batting.group_by('teamID').playerID.summary()
     result = expr.execute()
     expected = (
         batting_df.groupby('teamID')
