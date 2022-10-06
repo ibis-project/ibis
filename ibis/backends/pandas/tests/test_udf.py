@@ -125,7 +125,7 @@ def test_multiple_argument_udf(con, t, df):
 
 
 def test_multiple_argument_udf_group_by(con, t, df):
-    expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
+    expr = t.group_by(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
     assert isinstance(expr, ir.Table)
     assert isinstance(expr.my_add, ir.Column)
@@ -191,7 +191,7 @@ def test_udaf_groupby():
     con = Backend().connect({'df': df})
     t = con.table('df')
 
-    expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
+    expr = t.group_by(t.key).aggregate(my_corr=my_corr(t.a, t.b))
 
     assert isinstance(expr, ir.Table)
 
@@ -422,7 +422,7 @@ def test_array_return_type_reduction_group_by(con, t, df, qs):
     `SeriesGroupBy.agg` in the `Summarize` aggcontext implementation
     (#2768).
     """
-    expr = t.groupby(t.key).aggregate(
+    expr = t.group_by(t.key).aggregate(
         quantiles_col=quantiles(t.b, quantiles=qs)
     )
     result = expr.execute()

@@ -176,7 +176,7 @@ if __name__ == '__main__':
         left.inner_join(right, "b")
         .select(left.a, b=right.c, c=right.d)
         .filter((_.a + _.b * 2 * _.b / _.b**3 > 4) & (_.b > 5))
-        .groupby(_.c)
+        .group_by(_.c)
         .having(_.a.mean() > 0.0)
         .aggregate(a_mean=_.a.mean(), b_sum=_.b.sum())
     )

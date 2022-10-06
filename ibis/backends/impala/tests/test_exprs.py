@@ -740,9 +740,9 @@ FROM (
     assert result == expected
 
 
-def test_named_from_filter_groupby():
+def test_named_from_filter_group_by():
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
-    gb = t.filter(t.value == 42).groupby(t.key)
+    gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
     expr = gb.aggregate(abc=sum_expr)
     expected = """\

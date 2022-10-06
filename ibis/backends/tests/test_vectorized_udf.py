@@ -296,7 +296,7 @@ def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     # First filter down to zero rows
     t = udf_alltypes[udf_alltypes['int_col'] > np.inf]
     result = (
-        t.groupby('year').aggregate(mean=calc_mean(t['int_col'])).execute()
+        t.group_by('year').aggregate(mean=calc_mean(t['int_col'])).execute()
     )
     expected = pd.DataFrame({'year': [], 'mean': []})
     # We check that the result is an empty DataFrame,
@@ -603,7 +603,7 @@ def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
 
 
 @pytest.mark.notimpl(["pyspark"])
-def test_analytic_udf_destruct_no_groupby(udf_backend, udf_alltypes):
+def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     w = window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(
@@ -655,9 +655,9 @@ def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
 
 @pytest.mark.parametrize('udf', mean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
-def test_reduction_udf_destruct_groupby(udf_backend, udf_alltypes, udf):
+def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
     result = (
-        udf_alltypes.groupby('year')
+        udf_alltypes.group_by('year')
         .aggregate(
             udf(
                 udf_alltypes['double_col'], udf_alltypes['int_col']
@@ -667,7 +667,7 @@ def test_reduction_udf_destruct_groupby(udf_backend, udf_alltypes, udf):
     ).sort_values('year')
 
     expected = (
-        udf_alltypes.groupby('year')
+        udf_alltypes.group_by('year')
         .aggregate(
             mean=udf_alltypes['double_col'].mean(),
             mean_weight=udf_alltypes['int_col'].mean(),
@@ -679,7 +679,7 @@ def test_reduction_udf_destruct_groupby(udf_backend, udf_alltypes, udf):
 
 
 @pytest.mark.notimpl(["pyspark"])
-def test_reduction_udf_destruct_no_groupby(udf_backend, udf_alltypes):
+def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     mean_struct_udf = create_mean_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     )
@@ -697,7 +697,7 @@ def test_reduction_udf_destruct_no_groupby(udf_backend, udf_alltypes):
 
 
 @pytest.mark.notimpl(["pyspark"])
-def test_reduction_udf_destruct_no_groupby_overwrite(
+def test_reduction_udf_destruct_no_group_by_overwrite(
     udf_backend, udf_alltypes
 ):
     result = udf_alltypes.aggregate(

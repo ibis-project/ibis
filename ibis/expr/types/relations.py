@@ -154,17 +154,41 @@ class Table(Expr, JupyterMixin):
 
     def __getattr__(self, key):
         try:
-            schema = self.schema()
-        except com.IbisError:
-            raise AttributeError(key)
-
-        if key not in schema:
-            raise AttributeError(key)
-
-        try:
             return self.get_column(key)
         except com.IbisTypeError:
-            raise AttributeError(key)
+            pass
+
+        # Handle deprecated `groupby` and `sort_by` methods
+        if key == "groupby":
+            warnings.warn(
+                "`Table.groupby` is deprecated and will be removed in 5.0, "
+                "use `Table.group_by` instead",
+                FutureWarning,
+            )
+            return self.group_by
+        elif key == "sort_by":
+            warnings.warn(
+                "`Table.sort_by` is deprecated and will be removed in 5.0, "
+                "use `Table.order_by` instead",
+                FutureWarning,
+            )
+            return self.order_by
+
+        # A mapping of common attribute typos, mapping them to the proper name
+        common_typos = {
+            "sort": "order_by",
+            "sort_by": "order_by",
+            "sortby": "order_by",
+            "orderby": "order_by",
+            "groupby": "group_by",
+        }
+        if key in common_typos:
+            hint = common_typos[key]
+            raise AttributeError(
+                f"'Table' object has no attribute {key!r}, "
+                f"did you mean '{hint}'"
+            )
+        raise AttributeError(f"'Table' object has no attribute {key!r}")
 
     def __dir__(self):
         return sorted(frozenset(dir(type(self)) + self.columns))
@@ -271,8 +295,6 @@ class Table(Expr, JupyterMixin):
         from ibis.expr.types.groupby import GroupedTable
 
         return GroupedTable(self, by, **additional_grouping_expressions)
-
-    groupby = group_by
 
     def rowid(self) -> ir.IntegerValue:
         """A numbering expression representing the row number of the results.
@@ -416,24 +438,6 @@ class Table(Expr, JupyterMixin):
             `table` limited to `n` rows
         """
         return self.limit(n=n)
-
-    def sort_by(
-        self,
-        sort_exprs: str
-        | ir.Column
-        | tuple[str | ir.Column, bool]
-        | Sequence[tuple[str | ir.Column, bool]],
-    ) -> Table:
-        """Deprecated.
-
-        Use `order_by` instead.
-        """
-        warnings.warn(
-            "`Table.sort_by` is deprecated and will be removed in version "
-            "5.0, use `Table.order_by` instead",
-            FutureWarning,
-        )
-        return self.order_by(sort_exprs)
 
     def order_by(
         self,

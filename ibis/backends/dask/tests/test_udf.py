@@ -183,7 +183,7 @@ def test_multiple_argument_udf(con, t, df):
 
 
 def test_multiple_argument_udf_group_by(con, t, df):
-    expr = t.groupby(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
+    expr = t.group_by(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
     assert isinstance(expr, ir.Table)
     assert isinstance(expr.my_add, ir.Column)
@@ -239,7 +239,7 @@ def test_udaf_analytic(con, t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_udaf_analytic_groupby(con, t, df):
+def test_udaf_analytic_group_by(con, t, df):
     expr = zscore(t.c).over(ibis.window(group_by=t.key))
 
     assert isinstance(expr, ir.Column)
@@ -256,8 +256,8 @@ def test_udaf_analytic_groupby(con, t, df):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-def test_udaf_groupby(t2, df2):
-    expr = t2.groupby(t2.key).aggregate(my_corr=my_corr(t2.a, t2.b))
+def test_udaf_group_by(t2, df2):
+    expr = t2.group_by(t2.key).aggregate(my_corr=my_corr(t2.a, t2.b))
 
     result = expr.execute().sort_values('key').reset_index(drop=True)
 
@@ -275,8 +275,8 @@ def test_udaf_groupby(t2, df2):
     tm.assert_frame_equal(result, expected)
 
 
-def test_udaf_groupby_multikey(t2, df2):
-    expr = t2.groupby([t2.key, t2.d]).aggregate(my_corr=my_corr(t2.a, t2.b))
+def test_udaf_group_by_multikey(t2, df2):
+    expr = t2.group_by([t2.key, t2.d]).aggregate(my_corr=my_corr(t2.a, t2.b))
 
     result = expr.execute().sort_values('key').reset_index(drop=True)
 
@@ -294,8 +294,8 @@ def test_udaf_groupby_multikey(t2, df2):
     tm.assert_frame_equal(result, expected)
 
 
-def test_udaf_groupby_multikey_tzcol(t_timestamp, df_timestamp):
-    expr = t_timestamp.groupby([t_timestamp.b, t_timestamp.c]).aggregate(
+def test_udaf_group_by_multikey_tzcol(t_timestamp, df_timestamp):
+    expr = t_timestamp.group_by([t_timestamp.b, t_timestamp.c]).aggregate(
         my_min_time=my_tz_min(t_timestamp.a)
     )
 
@@ -485,7 +485,7 @@ def test_array_return_type_reduction_window(con, t, df, qs):
 
 def test_array_return_type_reduction_group_by(con, t, df, qs):
     """Tests reduction UDF returning an array, used in a grouped agg."""
-    expr = t.groupby(t.key).aggregate(
+    expr = t.group_by(t.key).aggregate(
         quantiles_col=quantiles(t.b, quantiles=qs)
     )
     result = expr.execute()

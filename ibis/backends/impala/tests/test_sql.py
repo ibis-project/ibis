@@ -297,10 +297,10 @@ def test_join_aliasing():
     test = test.mutate(d=test.a + 20)
     test2 = test[test.d, test.c]
     idx = (test2.d / 15).cast('int64').name('idx')
-    test3 = test2.groupby([test2.d, idx, test2.c]).aggregate(
+    test3 = test2.group_by([test2.d, idx, test2.c]).aggregate(
         row_count=test2.count()
     )
-    test3_totals = test3.groupby(test3.d).aggregate(
+    test3_totals = test3.group_by(test3.d).aggregate(
         total=test3.row_count.sum()
     )
     test4 = test3.join(test3_totals, test3.d == test3_totals.d)[
@@ -308,7 +308,7 @@ def test_join_aliasing():
     ]
     test5 = test4[test4.row_count < test4.total / 2]
     agg = (
-        test.groupby([test.d, test.b])
+        test.group_by([test.d, test.b])
         .aggregate(count=test.count(), unique=test.c.nunique())
         .view()
     )

@@ -372,7 +372,7 @@ def reduction(input_type, output_type):
     ...     return v.mean(), v.std()
     >>>
     >>> # create aggregation columns "mean" and "std"
-    >>> table = table.groupby('key').aggregate(
+    >>> table = table.group_by('key').aggregate(
     ...     mean_and_std(table['v']).destructure()
     ... )
     """

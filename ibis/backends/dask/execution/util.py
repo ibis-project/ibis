@@ -254,8 +254,8 @@ def compute_sorted_frame(
 
 def assert_identical_grouping_keys(*args):
     indices = [arg.index for arg in args]
-    # Depending on whether groupby was called like groupby("col") or
-    # groupby(["cold"]) index will be a string or a list
+    # Depending on whether group_by was called like group_by("col") or
+    # group_by(["cold"]) index will be a string or a list
     if isinstance(indices[0], list):
         indices = [tuple(index) for index in indices]
     grouping_keys = set(indices)
