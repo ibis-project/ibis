@@ -144,16 +144,18 @@ class Annotable(Base, metaclass=AnnotableMeta):
     def __setstate__(self, state) -> None:
         self.__init__(**state)
 
-    def copy(self, **overrides) -> Annotable:
+    def copy(self, **overrides: Any) -> Annotable:
         """Return a copy of this object with the given overrides.
 
         Parameters
         ----------
-        overrides : dict
+        overrides
+            Argument override values
 
         Returns
         -------
-        copy : Annotable
+        Annotable
+            New instance of the copied object
         """
         this = copy(self)
         for name, value in overrides.items():
