@@ -126,9 +126,7 @@ def compute_projection(
                 for t in an.find_immediate_parent_tables(node)
             )
 
-            result = execute(
-                node, scope=scope, timecontext=timecontext, **kwargs
-            )
+            result = execute(node, scope=scope, timecontext=timecontext, **kwargs)
             return coerce_to_output(result, node, data.index)
     else:
         raise TypeError(node)
@@ -143,26 +141,20 @@ def build_df_from_projection(
     """Build up a df from individual pieces by dispatching to
     `compute_projection` for each expression."""
     # Fast path for when we're assigning columns into the same table.
-    if (selections[0] is op.table) and all(
-        is_row_order_preserving(selections[1:])
-    ):
+    if (selections[0] is op.table) and all(is_row_order_preserving(selections[1:])):
         for node in selections[1:]:
             projection = compute_projection(node, op, data, **kwargs)
             if isinstance(projection, dd.Series):
                 data = data.assign(**{projection.name: projection})
             else:
-                data = data.assign(
-                    **{c: projection[c] for c in projection.columns}
-                )
+                data = data.assign(**{c: projection[c] for c in projection.columns})
         return data
 
     # Slow path when we cannot do direct assigns
     # Create a unique row identifier and set it as the index. This is
     # used in dd.concat to merge the pieces back together.
     data = add_partitioned_sorted_column(data)
-    data_pieces = [
-        compute_projection(node, op, data, **kwargs) for node in selections
-    ]
+    data_pieces = [compute_projection(node, op, data, **kwargs) for node in selections]
 
     return dd.concat(data_pieces, axis=1).reset_index(drop=True)
 
@@ -229,9 +221,9 @@ def execute_selection_dataframe(
         return result
 
     # create a sequence of columns that we need to drop
-    temporary_columns = pandas.Index(
-        concatv(grouping_keys, ordering_keys)
-    ).difference(data.columns)
+    temporary_columns = pandas.Index(concatv(grouping_keys, ordering_keys)).difference(
+        data.columns
+    )
 
     # no reason to call drop if we don't need to
     if temporary_columns.empty:
@@ -282,9 +274,7 @@ def _compute_predicates(
 
         additional_scope = Scope()
         for root_table in root_tables:
-            mapping = remap_overlapping_column_names(
-                table_op, root_table, data_columns
-            )
+            mapping = remap_overlapping_column_names(table_op, root_table, data_columns)
             if mapping is not None:
                 new_data = data.loc[:, mapping.keys()].rename(columns=mapping)
             else:

@@ -10,18 +10,14 @@ import ibis.expr.operations as ops
 from ibis.backends.pandas.dispatch import execute_node
 
 
-@execute_node.register(
-    ops.StructField, (collections.abc.Mapping, pd.DataFrame)
-)
+@execute_node.register(ops.StructField, (collections.abc.Mapping, pd.DataFrame))
 def execute_node_struct_field_dict(op, data, **kwargs):
     return data[op.field]
 
 
 @execute_node.register(ops.StructField, (type(None), type(pd.NA), float))
 def execute_node_struct_field_none(op, data, **_):
-    assert (isinstance(data, float) and pd.isna(data)) or not isinstance(
-        data, float
-    )
+    assert (isinstance(data, float) and pd.isna(data)) or not isinstance(data, float)
     return pd.NA
 
 
@@ -41,6 +37,4 @@ def execute_node_struct_field_series(op, data, **kwargs):
 @execute_node.register(ops.StructField, SeriesGroupBy)
 def execute_node_struct_field_series_group_by(op, data, **kwargs):
     getter = functools.partial(_safe_getter, field=op.field)
-    return (
-        data.obj.map(getter).rename(op.field).groupby(data.grouper.groupings)
-    )
+    return data.obj.map(getter).rename(op.field).groupby(data.grouper.groupings)

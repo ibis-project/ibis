@@ -33,9 +33,7 @@ def execute_aggregation_dataframe(
     assert op.metrics, 'no metrics found during aggregation execution'
 
     if op.sort_keys:
-        raise NotImplementedError(
-            'sorting on aggregations not yet implemented'
-        )
+        raise NotImplementedError('sorting on aggregations not yet implemented')
 
     if op.predicates:
         predicate = functools.reduce(
@@ -53,9 +51,9 @@ def execute_aggregation_dataframe(
         grouping_keys = [
             key.name
             if isinstance(key, ops.TableColumn)
-            else execute(
-                key, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(key.name)
+            else execute(key, scope=scope, timecontext=timecontext, **kwargs).rename(
+                key.name
+            )
             for key in op.by
         ]
         source = data.groupby(grouping_keys)

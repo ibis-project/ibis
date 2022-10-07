@@ -199,9 +199,7 @@ SELECT `f`, (row_number() OVER (ORDER BY `f` DESC) - 1) AS `revrank`
 FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
-    expr = t.group_by('g').order_by(ibis.desc(t.f))[
-        t.d.lag().name('foo'), t.a.max()
-    ]
+    expr = t.group_by('g').order_by(ibis.desc(t.f))[t.d.lag().name('foo'), t.a.max()]
     expected = """\
 SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
        max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`

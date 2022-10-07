@@ -131,9 +131,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.NotNull: [((dd.Series,), execute_series_notnnull)],
     ops.IsNan: [((dd.Series,), execute_isnan)],
     ops.IsInf: [((dd.Series,), execute_isinf)],
-    ops.SelfReference: [
-        ((dd.DataFrame,), execute_node_self_reference_dataframe)
-    ],
+    ops.SelfReference: [((dd.DataFrame,), execute_node_self_reference_dataframe)],
     ops.Contains: [
         (
             (
@@ -200,9 +198,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     elif op.how == 'last':
         index = len(data) - 1  # TODO - computation
     else:
-        raise com.OperationNotDefinedError(
-            f'Arbitrary {op.how!r} is not supported'
-        )
+        raise com.OperationNotDefinedError(f'Arbitrary {op.how!r} is not supported')
 
     return data.loc[index]
 
@@ -214,17 +210,13 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
         how = 'first'
 
     if how not in {'first', 'last'}:
-        raise com.OperationNotDefinedError(
-            f'Arbitrary {how!r} is not supported'
-        )
+        raise com.OperationNotDefinedError(f'Arbitrary {how!r} is not supported')
     return aggcontext.agg(data, how)
 
 
 @execute_node.register(ops.Cast, ddgb.SeriesGroupBy, dt.DataType)
 def execute_cast_series_group_by(op, data, type, **kwargs):
-    result = execute_cast_series_generic(
-        op, make_selected_obj(data), type, **kwargs
-    )
+    result = execute_cast_series_generic(op, make_selected_obj(data), type, **kwargs)
     return result.groupby(data.index)
 
 
@@ -239,9 +231,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
     tz = type.timezone
 
     if isinstance(from_type, (dt.Timestamp, dt.Date)):
-        return data.astype(
-            'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
-        )
+        return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
 
     if isinstance(from_type, (dt.String, dt.Integer)):
         timestamps = data.map_partitions(
@@ -372,9 +362,7 @@ def execute_log_series_gb_others(op, left, right, **kwargs):
     return result.groupby(left.index)
 
 
-@execute_node.register(
-    (ops.Log, ops.Round), ddgb.SeriesGroupBy, ddgb.SeriesGroupBy
-)
+@execute_node.register((ops.Log, ops.Round), ddgb.SeriesGroupBy, ddgb.SeriesGroupBy)
 def execute_log_series_gb_series_gb(op, left, right, **kwargs):
     result = execute_node(
         op, make_selected_obj(left), make_selected_obj(right), **kwargs

@@ -10,11 +10,7 @@ import ibis.expr.datatypes as dt
 pytest.importorskip("psycopg2")
 pytest.importorskip("sqlalchemy")
 
-from ibis.backends.postgres.udf import (  # noqa: E402
-    PostgresUDFError,
-    existing_udf,
-    udf,
-)
+from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf  # noqa: E402
 
 
 @pytest.fixture(scope='session')
@@ -80,9 +76,7 @@ $$;""".format(
 
 
 @pytest.fixture(scope='session')
-def con_for_udf(
-    con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf
-):
+def con_for_udf(con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf):
     with con.con.begin() as c:
         c.execute(sql_table_setup)
         c.execute(sql_define_udf)
@@ -111,9 +105,7 @@ def test_existing_sql_udf(test_schema, table):
         output_type=dt.int32,
         schema=test_schema,
     )
-    result_obj = table[
-        table, custom_length_udf(table['user_name']).name('custom_len')
-    ]
+    result_obj = table[table, custom_length_udf(table['user_name']).name('custom_len')]
     result = result_obj.execute()
     assert result['custom_len'].sum() == result['name_length'].sum()
 
@@ -126,9 +118,7 @@ def test_existing_plpython_udf(test_schema, table):
         output_type=dt.int32,
         schema=test_schema,
     )
-    result_obj = table[
-        table, py_length_udf(table['user_name']).name('custom_len')
-    ]
+    result_obj = table[table, py_length_udf(table['user_name']).name('custom_len')]
     result = result_obj.execute()
     assert result['custom_len'].sum() == result['name_length'].sum()
 

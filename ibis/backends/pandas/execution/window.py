@@ -28,10 +28,7 @@ from ibis.backends.pandas.core import (
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
 from ibis.backends.pandas.execution import util
 from ibis.expr.scope import Scope
-from ibis.expr.timecontext import (
-    construct_time_context_aware_series,
-    get_time_col,
-)
+from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
 from ibis.expr.typing import TimeContext
 
 
@@ -109,9 +106,7 @@ def _post_process_group_by_order_by(
 
     # get the levels common to series.index, in the order that they occur in
     # the parent's index
-    reordered_levels = [
-        name for name in index.names if name in series_index_names
-    ]
+    reordered_levels = [name for name in index.names if name in series_index_names]
 
     if len(reordered_levels) > 1:
         series = series.reorder_levels(reordered_levels)
@@ -160,9 +155,7 @@ def get_aggcontext_window(
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif (
-        isinstance(
-            operand, (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All)
-        )
+        isinstance(operand, (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All))
         and order_by
     ):
         # XXX(phillipc): What a horror show
@@ -344,11 +337,7 @@ def execute_window_op(
     ]
     if group_by:
         if order_by:
-            (
-                sorted_df,
-                grouping_keys,
-                ordering_keys,
-            ) = util.compute_sorted_frame(
+            (sorted_df, grouping_keys, ordering_keys,) = util.compute_sorted_frame(
                 data,
                 order_by,
                 group_by=group_by,
@@ -421,9 +410,7 @@ def execute_window_op(
 def execute_series_cumulative_sum_min_max(op, data, **kwargs):
     typename = type(op).__name__
     method_name = (
-        re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename)
-        .group(1)
-        .lower()
+        re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename).group(1).lower()
     )
     method = getattr(data, f"cum{method_name}")
     return method()
@@ -438,9 +425,7 @@ def execute_series_cumulative_mean(op, data, **kwargs):
 
 @execute_node.register(ops.CumulativeOp, (pd.Series, SeriesGroupBy))
 def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
-    assert aggcontext is not None, "aggcontext is none in {} operation".format(
-        type(op)
-    )
+    assert aggcontext is not None, f"aggcontext is none in {type(op)} operation"
     typename = type(op).__name__
     match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
     if match is None:
@@ -449,9 +434,7 @@ def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
     try:
         (operation_name,) = match.groups()
     except ValueError:
-        raise ValueError(
-            f'More than one operation name found in {typename} class'
-        )
+        raise ValueError(f'More than one operation name found in {typename} class')
 
     dtype = op.to_expr().type().to_pandas()
     assert isinstance(aggcontext, agg_ctx.Cumulative), f'Got {type()}'

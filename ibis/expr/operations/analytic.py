@@ -244,9 +244,7 @@ class NthValue(Analytic):
 class TopK(Node):
     arg = rlz.column(rlz.any)
     k = rlz.non_negative_integer
-    by = rlz.one_of(
-        (rlz.function_of(rlz.base_table_of(rlz.ref("arg"))), rlz.any)
-    )
+    by = rlz.one_of((rlz.function_of(rlz.base_table_of(rlz.ref("arg"))), rlz.any))
 
     def to_expr(self):
         import ibis.expr.types as ir

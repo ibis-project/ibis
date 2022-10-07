@@ -13,9 +13,7 @@ def client():
     return ibis.pandas.connect(
         {
             'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
-            'df_unknown': pd.DataFrame(
-                {'array_of_strings': [['a', 'b'], [], ['c']]}
-            ),
+            'df_unknown': pd.DataFrame({'array_of_strings': [['a', 'b'], [], ['c']]}),
         }
     )
 
@@ -27,9 +25,7 @@ def table(client):
 
 @pytest.fixture
 def test_data():
-    test_data = test_data = pd.DataFrame(
-        {"A": [1, 2, 3, 4, 5], "B": list("abcde")}
-    )
+    test_data = test_data = pd.DataFrame({"A": [1, 2, 3, 4, 5], "B": list("abcde")})
     return test_data
 
 

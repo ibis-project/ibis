@@ -540,9 +540,7 @@ def test_aggregate_keywords(table):
 
     expr = t.aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean(), by='g')
     expr2 = t.group_by('g').aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean())
-    expected = t.aggregate(
-        [t.f.sum().name('foo'), t.f.mean().name('bar')], by='g'
-    )
+    expected = t.aggregate([t.f.sum().name('foo'), t.f.mean().name('bar')], by='g')
 
     assert_equal(expr, expected)
     assert_equal(expr2, expected)
@@ -652,9 +650,7 @@ def test_group_by_having_api(table):
 
 def test_group_by_kwargs(table):
     t = table
-    expr = t.group_by(['f', t.h], z='g', z2=t.d).aggregate(
-        t.d.mean().name('foo')
-    )
+    expr = t.group_by(['f', t.h], z='g', z2=t.d).aggregate(t.d.mean().name('foo'))
     expected = t.group_by(['f', t.h, t.g.name('z'), t.d.name('z2')]).aggregate(
         t.d.mean().name('foo')
     )
@@ -787,12 +783,8 @@ def test_asof_join():
 
 
 def test_asof_join_with_by():
-    left = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value', 'double')]
-    )
-    right = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
-    )
+    left = ibis.table([('time', 'int32'), ('key', 'int32'), ('value', 'double')])
+    right = ibis.table([('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
     joined = api.asof_join(left, right, 'time', by='key')
     assert joined.columns == [
         "time_x",
@@ -825,20 +817,14 @@ def test_asof_join_with_by():
     ],
 )
 def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
-    left = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value', 'double')]
-    )
-    right = ibis.table(
-        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')]
-    )
+    left = ibis.table([('time', 'int32'), ('key', 'int32'), ('value', 'double')])
+    right = ibis.table([('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
 
     joined = api.asof_join(left, right, 'time', tolerance=ibis_interval).op()
     tolerance = joined.table.tolerance
     assert_equal(tolerance, ibis_interval.op())
 
-    joined = api.asof_join(
-        left, right, 'time', tolerance=timedelta_interval
-    ).op()
+    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval).op()
     tolerance = joined.table.tolerance
     assert isinstance(tolerance.to_expr(), ir.IntervalScalar)
     assert isinstance(tolerance, ops.Literal)
@@ -1005,9 +991,7 @@ def test_cross_join_multiple(table):
 
 
 def test_filter_join(table):
-    table1 = ibis.table(
-        {'key1': 'string', 'key2': 'string', 'value1': 'double'}
-    )
+    table1 = ibis.table({'key1': 'string', 'key2': 'string', 'value1': 'double'})
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
 
     # It works!
@@ -1017,12 +1001,8 @@ def test_filter_join(table):
 
 
 def test_join_overlapping_column_names(table):
-    t1 = ibis.table(
-        [('foo', 'string'), ('bar', 'string'), ('value1', 'double')]
-    )
-    t2 = ibis.table(
-        [('foo', 'string'), ('bar', 'string'), ('value2', 'double')]
-    )
+    t1 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value1', 'double')])
+    t2 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value2', 'double')])
 
     joined = t1.join(t2, 'foo')
     expected = t1.join(t2, t1.foo == t2.foo)
@@ -1497,26 +1477,20 @@ def test_merge_as_of_allows_overlapping_columns():
     )
 
     signal_one = table[
-        table['field'].contains('signal_one')
-        & table['field'].contains('current')
+        table['field'].contains('signal_one') & table['field'].contains('current')
     ]
     signal_one = signal_one[
         'value', 'timestamp_received', 'field'
     ]  # select columns we care about
-    signal_one = signal_one.relabel(
-        {'value': 'current', 'field': 'signal_one'}
-    )
+    signal_one = signal_one.relabel({'value': 'current', 'field': 'signal_one'})
 
     signal_two = table[
-        table['field'].contains('signal_two')
-        & table['field'].contains('voltage')
+        table['field'].contains('signal_two') & table['field'].contains('voltage')
     ]
     signal_two = signal_two[
         'value', 'timestamp_received', 'field'
     ]  # select columns we care about
-    signal_two = signal_two.relabel(
-        {'value': 'voltage', 'field': 'signal_two'}
-    )
+    signal_two = signal_two.relabel({'value': 'voltage', 'field': 'signal_two'})
 
     merged = ibis.api.asof_join(signal_one, signal_two, 'timestamp_received')
     assert merged.columns == [
@@ -1616,9 +1590,5 @@ def test_numpy_ufuncs_dont_cast_tables():
 
 def test_array_string_compare():
     t = ibis.table(schema=dict(by="string", words="array<string>"), name="t")
-    expr = (
-        t[t.by == "foo"]
-        .mutate(words=_.words.unnest())
-        .filter(_.words == "the")
-    )
+    expr = t[t.by == "foo"].mutate(words=_.words.unnest()).filter(_.words == "the")
     assert expr is not None

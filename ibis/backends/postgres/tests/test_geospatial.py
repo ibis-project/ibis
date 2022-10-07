@@ -40,19 +40,13 @@ shp_point_0 = shapely.geometry.Point(0, 0)
 shp_point_1 = shapely.geometry.Point(1, 1)
 shp_point_2 = shapely.geometry.Point(2, 2)
 
-shp_linestring_0 = shapely.geometry.LineString(
-    [shp_point_0, shp_point_1, shp_point_2]
-)
-shp_linestring_1 = shapely.geometry.LineString(
-    [shp_point_2, shp_point_1, shp_point_0]
-)
+shp_linestring_0 = shapely.geometry.LineString([shp_point_0, shp_point_1, shp_point_2])
+shp_linestring_1 = shapely.geometry.LineString([shp_point_2, shp_point_1, shp_point_0])
 shp_polygon_0 = shapely.geometry.Polygon(shp_linestring_0)
 shp_multilinestring_0 = shapely.geometry.MultiLineString(
     [shp_linestring_0, shp_linestring_1]
 )
-shp_multipoint_0 = shapely.geometry.MultiPoint(
-    [shp_point_0, shp_point_1, shp_point_2]
-)
+shp_multipoint_0 = shapely.geometry.MultiPoint([shp_point_0, shp_point_1, shp_point_2])
 shp_multipolygon_0 = shapely.geometry.MultiPolygon([shp_polygon_0])
 
 
@@ -304,9 +298,7 @@ def test_set_srid(geotable, condition, expected):
             900913,
         ),
         (
-            lambda t: t.geo_multipolygon.set_srid(4326)
-            .transform(900913)
-            .srid(),
+            lambda t: t.geo_multipolygon.set_srid(4326).transform(900913).srid(),
             900913,
         ),
     ],
@@ -467,21 +459,15 @@ def test_geo_literals_smoke(con, shape, value, modifier, expected):
     'fn_expr',
     [
         pytest.param(lambda t: t.geo_point.srid(), id='point_srid'),
-        pytest.param(
-            lambda t: t.geo_point.set_srid(4326), id='point_set_srid'
-        ),
+        pytest.param(lambda t: t.geo_point.set_srid(4326), id='point_set_srid'),
         pytest.param(lambda t: t.geo_point.x(), id='point_x'),
         pytest.param(lambda t: t.geo_point.y(), id='point_y'),
         pytest.param(
             lambda t: t.geo_linestring.contains(t.geo_point),
             id='linestring_contains',
         ),
-        pytest.param(
-            lambda t: t.geo_linestring.end_point(), id='linestring_end_point'
-        ),
-        pytest.param(
-            lambda t: t.geo_linestring.length(), id='linestring_length'
-        ),
+        pytest.param(lambda t: t.geo_linestring.end_point(), id='linestring_end_point'),
+        pytest.param(lambda t: t.geo_linestring.length(), id='linestring_length'),
         pytest.param(
             lambda t: t.geo_linestring.max_distance(t.geo_point),
             id='linestring_max_distance',
@@ -517,9 +503,7 @@ def test_geo_literals_smoke(con, shape, value, modifier, expected):
             marks=pytest.mark.notimpl(["postgres"]),
         ),
         pytest.param(lambda t: t.geo_polygon.area(), id='polygon_area'),
-        pytest.param(
-            lambda t: t.geo_polygon.perimeter(), id='polygon_perimeter'
-        ),
+        pytest.param(lambda t: t.geo_polygon.perimeter(), id='polygon_perimeter'),
         pytest.param(
             lambda t: t.geo_multipolygon.n_points(), id='multipolygon_n_points'
         ),
@@ -565,9 +549,7 @@ def test_geo_equals(geotable):
     assert expr.execute().all()
 
     # using geo_equals
-    expected = (
-        'SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0'
-    )
+    expected = 'SELECT ST_Equals(t0.geo_point, t0.geo_point) AS tmp \nFROM geo AS t0'
     expr = geotable.geo_point.geo_equals(geotable.geo_point).name('tmp')
     assert str(expr.compile().compile()) == expected
     assert expr.execute().all()

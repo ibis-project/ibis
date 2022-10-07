@@ -91,9 +91,7 @@ def execute_round_decimal(op, data, places, **kwargs):
             max(integer_part_length + places, abs(places)),
         )
     else:
-        decimal_format_string = '{}.{}'.format(
-            '0' * integer_part_length, '0' * places
-        )
+        decimal_format_string = '{}.{}'.format('0' * integer_part_length, '0' * places)
 
     places = decimal.Decimal(decimal_format_string)
     return data.quantize(places)

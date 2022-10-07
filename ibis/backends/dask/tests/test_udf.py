@@ -34,10 +34,8 @@ def df2(npartitions):
     return dd.from_pandas(
         pd.DataFrame(
             {
-                'a': np.arange(4, dtype=float).tolist()
-                + np.random.rand(3).tolist(),
-                'b': np.arange(4, dtype=float).tolist()
-                + np.random.rand(3).tolist(),
+                'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+                'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
                 'c': np.arange(7, dtype=int).tolist(),
                 'd': list('aaaaddd'),
                 'key': list('ddeefff'),
@@ -65,9 +63,7 @@ def df_timestamp(npartitions):
 
 @pytest.fixture
 def con(df, df2, df_timestamp):
-    return ibis.dask.connect(
-        {'df': df, 'df2': df2, 'df_timestamp': df_timestamp}
-    )
+    return ibis.dask.connect({'df': df, 'df2': df2, 'df_timestamp': df_timestamp})
 
 
 @pytest.fixture
@@ -266,8 +262,7 @@ def test_udaf_group_by(t2, df2):
         {
             'key': list('def'),
             'my_corr': [
-                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
-                for value in 'def'
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b']) for value in 'def'
             ],
         }
     )
@@ -286,8 +281,7 @@ def test_udaf_group_by_multikey(t2, df2):
             'key': list('def'),
             'd': list('aad'),
             'my_corr': [
-                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
-                for value in 'def'
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b']) for value in 'def'
             ],
         }
     )
@@ -317,9 +311,7 @@ def test_compose_udfs(t2, df2):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
+@pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
 def test_udaf_window(t2, df2):
     window = ibis.trailing_window(2, order_by='a', group_by='key')
     expr = t2.mutate(rolled=my_mean(t2.b).over(window))
@@ -333,18 +325,14 @@ def test_udaf_window(t2, df2):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
+@pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
 def test_udaf_window_interval(npartitions):
     df = pd.DataFrame(
         collections.OrderedDict(
             [
                 (
                     "time",
-                    pd.date_range(
-                        start='20190105', end='20190101', freq='-1D'
-                    ),
+                    pd.date_range(start='20190105', end='20190101', freq='-1D'),
                 ),
                 ("key", [1, 2, 1, 2, 1]),
                 ("value", np.arange(5)),
@@ -376,9 +364,7 @@ def test_udaf_window_interval(npartitions):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
+@pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
 def test_multiple_argument_udaf_window(npartitions):
     @reduction(['double', 'double'], 'double')
     def my_wm(v, w):
@@ -388,10 +374,8 @@ def test_multiple_argument_udaf_window(npartitions):
         {
             'a': np.arange(4, 0, dtype=float, step=-1).tolist()
             + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'c': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            'c': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
             'd': np.repeat(1, 7),
             'key': list('deefefd'),
         }
@@ -434,9 +418,7 @@ def test_multiple_argument_udaf_window(npartitions):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError, reason='TODO - windowing - #2553'
-)
+@pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
 def test_udaf_window_nan(npartitions):
     df = pd.DataFrame(
         {
@@ -485,9 +467,7 @@ def test_array_return_type_reduction_window(con, t, df, qs):
 
 def test_array_return_type_reduction_group_by(con, t, df, qs):
     """Tests reduction UDF returning an array, used in a grouped agg."""
-    expr = t.group_by(t.key).aggregate(
-        quantiles_col=quantiles(t.b, quantiles=qs)
-    )
+    expr = t.group_by(t.key).aggregate(quantiles_col=quantiles(t.b, quantiles=qs))
     result = expr.execute()
 
     df = df.compute()  # Convert to Pandas
@@ -498,9 +478,7 @@ def test_array_return_type_reduction_group_by(con, t, df, qs):
 
 
 def test_elementwise_udf_with_many_args(t2):
-    @elementwise(
-        input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double
-    )
+    @elementwise(input_type=[dt.double] * 16 + [dt.int32] * 8, output_type=dt.double)
     def my_udf(
         c1,
         c2,

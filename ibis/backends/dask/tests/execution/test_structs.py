@@ -42,9 +42,7 @@ def struct_table(struct_client):
     return struct_client.table(
         "t",
         schema={
-            "s": dt.Struct.from_tuples(
-                [("fruit", dt.string), ("weight", dt.int8)]
-            )
+            "s": dt.Struct.from_tuples([("fruit", dt.string), ("weight", dt.int8)])
         },
     )
 

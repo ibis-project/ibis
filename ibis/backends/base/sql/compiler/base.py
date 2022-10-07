@@ -24,9 +24,7 @@ class QueryAST:
 
     __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
 
-    def __init__(
-        self, context, dml, setup_queries=None, teardown_queries=None
-    ):
+    def __init__(self, context, dml, setup_queries=None, teardown_queries=None):
         self.context = context
         self.dml = dml
         self.setup_queries = setup_queries
@@ -39,9 +37,7 @@ class QueryAST:
     def compile(self):
         compiled_setup_queries = [q.compile() for q in self.setup_queries]
         compiled_queries = [q.compile() for q in self.queries]
-        compiled_teardown_queries = [
-            q.compile() for q in self.teardown_queries
-        ]
+        compiled_teardown_queries = [q.compile() for q in self.teardown_queries]
         return self.context.collapse(
             list(
                 chain(

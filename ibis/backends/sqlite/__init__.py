@@ -198,9 +198,7 @@ class Backend(BaseAlchemyBackend):
         node = self.table_class(source=self, sqla_table=alch_table)
         return self.table_expr_class(node)
 
-    def _table_from_schema(
-        self, name, schema, database: str | None = None
-    ) -> sa.Table:
+    def _table_from_schema(self, name, schema, database: str | None = None) -> sa.Table:
         columns = self._columns_from_schema(name, schema)
         return sa.Table(name, self.meta, schema=database, *columns)
 

@@ -48,14 +48,10 @@ class _CaseFormatter:
 
 
 def simple_case(translator, op):
-    formatter = _CaseFormatter(
-        translator, op.base, op.cases, op.results, op.default
-    )
+    formatter = _CaseFormatter(translator, op.base, op.cases, op.results, op.default)
     return formatter.get_result()
 
 
 def searched_case(translator, op):
-    formatter = _CaseFormatter(
-        translator, None, op.cases, op.results, op.default
-    )
+    formatter = _CaseFormatter(translator, None, op.cases, op.results, op.default)
     return formatter.get_result()

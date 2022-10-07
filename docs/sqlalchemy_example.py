@@ -12,16 +12,12 @@ a = (
             ).label("investor_name"),
             sa.func.count(c.c.permalink.distinct()).label("num_investments"),
             sa.func.count(
-                sa.case(
-                    [(c.status.in_(("ipo", "acquired")), c.c.permalink)]
-                ).distinct()
+                sa.case([(c.status.in_(("ipo", "acquired")), c.c.permalink)]).distinct()
             ).label("acq_ipos"),
         ]
     )
     .select_from(
-        c.join(
-            i, onclause=c.c.permalink == i.c.company_permalink, isouter=True
-        )
+        c.join(i, onclause=c.c.permalink == i.c.company_permalink, isouter=True)
     )
     .group_by(1)
     .order_by(sa.desc(2))

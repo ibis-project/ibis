@@ -70,9 +70,7 @@ class ScalarAggregate:
     def _visit(self, expr):
         assert isinstance(expr, ir.Expr), type(expr)
 
-        if is_scalar_reduction(expr.op()) and not has_multiple_bases(
-            expr.op()
-        ):
+        if is_scalar_reduction(expr.op()) and not has_multiple_bases(expr.op()):
             # An aggregation unit
             if not expr.has_name():
                 expr = expr.name('tmp')
@@ -175,8 +173,7 @@ def substitute(fn, node):
     for arg in node.args:
         if isinstance(arg, tuple):
             arg = tuple(
-                substitute(fn, x) if isinstance(arg, ops.Node) else x
-                for x in arg
+                substitute(fn, x) if isinstance(arg, ops.Node) else x for x in arg
             )
         elif isinstance(arg, ops.Node):
             arg = substitute(fn, arg)
@@ -209,10 +206,7 @@ def substitute_parents(node):
 
             if isinstance(table, ops.Selection):
                 for val in table.selections:
-                    if (
-                        isinstance(val, ops.PhysicalTable)
-                        and node.name in val.schema
-                    ):
+                    if isinstance(val, ops.PhysicalTable) and node.name in val.schema:
                         return ops.TableColumn(val, node.name)
 
         # keep looking for nodes to substitute
@@ -221,9 +215,7 @@ def substitute_parents(node):
     return substitute(fn, node)
 
 
-def get_mutation_exprs(
-    exprs: list[ir.Expr], table: ir.Table
-) -> list[ir.Expr | None]:
+def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
     """Given the list of exprs and the underlying table of a mutation op,
     return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
@@ -349,9 +341,7 @@ def _filter_selection(op, predicates):
     can_pushdown = _can_pushdown(op, predicates)
 
     if can_pushdown:
-        simplified_predicates = tuple(
-            substitute_parents(x) for x in predicates
-        )
+        simplified_predicates = tuple(substitute_parents(x) for x in predicates)
         fused_predicates = op.predicates + simplified_predicates
         return ops.Selection(
             op.table,
@@ -533,8 +523,7 @@ class Projector:
         if not isinstance(root_table, ops.Join):
             try:
                 resolved = [
-                    root_table_expr._ensure_expr(expr)
-                    for expr in self.input_exprs
+                    root_table_expr._ensure_expr(expr) for expr in self.input_exprs
                 ]
             except (AttributeError, IbisTypeError):
                 resolved = clean_exprs
@@ -737,9 +726,7 @@ def find_predicates(node, flatten=True):
     # flatten_predicates instead
     def predicate(node):
         assert isinstance(node, ops.Node), type(node)
-        if isinstance(node, ops.Value) and isinstance(
-            node.output_dtype, dt.Boolean
-        ):
+        if isinstance(node, ops.Value) and isinstance(node.output_dtype, dt.Boolean):
             if flatten and isinstance(node, ops.And):
                 return g.proceed, None
             else:

@@ -26,9 +26,7 @@ def filter_by_time_context(
     # Return original df if there is no timecontext (timecontext is not used)
     # or timecontext and adjusted_timecontext are the same
     if (not timecontext) or (
-        timecontext
-        and adjusted_timecontext
-        and timecontext == adjusted_timecontext
+        timecontext and adjusted_timecontext and timecontext == adjusted_timecontext
     ):
         return df
 

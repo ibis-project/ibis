@@ -60,9 +60,7 @@ class GroupedTable:
         self, table, by, having=None, order_by=None, window=None, **expressions
     ):
         self.table = table
-        self.by = [
-            _get_group_by_key(table, v) for v in util.promote_list(by)
-        ] + [
+        self.by = [_get_group_by_key(table, v) for v in util.promote_list(by)] + [
             _get_group_by_key(table, v).name(k)
             for k, v in sorted(expressions.items(), key=toolz.first)
         ]
@@ -88,9 +86,7 @@ class GroupedTable:
             return GroupedArray(col, self)
 
     def aggregate(self, metrics=None, **kwds):
-        return self.table.aggregate(
-            metrics, by=self.by, having=self._having, **kwds
-        )
+        return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
 
     def having(self, expr: ir.BooleanScalar) -> GroupedTable:
         """Add a post-aggregation result filter `expr`.
@@ -227,12 +223,8 @@ class GroupedTable:
         return _window.window(
             preceding=preceding,
             following=following,
-            group_by=list(
-                map(self.table._ensure_expr, util.promote_list(groups))
-            ),
-            order_by=list(
-                map(self.table._ensure_expr, util.promote_list(sorts))
-            ),
+            group_by=list(map(self.table._ensure_expr, util.promote_list(groups))),
+            order_by=list(map(self.table._ensure_expr, util.promote_list(sorts))),
         )
 
     def over(self, window: _window.Window) -> GroupedTable:

@@ -79,8 +79,7 @@ def _literal(_, op):
     if isinstance(dtype, dt.Interval):
         return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
     elif isinstance(dtype, dt.Set) or (
-        isinstance(value, collections.abc.Sequence)
-        and not isinstance(value, str)
+        isinstance(value, collections.abc.Sequence) and not isinstance(value, str)
     ):
         return sa.cast(sa.func.list_value(*value), sqla_type)
     elif isinstance(value, np.ndarray):
@@ -94,10 +93,7 @@ def _literal(_, op):
             )
             text = sa.text(f"struct_pack({placeholders})")
             bound_text = text.bindparams(
-                *(
-                    sa.bindparam(f"v{i:d}", val)
-                    for i, val in enumerate(value.values())
-                )
+                *(sa.bindparam(f"v{i:d}", val) for i, val in enumerate(value.values()))
             )
             name = op.name if isinstance(op, ops.Named) else "tmp"
             params = {name: to_sqla_type(dtype)}
@@ -113,9 +109,7 @@ def _literal(_, op):
 def _array_column(t, op):
     (arg,) = op.args
     sqla_type = to_sqla_type(op.output_dtype)
-    return sa.cast(
-        sa.func.list_value(*map(t.translate, arg.values)), sqla_type
-    )
+    return sa.cast(sa.func.list_value(*map(t.translate, arg.values)), sqla_type)
 
 
 def _struct_field(t, op):
@@ -139,9 +133,7 @@ def _regex_extract(t, op):
                     # the value and inline it using sa.text
                     sa.text(
                         str(
-                            (index + 1).compile(
-                                compile_kwargs=dict(literal_binds=True)
-                            )
+                            (index + 1).compile(compile_kwargs=dict(literal_binds=True))
                         )
                     ),
                 ),
@@ -156,12 +148,9 @@ def _strftime(t, op):
     format_str = op.format_str
     if not isinstance(format_str_op := format_str, ops.Literal):
         raise TypeError(
-            "DuckDB format_str must be a literal `str`; "
-            f"got {type(format_str)}"
+            "DuckDB format_str must be a literal `str`; " f"got {type(format_str)}"
         )
-    return sa.func.strftime(
-        t.translate(op.arg), sa.text(repr(format_str_op.value))
-    )
+    return sa.func.strftime(t.translate(op.arg), sa.text(repr(format_str_op.value)))
 
 
 def _arbitrary(t, op):

@@ -11,9 +11,7 @@ expr = (
     .aggregate(
         num_investments=c.permalink.nunique(),
         acq_ipos=(
-            c.status.isin(("ipo", "acquired"))
-            .ifelse(c.permalink, ibis.NA)
-            .nunique()
+            c.status.isin(("ipo", "acquired")).ifelse(c.permalink, ibis.NA).nunique()
         ),
     )
     .mutate(acq_rate=lambda t: t.acq_ipos / t.num_investments)

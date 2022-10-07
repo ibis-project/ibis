@@ -274,13 +274,13 @@ markers = [
 ]
 
 [tool.black]
-line_length = 79
+line_length = 88
 skip_string_normalization = true
 extend_exclude = '\.ipynb|\.direnv|result(-\d+)?'
 
 [tool.isort]
 ensure_newline_before_comments = true
-line_length = 79
+line_length = 88
 multi_line_output = 3
 include_trailing_comma = true
 profile = "black"

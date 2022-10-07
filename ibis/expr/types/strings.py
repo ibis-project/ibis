@@ -23,11 +23,7 @@ class StringValue(Value):
         if isinstance(key, slice):
             start, stop, step = key.start, key.stop, key.step
 
-            if (
-                step is not None
-                and not isinstance(step, ir.Expr)
-                and step != 1
-            ):
+            if step is not None and not isinstance(step, ir.Expr) and step != 1:
                 raise ValueError('Step can only be 1')
 
             if not isinstance(start, ir.Expr):
@@ -51,9 +47,7 @@ class StringValue(Value):
             return self.substr(start, stop - start)
         elif isinstance(key, int):
             return self.substr(key, 1)
-        raise NotImplementedError(
-            f"string __getitem__[{key.__class__.__name__}]"
-        )
+        raise NotImplementedError(f"string __getitem__[{key.__class__.__name__}]")
 
     def length(self) -> ir.IntegerValue:
         """Compute the length of a string.
@@ -252,9 +246,7 @@ class StringValue(Value):
 
     __mul__ = __rmul__ = repeat
 
-    def translate(
-        self, from_str: StringValue, to_str: StringValue
-    ) -> StringValue:
+    def translate(self, from_str: StringValue, to_str: StringValue) -> StringValue:
         """Replace `from_str` characters in `self` characters in `to_str`.
 
         To avoid unexpected behavior, `from_str` should be shorter than
@@ -801,9 +793,7 @@ class StringValue(Value):
         """
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
-    def __mul__(
-        self, n: int | ir.IntegerValue
-    ) -> StringValue | NotImplemented:
+    def __mul__(self, n: int | ir.IntegerValue) -> StringValue | NotImplemented:
 
         return _binop(ops.Repeat, self, n)
 

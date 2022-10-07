@@ -75,9 +75,7 @@ class PySparkTable(ir.Table):
             lt = from_schema[name]
             rt = to_schema[name]
             if not dt.castable(lt, rt):
-                raise com.IbisInputError(
-                    f'Cannot safely cast {lt!r} to {rt!r}'
-                )
+                raise com.IbisInputError(f'Cannot safely cast {lt!r} to {rt!r}')
 
     def insert(
         self,
@@ -125,9 +123,7 @@ class PySparkTable(ir.Table):
 
         ast = self._client.compiler.to_ast(expr)
         select = ast.queries[0]
-        statement = ddl.InsertSelect(
-            self._qualified_name, select, overwrite=overwrite
-        )
+        statement = ddl.InsertSelect(self._qualified_name, select, overwrite=overwrite)
         return self._client.raw_sql(statement.compile())
 
     def rename(self, new_name: str) -> PySparkTable:
@@ -165,7 +161,5 @@ class PySparkTable(ir.Table):
             Spark table properties
         """
 
-        stmt = ddl.AlterTable(
-            self._qualified_name, tbl_properties=tbl_properties
-        )
+        stmt = ddl.AlterTable(self._qualified_name, tbl_properties=tbl_properties)
         return self._client.raw_sql(stmt.compile())

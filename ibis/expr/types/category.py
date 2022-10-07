@@ -9,9 +9,7 @@ from ibis.expr.types.strings import StringValue
 
 @public
 class CategoryValue(Value):
-    def label(
-        self, labels: Sequence[str], nulls: Optional[str] = None
-    ) -> StringValue:
+    def label(self, labels: Sequence[str], nulls: Optional[str] = None) -> StringValue:
         """Format a known number of categories as strings.
 
         Parameters

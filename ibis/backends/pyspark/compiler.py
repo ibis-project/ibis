@@ -70,15 +70,11 @@ class PySparkExprTranslator:
             return result
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
-            result = formatter(
-                self, op, scope=scope, timecontext=timecontext, **kwargs
-            )
+            result = formatter(self, op, scope=scope, timecontext=timecontext, **kwargs)
             scope.set_value(op, timecontext, result)
             return result
         else:
-            raise com.OperationNotDefinedError(
-                f'No translation rule for {type(op)}'
-            )
+            raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 compiles = PySparkExprTranslator.compiles
@@ -130,9 +126,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
     # time context among child nodes, and pass this as context to
     # source table to get all data within time context loaded.
     arg_timecontexts = [
-        adjust_context(
-            node, scope=scope, timecontext=timecontext
-        )  # , **kwargs)
+        adjust_context(node, scope=scope, timecontext=timecontext)  # , **kwargs)
         for node in op.selections
         if timecontext
     ]
@@ -150,9 +144,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
     result_table = src_table
 
     for predicate in op.predicates:
-        col = t.translate(
-            predicate, scope=scope, timecontext=timecontext, **kwargs
-        )
+        col = t.translate(predicate, scope=scope, timecontext=timecontext, **kwargs)
         # Due to an upstream Spark issue (SPARK-33057) we cannot
         # directly use filter with a window operation. The workaround
         # here is to assign a temporary column for the filter predicate,
@@ -197,9 +189,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
         ]
         result_table = result_table.sort(*sort_cols)
 
-    return filter_by_time_context(
-        result_table, timecontext, adjusted_timecontext
-    )
+    return filter_by_time_context(result_table, timecontext, adjusted_timecontext)
 
 
 @compiles(ops.SortKey)
@@ -377,9 +367,7 @@ def compile_aggregation(t, op, **kwargs):
     else:
         aggcontext = AggregationContext.ENTIRE
 
-    aggs = [
-        t.translate(m, aggcontext=aggcontext, **kwargs) for m in op.metrics
-    ]
+    aggs = [t.translate(m, aggcontext=aggcontext, **kwargs) for m in op.metrics]
     return src_table.agg(*aggs)
 
 
@@ -452,9 +440,7 @@ def compile_aggregator(t, op, *, fn, aggcontext=None, **kwargs):
             src_col = F.when(condition, src_col)
         return src_col
 
-    src_inputs = tuple(
-        arg for arg in op.args if arg is not getattr(op, "where", None)
-    )
+    src_inputs = tuple(arg for arg in op.args if arg is not getattr(op, "where", None))
     src_cols = tuple(
         translate_arg(arg) for arg in src_inputs if isinstance(arg, ops.Node)
     )
@@ -508,9 +494,7 @@ def compile_notany(t, op, *args, aggcontext=None, **kwargs):
         def fn(col):
             return ~(F.max(col))
 
-        return compile_aggregator(
-            t, op, *args, fn=fn, aggcontext=aggcontext, **kwargs
-        )
+        return compile_aggregator(t, op, *args, fn=fn, aggcontext=aggcontext, **kwargs)
     else:
         return ~compile_any(t, op, *args, aggcontext=aggcontext, **kwargs)
 
@@ -528,9 +512,7 @@ def compile_notall(t, op, *, aggcontext=None, **kwargs):
         def fn(col):
             return ~(F.min(col))
 
-        return compile_aggregator(
-            t, op, fn=fn, aggcontext=aggcontext, **kwargs
-        )
+        return compile_aggregator(t, op, fn=fn, aggcontext=aggcontext, **kwargs)
     else:
         return ~compile_all(t, op, aggcontext=aggcontext, **kwargs)
 
@@ -702,16 +684,8 @@ def compile_abs(t, op, **kwargs):
 def compile_clip(t, op, **kwargs):
     spark_dtype = ibis_dtype_to_spark_dtype(op.output_dtype)
     col = t.translate(op.arg, **kwargs)
-    upper = (
-        t.translate(op.upper, **kwargs)
-        if op.upper is not None
-        else float('inf')
-    )
-    lower = (
-        t.translate(op.lower, **kwargs)
-        if op.lower is not None
-        else float('-inf')
-    )
+    upper = t.translate(op.upper, **kwargs) if op.upper is not None else float('inf')
+    lower = t.translate(op.lower, **kwargs) if op.lower is not None else float('-inf')
 
     def column_min(value, limit):
         """Given the minimum limit, return values that are greater than or
@@ -724,9 +698,7 @@ def compile_clip(t, op, **kwargs):
         return F.when(value > limit, limit).otherwise(value)
 
     def clip(column, lower_value, upper_value):
-        return column_max(
-            column_min(column, F.lit(lower_value)), F.lit(upper_value)
-        )
+        return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))
 
     return clip(col, lower, upper).cast(spark_dtype)
 
@@ -734,11 +706,7 @@ def compile_clip(t, op, **kwargs):
 @compiles(ops.Round)
 def compile_round(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
-    scale = (
-        t.translate(op.digits, **kwargs, raw=True)
-        if op.digits is not None
-        else 0
-    )
+    scale = t.translate(op.digits, **kwargs, raw=True) if op.digits is not None else 0
     rounded = F.round(src_column, scale=scale)
     if scale == 0:
         rounded = rounded.astype('long')
@@ -911,12 +879,9 @@ def compile_substring(t, op, **kwargs):
     start = t.translate(op.start, **kwargs, raw=True) + 1
     length = t.translate(op.length, **kwargs, raw=True)
 
-    if isinstance(start, pyspark.sql.Column) or isinstance(
-        length, pyspark.sql.Column
-    ):
+    if isinstance(start, pyspark.sql.Column) or isinstance(length, pyspark.sql.Column):
         raise NotImplementedError(
-            "Specifiying Start and length with column expressions "
-            "are not supported."
+            "Specifiying Start and length with column expressions " "are not supported."
         )
 
     return src_column.substr(start, length)
@@ -1102,9 +1067,7 @@ def compile_join(t, op, how, **kwargs):
     for pred in op.predicates:
         if not isinstance(pred, ops.Equals):
             raise NotImplementedError(
-                "Only equality predicate is supported, but got {}".format(
-                    type(pred)
-                )
+                f"Only equality predicate is supported, but got {type(pred)}"
             )
         pred_columns.append(pred.left.name)
 
@@ -1142,9 +1105,7 @@ def compile_window_op(t, op, **kwargs):
     operand = op.expr
 
     grouping_keys = [
-        key.name
-        if isinstance(key, ops.TableColumn)
-        else t.translate(key, **kwargs)
+        key.name if isinstance(key, ops.TableColumn) else t.translate(key, **kwargs)
         for key in window._group_by
     ]
 
@@ -1185,9 +1146,7 @@ def compile_window_op(t, op, **kwargs):
         # Here we rewrite node to be its negation, and negate it back after
         # translation and window operation
         operand = res_op.negate()
-    result = t.translate(operand, **kwargs, aggcontext=aggcontext).over(
-        pyspark_window
-    )
+    result = t.translate(operand, **kwargs, aggcontext=aggcontext).over(pyspark_window)
 
     if isinstance(res_op, (ops.NotAll, ops.NotAny)):
         return ~result
@@ -1304,30 +1263,22 @@ def compile_extract_year(t, op, **kwargs):
 
 @compiles(ops.ExtractMonth)
 def compile_extract_month(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.month, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.month, **kwargs)
 
 
 @compiles(ops.ExtractDay)
 def compile_extract_day(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.dayofmonth, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.dayofmonth, **kwargs)
 
 
 @compiles(ops.ExtractDayOfYear)
 def compile_extract_day_of_year(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.dayofyear, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.dayofyear, **kwargs)
 
 
 @compiles(ops.ExtractQuarter)
 def compile_extract_quarter(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.quarter, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.quarter, **kwargs)
 
 
 @compiles(ops.ExtractEpochSeconds)
@@ -1339,9 +1290,7 @@ def compile_extract_epoch_seconds(t, op, **kwargs):
 
 @compiles(ops.ExtractWeekOfYear)
 def compile_extract_week_of_year(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.weekofyear, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.weekofyear, **kwargs)
 
 
 @compiles(ops.ExtractHour)
@@ -1351,16 +1300,12 @@ def compile_extract_hour(t, op, **kwargs):
 
 @compiles(ops.ExtractMinute)
 def compile_extract_minute(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.minute, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.minute, **kwargs)
 
 
 @compiles(ops.ExtractSecond)
 def compile_extract_second(t, op, **kwargs):
-    return _extract_component_from_datetime(
-        t, op, extract_fn=F.second, **kwargs
-    )
+    return _extract_component_from_datetime(t, op, extract_fn=F.second, **kwargs)
 
 
 @compiles(ops.ExtractMillisecond)
@@ -1529,8 +1474,7 @@ def compile_date_sub(t, op, **kwargs):
 @compiles(ops.DateDiff)
 def compile_date_diff(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support DateDiff as there is no '
-        'timedelta type.'
+        'PySpark backend does not support DateDiff as there is no ' 'timedelta type.'
     )
 
 
@@ -1719,9 +1663,7 @@ def compile_elementwise_udf(t, op, **kwargs):
 @compiles(ops.ReductionVectorizedUDF)
 def compile_reduction_udf(t, op, *, aggcontext=None, **kwargs):
     spark_output_type = spark_dtype(op.return_type)
-    spark_udf = pandas_udf(
-        op.func, spark_output_type, PandasUDFType.GROUPED_AGG
-    )
+    spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.GROUPED_AGG)
     func_args = (t.translate(arg, **kwargs) for arg in op.func_args)
 
     col = spark_udf(*func_args)
@@ -1759,9 +1701,7 @@ def compile_view(t, op, **kwargs):
     backend = child.to_expr()._find_backend()
     tables = backend._session.catalog.listTables()
     if any(name == table.name and not table.isTemporary for table in tables):
-        raise ValueError(
-            f"table or non-temporary view `{name}` already exists"
-        )
+        raise ValueError(f"table or non-temporary view `{name}` already exists")
     result = t.translate(child, **kwargs)
     result.createOrReplaceTempView(name)
     return result

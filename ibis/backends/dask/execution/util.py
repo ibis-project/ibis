@@ -76,9 +76,7 @@ def make_selected_obj(gs: SeriesGroupBy) -> dd.DataFrame | dd.Series:
     if isinstance(gs.obj, dd.Series):
         return gs.obj
     else:
-        return gs.obj.set_index(gs.index, drop=False)[
-            gs._meta._selected_obj.name
-        ]
+        return gs.obj.set_index(gs.index, drop=False)[gs._meta._selected_obj.name]
 
 
 def coerce_to_output(
@@ -153,9 +151,7 @@ def coerce_to_output(
         )
         return series
 
-    return dd.from_pandas(
-        pd_util.coerce_to_output(result, node, index), npartitions=1
-    )
+    return dd.from_pandas(pd_util.coerce_to_output(result, node, index), npartitions=1)
 
 
 @dask.delayed
@@ -230,8 +226,7 @@ def compute_sort_key(
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
-            Scope({t: data}, timecontext)
-            for t in an.find_immediate_parent_tables(key)
+            Scope({t: data}, timecontext) for t in an.find_immediate_parent_tables(key)
         )
         new_column = execute(key, scope=scope, **kwargs)
         new_column.name = name
@@ -260,9 +255,7 @@ def assert_identical_grouping_keys(*args):
         indices = [tuple(index) for index in indices]
     grouping_keys = set(indices)
     if len(grouping_keys) != 1:
-        raise AssertionError(
-            f"Differing grouping keys passed: {grouping_keys}"
-        )
+        raise AssertionError(f"Differing grouping keys passed: {grouping_keys}")
 
 
 def add_partitioned_sorted_column(

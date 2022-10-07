@@ -228,10 +228,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.util
-from ibis.expr.timecontext import (
-    construct_time_context_aware_series,
-    get_time_col,
-)
+from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
 
 
 class AggregationContext(abc.ABC):
@@ -367,9 +364,9 @@ class Summarize(AggregationContext):
         if not callable(function):
             raise TypeError(f'Object {function} is not callable or a string')
 
-        if isinstance(
-            grouped_data, pd.core.groupby.generic.SeriesGroupBy
-        ) and len(grouped_data):
+        if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy) and len(
+            grouped_data
+        ):
             # `SeriesGroupBy.agg` does not allow np.arrays to be returned
             # from UDFs. To avoid `SeriesGroupBy.agg`, we will call the
             # aggregation function manually on each group. (#2768)
@@ -410,9 +407,7 @@ class Transform(AggregationContext):
 @functools.singledispatch
 def compute_window_spec(dtype, obj):
     raise com.IbisTypeError(
-        "Unknown dtype type {} and object {} for compute_window_spec".format(
-            dtype, obj
-        )
+        f"Unknown dtype type {dtype} and object {obj} for compute_window_spec"
     )
 
 
@@ -457,8 +452,7 @@ def window_agg_built_in(
     result = method(windowed)
     index = result.index
     result.index = pd.MultiIndex.from_arrays(
-        [frame.index]
-        + list(map(index.get_level_values, range(index.nlevels))),
+        [frame.index] + list(map(index.get_level_values, range(index.nlevels))),
         names=[frame.index.name] + index.names,
     )
     return result
@@ -617,9 +611,7 @@ class Window(AggregationContext):
             # To deal with this, we create a _placeholder column
 
             windowed_frame = self.construct_window(grouped_frame)
-            window_sizes = (
-                windowed_frame['_placeholder'].count().reset_index(drop=True)
-            )
+            window_sizes = windowed_frame['_placeholder'].count().reset_index(drop=True)
             mask = ~(window_sizes.isna())
             window_upper_indices = pd.Series(range(len(window_sizes))) + 1
             window_lower_indices = window_upper_indices - window_sizes
@@ -628,9 +620,7 @@ class Window(AggregationContext):
             # as an index to the Series, if present. Here We extract
             # time column from the parent Dataframe `frame`.
             if get_time_col() in frame:
-                result_index = construct_time_context_aware_series(
-                    obj, frame
-                ).index
+                result_index = construct_time_context_aware_series(obj, frame).index
             else:
                 result_index = obj.index
             result = window_agg_udf(
@@ -679,9 +669,7 @@ class Moving(Window):
         preceding = compute_window_spec(ibis_dtype, preceding)
         closed = (
             None
-            if not isinstance(
-                preceding, timedelta_types + (pd.offsets.DateOffset,)
-            )
+            if not isinstance(preceding, timedelta_types + (pd.offsets.DateOffset,))
             else 'both'
         )
         super().__init__(

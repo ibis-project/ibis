@@ -62,8 +62,7 @@ class DataType(Concrete):
     def equals(self, other):
         if not isinstance(other, DataType):
             raise TypeError(
-                "invalid equality comparison between DataType and "
-                f"{type(other)}"
+                "invalid equality comparison between DataType and " f"{type(other)}"
             )
         return super().__cached_equals__(other)
 
@@ -250,8 +249,7 @@ class Floating(Primitive, Numeric):
     @property
     def _nbytes(self) -> int:
         raise TypeError(
-            "Cannot determine the size in bytes of an abstract floating "
-            "point type."
+            "Cannot determine the size in bytes of an abstract floating " "point type."
         )
 
 
@@ -369,9 +367,7 @@ class Decimal(Numeric):
             if precision is not None and precision < scale:
                 raise ValueError(
                     'Decimal type precision must be greater than or equal to '
-                    'scale. Got precision={:d} and scale={:d}'.format(
-                        precision, scale
-                    )
+                    'scale. Got precision={:d} and scale={:d}'.format(precision, scale)
                 )
         super().__init__(precision=precision, scale=scale, **kwargs)
 
@@ -379,9 +375,7 @@ class Decimal(Numeric):
     def largest(self):
         """Return the largest type of decimal."""
         return self.__class__(
-            precision=max(self.precision, 38)
-            if self.precision is not None
-            else None,
+            precision=max(self.precision, 38) if self.precision is not None else None,
             scale=max(self.scale, 2) if self.scale is not None else None,
         )
 
@@ -431,9 +425,7 @@ class Interval(DataType):
     )
     """The time unit of the interval."""
 
-    value_type = optional(
-        all_of([datatype, instance_of(Integer)]), default=Int32()
-    )
+    value_type = optional(all_of([datatype, instance_of(Integer)]), default=Int32())
     """The underlying type of the stored values."""
 
     scalar = ir.IntervalScalar

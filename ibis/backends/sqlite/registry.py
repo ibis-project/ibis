@@ -153,23 +153,17 @@ def _repeat(t, op):
     arg = t.translate(op.arg)
     times = t.translate(op.times)
     f = sa.func
-    return f.replace(
-        f.substr(f.quote(f.zeroblob((times + 1) / 2)), 3, times), '0', arg
-    )
+    return f.replace(f.substr(f.quote(f.zeroblob((times + 1) / 2)), 3, times), '0', arg)
 
 
 def _generic_pad(arg, length, pad):
     f = sa.func
     arg_length = f.length(arg)
     pad_length = f.length(pad)
-    number_of_zero_bytes = (
-        (length - arg_length - 1 + pad_length) / pad_length + 1
-    ) / 2
+    number_of_zero_bytes = ((length - arg_length - 1 + pad_length) / pad_length + 1) / 2
     return f.substr(
         f.replace(
-            f.replace(
-                f.substr(f.quote(f.zeroblob(number_of_zero_bytes)), 3), "'", ''
-            ),
+            f.replace(f.substr(f.quote(f.zeroblob(number_of_zero_bytes)), 3), "'", ''),
             '0',
             pad,
         ),
@@ -266,9 +260,7 @@ def _timestamp_from_ymdhms(t, op):
         t.translate(x) if x is not None else None for x in op.args
     )
     tz = rest[0] if rest else ''
-    timestr = sa.func.printf(
-        '%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s, tz
-    )
+    timestr = sa.func.printf('%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s, tz)
     return sa.func.datetime(timestr)
 
 

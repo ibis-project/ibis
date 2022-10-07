@@ -547,11 +547,7 @@ class Column(Value, JupyterMixin):
         Scalar
             An approximate count of the distinct elements of `self`
         """
-        return (
-            ops.ApproxCountDistinct(self, where)
-            .to_expr()
-            .name("approx_nunique")
-        )
+        return ops.ApproxCountDistinct(self, where).to_expr().name("approx_nunique")
 
     def approx_median(
         self,
@@ -585,21 +581,15 @@ class Column(Value, JupyterMixin):
         """Return the minimum of a column."""
         return ops.Min(self, where).to_expr().name("min")
 
-    def argmax(
-        self, key: ir.Value, where: ir.BooleanValue | None = None
-    ) -> Scalar:
+    def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`."""
         return ops.ArgMax(self, key=key, where=where).to_expr()
 
-    def argmin(
-        self, key: ir.Value, where: ir.BooleanValue | None = None
-    ) -> Scalar:
+    def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that minimizes `key`."""
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
-    def nunique(
-        self, where: ir.BooleanValue | None = None
-    ) -> ir.IntegerScalar:
+    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         return ops.CountDistinct(self, where).to_expr().name("nunique")
 
     def topk(
@@ -903,9 +893,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
             # implicitly castable to the explicitly given dtype and value
             dtype = dt.cast(inferred_dtype, explicit_dtype, value=value)
         except com.IbisTypeError:
-            raise TypeError(
-                f'Value {value!r} cannot be safely coerced to {type}'
-            )
+            raise TypeError(f'Value {value!r} cannot be safely coerced to {type}')
     elif has_explicit:
         dtype = explicit_dtype
     elif has_inferred:

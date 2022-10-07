@@ -151,9 +151,9 @@ END""",
         # Because the bucket result is an integer, no explicit cast is
         # necessary
         pytest.param(
-            lambda f: f.bucket(
-                [10], include_over=True, include_under=True
-            ).cast('int32'),
+            lambda f: f.bucket([10], include_over=True, include_under=True).cast(
+                'int32'
+            ),
             """\
 CASE
   WHEN `f` < 10 THEN 0
@@ -163,9 +163,9 @@ END""",
             id="include_over_include_under",
         ),
         pytest.param(
-            lambda f: f.bucket(
-                [10], include_over=True, include_under=True
-            ).cast('double'),
+            lambda f: f.bucket([10], include_over=True, include_under=True).cast(
+                'double'
+            ),
             """\
 CAST(CASE
   WHEN `f` < 10 THEN 0

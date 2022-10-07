@@ -1,11 +1,6 @@
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
-from ibis.tests.sql.conftest import (
-    get_query,
-    sql_golden_check,
-    sqlgolden,
-    sqlgoldens,
-)
+from ibis.tests.sql.conftest import get_query, sql_golden_check, sqlgolden, sqlgoldens
 
 
 def test_select_sql(alltypes, star1, star2):
@@ -35,9 +30,7 @@ def test_select_sql(alltypes, star1, star2):
 def test_nameless_table():
     # Generate a unique table name when we haven't passed on
     nameless = ibis.table([('key', 'string')])
-    assert Compiler.to_sql(nameless) == 'SELECT *\nFROM {}'.format(
-        nameless.op().name
-    )
+    assert Compiler.to_sql(nameless) == f'SELECT *\nFROM {nameless.op().name}'
 
     return ibis.table([('key', 'string')], name='baz')
 
@@ -192,13 +185,9 @@ def test_aggregate_count_joined(con):
 
 
 def test_no_aliases_needed():
-    table = ibis.table(
-        [('key1', 'string'), ('key2', 'string'), ('value', 'double')]
-    )
+    table = ibis.table([('key1', 'string'), ('key2', 'string'), ('value', 'double')])
 
-    expr = table.aggregate(
-        [table['value'].sum().name('total')], by=['key1', 'key2']
-    )
+    expr = table.aggregate([table['value'].sum().name('total')], by=['key1', 'key2'])
 
     query = get_query(expr)
     context = query.context
@@ -295,12 +284,8 @@ def test_double_nested_subquery_no_aliases():
         'foo_table',
     )
 
-    agg1 = t.aggregate(
-        [t.value.sum().name('total')], by=['key1', 'key2', 'key3']
-    )
-    agg2 = agg1.aggregate(
-        [agg1.total.sum().name('total')], by=['key1', 'key2']
-    )
+    agg1 = t.aggregate([t.value.sum().name('total')], by=['key1', 'key2', 'key3'])
+    agg2 = agg1.aggregate([agg1.total.sum().name('total')], by=['key1', 'key2'])
     return agg2.aggregate([agg2.total.sum().name('total')], by=['key1'])
 
 
@@ -389,9 +374,7 @@ def test_bool_bool():
 def test_case_in_projection(alltypes):
     t = alltypes
 
-    expr = (
-        t.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
-    )
+    expr = t.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
 
     expr2 = ibis.case().when(t.g == 'foo', 'bar').when(t.g == 'baz', t.g).end()
 
@@ -463,9 +446,7 @@ def test_order_by_on_limit_yield_subquery(functional_alltypes):
 @sqlgolden
 def test_join_with_limited_table(star1, star2):
     limited = star1.limit(100)
-    return limited.inner_join(star2, [limited.foo_id == star2.foo_id])[
-        [limited]
-    ]
+    return limited.inner_join(star2, [limited.foo_id == star2.foo_id])[[limited]]
 
 
 @sqlgolden
@@ -501,13 +482,9 @@ def test_join_filtered_tables_no_pushdown():
         'b',
     )
 
-    tbl_a_filter = tbl_a.filter(
-        [tbl_a.year == 2016, tbl_a.month == 2, tbl_a.day == 29]
-    )
+    tbl_a_filter = tbl_a.filter([tbl_a.year == 2016, tbl_a.month == 2, tbl_a.day == 29])
 
-    tbl_b_filter = tbl_b.filter(
-        [tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29]
-    )
+    tbl_b_filter = tbl_b.filter([tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29])
 
     joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
     result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b].op()

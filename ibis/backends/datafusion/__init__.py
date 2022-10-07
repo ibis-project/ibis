@@ -184,9 +184,7 @@ class Backend(BaseBackend):
                 frame = self._context.empty_table().select(compiled)
             return frame
         else:
-            raise com.IbisError(
-                f"Cannot execute expression of type: {type(expr)}"
-            )
+            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
     def to_pyarrow_batches(
         self,
@@ -199,9 +197,7 @@ class Backend(BaseBackend):
     ) -> pa.RecordBatchReader:
         pa = self._import_pyarrow()
         frame = self._get_frame(expr, params, limit, **kwargs)
-        return pa.RecordBatchReader.from_batches(
-            frame.schema(), frame.collect()
-        )
+        return pa.RecordBatchReader.from_batches(frame.schema(), frame.collect())
 
     def execute(
         self,
@@ -220,9 +216,7 @@ class Backend(BaseBackend):
         elif isinstance(expr, ir.Scalar):
             return output.as_py()
         else:
-            raise com.IbisError(
-                f"Cannot execute expression of type: {type(expr)}"
-            )
+            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
     def compile(
         self,
@@ -237,9 +231,7 @@ class Backend(BaseBackend):
     def _get_operations(cls):
         from ibis.backends.datafusion.compiler import translate
 
-        return frozenset(
-            op for op in translate.registry if issubclass(op, ops.Value)
-        )
+        return frozenset(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:

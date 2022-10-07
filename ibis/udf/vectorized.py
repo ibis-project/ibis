@@ -233,9 +233,7 @@ class UserDefinedFunction:
             if self.coercion_fn:
                 # coercion function signature must take result, output type,
                 # and optionally the index
-                result = self.coercion_fn(
-                    result, self.output_type, saved_index
-                )
+                result = self.coercion_fn(result, self.output_type, saved_index)
             return result
 
         op = self.func_type(

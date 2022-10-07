@@ -65,15 +65,12 @@ class Expr(Immutable):
     def equals(self, other):
         if not isinstance(other, Expr):
             raise TypeError(
-                "invalid equality comparison between Expr and "
-                f"{type(other)}"
+                "invalid equality comparison between Expr and " f"{type(other)}"
             )
         return self._arg.equals(other._arg)
 
     def __bool__(self) -> bool:
-        raise ValueError(
-            "The truth value of an Ibis expression is not defined"
-        )
+        raise ValueError("The truth value of an Ibis expression is not defined")
 
     __nonzero__ = __bool__
 
@@ -199,9 +196,7 @@ class Expr(Immutable):
             # BaseBackend objects are not operation instances, so they don't
             # get traversed, this is why we need to select backends out from
             # the node's arguments
-            backends = [
-                arg for arg in node.args if isinstance(arg, BaseBackend)
-            ]
+            backends = [arg for arg in node.args if isinstance(arg, BaseBackend)]
             return g.proceed, (backends, isinstance(node, ops.UnboundTable))
 
         all_backends = []

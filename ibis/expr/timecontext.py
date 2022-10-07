@@ -115,9 +115,7 @@ def canonicalize_context(
     """
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
-        raise com.IbisError(
-            f'Timecontext {timecontext} should specify (begin, end)'
-        )
+        raise com.IbisError(f'Timecontext {timecontext} should specify (begin, end)')
 
     begin, end = timecontext
 
@@ -128,8 +126,7 @@ def canonicalize_context(
         )
     if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
-            f'end time value {end} of type {type(begin)} is not'
-            ' of type pd.Timestamp'
+            f'end time value {end} of type {type(begin)} is not' ' of type pd.Timestamp'
         )
     if begin > end:
         raise com.IbisError(
@@ -232,9 +229,7 @@ def construct_time_context_aware_series(
         raise com.IbisError(f'"time" column not present in DataFrame {frame}')
     if time_col not in series.index.names:
         series.index = pd.MultiIndex.from_arrays(
-            list(
-                map(series.index.get_level_values, range(series.index.nlevels))
-            )
+            list(map(series.index.get_level_values, range(series.index.nlevels)))
             + [time_index],
             names=series.index.names + [time_col],
         )
@@ -254,9 +249,7 @@ def construct_time_context_aware_series(
 
 
 @functools.singledispatch
-def adjust_context(
-    op: Any, scope: 'Scope', timecontext: TimeContext
-) -> TimeContext:
+def adjust_context(op: Any, scope: 'Scope', timecontext: TimeContext) -> TimeContext:
     """
     Params
     -------

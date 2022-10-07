@@ -25,9 +25,7 @@ class StructType(UserDefinedType):
         self,
         pairs: Iterable[tuple[str, sa.types.TypeEngine]],
     ):
-        self.pairs = [
-            (name, sa.types.to_instance(type)) for name, type in pairs
-        ]
+        self.pairs = [(name, sa.types.to_instance(type)) for name, type in pairs]
 
     def get_col_spec(self, **_):
         pairs = ", ".join(f"{k} {v}" for k, v in self.pairs)
@@ -176,9 +174,7 @@ def sa_boolean(_, satype, nullable=True):
 @dt.dtype.register(MySQLDialect, sa.NUMERIC)
 def sa_mysql_numeric(_, satype, nullable=True):
     # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
-    return dt.Decimal(
-        satype.precision or 10, satype.scale or 0, nullable=nullable
-    )
+    return dt.Decimal(satype.precision or 10, satype.scale or 0, nullable=nullable)
 
 
 @dt.dtype.register(MySQLDialect, mysql.TINYBLOB)

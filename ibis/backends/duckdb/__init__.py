@@ -189,9 +189,7 @@ class Backend(BaseAlchemyBackend):
             The just-registered table
         """
         if isinstance(source, str) and source.startswith("s3://"):
-            table_name, dataset = _generate_view_code(
-                source, table_name=table_name
-            )
+            table_name, dataset = _generate_view_code(source, table_name=table_name)
             # We don't create a view since DuckDB special cases Arrow Datasets
             # so if we also create a view we end up with both a "lazy table"
             # and a view with the same name
@@ -202,9 +200,7 @@ class Backend(BaseAlchemyBackend):
                 # explicitly.
                 cursor.cursor.c.register(table_name, dataset)
         elif isinstance(source, (str, Path)):
-            sql, table_name = _generate_view_code(
-                source, table_name=table_name
-            )
+            sql, table_name = _generate_view_code(source, table_name=table_name)
             self.con.execute(sql)
         else:
             if table_name is None:
@@ -222,9 +218,7 @@ class Backend(BaseAlchemyBackend):
         chunk_size: int = 1_000_000,
     ) -> Iterator[pa.RecordBatch]:
         _ = self._import_pyarrow()
-        query_ast = self.compiler.to_ast_ensure_limit(
-            expr, limit, params=params
-        )
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
         cursor = self.raw_sql(sql)
@@ -245,9 +239,7 @@ class Backend(BaseAlchemyBackend):
         limit: int | str | None = None,
     ) -> pa.Table:
         _ = self._import_pyarrow()
-        query_ast = self.compiler.to_ast_ensure_limit(
-            expr, limit, params=params
-        )
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
         cursor = self.raw_sql(sql)
@@ -318,9 +310,7 @@ class Backend(BaseAlchemyBackend):
             table = super()._get_sqla_table(name, schema, **kwargs)
 
         nulltype_cols = frozenset(
-            col.name
-            for col in table.c
-            if isinstance(col.type, sa.types.NullType)
+            col.name for col in table.c if isinstance(col.type, sa.types.NullType)
         )
 
         if not nulltype_cols:

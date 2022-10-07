@@ -11,9 +11,7 @@ from ibis.tests.util import assert_pickle_roundtrip
 
 @pytest.fixture
 def t():
-    return ibis.table(
-        dict(a="struct<b: float, c: string>", d="string"), name="t"
-    )
+    return ibis.table(dict(a="struct<b: float, c: string>", d="string"), name="t")
 
 
 @pytest.fixture
@@ -50,9 +48,7 @@ def test_struct_field_dir():
 
 
 def test_struct_pickle():
-    struct_scalar_expr = ibis.literal(
-        OrderedDict([("fruit", "pear"), ("weight", 0)])
-    )
+    struct_scalar_expr = ibis.literal(OrderedDict([("fruit", "pear"), ("weight", 0)]))
 
     assert_pickle_roundtrip(struct_scalar_expr)
 

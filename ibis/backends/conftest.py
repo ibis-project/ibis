@@ -208,8 +208,7 @@ def read_tables(
         schema = TEST_TABLES[name]
         convert_options = pac.ConvertOptions(
             column_types={
-                name: pa_dt.to_pyarrow_type(type)
-                for name, type in schema.items()
+                name: pa_dt.to_pyarrow_type(type) for name, type in schema.items()
             }
         )
         yield name, pac.read_csv(
@@ -224,9 +223,7 @@ def _random_identifier(suffix: str) -> str:
 
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
-    conftest = importlib.import_module(
-        f"ibis.backends.{backend_str}.tests.conftest"
-    )
+    conftest = importlib.import_module(f"ibis.backends.{backend_str}.tests.conftest")
     return conftest.TestConf
 
 
@@ -296,9 +293,7 @@ def pytest_collection_modifyitems(session, config, items):
             # build a list of markers so we're don't invalidate the item's
             # marker iterator
             for _ in item.iter_markers(name=name):
-                xdist_group_markers.append(
-                    (item, pytest.mark.xdist_group(name=name))
-                )
+                xdist_group_markers.append((item, pytest.mark.xdist_group(name=name)))
 
     for item, marker in xdist_group_markers:
         item.add_marker(marker)
@@ -374,8 +369,7 @@ def pytest_runtest_call(item):
             pytest.mark.xfail(
                 condition,
                 reason=(
-                    "unsupported functionality for server version "
-                    f"{server_version}"
+                    "unsupported functionality for server version " f"{server_version}"
                 ),
                 **kwargs,
             )
@@ -388,20 +382,15 @@ def pytest_runtest_call(item):
 
         min_version = kwargs.pop(backend)
         reason = kwargs.pop("reason", None)
-        version = getattr(
-            importlib.import_module(backend), "__version__", None
-        )
+        version = getattr(importlib.import_module(backend), "__version__", None)
         if condition := version is None:  # pragma: no cover
             if reason is None:
-                reason = (
-                    f"{backend} backend module has no __version__ attribute"
-                )
+                reason = f"{backend} backend module has no __version__ attribute"
         else:
             condition = vparse(version) < vparse(min_version)
             if reason is None:
                 reason = (
-                    f"test requires {backend}>={version}; "
-                    f"got version {version}"
+                    f"test requires {backend}>={version}; " f"got version {version}"
                 )
             else:
                 reason = f"{backend}@{version} (<{min_version}): {reason}"
@@ -415,9 +404,7 @@ def pytest_runtest_call(item):
             item.add_marker(
                 pytest.mark.xfail(
                     reason=reason or f'Feature not yet exposed in {backend}',
-                    **{
-                        k: v for k, v in marker.kwargs.items() if k != "reason"
-                    },
+                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
                 )
             )
 
@@ -428,11 +415,8 @@ def pytest_runtest_call(item):
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
-                    reason=reason
-                    or f'Feature not available upstream for {backend}',
-                    **{
-                        k: v for k, v in marker.kwargs.items() if k != "reason"
-                    },
+                    reason=reason or f'Feature not available upstream for {backend}',
+                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
                 )
             )
 
@@ -455,23 +439,17 @@ def pytest_runtest_call(item):
             item.add_marker(
                 pytest.mark.xfail(
                     reason=reason or f"Feature is failing on {backend}",
-                    **{
-                        k: v for k, v in marker.kwargs.items() if k != "reason"
-                    },
+                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
                 )
             )
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
-def backend(
-    request, data_directory, script_directory, tmp_path_factory, worker_id
-):
+def backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
-    return cls.load_data(
-        data_directory, script_directory, tmp_path_factory, worker_id
-    )
+    return cls.load_data(data_directory, script_directory, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope="session")
@@ -483,9 +461,7 @@ def con(backend):
 def _setup_backend(
     request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
-    if (
-        backend := request.param
-    ) == "duckdb" and platform.system() == "Windows":
+    if (backend := request.param) == "duckdb" and platform.system() == "Windows":
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"
@@ -501,9 +477,7 @@ def _setup_backend(
     params=_get_backends_to_test(discard=("dask", "pandas")),
     scope='session',
 )
-def ddl_backend(
-    request, data_directory, script_directory, tmp_path_factory, worker_id
-):
+def ddl_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
     """Set up the backends that are SQL-based.
 
     (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark,
@@ -548,14 +522,10 @@ def alchemy_con(alchemy_backend):
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
     scope='session',
 )
-def udf_backend(
-    request, data_directory, script_directory, tmp_path_factory, worker_id
-):
+def udf_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
     """Runs the UDF-supporting backends."""
     cls = _get_backend_conf(request.param)
-    return cls.load_data(
-        data_directory, script_directory, tmp_path_factory, worker_id
-    )
+    return cls.load_data(data_directory, script_directory, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope='session')
@@ -717,9 +687,7 @@ def current_data_db(ddl_con) -> str:
 
 
 @pytest.fixture
-def alternate_current_database(
-    ddl_con, ddl_backend, current_data_db: str
-) -> str:
+def alternate_current_database(ddl_con, ddl_backend, current_data_db: str) -> str:
     """Create a temporary database and yield its name. Drops the created
     database upon completion.
 
@@ -735,9 +703,7 @@ def alternate_current_database(
     try:
         ddl_con.create_database(name)
     except NotImplementedError:
-        pytest.skip(
-            f"{ddl_backend.name()} doesn't have create_database method."
-        )
+        pytest.skip(f"{ddl_backend.name()} doesn't have create_database method.")
     try:
         yield name
     finally:

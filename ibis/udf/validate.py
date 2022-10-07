@@ -33,9 +33,7 @@ def _parameter_count(funcsig: Signature) -> int:
     )
 
 
-def validate_input_type(
-    input_type: List[DataType], func: Callable
-) -> Signature:
+def validate_input_type(input_type: List[DataType], func: Callable) -> Signature:
     """Check that the declared number of inputs (the length of `input_type`)
     and the number of inputs to `func` are equal.
 
@@ -79,6 +77,4 @@ def validate_output_type(output_type: Any) -> None:
     """Check that the output type is a single datatype."""
 
     if isinstance(output_type, list):
-        raise com.IbisTypeError(
-            'The output type of a UDF must be a single datatype.'
-        )
+        raise com.IbisTypeError('The output type of a UDF must be a single datatype.')

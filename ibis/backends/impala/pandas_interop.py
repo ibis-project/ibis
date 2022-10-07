@@ -38,9 +38,7 @@ class DataFrameWriter:
         self.temp_hdfs_dirs = set()
 
     def write_temp_csv(self):
-        temp_hdfs_dir = pjoin(
-            options.impala.temp_hdfs_path, f'pandas_{util.guid()}'
-        )
+        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path, f'pandas_{util.guid()}')
         self.client.hdfs.mkdir(temp_hdfs_dir)
 
         # Keep track of the temporary HDFS file
@@ -61,9 +59,7 @@ class DataFrameWriter:
             # Write the DataFrame to the temporary file path
             tmp_file_path = os.path.join(f, 'impala_temp_file.csv')
             if options.verbose:
-                util.log(
-                    f'Writing DataFrame to temporary directory {tmp_file_path}'
-                )
+                util.log(f'Writing DataFrame to temporary directory {tmp_file_path}')
 
             self.df.to_csv(
                 tmp_file_path,

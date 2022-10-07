@@ -141,9 +141,7 @@ def test_columns_types_with_additional_argument(con):
             dt.Struct.from_dict(
                 dict(
                     a=dt.Array(dt.String(nullable=False), nullable=False),
-                    b=dt.Array(
-                        dt.Array(dt.float64, nullable=False), nullable=False
-                    ),
+                    b=dt.Array(dt.Array(dt.float64, nullable=False), nullable=False),
                 ),
                 nullable=False,
             ),

@@ -111,9 +111,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
             'Array value type must be a primitive type '
             '(e.g., number, string, or timestamp)'
         )
-    return data.map(
-        lambda array, numpy_type=numpy_type: array.astype(numpy_type)
-    )
+    return data.map(lambda array, numpy_type=numpy_type: array.astype(numpy_type))
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
@@ -127,9 +125,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
     tz = type.timezone
 
     if isinstance(from_type, (dt.Timestamp, dt.Date)):
-        return data.astype(
-            'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
-        )
+        return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
 
     if isinstance(from_type, (dt.String, dt.Integer)):
         timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
@@ -205,9 +201,7 @@ def execute_series_negate(op, data, **kwargs):
 
 @execute_node.register(ops.Negate, SeriesGroupBy)
 def execute_series_group_by_negate(op, data, **kwargs):
-    return execute_series_negate(op, data.obj, **kwargs).groupby(
-        data.grouper.groupings
-    )
+    return execute_series_negate(op, data.obj, **kwargs).groupby(data.grouper.groupings)
 
 
 @execute_node.register(ops.Unary, pd.Series)
@@ -305,15 +299,11 @@ def execute_series_clip(op, data, lower, upper, **kwargs):
 
 @execute_node.register(ops.Quantile, (pd.Series, SeriesGroupBy), numeric_types)
 def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
-    return aggcontext.agg(
-        data, 'quantile', q=quantile, interpolation=op.interpolation
-    )
+    return aggcontext.agg(data, 'quantile', q=quantile, interpolation=op.interpolation)
 
 
 @execute_node.register(ops.MultiQuantile, pd.Series, np.ndarray)
-def execute_series_quantile_multi(
-    op, data, quantile, aggcontext=None, **kwargs
-):
+def execute_series_quantile_multi(op, data, quantile, aggcontext=None, **kwargs):
     result = aggcontext.agg(
         data, 'quantile', q=quantile, interpolation=op.interpolation
     )
@@ -399,9 +389,7 @@ def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
 def execute_cast_datetime_to_datetime(op, data, type, **kwargs):
-    return execute_cast_timestamp_to_timestamp(
-        op, data, type, **kwargs
-    ).to_pydatetime()
+    return execute_cast_timestamp_to_timestamp(op, data, type, **kwargs).to_pydatetime()
 
 
 @execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)
@@ -428,9 +416,7 @@ def execute_round_scalars(op, data, places, **kwargs):
     return round(data, places) if places else round(data)
 
 
-@execute_node.register(
-    ops.Round, pd.Series, (pd.Series, np.integer, type(None), int)
-)
+@execute_node.register(ops.Round, pd.Series, (pd.Series, np.integer, type(None), int))
 def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return vectorize_object(op, data, places, **kwargs)
@@ -454,9 +440,7 @@ def execute_aggregation_dataframe(
     assert op.metrics, 'no metrics found during aggregation execution'
 
     if op.sort_keys:
-        raise NotImplementedError(
-            'sorting on aggregations not yet implemented'
-        )
+        raise NotImplementedError('sorting on aggregations not yet implemented')
 
     if op.predicates:
         predicate = functools.reduce(
@@ -474,9 +458,9 @@ def execute_aggregation_dataframe(
         grouping_keys = [
             key.name
             if isinstance(key, ops.TableColumn)
-            else execute(
-                key, scope=scope, timecontext=timecontext, **kwargs
-            ).rename(key.name)
+            else execute(key, scope=scope, timecontext=timecontext, **kwargs).rename(
+                key.name
+            )
             for key in op.by
         ]
         source = data.groupby(grouping_keys)
@@ -526,9 +510,7 @@ def execute_aggregation_dataframe(
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
-def execute_reduction_series_groupby(
-    op, data, mask, aggcontext=None, **kwargs
-):
+def execute_reduction_series_groupby(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(data, type(op).__name__.lower())
 
 
@@ -536,16 +518,12 @@ variance_ddof = {'pop': 0, 'sample': 1}
 
 
 @execute_node.register(ops.Variance, SeriesGroupBy, type(None))
-def execute_reduction_series_groupby_var(
-    op, data, _, aggcontext=None, **kwargs
-):
+def execute_reduction_series_groupby_var(op, data, _, aggcontext=None, **kwargs):
     return aggcontext.agg(data, 'var', ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
-def execute_reduction_series_groupby_std(
-    op, data, _, aggcontext=None, **kwargs
-):
+def execute_reduction_series_groupby_std(op, data, _, aggcontext=None, **kwargs):
     return aggcontext.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
@@ -554,9 +532,7 @@ def execute_reduction_series_groupby_std(
     SeriesGroupBy,
     type(None),
 )
-def execute_count_distinct_series_groupby(
-    op, data, _, aggcontext=None, **kwargs
-):
+def execute_count_distinct_series_groupby(op, data, _, aggcontext=None, **kwargs):
     return aggcontext.agg(data, 'nunique')
 
 
@@ -567,9 +543,7 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
         how = 'first'
 
     if how not in {'first', 'last'}:
-        raise com.OperationNotDefinedError(
-            f'Arbitrary {how!r} is not supported'
-        )
+        raise com.OperationNotDefinedError(f'Arbitrary {how!r} is not supported')
     return aggcontext.agg(data, how)
 
 
@@ -595,9 +569,7 @@ def _filtered_reduction(mask, method, data):
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
-def execute_reduction_series_gb_mask(
-    op, data, mask, aggcontext=None, **kwargs
-):
+def execute_reduction_series_gb_mask(op, data, mask, aggcontext=None, **kwargs):
     method = operator.methodcaller(type(op).__name__.lower())
     return aggcontext.agg(
         data, functools.partial(_filtered_reduction, mask.obj, method)
@@ -657,9 +629,7 @@ def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
     pd.Series,
     (pd.Series, type(None)),
 )
-def execute_count_distinct_series_mask(
-    op, data, mask, aggcontext=None, **kwargs
-):
+def execute_count_distinct_series_mask(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(data[mask] if mask is not None else data, 'nunique')
 
 
@@ -670,9 +640,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     elif op.how == 'last':
         index = -1
     else:
-        raise com.OperationNotDefinedError(
-            f'Arbitrary {op.how!r} is not supported'
-        )
+        raise com.OperationNotDefinedError(f'Arbitrary {op.how!r} is not supported')
 
     data = data[mask] if mask is not None else data
     return data.iloc[index]
@@ -943,9 +911,7 @@ def execute_difference_dataframe_dataframe(
         raise NotImplementedError(
             "`distinct=False` is not supported by the pandas backend"
         )
-    merged = left.merge(
-        right, on=list(left.columns), how="outer", indicator=True
-    )
+    merged = left.merge(right, on=list(left.columns), how="outer", indicator=True)
     result = merged[merged["_merge"] == "left_only"].drop("_merge", axis=1)
     return result
 
@@ -1026,9 +992,7 @@ def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     SeriesGroupBy,
     (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
-def execute_node_contains_series_group_by_sequence(
-    op, data, elements, **kwargs
-):
+def execute_node_contains_series_group_by_sequence(op, data, elements, **kwargs):
     return data.obj.isin(elements).groupby(data.grouper.groupings)
 
 
@@ -1046,9 +1010,7 @@ def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     SeriesGroupBy,
     (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
-def execute_node_not_contains_series_group_by_sequence(
-    op, data, elements, **kwargs
-):
+def execute_node_not_contains_series_group_by_sequence(op, data, elements, **kwargs):
     return (~data.obj.isin(elements)).groupby(data.grouper.groupings)
 
 
@@ -1070,18 +1032,10 @@ def pd_where(cond, true, false):
         return false
 
 
-@execute_node.register(
-    ops.Where, (pd.Series, *boolean_types), pd.Series, pd.Series
-)
-@execute_node.register(
-    ops.Where, (pd.Series, *boolean_types), pd.Series, simple_types
-)
-@execute_node.register(
-    ops.Where, (pd.Series, *boolean_types), simple_types, pd.Series
-)
-@execute_node.register(
-    ops.Where, (pd.Series, *boolean_types), type(None), type(None)
-)
+@execute_node.register(ops.Where, (pd.Series, *boolean_types), pd.Series, pd.Series)
+@execute_node.register(ops.Where, (pd.Series, *boolean_types), pd.Series, simple_types)
+@execute_node.register(ops.Where, (pd.Series, *boolean_types), simple_types, pd.Series)
+@execute_node.register(ops.Where, (pd.Series, *boolean_types), type(None), type(None))
 def execute_node_where(op, cond, true, false, **kwargs):
     return pd_where(cond, true, false)
 
@@ -1091,15 +1045,9 @@ def execute_node_where(op, cond, true, false, **kwargs):
 # promotion.
 for typ in (str, *scalar_types):
     for cond_typ in (pd.Series, *boolean_types):
-        execute_node.register(ops.Where, cond_typ, typ, typ)(
-            execute_node_where
-        )
-        execute_node.register(ops.Where, cond_typ, type(None), typ)(
-            execute_node_where
-        )
-        execute_node.register(ops.Where, cond_typ, typ, type(None))(
-            execute_node_where
-        )
+        execute_node.register(ops.Where, cond_typ, typ, typ)(execute_node_where)
+        execute_node.register(ops.Where, cond_typ, type(None), typ)(execute_node_where)
+        execute_node.register(ops.Where, cond_typ, typ, type(None))(execute_node_where)
 
 
 @execute_node.register(PandasTable, PandasBackend)
@@ -1174,9 +1122,7 @@ def execute_node_ifnull_series(op, value, replacement, **kwargs):
 @execute_node.register(ops.IfNull, simple_types, pd.Series)
 def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
     return (
-        replacement
-        if pd.isnull(value)
-        else pd.Series(value, index=replacement.index)
+        replacement if pd.isnull(value) else pd.Series(value, index=replacement.index)
     )
 
 
@@ -1301,9 +1247,7 @@ def execute_distinct_dataframe(op, df, **kwargs):
 
 @execute_node.register(ops.RowID)
 def execute_rowid(op, *args, **kwargs):
-    raise com.UnsupportedOperationError(
-        'rowid is not supported in pandas backends'
-    )
+    raise com.UnsupportedOperationError('rowid is not supported in pandas backends')
 
 
 @execute_node.register(ops.TableArrayView, pd.DataFrame)

@@ -33,9 +33,7 @@ PG_PASS = os.environ.get(
 PG_HOST = os.environ.get(
     'IBIS_TEST_POSTGRES_HOST', os.environ.get('PGHOST', 'localhost')
 )
-PG_PORT = os.environ.get(
-    'IBIS_TEST_POSTGRES_PORT', os.environ.get('PGPORT', 5432)
-)
+PG_PORT = os.environ.get('IBIS_TEST_POSTGRES_PORT', os.environ.get('PGPORT', 5432))
 IBIS_TEST_POSTGRES_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE', os.environ.get('PGDATABASE', 'ibis_testing')
 )
@@ -159,9 +157,7 @@ def translate():
     from ibis.backends.postgres import Backend
 
     context = Backend.compiler.make_context()
-    return lambda expr: (
-        Backend.compiler.translator_class(expr, context).get_result()
-    )
+    return lambda expr: (Backend.compiler.translator_class(expr, context).get_result())
 
 
 @pytest.fixture

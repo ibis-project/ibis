@@ -265,9 +265,7 @@ def test_show_types(show_types):
     assert "# float64" in repr(expr.sum())
 
 
-@pytest.mark.parametrize(
-    "cls", set(ops.TableNode.__subclasses__()) - {Projection}
-)
+@pytest.mark.parametrize("cls", set(ops.TableNode.__subclasses__()) - {Projection})
 def test_tables_have_format_rules(cls):
     assert cls in ibis.expr.format.fmt_table_op.registry
 
@@ -319,12 +317,8 @@ def test_asof_join():
 
 
 def test_two_inner_joins():
-    left = ibis.table(
-        [("time1", 'int32'), ('value', 'double'), ('a', 'string')]
-    )
-    right = ibis.table(
-        [("time2", 'int32'), ('value2', 'double'), ('b', 'string')]
-    )
+    left = ibis.table([("time1", 'int32'), ('value', 'double'), ('a', 'string')])
+    right = ibis.table([("time2", 'int32'), ('value2', 'double'), ('b', 'string')])
     joined = left.inner_join(right, left.a == right.b).inner_join(
         right, left.value == right.value2
     )

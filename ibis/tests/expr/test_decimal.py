@@ -72,9 +72,7 @@ def test_promote_decimal_type_max():
     ],
 )
 def test_decimal_sum_type_precision(precision, scale, expected):
-    t = ibis.table(
-        [("l_extendedprice", dt.Decimal(precision, scale))], name="t"
-    )
+    t = ibis.table([("l_extendedprice", dt.Decimal(precision, scale))], name="t")
     col = t.l_extendedprice
     result = col.sum()
     assert isinstance(result, ir.DecimalScalar)
@@ -98,9 +96,7 @@ def test_where(lineitem):
 
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = api.where(
-        table.l_discount > 0, (q * table.l_discount).sum(), api.null()
-    )
+    expr = api.where(table.l_discount > 0, (q * table.l_discount).sum(), api.null())
     assert isinstance(expr, ir.DecimalColumn)
 
     expr = api.where(

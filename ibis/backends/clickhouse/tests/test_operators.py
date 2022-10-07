@@ -195,16 +195,12 @@ def test_negate_literal(con):
     [
         (
             lambda t: (t.double_col > 20).ifelse(10, -20),
-            lambda df: pd.Series(
-                np.where(df.double_col > 20, 10, -20), dtype='int8'
-            ),
+            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20), dtype='int8'),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
             lambda df: (
-                pd.Series(np.where(df.double_col > 20, 10, -20))
-                .abs()
-                .astype('int8')
+                pd.Series(np.where(df.double_col > 20, 10, -20)).abs().astype('int8')
             ),
         ),
     ],
@@ -221,11 +217,7 @@ def test_ifelse(alltypes, df, op, pandas_op, translate):
 def test_simple_case(con, alltypes, translate):
     t = alltypes
     expr = (
-        t.string_col.case()
-        .when('foo', 'bar')
-        .when('baz', 'qux')
-        .else_('default')
-        .end()
+        t.string_col.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
     )
 
     expected = """CASE `string_col`

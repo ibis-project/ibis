@@ -25,9 +25,9 @@ class RoundAwayFromZero(RoundingConvention):
     @staticmethod
     def round(series: pd.Series, decimals: int = 0) -> pd.Series:
         if not decimals:
-            return (
-                -(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)
-            ).astype(np.int64)
+            return (-(np.sign(series)) * np.ceil(-(series.abs()) - 0.5)).astype(
+                np.int64
+            )
         return series.round(decimals=decimals)
 
 
@@ -92,9 +92,7 @@ class BackendTest(abc.ABC):
         """Return a connection with data loaded from `data_directory`."""
 
     @staticmethod
-    def _load_data(
-        data_directory: Path, script_directory: Path, **kwargs: Any
-    ) -> None:
+    def _load_data(data_directory: Path, script_directory: Path, **kwargs: Any) -> None:
         ...
 
     @classmethod
@@ -139,9 +137,7 @@ class BackendTest(abc.ABC):
         tm.assert_frame_equal(left, right, *args, **kwargs)
 
     @staticmethod
-    def default_series_rename(
-        series: pd.Series, name: str = 'tmp'
-    ) -> pd.Series:
+    def default_series_rename(series: pd.Series, name: str = 'tmp') -> pd.Series:
         return series.rename(name)
 
     @staticmethod
@@ -178,9 +174,7 @@ class BackendTest(abc.ABC):
         if self.supports_structs:
             return self.connection.table("struct")
         else:
-            pytest.xfail(
-                f"{self.name()} backend does not support struct types"
-            )
+            pytest.xfail(f"{self.name()} backend does not support struct types")
 
     @property
     def json_t(self) -> Optional[ir.Table]:

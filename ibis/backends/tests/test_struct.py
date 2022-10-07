@@ -75,9 +75,7 @@ def test_literal(con, field, expr_fn, expected_fn):
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.int_col)).name("s")
-    assert expr.type() == dt.Struct.from_dict(
-        dict(a=dt.string, b=dt.int8, c=dt.int32)
-    )
+    assert expr.type() == dt.Struct.from_dict(dict(a=dt.string, b=dt.int8, c=dt.int32))
     result = expr.execute()
     expected = pd.Series(
         (dict(a=a, b=1, c=c) for a, c in zip(df.string_col, df.int_col)),

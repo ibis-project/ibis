@@ -127,9 +127,7 @@ def _map_get(translator, op):
 def _agg(func):
     def formatter(translator, op):
         where = getattr(op, "where", None)
-        args = tuple(
-            arg for arg in op.args if arg is not None and arg is not where
-        )
+        args = tuple(arg for arg in op.args if arg is not None and arg is not where)
         return _aggregate(translator, func, *args, where=where)
 
     return formatter
@@ -152,9 +150,7 @@ def _agg_variance_like(func):
 
 def _corr(translator, op):
     if op.how == "pop":
-        raise ValueError(
-            "ClickHouse only implements `sample` correlation coefficient"
-        )
+        raise ValueError("ClickHouse only implements `sample` correlation coefficient")
     return _aggregate(translator, "corr", op.left, op.right, where=op.where)
 
 
@@ -214,9 +210,7 @@ def _string_find(translator, op):
             "String find doesn't support start argument"
         )
     if op.end is not None:
-        raise com.UnsupportedOperationError(
-            "String find doesn't support end argument"
-        )
+        raise com.UnsupportedOperationError("String find doesn't support end argument")
 
     return _call(translator, 'position', op.arg, op.substr) + ' - 1'
 
@@ -284,9 +278,7 @@ def _hash(translator, op):
     }
 
     if op.how not in algorithms:
-        raise com.UnsupportedOperationError(
-            f'Unsupported hash algorithm {op.how}'
-        )
+        raise com.UnsupportedOperationError(f'Unsupported hash algorithm {op.how}')
 
     return _call(translator, op.how, op.arg)
 
@@ -383,9 +375,7 @@ def _literal(translator, op):
     elif isinstance(op.output_dtype, dt.Set):
         return '({})'.format(', '.join(map(repr, value)))
     elif isinstance(op.output_dtype, dt.Struct):
-        fields = ", ".join(
-            f"{value} as `{key}`" for key, value in op.value.items()
-        )
+        fields = ", ".join(f"{value} as `{key}`" for key, value in op.value.items())
         return f"tuple({fields})"
     else:
         raise NotImplementedError(type(op))
@@ -456,16 +446,12 @@ class _CaseFormatter:
 
 
 def _simple_case(translator, op):
-    formatter = _CaseFormatter(
-        translator, op.base, op.cases, op.results, op.default
-    )
+    formatter = _CaseFormatter(translator, op.base, op.cases, op.results, op.default)
     return formatter.get_result()
 
 
 def _searched_case(translator, op):
-    formatter = _CaseFormatter(
-        translator, None, op.cases, op.results, op.default
-    )
+    formatter = _CaseFormatter(translator, None, op.cases, op.results, op.default)
     return formatter.get_result()
 
 
@@ -496,9 +482,7 @@ def _truncate(translator, op):
     try:
         converter = converters[op.unit]
     except KeyError:
-        raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {op.unit}'
-        )
+        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit}')
 
     return _call(translator, converter, op.arg)
 

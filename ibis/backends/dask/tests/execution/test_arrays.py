@@ -43,9 +43,7 @@ def test_array_length_scalar(client):
 
 
 def test_array_collect(t, df):
-    expr = t.group_by(t.dup_strings).aggregate(
-        collected=t.float64_with_zeros.collect()
-    )
+    expr = t.group_by(t.dup_strings).aggregate(collected=t.float64_with_zeros.collect())
     result = expr.compile()
     expected = (
         df.groupby('dup_strings')

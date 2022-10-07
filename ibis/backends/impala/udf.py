@@ -45,9 +45,7 @@ class Function(metaclass=abc.ABCMeta):
 
     def __repr__(self):
         klass = type(self).__name__
-        return '{}({}, {!r}, {!r})'.format(
-            klass, self.name, self.inputs, self.output
-        )
+        return f'{klass}({self.name}, {self.inputs!r}, {self.output!r})'
 
     def __call__(self, *args):
         return self._klass(*args).to_expr()
@@ -66,9 +64,7 @@ class Function(metaclass=abc.ABCMeta):
 
 class ScalarFunction(Function):
     def _create_operation_class(self):
-        fields = {
-            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
-        }
+        fields = {f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)}
         fields['output_dtype'] = self.output
         fields['output_shape'] = rlz.shape_like('args')
         return type(f"UDF_{self.name}", (ops.Value,), fields)
@@ -76,9 +72,7 @@ class ScalarFunction(Function):
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
-        fields = {
-            f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)
-        }
+        fields = {f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)}
         fields['output_dtype'] = self.output
         return type(f"UDA_{self.name}", (ops.Reduction,), fields)
 
@@ -103,9 +97,7 @@ class ImpalaFunction:
 class ImpalaUDF(ScalarFunction, ImpalaFunction):
     """Feel free to customize my __doc__ or wrap in a nicer user API."""
 
-    def __init__(
-        self, inputs, output, so_symbol=None, lib_path=None, name=None
-    ):
+    def __init__(self, inputs, output, so_symbol=None, lib_path=None, name=None):
         v.validate_output_type(output)
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)

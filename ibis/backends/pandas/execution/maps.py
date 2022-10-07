@@ -55,9 +55,7 @@ def map_get_series_series_scalar(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, pd.Series, pd.Series, pd.Series)
 def map_get_series_series_series(op, data, key, default):
-    def get(
-        mapping, keyiter=iter(key.values), defaultiter=iter(default.values)
-    ):
+    def get(mapping, keyiter=iter(key.values), defaultiter=iter(default.values)):
         return safe_get(mapping, next(keyiter), next(defaultiter))
 
     return data.map(get)
@@ -75,14 +73,10 @@ def map_get_dict_scalar_series(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series, object)
 def map_get_dict_series_scalar(op, data, key, default, **kwargs):
-    return key.map(
-        lambda k, data=data, default=default: safe_get(data, k, default)
-    )
+    return key.map(lambda k, data=data, default=default: safe_get(data, k, default))
 
 
-@execute_node.register(
-    ops.MapGet, collections.abc.Mapping, pd.Series, pd.Series
-)
+@execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series, pd.Series)
 def map_get_dict_series_series(op, data, key, default, **kwargs):
     return key.map(
         lambda k, data=data, defaultiter=iter(default.values): safe_get(
@@ -186,18 +180,14 @@ def map_merge_dict_dict(op, lhs, rhs, **kwargs):
     return safe_merge(lhs, rhs)
 
 
-@execute_node.register(
-    ops.MapMerge, (collections.abc.Mapping, type(None)), pd.Series
-)
+@execute_node.register(ops.MapMerge, (collections.abc.Mapping, type(None)), pd.Series)
 def map_merge_dict_series(op, lhs, rhs, **kwargs):
     if lhs is None:
         return pd.Series([None] * len(rhs))
     return rhs.map(lambda m, lhs=lhs: safe_merge(lhs, m))
 
 
-@execute_node.register(
-    ops.MapMerge, pd.Series, (collections.abc.Mapping, type(None))
-)
+@execute_node.register(ops.MapMerge, pd.Series, (collections.abc.Mapping, type(None)))
 def map_merge_series_dict(op, lhs, rhs, **kwargs):
     if rhs is None:
         return pd.Series([None] * len(lhs))
@@ -206,6 +196,4 @@ def map_merge_series_dict(op, lhs, rhs, **kwargs):
 
 @execute_node.register(ops.MapMerge, pd.Series, pd.Series)
 def map_merge_series_series(op, lhs, rhs, **kwargs):
-    return lhs.map(
-        lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter))
-    )
+    return lhs.map(lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter)))

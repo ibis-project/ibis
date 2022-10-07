@@ -38,9 +38,7 @@ def db(tmp_path_factory):
     con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMP)")
     con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
     with con:
-        con.executemany(
-            "INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS]
-        )
+        con.executemany("INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS])
         con.executemany(
             "INSERT INTO timestamps_tz VALUES (?)",
             [(t,) for t in TIMESTAMPS_TZ],
@@ -72,9 +70,7 @@ def test_timestamps(db, table, data):
 
 
 def test_type_map(db):
-    con = ibis.sqlite.connect(
-        db, type_map={"STRING": dt.string, "ITSADATE": "date"}
-    )
+    con = ibis.sqlite.connect(db, type_map={"STRING": dt.string, "ITSADATE": "date"})
     t = con.tables.weird
     expected_schema = ibis.schema({"str_col": "string", "date_col": "date"})
     assert t.schema() == expected_schema

@@ -80,8 +80,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     preceding_value = preceding.rows
     if not isinstance(preceding_value, (int, np.integer)):
         raise TypeError(
-            "'Rows with max look-back' only supports integer "
-            "row-based indexing."
+            "'Rows with max look-back' only supports integer " "row-based indexing."
         )
     return preceding_value
 
@@ -179,26 +178,19 @@ class Window(Comparable):
             following_tuple = isinstance(self.following, tuple)
             has_following = True
 
-        if (preceding_tuple and has_following) or (
-            following_tuple and has_preceding
-        ):
+        if (preceding_tuple and has_following) or (following_tuple and has_preceding):
             raise IbisInputError(
-                'Can only specify one window side when you want an '
-                'off-center window'
+                'Can only specify one window side when you want an ' 'off-center window'
             )
         elif preceding_tuple:
             start, end = self.preceding
             if end is None:
                 raise IbisInputError("preceding end point cannot be None")
             if end < 0:
-                raise IbisInputError(
-                    "preceding end point must be non-negative"
-                )
+                raise IbisInputError("preceding end point must be non-negative")
             if start is not None:
                 if start < 0:
-                    raise IbisInputError(
-                        "preceding start point must be non-negative"
-                    )
+                    raise IbisInputError("preceding start point must be non-negative")
                 if start <= end:
                     raise IbisInputError(
                         "preceding start must be greater than preceding end"
@@ -208,14 +200,10 @@ class Window(Comparable):
             if start is None:
                 raise IbisInputError("following start point cannot be None")
             if start < 0:
-                raise IbisInputError(
-                    "following start point must be non-negative"
-                )
+                raise IbisInputError("following start point must be non-negative")
             if end is not None:
                 if end < 0:
-                    raise IbisInputError(
-                        "following end point must be non-negative"
-                    )
+                    raise IbisInputError("following end point must be non-negative")
                 if start >= end:
                     raise IbisInputError(
                         "following start must be less than following end"
@@ -224,27 +212,19 @@ class Window(Comparable):
             if not isinstance(self.preceding, ir.Expr):
                 if has_preceding and self.preceding < 0:
                     raise IbisInputError(
-                        "'preceding' must be positive, got {}".format(
-                            self.preceding
-                        )
+                        f"'preceding' must be positive, got {self.preceding}"
                     )
 
             if not isinstance(self.following, ir.Expr):
                 if has_following and self.following < 0:
                     raise IbisInputError(
-                        "'following' must be positive, got {}".format(
-                            self.following
-                        )
+                        f"'following' must be positive, got {self.following}"
                     )
         if self.how not in {'rows', 'range'}:
-            raise IbisInputError(
-                f"'how' must be 'rows' or 'range', got {self.how}"
-            )
+            raise IbisInputError(f"'how' must be 'rows' or 'range', got {self.how}")
 
         if self.max_lookback is not None:
-            if not isinstance(
-                self.preceding, (ir.IntervalValue, pd.Timedelta)
-            ):
+            if not isinstance(self.preceding, (ir.IntervalValue, pd.Timedelta)):
                 raise IbisInputError(
                     "'max_lookback' must be specified as an interval "
                     "or pandas.Timedelta object"
@@ -258,9 +238,7 @@ class Window(Comparable):
             rlz.one_of((rlz.column_from(rlz.just(table)), rlz.any)),
             self._group_by,
         )
-        sorts = rlz.tuple_of(
-            rlz.sort_key_from(rlz.just(table)), self._order_by
-        )
+        sorts = rlz.tuple_of(rlz.sort_key_from(rlz.just(table)), self._order_by)
 
         return self._replace(group_by=groups, order_by=sorts)
 
@@ -319,8 +297,7 @@ class Window(Comparable):
     def equals(self, other):
         if not isinstance(other, Window):
             raise TypeError(
-                "invalid equality comparison between Window and "
-                f"{type(other)}"
+                "invalid equality comparison between Window and " f"{type(other)}"
             )
         return self.__cached_equals__(other)
 
@@ -430,9 +407,7 @@ def cumulative_window(group_by=None, order_by=None) -> Window:
     Window
         A window frame
     """
-    return Window(
-        preceding=None, following=0, group_by=group_by, order_by=order_by
-    )
+    return Window(preceding=None, following=0, group_by=group_by, order_by=order_by)
 
 
 def trailing_window(preceding, group_by=None, order_by=None):

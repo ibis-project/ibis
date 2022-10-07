@@ -31,9 +31,7 @@ def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
             ('r_comment', 'string'),
         ]
     )
-    con.parquet_file(
-        hdfs_path, schema=schema, name=name, database=tmp_db, persist=True
-    )
+    con.parquet_file(hdfs_path, schema=schema, name=name, database=tmp_db, persist=True)
     gc.collect()
 
     # table still exists
@@ -98,9 +96,7 @@ def test_query_parquet_infer_schema(con, test_data_dir):
     assert_equal(table.schema(), ex_schema)
 
 
-def test_create_table_persist_fails_if_called_twice(
-    con, temp_table_db, test_data_dir
-):
+def test_create_table_persist_fails_if_called_twice(con, temp_table_db, test_data_dir):
     tmp_db, tname = temp_table_db
 
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')

@@ -66,9 +66,7 @@ def parse_url(translator, op):
         return f"parse_url({arg_formatted}, '{extract}')"
     else:
         key_fmt = translator.translate(key)
-        return "parse_url({}, '{}', {})".format(
-            arg_formatted, extract, key_fmt
-        )
+        return f"parse_url({arg_formatted}, '{extract}', {key_fmt})"
 
 
 def startswith(translator, op):

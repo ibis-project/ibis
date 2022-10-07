@@ -104,9 +104,7 @@ def execute_interval_from_integer_series(op, data, **kwargs):
     # fast path for timedelta conversion
     if cls is None:
         return data.astype(f"timedelta64[{unit}]")
-    return data.apply(
-        lambda n, cls=cls, resolution=resolution: cls(**{resolution: n})
-    )
+    return data.apply(lambda n, cls=cls, resolution=resolution: cls(**{resolution: n}))
 
 
 @execute_node.register(ops.IntervalFromInteger, integer_types)
@@ -129,9 +127,7 @@ def execute_cast_integer_to_interval_series(op, data, type, **kwargs):
 
     if cls is None:
         return data.astype(f"timedelta64[{unit}]")
-    return data.apply(
-        lambda n, cls=cls, resolution=resolution: cls(**{resolution: n})
-    )
+    return data.apply(lambda n, cls=cls, resolution=resolution: cls(**{resolution: n}))
 
 
 @execute_node.register(ops.Cast, integer_types, dt.Interval)
@@ -169,16 +165,12 @@ def execute_interval_add_multiply_delta_series(op, left, right, **kwargs):
     return op.op(pd.Timedelta(left), right)
 
 
-@execute_node.register(
-    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, timedelta_types
-)
+@execute_node.register((ops.TimestampAdd, ops.IntervalAdd), pd.Series, timedelta_types)
 def execute_timestamp_interval_add_series_delta(op, left, right, **kwargs):
     return left + pd.Timedelta(right)
 
 
-@execute_node.register(
-    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, pd.Series
-)
+@execute_node.register((ops.TimestampAdd, ops.IntervalAdd), pd.Series, pd.Series)
 def execute_timestamp_interval_add_series_series(op, left, right, **kwargs):
     return left + right
 
@@ -219,9 +211,7 @@ def execute_timestamp_diff_series_datetime(op, left, right, **kwargs):
     return left - pd.Timestamp(right)
 
 
-@execute_node.register(
-    ops.IntervalMultiply, pd.Series, numeric_types + (pd.Series,)
-)
+@execute_node.register(ops.IntervalMultiply, pd.Series, numeric_types + (pd.Series,))
 @execute_node.register(
     ops.IntervalFloorDivide,
     (pd.Timedelta, pd.Series),

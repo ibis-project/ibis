@@ -64,9 +64,7 @@ def create_calc_zscore_udf(result_formatter):
 
 calc_zscore_udfs = [
     create_calc_zscore_udf(result_formatter=lambda v: v),  # pd.Series,
-    create_calc_zscore_udf(
-        result_formatter=lambda v: np.array(v)
-    ),  # np.array,
+    create_calc_zscore_udf(result_formatter=lambda v: np.array(v)),  # np.array,
     create_calc_zscore_udf(result_formatter=lambda v: list(v)),  # list,
 ]
 
@@ -134,9 +132,7 @@ def multiple_overwrite_struct_elementwise(v):
 
 @analytic(
     input_type=[dt.double, dt.double],
-    output_type=dt.Struct(
-        ['double_col', 'demean_weight'], [dt.double, dt.double]
-    ),
+    output_type=dt.Struct(['double_col', 'demean_weight'], [dt.double, dt.double]),
 )
 def overwrite_struct_analytic(v, w):
     assert isinstance(v, pd.Series)
@@ -154,9 +150,7 @@ def demean_struct(v, w):
 def create_demean_struct_udf(result_formatter):
     return analytic(
         input_type=[dt.double, dt.double],
-        output_type=dt.Struct(
-            ['demean', 'demean_weight'], [dt.double, dt.double]
-        ),
+        output_type=dt.Struct(['demean', 'demean_weight'], [dt.double, dt.double]),
     )(_format_struct_udf_return_type(demean_struct, result_formatter))
 
 
@@ -202,9 +196,7 @@ mean_struct_udfs = [
     create_mean_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     ),  # tuple of scalar,
-    create_mean_struct_udf(
-        result_formatter=lambda v1, v2: [v1, v2]
-    ),  # list of scalar,
+    create_mean_struct_udf(result_formatter=lambda v1, v2: [v1, v2]),  # list of scalar,
     create_mean_struct_udf(
         result_formatter=lambda v1, v2: np.array([v1, v2])
     ),  # np.array of scalar
@@ -213,9 +205,7 @@ mean_struct_udfs = [
 
 @reduction(
     input_type=[dt.double, dt.double],
-    output_type=dt.Struct(
-        ['double_col', 'mean_weight'], [dt.double, dt.double]
-    ),
+    output_type=dt.Struct(['double_col', 'mean_weight'], [dt.double, dt.double]),
 )
 def overwrite_struct_reduction(v, w):
     assert isinstance(v, (np.ndarray, pd.Series))
@@ -245,9 +235,7 @@ def test_elementwise_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
 
     expected = udf_df.assign(incremented=udf.func(udf_df['double_col']))
 
-    udf_backend.assert_series_equal(
-        result['incremented'], expected['incremented']
-    )
+    udf_backend.assert_series_equal(result['incremented'], expected['incremented'])
 
 
 @pytest.mark.notimpl(["pyspark"])
@@ -278,9 +266,7 @@ def test_reduction_udf(udf_backend, udf_alltypes, udf_df):
 def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
     """Tests reduction UDF returning an array."""
     qs = [0.25, 0.75]
-    expr = udf_alltypes.mutate(
-        q=quantiles(udf_alltypes['int_col'], quantiles=qs)
-    )
+    expr = udf_alltypes.mutate(q=quantiles(udf_alltypes['int_col'], quantiles=qs))
     result = expr.execute()
 
     expected = udf_df.assign(
@@ -295,9 +281,7 @@ def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     """Test that summarization can handle empty data."""
     # First filter down to zero rows
     t = udf_alltypes[udf_alltypes['int_col'] > np.inf]
-    result = (
-        t.group_by('year').aggregate(mean=calc_mean(t['int_col'])).execute()
-    )
+    result = t.group_by('year').aggregate(mean=calc_mean(t['int_col'])).execute()
     expected = pd.DataFrame({'year': [], 'mean': []})
     # We check that the result is an empty DataFrame,
     # rather than an error.
@@ -465,14 +449,10 @@ def test_elementwise_udf_overwrite_destruct(udf_backend, udf_alltypes):
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-def test_elementwise_udf_overwrite_destruct_and_assign(
-    udf_backend, udf_alltypes
-):
+def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes):
     result = (
         udf_alltypes.mutate(
-            overwrite_struct_elementwise(
-                udf_alltypes['double_col']
-            ).destructure()
+            overwrite_struct_elementwise(udf_alltypes['double_col']).destructure()
         )
         .mutate(col3=udf_alltypes['int_col'] * 3)
         .execute()
@@ -523,13 +503,9 @@ def test_elementwise_udf_destructure_exact_once(
     assert len(result) > 0
 
 
-def test_elementwise_udf_multiple_overwrite_destruct(
-    udf_backend, udf_alltypes
-):
+def test_elementwise_udf_multiple_overwrite_destruct(udf_backend, udf_alltypes):
     result = udf_alltypes.mutate(
-        multiple_overwrite_struct_elementwise(
-            udf_alltypes['double_col']
-        ).destructure()
+        multiple_overwrite_struct_elementwise(udf_alltypes['double_col']).destructure()
     ).execute()
 
     expected = udf_alltypes.mutate(
@@ -555,9 +531,7 @@ def test_elementwise_udf_named_destruct(udf_backend, udf_alltypes):
     )
     with pytest.raises(TypeError, match=r".*cannot be inferred.*"):
         udf_alltypes.mutate(
-            new_struct=add_one_struct_udf(
-                udf_alltypes['double_col']
-            ).destructure()
+            new_struct=add_one_struct_udf(udf_alltypes['double_col']).destructure()
         )
 
 
@@ -588,16 +562,12 @@ def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = window(preceding=None, following=None, group_by='year')
 
     result = udf_alltypes.mutate(
-        udf(udf_alltypes['double_col'], udf_alltypes['int_col'])
-        .over(w)
-        .destructure()
+        udf(udf_alltypes['double_col'], udf_alltypes['int_col']).over(w).destructure()
     ).execute()
 
     expected = udf_alltypes.mutate(
-        demean=udf_alltypes['double_col']
-        - udf_alltypes['double_col'].mean().over(w),
-        demean_weight=udf_alltypes['int_col']
-        - udf_alltypes['int_col'].mean().over(w),
+        demean=udf_alltypes['double_col'] - udf_alltypes['double_col'].mean().over(w),
+        demean_weight=udf_alltypes['int_col'] - udf_alltypes['int_col'].mean().over(w),
     ).execute()
     udf_backend.assert_frame_equal(result, expected)
 
@@ -616,10 +586,8 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     ).execute()
 
     expected = udf_alltypes.mutate(
-        demean=udf_alltypes['double_col']
-        - udf_alltypes['double_col'].mean().over(w),
-        demean_weight=udf_alltypes['int_col']
-        - udf_alltypes['int_col'].mean().over(w),
+        demean=udf_alltypes['double_col'] - udf_alltypes['double_col'].mean().over(w),
+        demean_weight=udf_alltypes['int_col'] - udf_alltypes['int_col'].mean().over(w),
     ).execute()
 
     udf_backend.assert_frame_equal(result, expected)
@@ -630,9 +598,7 @@ def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     w = window(preceding=None, following=None, group_by='year')
 
     result = udf_alltypes.mutate(
-        overwrite_struct_analytic(
-            udf_alltypes['double_col'], udf_alltypes['int_col']
-        )
+        overwrite_struct_analytic(udf_alltypes['double_col'], udf_alltypes['int_col'])
         .over(w)
         .destructure()
     ).execute()
@@ -640,8 +606,7 @@ def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     expected = udf_alltypes.mutate(
         double_col=udf_alltypes['double_col']
         - udf_alltypes['double_col'].mean().over(w),
-        demean_weight=udf_alltypes['int_col']
-        - udf_alltypes['int_col'].mean().over(w),
+        demean_weight=udf_alltypes['int_col'] - udf_alltypes['int_col'].mean().over(w),
     ).execute()
 
     # TODO issue #2649
@@ -659,9 +624,7 @@ def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
     result = (
         udf_alltypes.group_by('year')
         .aggregate(
-            udf(
-                udf_alltypes['double_col'], udf_alltypes['int_col']
-            ).destructure()
+            udf(udf_alltypes['double_col'], udf_alltypes['int_col']).destructure()
         )
         .execute()
     ).sort_values('year')
@@ -680,9 +643,7 @@ def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
 
 @pytest.mark.notimpl(["pyspark"])
 def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
-    mean_struct_udf = create_mean_struct_udf(
-        result_formatter=lambda v1, v2: (v1, v2)
-    )
+    mean_struct_udf = create_mean_struct_udf(result_formatter=lambda v1, v2: (v1, v2))
     result = udf_alltypes.aggregate(
         mean_struct_udf(
             udf_alltypes['double_col'], udf_alltypes['int_col']
@@ -697,9 +658,7 @@ def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 
 
 @pytest.mark.notimpl(["pyspark"])
-def test_reduction_udf_destruct_no_group_by_overwrite(
-    udf_backend, udf_alltypes
-):
+def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes):
     result = udf_alltypes.aggregate(
         overwrite_struct_reduction(
             udf_alltypes['double_col'], udf_alltypes['int_col']
@@ -728,9 +687,7 @@ def test_reduction_udf_destruct_window(udf_backend, udf_alltypes):
         group_by='year',
         order_by='timestamp_col',
     )
-    mean_struct_udf = create_mean_struct_udf(
-        result_formatter=lambda v1, v2: (v1, v2)
-    )
+    mean_struct_udf = create_mean_struct_udf(result_formatter=lambda v1, v2: (v1, v2))
 
     result = udf_alltypes.mutate(
         mean_struct_udf(udf_alltypes['double_col'], udf_alltypes['int_col'])

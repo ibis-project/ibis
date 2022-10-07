@@ -231,9 +231,7 @@ class ImpalaTable(ir.Table):
         m = fully_qualified_re.match(self._qualified_name)
         if not m:
             raise com.IbisError(
-                'Cannot determine database name from {}'.format(
-                    self._qualified_name
-                )
+                f'Cannot determine database name from {self._qualified_name}'
             )
         db, quoted, unquoted = m.groups()
         return db, quoted or unquoted
@@ -244,9 +242,7 @@ class ImpalaTable(ir.Table):
 
     def compute_stats(self, incremental=False):
         """Invoke Impala COMPUTE STATS command on the table."""
-        return self._client.compute_stats(
-            self._qualified_name, incremental=incremental
-        )
+        return self._client.compute_stats(self._qualified_name, incremental=incremental)
 
     def invalidate_metadata(self):
         self._client.invalidate_metadata(self._qualified_name)
@@ -377,9 +373,7 @@ class ImpalaTable(ir.Table):
         m = fully_qualified_re.match(new_name)
         if not m and database is None:
             database = self._database
-        statement = RenameTable(
-            self._qualified_name, new_name, new_database=database
-        )
+        statement = RenameTable(self._qualified_name, new_name, new_database=database)
         self._client.raw_sql(statement)
 
         op = self.op().change_name(statement.new_qualified_name)
@@ -483,9 +477,7 @@ class ImpalaTable(ir.Table):
         part_schema = self.partition_schema()
 
         def _run_ddl(**kwds):
-            stmt = ddl.AlterPartition(
-                self._qualified_name, spec, part_schema, **kwds
-            )
+            stmt = ddl.AlterPartition(self._qualified_name, spec, part_schema, **kwds)
             return self._client.raw_sql(stmt)
 
         return self._alter_table_helper(

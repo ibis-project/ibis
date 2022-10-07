@@ -35,25 +35,19 @@ def infer_dask_schema(df, schema=None):
     pairs = []
     for column_name, dask_dtype in df.dtypes.iteritems():
         if not isinstance(column_name, str):
-            raise TypeError(
-                'Column names must be strings to use the dask backend'
-            )
+            raise TypeError('Column names must be strings to use the dask backend')
 
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])
         elif dask_dtype == np.object_:
-            inferred_dtype = infer_dask_dtype(
-                df[column_name].compute(), skipna=True
-            )
+            inferred_dtype = infer_dask_dtype(df[column_name].compute(), skipna=True)
             if inferred_dtype in {'mixed', 'decimal'}:
                 # TODO: in principal we can handle decimal (added in pandas
                 # 0.23)
                 raise TypeError(
                     'Unable to infer type of column {0!r}. Try instantiating '
                     'your table from the client with client.table('
-                    "'my_table', schema={{{0!r}: <explicit type>}})".format(
-                        column_name
-                    )
+                    "'my_table', schema={{{0!r}: <explicit type>}})".format(column_name)
                 )
             ibis_dtype = _inferable_dask_dtypes[inferred_dtype]
         else:

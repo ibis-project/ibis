@@ -52,9 +52,7 @@ def compute_time_context_asof_join(
     **kwargs
 ):
     new_timecontexts = [
-        timecontext
-        for arg in get_node_arguments(op)
-        if is_computable_input(arg)
+        timecontext for arg in get_node_arguments(op) if is_computable_input(arg)
     ]
 
     if not timecontext:
@@ -78,9 +76,7 @@ def compute_time_context_window(
     **kwargs
 ):
     new_timecontexts = [
-        timecontext
-        for arg in get_node_arguments(op)
-        if is_computable_input(arg)
+        timecontext for arg in get_node_arguments(op) if is_computable_input(arg)
     ]
 
     if not timecontext:

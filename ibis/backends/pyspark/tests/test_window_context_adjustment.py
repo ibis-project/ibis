@@ -161,9 +161,7 @@ def test_multiple_trailing_window(client, ibis_windows, spark_range):
         spark_table.withColumn(
             'count_1h', F.count(spark_table['value']).over(spark_window_1h)
         )
-        .withColumn(
-            'count_2h', F.count(spark_table['value']).over(spark_window_2h)
-        )
+        .withColumn('count_2h', F.count(spark_table['value']).over(spark_window_2h))
         .toPandas()
     )
     expected = expected[
@@ -281,9 +279,7 @@ def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
         spark_table.withColumn(
             'count_1h', F.count(spark_table['value']).over(spark_window_1h)
         )
-        .withColumn(
-            'count_cum', F.count(spark_table['value']).over(spark_window_cum)
-        )
+        .withColumn('count_cum', F.count(spark_table['value']).over(spark_window_cum))
         .toPandas()
     )
     expected = expected[
@@ -415,9 +411,9 @@ def test_complex_window(client):
         )
     )
     df = df.assign(
-        count_cum=expected_cum_win.sort_index(
-            level=['time', 'key']
-        ).reset_index(level='key', drop=True)
+        count_cum=expected_cum_win.sort_index(level=['time', 'key']).reset_index(
+            level='key', drop=True
+        )
     )
     df['count'] = df.groupby(['key'])['value'].transform('count')
     df = df.reset_index()

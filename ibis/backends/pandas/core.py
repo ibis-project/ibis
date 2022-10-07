@@ -165,8 +165,7 @@ def is_computable_input_arg(arg):
 # Register is_computable_input for each scalar type (int, float, date, etc).
 # We use consume here to avoid leaking the iteration variable into the module.
 ibis.util.consume(
-    is_computable_input.register(t)(is_computable_input_arg)
-    for t in scalar_types
+    is_computable_input.register(t)(is_computable_input_arg) for t in scalar_types
 )
 
 
@@ -347,9 +346,7 @@ def execute_until_in_scope(
 
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
-        raise com.UnboundExpressionError(
-            f'Unable to find data for node:\n{repr(node)}'
-        )
+        raise com.UnboundExpressionError(f'Unable to find data for node:\n{repr(node)}')
 
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
@@ -357,9 +354,7 @@ def execute_until_in_scope(
     new_scope = new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        new_scope.get_value(arg, timecontext)
-        if isinstance(arg, ops.Node)
-        else arg
+        new_scope.get_value(arg, timecontext) if isinstance(arg, ops.Node) else arg
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
     result = execute_node(
@@ -555,11 +550,7 @@ def compute_time_context_default(
     timecontext: Optional[TimeContext] = None,
     **kwargs,
 ):
-    return [
-        timecontext
-        for arg in get_node_arguments(node)
-        if is_computable_input(arg)
-    ]
+    return [timecontext for arg in get_node_arguments(node) if is_computable_input(arg)]
 
 
 get_node_arguments = Dispatcher('get_node_arguments')

@@ -570,9 +570,7 @@ def test_tpch_self_join_failure(con):
     joined_all = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[
-            fields_of_interest
-        ]
+        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
     year = joined_all.odate.year().name('year')
@@ -585,10 +583,7 @@ def test_tpch_self_join_failure(con):
     yoy_change = (current.total - prior.total).name('yoy_change')
     yoy = current.join(
         prior,
-        (
-            (current.region == prior.region)
-            & (current.year == (prior.year - 1))
-        ),
+        ((current.region == prior.region) & (current.year == (prior.year - 1))),
     )[current.region, current.year, yoy_change]
 
     # no analysis failure
@@ -612,9 +607,7 @@ def test_tpch_correlated_subquery_failure(con):
     tpch = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[
-            fields_of_interest
-        ]
+        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
     t2 = tpch.view()
@@ -699,9 +692,7 @@ def test_where_with_timestamp():
         [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
         name='t',
     )
-    expr = t.group_by(t.uuid).aggregate(
-        min_date=t.ts.min(where=t.search_level == 1)
-    )
+    expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
     result = ibis.impala.compile(expr)
     expected = """\
 SELECT `uuid`, min(if(`search_level` = 1, `ts`, NULL)) AS `min_date`

@@ -114,9 +114,7 @@ class BasePandasBackend(BaseBackend):
         try:
             schema = schemas[table_name]
         except KeyError:
-            schemas[table_name] = schema = sch.infer(
-                self.dictionary[table_name]
-            )
+            schemas[table_name] = schema = sch.infer(self.dictionary[table_name])
         return schema
 
     def compile(self, expr, *args, **kwargs):
@@ -137,9 +135,7 @@ class BasePandasBackend(BaseBackend):
         else:
             pandas_schema = self._convert_schema(schema)
             dtypes = dict(pandas_schema)
-            df = self._from_pandas(
-                pd.DataFrame(columns=dtypes.keys()).astype(dtypes)
-            )
+            df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
 
         self.dictionary[table_name] = df
 
@@ -232,8 +228,6 @@ class Backend(BasePandasBackend):
         if params is None:
             params = {}
         else:
-            params = {
-                k.op() if hasattr(k, 'op') else k: v for k, v in params.items()
-            }
+            params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
         return execute_and_reset(node, params=params, **kwargs)

@@ -33,9 +33,7 @@ def get_common_spark_testing_client(data_directory, connect):
         .config('spark.default.parallelism', 1)
         .config('spark.dynamicAllocation.enabled', False)
         .config('spark.rdd.compress', False)
-        .config(
-            'spark.serializer', 'org.apache.spark.serializer.KryoSerializer'
-        )
+        .config('spark.serializer', 'org.apache.spark.serializer.KryoSerializer')
         .config('spark.shuffle.compress', False)
         .config('spark.shuffle.spill.compress', False)
         .config('spark.sql.shuffle.partitions', 1)
@@ -209,10 +207,7 @@ def get_common_spark_testing_client(data_directory, connect):
     df_udf_nan.createOrReplaceTempView('udf_nan')
 
     df_udf_null = s.createDataFrame(
-        [
-            (float(i), None if i % 2 else 3.0, 'ddeefffggh'[i])
-            for i in range(10)
-        ],
+        [(float(i), None if i % 2 else 3.0, 'ddeefffggh'[i]) for i in range(10)],
         ['a', 'b', 'key'],
     )
     df_udf_null.createOrReplaceTempView('udf_null')
@@ -220,10 +215,8 @@ def get_common_spark_testing_client(data_directory, connect):
     df_udf_random = s.createDataFrame(
         pd.DataFrame(
             {
-                'a': np.arange(4, dtype=float).tolist()
-                + np.random.rand(3).tolist(),
-                'b': np.arange(4, dtype=float).tolist()
-                + np.random.rand(3).tolist(),
+                'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+                'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
                 'key': list('ddeefff'),
             }
         )
@@ -250,9 +243,7 @@ def get_common_spark_testing_client(data_directory, connect):
 
 
 def get_pyspark_testing_client(data_directory):
-    return get_common_spark_testing_client(
-        data_directory, ibis.pyspark.connect
-    )
+    return get_common_spark_testing_client(data_directory, ibis.pyspark.connect)
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -379,9 +370,7 @@ def temp_table(client):
 
 @pytest.fixture(scope='session')
 def alltypes(client):
-    return client.table('functional_alltypes').relabel(
-        {'Unnamed: 0': 'Unnamed:0'}
-    )
+    return client.table('functional_alltypes').relabel({'Unnamed: 0': 'Unnamed:0'})
 
 
 @pytest.fixture(scope='session')

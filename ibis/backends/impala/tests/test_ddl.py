@@ -64,9 +64,7 @@ def test_create_table_with_location_execute(
     expr = alltypes
     table_name = temp_table
 
-    con.create_table(
-        table_name, obj=expr, location=tmp_path, database=test_data_db
-    )
+    con.create_table(table_name, obj=expr, location=tmp_path, database=test_data_db)
     assert hdfs.exists(tmp_path)
 
 
@@ -178,9 +176,7 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[
-        expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col
-    ]
+    to_insert = expr[expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col]
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -331,9 +327,7 @@ def test_create_table_reserved_identifier(con):
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
     hdfs_path = pjoin(test_data_dir, 'csv')
 
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'double'), ('baz', 'int8')]
-    )
+    schema = ibis.schema([('foo', 'string'), ('bar', 'double'), ('baz', 'int8')])
     name = 'delimited_table_test1'
     table = con.delimited_file(
         hdfs_path, schema, name=name, database=tmp_db, delimiter=','
@@ -394,8 +388,7 @@ def test_temp_table_concurrency(con, test_data_dir):
             for offset in range(nthreads)
         ]
         results = [
-            future.result()
-            for future in concurrent.futures.as_completed(futures)
+            future.result() for future in concurrent.futures.as_completed(futures)
         ]
     assert all(map(len, results))
 

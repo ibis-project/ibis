@@ -90,16 +90,12 @@ def from_pyarrow_time(
 
 
 @dt.dtype.register(pa.ListType)  # type: ignore[misc]
-def from_pyarrow_list(
-    arrow_type: pa.ListType, nullable: bool = True
-) -> dt.DataType:
+def from_pyarrow_list(arrow_type: pa.ListType, nullable: bool = True) -> dt.DataType:
     return dt.Array(dt.dtype(arrow_type.value_type), nullable=nullable)
 
 
 @dt.dtype.register(pa.MapType)  # type: ignore[misc]
-def from_pyarrow_map(
-    arrow_type: pa.MapType, nullable: bool = True
-) -> dt.DataType:
+def from_pyarrow_map(arrow_type: pa.MapType, nullable: bool = True) -> dt.DataType:
     return dt.Map(
         dt.dtype(arrow_type.key_type),
         dt.dtype(arrow_type.item_type),
@@ -128,9 +124,7 @@ def from_pyarrow_timestamp(
 
 @sch.infer.register(pa.Schema)  # type: ignore[misc]
 def infer_pyarrow_schema(schema: pa.Schema) -> sch.Schema:
-    return sch.schema(
-        [(f.name, dt.dtype(f.type, nullable=f.nullable)) for f in schema]
-    )
+    return sch.schema([(f.name, dt.dtype(f.type, nullable=f.nullable)) for f in schema])
 
 
 def _schema_to_pyarrow_schema_fields(schema: sch.Schema) -> Iterable[pa.Field]:

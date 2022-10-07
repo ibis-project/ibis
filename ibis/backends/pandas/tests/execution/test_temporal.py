@@ -125,9 +125,7 @@ def test_times_ops(t, df):
     ('tz', 'rconstruct'),
     [('US/Eastern', np.zeros), ('UTC', np.ones), (None, np.ones)],
 )
-@pytest.mark.parametrize(
-    'column', ['plain_datetimes_utc', 'plain_datetimes_naive']
-)
+@pytest.mark.parametrize('column', ['plain_datetimes_utc', 'plain_datetimes_naive'])
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     expected = pd.Series(rconstruct(len(df), dtype=bool))
     time = t[column].time()

@@ -97,11 +97,7 @@ def cumulative_to_window(translator, op, window):
     else:
         new_op = rule(new_op)
 
-    win = (
-        ibis.cumulative_window()
-        .group_by(window._group_by)
-        .order_by(window._order_by)
-    )
+    win = ibis.cumulative_window().group_by(window._group_by).order_by(window._order_by)
     new_expr = L.windowize_function(new_op.to_expr(), win)
     return new_expr.op()
 
@@ -132,8 +128,7 @@ def format_window(translator, op, window):
 
     if window.max_lookback is not None:
         raise NotImplementedError(
-            'Rows with max lookback is not implemented '
-            'for Impala-based backends.'
+            'Rows with max lookback is not implemented ' 'for Impala-based backends.'
         )
 
     if window._group_by:
@@ -183,9 +178,7 @@ def format_window(translator, op, window):
     if isinstance(op.expr, frame_clause_not_allowed):
         frame = None
     elif p is not None and f is not None:
-        frame = '{} BETWEEN {} AND {}'.format(
-            window.how.upper(), _prec(p), _foll(f)
-        )
+        frame = f'{window.how.upper()} BETWEEN {_prec(p)} AND {_foll(f)}'
 
     elif p is not None:
         if isinstance(p, tuple):
@@ -195,9 +188,7 @@ def format_window(translator, op, window):
             )
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
-            frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
-                kind, _prec(p)
-            )
+            frame = f'{kind} BETWEEN {_prec(p)} AND UNBOUNDED FOLLOWING'
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
@@ -206,9 +197,7 @@ def format_window(translator, op, window):
             )
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
-            frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(
-                kind, _foll(f)
-            )
+            frame = f'{kind} BETWEEN UNBOUNDED PRECEDING AND {_foll(f)}'
     else:
         # no-op, default is full sample
         frame = None

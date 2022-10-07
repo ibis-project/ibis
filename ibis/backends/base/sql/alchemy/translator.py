@@ -5,10 +5,7 @@ import sqlalchemy as sa
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.datatypes import (
-    ibis_type_to_sqla,
-    to_sqla_type,
-)
+from ibis.backends.base.sql.alchemy.datatypes import ibis_type_to_sqla, to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     sqlalchemy_operation_registry,

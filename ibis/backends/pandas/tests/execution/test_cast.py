@@ -159,16 +159,13 @@ def test_cast_to_decimal(t, df, type):
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
-                '{}.{}'.format(
-                    '0' * (type.precision - type.scale), '0' * type.scale
-                )
+                '{}.{}'.format('0' * (type.precision - type.scale), '0' * type.scale)
             )
         )
     )
     tm.assert_series_equal(result, expected)
     assert all(
-        abs(element.as_tuple().exponent) == type.scale
-        for element in result.values
+        abs(element.as_tuple().exponent) == type.scale for element in result.values
     )
     assert all(
         1 <= len(element.as_tuple().digits) <= type.precision

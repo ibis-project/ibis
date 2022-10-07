@@ -90,9 +90,7 @@ class Backend(BaseAlchemyBackend):
             month : int32
         """
         if driver != 'psycopg2':
-            raise NotImplementedError(
-                'psycopg2 is currently the only supported driver'
-            )
+            raise NotImplementedError('psycopg2 is currently the only supported driver')
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,

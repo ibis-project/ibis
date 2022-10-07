@@ -45,9 +45,7 @@ def test_rewrite_join_projection_without_other_ops(con):
 def test_multiple_join_deeper_reference():
     # Join predicates down the chain might reference one or more root
     # tables in the hierarchy.
-    table1 = ibis.table(
-        {'key1': 'string', 'key2': 'string', 'value1': 'double'}
-    )
+    table1 = ibis.table({'key1': 'string', 'key2': 'string', 'value1': 'double'})
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
     table3 = ibis.table({'key4': 'string', 'value3': 'double'})
 
@@ -100,9 +98,7 @@ def test_join_predicate_from_derived_raises():
     # Join predicate references a derived table, but we can salvage and
     # rewrite it to get the join semantics out
     # see ibis #74
-    table = ibis.table(
-        [('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table'
-    )
+    table = ibis.table([('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table')
 
     table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
 
@@ -114,9 +110,7 @@ def test_join_predicate_from_derived_raises():
 
 
 def test_bad_join_predicate_raises():
-    table = ibis.table(
-        [('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table'
-    )
+    table = ibis.table([('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table')
 
     table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
 
@@ -183,9 +177,7 @@ def test_is_ancestor_analytic():
     filtered = with_filter_col[with_filter_col['filter'].isnull()]
     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[
-        subquery.columns + [subquery.count().name('analytic')]
-    ]
+    with_analytic = subquery[subquery.columns + [subquery.count().name('analytic')]]
 
     assert not subquery.op().equals(with_analytic.op())
 
@@ -319,9 +311,7 @@ def test_agg_selection_does_not_share_roots():
 @pytest.mark.parametrize("num_joins", [1, 10])
 def test_large_compile(num_joins):
     num_columns = 20
-    table = ibis.table(
-        {f"col_{i:d}": "string" for i in range(num_columns)}, name="t"
-    )
+    table = ibis.table({f"col_{i:d}": "string" for i in range(num_columns)}, name="t")
     for _ in range(num_joins):
         start = time.time()
         table = table.mutate(dummy=ibis.literal(""))

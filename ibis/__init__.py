@@ -43,9 +43,7 @@ def __getattr__(name: str) -> BaseBackend:
     the `ibis.backends` entrypoints. If successful, the `ibis.sqlite`
     attribute is "cached", so this function is only called the first time.
     """
-    entry_points = {
-        ep for ep in util.backend_entry_points() if ep.name == name
-    }
+    entry_points = {ep for ep in util.backend_entry_points() if ep.name == name}
 
     if not entry_points:
         msg = f"module 'ibis' has no attribute '{name}'. "

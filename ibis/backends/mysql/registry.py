@@ -55,9 +55,7 @@ def _truncate(t, op):
     try:
         fmt = _truncate_formats[op.unit]
     except KeyError:
-        raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {op.unit}'
-        )
+        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit}')
     return sa.func.date_format(sa_arg, fmt)
 
 
@@ -81,8 +79,7 @@ def _round(t, op):
 def _interval_from_integer(t, op):
     if op.unit in {'ms', 'ns'}:
         raise com.UnsupportedOperationError(
-            'MySQL does not allow operation '
-            'with INTERVAL offset {}'.format(op.unit)
+            'MySQL does not allow operation ' 'with INTERVAL offset {}'.format(op.unit)
         )
 
     sa_arg = t.translate(op.arg)
@@ -92,9 +89,7 @@ def _interval_from_integer(t, op):
     # the existing bind parameter produced by translate and reuse its name in
     # the string passed to sa.text?
     if isinstance(sa_arg, sa.sql.elements.BindParameter):
-        return sa.text(f'INTERVAL :arg {text_unit}').bindparams(
-            arg=sa_arg.value
-        )
+        return sa.text(f'INTERVAL :arg {text_unit}').bindparams(arg=sa_arg.value)
     return sa.text(f'INTERVAL {sa_arg} {text_unit}')
 
 

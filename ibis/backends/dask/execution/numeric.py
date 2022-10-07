@@ -20,9 +20,9 @@ def execute_series_negate(_, data, **kwargs):
 
 @execute_node.register(ops.Negate, ddgb.SeriesGroupBy)
 def execute_series_group_by_negate(op, data, **kwargs):
-    return execute_series_negate(
-        op, make_selected_obj(data), **kwargs
-    ).groupby(data.index)
+    return execute_series_negate(op, make_selected_obj(data), **kwargs).groupby(
+        data.index
+    )
 
 
 def call_numpy_ufunc(func, op, data, **kwargs):
@@ -104,27 +104,19 @@ def execute_series_natural_log(op, data, **kwargs):
     return np.log(data)
 
 
-@execute_node.register(
-    ops.Quantile, (dd.Series, ddgb.SeriesGroupBy), numeric_types
-)
+@execute_node.register(ops.Quantile, (dd.Series, ddgb.SeriesGroupBy), numeric_types)
 def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
     return data.quantile(q=quantile)
 
 
 @execute_node.register(ops.MultiQuantile, dd.Series, collections.abc.Sequence)
-def execute_series_quantile_sequence(
-    op, data, quantile, aggcontext=None, **kwargs
-):
+def execute_series_quantile_sequence(op, data, quantile, aggcontext=None, **kwargs):
     return list(data.quantile(q=quantile))
 
 
 # TODO - aggregations - #2553
-@execute_node.register(
-    ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence
-)
-def execute_series_quantile_groupby(
-    op, data, quantile, aggcontext=None, **kwargs
-):
+@execute_node.register(ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence)
+def execute_series_quantile_groupby(op, data, quantile, aggcontext=None, **kwargs):
     def q(x, quantile, interpolation):
         result = x.quantile(quantile, interpolation=interpolation).tolist()
         res = [result for _ in range(len(x))]
@@ -134,9 +126,7 @@ def execute_series_quantile_groupby(
     return result
 
 
-@execute_node.register(
-    ops.Round, dd.Series, (dd.Series, np.integer, type(None), int)
-)
+@execute_node.register(ops.Round, dd.Series, (dd.Series, np.integer, type(None), int))
 def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return vectorize_object(op, data, places, **kwargs)

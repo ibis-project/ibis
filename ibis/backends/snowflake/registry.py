@@ -5,17 +5,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import fixed_arity
 from ibis.backends.postgres.registry import _literal as _postgres_literal
-from ibis.backends.postgres.registry import (
-    operation_registry as _operation_registry,
-)
+from ibis.backends.postgres.registry import operation_registry as _operation_registry
 
 operation_registry = _operation_registry.copy()
 
 
 def _literal(t, op):
-    if isinstance(op, ops.Literal) and isinstance(
-        op.output_dtype, dt.Floating
-    ):
+    if isinstance(op, ops.Literal) and isinstance(op.output_dtype, dt.Floating):
         value = op.value
 
         if np.isnan(value):
@@ -57,9 +53,7 @@ operation_registry.update(
         ops.Log2: fixed_arity(lambda arg: sa.func.log(2, arg), 1),
         ops.Log10: fixed_arity(lambda arg: sa.func.log(10, arg), 1),
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
-        ops.IsInf: fixed_arity(
-            lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF)), 1
-        ),
+        ops.IsInf: fixed_arity(lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF)), 1),
         ops.IsNan: fixed_arity(lambda arg: arg == _SF_NAN, 1),
         ops.Literal: _literal,
         ops.Round: _round,

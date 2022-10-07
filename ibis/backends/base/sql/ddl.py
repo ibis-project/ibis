@@ -3,10 +3,7 @@ import re
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.compiler import DDL, DML
-from ibis.backends.base.sql.registry import (
-    quote_identifier,
-    type_to_sql_string,
-)
+from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 _format_aliases = {'TEXT': 'TEXTFILE'}
@@ -35,8 +32,7 @@ def _is_quoted(x):
 
 def format_schema(schema):
     elements = [
-        _format_schema_element(name, t)
-        for name, t in zip(schema.names, schema.types)
+        _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
     ]
     return '({})'.format(',\n '.join(elements))
 
@@ -217,10 +213,7 @@ class CTAS(CreateTable):
     def _partitioned_by(self):
         if self.partition is not None:
             return 'PARTITIONED BY ({})'.format(
-                ', '.join(
-                    quote_identifier(expr.get_name())
-                    for expr in self.partition
-                )
+                ', '.join(quote_identifier(expr.get_name()) for expr in self.partition)
             )
         return None
 
@@ -230,9 +223,7 @@ class CreateView(CTAS):
     """Create a view."""
 
     def __init__(self, table_name, select, database=None, can_exist=False):
-        super().__init__(
-            table_name, select, database=database, can_exist=can_exist
-        )
+        super().__init__(table_name, select, database=database, can_exist=can_exist)
 
     @property
     def _pieces(self):
@@ -432,9 +423,7 @@ class AlterTable(BaseDDL):
 
 
 class DropFunction(DropObject):
-    def __init__(
-        self, name, inputs, must_exist=True, aggregate=False, database=None
-    ):
+    def __init__(self, name, inputs, must_exist=True, aggregate=False, database=None):
         super().__init__(must_exist=must_exist)
         self.name = name
         self.inputs = tuple(map(dt.dtype, inputs))
@@ -458,9 +447,7 @@ class DropFunction(DropObject):
 
 
 class RenameTable(AlterTable):
-    def __init__(
-        self, old_name, new_name, old_database=None, new_database=None
-    ):
+    def __init__(self, old_name, new_name, old_database=None, new_database=None):
         # if either database is None, the name is assumed to be fully scoped
         self.old_name = old_name
         self.old_database = old_database
@@ -479,9 +466,7 @@ class RenameTable(AlterTable):
         self.new_qualified_name = new_qualified_name
 
     def compile(self):
-        cmd = '{} RENAME TO {}'.format(
-            self.old_qualified_name, self.new_qualified_name
-        )
+        cmd = f'{self.old_qualified_name} RENAME TO {self.new_qualified_name}'
         return self._wrap_command(cmd)
 
 

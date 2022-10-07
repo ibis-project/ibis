@@ -101,11 +101,7 @@ def from_numpy_dtype(value):
     try:
         return _numpy_dtypes[value]
     except KeyError:
-        raise TypeError(
-            'numpy dtype {!r} is not supported in the pandas backend'.format(
-                value
-            )
-        )
+        raise TypeError(f'numpy dtype {value!r} is not supported in the pandas backend')
 
 
 @dt.dtype.register(DatetimeTZDtype)
@@ -214,9 +210,7 @@ def infer_pandas_schema(df, schema=None):
     pairs = []
     for column_name in df.dtypes.keys():
         if not isinstance(column_name, str):
-            raise TypeError(
-                'Column names must be strings to use the pandas backend'
-            )
+            raise TypeError('Column names must be strings to use the pandas backend')
 
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])

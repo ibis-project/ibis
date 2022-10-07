@@ -143,9 +143,7 @@ def test_cast_to_decimal(t, df, type):
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
-                '{}.{}'.format(
-                    '0' * (type.precision - type.scale), '0' * type.scale
-                )
+                '{}.{}'.format('0' * (type.precision - type.scale), '0' * type.scale)
             )
         ),
         meta=("float64_as_strings", "object"),
@@ -167,6 +165,4 @@ def test_cast_to_decimal(t, df, type):
 )
 def test_cast_to_category(t, df, column):
     test = t[column].cast('category').compile()
-    tm.assert_series_equal(
-        test.compute(), df[column].astype('category').compute()
-    )
+    tm.assert_series_equal(test.compute(), df[column].astype('category').compute())

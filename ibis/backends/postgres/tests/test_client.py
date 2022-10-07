@@ -32,9 +32,7 @@ from sqlalchemy.dialects import postgresql  # noqa: E402
 
 from ibis.backends.base.sql.alchemy import schema_from_table  # noqa: E402
 
-POSTGRES_TEST_DB = os.environ.get(
-    'IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing'
-)
+POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing')
 IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
 IBIS_POSTGRES_PORT = os.environ.get('IBIS_TEST_POSTGRES_PORT', '5432')
 IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER', 'postgres')
@@ -250,8 +248,6 @@ def test_get_schema_from_query(con, pg_type, expected_type):
     raw_name = ibis.util.guid()
     name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
     con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {pg_type}, y {pg_type}[])")
-    expected_schema = ibis.schema(
-        dict(x=expected_type, y=dt.Array(expected_type))
-    )
+    expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema

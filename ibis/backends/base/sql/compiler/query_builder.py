@@ -9,14 +9,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
-from ibis.backends.base.sql.compiler.select_builder import (
-    SelectBuilder,
-    _LimitSpec,
-)
-from ibis.backends.base.sql.compiler.translator import (
-    ExprTranslator,
-    QueryContext,
-)
+from ibis.backends.base.sql.compiler.select_builder import SelectBuilder, _LimitSpec
+from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.common.grounds import Comparable
 from ibis.config import options
@@ -51,9 +45,7 @@ class TableSetFormatter:
     # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
         if util.all_of([op.left, op.right], ops.Join):
-            raise NotImplementedError(
-                'Do not support joins between ' 'joins yet'
-            )
+            raise NotImplementedError('Do not support joins between ' 'joins yet')
 
         jname = self._get_join_type(op)
 
@@ -165,9 +157,7 @@ class TableSetFormatter:
                 buf.write('\n')
 
                 conj = ' AND\n{}'.format(' ' * 3)
-                fmt_preds = util.indent(
-                    'ON ' + conj.join(fmt_preds), self.indent * 2
-                )
+                fmt_preds = util.indent('ON ' + conj.join(fmt_preds), self.indent * 2)
                 buf.write(fmt_preds)
 
         return buf.getvalue()
@@ -231,10 +221,7 @@ class Select(DML, Comparable):
         return translator.get_result()
 
     def __equals__(self, other: Select) -> bool:
-        return (
-            self.limit == other.limit
-            and self._all_exprs() == other._all_exprs()
-        )
+        return self.limit == other.limit and self._all_exprs() == other._all_exprs()
 
     def _all_exprs(self):
         return tuple(
@@ -341,11 +328,7 @@ class Select(DML, Comparable):
                 # set length of last line
                 line_length = len(indented.split('\n')[-1])
                 tokens = 1
-            elif (
-                tokens > 0
-                and line_length
-                and len(val) + line_length > max_length
-            ):
+            elif tokens > 0 and line_length and len(val) + line_length > max_length:
                 # There is an expr, and adding this new one will make the line
                 # too long
                 buf.write(',\n       ') if i else buf.write('\n')
@@ -491,9 +474,7 @@ def flatten(op: ops.TableNode):
     -------
     Iterable[Union[Table]]
     """
-    return list(
-        toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right))
-    )
+    return list(toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right)))
 
 
 class Compiler:
@@ -614,9 +595,7 @@ class Compiler:
         # total number of elements is at least 3 + (2 * number of unions - 1)
         # and is therefore an odd number
         npieces = len(set_op_info)
-        assert (
-            npieces >= 3 and npieces % 2 != 0
-        ), 'Invalid set operation expression'
+        assert npieces >= 3 and npieces % 2 != 0, 'Invalid set operation expression'
 
         # 1. every other object starting from 0 is a Table instance
         # 2. every other object starting from 1 is a bool indicating the type

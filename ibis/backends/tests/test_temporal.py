@@ -322,9 +322,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split('/')
     month, day, year = array[0], array[1], array[2]
-    date_col = expr = (
-        ibis.literal('-').join(['20' + year, month, day]).cast('date')
-    )
+    date_col = expr = ibis.literal('-').join(['20' + year, month, day]).cast('date')
     expr = (date_col + interval).name('tmp')
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
@@ -441,9 +439,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
         param('10s', minus, marks=pytest.mark.notimpl(["mysql"])),
     ],
 )
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "sqlite", "snowflake"]
-)
+@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "sqlite", "snowflake"])
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -467,9 +463,7 @@ def test_temporal_binop_pandas_timedelta(
         operator.ne,
     ],
 )
-def test_timestamp_comparison_filter(
-    backend, con, alltypes, df, comparison_fn
-):
+def test_timestamp_comparison_filter(backend, con, alltypes, df, comparison_fn):
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
     expr = alltypes.filter(
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
@@ -488,9 +482,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     delta = ibis.literal(10).cast("interval('D')")
     expr = (timestamp_date + delta).name('result')
     result = expr.execute()
-    expected = timestamp_date.name('result').execute() + pd.Timedelta(
-        10, unit='D'
-    )
+    expected = timestamp_date.name('result').execute() + pd.Timedelta(10, unit='D')
     backend.assert_series_equal(result, expected)
 
 
@@ -526,9 +518,9 @@ def test_interval_add_cast_column(backend, alltypes, df):
                 t.mutate(suffix="%d")
                 .select(
                     [
-                        lambda t: t.timestamp_col.strftime(
-                            "%Y%m" + t.suffix
-                        ).name("formatted")
+                        lambda t: t.timestamp_col.strftime("%Y%m" + t.suffix).name(
+                            "formatted"
+                        )
                     ]
                 )
                 .formatted
@@ -574,9 +566,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "snowflake"]
-)
+@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite", "snowflake"])
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
@@ -658,9 +648,7 @@ def test_string_to_timestamp_tz_error(alltypes):
 
     with pytest.raises(com.UnsupportedArgumentError):
         table.mutate(
-            date=table.date_string_col.to_timestamp(
-                "%m/%d/%y", 'non-utc-timezone'
-            )
+            date=table.date_string_col.to_timestamp("%m/%d/%y", 'non-utc-timezone')
         ).compile()
 
 
@@ -693,9 +681,7 @@ def test_day_of_week_column(backend, alltypes, df):
     result_index = expr.index().execute()
     expected_index = df.timestamp_col.dt.dayofweek.astype('int16')
 
-    backend.assert_series_equal(
-        result_index, expected_index, check_names=False
-    )
+    backend.assert_series_equal(result_index, expected_index, check_names=False)
 
     result_day = expr.full_name().execute()
     expected_day = day_name(df.timestamp_col.dt)
@@ -771,9 +757,7 @@ def test_now_from_projection(alltypes):
     tm.assert_series_equal(ts.dt.year, year_expected)
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_date_literal(con):
     expr = ibis.date(2022, 2, 4)
@@ -781,9 +765,7 @@ def test_date_literal(con):
     assert result.strftime('%Y-%m-%d') == '2022-02-04'
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_timestamp_literal(con):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
@@ -793,9 +775,7 @@ def test_timestamp_literal(con):
     assert result == '2022-02-04 16:20:00'
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)
@@ -805,9 +785,7 @@ def test_time_literal(con):
     assert result == '16:20:00'
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
@@ -841,12 +819,7 @@ def test_date_column_from_iso(con, alltypes, df):
     expr = ibis.date(expr)
 
     result = con.execute(expr)
-    golden = (
-        df.year.astype(str)
-        + '-'
-        + df.month.astype(str).str.rjust(2, '0')
-        + '-13'
-    )
+    golden = df.year.astype(str) + '-' + df.month.astype(str).str.rjust(2, '0') + '-13'
     actual = result.dt.strftime('%Y-%m-%d')
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 

@@ -100,8 +100,7 @@ def test_sql_generation():
 
     result = func('hello world')
     expected = (
-        "SELECT udf_testing.identity('hello world') AS "
-        "`UDF_Tester('hello world')`"
+        "SELECT udf_testing.identity('hello world') AS " "`UDF_Tester('hello world')`"
     )
     assert ibis.impala.compile(result) == expected
 
@@ -386,9 +385,7 @@ def test_implicit_typecasting(udfcon, alltypes, test_data_db, udf_ll):
     identity_func_testing(udf_ll, udfcon, test_data_db, 'int32', literal, col)
 
 
-def identity_func_testing(
-    udf_ll, udfcon, test_data_db, datatype, literal, column
-):
+def identity_func_testing(udf_ll, udfcon, test_data_db, datatype, literal, column):
     inputs = [datatype]
     name = '__tmp_udf_' + util.guid()
     func = udf_creation_to_op(
@@ -508,9 +505,7 @@ def test_drop_uda_not_exists(udfcon):
         udfcon.drop_uda(random_name)
 
 
-def udf_creation_to_op(
-    udf_ll, udfcon, test_data_db, name, symbol, inputs, output
-):
+def udf_creation_to_op(udf_ll, udfcon, test_data_db, name, symbol, inputs, output):
     func = api.wrap_udf(udf_ll, inputs, output, symbol, name)
 
     udfcon.create_function(func, database=test_data_db)
@@ -527,9 +522,7 @@ def test_ll_uda_not_supported(uda_ll):
         conforming_wrapper(uda_ll, ['double'], 'double', 'Variance')
 
 
-def conforming_wrapper(
-    where, inputs, output, prefix, serialize=True, name=None
-):
+def conforming_wrapper(where, inputs, output, prefix, serialize=True, name=None):
     kwds = {'name': name}
     if serialize:
         kwds['serialize_fn'] = f'{prefix}Serialize'
@@ -576,9 +569,7 @@ def test_list_udas(udfcon, temp_database, wrapped_count_uda):
 @pytest.mark.xfail(
     reason='Unknown reason. xfailing to restore the CI for udf tests. #2358'
 )
-def test_drop_database_with_udfs_and_udas(
-    udfcon, temp_database, wrapped_count_uda
-):
+def test_drop_database_with_udfs_and_udas(udfcon, temp_database, wrapped_count_uda):
     uda1 = wrapped_count_uda
 
     udf1 = api.wrap_udf(

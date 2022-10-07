@@ -340,9 +340,7 @@ class DateColumn(TemporalColumn, DateValue):
 class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     def truncate(
         self,
-        unit: Literal[
-            "Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"
-        ],
+        unit: Literal["Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"],
     ) -> TimestampValue:
         """Truncate timestamp expression to units of `unit`.
 

@@ -122,10 +122,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col)
-        .apply(expected_fn)
-        .rename('tmp')
-        .reset_index()
+        df.groupby(grouping_key_col).apply(expected_fn).rename('tmp').reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
@@ -172,17 +169,13 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_cols)['double_col']
-        .agg(['mean', 'std'])
-        .reset_index()
+        df.groupby(grouping_key_cols)['double_col'].agg(['mean', 'std']).reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
     # grouping key
     result1 = result1.sort_values(by=grouping_key_cols).reset_index(drop=True)
-    expected = expected.sort_values(by=grouping_key_cols).reset_index(
-        drop=True
-    )
+    expected = expected.sort_values(by=grouping_key_cols).reset_index(drop=True)
 
     backend.assert_frame_equal(result1, expected)
 
@@ -247,9 +240,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
         ),
         param(
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
-            lambda t, where: t.double_col[where].iloc[
-                t.int_col[where].argmin()
-            ],
+            lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
             marks=pytest.mark.notyet(
                 [
@@ -264,9 +255,7 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
         ),
         param(
             lambda t, where: t.double_col.argmax(t.int_col, where=where),
-            lambda t, where: t.double_col[where].iloc[
-                t.int_col[where].argmax()
-            ],
+            lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
             id='argmax',
             marks=pytest.mark.notyet(
                 [
@@ -457,9 +446,7 @@ def test_reduction_ops(
                 where=where,
                 how="pop",
             ),
-            lambda t, where: (t.G[where] > 34.0).cov(
-                t.G[where] <= 34.0, ddof=0
-            ),
+            lambda t, where: (t.G[where] > 34.0).cov(t.G[where] <= 34.0, ddof=0),
             id='covar_pop_bool',
             marks=[
                 pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
@@ -494,9 +481,7 @@ def test_reduction_ops(
             marks=[
                 pytest.mark.broken(
                     ["snowflake"],
-                    reason=(
-                        "snowflake doesn't allow quoted columns in group_by"
-                    ),
+                    reason=("snowflake doesn't allow quoted columns in group_by"),
                 ),
             ],
         ),
@@ -546,9 +531,7 @@ def test_approx_median(alltypes):
         param(
             lambda t, where, sep: (
                 t.group_by('bigint_col')
-                .aggregate(
-                    tmp=lambda t: t.string_col.group_concat(sep, where=where)
-                )
+                .aggregate(tmp=lambda t: t.string_col.group_concat(sep, where=where))
                 .order_by('bigint_col')
             ),
             lambda t, where, sep: (
@@ -559,9 +542,7 @@ def test_approx_median(alltypes):
                 )
                 .groupby('bigint_col')
                 .string_col.agg(
-                    lambda s: (
-                        np.nan if pd.isna(s).all() else sep.join(s.values)
-                    )
+                    lambda s: (np.nan if pd.isna(s).all() else sep.join(s.values))
                 )
                 .rename('tmp')
                 .sort_index()
@@ -699,9 +680,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     is the list / np.array).
     """
 
-    udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(
-        agg_fn
-    )
+    udf = reduction(input_type=[dt.double], output_type=dt.Array(dt.double))(agg_fn)
 
     expr = alltypes.aggregate(result_col=udf(alltypes.double_col))
     result = expr.execute()

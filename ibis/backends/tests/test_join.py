@@ -70,10 +70,7 @@ def check_eq(left, right, how, **kwargs):
             # LEFT JOIN UNION RIGHT JOIN
             marks=pytest.mark.notimpl(
                 ["mysql"]
-                + (
-                    ["sqlite"]
-                    * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
-                )
+                + (["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39")))
             ),
         ),
     ],

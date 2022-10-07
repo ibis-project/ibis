@@ -6,14 +6,7 @@ import decimal
 import enum
 import ipaddress
 import uuid
-from typing import (
-    AbstractSet,
-    Any,
-    Mapping,
-    NamedTuple,
-    Sequence,
-    SupportsFloat,
-)
+from typing import AbstractSet, Any, Mapping, NamedTuple, Sequence, SupportsFloat
 
 import numpy as np
 import pandas as pd
@@ -80,9 +73,7 @@ def infer_map(value: Mapping[Any, Any]) -> dt.Map:
             highest_precedence(map(infer, value.values())),
         )
     except IbisTypeError:
-        return dt.Struct.from_dict(
-            toolz.valmap(infer, value, factory=type(value))
-        )
+        return dt.Struct.from_dict(toolz.valmap(infer, value, factory=type(value)))
 
 
 @infer.register((list, tuple))
@@ -163,9 +154,7 @@ def infer_floating(value: float) -> dt.Float64:
 
 @infer.register(int)
 def infer_integer(value: int, prefer_unsigned: bool = False) -> dt.Integer:
-    types = (
-        (dt.uint8, dt.uint16, dt.uint32, dt.uint64) if prefer_unsigned else ()
-    )
+    types = (dt.uint8, dt.uint16, dt.uint32, dt.uint64) if prefer_unsigned else ()
     types += (dt.int8, dt.int16, dt.int32, dt.int64)
     for dtype in types:
         if dtype.bounds.lower <= value <= dtype.bounds.upper:
@@ -205,9 +194,7 @@ def normalize_int(typ: dt.Integer, value: float) -> float:
     return int(value)
 
 
-@normalize.register(
-    dt.Floating, (int, float, np.integer, np.floating, SupportsFloat)
-)
+@normalize.register(dt.Floating, (int, float, np.integer, np.floating, SupportsFloat))
 def normalize_float(typ: dt.Floating, value: float) -> float:
     return float(value)
 
@@ -238,21 +225,15 @@ def normalize_set_to_frozenset(typ: dt.Set, values: AbstractSet) -> frozenset:
 
 
 @normalize.register(dt.Map, dict)
-def normalize_map_to_frozendict(
-    typ: dt.Map, values: Mapping
-) -> decimal.Decimal:
+def normalize_map_to_frozendict(typ: dt.Map, values: Mapping) -> decimal.Decimal:
     values = {k: normalize(typ.value_type, v) for k, v in values.items()}
     return frozendict(values)
 
 
 @normalize.register(dt.Struct, dict)
-def normalize_struct_to_frozendict(
-    typ: dt.Struct, values: Mapping
-) -> decimal.Decimal:
+def normalize_struct_to_frozendict(typ: dt.Struct, values: Mapping) -> decimal.Decimal:
     value_types = typ.pairs
-    values = {
-        k: normalize(typ[k], v) for k, v in values.items() if k in value_types
-    }
+    values = {k: normalize(typ[k], v) for k, v in values.items() if k in value_types}
     return frozendict(values)
 
 
@@ -262,9 +243,7 @@ def normalize_point_to_tuple(typ: dt.Point, values: Sequence) -> tuple:
 
 
 @normalize.register((dt.LineString, dt.MultiPoint), (tuple, list))
-def normalize_linestring_to_tuple(
-    typ: dt.LineString, values: Sequence
-) -> tuple:
+def normalize_linestring_to_tuple(typ: dt.LineString, values: Sequence) -> tuple:
     return tuple(normalize(dt.point, item) for item in values)
 
 
@@ -274,9 +253,7 @@ def normalize_polygon_to_tuple(typ: dt.Polygon, values: Sequence) -> tuple:
 
 
 @normalize.register(dt.MultiPolygon, (tuple, list))
-def normalize_multipolygon_to_tuple(
-    typ: dt.MultiPolygon, values: Sequence
-) -> tuple:
+def normalize_multipolygon_to_tuple(typ: dt.MultiPolygon, values: Sequence) -> tuple:
     return tuple(normalize(dt.polygon, item) for item in values)
 
 

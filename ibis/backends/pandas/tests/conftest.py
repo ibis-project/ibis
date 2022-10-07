@@ -12,9 +12,7 @@ from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 class TestConf(BackendTest, RoundHalfToEven):
     check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
-    supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {
-        'ns'
-    }
+    supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {'ns'}
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'
 

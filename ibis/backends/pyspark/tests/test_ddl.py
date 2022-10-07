@@ -152,9 +152,7 @@ def test_insert_validate_types(client, alltypes, test_data_db, temp_table):
     ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[
-        expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col
-    ]
+    to_insert = expr[expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col]
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -220,9 +218,7 @@ def test_change_properties(client, table):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
-    tbl_props_rows = client.raw_sql(
-        f"show tblproperties {table.name}"
-    ).fetchall()
+    tbl_props_rows = client.raw_sql(f"show tblproperties {table.name}").fetchall()
     for row in tbl_props_rows:
         key = row.key
         value = row.value
@@ -267,9 +263,7 @@ def test_schema_from_csv(client, awards_players_filename):
 
 
 def test_create_table_or_temp_view_from_csv(client, awards_players_filename):
-    client._create_table_or_temp_view_from_csv(
-        'awards', awards_players_filename
-    )
+    client._create_table_or_temp_view_from_csv('awards', awards_players_filename)
     table = client.table('awards')
     assert table.schema().equals(awards_players_schema)
     assert table.count().execute() == 6078

@@ -64,9 +64,7 @@ def test_initialized():
 
     assert field.initialize(Foo) == 20
 
-    field2 = Attribute(
-        validator=lambda x, this: str(x), default=lambda self: self.a
-    )
+    field2 = Attribute(validator=lambda x, this: str(x), default=lambda self: self.a)
     assert field != field2
     assert field2.initialize(Foo) == '10'
 
@@ -91,9 +89,7 @@ def test_parameter():
     assert op.default is None
     assert op.validate(None, this={'other': 1}) is None
 
-    with pytest.raises(
-        TypeError, match="annotation must be an instance of Argument"
-    ):
+    with pytest.raises(TypeError, match="annotation must be an instance of Argument"):
         Parameter("wrong", annotation=Attribute("a"))
 
 

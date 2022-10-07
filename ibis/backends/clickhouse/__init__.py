@@ -159,21 +159,15 @@ class Backend(BaseSQLBackend):
         external_tables_list = []
         if external_tables is None:
             external_tables = {}
-        for name, df in toolz.merge(
-            self._external_tables, external_tables
-        ).items():
+        for name, df in toolz.merge(self._external_tables, external_tables).items():
             if not isinstance(df, pd.DataFrame):
-                raise TypeError(
-                    'External table is not an instance of pandas dataframe'
-                )
+                raise TypeError('External table is not an instance of pandas dataframe')
             schema = sch.infer(df)
             external_tables_list.append(
                 {
                     'name': name,
                     'data': df.to_dict('records'),
-                    'structure': list(
-                        zip(schema.names, map(serialize, schema.types))
-                    ),
+                    'structure': list(zip(schema.names, map(serialize, schema.types))),
                 }
             )
 
@@ -226,9 +220,7 @@ class Backend(BaseSQLBackend):
             Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        (column_names, types, *_), *_ = self.raw_sql(
-            f"DESCRIBE {qualified_name}"
-        )
+        (column_names, types, *_), *_ = self.raw_sql(f"DESCRIBE {qualified_name}")
 
         return sch.Schema.from_tuples(zip(column_names, map(parse, types)))
 
@@ -250,8 +242,7 @@ class Backend(BaseSQLBackend):
         )
         [plan] = json.loads(raw_plans)
         fields = [
-            (field["Name"], parse(field["Type"]))
-            for field in plan["Plan"]["Header"]
+            (field["Name"], parse(field["Type"])) for field in plan["Plan"]["Header"]
         ]
         return sch.Schema.from_tuples(fields)
 

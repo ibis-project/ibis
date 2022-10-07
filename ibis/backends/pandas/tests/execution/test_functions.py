@@ -92,9 +92,7 @@ def test_math_functions_decimal(t, df, ibis_func, pandas_func):
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
-                '{}.{}'.format(
-                    '0' * (dtype.precision - dtype.scale), '0' * dtype.scale
-                )
+                '{}.{}'.format('0' * (dtype.precision - dtype.scale), '0' * dtype.scale)
             )
         )
     ).apply(pandas_func)

@@ -5,10 +5,7 @@ from sqlalchemy.ext.compiler import compiles
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.duckdb.registry import operation_registry
 
 
