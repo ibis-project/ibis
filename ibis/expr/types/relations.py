@@ -185,8 +185,7 @@ class Table(Expr, JupyterMixin):
         if key in common_typos:
             hint = common_typos[key]
             raise AttributeError(
-                f"'Table' object has no attribute {key!r}, "
-                f"did you mean '{hint}'"
+                f"'Table' object has no attribute {key!r}, " f"did you mean '{hint}'"
             )
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 
@@ -335,9 +334,7 @@ class Table(Expr, JupyterMixin):
         """
         return ops.SelfReference(self).to_expr()
 
-    def difference(
-        self, *tables: Table, distinct: bool = True, **kwargs
-    ) -> Table:
+    def difference(self, *tables: Table, distinct: bool = True, **kwargs) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -591,9 +588,7 @@ class Table(Expr, JupyterMixin):
         import ibis.expr.rules as rlz
 
         exprs = [] if exprs is None else util.promote_list(exprs)
-        for name, expr in sorted(
-            mutations.items(), key=operator.itemgetter(0)
-        ):
+        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0)):
             if util.is_function(expr):
                 value = expr(self)
             elif isinstance(expr, Deferred):
@@ -1122,9 +1117,7 @@ class Table(Expr, JupyterMixin):
     def asof_join(
         left: Table,
         right: Table,
-        predicates: str
-        | ir.BooleanColumn
-        | Sequence[str | ir.BooleanColumn] = (),
+        predicates: str | ir.BooleanColumn | Sequence[str | ir.BooleanColumn] = (),
         by: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
@@ -1165,9 +1158,7 @@ class Table(Expr, JupyterMixin):
             by=by,
             tolerance=tolerance,
         )
-        return ops.relations._dedup_join_columns(
-            op.to_expr(), suffixes=suffixes
-        )
+        return ops.relations._dedup_join_columns(op.to_expr(), suffixes=suffixes)
 
     def cross_join(
         left: Table,
@@ -1223,9 +1214,7 @@ class Table(Expr, JupyterMixin):
             functools.reduce(Table.cross_join, rest, right),
             [],
         )
-        return ops.relations._dedup_join_columns(
-            op.to_expr(), suffixes=suffixes
-        )
+        return ops.relations._dedup_join_columns(op.to_expr(), suffixes=suffixes)
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")

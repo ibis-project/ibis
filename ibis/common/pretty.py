@@ -96,9 +96,7 @@ def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
     except (AttributeError, TypeError):
         sql = compiled
 
-    assert isinstance(
-        sql, str
-    ), f"expected `str`, got `{sql.__class__.__name__}`"
+    assert isinstance(sql, str), f"expected `str`, got `{sql.__class__.__name__}`"
     (pretty,) = sqlglot.transpile(
         sql,
         read=_IBIS_TO_SQLGLOT_NAME_MAP.get(read, read),

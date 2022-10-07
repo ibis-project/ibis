@@ -26,9 +26,7 @@ register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 collect_list = dd.Aggregation(
     name="collect_list",
     chunk=lambda s: s.apply(list),
-    agg=lambda s0: s0.apply(
-        lambda chunks: list(itertools.chain.from_iterable(chunks))
-    ),
+    agg=lambda s0: s0.apply(lambda chunks: list(itertools.chain.from_iterable(chunks))),
 )
 
 

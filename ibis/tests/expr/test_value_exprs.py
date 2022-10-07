@@ -577,9 +577,7 @@ def test_string_comparisons(table, operation):
     assert isinstance(result, ir.BooleanColumn)
 
 
-@pytest.mark.parametrize(
-    'operation', [operator.xor, operator.or_, operator.and_]
-)
+@pytest.mark.parametrize('operation', [operator.xor, operator.or_, operator.and_])
 def test_boolean_logical_ops(table, operation):
     expr = table.a > 0
 
@@ -793,9 +791,7 @@ def test_literal_promotions(table, op, name, case, ex_type):
     ],
     ids=lambda arg: str(getattr(arg, '__name__', arg)),
 )
-def test_zero_subtract_literal_promotions(
-    table, op, left_fn, right_fn, ex_type
-):
+def test_zero_subtract_literal_promotions(table, op, left_fn, right_fn, ex_type):
     # in case of zero subtract the order of operands matters
     left, right = left_fn(table), right_fn(table)
     result = op(left, right)
@@ -809,21 +805,13 @@ def test_substitute_dict():
 
     result = table.foo.substitute(subs)
     expected = (
-        table.foo.case()
-        .when('a', 'one')
-        .when('b', table.bar)
-        .else_(table.foo)
-        .end()
+        table.foo.case().when('a', 'one').when('b', table.bar).else_(table.foo).end()
     )
     assert_equal(result, expected)
 
     result = table.foo.substitute(subs, else_=ibis.NA)
     expected = (
-        table.foo.case()
-        .when('a', 'one')
-        .when('b', table.bar)
-        .else_(ibis.NA)
-        .end()
+        table.foo.case().when('a', 'one').when('b', table.bar).else_(ibis.NA).end()
     )
     assert_equal(result, expected)
 
@@ -896,9 +884,7 @@ def test_table_operations_with_integer_column(position, names, expr_func):
 
 
 @pytest.mark.parametrize('value', ['abcdefg', ['a', 'b', 'c'], [1, 2, 3]])
-@pytest.mark.parametrize(
-    'operation', ['pow', 'sub', 'truediv', 'floordiv', 'mod']
-)
+@pytest.mark.parametrize('operation', ['pow', 'sub', 'truediv', 'floordiv', 'mod'])
 def test_generic_value_api_no_arithmetic(value, operation):
     func = getattr(operator, operation)
     expr = ibis.literal(value)
@@ -931,9 +917,7 @@ def test_fillna_null(value, expected):
         operator.le,
         operator.gt,
         operator.ge,
-        lambda left, right: ibis.timestamp('2017-04-01 00:02:34').between(
-            left, right
-        ),
+        lambda left, right: ibis.timestamp('2017-04-01 00:02:34').between(left, right),
         lambda left, right: ibis.timestamp('2017-04-01')
         .cast(dt.date)
         .between(left, right),
@@ -1350,9 +1334,7 @@ def test_nullif_type(left, right, expected):
     assert left.nullif(right).type() == expected
 
 
-@pytest.mark.parametrize(
-    ('left', 'right'), [(ibis.literal(1), ibis.literal('a'))]
-)
+@pytest.mark.parametrize(('left', 'right'), [(ibis.literal(1), ibis.literal('a'))])
 def test_nullif_fail(left, right):
     with pytest.raises(com.IbisTypeError):
         left.nullif(right)
@@ -1604,9 +1586,7 @@ def test_array_length_scalar():
             id="timestamp",
             marks=pytest.mark.xfail(
                 raises=NotImplementedError,
-                reason=(
-                    "`ibis.timestamp` isn't implemented for expression inputs"
-                ),
+                reason=("`ibis.timestamp` isn't implemented for expression inputs"),
             ),
         ),
         param(ibis.date, dt.date, id="date"),

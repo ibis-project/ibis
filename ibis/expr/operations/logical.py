@@ -124,9 +124,7 @@ class Between(Value):
                 f'Argument with datatype {arg.output_dtype} and upper bound '
                 f'with datatype {upper_bound.output_dtype} are not comparable'
             )
-        super().__init__(
-            arg=arg, lower_bound=lower_bound, upper_bound=upper_bound
-        )
+        super().__init__(arg=arg, lower_bound=lower_bound, upper_bound=upper_bound)
 
 
 # TODO(kszucs): decompose it into at least two operations

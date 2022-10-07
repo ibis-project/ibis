@@ -81,8 +81,7 @@ from dask.dataframe.utils import tm  # noqa: E402
         param(
             lambda s: s.re_search('(ab)+') | s.re_search('d{1,2}ee'),
             lambda s: (
-                s.str.contains('(ab)+', regex=True)
-                | s.str.contains('d{1,2}ee')
+                s.str.contains('(ab)+', regex=True) | s.str.contains('d{1,2}ee')
             ),
             id='re_search_or',
         ),
@@ -116,9 +115,7 @@ def test_grouped_string_re_search(t, df):
     result = expr.compile()
     expected = (
         df.groupby('dup_strings')
-        .strings_with_space.apply(
-            lambda s: s.str.contains('(ab)+', regex=True).sum()
-        )
+        .strings_with_space.apply(lambda s: s.str.contains('(ab)+', regex=True).sum())
         .reset_index()
         .rename(columns={'strings_with_space': 'sum'})
     )

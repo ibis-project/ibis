@@ -161,9 +161,7 @@ def test_table_drop_with_filter():
 
 def test_table_drop_consistency():
     # GH2829
-    t = ibis.table(
-        [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
-    )
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t')
 
     expected = t.projection(["a", "c"])
     result = t.drop("b")

@@ -27,10 +27,7 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
-from ibis.backends.pyspark.compiler import (
-    PySparkDatabaseTable,
-    PySparkExprTranslator,
-)
+from ibis.backends.pyspark.compiler import PySparkDatabaseTable, PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
@@ -179,9 +176,7 @@ class Backend(BaseSQLBackend):
     def list_tables(self, like=None, database=None):
         tables = [
             t.name
-            for t in self._catalog.listTables(
-                dbName=database or self.current_database
-            )
+            for t in self._catalog.listTables(dbName=database or self.current_database)
         ]
         return self._filter_with_like(tables, like)
 
@@ -189,9 +184,7 @@ class Backend(BaseSQLBackend):
         """Compile an ibis expression to a PySpark DataFrame object."""
 
         if timecontext is not None:
-            session_timezone = self._session.conf.get(
-                'spark.sql.session.timeZone'
-            )
+            session_timezone = self._session.conf.get('spark.sql.session.timeZone')
             # Since spark use session timezone for tz-naive timestamps
             # we localize tz-naive context here to match that behavior
             timecontext = localize_context(
@@ -239,9 +232,7 @@ class Backend(BaseSQLBackend):
                 compiled = self._session.range(0, 1).select(compiled)
             return compiled.toPandas().iloc[0, 0]
         else:
-            raise com.IbisError(
-                f"Cannot execute expression of type: {type(expr)}"
-            )
+            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
     @staticmethod
     def _fully_qualified_name(name, database):
@@ -354,8 +345,7 @@ class Backend(BaseSQLBackend):
         """
         if database is not None:
             raise com.UnsupportedArgumentError(
-                'Spark does not support the `database` argument for '
-                '`get_schema`'
+                'Spark does not support the `database` argument for ' '`get_schema`'
             )
 
         df = self._session.table(table_name)
@@ -458,9 +448,7 @@ class Backend(BaseSQLBackend):
                 mode = 'error'
                 if force:
                     mode = 'overwrite'
-                spark_df.write.saveAsTable(
-                    table_name, format=format, mode=mode
-                )
+                spark_df.write.saveAsTable(table_name, format=format, mode=mode)
                 return
             else:
                 self._register_in_memory_tables(obj)

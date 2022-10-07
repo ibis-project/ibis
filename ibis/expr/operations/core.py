@@ -16,8 +16,7 @@ class Node(Concrete):
     def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(
-                "invalid equality comparison between Node and "
-                f"{type(other)}"
+                "invalid equality comparison between Node and " f"{type(other)}"
             )
         return self.__cached_equals__(other)
 
@@ -49,9 +48,7 @@ class Value(Node, Named):
     # TODO(kszucs): figure out how to represent not named arguments
     @property
     def name(self):
-        args = ", ".join(
-            arg.name for arg in self.__args__ if isinstance(arg, Named)
-        )
+        args = ", ".join(arg.name for arg in self.__args__ if isinstance(arg, Named))
         return f"{self.__class__.__name__}({args})"
 
     @property

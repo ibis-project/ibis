@@ -14,15 +14,7 @@ import textwrap
 import types
 import warnings
 from numbers import Real
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Hashable,
-    Iterator,
-    Mapping,
-    Sequence,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Hashable, Iterator, Mapping, Sequence, TypeVar
 from uuid import uuid4
 
 import toolz
@@ -260,9 +252,7 @@ def is_iterable(o: Any) -> bool:
     >>> is_iterable([])
     True
     """
-    return not isinstance(o, (str, bytes)) and isinstance(
-        o, collections.abc.Iterable
-    )
+    return not isinstance(o, (str, bytes)) and isinstance(o, collections.abc.Iterable)
 
 
 def convert_unit(value, unit, to, floor=True):
@@ -316,9 +306,7 @@ def convert_unit(value, unit, to, floor=True):
             i, j = monthly_units.index(unit), monthly_units.index(to)
             factors = monthly_factors
         except ValueError:
-            raise ValueError(
-                'Cannot convert to or from variable length interval'
-            )
+            raise ValueError('Cannot convert to or from variable length interval')
 
     factor = functools.reduce(operator.mul, factors[min(i, j) : max(i, j)], 1)
     assert factor > 1
@@ -362,8 +350,7 @@ def get_logger(
     logger = logging.getLogger(name)
     logger.propagate = propagate
     logger.setLevel(
-        level
-        or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+        level or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
     )
     logger.addHandler(handler)
     return logger
@@ -460,8 +447,7 @@ def deprecated(*, instead, version=''):
         # count leading spaces and add them to the deprecation warning so the
         # docstring parses correctly
         leading_spaces = " " * sum(
-            1
-            for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
+            1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
         )
         warning_doc = f'{leading_spaces}!!! warning "DEPRECATED: {msg}"'
         func.__doc__ = "\n\n".join([first, warning_doc, *rest])
@@ -488,8 +474,7 @@ def experimental(func):
         preamble, *rest = docstr.split("\n\n", maxsplit=1)
 
         leading_spaces = " " * sum(
-            1
-            for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
+            1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
         )
 
         warning_doc = f'{leading_spaces}!!! warning "{msg}"'

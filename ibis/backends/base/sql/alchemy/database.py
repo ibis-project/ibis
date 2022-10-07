@@ -23,9 +23,7 @@ class AlchemyTable(ops.DatabaseTable):
             name = sqla_table.name
         if schema is None:
             schema = sch.infer(sqla_table, schema=schema)
-        super().__init__(
-            name=name, schema=schema, sqla_table=sqla_table, source=source
-        )
+        super().__init__(name=name, schema=schema, sqla_table=sqla_table, source=source)
 
     # TODO(kszucs): remove this
     def __equals__(self, other: AlchemyTable) -> bool:

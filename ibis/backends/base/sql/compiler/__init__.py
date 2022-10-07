@@ -8,10 +8,7 @@ from ibis.backends.base.sql.compiler.query_builder import (
     TableSetFormatter,
     Union,
 )
-from ibis.backends.base.sql.compiler.translator import (
-    ExprTranslator,
-    QueryContext,
-)
+from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
 
 __all__ = (
     'Compiler',

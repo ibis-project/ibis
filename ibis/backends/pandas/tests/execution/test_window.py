@@ -101,9 +101,7 @@ def sort_kind():
 
 
 default = pytest.mark.parametrize('default', [ibis.NA, ibis.literal('a')])
-row_offset = pytest.mark.parametrize(
-    'row_offset', list(map(ibis.literal, [-1, 1, 0]))
-)
+row_offset = pytest.mark.parametrize('row_offset', list(map(ibis.literal, [-1, 1, 0])))
 range_offset = pytest.mark.parametrize(
     'range_offset',
     [
@@ -242,9 +240,7 @@ def test_players(players, players_df):
 def test_batting_filter_mean(batting, batting_df):
     expr = batting[batting.G > batting.G.mean()]
     result = expr.execute()
-    expected = batting_df[batting_df.G > batting_df.G.mean()].reset_index(
-        drop=True
-    )
+    expected = batting_df[batting_df.G > batting_df.G.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -267,8 +263,7 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
 
     gb = players_df.groupby('playerID')
     expected = players_df.assign(
-        delta=(players_df.G - gb.G.shift(1))
-        / (players_df.yearID - gb.yearID.shift(1))
+        delta=(players_df.G - gb.G.shift(1)) / (players_df.yearID - gb.yearID.shift(1))
     )
 
     cols = expected.columns.tolist()
@@ -284,18 +279,14 @@ def test_batting_most_hits(players, players_df):
         )
     )
     result = expr.execute()
-    hits_rank = players_df.groupby('playerID').H.rank(
-        method='min', ascending=False
-    )
+    hits_rank = players_df.groupby('playerID').H.rank(method='min', ascending=False)
     expected = players_df.assign(hits_rank=hits_rank)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_batting_quantile(players, players_df):
     expr = players.mutate(hits_quantile=lambda t: t.H.quantile(0.25))
-    hits_quantile = players_df.groupby('playerID').H.transform(
-        'quantile', 0.25
-    )
+    hits_quantile = players_df.groupby('playerID').H.transform('quantile', 0.25)
     expected = players_df.assign(hits_quantile=hits_quantile)
     cols = expected.columns.tolist()
     result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
@@ -310,18 +301,14 @@ def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
 
     pandas_method = methodcaller(op)
     expected = pandas_method(
-        batting_df[['G', 'yearID']]
-        .sort_values('yearID', kind=sort_kind)
-        .G.expanding()
+        batting_df[['G', 'yearID']].sort_values('yearID', kind=sort_kind).G.expanding()
     ).reset_index(drop=True)
     tm.assert_series_equal(result, expected)
 
 
 def test_batting_cumulative(batting, batting_df, sort_kind):
     expr = batting.mutate(
-        more_values=lambda t: t.G.sum().over(
-            ibis.cumulative_window(order_by=t.yearID)
-        )
+        more_values=lambda t: t.G.sum().over(ibis.cumulative_window(order_by=t.yearID))
     )
     result = expr.execute()
 
@@ -342,9 +329,7 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
     order_by = 'yearID'
 
     t = batting
-    expr = t.G.sum().over(
-        ibis.cumulative_window(order_by=order_by, group_by=group_by)
-    )
+    expr = t.G.sum().over(ibis.cumulative_window(order_by=order_by, group_by=group_by))
     expr = t.mutate(cumulative=expr)
     result = expr.execute()
 
@@ -366,9 +351,7 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
 
 def test_batting_rolling(batting, batting_df, sort_kind):
     expr = batting.mutate(
-        more_values=lambda t: t.G.sum().over(
-            ibis.trailing_window(5, order_by=t.yearID)
-        )
+        more_values=lambda t: t.G.sum().over(ibis.trailing_window(5, order_by=t.yearID))
     )
     result = expr.execute()
 
@@ -630,9 +613,7 @@ def test_window_on_and_by_key_as_window_input(t, df):
     group_by = 'dup_ints'
     control = 'plain_float64'
 
-    row_window = ibis.trailing_window(
-        order_by=order_by, group_by=group_by, preceding=1
-    )
+    row_window = ibis.trailing_window(order_by=order_by, group_by=group_by, preceding=1)
 
     # Test built-in function
 
@@ -756,15 +737,11 @@ def test_rolling_window_udf_nan_and_non_numeric(t, group_by, order_by):
     def count_timestamp(v):
         return len(v)
 
-    @reduction(
-        input_type=[t['map_of_strings_integers'].type()], output_type=dt.int64
-    )
+    @reduction(input_type=[t['map_of_strings_integers'].type()], output_type=dt.int64)
     def count_complex(v):
         return len(v)
 
-    window = ibis.trailing_window(
-        preceding=1, order_by=order_by, group_by=group_by
-    )
+    window = ibis.trailing_window(preceding=1, order_by=order_by, group_by=group_by)
 
     result_nan = count_int64(t['nan_int64']).over(window).execute()
     result_non_numeric = (

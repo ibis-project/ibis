@@ -18,11 +18,7 @@ from ibis import options
 from ibis.backends.base import BaseBackend
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
-from ibis.backends.tests.base import (
-    BackendTest,
-    RoundAwayFromZero,
-    UnorderedComparator,
-)
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -132,8 +128,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(
         data_directory: Path,
-        database: str
-        | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),
+        database: str | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),
         with_hdfs: bool = True,
     ):
         fsspec = pytest.importorskip("fsspec")
@@ -158,10 +153,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         import pyarrow.parquet as pq
 
         pq_file = pq.ParquetFile(
-            self.data_directory
-            / "parquet"
-            / tablename
-            / f"{tablename}.parquet"
+            self.data_directory / "parquet" / tablename / f"{tablename}.parquet"
         )
         return pq_file.schema.names
 
@@ -212,9 +204,7 @@ class IbisTestEnv:
 
     @property
     def test_data_dir(self):
-        return os.environ.get(
-            'IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data'
-        )
+        return os.environ.get('IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data')
 
     @property
     def nn_host(self):
@@ -231,9 +221,7 @@ class IbisTestEnv:
     @property
     def use_codegen(self):
         return ast.literal_eval(
-            os.environ.get('IBIS_TEST_USE_CODEGEN', 'False')
-            .lower()
-            .capitalize()
+            os.environ.get('IBIS_TEST_USE_CODEGEN', 'False').lower().capitalize()
         )
 
     @property
@@ -299,9 +287,7 @@ def backend(tmp_path_factory, data_directory, script_directory, worker_id):
 def con_no_hdfs(env, data_directory, backend):
     con = backend.connect(data_directory, with_hdfs=False)
     con.disable_codegen(disabled=not env.use_codegen)
-    assert con.get_options()['DISABLE_CODEGEN'] == str(
-        int(not env.use_codegen)
-    )
+    assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
     try:
         yield con
     finally:
@@ -312,9 +298,7 @@ def con_no_hdfs(env, data_directory, backend):
 def con(env, data_directory, backend):
     con = backend.connect(data_directory)
     con.disable_codegen(disabled=not env.use_codegen)
-    assert con.get_options()['DISABLE_CODEGEN'] == str(
-        int(not env.use_codegen)
-    )
+    assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
     try:
         yield con
     finally:
@@ -414,9 +398,7 @@ def temp_view(con):
 
 @pytest.fixture
 def temp_parquet_table_schema():
-    return ibis.schema(
-        [('id', 'int32'), ('name', 'string'), ('files', 'int32')]
-    )
+    return ibis.schema([('id', 'int32'), ('name', 'string'), ('files', 'int32')])
 
 
 @pytest.fixture
@@ -486,9 +468,7 @@ def impala_build_and_upload_udfs(hdfs, env, *, fs):
     hdfs.mkdir(bitcode_dir, create_parents=True)
 
     for file in fs.find(build_dir):
-        bitcode_path = os.path.join(
-            bitcode_dir, os.path.relpath(file, build_dir)
-        )
+        bitcode_path = os.path.join(bitcode_dir, os.path.relpath(file, build_dir))
         yield hdfs.put_file, file, bitcode_path
 
 

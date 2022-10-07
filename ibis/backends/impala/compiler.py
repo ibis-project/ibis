@@ -1,13 +1,6 @@
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.compiler import (
-    Compiler,
-    ExprTranslator,
-    TableSetFormatter,
-)
-from ibis.backends.base.sql.registry import (
-    binary_infix_ops,
-    operation_registry,
-)
+from ibis.backends.base.sql.compiler import Compiler, ExprTranslator, TableSetFormatter
+from ibis.backends.base.sql.registry import binary_infix_ops, operation_registry
 
 
 class ImpalaTableSetFormatter(TableSetFormatter):

@@ -11,10 +11,7 @@ def get_backends():
     pyproject = tomli.loads(Path("pyproject.toml").read_text())
     backends = pyproject["tool"]["poetry"]["plugins"]["ibis.backends"]
     del backends["spark"]
-    return [
-        (backend, getattr(ibis, backend))
-        for backend in sorted(backends.keys())
-    ]
+    return [(backend, getattr(ibis, backend)) for backend in sorted(backends.keys())]
 
 
 def get_leaf_classes(op):

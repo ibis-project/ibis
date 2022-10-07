@@ -76,9 +76,7 @@ FROM t0
 def test_nested_join_base():
     t = ibis.table([('uuid', 'string'), ('ts', 'timestamp')], name='t')
     counts = t.group_by('uuid').size()
-    max_counts = counts.group_by('uuid').aggregate(
-        max_count=lambda x: x['count'].max()
-    )
+    max_counts = counts.group_by('uuid').aggregate(max_count=lambda x: x['count'].max())
     result = max_counts.left_join(counts, 'uuid').projection([counts])
     compiled_result = ImpalaCompiler.to_sql(result)
 
@@ -106,9 +104,7 @@ def test_nested_joins_single_cte():
 
     last_visit = t.group_by('uuid').aggregate(last_visit=t.ts.max())
 
-    max_counts = counts.group_by('uuid').aggregate(
-        max_count=counts['count'].max()
-    )
+    max_counts = counts.group_by('uuid').aggregate(max_count=counts['count'].max())
 
     main_kw = max_counts.left_join(
         counts, ['uuid', max_counts.max_count == counts['count']]
@@ -156,16 +152,12 @@ def test_nested_join_multiple_ctes():
         ],
         name='ratings',
     )
-    movies = ibis.table(
-        [('movieid', 'int64'), ('title', 'string')], name='movies'
-    )
+    movies = ibis.table([('movieid', 'int64'), ('title', 'string')], name='movies')
 
     expr = ratings.timestamp.cast('timestamp')
     ratings2 = ratings['userid', 'movieid', 'rating', expr.name('datetime')]
     joined2 = ratings2.join(movies, ['movieid'])[ratings2, movies['title']]
-    joined3 = joined2.filter(
-        [joined2.userid == 118205, joined2.datetime.year() > 2001]
-    )
+    joined3 = joined2.filter([joined2.userid == 118205, joined2.datetime.year() > 2001])
     top_user_old_movie_ids = joined3.filter(
         [joined3.userid == 118205, joined3.datetime.year() < 2009]
     )[['movieid']]
@@ -260,9 +252,7 @@ FROM t t0
     assert ImpalaCompiler.to_sql(expr) == expected
 
 
-@pytest.mark.parametrize(
-    ('method', 'sql'), [('isnull', 'IS'), ('notnull', 'IS NOT')]
-)
+@pytest.mark.parametrize(('method', 'sql'), [('isnull', 'IS'), ('notnull', 'IS NOT')])
 def test_is_parens(method, sql):
     t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
     func = operator.methodcaller(method)
@@ -297,12 +287,8 @@ def test_join_aliasing():
     test = test.mutate(d=test.a + 20)
     test2 = test[test.d, test.c]
     idx = (test2.d / 15).cast('int64').name('idx')
-    test3 = test2.group_by([test2.d, idx, test2.c]).aggregate(
-        row_count=test2.count()
-    )
-    test3_totals = test3.group_by(test3.d).aggregate(
-        total=test3.row_count.sum()
-    )
+    test3 = test2.group_by([test2.d, idx, test2.c]).aggregate(row_count=test2.count())
+    test3_totals = test3.group_by(test3.d).aggregate(total=test3.row_count.sum())
     test4 = test3.join(test3_totals, test3.d == test3_totals.d)[
         test3, test3_totals.total
     ]
@@ -467,9 +453,7 @@ def tpch(region, nation, customer, orders):
     return (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[
-            fields_of_interest
-        ]
+        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
 
@@ -482,9 +466,7 @@ def test_join_key_name(tpch):
     amount_filter = tpch.o_totalprice > conditional_avg
     post_sizes = tpch[amount_filter].group_by(year).size()
 
-    percent = (post_sizes['count'] / pre_sizes['count'].cast('double')).name(
-        'fraction'
-    )
+    percent = (post_sizes['count'] / pre_sizes['count'].cast('double')).name('fraction')
 
     expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
         pre_sizes.year,

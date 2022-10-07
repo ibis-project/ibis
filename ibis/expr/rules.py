@@ -175,9 +175,7 @@ def literal(dtype, value, **kwargs):
             # implicitly castable to the explicitly given dtype and value
             dtype = inferred_dtype.cast(explicit_dtype, value=value)
         except com.IbisTypeError:
-            raise TypeError(
-                f'Value {value!r} cannot be safely coerced to {type}'
-            )
+            raise TypeError(f'Value {value!r} cannot be safely coerced to {type}')
     elif has_explicit:
         dtype = explicit_dtype
     elif has_inferred:
@@ -477,8 +475,7 @@ def column_from(table_ref, column, **kwargs):
 
     if not isinstance(column, ir.Column):
         raise com.IbisTypeError(
-            "value must be an int or str or Column, got "
-            f"{type(column).__name__}"
+            "value must be an int or str or Column, got " f"{type(column).__name__}"
         )
 
     if not column.has_name():
@@ -489,13 +486,9 @@ def column_from(table_ref, column, **kwargs):
         if column.equals(table[maybe_column]):
             return column.op()
         else:
-            raise com.IbisTypeError(
-                f"Passed column is not a column in {type(table)}"
-            )
+            raise com.IbisTypeError(f"Passed column is not a column in {type(table)}")
     except com.IbisError:
-        raise com.IbisTypeError(
-            f"Cannot get column {maybe_column} from {type(table)}"
-        )
+        raise com.IbisTypeError(f"Cannot get column {maybe_column} from {type(table)}")
 
 
 @rule
@@ -560,9 +553,7 @@ def analytic(arg, **kwargs):
     from ibis.expr.analysis import is_analytic
 
     if not is_analytic(arg):
-        raise com.IbisInputError(
-            'Expression does not contain a valid window operation'
-        )
+        raise com.IbisInputError('Expression does not contain a valid window operation')
     return arg
 
 
@@ -581,9 +572,7 @@ def window_from(table_ref, win, **kwargs):
         win = win.bind(table.to_expr())
 
     if win.max_lookback is not None:
-        error_msg = (
-            "'max lookback' windows must be ordered " "by a timestamp column"
-        )
+        error_msg = "'max lookback' windows must be ordered " "by a timestamp column"
         if len(win._order_by) != 1:
             raise com.IbisInputError(error_msg)
         order_var = win._order_by[0].args[0]

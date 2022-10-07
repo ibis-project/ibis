@@ -13,11 +13,7 @@ import ibis.backends.pandas.execution  # noqa: F401
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.dask.client import (
-    DaskDatabase,
-    DaskTable,
-    ibis_schema_to_dask,
-)
+from ibis.backends.dask.client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 
@@ -98,9 +94,7 @@ class Backend(BasePandasBackend):
         if params is None:
             params = {}
         else:
-            params = {
-                k.op() if hasattr(k, 'op') else k: v for k, v in params.items()
-            }
+            params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
         return execute_and_reset(node, params=params, **kwargs)
 

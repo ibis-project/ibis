@@ -25,9 +25,7 @@ except ImportError:
     ('operand_fn', 'expected_operand_fn'),
     [
         param(lambda t: t.float_col, lambda t: t.float_col, id='float-column'),
-        param(
-            lambda t: t.double_col, lambda t: t.double_col, id='double-column'
-        ),
+        param(lambda t: t.double_col, lambda t: t.double_col, id='double-column'),
         param(lambda t: ibis.literal(1.3), lambda t: 1.3, id='float-literal'),
         param(
             lambda t: ibis.literal(np.nan),
@@ -209,13 +207,9 @@ def test_trig_functions_literals(con, expr, expected):
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
-    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(
-        tmp=expr
-    )
+    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(tmp=expr)
     result = expr.tmp.execute()
-    expected = expected_fn(
-        (df.double_col / dc_max).replace(0.0, np.nan)
-    ).rename("tmp")
+    expected = expected_fn((df.double_col / dc_max).replace(0.0, np.nan)).rename("tmp")
     backend.assert_series_equal(result, expected)
 
 
@@ -308,8 +302,7 @@ def test_simple_math_functions_columns(
                 )
             ),
             lambda t: (
-                np.log(t.double_col + 1)
-                / np.log(np.maximum(9_000, t.bigint_col))
+                np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
             marks=pytest.mark.notimpl(["clickhouse", "datafusion"]),
@@ -360,9 +353,7 @@ def test_complex_math_functions_columns(
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
-            lambda be, t: be.greatest(
-                ibis.greatest, t.bigint_col, t.int_col, -2
-            ),
+            lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
@@ -371,9 +362,7 @@ def test_complex_math_functions_columns(
         ),
     ],
 )
-def test_backend_specific_numerics(
-    backend, con, df, alltypes, expr_fn, expected_fn
-):
+def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected_fn):
     expr = expr_fn(backend, alltypes)
     result = backend.default_series_rename(con.execute(expr))
     expected = backend.default_series_rename(expected_fn(backend, df))
@@ -414,9 +403,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
 
 
 def test_mod(backend, alltypes, df):
-    expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name(
-        'tmp'
-    )
+    expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name('tmp')
 
     result = expr.execute()
     expected = operator.mod(df.smallint_col, df.smallint_col + 1)
@@ -426,9 +413,7 @@ def test_mod(backend, alltypes, df):
 
 
 def test_floating_mod(backend, alltypes, df):
-    expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name(
-        'tmp'
-    )
+    expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name('tmp')
 
     result = expr.execute()
     expected = operator.mod(df.double_col, df.smallint_col + 1)

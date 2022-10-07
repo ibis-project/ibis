@@ -32,9 +32,7 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while queue:
             if (node := queue.popleft()) not in graph:
-                children = [
-                    c for c in node.__children__ if isinstance(c, filter)
-                ]
+                children = [c for c in node.__children__ if isinstance(c, filter)]
                 graph[node] = children
                 queue.extend(children)
 
@@ -50,9 +48,7 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while stack:
             if (node := stack.pop()) not in graph:
-                children = [
-                    c for c in node.__children__ if isinstance(c, filter)
-                ]
+                children = [c for c in node.__children__ if isinstance(c, filter)]
                 graph[node] = children
                 stack.extend(children)
 

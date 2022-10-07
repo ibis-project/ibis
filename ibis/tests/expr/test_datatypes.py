@@ -62,9 +62,7 @@ def test_array_with_string_value_type():
 
 def test_map_with_string_value_type():
     assert dt.Map('int32', 'double') == dt.Map(dt.int32, dt.double)
-    assert dt.Map('int32', 'array<double>') == dt.Map(
-        dt.int32, dt.Array(dt.double)
-    )
+    assert dt.Map('int32', 'array<double>') == dt.Map(dt.int32, dt.Array(dt.double))
 
 
 def test_map_does_not_allow_non_primitive_keys():
@@ -166,9 +164,7 @@ def test_decimal_failure(case):
         dt.dtype(case)
 
 
-@pytest.mark.parametrize(
-    'spec', ['varchar', 'varchar(10)', 'char', 'char(10)']
-)
+@pytest.mark.parametrize('spec', ['varchar', 'varchar(10)', 'char', 'char(10)'])
 def test_char_varchar(spec):
     assert dt.dtype(spec) == dt.string
 
@@ -542,7 +538,5 @@ def test_traversal_replace():
     subs = {dt.string: dt.timestamp, dt.int64: dt.bool}
 
     result = dtype.replace(subs)
-    expected = dt.Struct.from_tuples(
-        [('a', 'bool'), ('b', dt.Array('timestamp'))]
-    )
+    expected = dt.Struct.from_tuples([('a', 'bool'), ('b', dt.Array('timestamp'))])
     assert result == expected

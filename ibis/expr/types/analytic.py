@@ -60,9 +60,7 @@ class TopK(Analytic):
         elif isinstance(by, ops.Value):
             by_table = find_first_base_table(op.by).to_expr()
         else:
-            raise com.IbisTypeError(
-                f"Invalid `by` argument with type {type(by)}"
-            )
+            raise com.IbisTypeError(f"Invalid `by` argument with type {type(by)}")
 
         if metric_name is None:
             if by.name == op.arg.name:
@@ -75,9 +73,7 @@ class TopK(Analytic):
         elif parent_table is not None:
             agg = parent_table.aggregate(by.to_expr(), by=[op.arg.to_expr()])
         else:
-            raise com.IbisError(
-                'Cross-table TopK; must provide a parent joined table'
-            )
+            raise com.IbisError('Cross-table TopK; must provide a parent joined table')
 
         return agg.order_by([(by.name, False)]).limit(op.k)
 

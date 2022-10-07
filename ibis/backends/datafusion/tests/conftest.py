@@ -48,9 +48,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 ]
             ),
         )
-        client.register_csv(
-            name='batting', path=data_directory / 'batting.csv'
-        )
+        client.register_csv(name='batting', path=data_directory / 'batting.csv')
         client.register_csv(
             name='awards_players', path=data_directory / 'awards_players.csv'
         )

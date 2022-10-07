@@ -82,12 +82,8 @@ def _construct_join_predicate_columns(op, predicates, **kwargs):
 
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError(
-                'Only equality join predicates supported with pandas'
-            )
-        new_left_column, left_pred_root = _compute_join_column(
-            predicate.left, **kwargs
-        )
+            raise TypeError('Only equality join predicates supported with pandas')
+        new_left_column, left_pred_root = _compute_join_column(predicate.left, **kwargs)
         on[left_pred_root].append(new_left_column)
 
         new_right_column, right_pred_root = _compute_join_column(
@@ -106,9 +102,7 @@ def execute_join(op, left, right, predicates, **kwargs):
     except KeyError:
         raise NotImplementedError(f'{op_type.__name__} not supported')
 
-    left_on, right_on = _construct_join_predicate_columns(
-        op, predicates, **kwargs
-    )
+    left_on, right_on = _construct_join_predicate_columns(op, predicates, **kwargs)
 
     df = pd.merge(
         left,
@@ -133,9 +127,7 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
     overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)
-    _validate_columns(
-        overlapping_columns, left_on, right_on, left_by, right_by
-    )
+    _validate_columns(overlapping_columns, left_on, right_on, left_by, right_by)
 
     return pd.merge_asof(
         left=left,
@@ -153,9 +145,7 @@ def _extract_predicate_names(predicates):
     rights = []
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError(
-                'Only equality join predicates supported with pandas'
-            )
+            raise TypeError('Only equality join predicates supported with pandas')
         left_name = predicate.left.name
         right_name = predicate.right.name
         lefts.append(left_name)
@@ -171,7 +161,5 @@ def _validate_columns(orig_columns, *key_lists):
         raise ValueError(
             'left and right DataFrame columns overlap on {} in a join. '
             'Please specify the columns you want to select from the join, '
-            'e.g., join[left.column1, right.column2, ...]'.format(
-                overlapping_columns
-            )
+            'e.g., join[left.column1, right.column2, ...]'.format(overlapping_columns)
         )

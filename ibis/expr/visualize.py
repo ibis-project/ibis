@@ -42,9 +42,7 @@ def get_type(node):
 
     return (
         ''.join(
-            '<BR ALIGN="LEFT" /> <I>{}</I>: {}'.format(
-                escape(name), escape(str(type))
-            )
+            f'<BR ALIGN="LEFT" /> <I>{escape(name)}</I>: {escape(str(type))}'
             for name, type in zip(schema.names, schema.types)
         )
         + '<BR ALIGN="LEFT" />'

@@ -72,12 +72,8 @@ def test_pickle_literal_interval():
     [
         pytest.param(uuid.uuid1(), "uuid", uuid.UUID, id="uuid1_as_uuid"),
         pytest.param(uuid.uuid4(), "uuid", uuid.UUID, id="uuid4_as_uuid"),
-        pytest.param(
-            str(uuid.uuid1()), "uuid", uuid.UUID, id="str_uuid1_as_uuid"
-        ),
-        pytest.param(
-            str(uuid.uuid4()), "uuid", uuid.UUID, id="str_uuid4_as_uuid"
-        ),
+        pytest.param(str(uuid.uuid1()), "uuid", uuid.UUID, id="str_uuid1_as_uuid"),
+        pytest.param(str(uuid.uuid4()), "uuid", uuid.UUID, id="str_uuid4_as_uuid"),
         pytest.param(uuid.uuid1(), "string", str, id="uuid1_as_str"),
         pytest.param(uuid.uuid4(), "string", str, id="uuid4_as_str"),
         pytest.param(str(uuid.uuid1()), "string", str, id="str_uuid1_as_str"),
@@ -108,9 +104,7 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
 def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
-    assert a.op().value == frozendict(
-        field1=value['field1'], field2=value['field2']
-    )
+    assert a.op().value == frozendict(field1=value['field1'], field2=value['field2'])
     assert a.type() == datatypes.dtype(typestr)
 
 
@@ -124,9 +118,7 @@ def test_struct_literal(value):
 )
 def test_struct_literal_non_castable(value):
     typestr = "struct<field1: string, field2: float64>"
-    with pytest.raises(
-        (KeyError, TypeError, ibis.common.exceptions.IbisTypeError)
-    ):
+    with pytest.raises((KeyError, TypeError, ibis.common.exceptions.IbisTypeError)):
         ibis.struct(value, type=typestr)
 
 

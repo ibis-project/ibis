@@ -70,10 +70,7 @@ def make_geography_db(
             table = sa.Table(
                 table_name,
                 metadata,
-                *(
-                    sa.Column(col_name, col_type)
-                    for col_name, col_type in schema
-                ),
+                *(sa.Column(col_name, col_type) for col_name, col_type in schema),
             )
             table_columns = table.c.keys()
             post_parse = POST_PARSE_FUNCTIONS.get(table_name, toolz.identity)
@@ -82,16 +79,11 @@ def make_geography_db(
             table.create(bind=bind)
             bind.execute(
                 table.insert().values(),
-                [
-                    post_parse(dict(zip(table_columns, row)))
-                    for row in data[table_name]
-                ],
+                [post_parse(dict(zip(table_columns, row))) for row in data[table_name]],
             )
 
 
-@click.command(
-    help="Create the geography SQLite database for the Ibis tutorial"
-)
+@click.command(help="Create the geography SQLite database for the Ibis tutorial")
 @click.option(
     "-d",
     "--output-directory",

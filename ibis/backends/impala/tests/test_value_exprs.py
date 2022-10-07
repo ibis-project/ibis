@@ -179,9 +179,7 @@ def test_between(table):
     ("expr_fn", "expected"),
     [
         pytest.param(lambda t: t['g'].isnull(), '`g` IS NULL', id="isnull"),
-        pytest.param(
-            lambda t: t['a'].notnull(), '`a` IS NOT NULL', id="notnull"
-        ),
+        pytest.param(lambda t: t['a'].notnull(), '`a` IS NOT NULL', id="notnull"),
         pytest.param(
             lambda t: (t['a'] + t['b']).isnull(),
             '`a` + `b` IS NULL',
@@ -317,17 +315,11 @@ def test_timestamp_deltas(table, unit, compiled_unit):
 
     add_expr = table.i + offset
     result = translate(add_expr)
-    assert (
-        result
-        == f'date_add(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
-    )
+    assert result == f'date_add(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
 
     sub_expr = table.i - offset
     result = translate(sub_expr)
-    assert (
-        result
-        == f'date_sub(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
-    )
+    assert result == f'date_sub(cast({f} as timestamp), INTERVAL {K} {compiled_unit})'
 
 
 @pytest.mark.parametrize(

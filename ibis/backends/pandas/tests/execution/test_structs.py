@@ -36,9 +36,7 @@ def struct_table(struct_client):
     return struct_client.table(
         "t",
         schema={
-            "s": dt.Struct.from_tuples(
-                [("fruit", dt.string), ("weight", dt.int8)]
-            )
+            "s": dt.Struct.from_tuples([("fruit", dt.string), ("weight", dt.int8)])
         },
     )
 
@@ -70,9 +68,7 @@ def test_struct_field_series_group_by_key(struct_table):
     t = struct_table
     expr = t.group_by(t.s['fruit']).aggregate(total=t.value.sum())
     result = expr.execute()
-    expected = pd.DataFrame(
-        [("apple", 1), ("pear", 5)], columns=["fruit", "total"]
-    )
+    expected = pd.DataFrame([("apple", 1), ("pear", 5)], columns=["fruit", "total"])
     tm.assert_frame_equal(result, expected)
 
 

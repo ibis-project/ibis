@@ -30,20 +30,14 @@ def parse(text: str) -> dt.DataType:
         datetime
         | spaceless_string("null", "nothing").result(dt.null)
         | spaceless_string("bigint", "int64").result(dt.Int64(nullable=False))
-        | spaceless_string("double", "float64").result(
-            dt.Float64(nullable=False)
-        )
-        | spaceless_string("float32", "float").result(
-            dt.Float32(nullable=False)
-        )
-        | spaceless_string("smallint", "int16", "int2").result(
-            dt.Int16(nullable=False)
-        )
+        | spaceless_string("double", "float64").result(dt.Float64(nullable=False))
+        | spaceless_string("float32", "float").result(dt.Float32(nullable=False))
+        | spaceless_string("smallint", "int16", "int2").result(dt.Int16(nullable=False))
         | spaceless_string("date32", "date").result(dt.Date(nullable=False))
         | spaceless_string("time").result(dt.Time(nullable=False))
-        | spaceless_string(
-            "tinyint", "int8", "int1", "boolean", "bool"
-        ).result(dt.Int8(nullable=False))
+        | spaceless_string("tinyint", "int8", "int1", "boolean", "bool").result(
+            dt.Int8(nullable=False)
+        )
         | spaceless_string("integer", "int32", "int4", "int").result(
             dt.Int32(nullable=False)
         )
@@ -203,9 +197,7 @@ def parse(text: str) -> dt.DataType:
 
 @functools.singledispatch
 def serialize(ty) -> str:
-    raise NotImplementedError(
-        f"{ty} not serializable to clickhouse type string"
-    )
+    raise NotImplementedError(f"{ty} not serializable to clickhouse type string")
 
 
 @serialize.register(dt.DataType)
@@ -223,9 +215,7 @@ def _(ty: dt.Map) -> str:
 
 @functools.singledispatch
 def serialize_raw(ty: dt.DataType) -> str:
-    raise NotImplementedError(
-        f"{ty} not serializable to clickhouse type string"
-    )
+    raise NotImplementedError(f"{ty} not serializable to clickhouse type string")
 
 
 @serialize_raw.register(dt.DataType)
@@ -256,8 +246,4 @@ def _(ty: dt.Struct) -> str:
 
 @serialize_raw.register(dt.Timestamp)
 def _(ty: dt.Timestamp) -> str:
-    return (
-        "DateTime64(6)"
-        if ty.timezone is None
-        else f"DateTime64(6, {ty.timezone!r})"
-    )
+    return "DateTime64(6)" if ty.timezone is None else f"DateTime64(6, {ty.timezone!r})"

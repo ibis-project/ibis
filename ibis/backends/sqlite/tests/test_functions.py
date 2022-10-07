@@ -45,9 +45,7 @@ def test_cast(alltypes, alltypes_sqla, translate, func, expected):
     [
         (
             lambda t: t.timestamp_col.cast(dt.timestamp),
-            lambda at: sa.func.strftime(
-                '%Y-%m-%d %H:%M:%f', at.c.timestamp_col
-            ),
+            lambda at: sa.func.strftime('%Y-%m-%d %H:%M:%f', at.c.timestamp_col),
         ),
         (
             lambda t: t.int_col.cast(dt.timestamp),
@@ -342,24 +340,18 @@ def test_ifelse(alltypes, df, func, expected_func):
         # tier and histogram
         (
             lambda d: d.bucket([0, 10, 25, 50, 100]),
-            lambda s: pd.cut(
-                s, [0, 10, 25, 50, 100], right=False, labels=False
-            ),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
         ),
         (
             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
-            lambda s: pd.cut(
-                s, [0, 10, 25, 50, np.inf], right=False, labels=False
-            ),
+            lambda s: pd.cut(s, [0, 10, 25, 50, np.inf], right=False, labels=False),
         ),
         (
             lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
             lambda s: pd.cut(s, [0, 10, 25, 50], right=False, labels=False),
         ),
         (
-            lambda d: d.bucket(
-                [0, 10, 25, 50], closed='right', close_extreme=False
-            ),
+            lambda d: d.bucket([0, 10, 25, 50], closed='right', close_extreme=False),
             lambda s: pd.cut(
                 s,
                 [0, 10, 25, 50],
@@ -370,9 +362,7 @@ def test_ifelse(alltypes, df, func, expected_func):
         ),
         (
             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
-            lambda s: pd.cut(
-                s, [0, 10, 25, 50, 100], right=False, labels=False
-            ),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
         ),
     ],
 )
@@ -556,12 +546,7 @@ def test_interactive_repr_shows_error(alltypes):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = (
-        t.mutate(d=t.double_col.fillna(0))
-        .limit(1000)
-        .group_by('string_col')
-        .size()
-    )
+    expr = t.mutate(d=t.double_col.fillna(0)).limit(1000).group_by('string_col').size()
     result = expr.execute()
     expected = (
         df.assign(d=df.double_col.fillna(0))
@@ -581,15 +566,11 @@ def test_filter(alltypes, df):
     assert len(result) == len(expected)
 
 
-@pytest.mark.parametrize(
-    'column', [lambda t: 'float_col', lambda t: t['float_col']]
-)
+@pytest.mark.parametrize('column', [lambda t: 'float_col', lambda t: t['float_col']])
 def test_column_access_after_sort(alltypes, df, column):
     expr = alltypes.order_by(column(alltypes)).head(10).string_col
     result = expr.execute()
-    expected = (
-        df.sort_values('float_col').string_col.head(10).reset_index(drop=True)
-    )
+    expected = df.sort_values('float_col').string_col.head(10).reset_index(drop=True)
     tm.assert_series_equal(result, expected)
 
 
@@ -770,8 +751,6 @@ def test_count_on_order_by(con):
     sort_key = ibis.desc(t.playerID)
     sorted_table = t.order_by(sort_key)
     expr = sorted_table.count()
-    result = str(
-        expr.compile().compile(compile_kwargs={'literal_binds': True})
-    )
+    result = str(expr.compile().compile(compile_kwargs={'literal_binds': True}))
     expected = "SELECT count(*) AS count \nFROM main.batting AS t0"
     assert result == expected

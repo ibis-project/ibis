@@ -51,10 +51,7 @@ def calc_zscore(s):
             lambda t, win: t.id.percent_rank().over(win),
             lambda t: t.apply(
                 lambda df: (
-                    df.sort_values("id")
-                    .id.rank(method="min")
-                    .sub(1)
-                    .div(len(df) - 1)
+                    df.sort_values("id").id.rank(method="min").sub(1).div(len(df) - 1)
                 )
             ).reset_index(drop=True, level=[0]),
             id='percent_rank',
@@ -124,9 +121,7 @@ def calc_zscore(s):
         ),
         param(
             lambda t, win: t.double_col.cummean().over(win),
-            lambda t: (
-                t.double_col.expanding().mean().reset_index(drop=True, level=0)
-            ),
+            lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
             id='cummean',
         ),
         param(
@@ -211,9 +206,7 @@ def calc_zscore(s):
         param(
             lambda t, win: t.double_col.mean().over(win),
             lambda gb: (
-                gb.double_col.expanding()
-                .mean()
-                .reset_index(drop=True, level=0)
+                gb.double_col.expanding().mean().reset_index(drop=True, level=0)
             ),
             id='mean',
         ),
@@ -420,16 +413,12 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
 @pytest.mark.parametrize(
     ('ordered'),
     [
-        param(
-            True, id='ordered', marks=pytest.mark.notimpl(["dask", "pandas"])
-        ),
+        param(True, id='ordered', marks=pytest.mark.notimpl(["dask", "pandas"])),
         param(
             False,
             id='unordered',
             marks=[
-                pytest.mark.notyet(
-                    ["snowflake"], reason="snowflake requires ordering"
-                )
+                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering")
             ],
         ),
     ],
@@ -476,9 +465,7 @@ def test_grouped_unbounded_window(
             id='ordered-mean',
             marks=[
                 pytest.mark.notimpl(["dask", "impala", "pandas"]),
-                pytest.mark.broken(
-                    ["clickhouse"], reason="upstream appears broken"
-                ),
+                pytest.mark.broken(["clickhouse"], reason="upstream appears broken"),
             ],
         ),
         param(
@@ -487,9 +474,7 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-mean',
             marks=[
-                pytest.mark.notyet(
-                    ["snowflake"], reason="snowflake requires ordering"
-                )
+                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering")
             ],
         ),
         param(
@@ -545,9 +530,7 @@ def test_grouped_unbounded_window(
             id='unordered-lag',
             marks=[
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
-                pytest.mark.notyet(
-                    ["snowflake"], reason="snowflake requires ordering"
-                ),
+                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering"),
             ],
         ),
         param(
@@ -692,9 +675,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark"])
-@pytest.mark.notyet(
-    ["clickhouse"], reason="clickhouse doesn't implement percent_rank"
-)
+@pytest.mark.notyet(["clickhouse"], reason="clickhouse doesn't implement percent_rank")
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 

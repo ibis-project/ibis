@@ -7,11 +7,7 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.conftest import TEST_TABLES, read_tables
-from ibis.backends.tests.base import (
-    BackendTest,
-    RoundHalfToEven,
-    UnorderedComparator,
-)
+from ibis.backends.tests.base import BackendTest, RoundHalfToEven, UnorderedComparator
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))

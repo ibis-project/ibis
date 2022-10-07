@@ -138,13 +138,9 @@ def test_funcs(foo, foo_m):
     assert foo.funcs == foo_m.funcs
 
 
-@pytest.mark.parametrize(
-    'args', [(B1(),), (B2(),), (A1(), A1()), (A1(), A2(), A3())]
-)
+@pytest.mark.parametrize('args', [(B1(),), (B2(),), (A1(), A1()), (A1(), A2(), A3())])
 def test_unregistered(foo, args):
-    with pytest.raises(
-        NotImplementedError, match="Could not find signature for foo.*"
-    ):
+    with pytest.raises(NotImplementedError, match="Could not find signature for foo.*"):
         foo(*args)
 
 

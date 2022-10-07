@@ -4,10 +4,7 @@ from sqlalchemy.dialects import postgresql
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
 from ibis.backends.postgres.registry import operation_registry
 

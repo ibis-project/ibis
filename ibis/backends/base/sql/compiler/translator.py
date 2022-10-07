@@ -7,10 +7,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.registry import (
-    operation_registry,
-    quote_identifier,
-)
+from ibis.backends.base.sql.registry import operation_registry, quote_identifier
 from ibis.expr.types.core import unnamed
 
 
@@ -114,8 +111,7 @@ class QueryContext:
 
     def has_ref(self, node, parent_contexts=False):
         return any(
-            node in ctx.table_refs
-            for ctx in self._contexts(parents=parent_contexts)
+            node in ctx.table_refs for ctx in self._contexts(parents=parent_contexts)
         )
 
     def set_ref(self, node, alias):
@@ -172,9 +168,7 @@ class ExprTranslator:
         self.node = node
         self.permit_subquery = permit_subquery
 
-        assert context is not None, 'context is None in {}'.format(
-            type(self).__name__
-        )
+        assert context is not None, f'context is None in {type(self).__name__}'
         self.context = context
 
         # For now, governing whether the result will have a name
@@ -191,9 +185,7 @@ class ExprTranslator:
         return op.name is not unnamed
 
     def name(self, translated, name, force=True):
-        return '{} AS {}'.format(
-            translated, quote_identifier(name, force=force)
-        )
+        return f'{translated} AS {quote_identifier(name, force=force)}'
 
     def get_result(self):
         """Compile SQL expression into a string."""
@@ -231,9 +223,7 @@ class ExprTranslator:
             formatter = self._registry[type(op)]
             return formatter(self, op)
         else:
-            raise com.OperationNotDefinedError(
-                f'No translation rule for {type(op)}'
-            )
+            raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
     def _trans_param(self, op):
         raw_value = self.context.params[op]
@@ -342,9 +332,7 @@ def _any_expand(op):
 
 @rewrites(ops.NotAny)
 def _notany_expand(op):
-    return ops.Equals(
-        ops.Max(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
-    )
+    return ops.Equals(ops.Max(op.arg), ops.Literal(0, dtype=op.arg.output_dtype))
 
 
 @rewrites(ops.All)
@@ -354,17 +342,13 @@ def _all_expand(op):
 
 @rewrites(ops.NotAll)
 def _notall_expand(op):
-    return ops.Equals(
-        ops.Min(op.arg), ops.Literal(0, dtype=op.arg.output_dtype)
-    )
+    return ops.Equals(ops.Min(op.arg), ops.Literal(0, dtype=op.arg.output_dtype))
 
 
 @rewrites(ops.Cast)
 def _rewrite_cast(op):
     # TODO(kszucs): avoid the expression roundtrip
-    if isinstance(op.to, dt.Interval) and isinstance(
-        op.arg.output_dtype, dt.Integer
-    ):
+    if isinstance(op.to, dt.Interval) and isinstance(op.arg.output_dtype, dt.Integer):
         return op.arg.to_expr().to_interval(unit=op.to.unit).op()
     return op
 

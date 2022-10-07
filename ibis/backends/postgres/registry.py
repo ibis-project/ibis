@@ -24,10 +24,7 @@ from ibis.backends.base.sql.alchemy import (
     unary,
 )
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
-from ibis.backends.base.sql.alchemy.registry import (
-    _bitwise_op,
-    get_col_or_deferred_col,
-)
+from ibis.backends.base.sql.alchemy.registry import _bitwise_op, get_col_or_deferred_col
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -77,9 +74,7 @@ def _timestamp_truncate(t, op):
     try:
         precision = _truncate_precisions[op.unit]
     except KeyError:
-        raise com.UnsupportedOperationError(
-            f'Unsupported truncate unit {op.unit!r}'
-        )
+        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
     return sa.func.date_trunc(precision, sa_arg)
 
 
@@ -202,9 +197,7 @@ def _reduce_tokens(tokens, arg):
     # reduced list of tokens that accounts for blacklisted values
     reduced = []
 
-    non_special_tokens = (
-        frozenset(_strftime_to_postgresql_rules) - _strftime_blacklist
-    )
+    non_special_tokens = frozenset(_strftime_to_postgresql_rules) - _strftime_blacklist
 
     # TODO: how much of a hack is this?
     for token in tokens:
@@ -297,9 +290,7 @@ def _log(t, op):
     if base is not None:
         sa_base = t.translate(base)
         return sa.cast(
-            sa.func.log(
-                sa.cast(sa_base, sa.NUMERIC), sa.cast(sa_arg, sa.NUMERIC)
-            ),
+            sa.func.log(sa.cast(sa_base, sa.NUMERIC), sa.cast(sa_arg, sa.NUMERIC)),
             t.get_sqla_type(op.output_dtype),
         )
     return sa.func.ln(sa_arg)
@@ -359,9 +350,7 @@ def _array_repeat(t, op):
     index = sa.func.coalesce(sa.func.nullif(index_expression, 0), array_length)
 
     # tie it all together in a scalar subquery and collapse that into an ARRAY
-    return sa.func.array(
-        sa.select(array[index]).select_from(series).scalar_subquery()
-    )
+    return sa.func.array(sa.select(array[index]).select_from(series).scalar_subquery())
 
 
 def _table_column(t, op):
@@ -453,9 +442,7 @@ def _literal(_, op):
     # geo spatial data type
     elif isinstance(dtype, dt.GeoSpatial):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
-        return sa.literal_column(
-            geo.translate_literal(op, inline_metadata=True)
-        )
+        return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
     elif isinstance(value, tuple):
         return sa.literal(value, type_=to_sqla_type(dtype))
     else:
@@ -464,9 +451,7 @@ def _literal(_, op):
 
 def _day_of_week_index(t, op):
     sa_arg = t.translate(op.arg)
-    return sa.cast(
-        sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
-    )
+    return sa.cast(sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT)
 
 
 def _day_of_week_name(t, op):
@@ -599,9 +584,7 @@ operation_registry.update(
         ops.ArrayIndex: fixed_arity(
             lambda array, index: array[_neg_idx_to_pos(array, index) + 1], 2
         ),
-        ops.ArrayConcat: fixed_arity(
-            sa.sql.expression.ColumnElement.concat, 2
-        ),
+        ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),
         ops.Covariance: _covar,

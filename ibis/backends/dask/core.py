@@ -316,9 +316,7 @@ def execute_until_in_scope(
 
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
-        raise com.UnboundExpressionError(
-            f'Unable to find data for node:\n{repr(node)}'
-        )
+        raise com.UnboundExpressionError(f'Unable to find data for node:\n{repr(node)}')
 
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
@@ -326,9 +324,7 @@ def execute_until_in_scope(
     new_scope = new_scope.merge_scopes(scopes)
     # pass our computed arguments to this node's execute_node implementation
     data = [
-        new_scope.get_value(arg, timecontext)
-        if isinstance(arg, ops.Node)
-        else arg
+        new_scope.get_value(arg, timecontext) if isinstance(arg, ops.Node) else arg
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
 

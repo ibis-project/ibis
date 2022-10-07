@@ -10,9 +10,7 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.util as util
-from ibis.backends.base.sql.compiler.base import (
-    _extract_common_table_expressions,
-)
+from ibis.backends.base.sql.compiler.base import _extract_common_table_expressions
 from ibis.expr.rules import Shape
 
 
@@ -55,9 +53,7 @@ class _CorrelatedRefCheck:
                 ops.ExistsSubquery,
                 ops.NotExistsSubquery,
             ),
-        ) or (
-            isinstance(node, ops.TableColumn) and not self.is_root(node.table)
-        )
+        ) or (isinstance(node, ops.TableColumn) and not self.is_root(node.table))
 
     def visit_table(self, node, in_subquery):
         if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
@@ -184,17 +180,13 @@ class SelectBuilder:
 
                 return table_expr.op(), result_handler
             else:
-                raise com.TranslationError(
-                    f"Unexpected shape {node.output_shape}"
-                )
+                raise com.TranslationError(f"Unexpected shape {node.output_shape}")
 
         elif isinstance(node, (ops.Analytic, ops.TopK)):
             return node.to_expr().to_aggregation().op(), toolz.identity
 
         else:
-            raise com.TranslationError(
-                f'Do not know how to execute: {type(node)}'
-            )
+            raise com.TranslationError(f'Do not know how to execute: {type(node)}')
 
     def _build_result_query(self):
         self._collect_elements()
@@ -362,8 +354,7 @@ class SelectBuilder:
         if toplevel:
             if op.subset is None:
                 columns = [
-                    ops.TableColumn(op.table, name)
-                    for name in op.table.schema.names
+                    ops.TableColumn(op.table, name) for name in op.table.schema.names
                 ]
             else:
                 columns = op.subset
@@ -498,9 +489,7 @@ class SelectBuilder:
         # want.
 
         # Find the subqueries, and record them in the passed query context.
-        subqueries = _extract_common_table_expressions(
-            [self.table_set, *self.filters]
-        )
+        subqueries = _extract_common_table_expressions([self.table_set, *self.filters])
 
         self.subqueries = []
         for node in subqueries:

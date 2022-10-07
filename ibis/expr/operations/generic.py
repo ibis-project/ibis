@@ -41,9 +41,7 @@ class TableColumn(Value, Named):
             name = table.schema.name_at_position(name)
 
         if name not in table.schema:
-            raise com.IbisTypeError(
-                f"value {name!r} is not a field in {table.schema}"
-            )
+            raise com.IbisTypeError(f"value {name!r} is not a field in {table.schema}")
 
         super().__init__(table=table, name=name)
 

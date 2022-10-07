@@ -61,8 +61,7 @@ def test_load_data_unpartitioned():
 
     result = stmt.compile()
     expected = (
-        "LOAD DATA INPATH '/path/to/data' "
-        "INTO TABLE foo.`functional_alltypes`"
+        "LOAD DATA INPATH '/path/to/data' " "INTO TABLE foo.`functional_alltypes`"
     )
     assert result == expected
 
@@ -124,9 +123,7 @@ def table_name():
 
 
 def test_add_partition(part_schema, table_name):
-    stmt = ddl.AddPartition(
-        table_name, {'year': 2007, 'month': 4}, part_schema
-    )
+    stmt = ddl.AddPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
     expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
@@ -143,9 +140,7 @@ def test_add_partition_string_key():
 
 
 def test_drop_partition(part_schema, table_name):
-    stmt = ddl.DropPartition(
-        table_name, {'year': 2007, 'month': 4}, part_schema
-    )
+    stmt = ddl.DropPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
     expected = 'ALTER TABLE tbl DROP PARTITION (year=2007, month=4)'
@@ -271,9 +266,7 @@ FROM test1""".format(
 
 def test_create_table_with_location_compile():
     path = '/path/to/table'
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
-    )
+    schema = ibis.schema([('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')])
     statement = CreateTableWithSchema(
         'another_table',
         schema,
@@ -347,9 +340,7 @@ LOCATION '{}'""".format(
 def test_create_table_parquet_with_schema():
     directory = '/path/to/'
 
-    schema = ibis.schema(
-        [('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')]
-    )
+    schema = ibis.schema([('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')])
 
     statement = ddl.CreateTableParquet(
         'new_table',
@@ -477,9 +468,7 @@ TBLPROPERTIES (
 
 
 def test_create_table_parquet(expr):
-    statement = _create_table(
-        'some_table', expr, database='bar', can_exist=False
-    )
+    statement = _create_table('some_table', expr, database='bar', can_exist=False)
     result = statement.compile()
 
     expected = """\
@@ -521,9 +510,7 @@ FROM functional_alltypes"""
         _create_table('tname', t, format='foo')
 
 
-def _create_table(
-    table_name, expr, database=None, can_exist=False, format='parquet'
-):
+def _create_table(table_name, expr, database=None, can_exist=False, format='parquet'):
     ast = ImpalaCompiler.to_ast(expr)
     select = ast.queries[0]
     statement = CTAS(

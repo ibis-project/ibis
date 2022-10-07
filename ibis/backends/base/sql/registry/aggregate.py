@@ -29,9 +29,7 @@ def variance_like(func_name):
     }
 
     def formatter(translator, op):
-        return _reduction_format(
-            translator, func_names[op.how], op.where, op.arg
-        )
+        return _reduction_format(translator, func_names[op.how], op.where, op.arg)
 
     return formatter
 

@@ -114,9 +114,7 @@ def test_adapt_scalar_array_results(con, alltypes):
         assert isinstance(result2, float)
 
     expr = (
-        table.group_by('string_col')
-        .aggregate([table.count().name('count')])
-        .string_col
+        table.group_by('string_col').aggregate([table.count().name('count')]).string_col
     )
 
     result = con.execute(expr)
@@ -130,15 +128,9 @@ def test_interactive_repr_call_failure(con):
 
     keys = [t.date.year().name('year'), 'l_linestatus']
     filt = t.l_linestatus.isin(['F'])
-    expr = (
-        t[filt]
-        .group_by(keys)
-        .aggregate(t.l_extendedprice.mean().name('avg_px'))
-    )
+    expr = t[filt].group_by(keys).aggregate(t.l_extendedprice.mean().name('avg_px'))
 
-    w2 = ibis.trailing_window(
-        9, group_by=expr.l_linestatus, order_by=expr.year
-    )
+    w2 = ibis.trailing_window(9, group_by=expr.l_linestatus, order_by=expr.year)
 
     metric = expr['avg_px'].mean().over(w2)
     enriched = expr[expr, metric]
@@ -271,9 +263,7 @@ def test_disable_codegen(con):
     assert opts2['DISABLE_CODEGEN'] == '1'
 
 
-def test_attr_name_conflict(
-    con, tmp_db, temp_parquet_table, temp_parquet_table2
-):
+def test_attr_name_conflict(con, tmp_db, temp_parquet_table, temp_parquet_table2):
     left = temp_parquet_table
     right = temp_parquet_table2
 
@@ -307,9 +297,7 @@ def test_day_of_week(con):
 
 
 def test_datetime_to_int_cast(con):
-    timestamp = pytz.utc.localize(
-        datetime.datetime(2021, 9, 12, 14, 45, 33, 0)
-    )
+    timestamp = pytz.utc.localize(datetime.datetime(2021, 9, 12, 14, 45, 33, 0))
     d = ibis.literal(timestamp)
     result = con.execute(d.cast('int64'))
     assert result == pd.Timestamp(timestamp).value // 1000

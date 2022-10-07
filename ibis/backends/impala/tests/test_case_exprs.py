@@ -13,13 +13,7 @@ def table(mockcon):
 
 @pytest.fixture
 def simple_case(table):
-    return (
-        table.g.case()
-        .when('foo', 'bar')
-        .when('baz', 'qux')
-        .else_('default')
-        .end()
-    )
+    return table.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
 
 
 @pytest.fixture
@@ -140,8 +134,6 @@ FROM ibis_testing.`functional_alltypes`"""
 
 
 def test_identical_to_special_case():
-    expr = (
-        ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64')).name('tmp')
-    )
+    expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64')).name('tmp')
     result = ImpalaCompiler.to_sql(expr)
     assert result == 'SELECT TRUE AS `tmp`'

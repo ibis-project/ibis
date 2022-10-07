@@ -60,13 +60,9 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause, full=True)
             elif jtype is ops.LeftSemiJoin:
-                result = result.select().where(
-                    sa.exists(sa.select(1).where(onclause))
-                )
+                result = result.select().where(sa.exists(sa.select(1).where(onclause)))
             elif jtype is ops.LeftAntiJoin:
-                result = result.select().where(
-                    ~sa.exists(sa.select(1).where(onclause))
-                )
+                result = result.select().where(~sa.exists(sa.select(1).where(onclause)))
             else:
                 raise NotImplementedError(jtype)
 
@@ -129,9 +125,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 # hack
                 if isinstance(op, ops.SelfReference):
                     table = ctx.get_ref(ref_op)
-                    self_ref = (
-                        alias if hasattr(alias, "name") else table.alias(alias)
-                    )
+                    self_ref = alias if hasattr(alias, "name") else table.alias(alias)
                     ctx.set_ref(op, self_ref)
                     return self_ref
                 return alias
@@ -304,9 +298,7 @@ class AlchemySelect(Select):
         if not len(self.where):
             return fragment
 
-        args = [
-            self._translate(pred, permit_subquery=True) for pred in self.where
-        ]
+        args = [self._translate(pred, permit_subquery=True) for pred in self.where]
         clause = functools.reduce(sql.and_, args)
         return fragment.where(clause)
 
@@ -359,9 +351,7 @@ class AlchemySetOp(SetOp):
 
         def call(distinct, *args):
             return (
-                self.distinct_func(*args)
-                if distinct
-                else self.non_distinct_func(*args)
+                self.distinct_func(*args) if distinct else self.non_distinct_func(*args)
             )
 
         for table in self.tables:

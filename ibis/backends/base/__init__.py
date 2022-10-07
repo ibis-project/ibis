@@ -266,9 +266,7 @@ class ResultHandler:
             # so construct at one column table (if applicable)
             # then return the column _from_ the table
             table = pa.Table.from_batches(
-                self.to_pyarrow_batches(
-                    expr, params=params, limit=limit, **kwargs
-                )
+                self.to_pyarrow_batches(expr, params=params, limit=limit, **kwargs)
             )
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
@@ -430,9 +428,7 @@ class BaseBackend(abc.ABC, ResultHandler):
         Database
             A database object for the specified database.
         """
-        return self.database_class(
-            name=name or self.current_database, client=self
-        )
+        return self.database_class(name=name or self.current_database, client=self)
 
     @property
     @abc.abstractmethod
@@ -561,9 +557,7 @@ class BaseBackend(abc.ABC, ResultHandler):
             try:
                 setattr(options, backend_name, backend_options)
             except ValueError as e:
-                raise exc.BackendConfigurationNotRegistered(
-                    backend_name
-                ) from e
+                raise exc.BackendConfigurationNotRegistered(backend_name) from e
 
     def compile(
         self,
@@ -592,9 +586,7 @@ class BaseBackend(abc.ABC, ResultHandler):
         ...     return 'NULL'
         """
         if not hasattr(self, 'compiler'):
-            raise RuntimeError(
-                'Only SQL-based backends support `add_operation`'
-            )
+            raise RuntimeError('Only SQL-based backends support `add_operation`')
 
         def decorator(translation_function: Callable) -> None:
             self.compiler.translator_class.add_operation(

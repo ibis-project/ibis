@@ -25,14 +25,10 @@ def test_literal(client):
 
 
 def test_selection(t, df):
-    expr = t[
-        ((t.plain_strings == 'a') | (t.plain_int64 == 3))
-        & (t.dup_strings == 'd')
-    ]
+    expr = t[((t.plain_strings == 'a') | (t.plain_int64 == 3)) & (t.dup_strings == 'd')]
     result = expr.execute()
     expected = df[
-        ((df.plain_strings == 'a') | (df.plain_int64 == 3))
-        & (df.dup_strings == 'd')
+        ((df.plain_strings == 'a') | (df.plain_int64 == 3)) & (df.dup_strings == 'd')
     ].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
@@ -49,9 +45,7 @@ def test_project_scope_does_not_override(t, df):
     expr = t[
         [
             col.name('new_col'),
-            col.sum()
-            .over(ibis.window(group_by='dup_strings'))
-            .name('grouped'),
+            col.sum().over(ibis.window(group_by='dup_strings')).name('grouped'),
         ]
     ]
     result = expr.execute()
@@ -102,9 +96,7 @@ def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):
     expr = t.group_by(t.dup_strings).aggregate(
         avg_plain_int64=t.plain_int64.mean(where=ibis_where),
         sum_plain_float64=t.plain_float64.sum(where=ibis_where),
-        mean_float64_positive=ibis_func(t.float64_positive).mean(
-            where=ibis_where
-        ),
+        mean_float64_positive=ibis_func(t.float64_positive).mean(where=ibis_where),
         neg_mean_int64_with_zeros=(-t.int64_with_zeros).mean(where=ibis_where),
         nunique_dup_ints=t.dup_ints.nunique(),
     )
@@ -139,18 +131,14 @@ def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
     result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
-    expected[
-        'neg_mean_int64_with_zeros'
-    ] = expected.neg_mean_int64_with_zeros.astype('float64')
-    result[
-        'neg_mean_int64_with_zeros'
-    ] = result.neg_mean_int64_with_zeros.astype('float64')
-    expected['mean_float64_positive'] = expected.mean_float64_positive.astype(
+    expected['neg_mean_int64_with_zeros'] = expected.neg_mean_int64_with_zeros.astype(
         'float64'
     )
-    result['mean_float64_positive'] = result.mean_float64_positive.astype(
+    result['neg_mean_int64_with_zeros'] = result.neg_mean_int64_with_zeros.astype(
         'float64'
     )
+    expected['mean_float64_positive'] = expected.mean_float64_positive.astype('float64')
+    result['mean_float64_positive'] = result.mean_float64_positive.astype('float64')
     lhs = result[expected.columns]
     rhs = expected
     tm.assert_frame_equal(lhs, rhs)
@@ -323,9 +311,7 @@ def test_nullif_inf():
 
 
 def test_group_concat(t, df):
-    expr = t.group_by(t.dup_strings).aggregate(
-        foo=t.plain_int64.group_concat(',')
-    )
+    expr = t.group_by(t.dup_strings).aggregate(foo=t.plain_int64.group_concat(','))
     result = expr.execute()
     expected = (
         df.groupby('dup_strings')
@@ -381,9 +367,7 @@ def test_order_by(t, df, column, key, pandas_by, pandas_ascending):
 
 
 def test_complex_order_by(t, df):
-    expr = t.order_by(
-        [ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64]
-    )
+    expr = t.order_by([ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64])
     result = expr.execute()
     expected = (
         df.assign(foo=df.plain_int64 * df.plain_float64)
@@ -431,8 +415,7 @@ def test_weighted_average(t, df):
     expected = (
         df.groupby('dup_strings')
         .apply(
-            lambda df: (df.plain_int64 * df.plain_float64).sum()
-            / df.plain_int64.sum()
+            lambda df: (df.plain_int64 * df.plain_float64).sum() / df.plain_int64.sum()
         )
         .reset_index()
         .rename(columns={0: 'avg'})
@@ -455,9 +438,7 @@ def test_group_by_multiple_keys(t, df):
 
 
 def test_mutate_after_group_by(t, df):
-    gb = t.group_by(t.dup_strings).aggregate(
-        avg_plain_float64=t.plain_float64.mean()
-    )
+    gb = t.group_by(t.dup_strings).aggregate(avg_plain_float64=t.plain_float64.mean())
     expr = gb.mutate(x=gb.avg_plain_float64)
     result = expr.execute()
     expected = (
@@ -472,20 +453,13 @@ def test_mutate_after_group_by(t, df):
 
 def test_groupby_with_unnamed_arithmetic(t, df):
     expr = t.group_by(t.dup_strings).aggregate(
-        naive_variance=(
-            (t.plain_float64**2).sum() - t.plain_float64.mean() ** 2
-        )
+        naive_variance=((t.plain_float64**2).sum() - t.plain_float64.mean() ** 2)
         / t.plain_float64.count()
     )
     result = expr.execute()
     expected = (
         df.groupby('dup_strings')
-        .agg(
-            {
-                'plain_float64': lambda x: ((x**2).sum() - x.mean() ** 2)
-                / x.count()
-            }
-        )
+        .agg({'plain_float64': lambda x: ((x**2).sum() - x.mean() ** 2) / x.count()})
         .reset_index()
         .rename(columns={'plain_float64': 'naive_variance'})
     )
@@ -594,12 +568,8 @@ def test_left_binary_op_gb(t, df, op, argfunc):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    "left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None]
-)
-@pytest.mark.parametrize(
-    "right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None]
-)
+@pytest.mark.parametrize("left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None])
+@pytest.mark.parametrize("right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None])
 def test_where_series(t, df, left_f, right_f):
     col_expr = t['plain_int64']
     result = ibis.where(
@@ -832,9 +802,7 @@ def test_union(client, df1, distinct):
     t = client.table('df1')
     expr = t.union(t, distinct=distinct)
     result = expr.execute()
-    expected = (
-        df1 if distinct else pd.concat([df1, df1], axis=0, ignore_index=True)
-    )
+    expected = df1 if distinct else pd.concat([df1, df1], axis=0, ignore_index=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -852,9 +820,7 @@ def test_difference(client, df1, intersect_df2):
     t2 = client.table('intersect_df2')
     expr = t1.difference(t2)
     result = expr.execute()
-    merged = df1.merge(
-        intersect_df2, on=list(df1.columns), how="outer", indicator=True
-    )
+    merged = df1.merge(intersect_df2, on=list(df1.columns), how="outer", indicator=True)
     expected = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
     tm.assert_frame_equal(result, expected)
 
@@ -867,8 +833,7 @@ def test_difference(client, df1, intersect_df2):
             marks=pytest.mark.xfail(
                 raises=TypeError,
                 reason=(
-                    "Pandas cannot compute the distinct element of an "
-                    "array column"
+                    "Pandas cannot compute the distinct element of an " "array column"
                 ),
             ),
         ),
@@ -878,7 +843,5 @@ def test_difference(client, df1, intersect_df2):
 def test_union_with_list_types(t, df, distinct):
     expr = t.union(t, distinct=distinct)
     result = expr.execute()
-    expected = (
-        df if distinct else pd.concat([df, df], axis=0, ignore_index=True)
-    )
+    expected = df if distinct else pd.concat([df, df], axis=0, ignore_index=True)
     tm.assert_frame_equal(result, expected)

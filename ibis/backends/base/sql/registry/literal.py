@@ -9,8 +9,7 @@ def _set_literal_format(translator, expr):
     value_type = expr.type().value_type
 
     formatted = [
-        translator.translate(ir.literal(x, type=value_type))
-        for x in expr.op().value
+        translator.translate(ir.literal(x, type=value_type)) for x in expr.op().value
     ]
 
     return '(' + ', '.join(formatted) + ')'
@@ -41,9 +40,7 @@ def _number_literal_format(translator, op):
 
 
 def _interval_literal_format(translator, op):
-    return 'INTERVAL {} {}'.format(
-        op.value, op.output_dtype.resolution.upper()
-    )
+    return f'INTERVAL {op.value} {op.output_dtype.resolution.upper()}'
 
 
 def _date_literal_format(translator, op):

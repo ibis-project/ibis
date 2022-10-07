@@ -110,9 +110,7 @@ class BaseSQLBackend(BaseBackend):
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
     def _get_schema_using_query(self, query):
-        raise NotImplementedError(
-            f"Backend {self.name} does not support .sql()"
-        )
+        raise NotImplementedError(f"Backend {self.name} does not support .sql()")
 
     def raw_sql(self, query: str) -> Any:
         """Execute a query string.
@@ -149,9 +147,7 @@ class BaseSQLBackend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
     ) -> Iterable[list]:
-        query_ast = self.compiler.to_ast_ensure_limit(
-            expr, limit, params=params
-        )
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
         with self._safe_raw_sql(sql) as cursor:
@@ -207,9 +203,7 @@ class BaseSQLBackend(BaseBackend):
                 )
                 yield pa.RecordBatch.from_struct_array(struct_array)
 
-        return pa.RecordBatchReader.from_batches(
-            schema.to_pyarrow(), _batches()
-        )
+        return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
 
     def execute(
         self,
@@ -249,9 +243,7 @@ class BaseSQLBackend(BaseBackend):
         # feature than all this magic.
         # we don't want to pass `timecontext` to `raw_sql`
         kwargs.pop('timecontext', None)
-        query_ast = self.compiler.to_ast_ensure_limit(
-            expr, limit, params=params
-        )
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         self._log(sql)
 
@@ -349,9 +341,7 @@ class BaseSQLBackend(BaseBackend):
             The output of compilation. The type of this value depends on the
             backend.
         """
-        return self.compiler.to_ast_ensure_limit(
-            expr, limit, params=params
-        ).compile()
+        return self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
     def explain(
         self,
@@ -397,6 +387,5 @@ class BaseSQLBackend(BaseBackend):
 
     def _create_temp_view(self, view, definition):
         raise NotImplementedError(
-            f"The {self.name} backend does not implement temporary view "
-            "creation"
+            f"The {self.name} backend does not implement temporary view " "creation"
         )

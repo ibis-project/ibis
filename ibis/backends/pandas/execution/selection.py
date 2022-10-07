@@ -116,9 +116,7 @@ def compute_projection(
                 for t in an.find_immediate_parent_tables(node)
             )
 
-            result = execute(
-                node, scope=scope, timecontext=timecontext, **kwargs
-            )
+            result = execute(node, scope=scope, timecontext=timecontext, **kwargs)
             return coerce_to_output(result, node, data.index)
     else:
         raise TypeError(node)
@@ -146,9 +144,7 @@ def remap_overlapping_column_names(table, root_table, data_columns):
     if not isinstance(table, ops.Join):
         return None
 
-    left_root, right_root = an.find_immediate_parent_tables(
-        [table.left, table.right]
-    )
+    left_root, right_root = an.find_immediate_parent_tables([table.left, table.right])
     suffixes = {
         left_root: constants.LEFT_JOIN_SUFFIX,
         right_root: constants.RIGHT_JOIN_SUFFIX,
@@ -171,9 +167,7 @@ def remap_overlapping_column_names(table, root_table, data_columns):
         for name in root_table.schema.names
     ]
     mapping = {
-        first(col_name): final_name
-        for col_name, final_name in column_names
-        if col_name
+        first(col_name): final_name for col_name, final_name in column_names if col_name
     }
     return mapping
 
@@ -225,9 +219,7 @@ def _compute_predicates(
 
         additional_scope = Scope()
         for root_table in root_tables:
-            mapping = remap_overlapping_column_names(
-                table_op, root_table, data_columns
-            )
+            mapping = remap_overlapping_column_names(table_op, root_table, data_columns)
             new_data = map_new_column_names_to_data(mapping, data)
             additional_scope = additional_scope.merge_scope(
                 Scope({root_table: new_data}, timecontext)
@@ -285,8 +277,7 @@ def build_df_from_projection(
     **kwargs,
 ) -> pd.DataFrame:
     data_pieces = [
-        compute_projection(node, op, data, **kwargs)
-        for node in selection_exprs
+        compute_projection(node, op, data, **kwargs) for node in selection_exprs
     ]
 
     new_pieces = [
@@ -357,9 +348,9 @@ def execute_selection_dataframe(
         return result
 
     # create a sequence of columns that we need to drop
-    temporary_columns = pd.Index(
-        concatv(grouping_keys, ordering_keys)
-    ).difference(data.columns)
+    temporary_columns = pd.Index(concatv(grouping_keys, ordering_keys)).difference(
+        data.columns
+    )
 
     # no reason to call drop if we don't need to
     if temporary_columns.empty:

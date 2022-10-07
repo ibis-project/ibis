@@ -109,9 +109,7 @@ class Scope:
         if self.get_value(op, timecontext) is None:
             self._items[op] = ScopeItem(timecontext, value)
 
-    def get_value(
-        self, op: Node, timecontext: Optional[TimeContext] = None
-    ) -> Any:
+    def get_value(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
         """Given a op and timecontext, get the result from scope.
 
         Parameters
@@ -187,9 +185,7 @@ class Scope:
                 result._items[op] = v
         return result
 
-    def merge_scopes(
-        self, other_scopes: Iterable['Scope'], overwrite=False
-    ) -> 'Scope':
+    def merge_scopes(self, other_scopes: Iterable['Scope'], overwrite=False) -> 'Scope':
         """merge items in other_scopes into this scope.
 
         Parameters

@@ -120,18 +120,14 @@ def test_context_adjustment_asof_join(
         (5 * ibis.interval(days=1), '5d'),
     ],
 )
-def test_context_adjustment_window(
-    time_table, time_df3, interval_ibis, interval_pd
-):
+def test_context_adjustment_window(time_table, time_df3, interval_ibis, interval_pd):
     # trim data manually
     expected = (
-        time_df3.set_index('time')
-        .value.rolling(interval_pd, closed='both')
-        .mean()
+        time_df3.set_index('time').value.rolling(interval_pd, closed='both').mean()
     )
-    expected = expected[
-        expected.index >= pd.Timestamp('20170105')
-    ].reset_index(drop=True)
+    expected = expected[expected.index >= pd.Timestamp('20170105')].reset_index(
+        drop=True
+    )
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
 
@@ -155,9 +151,7 @@ def test_trim_window_result(time_df3):
         names=series.index.names + ['time'],
     )
     result = trim_window_result(series, context)
-    expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(
-        drop=True
-    )
+    expected = df['time'][df['time'] >= pd.Timestamp('20170105')].reset_index(drop=True)
 
     # result should adjust time context accordingly
     tm.assert_series_equal(result.reset_index()['time'], expected)
@@ -170,9 +164,7 @@ def test_trim_window_result(time_df3):
         [wrong_series.index, time_index],
         names=wrong_series.index.names + ['time'],
     )
-    with pytest.raises(
-        TypeError, match=r".*not supported between instances.*"
-    ):
+    with pytest.raises(TypeError, match=r".*not supported between instances.*"):
         trim_window_result(wrong_series, context)
 
     # column is ignored and series is not trimmed
@@ -189,9 +181,7 @@ def test_setting_timecontext_in_scope(time_table, time_df3):
     ].reset_index(drop=True)
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
-    window1 = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by=time_table.time
-    )
+    window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
     """
     In the following expression, Selection node will be executed first and
     get table in context ('20170105', '20170101'). Then in window execution
@@ -227,12 +217,8 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     ].reset_index(drop=True)
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
-    window1 = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by=time_table.time
-    )
-    window2 = ibis.trailing_window(
-        2 * ibis.interval(days=1), order_by=time_table.time
-    )
+    window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
+    window2 = ibis.trailing_window(2 * ibis.interval(days=1), order_by=time_table.time)
     expr = time_table.mutate(
         v1=time_table['value'].mean().over(window1),
         v2=time_table['value'].mean().over(window2),
@@ -407,7 +393,5 @@ def test_construct_time_context_aware_series(time_df3):
         [multi_index_series.index, other_index],
         names=multi_index_series.index.names + ['value'],
     )
-    result_multi_index = construct_time_context_aware_series(
-        multi_index_series, df
-    )
+    result_multi_index = construct_time_context_aware_series(multi_index_series, df)
     tm.assert_series_equal(result_multi_index, expected_multi_index)

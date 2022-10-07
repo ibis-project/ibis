@@ -15,10 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy.database import (
-    AlchemyDatabase,
-    AlchemyTable,
-)
+from ibis.backends.base.sql.alchemy.database import AlchemyDatabase, AlchemyTable
 from ibis.backends.base.sql.alchemy.datatypes import (
     schema_from_table,
     table_from_schema,
@@ -71,9 +68,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     table_class = AlchemyTable
     compiler = AlchemyCompiler
 
-    def _build_alchemy_url(
-        self, url, host, port, user, password, database, driver
-    ):
+    def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
             return sa.engine.url.make_url(url)
 
@@ -189,8 +184,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Creating tables from a different database is not yet '
-                'implemented'
+                'Creating tables from a different database is not yet ' 'implemented'
             )
 
         if expr is None and schema is None:
@@ -236,9 +230,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         return methodcaller("from_select", list(expr.columns), compiled)
 
-    def _columns_from_schema(
-        self, name: str, schema: sch.Schema
-    ) -> list[sa.Column]:
+    def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
         return [
             sa.Column(colname, to_sqla_type(dtype), nullable=dtype.nullable)
             for colname, dtype in zip(schema.names, schema.types)
@@ -273,8 +265,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Dropping tables from a different database is not yet '
-                'implemented'
+                'Dropping tables from a different database is not yet ' 'implemented'
             )
 
         t = self._get_sqla_table(table_name, schema=database, autoload=False)
@@ -515,8 +506,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         raise NotImplementedError(
-            f"The {self.name} backend does not implement temporary view "
-            "creation"
+            f"The {self.name} backend does not implement temporary view " "creation"
         )
 
     def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:

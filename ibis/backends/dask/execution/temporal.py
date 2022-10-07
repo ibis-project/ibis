@@ -47,23 +47,15 @@ from ibis.backends.pandas.execution.temporal import (
 )
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
-    ops.Cast: [
-        ((dd.Series, dt.Interval), execute_cast_integer_to_interval_series)
-    ],
+    ops.Cast: [((dd.Series, dt.Interval), execute_cast_integer_to_interval_series)],
     ops.Strftime: [((dd.Series, str), execute_strftime_series_str)],
     ops.TimestampFromUNIX: [
         (((dd.Series,) + integer_types), execute_timestamp_from_unix)
     ],
-    ops.ExtractTemporalField: [
-        ((dd.Series,), execute_extract_timestamp_field_series)
-    ],
-    ops.ExtractMillisecond: [
-        ((dd.Series,), execute_extract_millisecond_series)
-    ],
+    ops.ExtractTemporalField: [((dd.Series,), execute_extract_timestamp_field_series)],
+    ops.ExtractMillisecond: [((dd.Series,), execute_extract_millisecond_series)],
     ops.ExtractEpochSeconds: [((dd.Series,), execute_epoch_seconds)],
-    ops.IntervalFromInteger: [
-        ((dd.Series,), execute_interval_from_integer_series)
-    ],
+    ops.IntervalFromInteger: [((dd.Series,), execute_interval_from_integer_series)],
     ops.IntervalAdd: [
         (
             (timedelta_types, dd.Series),
@@ -155,8 +147,7 @@ register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 def execute_between_time(op, data, lower, upper, **kwargs):
     # TODO - Can this be done better?
     indexer = (
-        (data.dt.time.astype(str) >= lower)
-        & (data.dt.time.astype(str) <= upper)
+        (data.dt.time.astype(str) >= lower) & (data.dt.time.astype(str) <= upper)
     ).to_dask_array(True)
 
     result = da.zeros(len(data), dtype=np.bool_)
@@ -172,11 +163,7 @@ def execute_timestamp_truncate(op, data, **kwargs):
 
 @execute_node.register(ops.DayOfWeekIndex, ddgb.SeriesGroupBy)
 def execute_day_of_week_index_series_group_by(op, data, **kwargs):
-    return (
-        make_selected_obj(data)
-        .dt.dayofweek.astype(np.int16)
-        .groupby(data.index)
-    )
+    return make_selected_obj(data).dt.dayofweek.astype(np.int16).groupby(data.index)
 
 
 @execute_node.register(ops.DayOfWeekName, ddgb.SeriesGroupBy)

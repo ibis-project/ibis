@@ -104,7 +104,5 @@ def pytest_pyfunc_call(pyfuncitem):
             raise
         assert (
             len(markers) == 1
-        ), "More than one xfail_unsupported marker found on test {}".format(
-            pyfuncitem
-        )
+        ), f"More than one xfail_unsupported marker found on test {pyfuncitem}"
         pytest.xfail(reason=repr(e))

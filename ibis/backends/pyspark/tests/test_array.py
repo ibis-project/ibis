@@ -14,9 +14,7 @@ def test_array_length(client):
     result = table.mutate(length=table.array_int.length()).compile()
 
     expected = table.compile().toPandas()
-    expected['length'] = (
-        expected['array_int'].map(lambda a: len(a)).astype('int32')
-    )
+    expected['length'] = expected['array_int'].map(lambda a: len(a)).astype('int32')
     tm.assert_frame_equal(result.toPandas(), expected)
 
 
@@ -114,9 +112,9 @@ def test_array_concat(client, op):
     result = expr.execute()
 
     df = table.compile().toPandas()
-    expected = op(
-        df.array_int.apply(lambda x: list(map(str, x))), df.array_str
-    ).rename('array_result')
+    expected = op(df.array_int.apply(lambda x: list(map(str, x))), df.array_str).rename(
+        'array_result'
+    )
     tm.assert_series_equal(result, expected)
 
 
@@ -157,9 +155,7 @@ def test_array_repeat_scalar(client, n, mul):
 
 def test_array_collect(client):
     table = client.table('array_table')
-    expr = table.group_by(table.key).aggregate(
-        collected=table.array_int.collect()
-    )
+    expr = table.group_by(table.key).aggregate(collected=table.array_int.collect())
     result = expr.execute().sort_values('key').reset_index(drop=True)
 
     df = table.compile().toPandas()

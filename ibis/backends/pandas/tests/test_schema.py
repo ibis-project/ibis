@@ -10,9 +10,7 @@ from ibis.expr import schema as sch
 def test_infer_basic_types():
     df = pd.DataFrame(
         {
-            'bigint_col': np.array(
-                [0, 10, 20, 30, 40, 50, 60, 70, 80, 90], dtype='i8'
-            ),
+            'bigint_col': np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90], dtype='i8'),
             'bool_col': np.array(
                 [
                     True,
@@ -87,9 +85,7 @@ def test_infer_basic_types():
             ),
             'int_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i4'),
             'month': [11, 11, 11, 11, 2, 11, 11, 11, 11, 11],
-            'smallint_col': np.array(
-                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i2'
-            ),
+            'smallint_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i2'),
             'string_col': [
                 '0',
                 '1',
@@ -114,9 +110,7 @@ def test_infer_basic_types():
                 pd.Timestamp('2010-11-01 00:08:00.280000'),
                 pd.Timestamp('2010-11-01 00:09:00.360000'),
             ],
-            'tinyint_col': np.array(
-                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i1'
-            ),
+            'tinyint_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i1'),
             'year': [
                 2010,
                 2010,

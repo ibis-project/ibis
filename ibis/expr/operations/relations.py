@@ -164,17 +164,13 @@ class Join(TableNode):
             old = right
             new = right = ops.SelfReference(right)
             predicates = [
-                L.sub_for(pred, {old: new})
-                if isinstance(pred, ops.Node)
-                else pred
+                L.sub_for(pred, {old: new}) if isinstance(pred, ops.Node) else pred
                 for pred in predicates
             ]
 
         predicates = _clean_join_predicates(left, right, predicates)
 
-        super().__init__(
-            left=left, right=right, predicates=predicates, **kwargs
-        )
+        super().__init__(left=left, right=right, predicates=predicates, **kwargs)
 
     @property
     def schema(self):
@@ -239,9 +235,7 @@ class AsOfJoin(Join):
 
     def __init__(self, left, right, by, predicates, **kwargs):
         by = _clean_join_predicates(left, right, util.promote_list(by))
-        super().__init__(
-            left=left, right=right, by=by, predicates=predicates, **kwargs
-        )
+        super().__init__(left=left, right=right, by=by, predicates=predicates, **kwargs)
 
 
 @public
@@ -252,9 +246,7 @@ class SetOp(TableNode):
 
     def __init__(self, left, right, **kwargs):
         if not left.schema == right.schema:
-            raise com.RelationError(
-                'Table schemas must be equal for set operations'
-            )
+            raise com.RelationError('Table schemas must be equal for set operations')
         super().__init__(left=left, right=right, **kwargs)
 
     @property
@@ -350,9 +342,7 @@ class Selection(Projection):
 
         for predicate in predicates:
             if not shares_some_roots(predicate, table):
-                raise com.RelationError(
-                    "Predicate doesn't share any roots with table"
-                )
+                raise com.RelationError("Predicate doesn't share any roots with table")
 
         super().__init__(
             table=table,
@@ -402,9 +392,7 @@ class Aggregation(TableNode):
                 (
                     rlz.function_of(
                         rlz.ref("table"),
-                        output_rule=rlz.one_of(
-                            (rlz.reduction, rlz.scalar(rlz.any))
-                        ),
+                        output_rule=rlz.one_of((rlz.reduction, rlz.scalar(rlz.any))),
                     ),
                     rlz.reduction,
                     rlz.scalar(rlz.any),
@@ -441,9 +429,7 @@ class Aggregation(TableNode):
         default=(),
     )
     predicates = rlz.optional(rlz.nodes_of(rlz.boolean), default=())
-    sort_keys = rlz.optional(
-        rlz.nodes_of(rlz.sort_key_from("table")), default=()
-    )
+    sort_keys = rlz.optional(rlz.nodes_of(rlz.sort_key_from("table")), default=())
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
         from ibis.expr.analysis import shares_all_roots, shares_some_roots
@@ -457,9 +443,7 @@ class Aggregation(TableNode):
 
         # invariant due to Aggregation and AggregateSelection requiring a valid
         # Selection
-        assert all(
-            shares_some_roots(predicate, table) for predicate in predicates
-        )
+        assert all(shares_some_roots(predicate, table) for predicate in predicates)
 
         if not by:
             sort_keys = tuple()
@@ -597,9 +581,7 @@ def _dedup_join_columns(expr, suffixes: tuple[str, str]):
     right = op.right.to_expr()
 
     right_columns = frozenset(right.columns)
-    overlap = frozenset(
-        column for column in left.columns if column in right_columns
-    )
+    overlap = frozenset(column for column in left.columns if column in right_columns)
 
     if not overlap:
         return expr

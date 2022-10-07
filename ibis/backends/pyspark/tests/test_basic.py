@@ -9,9 +9,7 @@ pyspark = pytest.importorskip("pyspark")
 
 import pyspark.sql.functions as F  # noqa: E402
 
-from ibis.backends.pyspark.compiler import (  # noqa: E402
-    _can_be_replaced_by_column_name,
-)
+from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # noqa: E402
 
 
 def test_basic(client):
@@ -123,9 +121,7 @@ def test_selection(client):
 
 def test_join(client):
     table = client.table('basic_table')
-    result = table.join(table, ['id', 'str_col'])[
-        table.id, table.str_col
-    ].compile()
+    result = table.join(table, ['id', 'str_col'])[table.id, table.str_col].compile()
     spark_table = table.compile()
     expected = spark_table.join(spark_table, ['id', 'str_col'])
 
@@ -213,7 +209,5 @@ def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
     table = ibis.table([('id', 'double'), ('str_col', 'string')])
     table = selection_fn(table)
     selection_to_test = table.op().selections[selection_idx]
-    result = _can_be_replaced_by_column_name(
-        selection_to_test, table.op().table
-    )
+    result = _can_be_replaced_by_column_name(selection_to_test, table.op().table)
     assert result == expected

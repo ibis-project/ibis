@@ -165,9 +165,7 @@ WHERE `int_col` > 0"""
 # TODO use alltypes
 def test_table_column_unbox(db, alltypes):
     m = alltypes.float_col.sum().name('total')
-    agged = (
-        alltypes[alltypes.int_col > 0].group_by('string_col').aggregate([m])
-    )
+    agged = alltypes[alltypes.int_col > 0].group_by('string_col').aggregate([m])
     expr = agged.string_col
 
     sql_query = ibis.clickhouse.compile(expr)
@@ -185,9 +183,7 @@ FROM (
 
 def test_complex_array_expr_projection(db, alltypes):
     # May require finding the base table and forming a projection.
-    expr = alltypes.group_by('string_col').aggregate(
-        [alltypes.count().name('count')]
-    )
+    expr = alltypes.group_by('string_col').aggregate([alltypes.count().name('count')])
     expr2 = expr.string_col.cast('double')
 
     query = ibis.clickhouse.compile(expr2)
@@ -344,9 +340,7 @@ WHERE (`int_col` > 0) AND
 
 
 def test_where_use_if(con, alltypes, translate):
-    expr = ibis.where(
-        alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col
-    )
+    expr = ibis.where(alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col)
 
     result = translate(expr.op())
     expected = "if(`float_col` > 0, `int_col`, `bigint_col`)"
@@ -373,9 +367,7 @@ def test_where_with_timestamp():
         [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
         name='t',
     )
-    expr = t.group_by(t.uuid).aggregate(
-        min_date=t.ts.min(where=t.search_level == 1)
-    )
+    expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
     result = ibis.clickhouse.compile(expr)
     expected = """\
 SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
@@ -452,9 +444,7 @@ def test_join_with_external_table(con, alltypes, df):
     ]
 
     result = expr.execute(external_tables={'external': external_df})
-    expected = df.assign(b=df.tinyint_col).merge(external_df, on='b')[
-        ['a', 'c', 'id']
-    ]
+    expected = df.assign(b=df.tinyint_col).merge(external_df, on='b')[['a', 'c', 'id']]
 
     result = result.sort_values('id').reset_index(drop=True)
     expected = expected.sort_values('id').reset_index(drop=True)

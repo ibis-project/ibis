@@ -34,27 +34,19 @@ def test_read_with_undiscoverable_type(client):
 
 
 def test_selection(t, df):
-    expr = t[
-        ((t.plain_strings == 'a') | (t.plain_int64 == 3))
-        & (t.dup_strings == 'd')
-    ]
+    expr = t[((t.plain_strings == 'a') | (t.plain_int64 == 3)) & (t.dup_strings == 'd')]
     result = expr.compile()
     expected = df[
-        ((df.plain_strings == 'a') | (df.plain_int64 == 3))
-        & (df.dup_strings == 'd')
+        ((df.plain_strings == 'a') | (df.plain_int64 == 3)) & (df.dup_strings == 'd')
     ].reset_index(drop=True)
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_mutate(t, df):
     expr = t.mutate(x=t.plain_int64 + 1, y=t.plain_int64 * 2)
     result = expr.compile()
     expected = df.assign(x=df.plain_int64 + 1, y=df.plain_int64 * 2)
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 @pytest.mark.xfail(reason='TODO - windowing - #2553')
@@ -63,9 +55,7 @@ def test_project_scope_does_not_override(t, df):
     expr = t[
         [
             col.name('new_col'),
-            col.sum()
-            .over(ibis.window(group_by='dup_strings'))
-            .name('grouped'),
+            col.sum().over(ibis.window(group_by='dup_strings')).name('grouped'),
         ]
     ]
     result = expr.compile()
@@ -116,9 +106,7 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     expr = t.group_by(t.dup_strings).aggregate(
         avg_plain_int64=t.plain_int64.mean(where=ibis_where),
         sum_plain_float64=t.plain_float64.sum(where=ibis_where),
-        mean_float64_positive=ibis_func(t.float64_positive).mean(
-            where=ibis_where
-        ),
+        mean_float64_positive=ibis_func(t.float64_positive).mean(where=ibis_where),
         neg_mean_int64_with_zeros=(-t.int64_with_zeros).mean(where=ibis_where),
         nunique_dup_ints=t.dup_ints.nunique(),
     )
@@ -158,18 +146,14 @@ def test_aggregation_group_by(t, df, where, ibis_func, dask_func):
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
     result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
-    expected[
-        'neg_mean_int64_with_zeros'
-    ] = expected.neg_mean_int64_with_zeros.astype('float64')
-    result[
-        'neg_mean_int64_with_zeros'
-    ] = result.neg_mean_int64_with_zeros.astype('float64')
-    expected['mean_float64_positive'] = expected.mean_float64_positive.astype(
+    expected['neg_mean_int64_with_zeros'] = expected.neg_mean_int64_with_zeros.astype(
         'float64'
     )
-    result['mean_float64_positive'] = result.mean_float64_positive.astype(
+    result['neg_mean_int64_with_zeros'] = result.neg_mean_int64_with_zeros.astype(
         'float64'
     )
+    expected['mean_float64_positive'] = expected.mean_float64_positive.astype('float64')
+    result['mean_float64_positive'] = result.mean_float64_positive.astype('float64')
 
     lhs = result[expected.columns]
     rhs = expected
@@ -218,9 +202,7 @@ def test_group_by_with_having(t, df):
     )
     expected = expected.loc[expected.sum_c == 5, ['avg_a', 'sum_c']]
 
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_group_by_rename_key(t, df):
@@ -331,19 +313,11 @@ def test_grouped_reduction(t, df, where):
 
     # match the dtypes
     if df_mask is None:
-        expected["mean_plain_int64"] = expected.mean_plain_int64.astype(
-            "float64"
-        )
+        expected["mean_plain_int64"] = expected.mean_plain_int64.astype("float64")
     else:
-        expected["sum_plain_int64"] = expected.sum_plain_int64.astype(
-            "float64"
-        )
-        expected["count_plain_int64"] = expected.count_plain_int64.astype(
-            "float64"
-        )
-        expected["nunique_plain_int64"] = expected.nunique_plain_int64.astype(
-            "float64"
-        )
+        expected["sum_plain_int64"] = expected.sum_plain_int64.astype("float64")
+        expected["count_plain_int64"] = expected.count_plain_int64.astype("float64")
+        expected["nunique_plain_int64"] = expected.nunique_plain_int64.astype("float64")
 
     tm.assert_frame_equal(result, expected)
 
@@ -442,9 +416,7 @@ def test_nullif_inf(npartitions):
 
 
 def test_group_concat(t, df):
-    expr = t.group_by(t.dup_strings).aggregate(
-        foo=t.plain_int64.group_concat(',')
-    )
+    expr = t.group_by(t.dup_strings).aggregate(foo=t.plain_int64.group_concat(','))
     result = expr.compile()
     expected = (
         df.groupby('dup_strings')
@@ -452,9 +424,7 @@ def test_group_concat(t, df):
         .reset_index()
         .rename(columns={0: 'foo'})
     )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 @pytest.mark.parametrize('offset', [0, 2])
@@ -463,14 +433,10 @@ def test_frame_limit(t, df, offset):
     df_expr = t.limit(n, offset=offset)
     result = df_expr.compile()
     expected = df.loc[offset : offset + n].reset_index(drop=True)
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
-@pytest.mark.xfail(
-    raises=AttributeError, reason='TableColumn does not implement limit'
-)
+@pytest.mark.xfail(raises=AttributeError, reason='TableColumn does not implement limit')
 @pytest.mark.parametrize('offset', [0, 2])
 def test_series_limit(t, df, offset):
     n = 5
@@ -519,9 +485,7 @@ def test_order_by(t, df, column, key, dask_by, dask_ascending):
 
 @pytest.mark.xfail(reason="TODO - sorting - #2553")
 def test_complex_order_by(t, df):
-    expr = t.order_by(
-        [ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64]
-    )
+    expr = t.order_by([ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64])
     result = expr.compile()
     expected = (
         df.assign(foo=df.plain_int64 * df.plain_float64)
@@ -530,9 +494,7 @@ def test_complex_order_by(t, df):
         .reset_index(drop=True)
     )
 
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_count_distinct(t, df):
@@ -572,15 +534,12 @@ def test_weighted_average(t, df):
     expected = (
         df.groupby('dup_strings')
         .apply(
-            lambda df: (df.plain_int64 * df.plain_float64).sum()
-            / df.plain_int64.sum()
+            lambda df: (df.plain_int64 * df.plain_float64).sum() / df.plain_int64.sum()
         )
         .reset_index()
         .rename(columns={0: 'avg'})
     )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_group_by_multiple_keys(t, df):
@@ -594,15 +553,11 @@ def test_group_by_multiple_keys(t, df):
         .reset_index()
         .rename(columns={'plain_float64': 'avg_plain_float64'})
     )
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_mutate_after_group_by(t, df):
-    gb = t.group_by(t.dup_strings).aggregate(
-        avg_plain_float64=t.plain_float64.mean()
-    )
+    gb = t.group_by(t.dup_strings).aggregate(avg_plain_float64=t.plain_float64.mean())
     expr = gb.mutate(x=gb.avg_plain_float64)
     result = expr.compile()
     expected = (
@@ -612,28 +567,19 @@ def test_mutate_after_group_by(t, df):
         .rename(columns={'plain_float64': 'avg_plain_float64'})
     )
     expected = expected.assign(x=expected.avg_plain_float64)
-    tm.assert_frame_equal(
-        result[expected.columns].compute(), expected.compute()
-    )
+    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
 
 
 def test_group_by_with_unnamed_arithmetic(t, df):
     expr = t.group_by(t.dup_strings).aggregate(
-        naive_variance=(
-            (t.plain_float64**2).sum() - t.plain_float64.mean() ** 2
-        )
+        naive_variance=((t.plain_float64**2).sum() - t.plain_float64.mean() ** 2)
         / t.plain_float64.count()
     )
     result = expr.compile()
     expected = (
         df.compute()
         .groupby('dup_strings')
-        .agg(
-            {
-                'plain_float64': lambda x: ((x**2).sum() - x.mean() ** 2)
-                / x.count()
-            }
-        )
+        .agg({'plain_float64': lambda x: ((x**2).sum() - x.mean() ** 2) / x.count()})
         .reset_index()
         .rename(columns={'plain_float64': 'naive_variance'})
     )
@@ -743,12 +689,8 @@ def test_left_binary_op_gb(t, df, op, argfunc):
     tm.assert_frame_equal(result.compute(), expected.compute())
 
 
-@pytest.mark.parametrize(
-    "left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None]
-)
-@pytest.mark.parametrize(
-    "right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None]
-)
+@pytest.mark.parametrize("left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None])
+@pytest.mark.parametrize("right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None])
 def test_where_series(t, df, left_f, right_f):
     col_expr = t['plain_int64']
     result = ibis.where(
@@ -973,9 +915,7 @@ def test_union(client, df1, distinct):
     t = client.table('df1')
     expr = t.union(t, distinct=distinct)
     result = expr.compile()
-    expected = (
-        df1 if distinct else dd.concat([df1, df1], axis=0, ignore_index=True)
-    )
+    expected = df1 if distinct else dd.concat([df1, df1], axis=0, ignore_index=True)
 
     # match indicies because of dask reset_index behavior
     result = result.compute().reset_index(drop=True)
@@ -998,9 +938,7 @@ def test_difference(client, df1, intersect_df2):
     t2 = client.table('intersect_df2')
     expr = t1.difference(t2)
     result = expr.compile()
-    merged = df1.merge(
-        intersect_df2, on=list(df1.columns), how="outer", indicator=True
-    )
+    merged = df1.merge(intersect_df2, on=list(df1.columns), how="outer", indicator=True)
     expected = merged[merged["_merge"] != "both"].drop("_merge", axis=1)
 
     # force same index
@@ -1018,8 +956,7 @@ def test_difference(client, df1, intersect_df2):
             marks=pytest.mark.xfail(
                 raises=TypeError,
                 reason=(
-                    "dask cannot compute the distinct element of an "
-                    "array column"
+                    "dask cannot compute the distinct element of an " "array column"
                 ),
             ),
         ),
@@ -1029,7 +966,5 @@ def test_difference(client, df1, intersect_df2):
 def test_union_with_list_types(t, df, distinct):
     expr = t.union(t, distinct=distinct)
     result = expr.compile()
-    expected = (
-        df if distinct else dd.concat([df, df], axis=0, ignore_index=True)
-    )
+    expected = df if distinct else dd.concat([df, df], axis=0, ignore_index=True)
     tm.assert_frame_equal(result.compute(), expected.compute())

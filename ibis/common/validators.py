@@ -89,8 +89,7 @@ def instance_of(klasses, arg, **kwargs):
     if not isinstance(arg, klasses):
         # TODO(kszucs): unify errors coming from various validators
         raise IbisTypeError(
-            f'Given argument with type {type(arg)} '
-            f'is not an instance of {klasses}'
+            f'Given argument with type {type(arg)} ' f'is not an instance of {klasses}'
         )
     return arg
 
@@ -150,9 +149,7 @@ def map_to(mapping, variant, **kwargs):
     try:
         return mapping[variant]
     except KeyError:
-        raise ValueError(
-            f'Value with type {type(variant)} is not in {mapping!r}'
-        )
+        raise ValueError(f'Value with type {type(variant)} is not in {mapping!r}')
 
 
 @validator
@@ -161,9 +158,7 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
         raise IbisTypeError('Argument must be a sequence')
 
     if len(arg) < min_length:
-        raise IbisTypeError(
-            f'Arg must have at least {min_length} number of elements'
-        )
+        raise IbisTypeError(f'Arg must have at least {min_length} number of elements')
 
     if flatten:
         arg = flatten_iterable(arg)
@@ -174,8 +169,7 @@ def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
 @validator
 def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
     return type(
-        (key_inner(k, **kwargs), value_inner(v, **kwargs))
-        for k, v in arg.items()
+        (key_inner(k, **kwargs), value_inner(v, **kwargs)) for k, v in arg.items()
     )
 
 

@@ -13,9 +13,7 @@ def table(mockcon):
     ("expr_fn", "expected"),
     [
         pytest.param(
-            lambda t: ibis.row_number().over(
-                ibis.window(order_by=t.float_col)
-            ),
+            lambda t: ibis.row_number().over(ibis.window(order_by=t.float_col)),
             '(row_number() OVER (ORDER BY `float_col`) - 1)',
         ),
         pytest.param(

@@ -42,8 +42,7 @@ def test_select_linestring_geodata(geotable):
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
-        "SELECT ST_AsEWKB(t0.geo_linestring) AS geo_linestring \n"
-        "FROM geo AS t0"
+        "SELECT ST_AsEWKB(t0.geo_linestring) AS geo_linestring \n" "FROM geo AS t0"
     )
     assert compiled == expected
     data = expr.execute()
@@ -54,9 +53,7 @@ def test_select_polygon_geodata(geotable):
     expr = geotable['geo_polygon']
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
-    expected = (
-        "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \n" "FROM geo AS t0"
-    )
+    expected = "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \n" "FROM geo AS t0"
     assert compiled == expected
     data = expr.execute()
     assert data.geom_type.iloc[0] == 'Polygon'
@@ -67,8 +64,7 @@ def test_select_multipolygon_geodata(geotable):
     sqla_expr = expr.compile()
     compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
     expected = (
-        "SELECT ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon \n"
-        "FROM geo AS t0"
+        "SELECT ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon \n" "FROM geo AS t0"
     )
     assert compiled == expected
     data = expr.execute()
@@ -114,9 +110,7 @@ def test_geo_covered_by(geotable):
 
 
 def test_geo_d_fully_within(geotable):
-    expr = geotable.geo_point.d_fully_within(
-        geotable.geo_point.buffer(1.0), 2.0
-    )
+    expr = geotable.geo_point.d_fully_within(geotable.geo_point.buffer(1.0), 2.0)
     assert expr.execute().all()
 
 
@@ -128,9 +122,7 @@ def test_geo_d_within(geotable):
 def test_geo_end_point(geotable, gdf):
     expr = geotable.geo_linestring.end_point()
     result = expr.execute()
-    end_point = gdf.apply(
-        lambda x: x.geo_linestring.interpolate(1, True), axis=1
-    )
+    end_point = gdf.apply(lambda x: x.geo_linestring.interpolate(1, True), axis=1)
     for a, b in zip(result, end_point):
         assert a.equals(b)
 
@@ -139,10 +131,7 @@ def test_geo_envelope(geotable, gdf):
     expr = geotable.geo_linestring.buffer(1.0).envelope()
     result = expr.execute()
     expected = pd.Series(
-        [
-            linestring.buffer(1.0).envelope.area
-            for linestring in gdf.geo_linestring
-        ]
+        [linestring.buffer(1.0).envelope.area for linestring in gdf.geo_linestring]
     )
     tm.assert_series_equal(result.area, expected, check_names=False)
 
@@ -268,9 +257,7 @@ def test_geo_srid(geotable):
 def test_geo_start_point(geotable, gdf):
     expr = geotable.geo_linestring.start_point()
     result = expr.execute()
-    start_point = gdf.apply(
-        lambda x: x.geo_linestring.interpolate(0, True), axis=1
-    )
+    start_point = gdf.apply(lambda x: x.geo_linestring.interpolate(0, True), axis=1)
     for a, b in zip(result, start_point):
         assert a.equals(b)
 
@@ -288,9 +275,7 @@ def test_geo_difference(geotable, gdf):
             for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
         ]
     )
-    tm.assert_series_equal(
-        result, expected, check_names=False, check_less_precise=2
-    )
+    tm.assert_series_equal(result, expected, check_names=False, check_less_precise=2)
 
 
 def test_geo_intersection(geotable, gdf):
@@ -306,9 +291,7 @@ def test_geo_intersection(geotable, gdf):
             for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
         ]
     )
-    tm.assert_series_equal(
-        result, expected, check_names=False, check_less_precise=2
-    )
+    tm.assert_series_equal(result, expected, check_names=False, check_less_precise=2)
 
 
 def test_geo_unary_union(geotable, gdf):
@@ -320,10 +303,7 @@ def test_geo_unary_union(geotable, gdf):
 def test_geo_union(geotable, gdf):
     expr = geotable.geo_polygon.union(geotable.geo_multipolygon).area()
     expected = pd.Series(
-        [
-            p.union(mp).area
-            for p, mp in zip(gdf.geo_polygon, gdf.geo_multipolygon)
-        ]
+        [p.union(mp).area for p, mp in zip(gdf.geo_polygon, gdf.geo_multipolygon)]
     )
     tm.assert_series_equal(expr.execute(), expected, check_names=False)
 

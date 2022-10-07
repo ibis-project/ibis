@@ -41,9 +41,7 @@ class TestConf(BackendTest, RoundHalfToEven):
         con = self.connection
         if 'MariaDB' in str(con.version):
             # we might move this parsing step to the mysql client
-            version_detail = con.con.dialect._parse_server_version(
-                str(con.version)
-            )
+            version_detail = con.con.dialect._parse_server_version(str(con.version))
             version = (
                 version_detail[:3]
                 if version_detail[3] == 'MariaDB'

@@ -36,11 +36,7 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.impala import ddl, udf
-from ibis.backends.impala.client import (
-    ImpalaConnection,
-    ImpalaDatabase,
-    ImpalaTable,
-)
+from ibis.backends.impala.client import ImpalaConnection, ImpalaDatabase, ImpalaTable
 from ibis.backends.impala.compat import HS2Error, ImpylaError
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.pandas_interop import DataFrameWriter
@@ -207,9 +203,7 @@ class Backend(BaseSQLBackend):
         ca_cert: str | Path | None = None,
         user: str | None = None,
         password: str | None = None,
-        auth_mechanism: Literal[
-            "NOSASL", "PLAIN", "GSSAPI", "LDAP"
-        ] = "NOSASL",
+        auth_mechanism: Literal["NOSASL", "PLAIN", "GSSAPI", "LDAP"] = "NOSASL",
         kerberos_service_name: str = "impala",
         pool_size: int = 8,
         hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
@@ -437,11 +431,7 @@ class Backend(BaseSQLBackend):
                     force=True,
                 )
             for func in udas:
-                util.log(
-                    'Dropping aggregate function {}({})'.format(
-                        func.name, func.inputs
-                    )
-                )
+                util.log(f'Dropping aggregate function {func.name}({func.inputs})')
                 self.drop_uda(
                     func.name,
                     input_types=func.inputs,
@@ -669,9 +659,7 @@ class Backend(BaseSQLBackend):
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(
-            name, database, persist=persist
-        )
+        name, database = self._get_concrete_table_path(name, database, persist=persist)
 
         stmt = ddl.CreateTableAvro(
             name, hdfs_dir, avro_schema, database=database, external=external
@@ -727,9 +715,7 @@ class Backend(BaseSQLBackend):
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(
-            name, database, persist=persist
-        )
+        name, database = self._get_concrete_table_path(name, database, persist=persist)
 
         stmt = ddl.CreateTableDelimited(
             name,
@@ -794,9 +780,7 @@ class Backend(BaseSQLBackend):
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(
-            name, database, persist=persist
-        )
+        name, database = self._get_concrete_table_path(name, database, persist=persist)
 
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
@@ -946,9 +930,7 @@ class Backend(BaseSQLBackend):
         >>> db = 'operations'
         >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
-        statement = DropTable(
-            table_name, database=database, must_exist=not force
-        )
+        statement = DropTable(table_name, database=database, must_exist=not force)
         self.raw_sql(statement)
 
     def truncate_table(self, table_name, database=None):
@@ -1096,9 +1078,7 @@ class Backend(BaseSQLBackend):
             name, input_types=input_types, database=database, force=force
         )
 
-    def _drop_single_function(
-        self, name, input_types, database=None, aggregate=False
-    ):
+    def _drop_single_function(self, name, input_types, database=None, aggregate=False):
         stmt = ddl.DropFunction(
             name,
             input_types,
@@ -1273,9 +1253,7 @@ class Backend(BaseSQLBackend):
         """
         from ibis.backends.impala.metadata import parse_metadata
 
-        stmt = self._table_command(
-            'DESCRIBE FORMATTED', name, database=database
-        )
+        stmt = self._table_command('DESCRIBE FORMATTED', name, database=database)
         result = self._exec_statement(stmt)
 
         # Leave formatting to pandas
@@ -1314,9 +1292,7 @@ class Backend(BaseSQLBackend):
 
     def column_stats(self, name, database=None):
         """Return results of `SHOW COLUMN STATS` for the table `name`."""
-        stmt = self._table_command(
-            'SHOW COLUMN STATS', name, database=database
-        )
+        stmt = self._table_command('SHOW COLUMN STATS', name, database=database)
         return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt):

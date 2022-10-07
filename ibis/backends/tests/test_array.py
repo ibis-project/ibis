@@ -15,9 +15,7 @@ try:
 except ImportError:
     duckdb = None
 
-pytestmark = [
-    pytest.mark.never(["sqlite", "mysql"], reason="No array support")
-]
+pytestmark = [pytest.mark.never(["sqlite", "mysql"], reason="No array support")]
 
 
 @pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
@@ -312,8 +310,7 @@ def test_unnest_default_name(con):
     array_types = con.table("array_types")
     df = array_types.execute()
     expr = (
-        array_types.x.cast("!array<int64>")
-        + ibis.array([1], type="!array<int64>")
+        array_types.x.cast("!array<int64>") + ibis.array([1], type="!array<int64>")
     ).unnest()
     assert expr.get_name().startswith("ArrayConcat(")
 

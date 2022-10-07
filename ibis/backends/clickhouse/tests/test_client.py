@@ -155,9 +155,7 @@ def test_insert_with_more_columns(temporary_alltypes, df):
     [
         (
             "SELECT 1 as a, 2 + dummy as b",
-            ibis.schema(
-                dict(a=dt.UInt8(nullable=False), b=dt.UInt16(nullable=False))
-            ),
+            ibis.schema(dict(a=dt.UInt8(nullable=False), b=dt.UInt16(nullable=False))),
         ),
         (
             "SELECT string_col, sum(double_col) as b FROM functional_alltypes GROUP BY string_col",  # noqa: E501

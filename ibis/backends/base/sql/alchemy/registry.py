@@ -166,9 +166,7 @@ def _cast(t, op):
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.output_dtype, dt.Integer) and isinstance(
-        sa_type, sa.DateTime
-    ):
+    if isinstance(arg.output_dtype, dt.Integer) and isinstance(sa_type, sa.DateTime):
         return t.integer_to_timestamp(sa_arg)
 
     if isinstance(arg.output_dtype, dt.Binary) and isinstance(typ, dt.String):
@@ -285,9 +283,7 @@ def _translate_case(t, cases, results, default):
 
 def _negate(t, op):
     arg = t.translate(op.arg)
-    return (
-        sa.not_(arg) if isinstance(op.arg.output_dtype, dt.Boolean) else -arg
-    )
+    return sa.not_(arg) if isinstance(op.arg.output_dtype, dt.Boolean) else -arg
 
 
 def unary(sa_func):
@@ -392,9 +388,7 @@ def _window(t, op):
         partition_by=partition_by, order_by=order_by, **additional_params
     )
 
-    if isinstance(
-        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
-    ):
+    if isinstance(window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)):
         return result - 1
     else:
         return result
@@ -427,9 +421,7 @@ def _sort_key(t, op):
 
 
 def _string_join(t, op):
-    return sa.func.concat_ws(
-        t.translate(op.sep), *map(t.translate, op.arg.values)
-    )
+    return sa.func.concat_ws(t.translate(op.sep), *map(t.translate, op.arg.values))
 
 
 def reduction(sa_func):
@@ -540,9 +532,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.BitXor: reduction(sa.func.bit_xor),
     ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.HLLCardinality: reduction(lambda arg: sa.func.count(arg.distinct())),
-    ops.ApproxCountDistinct: reduction(
-        lambda arg: sa.func.count(arg.distinct())
-    ),
+    ops.ApproxCountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.GroupConcat: _group_concat,
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,

@@ -202,9 +202,7 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
     ):
         _, begin = next(start_iter)
         _, end = next(end_iter)
-        if (begin is not None and isnull(begin)) or (
-            end is not None and isnull(end)
-        ):
+        if (begin is not None and isnull(begin)) or (end is not None and isnull(end)):
             return None
         return value[begin:end]
 
@@ -212,21 +210,15 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
 
 
 @execute_node.register(ops.StringSQLLike, ddgb.SeriesGroupBy, str, str)
-def execute_string_like_series_groupby_string(
-    op, data, pattern, escape, **kwargs
-):
+def execute_string_like_series_groupby_string(op, data, pattern, escape, **kwargs):
     return execute_string_like_series_string(
         op, make_selected_obj(data), pattern, escape, **kwargs
     ).groupby(data.grouper.groupings)
 
 
 # TODO - aggregations - #2553
-@execute_node.register(
-    ops.GroupConcat, dd.Series, str, (dd.Series, type(None))
-)
-def execute_group_concat_series_mask(
-    op, data, sep, mask, aggcontext=None, **kwargs
-):
+@execute_node.register(ops.GroupConcat, dd.Series, str, (dd.Series, type(None)))
+def execute_group_concat_series_mask(op, data, sep, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data[mask] if mask is not None else data,
         lambda series, sep=sep: sep.join(series.values),
@@ -234,9 +226,7 @@ def execute_group_concat_series_mask(
 
 
 @execute_node.register(ops.GroupConcat, ddgb.SeriesGroupBy, str, type(None))
-def execute_group_concat_series_gb(
-    op, data, sep, _, aggcontext=None, **kwargs
-):
+def execute_group_concat_series_gb(op, data, sep, _, aggcontext=None, **kwargs):
     custom_group_concat = dd.Aggregation(
         name='custom_group_concat',
         chunk=lambda s: s.apply(list),
@@ -250,20 +240,14 @@ def execute_group_concat_series_gb(
 
 
 # TODO - aggregations - #2553
-@execute_node.register(
-    ops.GroupConcat, ddgb.SeriesGroupBy, str, ddgb.SeriesGroupBy
-)
-def execute_group_concat_series_gb_mask(
-    op, data, sep, mask, aggcontext=None, **kwargs
-):
+@execute_node.register(ops.GroupConcat, ddgb.SeriesGroupBy, str, ddgb.SeriesGroupBy)
+def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **kwargs):
     def method(series, sep=sep):
         return sep.join(series.values.astype(str))
 
     return aggcontext.agg(
         data,
-        lambda data, mask=mask.obj, method=method: method(
-            data[mask[data.index]]
-        ),
+        lambda data, mask=mask.obj, method=method: method(data[mask[data.index]]),
     )
 
 
@@ -290,9 +274,7 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     ).groupby(data.index)
 
 
-@execute_node.register(
-    ops.RegexExtract, ddgb.SeriesGroupBy, str, integer_types
-)
+@execute_node.register(ops.RegexExtract, ddgb.SeriesGroupBy, str, integer_types)
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(
         op, make_selected_obj(data), pattern, index, **kwargs
@@ -308,9 +290,7 @@ def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
 
 @execute_node.register(ops.StrRight, ddgb.SeriesGroupBy, integer_types)
 def execute_series_right_gb(op, data, nchars, **kwargs):
-    return execute_series_right(op, make_selected_obj(data), nchars).groupby(
-        data.index
-    )
+    return execute_series_right(op, make_selected_obj(data), nchars).groupby(data.index)
 
 
 def haystack_to_dask_series_of_lists(haystack, index=None):
@@ -365,8 +345,6 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
 
     return result.groupby(
         toolz.first(
-            piece.grouper.groupings
-            for piece in haystack
-            if hasattr(piece, 'grouper')
+            piece.grouper.groupings for piece in haystack if hasattr(piece, 'grouper')
         )
     )

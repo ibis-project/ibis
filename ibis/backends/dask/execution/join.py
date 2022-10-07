@@ -24,9 +24,7 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
     overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)
-    _validate_columns(
-        overlapping_columns, left_on, right_on, left_by, right_by
-    )
+    _validate_columns(overlapping_columns, left_on, right_on, left_by, right_by)
 
     assert 0 <= len(left_on) <= 1, f"len(left_on) == {len(left_on)}"
     assert 0 <= len(right_on) <= 1, f"len(right_on) == {len(right_on)}"
@@ -93,12 +91,8 @@ def execute_join(op, left, right, predicates, **kwargs):
     on = {op.left: [], op.right: []}
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError(
-                'Only equality join predicates supported with dask'
-            )
-        new_left_column, left_pred_root = _compute_join_column(
-            predicate.left, **kwargs
-        )
+            raise TypeError('Only equality join predicates supported with dask')
+        new_left_column, left_pred_root = _compute_join_column(predicate.left, **kwargs)
         on[left_pred_root].append(new_left_column)
 
         new_right_column, right_pred_root = _compute_join_column(

@@ -4,9 +4,7 @@ import pytest
 import ibis
 from ibis import util
 
-dot_sql_notimpl = pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "sqlite"]
-)
+dot_sql_notimpl = pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "sqlite"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake"],
     reason="snowflake column names are case insensitive",

@@ -100,9 +100,7 @@ def test_join(how):
 
 def test_order_by():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = (
-        t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
-    )
+    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
     graph = viz.to_graph(expr)
     assert key(expr.op()) in graph.source
 
@@ -113,9 +111,7 @@ def test_order_by():
 )
 def test_optional_graphviz_repr(with_graphviz):
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = (
-        t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
-    )
+    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
 
     # default behavior
     assert expr._repr_png_() is not None

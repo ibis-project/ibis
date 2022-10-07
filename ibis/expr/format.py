@@ -94,9 +94,7 @@ def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
         Max length
     """
     try:
-        return max(
-            len(node.name) for node in nodes if isinstance(node, ops.Named)
-        )
+        return max(len(node.name) for node in nodes if isinstance(node, ops.Named))
     except ValueError:
         return 0
 
@@ -118,9 +116,7 @@ def _fmt_root_table_node(op: ops.TableNode, **kwargs: Any) -> str:
 
 
 @fmt_root.register
-def _fmt_root_value_op(
-    op: ops.Value, *, name: str, aliases: Aliases, **_: Any
-) -> str:
+def _fmt_root_value_op(op: ops.Value, *, name: str, aliases: Aliases, **_: Any) -> str:
     value = fmt_value(op, aliases=aliases)
     prefix = f"{name}: " if name is not None else ""
     return f"{prefix}{value}{type_info(op.to_expr().type())}"
@@ -365,9 +361,7 @@ def fmt_fields(
 
     for field, formatter in fields.items():
         if exprs := [
-            expr
-            for expr in util.promote_list(getattr(op, field))
-            if expr is not None
+            expr for expr in util.promote_list(getattr(op, field)) if expr is not None
         ]:
             field_fmt = [formatter(expr, aliases=aliases) for expr in exprs]
 
@@ -378,9 +372,7 @@ def fmt_fields(
 
 
 @fmt_table_op.register
-def _fmt_table_op_selection(
-    op: ops.Selection, *, aliases: Aliases, **_: Any
-) -> str:
+def _fmt_table_op_selection(op: ops.Selection, *, aliases: Aliases, **_: Any) -> str:
     top = f"{op.__class__.__name__}[{aliases[op.table]}]"
     raw_parts = fmt_fields(
         op,
@@ -459,9 +451,7 @@ def type_info(datatype: dt.DataType) -> str:
 
 @fmt_selection_column.register
 def _fmt_selection_column_sequence(node: ops.NodeList, **kwargs):
-    return "\n".join(
-        fmt_selection_column(value, **kwargs) for value in node.values
-    )
+    return "\n".join(fmt_selection_column(value, **kwargs) for value in node.values)
 
 
 @fmt_selection_column.register
@@ -593,9 +583,7 @@ def _fmt_value_value_op(op: ops.Value, *, aliases: Aliases) -> str:
     for argname, orig_expr in zip(op.argnames, op.args):
         # promote argument to a list, so that we don't accidentially repr
         # entire subtrees when all we want is the formatted argument value
-        if exprs := [
-            expr for expr in util.promote_list(orig_expr) if expr is not None
-        ]:
+        if exprs := [expr for expr in util.promote_list(orig_expr) if expr is not None]:
             # format the individual argument values
             formatted_args = ", ".join(
                 fmt_value(expr, aliases=aliases) for expr in exprs
@@ -603,9 +591,7 @@ def _fmt_value_value_op(op: ops.Value, *, aliases: Aliases) -> str:
             # if the original argument was a non-string iterable, display it as
             # a list
             value = (
-                f"[{formatted_args}]"
-                if util.is_iterable(orig_expr)
-                else formatted_args
+                f"[{formatted_args}]" if util.is_iterable(orig_expr) else formatted_args
             )
             # `arg` and `expr` are noisy, so we ignore printing them as a
             # special case
@@ -651,9 +637,7 @@ def _fmt_value_physical_table(op: ops.PhysicalTable, **_: Any) -> str:
 
 
 @fmt_value.register
-def _fmt_value_table_node(
-    op: ops.TableNode, *, aliases: Aliases, **_: Any
-) -> str:
+def _fmt_value_table_node(op: ops.TableNode, *, aliases: Aliases, **_: Any) -> str:
     """Format a table as value.
 
     This function is called when a table is used in a value expression.
@@ -663,9 +647,7 @@ def _fmt_value_table_node(
 
 
 @fmt_value.register
-def _fmt_value_string_sql_like(
-    op: ops.StringSQLLike, *, aliases: Aliases
-) -> str:
+def _fmt_value_string_sql_like(op: ops.StringSQLLike, *, aliases: Aliases) -> str:
     expr = fmt_value(op.arg, aliases=aliases)
     pattern = fmt_value(op.pattern, aliases=aliases)
     prefix = "I" * isinstance(op, ops.StringSQLILike)

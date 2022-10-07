@@ -59,9 +59,7 @@ class Schema(Concrete):
             duplicate_names = list(self.names)
             for v in name_locs.keys():
                 duplicate_names.remove(v)
-            raise IntegrityError(
-                f'Duplicate column name(s): {duplicate_names}'
-            )
+            raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
         return name_locs
 
     def __repr__(self) -> str:
@@ -107,8 +105,7 @@ class Schema(Concrete):
         """
         if not isinstance(other, Schema):
             raise TypeError(
-                "invalid equality comparison between Schema and "
-                f"{type(other)}"
+                "invalid equality comparison between Schema and " f"{type(other)}"
             )
         return self.__cached_equals__(other)
 
@@ -234,9 +231,7 @@ class Schema(Concrete):
           d  int16
         }
         """
-        return self.__class__(
-            self.names + schema.names, self.types + schema.types
-        )
+        return self.__class__(self.names + schema.names, self.types + schema.types)
 
     def items(self) -> Iterator[tuple[str, dt.DataType]]:
         """Return an iterator of pairs of names and types.
@@ -279,11 +274,7 @@ class Schema(Concrete):
         """
         upper = len(self.names) - 1
         if not 0 <= i <= upper:
-            raise ValueError(
-                'Column index must be between 0 and {:d}, inclusive'.format(
-                    upper
-                )
-            )
+            raise ValueError(f'Column index must be between 0 and {upper:d}, inclusive')
         return self.names[i]
 
     def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:

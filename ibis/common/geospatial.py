@@ -29,9 +29,7 @@ def _format_linestring_value(value: LineStringType, nested=False) -> str:
             'Data' if not nested else 'Inner data'
         )
         raise ex.IbisInputError(msg)
-    return template.format(
-        ', '.join(_format_point_value(point) for point in value)
-    )
+    return template.format(', '.join(_format_point_value(point) for point in value))
 
 
 def _format_polygon_value(value: PolygonType, nested=False) -> str:
@@ -44,9 +42,7 @@ def _format_polygon_value(value: PolygonType, nested=False) -> str:
         raise ex.IbisInputError(msg)
 
     return template.format(
-        ', '.join(
-            _format_linestring_value(line, nested=True) for line in value
-        )
+        ', '.join(_format_linestring_value(line, nested=True) for line in value)
     )
 
 
@@ -68,9 +64,7 @@ def _format_multipolygon_value(value: MultiPolygonType) -> str:
     """Convert a iterable with a multipolygon to text."""
     if not isinstance(value[0][0], (tuple, list)):
         raise ex.IbisInputError('Data structure expected: MultiPolygonType')
-    return ', '.join(
-        _format_polygon_value(polygon, nested=True) for polygon in value
-    )
+    return ', '.join(_format_polygon_value(polygon, nested=True) for polygon in value)
 
 
 def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
@@ -86,9 +80,7 @@ def _format_geo_metadata(op, value: str, inline_metadata: bool = False) -> str:
         )
         return value
 
-    geofunc = (
-        'ST_GeogFromText' if geotype == 'geography' else 'ST_GeomFromText'
-    )
+    geofunc = 'ST_GeogFromText' if geotype == 'geography' else 'ST_GeomFromText'
 
     value = repr(value)
     if srid:

@@ -143,9 +143,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         yield spaceless_string("struct")
         yield LPAREN
         field_names_types = yield (
-            p.seq(field, ty)
-            .combine(lambda field, ty: (field, ty))
-            .sep_by(COMMA)
+            p.seq(field, ty).combine(lambda field, ty: (field, ty)).sep_by(COMMA)
         )
         yield RPAREN
         return Struct.from_tuples(field_names_types)

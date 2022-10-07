@@ -648,30 +648,22 @@ def _timestamp_from_ymdhms(
 
 
 @timestamp.register(pd.Timestamp)
-def _timestamp_from_timestamp(
-    value, timezone: str | None = None
-) -> ir.TimestampScalar:
+def _timestamp_from_timestamp(value, timezone: str | None = None) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 @timestamp.register(datetime.datetime)
-def _timestamp_from_datetime(
-    value, timezone: str | None = None
-) -> ir.TimestampScalar:
+def _timestamp_from_datetime(value, timezone: str | None = None) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
 @timestamp.register(str)
-def _timestamp_from_str(
-    value: str, timezone: str | None = None
-) -> ir.TimestampScalar:
+def _timestamp_from_str(value: str, timezone: str | None = None) -> ir.TimestampScalar:
     try:
         value = pd.Timestamp(value, tz=timezone)
     except pd.errors.OutOfBoundsDatetime:
         value = dateutil.parser.parse(value)
-    dtype = dt.Timestamp(
-        timezone=timezone if timezone is not None else value.tzname()
-    )
+    dtype = dt.Timestamp(timezone=timezone if timezone is not None else value.tzname())
     return literal(value, type=dtype)
 
 

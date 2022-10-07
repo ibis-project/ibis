@@ -35,9 +35,7 @@ def test_cross_join(left, right, df1, df2):
 def test_join_project_left_table(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
     result = expr.execute()
-    expected = pd.merge(df1, df2, how=how, on='key')[
-        list(left.columns) + ['key3']
-    ]
+    expected = pd.merge(df1, df2, how=how, on='key')[list(left.columns) + ['key3']]
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -52,9 +50,9 @@ def test_cross_join_project_left_table(left, right, df1, df2):
 
 @mutating_join_type
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
-    expr = left.join(
-        right, [left.key == right.key, left.key2 == right.key3], how=how
-    )[left, right.key3, right.other_value]
+    expr = left.join(right, [left.key == right.key, left.key2 == right.key3], how=how)[
+        left, right.key3, right.other_value
+    ]
     result = expr.execute()
     expected = pd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
@@ -63,13 +61,9 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
 
 
 @mutating_join_type
-def test_join_with_multiple_predicates_written_as_one(
-    how, left, right, df1, df2
-):
+def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2):
     predicate = (left.key == right.key) & (left.key2 == right.key3)
-    expr = left.join(right, predicate, how=how)[
-        left, right.key3, right.other_value
-    ]
+    expr = left.join(right, predicate, how=how)[left, right.key3, right.other_value]
     result = expr.execute()
     expected = pd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
@@ -104,15 +98,11 @@ def test_join_with_duplicate_non_key_columns(how, left, right):
 
 
 @mutating_join_type
-def test_join_with_duplicate_non_key_columns_not_selected(
-    how, left, right, df1, df2
-):
+def test_join_with_duplicate_non_key_columns_not_selected(how, left, right, df1, df2):
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
     right = right[['key', 'other_value']]
-    expr = left.join(right, left.key == right.key, how=how)[
-        left, right.other_value
-    ]
+    expr = left.join(right, left.key == right.key, how=how)[left, right.other_value]
     result = expr.execute()
     expected = pd.merge(
         df1.assign(x=df1.value * 2),
@@ -128,9 +118,7 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
     join = left.join(right, left.key == right.key, how=how)
     expr = join[left.key, left.value, right.other_value]
     result = expr.execute()
-    expected = pd.merge(df1, df2, on='key', how=how)[
-        ['key', 'value', 'other_value']
-    ]
+    expected = pd.merge(df1, df2, on='key', how=how)[['key', 'value', 'other_value']]
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -237,9 +225,7 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-def test_join_with_window_function(
-    players_base, players_df, batting, batting_df
-):
+def test_join_with_window_function(players_base, players_df, batting, batting_df):
     players = players_base
 
     # this should be semi_join
@@ -270,9 +256,7 @@ merge_asof_minversion = pytest.mark.skipif(
 
 @merge_asof_minversion
 def test_asof_join(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, 'time')[
-        time_left, time_right.other_value
-    ]
+    expr = time_left.asof_join(time_right, 'time')[time_left, time_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -296,9 +280,7 @@ def test_keyed_asof_join(
         time_keyed_left, time_keyed_right.other_value
     ]
     result = expr.execute()
-    expected = pd.merge_asof(
-        time_keyed_df1, time_keyed_df2, on='time', by='key'
-    )
+    expected = pd.merge_asof(time_keyed_df1, time_keyed_df2, on='time', by='key')
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -364,19 +346,13 @@ def test_select_on_unambiguous_join(how, func):
 )
 @merge_asof_minversion
 def test_select_on_unambiguous_asof_join(func):
-    df_t = pd.DataFrame(
-        {'a0': [1, 2, 3], 'b1': pd.date_range("20180101", periods=3)}
-    )
-    df_s = pd.DataFrame(
-        {'a1': [2, 3, 4], 'b2': pd.date_range("20171230", periods=3)}
-    )
+    df_t = pd.DataFrame({'a0': [1, 2, 3], 'b1': pd.date_range("20180101", periods=3)})
+    df_s = pd.DataFrame({'a1': [2, 3, 4], 'b2': pd.date_range("20171230", periods=3)})
     con = ibis.pandas.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
     join = t.asof_join(s, t.b1 == s.b2)
-    expected = pd.merge_asof(df_t, df_s, left_on=["b1"], right_on=["b2"])[
-        ["a0", "a1"]
-    ]
+    expected = pd.merge_asof(df_t, df_s, left_on=["b1"], right_on=["b2"])[["a0", "a1"]]
     assert not expected.empty
     expr = func(join)
     result = expr.execute()
@@ -432,8 +408,7 @@ def test_mutate_after_join():
     joined = ibis_table_1.outer_join(
         ibis_table_2,
         predicates=(
-            ibis_table_1["p_Order_Priority"]
-            == ibis_table_2["q_Order_Priority"]
+            ibis_table_1["p_Order_Priority"] == ibis_table_2["q_Order_Priority"]
         ),
     )
 

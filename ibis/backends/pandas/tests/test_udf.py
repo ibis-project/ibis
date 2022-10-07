@@ -29,10 +29,8 @@ def df():
 def df2():
     return pd.DataFrame(
         {
-            'a': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
+            'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
             'c': np.arange(7, dtype=int).tolist(),
             'key': list('ddeefff'),
         }
@@ -181,10 +179,8 @@ def test_udaf_analytic_groupby(con, t, df):
 def test_udaf_groupby():
     df = pd.DataFrame(
         {
-            'a': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
+            'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
             'key': list('ddeefff'),
         }
     )
@@ -202,8 +198,7 @@ def test_udaf_groupby():
         {
             'key': list('def'),
             'my_corr': [
-                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b'])
-                for value in 'def'
+                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b']) for value in 'def'
             ],
         }
     )
@@ -283,9 +278,7 @@ def test_udaf_window_interval():
             [
                 (
                     "time",
-                    pd.date_range(
-                        start='20190105', end='20190101', freq='-1D'
-                    ),
+                    pd.date_range(start='20190105', end='20190101', freq='-1D'),
                 ),
                 ("key", [1, 2, 1, 2, 1]),
                 ("value", np.arange(5)),
@@ -327,10 +320,8 @@ def test_multiple_argument_udaf_window():
         {
             'a': np.arange(4, 0, dtype=float, step=-1).tolist()
             + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
-            'c': np.arange(4, dtype=float).tolist()
-            + np.random.rand(3).tolist(),
+            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            'c': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
             'd': np.repeat(1, 7),
             'key': list('deefefd'),
         }
@@ -422,9 +413,7 @@ def test_array_return_type_reduction_group_by(con, t, df, qs):
     `SeriesGroupBy.agg` in the `Summarize` aggcontext implementation
     (#2768).
     """
-    expr = t.group_by(t.key).aggregate(
-        quantiles_col=quantiles(t.b, quantiles=qs)
-    )
+    expr = t.group_by(t.key).aggregate(quantiles_col=quantiles(t.b, quantiles=qs))
     result = expr.execute()
 
     expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())

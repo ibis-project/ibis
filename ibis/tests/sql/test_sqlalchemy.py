@@ -119,9 +119,7 @@ def test_sqla_schema_conversion(con):
 )
 def test_comparisons(con, functional_alltypes, sa_functional_alltypes, op):
     expr = op(functional_alltypes.double_col, 5).name("tmp")
-    expected = sa.select(
-        [op(sa_functional_alltypes.c.double_col, L(5)).label("tmp")]
-    )
+    expected = sa.select([op(sa_functional_alltypes.c.double_col, L(5)).label("tmp")])
     _check(expr, expected)
 
 
@@ -146,9 +144,7 @@ def test_boolean_conjunction(
     expected_fn,
 ):
     expr = expr_fn(functional_alltypes.double_col).name('tmp')
-    expected = sa.select(
-        [expr_fn(sa_functional_alltypes.c.double_col).label("tmp")]
-    )
+    expected = sa.select([expr_fn(sa_functional_alltypes.c.double_col).label("tmp")])
     _check(expr, expected)
 
 
@@ -216,12 +212,8 @@ def test_coalesce(sa_functional_alltypes, functional_alltypes):
 
 
 def test_named_expr(sa_functional_alltypes, functional_alltypes):
-    expr = functional_alltypes[
-        (functional_alltypes.double_col * 2).name('foo')
-    ]
-    expected = sa.select(
-        [(sa_functional_alltypes.c.double_col * L(2)).label('foo')]
-    )
+    expr = functional_alltypes[(functional_alltypes.double_col * 2).name('foo')]
+    expected = sa.select([(sa_functional_alltypes.c.double_col * L(2)).label('foo')])
     _check(expr, expected)
 
 
@@ -252,17 +244,13 @@ def test_named_expr(sa_functional_alltypes, functional_alltypes):
             ).select(),
         ),
         (
-            lambda r, n: r.inner_join(
-                n, r.r_regionkey == n.n_regionkey
-            ).projection(n),
+            lambda r, n: r.inner_join(n, r.r_regionkey == n.n_regionkey).projection(n),
             lambda rt, nt: sa.select([nt]).select_from(
                 rt.join(nt, rt.c.r_regionkey == nt.c.n_regionkey)
             ),
         ),
         (
-            lambda r, n: r.left_join(
-                n, r.r_regionkey == n.n_regionkey
-            ).projection(n),
+            lambda r, n: r.left_join(n, r.r_regionkey == n.n_regionkey).projection(n),
             lambda rt, nt: sa.select([nt]).select_from(
                 rt.join(
                     nt,
@@ -272,9 +260,7 @@ def test_named_expr(sa_functional_alltypes, functional_alltypes):
             ),
         ),
         (
-            lambda r, n: r.outer_join(
-                n, r.r_regionkey == n.n_regionkey
-            ).projection(n),
+            lambda r, n: r.outer_join(n, r.r_regionkey == n.n_regionkey).projection(n),
             lambda rt, nt: sa.select([nt]).select_from(
                 rt.outerjoin(
                     nt,
@@ -307,9 +293,7 @@ def test_join_just_materialized(con, nation, region, customer):
 
     nt, rt, ct = (
         con.meta.tables[name].alias(f"t{i:d}")
-        for i, name in enumerate(
-            ['tpch_nation', 'tpch_region', 'tpch_customer']
-        )
+        for i, name in enumerate(['tpch_nation', 'tpch_region', 'tpch_customer'])
     )
 
     sqla_joined = nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey).join(
@@ -373,9 +357,7 @@ def test_where_simple_comparisons(sa_star1, star1):
     t1 = star1
     expr = t1.filter([t1.f > 0, t1.c < t1.f * 2])
     st = sa_star1.alias("t0")
-    expected = sa.select([st]).where(
-        sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2)))
-    )
+    expected = sa.select([st]).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
     _check(expr, expected)
     return expr
 
@@ -385,14 +367,12 @@ def test_where_simple_comparisons(sa_star1, star1):
     [
         (
             lambda t: t.aggregate([t['f'].sum().name('total')], [t['foo_id']]),
-            lambda st: sa.select(
-                [st.c.foo_id, F.sum(st.c.f).label('total')]
-            ).group_by(st.c.foo_id),
+            lambda st: sa.select([st.c.foo_id, F.sum(st.c.f).label('total')]).group_by(
+                st.c.foo_id
+            ),
         ),
         (
-            lambda t: t.aggregate(
-                [t['f'].sum().name('total')], ['foo_id', 'bar_id']
-            ),
+            lambda t: t.aggregate([t['f'].sum().name('total')], ['foo_id', 'bar_id']),
             lambda st: sa.select(
                 [st.c.foo_id, st.c.bar_id, F.sum(st.c.f).label('total')]
             ).group_by(st.c.foo_id, st.c.bar_id),
@@ -508,11 +488,7 @@ def test_cte_factor_distinct_but_equal(
     #
 
     t2 = sa_alltypes.alias('t2')
-    t0 = (
-        sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
-        .group_by(t2.c.g)
-        .cte('t0')
-    )
+    t0 = sa.select([t2.c.g, F.sum(t2.c.f).label('metric')]).group_by(t2.c.g).cte('t0')
 
     t1 = t0.alias('t1')
     table_set = t0.join(t1, t0.c.g == t1.c.g)
@@ -552,11 +528,7 @@ def test_self_reference_in_not_exists(
     s1 = sa_functional_alltypes.alias('t0')
     s2 = sa_functional_alltypes.alias('t1')
 
-    cond = (
-        sa.exists([L(1)])
-        .select_from(s1)
-        .where(s1.c.string_col == s2.c.string_col)
-    )
+    cond = sa.exists([L(1)]).select_from(s1).where(s1.c.string_col == s2.c.string_col)
 
     ex_semi = sa.select([s1]).where(cond)
     ex_anti = sa.select([s1]).where(~cond)
@@ -588,9 +560,7 @@ def test_where_correlated_subquery(con, foo):
     foo = con.meta.tables["foo"]
     t0 = foo.alias('t0')
     t1 = foo.alias('t1')
-    subq = sa.select([F.avg(t1.c.y).label('mean')]).where(
-        t0.c.dept_id == t1.c.dept_id
-    )
+    subq = sa.select([F.avg(t1.c.y).label('mean')]).where(t0.c.dept_id == t1.c.dept_id)
     # For versions of SQLAlchemy where scalar_subquery exists,
     # it should be used (otherwise, a deprecation warning is raised)
     if hasattr(subq, 'scalar_subquery'):
@@ -708,9 +678,7 @@ def test_not_exists(con, not_exists):
         (lambda t: t.distinct(), lambda sat: sa.select([sat]).distinct()),
         (
             lambda t: t['string_col', 'int_col'].distinct(),
-            lambda sat: sa.select(
-                [sat.c.string_col, sat.c.int_col]
-            ).distinct(),
+            lambda sat: sa.select([sat.c.string_col, sat.c.int_col]).distinct(),
         ),
         (
             lambda t: t[t.string_col].distinct(),
@@ -718,9 +686,7 @@ def test_not_exists(con, not_exists):
         ),
         (
             lambda t: t.int_col.nunique().name('nunique'),
-            lambda sat: sa.select(
-                [F.count(sat.c.int_col.distinct()).label('nunique')]
-            ),
+            lambda sat: sa.select([F.count(sat.c.int_col.distinct()).label('nunique')]),
         ),
         (
             lambda t: t.group_by('string_col').aggregate(
@@ -760,9 +726,9 @@ def test_sort_aggregation_translation_failure(
 
     sat = sa_functional_alltypes.alias("t1")
     base = (
-        sa.select(
-            [sat.c.string_col, F.max(sat.c.double_col).label('foo')]
-        ).group_by(sat.c.string_col)
+        sa.select([sat.c.string_col, F.max(sat.c.double_col).label('foo')]).group_by(
+            sat.c.string_col
+        )
     ).alias('t0')
 
     ex = (
@@ -883,9 +849,7 @@ def test_filter_group_by_agg_with_same_name():
         .filter(lambda t: t.bigint_col == 60)
     )
 
-    t1 = sa.table("t", sa.column("int_col"), sa.column("bigint_col")).alias(
-        "t1"
-    )
+    t1 = sa.table("t", sa.column("int_col"), sa.column("bigint_col")).alias("t1")
     t0 = (
         sa.select(
             [
@@ -986,9 +950,7 @@ def test_gh_1045(test1, test2, test3):
     t2 = test2
     t3 = test3
 
-    t3 = t3[[c for c in t3.columns if c != "id3"]].mutate(
-        id3=t3.id3.cast('int64')
-    )
+    t3 = t3[[c for c in t3.columns if c != "id3"]].mutate(id3=t3.id3.cast('int64'))
 
     t3 = t3[[c for c in t3.columns if c != "val2"]].mutate(t3_val2=t3.id3)
     t4 = t3.join(t2, t2.id2b == t3.id3)
@@ -997,12 +959,8 @@ def test_gh_1045(test1, test2, test3):
 
     expr = t1.left_join(t4, t1.t1_id1 == t4.id2a)
 
-    test3 = sa.table(
-        "test3", sa.column("id3"), sa.column("val2"), sa.column("dt")
-    )
-    test2 = sa.table(
-        "test2", sa.column("id2a"), sa.column("id2b"), sa.column("val2")
-    )
+    test3 = sa.table("test3", sa.column("id3"), sa.column("val2"), sa.column("dt"))
+    test2 = sa.table("test2", sa.column("id2a"), sa.column("id2b"), sa.column("val2"))
     test1 = sa.table("test1", sa.column("id1"), sa.column("val1"))
 
     t2 = test1.alias("t2")
@@ -1066,17 +1024,8 @@ def test_multi_join():
         .select_from(t3.join(t4, onclause=t3.c.x3 == t4.c.x4))
         .alias("t2")
     )
-    ex = sa.select(
-        t0.c.x1,
-        t0.c.y1,
-        t1.c.x2,
-        t2.c.x3,
-        t2.c.y2,
-        t2.c.x4,
-    ).select_from(
-        t0.join(t1, onclause=t0.c.x1 == t1.c.x2).join(
-            t2, onclause=t0.c.y1 == t2.c.y2
-        )
+    ex = sa.select(t0.c.x1, t0.c.y1, t1.c.x2, t2.c.x3, t2.c.y2, t2.c.x4,).select_from(
+        t0.join(t1, onclause=t0.c.x1 == t1.c.x2).join(t2, onclause=t0.c.y1 == t2.c.y2)
     )
     _check(expr, ex)
 
@@ -1114,9 +1063,7 @@ def h11():
     innerq = innerq.join(supplier, partsupp.ps_suppkey == supplier.s_suppkey)
     innerq = innerq.join(nation, nation.n_nationkey == supplier.s_nationkey)
     innerq = innerq.filter([innerq.n_name == NATION])
-    innerq = innerq.aggregate(
-        total=(innerq.ps_supplycost * innerq.ps_availqty).sum()
-    )
+    innerq = innerq.aggregate(total=(innerq.ps_supplycost * innerq.ps_availqty).sum())
 
     gq = q.group_by([q.ps_partkey])
     q = gq.aggregate(value=(q.ps_supplycost * q.ps_availqty).sum())
@@ -1149,9 +1096,9 @@ def test_tpc_h11(h11):
     t1 = (
         sa.select(
             sa.column("ps_partkey"),
-            sa.func.sum(
-                sa.column("ps_supplycost") * sa.column("ps_availqty")
-            ).label("value"),
+            sa.func.sum(sa.column("ps_supplycost") * sa.column("ps_availqty")).label(
+                "value"
+            ),
         )
         .select_from(
             t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
@@ -1164,9 +1111,9 @@ def test_tpc_h11(h11):
 
     anon_1 = (
         sa.select(
-            sa.func.sum(
-                sa.column("ps_supplycost") * sa.column("ps_availqty")
-            ).label("total")
+            sa.func.sum(sa.column("ps_supplycost") * sa.column("ps_availqty")).label(
+                "total"
+            )
         )
         .select_from(
             t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
@@ -1181,9 +1128,7 @@ def test_tpc_h11(h11):
         sa.select(
             t1.c.ps_partkey.label("ps_partkey"),
             t1.c.value.label("value"),
-        ).where(
-            t1.c.value > sa.select(anon_1.c.total).scalar_subquery() * FRACTION
-        )
+        ).where(t1.c.value > sa.select(anon_1.c.total).scalar_subquery() * FRACTION)
     ).alias("t0")
 
     ex = sa.select(t0.c.ps_partkey, t0.c.value).order_by(t0.c.value.desc())

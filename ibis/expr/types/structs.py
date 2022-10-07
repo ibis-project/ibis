@@ -60,9 +60,7 @@ def struct(
 @public
 class StructValue(Value):
     def __dir__(self):
-        return sorted(
-            frozenset(itertools.chain(dir(type(self)), self.type().names))
-        )
+        return sorted(frozenset(itertools.chain(dir(type(self)), self.type().names)))
 
     def __getitem__(self, name: str) -> ir.Value:
         """Extract the `name` field from this struct.

@@ -130,9 +130,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
 
             if args[0].known_divisions:
                 if not len({a.divisions for a in args}) == 1:
-                    raise ValueError(
-                        "Mixed divisions passed to AnalyticVectorized UDF"
-                    )
+                    raise ValueError("Mixed divisions passed to AnalyticVectorized UDF")
                 # result is going to be a single partitioned thing, but we
                 # need it to be able to dd.concat it with other data
                 # downstream. We know that this udf operation did not change
@@ -255,9 +253,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 apply_wrapper,
                 func,
                 col_names,
-                meta=pandas.Series(
-                    meta_value, index=meta_index, dtype=out_type
-                ),
+                meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
             )
             # If you use the UDF directly (as in `test_udaf_analytic_groupby`)
             # we need to do some renaming/cleanup to get the result to

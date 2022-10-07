@@ -10,13 +10,8 @@ from ibis.expr.typing import TimeContext
 
 pytest.importorskip("pyspark")
 
-from ibis.backends.pyspark.compiler import (  # noqa: E402
-    compile_window_op,
-    compiles,
-)
-from ibis.backends.pyspark.timecontext import (  # noqa: E402
-    combine_time_context,
-)
+from ibis.backends.pyspark.compiler import compile_window_op, compiles  # noqa: E402
+from ibis.backends.pyspark.timecontext import combine_time_context  # noqa: E402
 
 
 def test_table_with_timecontext(client):

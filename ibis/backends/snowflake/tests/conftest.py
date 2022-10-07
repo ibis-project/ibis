@@ -61,9 +61,7 @@ CREATE OR REPLACE STAGE ibis_testing_stage
 
             for table in TEST_TABLES:
                 src = data_dir / f"{table}.csv"
-                con.execute(
-                    f"PUT file://{str(src.absolute())} @{stage}/{table}.csv"
-                )
+                con.execute(f"PUT file://{str(src.absolute())} @{stage}/{table}.csv")
                 con.execute(
                     f"COPY INTO {table} FROM @{stage}/{table}.csv FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"  # noqa: E501
                 )

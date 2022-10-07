@@ -5,10 +5,7 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
-from ibis.backends.tests.test_vectorized_udf import (
-    calc_mean,
-    create_demean_struct_udf,
-)
+from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
 from ibis.config import option_context
 
 pytestmark = pytest.mark.notimpl(
@@ -36,10 +33,7 @@ def context():
 
 
 def filter_by_time_context(df, context):
-    return df[
-        (df['timestamp_col'] >= context[0])
-        & (df['timestamp_col'] < context[1])
-    ]
+    return df[(df['timestamp_col'] >= context[0]) & (df['timestamp_col'] < context[1])]
 
 
 broken_pandas_grouped_rolling = pytest.mark.xfail(

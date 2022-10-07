@@ -30,11 +30,7 @@ def test_union(backend, union_subsets, distinct):
     expr = ibis.union(a, b, c, distinct=distinct).order_by("id")
     result = expr.execute()
 
-    expected = (
-        pd.concat([da, db, dc], axis=0)
-        .sort_values("id")
-        .reset_index(drop=True)
-    )
+    expected = pd.concat([da, db, dc], axis=0).sort_values("id").reset_index(drop=True)
     if distinct:
         expected = expected.drop_duplicates("id")
 

@@ -14,9 +14,7 @@ def spaceless(parser):
 
 def spaceless_string(*strings: str):
     return spaceless(
-        parsy.alt(
-            *(parsy.string(string, transform=str.lower) for string in strings)
-        )
+        parsy.alt(*(parsy.string(string, transform=str.lower) for string in strings))
     )
 
 

@@ -36,9 +36,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 
 
 @pytest.mark.notimpl(["snowflake"])
-def test_load_data_sqlalchemy(
-    alchemy_backend, alchemy_con, alchemy_temp_table
-):
+def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -84,10 +82,7 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
     expected = ibis.schema(
-        [
-            (name, dtype(nullable=schema[name].nullable))
-            for name, dtype in expected
-        ]
+        [(name, dtype(nullable=schema[name].nullable)) for name, dtype in expected]
     )
     assert schema.equals(expected)
 
@@ -191,9 +186,7 @@ def test_create_drop_view(ddl_con, temp_view):
 
 
 @mark.notimpl(["postgres", "mysql", "clickhouse", "datafusion"])
-def test_separate_database(
-    ddl_con, alternate_current_database, current_data_db
-):
+def test_separate_database(ddl_con, alternate_current_database, current_data_db):
     # using alternate_current_database switches "con" current
     #  database to a temporary one until a test is over
     tmp_db = ddl_con.database(alternate_current_database)
@@ -372,9 +365,7 @@ def test_in_memory(alchemy_backend):
 )
 def test_unsigned_integer_type(alchemy_con, coltype):
     tname = f"t{guid()[:6]}"
-    alchemy_con.create_table(
-        tname, schema=ibis.schema(dict(a=coltype)), force=True
-    )
+    alchemy_con.create_table(tname, schema=ibis.schema(dict(a=coltype)), force=True)
     try:
         assert tname in alchemy_con.list_tables()
     finally:
@@ -457,9 +448,7 @@ def tmp_db(request, tmp_path):
     api = request.param
     mod = pytest.importorskip(api)
     db = tmp_path / "test.db"
-    mod.connect(str(db)).execute(
-        "CREATE TABLE tmp_t AS SELECT 1 AS a"
-    ).fetchall()
+    mod.connect(str(db)).execute("CREATE TABLE tmp_t AS SELECT 1 AS a").fetchall()
     return db
 
 
@@ -527,9 +516,7 @@ def test_connect_file_url(url, tmp_db):
         ("to_parquet", "parquet"),
     ],
 )
-def test_connect_local_file(
-    out_method, extension, test_employee_data_1, tmp_path
-):
+def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
     getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
     t = ibis.connect(tmp_path / f"out.{extension}")
     assert isinstance(t, ir.Table)
@@ -696,9 +683,7 @@ def test_default_backend_no_duckdb(backend):
     try:
         import duckdb  # noqa: F401
 
-        pytest.skip(
-            "duckdb is installed; it will be used as the default backend"
-        )
+        pytest.skip("duckdb is installed; it will be used as the default backend")
     except ImportError:
         pass
 
@@ -740,10 +725,7 @@ def test_dunder_array_table(alltypes, df):
     expr = alltypes.group_by("string_col").int_col.sum().order_by("string_col")
     result = np.array(expr)
     expected = np.array(
-        df.groupby("string_col")
-        .int_col.sum()
-        .reset_index()
-        .sort_values(["string_col"])
+        df.groupby("string_col").int_col.sum().reset_index().sort_values(["string_col"])
     )
     np.testing.assert_array_equal(result, expected)
 
@@ -790,9 +772,7 @@ def test_repr_mimebundle(alltypes, interactive, expr_type):
     old = ibis.options.interactive
     ibis.options.interactive = interactive
     try:
-        reprs = expr._repr_mimebundle_(
-            include=["text/plain", "text/html"], exclude=[]
-        )
+        reprs = expr._repr_mimebundle_(include=["text/plain", "text/html"], exclude=[])
         for format in ["text/plain", "text/html"]:
             assert "id" in reprs[format]
             if interactive:

@@ -110,18 +110,12 @@ def test_context_adjustment_asof_join(
         (5 * ibis.interval(days=1), '5d'),
     ],
 )
-def test_context_adjustment_window(
-    time_table, time_df3, interval_ibis, interval_pd
-):
+def test_context_adjustment_window(time_table, time_df3, interval_ibis, interval_pd):
     # trim data manually
     expected = (
-        time_df3.set_index('time')
-        .value.rolling(interval_pd, closed='both')
-        .mean()
+        time_df3.set_index('time').value.rolling(interval_pd, closed='both').mean()
     )
-    expected = expected[expected.index >= Timestamp('20170105')].reset_index(
-        drop=True
-    )
+    expected = expected[expected.index >= Timestamp('20170105')].reset_index(drop=True)
 
     context = Timestamp('20170105'), Timestamp('20170111')
 
@@ -135,19 +129,14 @@ def test_context_adjustment_window(
 @pytest.mark.xfail(reason="TODO - windowing - #2553")
 def test_setting_timecontext_in_scope(time_table, time_df3):
     expected_win_1 = (
-        time_df3.compute()
-        .set_index('time')
-        .value.rolling('3d', closed='both')
-        .mean()
+        time_df3.compute().set_index('time').value.rolling('3d', closed='both').mean()
     )
     expected_win_1 = expected_win_1[
         expected_win_1.index >= Timestamp('20170105')
     ].reset_index(drop=True)
 
     context = Timestamp('20170105'), Timestamp('20170111')
-    window1 = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by=time_table.time
-    )
+    window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
     """
     In the following expression, Selection node will be executed first and
     get table in context ('20170105', '20170101'). Then in window execution
@@ -186,12 +175,8 @@ def test_context_adjustment_multi_window(time_table, time_df3):
     ].reset_index(drop=True)
 
     context = Timestamp('20170105'), Timestamp('20170111')
-    window1 = ibis.trailing_window(
-        3 * ibis.interval(days=1), order_by=time_table.time
-    )
-    window2 = ibis.trailing_window(
-        2 * ibis.interval(days=1), order_by=time_table.time
-    )
+    window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
+    window2 = ibis.trailing_window(2 * ibis.interval(days=1), order_by=time_table.time)
     expr = time_table.mutate(
         v1=time_table['value'].mean().over(window1),
         v2=time_table['value'].mean().over(window2),
@@ -216,9 +201,9 @@ def test_context_adjustment_window_groupby_id(time_table, time_df3):
     )
     # This is a MultiIndexed Series
     expected = expected.reset_index()
-    expected = expected[expected.time >= Timestamp('20170105')].reset_index(
-        drop=True
-    )['value']
+    expected = expected[expected.time >= Timestamp('20170105')].reset_index(drop=True)[
+        'value'
+    ]
 
     context = Timestamp('20170105'), Timestamp('20170111')
 

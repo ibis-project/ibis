@@ -30,8 +30,7 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
         if scope is None:
             scope = Scope()
         scope = scope.merge_scopes(
-            Scope({t: data}, timecontext)
-            for t in an.find_immediate_parent_tables(key)
+            Scope({t: data}, timecontext) for t in an.find_immediate_parent_tables(key)
         )
         new_column = execute(key, scope=scope, **kwargs)
         name = ibis.util.guid()
@@ -39,9 +38,7 @@ def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
         return name, new_column
 
 
-def compute_sorted_frame(
-    df, order_by, group_by=(), timecontext=None, **kwargs
-):
+def compute_sorted_frame(df, order_by, group_by=(), timecontext=None, **kwargs):
     sort_keys = []
     ascending = []
 

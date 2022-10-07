@@ -20,9 +20,7 @@ pytest.importorskip("clickhouse_driver")
     [
         param('int8', 'CAST(`double_col` AS Nullable(Int8))', id="int8"),
         param('int16', 'CAST(`double_col` AS Nullable(Int16))', id="int16"),
-        param(
-            'float32', 'CAST(`double_col` AS Nullable(Float32))', id="float32"
-        ),
+        param('float32', 'CAST(`double_col` AS Nullable(Float32))', id="float32"),
         param('float', '`double_col`', id="float"),
         # alltypes.double_col is non-nullable
         param(
@@ -52,10 +50,7 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
         ),
         (
             '!struct<a: string, b: int64>',
-            (
-                'CAST(`string_col` AS '
-                'Tuple(a Nullable(String), b Nullable(Int64)))'
-            ),
+            ('CAST(`string_col` AS ' 'Tuple(a Nullable(String), b Nullable(Int64)))'),
         ),
     ],
 )
@@ -509,9 +504,7 @@ def test_literal_none_to_nullable_colum(alltypes):
     t = alltypes
     nrows = t.count().execute()
     expr = t.mutate(
-        ibis.literal(None, dt.String(nullable=True)).name(
-            'nullable_string_column'
-        )
+        ibis.literal(None, dt.String(nullable=True)).name('nullable_string_column')
     )
     result = expr['nullable_string_column'].execute()
     expected = pd.Series([None] * nrows, name='nullable_string_column')
@@ -526,9 +519,7 @@ def test_timestamp_from_integer(con, alltypes, translate):
 
 
 def test_count_distinct_with_filter(alltypes):
-    expr = alltypes.string_col.nunique(
-        where=alltypes.string_col.cast('int64') > 1
-    )
+    expr = alltypes.string_col.nunique(where=alltypes.string_col.cast('int64') > 1)
     result = expr.execute()
     expected = alltypes.string_col.execute()
     expected = expected[expected.astype('int64') > 1].nunique()

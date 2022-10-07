@@ -120,9 +120,7 @@ def test_empty_column_to_pyarrow(limit, backend, awards_players):
     assert len(array) == 0
 
 
-@pytest.mark.notyet(
-    ["datafusion"], reason="DataFusion backend doesn't support sum"
-)
+@pytest.mark.notyet(["datafusion"], reason="DataFusion backend doesn't support sum")
 @pytest.mark.parametrize("limit", no_limit)
 def test_empty_scalar_to_pyarrow(limit, backend, awards_players):
     array = (
@@ -133,9 +131,7 @@ def test_empty_scalar_to_pyarrow(limit, backend, awards_players):
     assert isinstance(array, pa.Scalar)
 
 
-@pytest.mark.notyet(
-    ["datafusion"], reason="DataFusion backend doesn't support sum"
-)
+@pytest.mark.notyet(["datafusion"], reason="DataFusion backend doesn't support sum")
 @pytest.mark.parametrize("limit", no_limit)
 def test_scalar_to_pyarrow_scalar(limit, backend, awards_players):
     scalar = awards_players.yearID.sum().to_pyarrow(limit=limit)
@@ -168,9 +164,7 @@ def test_column_to_pyarrow_table_schema(backend, awards_players):
     ["pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
 )
 def test_table_pyarrow_batch_chunk_size(backend, awards_players):
-    batch_reader = awards_players.to_pyarrow_batches(
-        limit=2050, chunk_size=2048
-    )
+    batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
     assert isinstance(batch_reader, pa.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)

@@ -107,9 +107,7 @@ class NumericValue(Value):
             Clipped input
         """
         if lower is None and upper is None:
-            raise ValueError(
-                "at least one of lower and upper must be provided"
-            )
+            raise ValueError("at least one of lower and upper must be provided")
 
         return ops.Clip(self, lower, upper).to_expr()
 
@@ -237,9 +235,7 @@ class NumericValue(Value):
 
     div = __div__ = __truediv__
 
-    def __rtruediv__(
-        self, other: NumericValue
-    ) -> NumericValue | NotImplemented:
+    def __rtruediv__(self, other: NumericValue) -> NumericValue | NotImplemented:
         """Divide `other` by `self`."""
         return _binop(ops.Divide, other, self)
 
@@ -372,9 +368,7 @@ class NumericColumn(Column, NumericValue):
         NumericScalar
             Standard deviation of `arg`
         """
-        return (
-            ops.StandardDev(self, how=how, where=where).to_expr().name("std")
-        )
+        return ops.StandardDev(self, how=how, where=where).to_expr().name("std")
 
     def var(
         self,
@@ -627,9 +621,7 @@ class IntegerValue(NumericValue):
 
     def to_interval(
         self,
-        unit: Literal[
-            "Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"
-        ] = "s",
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
     ) -> ir.IntervalValue:
         """Convert an integer to an interval.
 
@@ -696,9 +688,7 @@ class IntegerValue(NumericValue):
 
         return _binop(ops.BitwiseLeftShift, self, other)
 
-    def __rlshift__(
-        self, other: IntegerValue
-    ) -> IntegerValue | NotImplemented:
+    def __rlshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise left shift `self` with `other`."""
         from ibis.expr import operations as ops
 
@@ -710,9 +700,7 @@ class IntegerValue(NumericValue):
 
         return _binop(ops.BitwiseRightShift, self, other)
 
-    def __rrshift__(
-        self, other: IntegerValue
-    ) -> IntegerValue | NotImplemented:
+    def __rrshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise right shift `self` with `other`."""
         from ibis.expr import operations as ops
 

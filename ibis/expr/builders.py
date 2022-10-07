@@ -17,9 +17,7 @@ class TypedCaseBuilder(Annotable):
         builder : CaseBuilder
         """
         kwargs = {
-            slot: getattr(self, slot)
-            for slot in self.__slots__
-            if slot != 'default'
+            slot: getattr(self, slot) for slot in self.__slots__ if slot != 'default'
         }
 
         result_expr = rlz.any(result_expr)
@@ -32,9 +30,7 @@ class TypedCaseBuilder(Annotable):
         if default is None:
             default = ir.null().cast(self.type())
 
-        args = [
-            getattr(self, slot) for slot in self.__slots__ if slot != 'default'
-        ]
+        args = [getattr(self, slot) for slot in self.__slots__ if slot != 'default']
         args.append(default)
 
         op = self.__class__.op(*args)
@@ -70,9 +66,7 @@ class SimpleCaseBuilder(TypedCaseBuilder):
         result_expr = rlz.any(result_expr)
 
         if not rlz.comparable(self.base, case_expr):
-            raise TypeError(
-                'Base expression and passed case are not ' 'comparable'
-            )
+            raise TypeError('Base expression and passed case are not ' 'comparable')
 
         cases = list(self.cases)
         cases.append(case_expr)

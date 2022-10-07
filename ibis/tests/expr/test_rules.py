@@ -323,9 +323,7 @@ def test_invalid_column_from(check_table, validator, value):
     'table',
     [
         ibis.table([('group', dt.int64), ('value', dt.double)]),
-        ibis.table(
-            [('group', dt.int64), ('value', dt.double), ('value2', dt.double)]
-        ),
+        ibis.table([('group', dt.int64), ('value', dt.double), ('value2', dt.double)]),
     ],
 )
 def test_table_with_schema(table):
@@ -337,9 +335,7 @@ def test_table_with_schema(table):
     'table', [ibis.table([('group', dt.int64), ('value', dt.timestamp)])]
 )
 def test_table_with_schema_invalid(table):
-    validator = rlz.table(
-        schema=[('group', dt.double), ('value', dt.timestamp)]
-    )
+    validator = rlz.table(schema=[('group', dt.double), ('value', dt.timestamp)])
     with pytest.raises(IbisTypeError):
         validator(table)
 

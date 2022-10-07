@@ -65,9 +65,7 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
 
 
 def test_map_column_contains_key_scalar(backend, alltypes, df):
-    expr = ibis.map(
-        ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
-    )
+    expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row['string_col']: row['int_col']}, axis=1)
 
     result = expr.contains('1').name('tmp').execute()
@@ -77,9 +75,7 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
 
 
 def test_map_column_contains_key_column(backend, alltypes, df):
-    expr = ibis.map(
-        ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
-    )
+    expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = expr.contains(alltypes.string_col).name('tmp').execute()
     assert result.all()
 
@@ -111,9 +107,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
     expr = lookup_table.get(alltypes.string_col, 'default')
 
     result = expr.name('tmp').execute()
-    expected = df.string_col.apply(lambda x: value.get(x, 'default')).rename(
-        'tmp'
-    )
+    expected = df.string_col.apply(lambda x: value.get(x, 'default')).rename('tmp')
 
     backend.assert_series_equal(result, expected)
 
@@ -123,13 +117,9 @@ def test_map_construction(backend, con, alltypes, df):
     result = con.execute(expr.name('tmp'))
     assert result == {'a': 1, 'b': 2}
 
-    expr = ibis.map(
-        ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
-    )
+    expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = con.execute(expr)
-    expected = df.apply(
-        lambda row: {row['string_col']: row['int_col']}, axis=1
-    )
+    expected = df.apply(lambda row: {row['string_col']: row['int_col']}, axis=1)
 
     assert result.to_list() == expected.to_list()
 

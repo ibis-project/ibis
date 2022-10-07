@@ -79,6 +79,4 @@ class MapMerge(Value):
     output_dtype = rlz.dtype_like("args")
 
 
-public(
-    MapValueForKey=MapGet, MapValueOrDefaultForKey=MapGet, MapConcat=MapMerge
-)
+public(MapValueForKey=MapGet, MapValueOrDefaultForKey=MapGet, MapConcat=MapMerge)

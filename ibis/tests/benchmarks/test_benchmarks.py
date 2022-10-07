@@ -202,15 +202,13 @@ def pt():
             'key': np.random.choice(16000, size=n),
             'low_card_key': np.random.choice(30, size=n),
             'value': np.random.rand(n),
-            'timestamps': pd.date_range(
-                start='now', periods=n, freq='s'
-            ).values,
+            'timestamps': pd.date_range(start='now', periods=n, freq='s').values,
             'timestamp_strings': pd.date_range(
                 start='now', periods=n, freq='s'
             ).values.astype(str),
-            'repeated_timestamps': pd.date_range(
-                start='2018-09-01', periods=30
-            ).repeat(int(n / 30)),
+            'repeated_timestamps': pd.date_range(start='2018-09-01', periods=30).repeat(
+                int(n / 30)
+            ),
         }
     )
 
@@ -250,9 +248,7 @@ def multikey_sort(t):
 
 
 def multikey_sort_projection(t):
-    return t[['low_card_key', 'key', 'value']].order_by(
-        ['low_card_key', 'key']
-    )
+    return t[['low_card_key', 'key', 'value']].order_by(['low_card_key', 'key'])
 
 
 def low_card_rolling_window(t):
@@ -339,12 +335,8 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
     [
         pytest.param(high_card_group_by, id="high_card_group_by"),
         pytest.param(cast_to_dates, id="cast_to_dates"),
-        pytest.param(
-            cast_to_dates_from_strings, id="cast_to_dates_from_strings"
-        ),
-        pytest.param(
-            multikey_group_by_with_mutate, id="multikey_group_by_with_mutate"
-        ),
+        pytest.param(cast_to_dates_from_strings, id="cast_to_dates_from_strings"),
+        pytest.param(multikey_group_by_with_mutate, id="multikey_group_by_with_mutate"),
         pytest.param(simple_sort, id="simple_sort"),
         pytest.param(simple_sort_projection, id="simple_sort_projection"),
         pytest.param(multikey_sort, id="multikey_sort"),
@@ -369,9 +361,7 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
             id="high_card_grouped_rolling_udf_mean",
             marks=[broken_pandas_grouped_rolling],
         ),
-        pytest.param(
-            low_card_window_analytics_udf, id="low_card_window_analytics_udf"
-        ),
+        pytest.param(low_card_window_analytics_udf, id="low_card_window_analytics_udf"),
         pytest.param(
             high_card_window_analytics_udf, id="high_card_window_analytics_udf"
         ),
@@ -443,9 +433,7 @@ def nation():
 
 @pytest.fixture(scope="module")
 def region():
-    return ibis.table(
-        dict(r_regionkey="int64", r_name="string"), name="region"
-    )
+    return ibis.table(dict(r_regionkey="int64", r_name="string"), name="region")
 
 
 @pytest.fixture(scope="module")
@@ -546,9 +534,7 @@ def test_complex_datatype_parse(benchmark):
     type_str = "array<struct<a: array<string>, b: map<string, array<int64>>>>"
     expected = dt.Array(
         dt.Struct.from_dict(
-            dict(
-                a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))
-            )
+            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
         )
     )
     assert dt.parse(type_str) == expected
@@ -560,9 +546,7 @@ def test_complex_datatype_parse(benchmark):
 def test_complex_datatype_builtins(benchmark, func):
     datatype = dt.Array(
         dt.Struct.from_dict(
-            dict(
-                a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))
-            )
+            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
         )
     )
     benchmark(func, datatype)

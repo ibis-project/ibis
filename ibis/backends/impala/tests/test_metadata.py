@@ -86,9 +86,7 @@ def part_metadata(spacer, schema, partitions, info, storage_info):
     return pd.DataFrame.from_records(
         list(
             toolz.concat(
-                toolz.interpose(
-                    [spacer], [schema, partitions, info, storage_info]
-                )
+                toolz.interpose([spacer], [schema, partitions, info, storage_info])
             )
         ),
         columns=['name', 'type', 'comment'],
@@ -98,11 +96,7 @@ def part_metadata(spacer, schema, partitions, info, storage_info):
 @pytest.fixture(scope="module")
 def unpart_metadata(spacer, schema, info, storage_info):
     return pd.DataFrame.from_records(
-        list(
-            toolz.concat(
-                toolz.interpose([spacer], [schema, info, storage_info])
-            )
-        ),
+        list(toolz.concat(toolz.interpose([spacer], [schema, info, storage_info]))),
         columns=['name', 'type', 'comment'],
     )
 
@@ -123,9 +117,7 @@ def test_table_params(parsed_part):
     assert params['EXTERNAL'] is True
     assert params['STATS_GENERATED_VIA_STATS_TASK'] is True
     assert params['numRows'] == 183592
-    assert params['transient_lastDdlTime'] == pd.Timestamp(
-        '2015-11-12 15:09:01'
-    )
+    assert params['transient_lastDdlTime'] == pd.Timestamp('2015-11-12 15:09:01')
 
 
 def test_partitions(parsed_unpart, parsed_part):

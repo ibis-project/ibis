@@ -15,9 +15,7 @@ castable = Dispatcher('castable')
 
 
 @public
-def cast(
-    source: str | dt.DataType, target: str | dt.DataType, **kwargs
-) -> dt.DataType:
+def cast(source: str | dt.DataType, target: str | dt.DataType, **kwargs) -> dt.DataType:
     """Attempts to implicitly cast from source dtype to target dtype."""
     source, target = dt.dtype(source), dt.dtype(target)
 
@@ -37,9 +35,7 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
     elif castable(right, left, upcast=True):
         return left.copy(nullable=nullable)
 
-    raise IbisTypeError(
-        f'Cannot compute precedence for `{left}` and `{right}` types'
-    )
+    raise IbisTypeError(f'Cannot compute precedence for `{left}` and `{right}` types')
 
 
 @public
@@ -52,9 +48,7 @@ def highest_precedence(dtypes: Iterator[dt.DataType]) -> dt.DataType:
 
 
 @castable.register(dt.DataType, dt.DataType)
-def can_cast_subtype(
-    source: dt.DataType, target: dt.DataType, **kwargs
-) -> bool:
+def can_cast_subtype(source: dt.DataType, target: dt.DataType, **kwargs) -> bool:
     return isinstance(target, source.__class__)
 
 
@@ -94,9 +88,7 @@ def can_cast_to_differently_signed_integer_type(
 
 @castable.register(dt.SignedInteger, dt.SignedInteger)
 @castable.register(dt.UnsignedInteger, dt.UnsignedInteger)
-def can_cast_integers(
-    source: dt.Integer, target: dt.Integer, **kwargs
-) -> bool:
+def can_cast_integers(source: dt.Integer, target: dt.Integer, **kwargs) -> bool:
     return target._nbytes >= source._nbytes
 
 
@@ -113,28 +105,19 @@ def can_cast_floats(
 
 
 @castable.register(dt.Decimal, dt.Decimal)
-def can_cast_decimals(
-    source: dt.Decimal, target: dt.Decimal, **kwargs
-) -> bool:
+def can_cast_decimals(source: dt.Decimal, target: dt.Decimal, **kwargs) -> bool:
     target_prec = target.precision
     source_prec = source.precision
     target_sc = target.scale
     source_sc = source.scale
     return (
-        target_prec is None
-        or (source_prec is not None and target_prec >= source_prec)
-    ) and (
-        target_sc is None or (source_sc is not None and target_sc >= source_sc)
-    )
+        target_prec is None or (source_prec is not None and target_prec >= source_prec)
+    ) and (target_sc is None or (source_sc is not None and target_sc >= source_sc))
 
 
 @castable.register(dt.Interval, dt.Interval)
-def can_cast_intervals(
-    source: dt.Interval, target: dt.Interval, **kwargs
-) -> bool:
-    return source.unit == target.unit and castable(
-        source.value_type, target.value_type
-    )
+def can_cast_intervals(source: dt.Interval, target: dt.Interval, **kwargs) -> bool:
+    return source.unit == target.unit and castable(source.value_type, target.value_type)
 
 
 @castable.register(dt.Integer, dt.Boolean)

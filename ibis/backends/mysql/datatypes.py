@@ -27,9 +27,7 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
     flags = _FieldFlags(field.flags)
     typename = _type_codes.get(type_code)
     if typename is None:
-        raise NotImplementedError(
-            f"MySQL type code {type_code:d} is not supported"
-        )
+        raise NotImplementedError(f"MySQL type code {type_code:d} is not supported")
 
     typ = _type_mapping[typename]
 

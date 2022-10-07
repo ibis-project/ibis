@@ -208,9 +208,7 @@ def test_subquery_used_for_self_join(con):
     agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
     view = agged.view()
     metrics = [(agged.total - view.total).max().name('metric')]
-    expr = agged.inner_join(view, [agged.a == view.b]).aggregate(
-        metrics, by=[agged.g]
-    )
+    expr = agged.inner_join(view, [agged.a == view.b]).aggregate(metrics, by=[agged.g])
 
     return expr
 
@@ -233,9 +231,7 @@ def test_subquery_factor_correlated_subquery(con):
     tpch = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[
-            fields_of_interest
-        ]
+        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
     # Self-reference + correlated subquery complicates things
@@ -251,9 +247,7 @@ def self_join_subquery_distinct_equal(con):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
 
-    j1 = region.join(nation, region.r_regionkey == nation.n_regionkey)[
-        region, nation
-    ]
+    j1 = region.join(nation, region.r_regionkey == nation.n_regionkey)[region, nation]
 
     j2 = region.join(nation, region.r_regionkey == nation.n_regionkey)[
         region, nation
@@ -283,9 +277,7 @@ def test_tpch_self_join_failure(con):
     joined_all = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[
-            fields_of_interest
-        ]
+        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
     year = joined_all.odate.year().name('year')
@@ -450,9 +442,7 @@ def difference(con):
 @pytest.fixture(scope="module")
 def simple_case(con):
     t = con.table('alltypes')
-    return (
-        t.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
-    )
+    return t.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
 
 
 @pytest.fixture(scope="module")

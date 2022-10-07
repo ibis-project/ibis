@@ -79,33 +79,26 @@ def _(dtype, values):
     else:
         timespec = "microseconds"
     return [
-        Text.styled(v.isoformat(sep=" ", timespec=timespec), "magenta")
-        for v in values
+        Text.styled(v.isoformat(sep=" ", timespec=timespec), "magenta") for v in values
     ]
 
 
 @format_values.register(dt.Date)
 def _(dtype, values):
-    dates = [
-        v.date() if isinstance(v, datetime.datetime) else v for v in values
-    ]
+    dates = [v.date() if isinstance(v, datetime.datetime) else v for v in values]
     return [Text.styled(d.isoformat(), "magenta") for d in dates]
 
 
 @format_values.register(dt.Time)
 def _(dtype, values):
-    times = [
-        v.time() if isinstance(v, datetime.datetime) else v for v in values
-    ]
+    times = [v.time() if isinstance(v, datetime.datetime) else v for v in values]
     if all(t.microsecond == 0 for t in times):
         timespec = "seconds"
     elif all(t.microsecond % 1000 == 0 for t in times):
         timespec = "milliseconds"
     else:
         timespec = "microseconds"
-    return [
-        Text.styled(t.isoformat(timespec=timespec), "magenta") for t in times
-    ]
+    return [Text.styled(t.isoformat(timespec=timespec), "magenta") for t in times]
 
 
 @format_values.register(dt.Interval)
@@ -142,8 +135,7 @@ def _(dtype, values):
                 # display all unprintable characters as a dimmed version of
                 # their repr
                 v = "".join(
-                    f"[dim]{repr(c)[1:-1]}[/]" if not c.isprintable() else c
-                    for c in v
+                    f"[dim]{repr(c)[1:-1]}[/]" if not c.isprintable() else c for c in v
                 )
             text = Text.from_markup(v)
         else:
@@ -228,9 +220,7 @@ def to_rich_table(table, console_width=None):
     formatted_dtypes = []
     remaining = console_width - 1  # 1 char for left boundary
     for name, dtype in table.schema().items():
-        formatted, min_width, max_width = format_column(
-            dtype, result[name].to_list()
-        )
+        formatted, min_width, max_width = format_column(dtype, result[name].to_list())
         dtype_str = format_dtype(dtype)
         if ibis.options.repr.interactive.show_types and not isinstance(
             dtype, (dt.Struct, dt.Map, dt.Array)
@@ -308,9 +298,7 @@ def to_rich_table(table, console_width=None):
         )
 
         def add_row(*args, **kwargs):
-            rich_table.add_row(
-                *args, Align("[dim]…[/]", align="left"), **kwargs
-            )
+            rich_table.add_row(*args, Align("[dim]…[/]", align="left"), **kwargs)
 
     else:
         add_row = rich_table.add_row

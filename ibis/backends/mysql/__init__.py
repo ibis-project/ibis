@@ -90,9 +90,7 @@ class Backend(BaseAlchemyBackend):
             month : int32
         """
         if driver != 'pymysql':
-            raise NotImplementedError(
-                'pymysql is currently the only supported driver'
-            )
+            raise NotImplementedError('pymysql is currently the only supported driver')
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -109,9 +107,7 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute(
-                'SELECT @@session.time_zone'
-            ).scalar()
+            previous_timezone = bind.execute('SELECT @@session.time_zone').scalar()
             try:
                 bind.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:
