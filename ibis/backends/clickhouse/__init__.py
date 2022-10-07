@@ -29,6 +29,8 @@ except ImportError:
 
 class Backend(BaseSQLBackend):
     name = 'clickhouse'
+    # for now map clickhouse to mysql so that _something_ works
+    _sqlglot_dialect = "mysql"
     table_expr_class = ClickhouseTable
     compiler = ClickhouseCompiler
 

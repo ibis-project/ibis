@@ -167,6 +167,8 @@ def _column_batches_to_dataframe(names, batches):
 
 class Backend(BaseSQLBackend):
     name = 'impala'
+    # not 100% accurate, but very close
+    _sqlglot_dialect = "hive"
     database_class = ImpalaDatabase
     table_expr_class = ImpalaTable
     compiler = ImpalaCompiler
