@@ -154,12 +154,7 @@ jobs:
         run: just download-data
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        if: ${{ matrix.backend.name != 'pyspark' && matrix.backend.name != 'impala' }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-
-      - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: ${{ matrix.backend.name == 'pyspark' || matrix.backend.name == 'impala' }}
-        run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_TEST_NN_HOST: localhost
           IBIS_TEST_IMPALA_HOST: localhost
