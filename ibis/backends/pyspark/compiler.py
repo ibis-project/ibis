@@ -2,7 +2,6 @@ import collections
 import enum
 import functools
 
-import pandas as pd
 import pyspark
 import pyspark.sql.functions as F
 import pyspark.sql.types as pt
@@ -327,6 +326,8 @@ def compile_subtract(t, op, **kwargs):
 @compile_nan_as_null
 def compile_literal(t, op, *, raw=False, **kwargs):
     """If raw is True, don't wrap the result with F.lit()"""
+    import pandas as pd
+
     value = op.value
     dtype = op.dtype
 
@@ -1398,6 +1399,8 @@ def compiles_day_of_week_name(t, op, **kwargs):
 
 
 def _get_interval_col(t, op, allowed_units=None, **kwargs):
+    import pandas as pd
+
     dtype = op.output_dtype
     if not dtype.is_interval():
         raise com.UnsupportedArgumentError(

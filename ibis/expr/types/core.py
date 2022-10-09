@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
-from ibis.expr.typing import TimeContext
 from ibis.util import UnnamedMarker, experimental
 
 if TYPE_CHECKING:
@@ -20,6 +19,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
+    from ibis.expr.typing import TimeContext
 
 
 # TODO(kszucs): consider to subclass from Annotable with a single _arg field

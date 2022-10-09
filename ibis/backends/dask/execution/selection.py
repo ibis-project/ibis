@@ -1,9 +1,10 @@
 """Dispatching code for Selection operations."""
 
+from __future__ import annotations
 
 import functools
 import operator
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 import pandas
@@ -27,7 +28,9 @@ from ibis.backends.pandas.execution.selection import (
 from ibis.backends.pandas.execution.util import get_join_suffix_for_op
 from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 # TODO(kszucs): deduplicate with pandas.compute_projection() since it is almost
@@ -37,7 +40,7 @@ def compute_projection(
     parent,
     data,
     scope: Scope = None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     **kwargs,
 ):
     """Compute a projection.
@@ -133,7 +136,7 @@ def compute_projection(
 
 
 def build_df_from_projection(
-    selections: List[ops.Node],
+    selections: list[ops.Node],
     op: ops.Selection,
     data: dd.DataFrame,
     **kwargs,
@@ -164,7 +167,7 @@ def execute_selection_dataframe(
     op,
     data,
     scope: Scope,
-    timecontext: Optional[TimeContext],
+    timecontext: TimeContext | None,
     **kwargs,
 ):
     result = data
@@ -238,7 +241,7 @@ def _compute_predicates(
     predicates,
     data,
     scope: Scope,
-    timecontext: Optional[TimeContext],
+    timecontext: TimeContext | None,
     **kwargs,
 ):
     """Compute the predicates for a table operation.

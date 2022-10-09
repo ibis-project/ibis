@@ -29,21 +29,24 @@ pass it along to children nodes, in the ibis tree. See each backends for
 implementation details.
 """
 
+from __future__ import annotations
+
 import enum
 import functools
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.config as config
 import ibis.expr.api as ir
 import ibis.expr.operations as ops
-from ibis.expr.typing import TimeContext
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     from ibis.expr.scope import Scope
+    from ibis.expr.typing import TimeContext
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in Table. This TIME_COL constant will be
@@ -106,13 +109,15 @@ def compare_timecontext(
 
 
 def canonicalize_context(
-    timecontext: Optional[TimeContext],
-) -> Optional[TimeContext]:
+    timecontext: TimeContext | None,
+) -> TimeContext | None:
     """Convert a timecontext to canonical one with type pandas.Timestamp for
     its begin and end time.
 
     Raise Exception for illegal inputs
     """
+    import pandas as pd
+
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
         raise com.IbisError(f'Timecontext {timecontext} should specify (begin, end)')
@@ -220,6 +225,8 @@ def construct_time_context_aware_series(
     Name: value, dtype: float64
     The result is unchanged for a series already has 'time' as its index.
     """
+    import pandas as pd
+
     time_col = get_time_col()
     if time_col == frame.index.name:
         time_index = frame.index
@@ -249,7 +256,7 @@ def construct_time_context_aware_series(
 
 
 @functools.singledispatch
-def adjust_context(op: Any, scope: 'Scope', timecontext: TimeContext) -> TimeContext:
+def adjust_context(op: Any, scope: Scope, timecontext: TimeContext) -> TimeContext:
     """
     Params
     -------
@@ -270,7 +277,7 @@ def adjust_context(op: Any, scope: 'Scope', timecontext: TimeContext) -> TimeCon
 
 @adjust_context.register(ops.Node)
 def adjust_context_node(
-    op: ops.Node, scope: 'Scope', timecontext: TimeContext
+    op: ops.Node, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
     # For any node, by default, do not adjust time context
     return timecontext
@@ -278,7 +285,7 @@ def adjust_context_node(
 
 @adjust_context.register(ops.Alias)
 def adjust_context_alias(
-    op: ops.Node, scope: 'Scope', timecontext: TimeContext
+    op: ops.Node, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
     # For any node, by default, do not adjust time context
     return adjust_context(op.arg, scope, timecontext)
@@ -286,7 +293,7 @@ def adjust_context_alias(
 
 @adjust_context.register(ops.AsOfJoin)
 def adjust_context_asof_join(
-    op: ops.AsOfJoin, scope: 'Scope', timecontext: TimeContext
+    op: ops.AsOfJoin, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
     begin, end = timecontext
 
@@ -301,7 +308,7 @@ def adjust_context_asof_join(
 
 @adjust_context.register(ops.Window)
 def adjust_context_window(
-    op: ops.Window, scope: 'Scope', timecontext: TimeContext
+    op: ops.Window, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
     # adjust time context by preceding and following
     begin, end = timecontext

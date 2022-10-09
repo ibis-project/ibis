@@ -1,6 +1,8 @@
 """Code for computing window functions in the dask backend."""
 
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import dask.dataframe as dd
 
@@ -16,13 +18,15 @@ from ibis.backends.dask.execution.util import (
     make_meta_series,
 )
 from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(
     result: Any,
-    parent: Union[dd.Series, dd.DataFrame],
-    timecontext: Optional[TimeContext],
+    parent: dd.Series | dd.DataFrame,
+    timecontext: TimeContext | None,
 ) -> dd.Series:
     """Post process non grouped, non ordered windows.
 
@@ -57,7 +61,7 @@ def execute_window_op(
     data,
     window,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     **kwargs,

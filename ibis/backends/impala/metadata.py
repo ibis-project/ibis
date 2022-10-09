@@ -14,8 +14,6 @@
 
 from io import StringIO
 
-import pandas as pd
-
 
 def parse_metadata(descr_table):
     parser = MetadataParser(descr_table)
@@ -44,6 +42,8 @@ _get_comment = _item_converter(2)
 
 
 def _try_timestamp(x):
+    import pandas as pd
+
     try:
         ts = pd.Timestamp(x, tz='UTC')
         return ts.to_pydatetime().replace(tzinfo=None)
@@ -57,6 +57,8 @@ def _try_unix_timestamp(x):
     except (ValueError, TypeError):
         return x
     else:
+        import pandas as pd
+
         return (
             pd.Timestamp.fromtimestamp(value, tz="UTC")
             .tz_localize(None)
@@ -237,6 +239,8 @@ class MetadataParser:
     _storage_param_cleaners = {}
 
     def _parse_nested_params(self, cleaners):
+        import pandas as pd
+
         params = {}
         while True:
             try:

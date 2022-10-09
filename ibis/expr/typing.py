@@ -1,8 +1,9 @@
 """Define types for annotation."""
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
 
-# Time context types
-TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
+    # Time context types
+    TimeContext = Tuple[pd.Timestamp, pd.Timestamp]

@@ -1,8 +1,10 @@
 """Code for computing window functions with ibis and pandas."""
 
+from __future__ import annotations
+
 import operator
 import re
-from typing import Any, Callable, List, NoReturn, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 import pandas as pd
 import toolz
@@ -28,15 +30,17 @@ from ibis.backends.pandas.dispatch import execute_node, pre_execute
 from ibis.backends.pandas.execution import util
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(
     result: Any,
     parent: pd.DataFrame,
-    order_by: List[str],
-    group_by: List[str],
-    timecontext: Optional[TimeContext],
+    order_by: list[str],
+    group_by: list[str],
+    timecontext: TimeContext | None,
 ) -> pd.Series:
     # This is the post process of the no groupby nor orderby window
     # `result` could be a Series, DataFrame, or a scalar. generated
@@ -65,9 +69,9 @@ def _post_process_empty(
 def _post_process_group_by(
     series: pd.Series,
     parent: pd.DataFrame,
-    order_by: List[str],
-    group_by: List[str],
-    timecontext: Optional[TimeContext],
+    order_by: list[str],
+    group_by: list[str],
+    timecontext: TimeContext | None,
 ) -> pd.Series:
     assert not order_by and group_by
     return series
@@ -76,9 +80,9 @@ def _post_process_group_by(
 def _post_process_order_by(
     series,
     parent: pd.DataFrame,
-    order_by: List[str],
-    group_by: List[str],
-    timecontext: Optional[TimeContext],
+    order_by: list[str],
+    group_by: list[str],
+    timecontext: TimeContext | None,
 ) -> pd.Series:
     assert order_by and not group_by
     indexed_parent = parent.set_index(order_by)
@@ -93,9 +97,9 @@ def _post_process_order_by(
 def _post_process_group_by_order_by(
     series: pd.Series,
     parent: pd.DataFrame,
-    order_by: List[str],
-    group_by: List[str],
-    timecontext: Optional[TimeContext],
+    order_by: list[str],
+    group_by: list[str],
+    timecontext: TimeContext | None,
 ) -> pd.Series:
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
@@ -190,9 +194,7 @@ def get_aggcontext_window(
     return aggcontext
 
 
-def trim_window_result(
-    data: Union[pd.Series, pd.DataFrame], timecontext: Optional[TimeContext]
-):
+def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext | None):
     """Trim data within time range defined by timecontext.
 
     This is a util function used in ``execute_window_op``, where time
@@ -251,7 +253,7 @@ def execute_window_op(
     data,
     window,
     scope: Scope = None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -330,7 +332,7 @@ def execute_window_op(
         ordering_keys = []
 
     post_process: Callable[
-        [Any, pd.DataFrame, List[str], List[str], Optional[TimeContext]],
+        [Any, pd.DataFrame, list[str], list[str], TimeContext | None],
         pd.Series,
     ]
     if group_by:

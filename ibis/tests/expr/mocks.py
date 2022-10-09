@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from __future__ import annotations
 
 import pytest
 
@@ -24,7 +24,6 @@ from ibis.backends.base.sql.alchemy import (
     table_from_schema,
 )
 from ibis.expr.schema import Schema
-from ibis.expr.typing import TimeContext
 
 MOCK_TABLES = {
     'alltypes': [
@@ -409,7 +408,7 @@ class MockBackend(BaseSQLBackend):
         expr,
         limit=None,
         params=None,
-        timecontext: Optional[TimeContext] = None,
+        timecontext=None,
     ):
         ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]

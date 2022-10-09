@@ -1,9 +1,6 @@
 import re
 from typing import Any
 
-import numpy as np
-import pandas as pd
-
 import ibis.expr.types as ir
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -40,6 +37,9 @@ class ClickhouseTable(ir.Table):
         return self.op().name
 
     def insert(self, obj, **kwargs):
+        import numpy as np
+        import pandas as pd
+
         from ibis.backends.clickhouse.identifiers import quote_identifier
 
         schema = self.schema()

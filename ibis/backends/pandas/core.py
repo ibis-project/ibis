@@ -103,11 +103,12 @@ stored in value
 See ibis.common.scope for details about the implementaion.
 """
 
+from __future__ import annotations
 
 import datetime
 import functools
 import numbers
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -129,7 +130,9 @@ from ibis.backends.pandas.dispatch import (
 from ibis.backends.pandas.trace import trace
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -172,7 +175,7 @@ ibis.util.consume(
 def execute_with_scope(
     node,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -241,7 +244,7 @@ def execute_with_scope(
 def execute_until_in_scope(
     node,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
@@ -381,7 +384,7 @@ def main_execute(
     node,
     params=None,
     scope=None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     cache=None,
     **kwargs,
@@ -449,7 +452,7 @@ def execute_and_reset(
     node,
     params=None,
     scope=None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     **kwargs,
 ):
@@ -547,7 +550,7 @@ See ``computable_args`` in ``execute_until_in_scope``
 def compute_time_context_default(
     node: ops.Node,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     **kwargs,
 ):
     return [timecontext for arg in get_node_arguments(node) if is_computable_input(arg)]

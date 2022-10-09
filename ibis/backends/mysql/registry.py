@@ -1,6 +1,5 @@
 import operator
 
-import pandas as pd
 import sqlalchemy as sa
 
 import ibis
@@ -136,8 +135,10 @@ def _literal(_, op):
         return list(map(sa.literal, op.value))
     else:
         value = op.value
-        if isinstance(value, pd.Timestamp):
+        try:
             value = value.to_pydatetime()
+        except AttributeError:
+            pass
 
         lit = sa.literal(value)
         if op.output_dtype.is_timestamp():

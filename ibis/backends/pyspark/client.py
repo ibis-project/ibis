@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-import pandas as pd
 import pyspark as ps
 
 import ibis.common.exceptions as com
@@ -11,6 +10,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.backends.pyspark import ddl
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 @sch.infer.register(ps.sql.dataframe.DataFrame)
@@ -105,6 +107,8 @@ class PySparkTable(ir.Table):
         # Completely overwrite contents
         >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
+        import pandas as pd
+
         if isinstance(obj, pd.DataFrame):
             spark_df = self._session.createDataFrame(obj)
             spark_df.insertInto(self.name, overwrite=overwrite)

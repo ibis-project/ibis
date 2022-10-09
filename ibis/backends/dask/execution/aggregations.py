@@ -8,9 +8,11 @@
 
 """
 
+from __future__ import annotations
+
 import functools
 import operator
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
@@ -21,14 +23,16 @@ from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import coerce_to_output, safe_concat
 from ibis.backends.pandas.execution.generic import agg_ctx
 from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 # TODO - aggregations - #2553
 # Not all code paths work cleanly here
 @execute_node.register(ops.Aggregation, dd.DataFrame)
 def execute_aggregation_dataframe(
-    op, data, scope=None, timecontext: Optional[TimeContext] = None, **kwargs
+    op, data, scope=None, timecontext: TimeContext | None = None, **kwargs
 ):
     assert op.metrics, 'no metrics found during aggregation execution'
 

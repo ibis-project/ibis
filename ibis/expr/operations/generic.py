@@ -10,7 +10,6 @@ import uuid
 from operator import attrgetter
 
 import numpy as np
-import pandas as pd
 from public import public
 
 import ibis.expr.datatypes as dt
@@ -185,8 +184,6 @@ class Literal(Value):
             ipaddress.IPv6Address,
             np.generic,
             np.ndarray,
-            pd.Timedelta,
-            pd.Timestamp,
             str,
             tuple,
             type(None),

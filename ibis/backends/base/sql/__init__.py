@@ -15,10 +15,11 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
-from ibis.expr.typing import TimeContext
 
 if TYPE_CHECKING:
     import pyarrow as pa
+
+    from ibis.expr.typing import TimeContext
 
 __all__ = [
     'BaseSQLBackend',

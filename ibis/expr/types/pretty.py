@@ -2,7 +2,6 @@ import datetime
 from functools import singledispatch
 from math import isfinite
 
-import pandas as pd
 import rich
 from rich.align import Align
 from rich.console import Console
@@ -145,6 +144,8 @@ def _(dtype, values):
 
 
 def format_column(dtype, values):
+    import pandas as pd
+
     null_str = Text.styled("∅", "dim")
     if dtype.is_floating():
         # We don't want to treat `nan` as `NULL` for floating point types

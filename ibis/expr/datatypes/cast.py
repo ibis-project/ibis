@@ -4,7 +4,6 @@ import collections
 import functools
 from typing import Any, Iterator
 
-import pandas as pd
 from multipledispatch import Dispatcher
 from public import public
 
@@ -143,6 +142,8 @@ def can_cast_string_to_temporal(
     value: str | None = None,
     **kwargs,
 ) -> bool:
+    import pandas as pd
+
     if value is None:
         return False
     try:

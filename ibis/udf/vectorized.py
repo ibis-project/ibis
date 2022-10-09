@@ -5,11 +5,12 @@ Warning: This is an experimental module and API here can change without notice.
 DO NOT USE DIRECTLY.
 """
 
+from __future__ import annotations
+
 import functools
-from typing import Any, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-import pandas as pd
 
 import ibis.expr.datatypes as dt
 import ibis.udf.validate as v
@@ -19,12 +20,15 @@ from ibis.expr.operations import (
     ReductionVectorizedUDF,
 )
 
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 def _coerce_to_dict(
-    data: Union[List, np.ndarray, pd.Series],
+    data: list | np.ndarray | pd.Series,
     output_type: dt.Struct,
-    index: Optional[pd.Index] = None,
-) -> Tuple:
+    index: pd.Index | None = None,
+) -> tuple:
     """Coerce the following shapes to a tuple.
 
     - [`list`][list]
@@ -35,9 +39,9 @@ def _coerce_to_dict(
 
 
 def _coerce_to_np_array(
-    data: Union[List, np.ndarray, pd.Series],
+    data: list | np.ndarray | pd.Series,
     output_type: dt.Struct,
-    index: Optional[pd.Index] = None,
+    index: pd.Index | None = None,
 ) -> np.ndarray:
     """Coerce the following shapes to an np.ndarray.
 
@@ -49,9 +53,9 @@ def _coerce_to_np_array(
 
 
 def _coerce_to_series(
-    data: Union[List, np.ndarray, pd.Series],
+    data: list | np.ndarray | pd.Series,
     output_type: dt.DataType,
-    original_index: Optional[pd.Index] = None,
+    original_index: pd.Index | None = None,
 ) -> pd.Series:
     """Coerce the following shapes to a Series.
 
@@ -78,6 +82,8 @@ def _coerce_to_series(
     pd.Series
         Output Series
     """
+    import pandas as pd
+
     if isinstance(data, (list, np.ndarray)):
         result = pd.Series(data)
     elif isinstance(data, pd.Series):
@@ -94,7 +100,7 @@ def _coerce_to_series(
 def _coerce_to_dataframe(
     data: Any,
     output_type: dt.Struct,
-    original_index: Optional[pd.Index] = None,
+    original_index: pd.Index | None = None,
 ) -> pd.DataFrame:
     """Coerce the following shapes to a DataFrame.
 
@@ -150,6 +156,8 @@ def _coerce_to_dataframe(
     0  1  2  3
     dtypes: [int32, int32, int32]
     """
+    import pandas as pd
+
     if isinstance(data, pd.DataFrame):
         result = data
     elif isinstance(data, pd.Series):

@@ -106,8 +106,10 @@ stored in value
 
 See ibis.common.scope for details about the implementaion.
 """
+from __future__ import annotations
+
 import functools
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 from multipledispatch import Dispatcher
@@ -130,7 +132,9 @@ from ibis.backends.pandas.core import (
 )
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 
@@ -140,7 +144,7 @@ is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 def execute_with_scope(
     node,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     **kwargs,
@@ -211,7 +215,7 @@ def execute_with_scope(
 def execute_until_in_scope(
     node,
     scope: Scope,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     post_execute_=None,
@@ -350,7 +354,7 @@ def main_execute(
     node,
     params=None,
     scope=None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     cache=None,
     **kwargs,
@@ -419,7 +423,7 @@ def execute_and_reset(
     node,
     params=None,
     scope=None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     aggcontext=None,
     **kwargs,
 ):

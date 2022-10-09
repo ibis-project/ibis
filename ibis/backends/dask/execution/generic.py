@@ -1,5 +1,7 @@
 """Execution rules for generic ibis operations."""
 
+from __future__ import annotations
+
 import collections
 import datetime
 import decimal

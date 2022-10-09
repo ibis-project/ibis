@@ -7,14 +7,13 @@ import functools
 import itertools
 import operator
 from pathlib import Path
-from typing import Any, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
 from typing import Tuple as _Tuple
 from typing import TypeVar
 from typing import Union as _Union
 
 import dateutil.parser
 import numpy as np
-import pandas as pd
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -111,6 +110,9 @@ from ibis.expr.window import (
     trailing_window,
     window,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 __all__ = (
     'aggregate',
@@ -446,6 +448,8 @@ def memtable(
           0     1  foo
           1     2  baz
     """
+    import pandas as pd
+
     if columns is not None and schema is not None:
         raise NotImplementedError(
             "passing `columns` and schema` is ambiguous; "
@@ -460,13 +464,12 @@ def memtable(
             (f"col{i:d}" for i in range(len(cols))),
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
-    return memtable(df, name=name, schema=schema)
+    return _memtable_from_dataframe(df, name=name, schema=schema)
 
 
 _gen_memtable_name = (f"_ibis_memtable{i:d}" for i in itertools.count())
 
 
-@memtable.register(pd.DataFrame)
 def _memtable_from_dataframe(
     df: pd.DataFrame,
     *,
@@ -483,7 +486,7 @@ def _memtable_from_dataframe(
     return op.to_expr()
 
 
-def _sort_order(expr, order: Literal["desc"] | Literal["asc"]):
+def _sort_order(expr, order: Literal["desc", "asc"]):
     method = operator.methodcaller(order)
     if isinstance(expr, str):
         value = _[expr]
@@ -652,11 +655,6 @@ def _timestamp_from_ymdhms(
     return ops.TimestampFromYMDHMS(value, *args).to_expr()
 
 
-@timestamp.register(pd.Timestamp)
-def _timestamp_from_timestamp(value, timezone: str | None = None) -> ir.TimestampScalar:
-    return literal(value, type=dt.Timestamp(timezone=timezone))
-
-
 @timestamp.register(datetime.datetime)
 def _timestamp_from_datetime(value, timezone: str | None = None) -> ir.TimestampScalar:
     return literal(value, type=dt.Timestamp(timezone=timezone))
@@ -664,6 +662,8 @@ def _timestamp_from_datetime(value, timezone: str | None = None) -> ir.Timestamp
 
 @timestamp.register(str)
 def _timestamp_from_str(value: str, timezone: str | None = None) -> ir.TimestampScalar:
+    import pandas as pd
+
     try:
         value = pd.Timestamp(value, tz=timezone)
     except pd.errors.OutOfBoundsDatetime:
@@ -691,10 +691,12 @@ def date(value) -> DateValue:
 
 @date.register(str)
 def _date_from_str(value: str) -> ir.DateScalar:
+    import pandas as pd
+
     return literal(pd.to_datetime(value).date(), type=dt.date)
 
 
-@date.register(pd.Timestamp)
+@date.register(datetime.datetime)
 def _date_from_timestamp(value) -> ir.DateScalar:
     return literal(value, type=dt.date)
 
@@ -722,6 +724,8 @@ def time(value) -> TimeValue:
 
 @time.register(str)
 def _time_from_str(value: str) -> ir.TimeScalar:
+    import pandas as pd
+
     return literal(pd.to_datetime(value).time(), type=dt.time)
 
 

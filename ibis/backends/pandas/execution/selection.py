@@ -1,9 +1,11 @@
 """Dispatching code for Selection operations."""
 
+from __future__ import annotations
+
 import functools
 import operator
 from collections import defaultdict
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from toolz import concatv, first
@@ -17,7 +19,9 @@ from ibis.backends.pandas.execution import constants, util
 from ibis.backends.pandas.execution.util import coerce_to_output
 from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 def compute_projection(
@@ -25,7 +29,7 @@ def compute_projection(
     parent,
     data,
     scope: Scope = None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     **kwargs,
 ):
     """Compute a projection.
@@ -183,7 +187,7 @@ def _compute_predicates(
     predicates,
     data,
     scope: Scope,
-    timecontext: Optional[TimeContext],
+    timecontext: TimeContext | None,
     **kwargs,
 ):
     """Compute the predicates for a table operation.
@@ -230,7 +234,7 @@ def _compute_predicates(
 
 
 def build_df_from_selection(
-    selections: List[ops.Value],
+    selections: list[ops.Value],
     data: pd.DataFrame,
     table: ops.Node,
 ) -> pd.DataFrame:
@@ -271,7 +275,7 @@ def build_df_from_selection(
 
 
 def build_df_from_projection(
-    selection_exprs: List[ir.Expr],
+    selection_exprs: list[ir.Expr],
     op: ops.Selection,
     data: pd.DataFrame,
     **kwargs,
@@ -302,7 +306,7 @@ def execute_selection_dataframe(
     op,
     data,
     scope: Scope,
-    timecontext: Optional[TimeContext],
+    timecontext: TimeContext | None,
     **kwargs,
 ):
     result = data

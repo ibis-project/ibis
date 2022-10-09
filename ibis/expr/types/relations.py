@@ -16,7 +16,6 @@ from typing import (
     Sequence,
 )
 
-import numpy as np
 from public import public
 from rich.jupyter import JupyterMixin
 
@@ -196,6 +195,8 @@ class Table(Expr, JupyterMixin):
         return self.columns
 
     def _ensure_expr(self, expr):
+        import numpy as np
+
         if isinstance(expr, str):
             # treat strings as column names
             return self[expr]
