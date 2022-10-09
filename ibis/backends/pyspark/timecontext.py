@@ -1,17 +1,21 @@
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pyspark.sql.functions as F
 from pyspark.sql.dataframe import DataFrame
 
 import ibis.common.exceptions as com
 from ibis.expr.timecontext import get_time_col
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 def filter_by_time_context(
     df: DataFrame,
-    timecontext: Optional[TimeContext],
-    adjusted_timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None,
+    adjusted_timecontext: TimeContext | None = None,
 ) -> DataFrame:
     """Filter a Dataframe by given time context
     Parameters
@@ -52,8 +56,8 @@ def filter_by_time_context(
 
 
 def combine_time_context(
-    timecontexts: List[TimeContext],
-) -> Optional[TimeContext]:
+    timecontexts: list[TimeContext],
+) -> TimeContext | None:
     """Return a combined time context of `timecontexts`
 
     The combined time context starts from the earliest begin time

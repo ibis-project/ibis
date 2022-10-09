@@ -6,10 +6,17 @@ import decimal
 import enum
 import ipaddress
 import uuid
-from typing import AbstractSet, Any, Mapping, NamedTuple, Sequence, SupportsFloat
+from typing import (
+    TYPE_CHECKING,
+    AbstractSet,
+    Any,
+    Mapping,
+    NamedTuple,
+    Sequence,
+    SupportsFloat,
+)
 
 import numpy as np
-import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
 from public import public
@@ -18,6 +25,9 @@ import ibis.expr.datatypes.core as dt
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.expr.datatypes.cast import highest_precedence
 from ibis.util import frozendict
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 try:
     import shapely.geometry as geo
@@ -113,6 +123,8 @@ def infer_timestamp(value: datetime.datetime) -> dt.Timestamp:
 def _get_timedelta_units(
     timedelta: datetime.timedelta | pd.Timedelta,
 ) -> list[str]:
+    import pandas as pd
+
     # pandas Timedelta has more granularity
     if isinstance(timedelta, pd.Timedelta):
         unit_fields = timedelta.components._fields

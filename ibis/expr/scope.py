@@ -33,12 +33,16 @@ the data stored in scope doesn't cover the current time context.
 For simplicity, we update cache in this case, instead of merge data of
 different time contexts.
 """
+from __future__ import annotations
+
 from collections import namedtuple
-from typing import Any, Dict, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Iterable
 
 from ibis.expr.operations import Node
 from ibis.expr.timecontext import TimeContextRelation, compare_timecontext
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
 
@@ -46,8 +50,8 @@ ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
 class Scope:
     def __init__(
         self,
-        param: Dict[Node, Any] = None,
-        timecontext: Optional[TimeContext] = None,
+        param: dict[Node, Any] = None,
+        timecontext: TimeContext | None = None,
     ):
         """Take a dict of `op`, `result`, create a new scope and save those
         pairs in scope.
@@ -79,9 +83,7 @@ class Scope:
     def __iter__(self):
         return iter(self._items.keys())
 
-    def set_value(
-        self, op: Node, timecontext: Optional[TimeContext], value: Any
-    ) -> None:
+    def set_value(self, op: Node, timecontext: TimeContext | None, value: Any) -> None:
         """Set values in scope.
 
             Given an `op`, `timecontext` and `value`, set `op` and
@@ -109,7 +111,7 @@ class Scope:
         if self.get_value(op, timecontext) is None:
             self._items[op] = ScopeItem(timecontext, value)
 
-    def get_value(self, op: Node, timecontext: Optional[TimeContext] = None) -> Any:
+    def get_value(self, op: Node, timecontext: TimeContext | None = None) -> Any:
         """Given a op and timecontext, get the result from scope.
 
         Parameters
@@ -154,7 +156,7 @@ class Scope:
                 return self._items[op].value
         return None
 
-    def merge_scope(self, other_scope: 'Scope', overwrite=False) -> 'Scope':
+    def merge_scope(self, other_scope: Scope, overwrite=False) -> Scope:
         """merge items in other_scope into this scope.
 
         Parameters
@@ -185,7 +187,7 @@ class Scope:
                 result._items[op] = v
         return result
 
-    def merge_scopes(self, other_scopes: Iterable['Scope'], overwrite=False) -> 'Scope':
+    def merge_scopes(self, other_scopes: Iterable[Scope], overwrite=False) -> Scope:
         """merge items in other_scopes into this scope.
 
         Parameters

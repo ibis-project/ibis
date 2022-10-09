@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 from importlib.metadata import EntryPoint
 from typing import NamedTuple
@@ -57,3 +58,13 @@ def test_multiple_backends(mocker):
     msg = r"\d+ packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
         ibis.foo
+
+
+def test_no_import_pandas():
+    script = """\
+import ibis
+import sys
+
+assert "pandas" not in sys.modules"""
+
+    subprocess.check_call([sys.executable], text=script)

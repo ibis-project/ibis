@@ -20,7 +20,6 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
@@ -111,6 +110,8 @@ class Backend(BaseAlchemyBackend):
         >>> import ibis
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
+        import pandas as pd
+
         if path is not None:
             warnings.warn(
                 "The `path` argument is deprecated in 4.0. Use `database=...`"

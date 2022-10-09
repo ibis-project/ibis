@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
-import pandas as pd
 import pyspark
 import sqlalchemy as sa
 from pyspark import SparkConf
@@ -31,6 +30,9 @@ from ibis.backends.pyspark.compiler import PySparkDatabaseTable, PySparkExprTran
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import canonicalize_context, localize_context
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 _read_csv_defaults = {
     'header': True,
@@ -442,6 +444,8 @@ class Backend(BaseSQLBackend):
         --------
         >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
+        import pandas as pd
+
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
                 spark_df = self._session.createDataFrame(obj)

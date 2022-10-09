@@ -6,7 +6,6 @@ import functools
 from typing import NamedTuple
 
 import numpy as np
-import pandas as pd
 import toolz
 
 import ibis.expr.operations as ops
@@ -224,6 +223,8 @@ class Window(Comparable):
             raise IbisInputError(f"'how' must be 'rows' or 'range', got {self.how}")
 
         if self.max_lookback is not None:
+            import pandas as pd
+
             if not isinstance(self.preceding, (ir.IntervalValue, pd.Timedelta)):
                 raise IbisInputError(
                     "'max_lookback' must be specified as an interval "

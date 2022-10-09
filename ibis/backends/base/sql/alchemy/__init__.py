@@ -3,9 +3,8 @@ from __future__ import annotations
 import contextlib
 import getpass
 from operator import methodcaller
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-import pandas as pd
 import sqlalchemy as sa
 
 import ibis
@@ -36,6 +35,10 @@ from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 __all__ = (
     'BaseAlchemyBackend',
@@ -139,6 +142,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return df
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+
+        import pandas as pd
+
         df = pd.DataFrame.from_records(
             cursor,
             columns=cursor.keys(),
@@ -177,6 +183,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         force
             Check whether a table exists before creating it
         """
+        import pandas as pd
+
         if isinstance(expr, pd.DataFrame):
             expr = ibis.memtable(expr)
 
@@ -452,6 +460,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ValueError
             If the type of `obj` isn't supported
         """
+
+        import pandas as pd
 
         if database == self.current_database:
             # avoid fully qualified name

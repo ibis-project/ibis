@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -6,7 +10,9 @@ import ibis
 import ibis.expr.operations as ops
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 pytest.importorskip("pyspark")
 

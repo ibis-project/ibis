@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal, Mapping
 
-import pandas as pd
 import toolz
 from clickhouse_driver.client import Client as _DriverClient
 
@@ -15,6 +14,9 @@ from ibis.backends.clickhouse.client import ClickhouseTable, fully_qualified_re
 from ibis.backends.clickhouse.compiler import ClickhouseCompiler
 from ibis.backends.clickhouse.datatypes import parse, serialize
 from ibis.config import options
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 _default_compression: str | bool
 
@@ -158,6 +160,8 @@ class Backend(BaseSQLBackend):
         Any
             The resutls of executing the query
         """
+        import pandas as pd
+
         external_tables_list = []
         if external_tables is None:
             external_tables = {}
@@ -183,6 +187,8 @@ class Backend(BaseSQLBackend):
             )
 
     def fetch_from_cursor(self, cursor, schema):
+        import pandas as pd
+
         data, _ = cursor
         names = schema.names
         if not data:

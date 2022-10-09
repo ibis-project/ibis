@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import time
 import traceback
+from typing import TYPE_CHECKING
 
-import pandas as pd
 import sqlalchemy as sa
 
 import ibis.common.exceptions as com
@@ -18,6 +20,9 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.backends.impala import ddl
 from ibis.backends.impala.compat import HS2Error, impyla
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class ImpalaDatabase(Database):

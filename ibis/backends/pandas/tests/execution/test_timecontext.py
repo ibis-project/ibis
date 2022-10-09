@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -15,7 +19,9 @@ from ibis.expr.timecontext import (
     compare_timecontext,
     construct_time_context_aware_series,
 )
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 class CustomAsOfJoin(ops.AsOfJoin):

@@ -9,7 +9,6 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, Mapping, MutableMapping
 
-import pandas as pd
 import pyarrow as pa
 import pyarrow.types as pat
 import sqlalchemy as sa
@@ -331,7 +330,10 @@ class Backend(BaseAlchemyBackend):
         cursor: duckdb.DuckDBPyConnection,
         schema: sch.Schema,
     ):
+        import pandas as pd
+
         table = cursor.cursor.fetch_arrow_table()
+
         df = pd.DataFrame(
             {
                 name: (

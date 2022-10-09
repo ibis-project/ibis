@@ -1,5 +1,7 @@
 """Execution rules for generic ibis operations."""
 
+from __future__ import annotations
+
 import collections
 import datetime
 import decimal
@@ -8,7 +10,7 @@ import math
 import numbers
 import operator
 from collections.abc import Mapping, Sized
-from typing import Dict, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -41,7 +43,9 @@ from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import get_time_col
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 # By default return the literal value
@@ -437,7 +441,7 @@ def execute_aggregation_dataframe(
     op,
     data,
     scope=None,
-    timecontext: Optional[TimeContext] = None,
+    timecontext: TimeContext | None = None,
     **kwargs,
 ):
     assert op.metrics, 'no metrics found during aggregation execution'
@@ -455,7 +459,7 @@ def execute_aggregation_dataframe(
         )
         data = data.loc[predicate]
 
-    columns: Dict[str, str] = {}
+    columns: dict[str, str] = {}
 
     if op.by:
         grouping_keys = [
@@ -1077,7 +1081,7 @@ for typ in (str, *scalar_types):
 
 @execute_node.register(PandasTable, PandasBackend)
 def execute_database_table_client(
-    op, client, timecontext: Optional[TimeContext], **kwargs
+    op, client, timecontext: TimeContext | None, **kwargs
 ):
     df = client.dictionary[op.name]
     if timecontext:

@@ -10,11 +10,10 @@ import re
 import weakref
 from pathlib import Path
 from posixpath import join as pjoin
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import fsspec
 import numpy as np
-import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -47,6 +46,10 @@ from ibis.backends.impala.udf import (  # noqa F408
     wrap_udf,
 )
 from ibis.config import options
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
@@ -159,6 +162,8 @@ def _chunks_to_pandas_array(chunks):
 
 
 def _column_batches_to_dataframe(names, batches):
+    import pandas as pd
+
     cols = {}
     for name, chunks in zip(names, zip(*(b.columns for b in batches))):
         cols[name] = _chunks_to_pandas_array(chunks)
@@ -539,6 +544,9 @@ class Backend(BaseSQLBackend):
 
     @contextlib.contextmanager
     def _setup_insert(self, obj):
+
+        import pandas as pd
+
         if isinstance(obj, pd.DataFrame):
             with DataFrameWriter(self, obj) as writer:
                 yield writer.delimited_table(writer.write_temp_csv())

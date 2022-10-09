@@ -1,16 +1,12 @@
 """Initialize Ibis module."""
 from __future__ import annotations
 
-# Converting an Ibis schema to a pandas DataFrame requires registering
-# some type conversions that are currently registered in the pandas backend
-import ibis.backends.pandas
-import ibis.config
-import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
+from ibis.expr import types as ir
 from ibis.expr.api import *  # noqa: F401,F403
 
 __all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
@@ -23,6 +19,7 @@ _KNOWN_BACKENDS = ['bigquery', 'heavyai']
 
 def __dir__() -> list[str]:
     """Adds tab completion for ibis backends to the top-level module."""
+
     out = set(__all__)
     out.update(ep.name for ep in util.backend_entry_points())
     return sorted(out)
@@ -67,6 +64,8 @@ def __getattr__(name: str) -> BaseBackend:
     # The first time a backend is loaded, we register its options, and we set
     # it as an attribute of `ibis`, so `__getattr__` is not called again for it
     backend.register_options()
+
+    import ibis
 
     setattr(ibis, name, backend)
     return backend
