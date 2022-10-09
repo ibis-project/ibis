@@ -60,9 +60,8 @@ jobs:
 
           exit_code=0
           for table in workflows jobs; do
-            bq load --autodetect=true --source_format=NEWLINE_DELIMITED_JSON \
-              "workflows_native.${table}" "${bucket}/${table}.json"
-            if [ -n "$?" ]; then
+            if ! bq load --autodetect=true --source_format=NEWLINE_DELIMITED_JSON \
+              "workflows_native.${table}" "${bucket}/${table}.json"; then
               ((++exit_code))
             fi
           done
