@@ -79,7 +79,6 @@ def test_scalar_param_array(backend, con):
         "postgres",
         "pyspark",
         "snowflake",
-        "polars",
     ]
 )
 @pytest.mark.never(

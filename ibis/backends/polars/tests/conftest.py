@@ -5,14 +5,13 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.backends.tests.data import array_types
+from ibis.backends.tests.data import array_types, struct_types
 
 pl = pytest.importorskip("polars")
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
-    bool_is_int = True
-    supports_structs = False
+    supports_structs = True
     supports_json = False
     reduction_tolerance = 1e-3
 
@@ -45,6 +44,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
             name='awards_players', path=data_directory / 'awards_players.csv'
         )
         client.register_pandas(name='array_types', df=array_types)
+        client.register_pandas(name='struct', df=struct_types)
 
         return client
 

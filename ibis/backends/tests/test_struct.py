@@ -10,7 +10,12 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "pyspark", "polars"]),
+    pytest.mark.notimpl(
+        [
+            "datafusion",
+            "pyspark",
+        ]
+    ),
 ]
 
 
@@ -60,6 +65,7 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
             _NULL_STRUCT_LITERAL.__getitem__,
             lambda _: None,
             id="null",
+            marks=pytest.mark.notimpl(["polars"]),
         ),
     ],
 )

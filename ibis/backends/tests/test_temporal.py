@@ -869,7 +869,7 @@ def test_integer_cast_to_timestamp(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     ["datafusion", "polars"],
-    reason="Arrow backends assumes ns resolution timestamps",
+    reason="Arrow backends assume a ns resolution timestamps",
 )
 @pytest.mark.notyet(
     ["pyspark"],
