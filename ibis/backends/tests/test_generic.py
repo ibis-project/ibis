@@ -120,7 +120,10 @@ def test_fillna(backend, alltypes, col):
             ibis.coalesce(ibis.NA, ibis.NA, 3.14),
             3.14,
             id="non_null_last",
-            marks=pytest.mark.broken("polars"),
+            marks=pytest.mark.broken(
+                "polars",
+                reason="implementation error, cannot get ref Int8 from Float64",
+            ),
         ),
     ],
 )
@@ -701,18 +704,8 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
             id="lshift_scalar_col",
         ),
         param(lshift, lambda t: t.int_col, lambda _: 3, id="lshift_col_scalar"),
-        param(
-            rshift,
-            lambda t: t.int_col,
-            lambda t: t.int_col,
-            id="rshift_col_col",
-        ),
-        param(
-            rshift,
-            lambda _: 3,
-            lambda t: t.int_col,
-            id="rshift_scalar_col",
-        ),
+        param(rshift, lambda t: t.int_col, lambda t: t.int_col, id="rshift_col_col"),
+        param(rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"),
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )

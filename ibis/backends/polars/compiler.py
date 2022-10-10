@@ -72,6 +72,12 @@ def literal(op):
         value = pl.Series("", op.value)
         typ = to_polars_type(op.dtype)
         return pl.lit(value, dtype=typ).list()
+    elif isinstance(op.dtype, dt.Struct):
+        values = [
+            pl.lit(v, dtype=to_polars_type(op.dtype[k])).alias(k)
+            for k, v in op.value.items()
+        ]
+        return pl.struct(values)
     elif isinstance(op.dtype, dt.Interval):
         return _make_duration(op.value, op.dtype)
     else:
@@ -551,6 +557,18 @@ def power(op):
     return left.pow(right)
 
 
+@translate.register(ops.StructField)
+def struct_field(op):
+    arg = translate(op.arg)
+    return arg.struct.field(op.name)
+
+
+@translate.register(ops.StructColumn)
+def struct_column(op):
+    fields = [translate(v).alias(k) for k, v in zip(op.names, op.values)]
+    return pl.struct(fields)
+
+
 _reductions = {
     ops.ApproxMedian: 'median',
     ops.Count: 'count',
@@ -727,6 +745,33 @@ def unnest(op):
     return arg.explode()
 
 
+_date_methods = {
+    ops.ExtractDay: "day",
+    ops.ExtractMonth: "month",
+    ops.ExtractYear: "year",
+    ops.ExtractQuarter: "quarter",
+    ops.ExtractDayOfYear: "ordinal_day",
+    ops.ExtractWeekOfYear: "week",
+    ops.ExtractHour: "hour",
+    ops.ExtractMinute: "minute",
+    ops.ExtractSecond: "second",
+    ops.ExtractMillisecond: "millisecond",
+}
+
+
+@translate.register(ops.ExtractTemporalField)
+def extract_date_field(op):
+    arg = translate(op.arg)
+    method = operator.methodcaller(_date_methods[type(op)])
+    return method(arg.dt).cast(pl.Int32)
+
+
+@translate.register(ops.ExtractEpochSeconds)
+def extract_epoch_seconds(op):
+    arg = translate(op.arg)
+    return arg.dt.epoch('s').cast(pl.Int32)
+
+
 _unary = {
     # TODO(kszucs): factor out the lambdas
     ops.Abs: operator.methodcaller('abs'),
@@ -738,27 +783,16 @@ _unary = {
     ops.Cot: lambda arg: arg.cos() / arg.sin(),
     ops.DayOfWeekIndex: lambda arg: arg.dt.weekday().cast(pl.Int16),
     ops.Exp: operator.methodcaller('exp'),
-    ops.ExtractDay: lambda arg: arg.dt.day().cast(pl.Int32),
-    ops.ExtractDayOfYear: lambda arg: arg.dt.ordinal_day().cast(pl.Int32),
-    ops.ExtractEpochSeconds: lambda arg: arg.dt.epoch('s').cast(pl.Int32),
-    ops.ExtractHour: lambda arg: arg.dt.hour().cast(pl.Int32),
-    ops.ExtractMillisecond: lambda arg: arg.dt.millisecond().cast(pl.Int32),
-    ops.ExtractMinute: lambda arg: arg.dt.minute().cast(pl.Int32),
-    ops.ExtractMonth: lambda arg: arg.dt.month().cast(pl.Int32),
-    ops.ExtractQuarter: lambda arg: arg.dt.quarter().cast(pl.Int32),
-    ops.ExtractSecond: lambda arg: arg.dt.second().cast(pl.Int32),
-    ops.ExtractWeekOfYear: lambda arg: arg.dt.week().cast(pl.Int32),
-    ops.ExtractYear: lambda arg: arg.dt.year().cast(pl.Int32),
     ops.Floor: lambda arg: arg.floor().cast(pl.Int64),
     ops.IsInf: operator.methodcaller('is_infinite'),
     ops.IsNan: operator.methodcaller('is_nan'),
     ops.IsNull: operator.methodcaller('is_null'),
-    ops.NotNull: operator.methodcaller('is_not_null'),
     ops.Ln: operator.methodcaller('log'),
     ops.Log10: operator.methodcaller('log10'),
     ops.Log2: lambda arg: arg.log(2),
     ops.Negate: operator.neg,
     ops.Not: operator.methodcaller('is_not'),
+    ops.NotNull: operator.methodcaller('is_not_null'),
     ops.Sin: operator.methodcaller('sin'),
     ops.Sqrt: operator.methodcaller('sqrt'),
     ops.Tan: operator.methodcaller('tan'),
@@ -870,12 +904,6 @@ def binop(op):
     right = translate(op.right)
     func = _binops[type(op)]
     return func(left, right)
-
-
-# func = rlz.instance_of((FunctionType, LambdaType))
-# func_args = rlz.nodes_of(rlz.column(rlz.any))
-# input_type = rlz.tuple_of(rlz.datatype)
-# return_type = rlz.datatype
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)

@@ -429,7 +429,14 @@ def test_floating_mod(backend, alltypes, df):
         'smallint_col',
         'int_col',
         'bigint_col',
-        pytest.param('float_col', marks=pytest.mark.broken("polars", strict=False)),
+        pytest.param(
+            'float_col',
+            marks=pytest.mark.broken(
+                "polars",
+                strict=False,
+                reason="output types is float64 instead of the expected float32",
+            ),
+        ),
         'double_col',
     ],
 )

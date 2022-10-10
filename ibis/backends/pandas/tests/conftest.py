@@ -6,7 +6,7 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
-from ibis.backends.tests.data import array_types
+from ibis.backends.tests.data import array_types, json_types, struct_types
 
 
 class TestConf(BackendTest, RoundHalfToEven):
@@ -31,31 +31,8 @@ class TestConf(BackendTest, RoundHalfToEven):
                 'awards_players': pd.read_csv(
                     str(data_directory / 'awards_players.csv')
                 ),
-                'struct': pd.DataFrame(
-                    {
-                        'abc': [
-                            {'a': 1.0, 'b': 'banana', 'c': 2},
-                            {'a': 2.0, 'b': 'apple', 'c': 3},
-                            {'a': 3.0, 'b': 'orange', 'c': 4},
-                            {'a': pd.NA, 'b': 'banana', 'c': 2},
-                            {'a': 2.0, 'b': pd.NA, 'c': 3},
-                            pd.NA,
-                            {'a': 3.0, 'b': 'orange', 'c': pd.NA},
-                        ]
-                    }
-                ),
-                'json_t': pd.DataFrame(
-                    {
-                        "js": [
-                            '{"a": [1,2,3,4], "b": 1}',
-                            '{"a":null,"b":2}',
-                            '{"a":"foo", "c":null}',
-                            "null",
-                            "[42,47,55]",
-                            "[]",
-                        ]
-                    }
-                ),
+                'struct': struct_types,
+                'json_t': json_types,
                 'array_types': array_types,
             }
         )

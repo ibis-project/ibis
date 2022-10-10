@@ -26,7 +26,6 @@ _to_polars_types = {
     dt.Float32: pl.Float32,
     dt.Float64: pl.Float64,
     dt.Decimal: pl.Object,
-    dt.Struct: pl.Struct,
 }
 
 _to_ibis_dtypes = {v: k for k, v in _to_polars_types.items()}
@@ -49,6 +48,15 @@ def from_ibis_interval(dtype):
         return pl.Duration(dtype.unit)
     else:
         raise ValueError(f"Unsupported polars duration unit: {dtype.unit}")
+
+
+@to_polars_type.register(dt.Struct)
+def from_ibis_struct(dtype):
+    fields = [
+        pl.Field(name=name, dtype=to_polars_type(dtype))
+        for name, dtype in dtype.pairs.items()
+    ]
+    return pl.Struct(fields)
 
 
 @to_polars_type.register(dt.Category)
@@ -79,6 +87,13 @@ def from_polars_list(typ):
     return dt.Array(to_ibis_dtype(typ.inner))
 
 
+@to_ibis_dtype.register(pl.Struct)
+def from_polars_struct(typ):
+    return dt.Struct.from_tuples(
+        [(field.name, to_ibis_dtype(field.dtype)) for field in typ.fields]
+    )
+
+
 # Can't register here since polars datatypes are classes
 # @dt.dtype.register(pl.DataType)
 
@@ -86,4 +101,4 @@ def from_polars_list(typ):
 @sch.infer.register(pl.LazyFrame)
 def from_polars_schema(df: pl.LazyFrame) -> sch.Schema:
     fields = [(name, to_ibis_dtype(typ)) for name, typ in df.schema.items()]
-    return sch.schema(fields)
+    return sch.Schema.from_tuples(fields)

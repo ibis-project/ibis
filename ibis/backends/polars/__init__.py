@@ -36,10 +36,6 @@ class Backend(BaseBackend):
         _tables
             Mutable mapping of string table names to polars LazyFrames.
         """
-        # register dispatchers
-        # from ibis.backends.polars import execution  # noqa: F401
-        # from ibis.backends.polars import udf  # noqa: F401
-
         if isinstance(_tables, dict):
             self._tables = _tables
         else:
@@ -58,7 +54,7 @@ class Backend(BaseBackend):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, _schema: sch.Schema = None) -> pl.LazyFrame:
+    def table(self, name: str, _schema: sch.Schema = None) -> ir.Table:
         schema = sch.infer(self._tables[name])
         return self.table_class(name, schema, self).to_expr()
 
