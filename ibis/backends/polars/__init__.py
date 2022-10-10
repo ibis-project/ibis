@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping, MutableMapping
 
@@ -109,6 +110,11 @@ class Backend(BaseBackend):
 
     def get_schema(self, table_name, database=None):
         return self._tables[table_name].schema
+
+    @classmethod
+    @lru_cache
+    def _get_operations(cls):
+        return frozenset(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
