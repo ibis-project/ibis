@@ -131,7 +131,7 @@ in
         owner = "pola-rs";
         repo = "polars";
         rev = "py-v${version}";
-        sha256 = "sha256-4pXpU0QbUJv0OikOarBPsPqWZNEtpOhnEv6w4wMMSbs=";
+        sha256 = "sha256-nXYQ7vwVD4WJrSsBATuqj5cGdpFKLvi1S4EpjBoSIKA=";
       };
       sourceRoot = "source/py-polars";
       nightlyRustPlatform =
@@ -158,7 +158,7 @@ in
         inherit sourceRoot;
         patches = [ ./nix/patches/py-polars.patch ];
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-NdJ4p6DgtKzdPlc9f/2OsAK++s2Hm1F7OlbfAfxOs0o=";
+        sha256 = "sha256-otUlYIR2HxTgkD0ZDgUkGfhstSbJVUWB05OR7f4PTlU=";
       };
     });
 }
