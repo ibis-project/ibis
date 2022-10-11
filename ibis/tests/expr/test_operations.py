@@ -80,6 +80,11 @@ operations = [
 
 @pytest.fixture(scope='module', params=operations)
 def op(request):
+    with pytest.warns(FutureWarning):
+        # .op().op() deprecated, do not use for new code
+        r = request.param.op()
+        assert r is request.param
+
     return request.param
 
 

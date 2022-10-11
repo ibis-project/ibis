@@ -231,6 +231,7 @@ filterwarnings = [
   "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # snowflake
   "ignore:You have an incompatible version of 'pyarrow' installed:UserWarning",
+  "ignore:`op` is deprecated:FutureWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [
