@@ -192,6 +192,9 @@ class Table(Expr, JupyterMixin):
     def __dir__(self):
         return sorted(frozenset(dir(type(self)) + self.columns))
 
+    def _ipython_key_completions_(self) -> list[str]:
+        return self.columns
+
     def _ensure_expr(self, expr):
         if isinstance(expr, str):
             # treat strings as column names

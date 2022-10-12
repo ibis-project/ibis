@@ -92,6 +92,7 @@ def test_getitem_attribute(table):
     assert_equal(result, table['a'])
 
     assert 'a' in dir(table)
+    assert 'a' in table._ipython_key_completions_()
 
     # Project and add a name that conflicts with a Table built-in
     # attribute
