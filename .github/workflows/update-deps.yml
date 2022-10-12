@@ -35,7 +35,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: setup cachix
-        uses: cachix/cachix-action@v10
+        uses: cachix/cachix-action@v11
         with:
           name: ibis
           extraPullNames: nix-community,poetry2nix
