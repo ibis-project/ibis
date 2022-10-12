@@ -29,22 +29,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "c2ee667d2fd19f70a9ac256b81f2cfc248c4f04d",
-        "sha256": "17k5jshhrszb13h6n08fh6cxf2h5k76a2rpv7qz1zzf3wrrknabf",
+        "rev": "d62ba59f1e28c382665c57203a4b9ad11fd7f449",
+        "sha256": "1ajkw5f964p7grmkqnpv97xahxrfn6ck8d9mb26r9sxk499bahc0",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/c2ee667d2fd19f70a9ac256b81f2cfc248c4f04d.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "rust-overlay": {
-        "branch": "master",
-        "description": "Pure and reproducible nix overlay of binary distributed rust toolchains",
-        "homepage": "",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "9e319dd18f7beadab4daaf2426466d4023c1d26f",
-        "sha256": "0fizgamhrypmmkxzhd02r7j7151d03xsxcsw7135py836x6fmq62",
-        "type": "tarball",
-        "url": "https://github.com/oxalica/rust-overlay/archive/9e319dd18f7beadab4daaf2426466d4023c1d26f.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/d62ba59f1e28c382665c57203a4b9ad11fd7f449.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "rust-overlay": {
