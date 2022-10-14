@@ -238,11 +238,37 @@ def test_projection_array_expr(table):
 
 
 def test_mutate(table):
-    one = table.f * 2
-    foo = (table.a + table.b).name('foo')
-
-    expr = table.mutate(foo, one=one, two=2)
-    expected = table[table, foo, one.name('one'), ibis.literal(2).name('two')]
+    expr = table.mutate(
+        [
+            (table.a + 1).name("x1"),
+            table.b.sum().name("x2"),
+            (_.a + 2).name("x3"),
+            lambda _: (_.a + 3).name("x4"),
+            4,
+            "five",
+        ],
+        kw1=(table.a + 6),
+        kw2=table.b.sum(),
+        kw3=(_.a + 7),
+        kw4=lambda _: (_.a + 8),
+        kw5=9,
+        kw6="ten",
+    )
+    expected = table[
+        table,
+        (table.a + 1).name("x1"),
+        table.b.sum().name("x2"),
+        (table.a + 2).name("x3"),
+        (table.a + 3).name("x4"),
+        ibis.literal(4).name("4"),
+        ibis.literal("five").name("'five'"),
+        (table.a + 6).name("kw1"),
+        table.b.sum().name("kw2"),
+        (table.a + 7).name("kw3"),
+        (table.a + 8).name("kw4"),
+        ibis.literal(9).name("kw5"),
+        ibis.literal("ten").name("kw6"),
+    ]
     assert_equal(expr, expected)
 
 
