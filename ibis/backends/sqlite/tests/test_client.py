@@ -83,10 +83,7 @@ def test_verbose_log_queries(con):
 
     assert len(queries) == 1
     (query,) = queries
-    expected = 'SELECT t0.year \n'
-    expected += 'FROM main.functional_alltypes AS t0\n'
-    expected += ' LIMIT ? OFFSET ?'
-    assert query == expected
+    assert "SELECT t0.year" in query
 
 
 def test_table_equality(dbpath):
