@@ -67,7 +67,7 @@ class SQL(Config):
         Dialect to use for printing SQL when the backend cannot be determined.
     """
 
-    default_limit: Optional[PosInt] = 10_000
+    default_limit: Optional[PosInt] = None
     default_dialect: str = "duckdb"
 
 
