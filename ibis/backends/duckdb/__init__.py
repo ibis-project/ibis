@@ -119,6 +119,18 @@ def _s3(full_path, table_name=None):
     return table_name, dataset, []
 
 
+@_generate_view_code.register(r"postgres(ql)?://.+", priority=10)
+def _postgres(uri, table_name=None):
+    if table_name is None:
+        raise ValueError("`table_name` is required when registering a postgres table")
+    quoted_table_name = _quote(table_name)
+    sql = (
+        f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
+        f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
+    )
+    return sql, table_name, ["postgres_scanner"]
+
+
 @_generate_view_code.register(r".+", priority=1)
 def _default(path, **kwargs):
     raise ValueError(

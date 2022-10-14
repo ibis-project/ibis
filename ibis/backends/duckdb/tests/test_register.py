@@ -229,3 +229,18 @@ def test_temp_directory(tmp_path):
 def test_s3_parquet(path):
     with pytest.raises(OSError):
         _generate_view_code(path)
+
+
+@pytest.mark.parametrize("scheme", ["postgres", "postgresql"])
+@pytest.mark.parametrize(
+    "name, quoted_name", [("test", "test"), ("my table", '"my table"')]
+)
+def test_postgres(scheme, name, quoted_name):
+    uri = f"{scheme}://username:password@localhost:5432"
+    sql, table_name, exts = _generate_view_code(uri, name)
+    assert sql == (
+        f"CREATE OR REPLACE VIEW {quoted_name} AS "
+        f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{name}')"
+    )
+    assert table_name == name
+    assert exts == ["postgres_scanner"]
