@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import functools
 import itertools
-import operator
 import sys
 import warnings
 from typing import (
@@ -590,16 +589,21 @@ class Table(Expr, JupyterMixin):
         import ibis.expr.analysis as an
         import ibis.expr.rules as rlz
 
-        exprs = [] if exprs is None else util.promote_list(exprs)
-        for name, expr in sorted(mutations.items(), key=operator.itemgetter(0)):
+        def ensure_expr(expr):
+            # This is different than self._ensure_expr, since we don't want to
+            # treat `str` or `int` values as column indices
             if util.is_function(expr):
-                value = expr(self)
+                return expr(self)
             elif isinstance(expr, Deferred):
-                value = expr.resolve(self)
+                return expr.resolve(self)
             else:
-                value = rlz.any(expr).to_expr()
-            exprs.append(value.name(name))
+                return rlz.any(expr).to_expr()
 
+        exprs = [] if exprs is None else util.promote_list(exprs)
+        exprs = [ensure_expr(expr) for expr in exprs]
+        exprs.extend(
+            ensure_expr(expr).name(name) for name, expr in sorted(mutations.items())
+        )
         mutation_exprs = an.get_mutation_exprs(exprs, self)
         return self.select(mutation_exprs)
 
