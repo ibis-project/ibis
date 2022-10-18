@@ -54,7 +54,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
             (
                 dd.Series,
                 integer_types,
-                integer_types,
+                (type(None), *integer_types),
             ),
             execute_substring_int_int,
         ),
