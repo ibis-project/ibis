@@ -601,9 +601,7 @@ class Table(Expr, JupyterMixin):
 
         exprs = [] if exprs is None else util.promote_list(exprs)
         exprs = [ensure_expr(expr) for expr in exprs]
-        exprs.extend(
-            ensure_expr(expr).name(name) for name, expr in sorted(mutations.items())
-        )
+        exprs.extend(ensure_expr(expr).name(name) for name, expr in mutations.items())
         mutation_exprs = an.get_mutation_exprs(exprs, self)
         return self.select(mutation_exprs)
 
