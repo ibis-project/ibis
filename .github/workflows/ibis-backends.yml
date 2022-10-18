@@ -78,8 +78,6 @@ jobs:
             sys-deps:
               - cmake
               - ninja-build
-              - krb5-config
-              - libkrb5-dev
         exclude:
           - os: windows-latest
             backend:

@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
 
           sudo apt-get update -y -q
-          sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev
 
       - name: install ${{ matrix.os }} system dependencies
         if: ${{ matrix.os == 'windows-latest' }}
