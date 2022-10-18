@@ -205,6 +205,11 @@ def test_string_col_is_unicode(alltypes, df):
             id='substr',
         ),
         param(
+            lambda t: t.date_string_col.substr(2),
+            lambda t: t.date_string_col.str[2:],
+            id='substr-start-only',
+        ),
+        param(
             lambda t: t.date_string_col.left(2),
             lambda t: t.date_string_col.str[:2],
             id='left',

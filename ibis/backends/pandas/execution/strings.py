@@ -21,9 +21,14 @@ def execute_string_length_series(op, data, **kwargs):
     return data.str.len().astype('int32')
 
 
-@execute_node.register(ops.Substring, pd.Series, integer_types, integer_types)
+@execute_node.register(
+    ops.Substring, pd.Series, integer_types, (type(None), *integer_types)
+)
 def execute_substring_int_int(op, data, start, length, **kwargs):
-    return data.str[start : start + length]
+    if length is None:
+        return data.str[start:]
+    else:
+        return data.str[start : start + length]
 
 
 @execute_node.register(ops.Substring, pd.Series, pd.Series, integer_types)
