@@ -89,7 +89,7 @@ mkdocs-table-reader-plugin = ">=1.0.0,<2"
 mkdocstrings = ">=0.17.0,<0.18.0"
 mypy = ">=0.942,<1"
 # TODO: 0.18.0 requires poetry 1.2.0
-poetry-dynamic-versioning = ">=0.14.0,<0.18.0"
+poetry-dynamic-versioning = ">=0.14.0,<0.21.0"
 pyarrow = ">=1,<10"
 pydocstyle = ">=6.1.1,<7"
 pytest = ">=7.0.0,<8"
