@@ -136,4 +136,12 @@ in
       nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
     }
   );
+
+  duckdb = super.duckdb.overridePythonAttrs (
+    _: {
+      prePatch = ''
+        substituteInPlace setup.py --replace "multiprocessing.cpu_count()" "int(os.getenv('NIX_BUILD_CORES', multiprocessing.cpu_count()))"
+      '';
+    }
+  );
 }
