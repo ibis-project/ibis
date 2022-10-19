@@ -41,7 +41,11 @@ class Backend(BasePandasBackend):
         Examples
         --------
         >>> import ibis
-        >>> data = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
+        >>> import dask.dataframe as dd
+        >>> data = {
+        ...     "t": dd.read_parquet("path/to/file.parquet"),
+        ...     "s": dd.read_csv("path/to/file.csv"),
+        ... }
         >>> ibis.dask.connect(data)
         """
         # register dispatchers
