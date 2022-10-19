@@ -661,6 +661,10 @@ def test_agg_memory_table(con):
         ),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
+            id="pandas-memtable",
+        ),
+        param(
+            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
             id="pandas",
         ),
     ],

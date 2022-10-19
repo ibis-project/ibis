@@ -178,6 +178,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         force
             Check whether a table exists before creating it
         """
+        if isinstance(expr, pd.DataFrame):
+            expr = ibis.memtable(expr)
+
         if database == self.current_database:
             # avoid fully qualified name
             database = None
