@@ -379,14 +379,16 @@ class BaseBackend(abc.ABC, ResultHandler):
         Parameters
         ----------
         args
-            Connection parameters
+            Mandatory connection parameters, see the docstring of `do_connect`
+            for details.
         kwargs
-            Additional connection parameters
+            Extra connection parameters, see the docstring of `do_connect` for
+            details.
 
         Notes
         -----
         This returns a new backend instance with saved `args` and `kwargs`,
-        calling `reconnect` is called before returning.
+        calling `reconnect` is called before returning the backend instance.
 
         Returns
         -------
