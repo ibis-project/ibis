@@ -387,8 +387,9 @@ class BaseBackend(abc.ABC, ResultHandler):
 
         Notes
         -----
-        This returns a new backend instance with saved `args` and `kwargs`,
-        calling `reconnect` is called before returning the backend instance.
+        This creates a new backend instance with saved `args` and `kwargs`,
+        then calls `reconnect` and finally returns the newly created and
+        connected backend instance.
 
         Returns
         -------
