@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -107,3 +109,30 @@ def test_datetime64_infer(client, unit):
     expr = ibis.literal(value, type='timestamp')
     result = client.execute(expr)
     assert result == value
+
+
+def test_invalid_connection_parameter_types(npartitions):
+    # Check that the user receives a TypeError with an informative message when
+    # passing invalid an connection parameter to the backend.
+    expected_msg = re.escape(
+        "Expected an instance of 'dask.dataframe.DataFrame' for 'invalid_str',"
+        " got an instance of 'str' instead."
+    )
+    with pytest.raises(TypeError, match=expected_msg):
+        ibis.dask.connect(
+            {
+                "valid_dask_df": dd.from_pandas(
+                    pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
+                    npartitions=npartitions,
+                ),
+                "valid_pandas_df": pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
+                "invalid_str": "file.csv",
+            }
+        )
+
+    expeced_msg = re.escape(
+        "Expected an instance of 'dask.dataframe.DataFrame' for 'df', "
+        "got an instance of 'str' instead."
+    )
+    with pytest.raises(TypeError, match=expeced_msg):
+        ibis.dask.from_dataframe("file.csv")
