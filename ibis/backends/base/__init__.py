@@ -799,6 +799,12 @@ def _(_: str, *, path: str, **kwargs: Any) -> BaseBackend:
     return _connect(path, **kwargs)
 
 
+@_connect.register(r".+\.db", priority=10)
+def _(path: str, **kwargs: Any) -> BaseBackend:
+    """Connect to sqlite file with .db extension."""
+    return ibis.sqlite.connect(path, **kwargs)
+
+
 @_connect.register(r".+\.(?P<backend>.+)", priority=1)
 def _(path: str, *, backend: str, **kwargs: Any) -> BaseBackend:
     """Connect to given path.
