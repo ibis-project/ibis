@@ -47,6 +47,12 @@ class Backend(BasePandasBackend):
         # register dispatchers
         from ibis.backends.dask import udf  # noqa: F401
 
+        for k, v in dictionary.items():
+            if not isinstance(v, (dd.DataFrame, pd.DataFrame)):
+                raise TypeError(
+                    f"Expected an instance of 'dask.dataframe.DataFrame' for {k!r},"
+                    f" got an instance of '{type(v).__name__}' instead."
+                )
         super().do_connect(dictionary)
 
     @property
