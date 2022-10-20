@@ -306,6 +306,11 @@ class Backend(BaseAlchemyBackend):
                 message="Did not recognize type",
                 category=sa.exc.SAWarning,
             )
+            # We don't rely on index reflection, ignore this warning
+            warnings.filterwarnings(
+                "ignore",
+                message="duckdb-engine doesn't yet support reflection on indices",
+            )
 
             table = super()._get_sqla_table(name, schema, **kwargs)
 
