@@ -22,9 +22,11 @@ coverage:
       default:
         # Allow for slight decreases in code coverage, makes
         # the coverage status checks a little less finicky
-        threshold: 0.5%
+        target: auto
+        threshold: 1%
         only_pulls: true
     patch:
       default:
-        threshold: 0.5%
+        target: auto
+        threshold: 1%
         only_pulls: true
