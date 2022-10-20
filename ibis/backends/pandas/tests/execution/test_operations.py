@@ -6,6 +6,7 @@ import numpy.testing as npt
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -67,28 +68,30 @@ def test_project_scope_does_not_override(t, df):
 @pytest.mark.parametrize(
     'where',
     [
-        lambda t: None,
-        lambda t: t.dup_strings == 'd',
-        lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
+        param(lambda _: None, id="none"),
+        param(lambda t: t.dup_strings == 'd', id="simple"),
+        param(lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100), id="complex"),
     ],
 )
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (methodcaller('abs'), np.abs),
-        (methodcaller('ceil'), np.ceil),
-        (methodcaller('exp'), np.exp),
-        (methodcaller('floor'), np.floor),
-        (methodcaller('ln'), np.log),
-        (methodcaller('log10'), np.log10),
-        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
-        (methodcaller('log2'), np.log2),
-        (methodcaller('round', 0), lambda x: x.round(0).astype('int64')),
-        (methodcaller('round', -2), methodcaller('round', -2)),
-        (methodcaller('round', 2), methodcaller('round', 2)),
-        (methodcaller('round'), lambda x: x.round().astype('int64')),
-        (methodcaller('sign'), np.sign),
-        (methodcaller('sqrt'), np.sqrt),
+        param(methodcaller('abs'), np.abs, id="abs"),
+        param(methodcaller('ceil'), np.ceil, id="ceil"),
+        param(methodcaller('exp'), np.exp, id="exp"),
+        param(methodcaller('floor'), np.floor, id="floor"),
+        param(methodcaller('ln'), np.log, id="log"),
+        param(methodcaller('log10'), np.log10, id="log10"),
+        param(methodcaller('log', 2), lambda x: np.log(x) / np.log(2), id="logb"),
+        param(methodcaller('log2'), np.log2, id="log2"),
+        param(
+            methodcaller('round', 0), lambda x: x.round(0).astype('int64'), id="round0"
+        ),
+        param(methodcaller('round', -2), methodcaller('round', -2), id="roundm2"),
+        param(methodcaller('round', 2), methodcaller('round', 2), id="round2"),
+        param(methodcaller('round'), lambda x: x.round().astype('int64'), id="round"),
+        param(methodcaller('sign'), np.sign, id="sign"),
+        param(methodcaller('sqrt'), np.sqrt, id="sqrt"),
     ],
 )
 def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):

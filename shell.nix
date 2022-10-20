@@ -2,7 +2,7 @@
 let
   pkgs = import ./nix { };
 
-  pythonEnv = pkgs."ibisDevEnv${pythonShortVersion}";
+  pythonEnv = pkgs."ibisFullDevEnv${pythonShortVersion}";
 
   devDeps = with pkgs; [
     # terminal markdown rendering
@@ -17,6 +17,7 @@ let
     lychee
     # packaging
     niv
+    pythonEnv.pkgs.poetry
   ];
 
   impalaUdfDeps = with pkgs; [
@@ -32,7 +33,7 @@ let
   pysparkDeps = [ pkgs.openjdk11_headless ];
 
   postgresDeps = [ pkgs.postgresql ];
-  geospatialDeps = [ pkgs.gdal_2 pkgs.proj ];
+  geospatialDeps = [ pkgs.gdal pkgs.proj ];
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
   libraryDevDeps = impalaUdfDeps
@@ -76,7 +77,6 @@ pkgs.mkShell {
   ] ++ pkgs.preCommitShell.buildInputs ++ (with pkgs; [
     changelog
     mic
-    poetry-cli
   ]);
 
   PYTHONPATH = builtins.toPath ./.;

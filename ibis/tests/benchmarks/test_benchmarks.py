@@ -3,17 +3,16 @@ import functools
 import inspect
 import itertools
 import string
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-import tomli
 from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.backends.base import _get_backend_names
 from ibis.backends.pandas.udf import udf
 
 pytestmark = pytest.mark.benchmark
@@ -151,13 +150,11 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
     benchmark(builtin, expr)
 
 
-_backends = tomli.loads(
-    Path(ibis.__file__).parent.parent.joinpath("pyproject.toml").read_text()
-)["tool"]["poetry"]["plugins"]["ibis.backends"]
-
-# spark is a duplicate of pyspark and pandas compilation is a no-op
-del _backends["spark"], _backends["pandas"]
-
+_backends = set(_get_backend_names())
+# spark is a duplicate of pyspark
+_backends.remove("spark")
+# compile is a no-op
+_backends.remove("pandas")
 
 _XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark", "polars"}
 
@@ -173,7 +170,7 @@ _XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark", "polars"}
                 reason=f"{mod} backend doesn't support compiling UnboundTable",
             ),
         )
-        for mod in _backends.keys()
+        for mod in _backends
     ],
 )
 @pytest.mark.parametrize(
@@ -187,7 +184,7 @@ _XFAIL_COMPILE_BACKENDS = {"dask", "datafusion", "pyspark", "polars"}
 def test_compile(benchmark, module, expr_fn, t, base, large_expr):
     try:
         mod = getattr(ibis, module)
-    except AttributeError as e:
+    except (AttributeError, ImportError) as e:
         pytest.skip(str(e))
     else:
         expr = expr_fn(t, base, large_expr)

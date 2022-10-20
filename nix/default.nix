@@ -18,10 +18,10 @@ in
         sha256 = "sha256-BZWi4kEumZemQeYoAtlUSw922p+R6opSWp/bmX0DjAo=";
       };
 
-      poetry-cli = pkgs.python3Packages.poetry;
+      rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
 
-      mkPoetryEnv = python: pkgs.poetry2nix.mkPoetryEnv {
-        inherit python;
+      mkPoetryEnv = { python, groups }: pkgs.poetry2nix.mkPoetryEnv {
+        inherit python groups;
         projectDir = ../.;
         editablePackageSources = {
           ibis = ../ibis;
@@ -31,16 +31,44 @@ in
         );
       };
 
+      mkPoetryDocsEnv = python: pkgs.mkPoetryEnv {
+        inherit python;
+        groups = [ "docs" ];
+      };
+
+      mkPoetryDevEnv = python: pkgs.mkPoetryEnv {
+        inherit python;
+        groups = [ "dev" "test" ];
+      };
+
+      mkPoetryFullDevEnv = python: pkgs.mkPoetryEnv {
+        inherit python;
+        groups = [ "dev" "docs" "test" ];
+      };
+
       prettierTOML = pkgs.writeShellScriptBin "prettier" ''
         ${pkgs.nodePackages.prettier}/bin/prettier \
         --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
         "$@"
       '';
 
-      ibisDevEnv38 = pkgs.mkPoetryEnv pkgs.python38;
-      ibisDevEnv39 = pkgs.mkPoetryEnv pkgs.python39;
-      ibisDevEnv310 = pkgs.mkPoetryEnv pkgs.python310;
+      ibisDevEnv38 = pkgs.mkPoetryDevEnv pkgs.python38;
+      ibisDevEnv39 = pkgs.mkPoetryDevEnv pkgs.python39;
+      ibisDevEnv310 = pkgs.mkPoetryDevEnv pkgs.python310;
+
       ibisDevEnv = pkgs.ibisDevEnv310;
+
+      ibisDocsEnv38 = pkgs.mkPoetryDocsEnv pkgs.python38;
+      ibisDocsEnv39 = pkgs.mkPoetryDocsEnv pkgs.python39;
+      ibisDocsEnv310 = pkgs.mkPoetryDocsEnv pkgs.python310;
+
+      ibisDocsEnv = pkgs.ibisDocsEnv310;
+
+      ibisFullDevEnv38 = pkgs.mkPoetryFullDevEnv pkgs.python38;
+      ibisFullDevEnv39 = pkgs.mkPoetryFullDevEnv pkgs.python39;
+      ibisFullDevEnv310 = pkgs.mkPoetryFullDevEnv pkgs.python310;
+
+      ibisFullDevEnv = pkgs.ibisFullDevEnv310;
 
       mic = pkgs.writeShellApplication {
         name = "mic";

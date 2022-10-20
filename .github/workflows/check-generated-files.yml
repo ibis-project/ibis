@@ -40,10 +40,10 @@ jobs:
         run: sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
 
       - name: install poetry
-        run: pip install 'poetry<1.2' 'poetry-core>=1.0.8'
+        run: pip install 'poetry>=1.2' 'poetry-core>=1.1'
 
       - name: generate requirements.txt
-        run: poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
+        run: poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
 
       - name: check requirements.txt
         run: git diff --exit-code requirements.txt
@@ -82,7 +82,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v11

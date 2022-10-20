@@ -195,11 +195,7 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
     end = start + length
 
     # TODO - this is broken
-    def iterate(
-        value,
-        start_iter=start.iteritems(),
-        end_iter=end.iteritems(),
-    ):
+    def iterate(value, start_iter=start.items(), end_iter=end.items()):
         _, begin = next(start_iter)
         _, end = next(end_iter)
         if (begin is not None and isnull(begin)) or (end is not None and isnull(end)):
