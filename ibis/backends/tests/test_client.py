@@ -1,3 +1,4 @@
+import os
 import platform
 import re
 
@@ -414,6 +415,11 @@ def test_unsigned_integer_type(alchemy_con, coltype):
             id="postgres",
         ),
         param(
+            "postgresql://postgres:postgres@localhost:5432/ibis_testing",
+            marks=mark.postgres,
+            id="postgresql",
+        ),
+        param(
             "pyspark://?spark.app.name=test-pyspark",
             marks=mark.pyspark,
             id="pyspark",
@@ -454,58 +460,69 @@ def tmp_db(request, tmp_path):
     return db
 
 
-@pytest.mark.backend
+@pytest.mark.duckdb
 @pytest.mark.parametrize(
     "url",
     [
+        param(lambda p: p, id="no-scheme-duckdb-ext"),
+        param(lambda p: f"duckdb://{p}", id="absolute-path"),
         param(
-            "duckdb://{}",
-            marks=[mark.duckdb, not_windows],
-            id="duckdb_path",
+            lambda p: f"duckdb://{os.path.relpath(p)}",
+            marks=[
+                not_windows
+            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            id="relative-path",
         ),
+        param(lambda p: "duckdb://", id="in-memory-empty"),
+        param(lambda p: "duckdb://:memory:", id="in-memory-explicit"),
         param(
-            "duckdb://{}?read_only=0",
-            marks=[mark.duckdb, not_windows],
+            lambda p: f"duckdb://{p}?read_only=1",
             id="duckdb_read_write_int",
         ),
         param(
-            "duckdb://{}?read_only=False",
-            marks=[mark.duckdb, not_windows],
+            lambda p: f"duckdb://{p}?read_only=False",
             id="duckdb_read_write_upper",
         ),
         param(
-            "duckdb://{}?read_only=false",
-            marks=[mark.duckdb, not_windows],
+            lambda p: f"duckdb://{p}?read_only=false",
             id="duckdb_read_write_lower",
-        ),
-        param("duckdb://", marks=mark.duckdb, id="duckdb_memory"),
-        param(
-            "duckdb://?read_only=1",
-            marks=[
-                mark.duckdb,
-                pytest.mark.xfail(
-                    reason="Read-only in-memory databases aren't supported",
-                    raises=sa.exc.DBAPIError,
-                ),
-            ],
-            id="duckdb_memory_read_only",
-        ),
-        param(
-            "duckdb://:memory:",
-            marks=mark.duckdb,
-            id="duckdb_memory_explicit",
-        ),
-        param("sqlite://{}", marks=mark.sqlite, id="sqlite_path"),
-        param("sqlite://", marks=mark.sqlite, id="sqlite_memory"),
-        param(
-            "sqlite://:memory:",
-            marks=mark.sqlite,
-            id="sqlite_memory_explicit",
         ),
     ],
 )
-def test_connect_file_url(url, tmp_db):
-    con = ibis.connect(url.format(tmp_db))
+def test_connect_duckdb(url, tmp_path):
+    duckdb = pytest.importorskip("duckdb")
+    path = os.path.abspath(tmp_path / "test.duckdb")
+    with duckdb.connect(path):
+        pass
+    con = ibis.connect(url(path))
+    one = ibis.literal(1)
+    assert con.execute(one) == 1
+
+
+@pytest.mark.sqlite
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(lambda p: p, id="no-scheme-sqlite-ext"),
+        param(lambda p: f"sqlite://{p}", id="absolute-path"),
+        param(
+            lambda p: f"sqlite://{os.path.relpath(p)}",
+            marks=[
+                not_windows
+            ],  # hard to test in CI since tmpdir & cwd are on different drives
+            id="relative-path",
+        ),
+        param(lambda p: "sqlite://", id="in-memory-empty"),
+        param(lambda p: "sqlite://:memory:", id="in-memory-explicit"),
+    ],
+)
+def test_connect_sqlite(url, tmp_path):
+    import sqlite3
+
+    path = os.path.abspath(tmp_path / "test.sqlite")
+    with sqlite3.connect(path):
+        pass
+    con = ibis.connect(url(path))
     one = ibis.literal(1)
     assert con.execute(one) == 1
 
@@ -523,21 +540,6 @@ def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_pat
     t = ibis.connect(tmp_path / f"out.{extension}")
     assert isinstance(t, ir.Table)
     assert not t.head().execute().empty
-
-
-@pytest.mark.duckdb
-@pytest.mark.parametrize(
-    "read_only",
-    [
-        param("True", marks=[not_windows], id="duckdb_read_only_upper"),
-        param("1", marks=[not_windows], id="duckdb_read_only_int"),
-        param("true", marks=[not_windows], id="duckdb_read_only_lower"),
-    ],
-)
-def test_connect_file_url_read_only(tmp_db, read_only):
-    url = f"duckdb://{tmp_db}?read_only={read_only}"
-    con = ibis.connect(url)
-    assert "tmp_t" in con.list_tables()
 
 
 @not_windows
