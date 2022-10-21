@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "a114755d05c1a590ece2e3ecff31e43e07334b5e",
-        "sha256": "0bh1w9jw4r45a5rrw4wc02k4yajm64r0prsr6z20ybi5zgai727v",
+        "rev": "93e0ac196106dce51878469c9a763c6233af5c57",
+        "sha256": "1gl0nb3k1qi0sz9mw9v8sms5sba28dfpa4np52qzbc3zn1wchxd0",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/a114755d05c1a590ece2e3ecff31e43e07334b5e.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/93e0ac196106dce51878469c9a763c6233af5c57.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "poetry2nix": {
@@ -29,10 +29,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "ed90486b3a52277171183d1ada05c52051cceb60",
-        "sha256": "149zvj052h8hy3swbg3nbmbqh3xzp9b1zw49vl3lyh69xa03dr7b",
+        "rev": "a982fc6574b0eaec19d02834e2c988df7e0948a3",
+        "sha256": "0wnx0frsng7pjgv23yd01r0l5k4hh36zpz0b6incfpyh2rf1f2qn",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/ed90486b3a52277171183d1ada05c52051cceb60.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/a982fc6574b0eaec19d02834e2c988df7e0948a3.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "rust-overlay": {
@@ -41,10 +41,10 @@
         "homepage": "",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "8643439d1db65a33ca6813d0aa8956b2be4bd91d",
-        "sha256": "1ra2lncz77k7bnbsj9jnnc62qrwzxlynhgkqx1hqmpdijp3k339q",
+        "rev": "5f0aea6238cfc6891dfed525f01a1d84297e1723",
+        "sha256": "0c64wgay1qn78g8ijr4knp8d4ir9r109zdiqh7nzrm4ad5z0abva",
         "type": "tarball",
-        "url": "https://github.com/oxalica/rust-overlay/archive/8643439d1db65a33ca6813d0aa8956b2be4bd91d.tar.gz",
+        "url": "https://github.com/oxalica/rust-overlay/archive/5f0aea6238cfc6891dfed525f01a1d84297e1723.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
