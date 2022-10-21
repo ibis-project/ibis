@@ -26,12 +26,14 @@ two TableExpressions in a backend.
     In [2]: import pandas as pd
        ...: from datetime import date
 
-    In [3]: # create a pandas DataFrame that we will convert to a PandasInMemoryTabl
-       ...: e (Ibis MemTable)
-       ...: events = pd.DataFrame({
-       ...:     'event_id': range(4)
-       ...:     ,'event_name': [f'e{k}' for k in range(4)]
-       ...: })
+    In [3]: # create a pandas DataFrame that we will convert to a
+       ...: # PandasInMemoryTable (Ibis MemTable)
+       ...: events = pd.DataFrame(
+       ...:     {
+       ...:         'event_id': range(4),
+       ...:         'event_name': [f'e{k}' for k in range(4)],
+       ...:     }
+       ...: )
 
     In [4]: # Create a parquet file that we will read in using the DuckDB backend
        ...: # as a TableExpression
