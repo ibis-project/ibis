@@ -60,7 +60,7 @@ python -c 'import ibis; print(ibis.__version__)'
     ##### Ibis
 
     ```python
-    t.group_by("f").aggregate(d=t.a + t.b.sum())
+    t.group_by("f").aggregate(d=(t.a + t.b).sum())
     ```
 
 === "Join"
