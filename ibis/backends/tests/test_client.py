@@ -501,25 +501,27 @@ def test_connect_duckdb(url, tmp_path):
 
 @pytest.mark.sqlite
 @pytest.mark.parametrize(
-    "url",
+    "url, ext",
     [
-        param(lambda p: p, id="no-scheme-sqlite-ext"),
-        param(lambda p: f"sqlite://{p}", id="absolute-path"),
+        param(lambda p: p, "sqlite", id="no-scheme-sqlite-ext"),
+        param(lambda p: p, "db", id="no-scheme-db-ext"),
+        param(lambda p: f"sqlite://{p}", "db", id="absolute-path"),
         param(
             lambda p: f"sqlite://{os.path.relpath(p)}",
+            "db",
             marks=[
                 not_windows
             ],  # hard to test in CI since tmpdir & cwd are on different drives
             id="relative-path",
         ),
-        param(lambda p: "sqlite://", id="in-memory-empty"),
-        param(lambda p: "sqlite://:memory:", id="in-memory-explicit"),
+        param(lambda p: "sqlite://", "db", id="in-memory-empty"),
+        param(lambda p: "sqlite://:memory:", "db", id="in-memory-explicit"),
     ],
 )
-def test_connect_sqlite(url, tmp_path):
+def test_connect_sqlite(url, ext, tmp_path):
     import sqlite3
 
-    path = os.path.abspath(tmp_path / "test.sqlite")
+    path = os.path.abspath(tmp_path / f"test.{ext}")
     with sqlite3.connect(path):
         pass
     con = ibis.connect(url(path))
