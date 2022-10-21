@@ -53,11 +53,11 @@ two TableExpressions in a backend.
        ...: measures.at[7, "measurement"] = 11.
 
     In [6]: # Save measures to parquet:
-       ...: measures.to_parquet('data.parquet')
+       ...: measures.to_parquet('measures.parquet')
 
     In [7]: # connect to a DuckDB backend
        ...: conn = ibis.connect('duckdb://:memory:')
-       ...: measures = conn.register('data.parquet', 'measures')
+       ...: measures = conn.register('measures.parquet', 'measures')
 
     In [8]: # `measures` is a TableExpression in a DuckDB backend connection:
        ...: measures
