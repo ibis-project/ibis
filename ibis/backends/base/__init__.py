@@ -793,7 +793,7 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         path = parsed.netloc + parsed.path
         if path.endswith(".duckdb"):
             return ibis.duckdb.connect(path, **kwargs)
-        elif path.endswith(".sqlite"):
+        elif path.endswith((".sqlite", ".db")):
             return ibis.sqlite.connect(path, **kwargs)
         elif path.endswith((".parquet", ".csv", ".csv.gz")):
             # Load parquet/csv/csv.gz files with duckdb by default
