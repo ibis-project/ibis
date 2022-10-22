@@ -72,7 +72,7 @@ in
 
       mic = pkgs.writeShellApplication {
         name = "mic";
-        runtimeInputs = [ pkgs.ibisDevEnv pkgs.coreutils ];
+        runtimeInputs = [ pkgs.ibisDocsEnv pkgs.coreutils ];
         # The immediate reason setting PYTHONPATH is necessary is to allow the
         # subprocess invocations of `mkdocs` by `mike` to see Python dependencies.
         #
