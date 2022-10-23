@@ -137,6 +137,10 @@ in
     }
   );
 
+  pybind11 = super.pybind11.overridePythonAttrs (attrs: {
+    buildInputs = attrs.buildInputs or [ ] ++ (lib.optionals (self.pythonOlder "3.9") [ pkgs.libxcrypt ]);
+  });
+
   duckdb = super.duckdb.overridePythonAttrs (
     _: {
       prePatch = ''
