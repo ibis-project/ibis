@@ -80,13 +80,14 @@ in
       '';
     });
 
-  pyarrow = super.pyarrow.overridePythonAttrs (_: {
+  pyarrow = super.pyarrow.overridePythonAttrs (attrs: {
     PYARROW_WITH_DATASET = "1";
     PYARROW_WITH_FLIGHT = "1";
     PYARROW_WITH_HDFS = "0";
     PYARROW_WITH_PARQUET = "1";
     PYARROW_WITH_PLASMA = "0";
     PYARROW_WITH_S3 = "${if pkgs.arrow-cpp.enableS3 then "1" else "0"}";
+    buildInputs = attrs.buildInputs or [ ] ++ lib.optionals (self.pythonOlder "3.9") [ pkgs.libxcrypt ];
   });
 
   polars = super.polars.overridePythonAttrs (attrs:
