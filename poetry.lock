@@ -603,7 +603,7 @@ SQLAlchemy = ">=1.4"
 
 [[package]]
 name = "geopandas"
-version = "0.11.1"
+version = "0.12.0"
 description = "Geographic pandas extensions"
 category = "main"
 optional = true
@@ -2557,7 +2557,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "bb586724f19d7dea0c0a02ac52ff2c49cfe6ec9a20ec041e15ea49f64087fce4"
+content-hash = "133118aec6e5efd642d273b29b4e7397434539fadcf119329d152cb95c05e9d5"
 
 [metadata.files]
 absolufy-imports = [
@@ -3221,8 +3221,8 @@ geoalchemy2 = [
     {file = "GeoAlchemy2-0.12.5.tar.gz", hash = "sha256:31c2502dce317b57b335e4eb87562d501fa39e46c728be514d9b86091e08dd67"},
 ]
 geopandas = [
-    {file = "geopandas-0.11.1-py3-none-any.whl", hash = "sha256:f3344937f3866e52996c7e505d56dae78be117dc840cd1c23507da0b33c0af71"},
-    {file = "geopandas-0.11.1.tar.gz", hash = "sha256:f0f0c8d0423d30cf81de2056d853145c4362739350a7f8f2d72cc7409ef1eca1"},
+    {file = "geopandas-0.12.0-py3-none-any.whl", hash = "sha256:8890f3912e9e69383258d48e6fe311a2a541c62c096202e3da5a227e4c979331"},
+    {file = "geopandas-0.12.0.tar.gz", hash = "sha256:1980a5de8b3bc5a5e7db216f021c275bdf7b87c55400834baa65eadb88693925"},
 ]
 ghp-import = [
     {file = "ghp-import-2.1.0.tar.gz", hash = "sha256:9c535c4c61193c2df8871222567d7fd7e5014d835f97dc7b7439069e2413d343"},
