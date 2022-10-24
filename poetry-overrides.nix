@@ -90,6 +90,10 @@ in
     buildInputs = attrs.buildInputs or [ ] ++ lib.optionals (self.pythonOlder "3.9") [ pkgs.libxcrypt ];
   });
 
+  mkdocs-material-extensions = super.mkdocs-material-extensions.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
+  });
+
   polars = super.polars.overridePythonAttrs (attrs:
     let
       inherit (attrs) version;
@@ -97,27 +101,25 @@ in
         owner = "pola-rs";
         repo = "polars";
         rev = "py-${version}";
-        sha256 = "sha256-u4mBAnX8pG2kb6ywlG+jkUpYG5Z/vvZdQSfz2pwQT6A=";
+        sha256 = "sha256-fGC2mVgFm1cpPdYbWukE9cryUul7C755enFm/WQN/c4=";
       };
       sourceRoot = "source/py-polars";
       nightlyRustPlatform = pkgs.makeRustPlatform {
         cargo = pkgs.rustNightly;
         rustc = pkgs.rustNightly;
       };
+      patches = [ ./nix/patches/py-polars.patch ];
     in
     {
-      inherit version src sourceRoot;
-
-      patches = [ ./nix/patches/py-polars.patch ];
+      inherit version src sourceRoot patches;
 
       nativeBuildInputs = attrs.nativeBuildInputs or [ ]
         ++ (with nightlyRustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
-        inherit src sourceRoot;
-        patches = [ ./nix/patches/py-polars.patch ];
+        inherit src sourceRoot patches;
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-aQIWSDwwGYpJMUcUIYd68G7yFv87QwdvYevbeolTj88=";
+        sha256 = "sha256-VIHO+IFdqCjcJTysSiVQU9PVTkSUSXJQ3Gfe6aiU3/0=";
       };
     });
 
