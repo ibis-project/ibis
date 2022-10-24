@@ -101,7 +101,7 @@ in
         owner = "pola-rs";
         repo = "polars";
         rev = "py-${version}";
-        sha256 = "sha256-fGC2mVgFm1cpPdYbWukE9cryUul7C755enFm/WQN/c4=";
+        sha256 = "sha256-/CyGg2YC32yDDhJt5NwhFEYemK1a9osBNFjovm56LOM=";
       };
       sourceRoot = "source/py-polars";
       nightlyRustPlatform = pkgs.makeRustPlatform {
@@ -119,7 +119,7 @@ in
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
         inherit src sourceRoot patches;
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-VIHO+IFdqCjcJTysSiVQU9PVTkSUSXJQ3Gfe6aiU3/0=";
+        sha256 = "sha256-tRnd3mlqTOSpdd5TRAWC6BnHn/76V/KLXupYr3cxyZ4=";
       };
     });
 
