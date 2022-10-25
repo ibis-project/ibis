@@ -25,7 +25,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 atpublic = ">=2.3,<4"
-multipledispatch = ">=0.6,<0.7"
+multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 packaging = ">=21.3,<22"
 # pandas 1.5.0 breaks so many things, including dask
@@ -33,10 +33,10 @@ pandas = ">=1.2.5,<1.5.0"
 parsy = ">=1.3.0,<3"
 regex = ">=2021.7.6"
 rich = ">=12.4.4,<13"
-toolz = ">=0.11,<0.13"
+toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
-clickhouse-driver = { version = ">=0.1,<0.3", optional = true, extras = [
+clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
   "numpy"
 ] }
 dask = { version = ">=2021.10.0,<2022.8.0", optional = true, extras = [
@@ -47,10 +47,10 @@ datafusion = { version = ">=0.6,<0.7", optional = true }
 duckdb = { version = ">=0.3.2,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
-GeoAlchemy2 = { version = ">=0.6.3,<0.13", optional = true }
-geopandas = { version = ">=0.6,<0.13", optional = true }
-graphviz = { version = ">=0.16,<0.21", optional = true }
-impyla = { version = ">=0.17,<0.19", optional = true }
+GeoAlchemy2 = { version = ">=0.6.3,<1", optional = true }
+geopandas = { version = ">=0.6,<1", optional = true }
+graphviz = { version = ">=0.16,<1", optional = true }
+impyla = { version = ">=0.17,<1", optional = true }
 lz4 = { version = ">=3.1.10,<5", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
@@ -59,7 +59,7 @@ pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<2", optional = true }
-sqlalchemy = { version = ">=1.4,<2.0", optional = true }
+sqlalchemy = { version = ">=1.4,<2", optional = true }
 sqlglot = { version = ">=4.5.0,<10", optional = true }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 
