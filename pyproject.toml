@@ -79,7 +79,8 @@ pyupgrade = ">=2.26.0,<4"
 [tool.poetry.group.test.dependencies]
 filelock = ">=3.7.0,<4"
 pyarrow = ">=1,<10"
-pytest = ">=7.0.0,<8"
+# pytest-benchmark is broken with pytest>=7.2
+pytest = ">=7.0.0,<7.2"
 pytest-benchmark = ">=3.4.1,<4"
 pytest-clarity = ">=1.0.1,<2"
 pytest-cov = ">=3.0.0,<5"
