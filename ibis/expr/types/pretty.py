@@ -56,7 +56,7 @@ def _(dtype, values):
     floats = [float(v) for v in values]
     # Extract and format all finite floats
     finites = [f for f in floats if isfinite(f)]
-    if all(f == 0 or 1e-6 < abs(f) < 1e6 for f in finites):
+    if finites and all(f == 0 or 1e-6 < abs(f) < 1e6 for f in finites):
         strs = [f"{f:f}" for f in finites]
         # Trim matching trailing zeros
         while all(s.endswith("0") for s in strs):
@@ -65,8 +65,8 @@ def _(dtype, values):
     else:
         strs = [f"{f:e}" for f in finites]
     # Merge together the formatted finite floats with non-finite values
-    next_f = iter(strs).__next__
-    strs2 = [next_f() if isfinite(f) else str(f) for f in floats]
+    iterstrs = iter(strs)
+    strs2 = (next(iterstrs) if isfinite(f) else str(f) for f in floats)
     return [Text.styled(s, "bold cyan") for s in strs2]
 
 
