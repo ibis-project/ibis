@@ -8,6 +8,7 @@ from pytest import param
 
 import ibis
 from ibis.backends.conftest import read_tables
+from ibis.backends.duckdb import _generate_view_code
 
 
 @contextlib.contextmanager
@@ -131,3 +132,12 @@ def test_register_pyarrow_tables():
 
     t = con.register(pa_t)
     assert t.x.sum().execute() == 6
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_snippet",
+    [({}, "AUTO_DETECT=True"), ({"COLUMNS": {"foo": "int8"}}, "AUTO_DETECT=False")],
+)
+def test_csv_register_kwargs(kwargs, expected_snippet):
+    view_str, _ = _generate_view_code("bork.csv", **kwargs)
+    assert expected_snippet in view_str

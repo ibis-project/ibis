@@ -48,32 +48,48 @@ def _quote(name: str):
 
 
 @_generate_view_code.register(r"parquet://(?P<path>.+)", priority=10)
-def _parquet(_, path, table_name=None):
+def _parquet(_, path, table_name=None, **kwargs):
     path = Path(path).absolute()
     table_name = table_name or _name_from_path(path)
     quoted_table_name = _quote(table_name)
+    args = [f"'{str(path)}'"]
+    if kwargs:
+        args.extend([f"{k}={v}" for k, v in kwargs.items()])
     return (
-        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * from read_parquet('{path}')",  # noqa: E501
+        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * "
+        f"from read_parquet({', '.join(args)})",
         table_name,
     )
 
 
 @_generate_view_code.register(r"csv(?:\.gz)?://(?P<path>.+)", priority=10)
-def _csv(_, path, table_name=None):
+def _csv(_, path, table_name=None, **kwargs):
     path = Path(path).absolute()
     table_name = table_name or _name_from_path(path)
     quoted_table_name = _quote(table_name)
+    # AUTO_DETECT and COLUMNS collide, so we set AUTO_DETECT=True
+    # unless COLUMNS has been specified
+    args = [f"'{str(path)}'"]
+    args.extend(
+        [
+            f"AUTO_DETECT="
+            f"{kwargs.pop('AUTO_DETECT', False if 'COLUMNS' in kwargs else True)}"
+        ]
+    )
+    if kwargs:
+        args.extend([f"{k}={v}" for k, v in kwargs.items()])
     return (
-        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * from read_csv_auto('{path}')",  # noqa: E501
+        f"CREATE OR REPLACE VIEW {quoted_table_name} as SELECT * "
+        f"from read_csv({', '.join(args)})",
         table_name,
     )
 
 
 @_generate_view_code.register(r"(?:file://)?(?P<path>.+)", priority=9)
-def _file(_, path, table_name=None):
+def _file(_, path, table_name=None, **kwargs):
     num_sep_chars = len(os.extsep)
     extension = "".join(Path(path).suffixes)[num_sep_chars:]
-    return _generate_view_code(f"{extension}://{path}", table_name=table_name)
+    return _generate_view_code(f"{extension}://{path}", table_name=table_name, **kwargs)
 
 
 @_generate_view_code.register(r"s3://.+", priority=10)
@@ -92,7 +108,7 @@ def _default(_, **kwargs):
     raise ValueError(
         """
 Unrecognized filetype or extension.
-Valid prefixes are parquet://, csv://, or file://
+Valid prefixes are parquet://, csv://, s3://, or file://
 
 Supported filetypes are parquet, csv, and csv.gz
     """
@@ -169,6 +185,7 @@ class Backend(BaseAlchemyBackend):
         self,
         source: str | Path | Any,
         table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a data source as a table in the current database.
 
@@ -182,6 +199,10 @@ class Backend(BaseAlchemyBackend):
             An optional name to use for the created table. This defaults to the
             filename if a path (with hyphens replaced with underscores), or
             sequentially generated name otherwise.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading functions for
+            CSV or parquet.  See https://duckdb.org/docs/data/csv and
+            https://duckdb.org/docs/data/parquet for more information.
 
         Returns
         -------
@@ -200,7 +221,9 @@ class Backend(BaseAlchemyBackend):
                 # explicitly.
                 cursor.cursor.c.register(table_name, dataset)
         elif isinstance(source, (str, Path)):
-            sql, table_name = _generate_view_code(source, table_name=table_name)
+            sql, table_name = _generate_view_code(
+                source, table_name=table_name, **kwargs
+            )
             self.con.execute(sql)
         else:
             if table_name is None:
