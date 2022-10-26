@@ -1649,3 +1649,12 @@ def test_case_rlz_incompatible_error(table):
         table.g.case().when(case == result, result).end()
 
     assert "a:int8 and Literal(foo):string" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("func", [ibis.asc, ibis.desc])
+def test_group_by_order_by_deferred(func):
+    from ibis import _
+
+    table = ibis.table(dict(x="string", y="int"), name="t")
+    expr = table.group_by(_.x).aggregate(mean_y=_.y.mean()).order_by(func(_.mean_y))
+    assert isinstance(expr, ir.Table)
