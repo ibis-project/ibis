@@ -154,6 +154,13 @@ def test_format_nested_column():
 
 def test_format_fully_null_column():
     values = [None, None, None]
-    fmts, min_len, max_len = format_column(dt.int64, values)
+    fmts, *_ = format_column(dt.int64, values)
     strs = [str(f) for f in fmts]
     assert strs == [null, null, null]
+
+
+def test_all_empty_groups_repr():
+    values = [float("nan"), float("nan")]
+    dtype = dt.float64
+    fmts, *_ = format_column(dtype, values)
+    assert list(map(str, fmts)) == ["nan", "nan"]
