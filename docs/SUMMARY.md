@@ -10,6 +10,7 @@
     * [Analytics Tools](tutorial/07-Analytics-Tools.ipynb)
     * [Geospatial Analysis](tutorial/08-Geospatial-Analysis.ipynb)
 * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
+* [Ibis for pandas Users](ibis-for-pandas-users.ipynb)
 * [User Guide](user_guide/)
 * [Execution Backends](backends/)
 * [How To Guide](how_to/)
