@@ -45,7 +45,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v11
@@ -56,4 +56,4 @@ jobs:
 
       - name: nix build and run tests
         continue-on-error: ${{ matrix.os == 'macos-latest' && matrix.python-version == '3.8' }}
-        run: nix build --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
+        run: nix build --fallback --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}

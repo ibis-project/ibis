@@ -1,122 +1,135 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index be5e14c36..a6b1676df 100644
+index 0f7af19d8..4ca9ba1a9 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -358,26 +358,24 @@ dependencies = [
+@@ -72,9 +72,9 @@ dependencies = [
  
  [[package]]
- name = "crossbeam-epoch"
--version = "0.9.10"
-+version = "0.9.11"
+ name = "anyhow"
+-version = "1.0.65"
++version = "1.0.66"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "045ebe27666471bb549370b4b0b3e51b07f56325befa4284db65fc89c02511b1"
-+checksum = "f916dfc5d356b0ed9dae65f1db9fc9770aa2851d2662b988ccf4fe3516e86348"
- dependencies = [
-  "autocfg",
-  "cfg-if",
-  "crossbeam-utils",
-  "memoffset",
-- "once_cell",
-  "scopeguard",
- ]
+-checksum = "98161a4e3e2184da77bb14f02184cdd111e83bbbcc9979dfee3c44b9a85f5602"
++checksum = "216261ddc8289130e551ddcd5ce8a064710c0d064a4d2895c67151c92b5443f6"
  
  [[package]]
- name = "crossbeam-utils"
--version = "0.8.11"
-+version = "0.8.12"
+ name = "array-init-cursor"
+@@ -181,9 +181,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "base64"
+-version = "0.13.0"
++version = "0.13.1"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "51887d4adc7b564537b15adcfb307936f8075dfcd5f00dde9a9f1d29383682bc"
-+checksum = "edbafec5fa1f196ca66527c1b12c2ec4745ca14b50f1ad8f9f6f720b55d11fac"
- dependencies = [
-  "cfg-if",
-- "once_cell",
- ]
+-checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
++checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
  
  [[package]]
-@@ -724,9 +722,9 @@ checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
+ name = "bincode"
+@@ -446,9 +446,9 @@ dependencies = [
  
  [[package]]
- name = "jemalloc-sys"
--version = "0.5.1+5.3.0-patched"
-+version = "0.5.2+5.3.0-patched"
+ name = "cxx"
+-version = "1.0.79"
++version = "1.0.80"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "b7c2b313609b95939cb0c5a5c6917fb9b7c9394562aa3ef44eb66ffa51736432"
-+checksum = "134163979b6eed9564c98637b710b40979939ba351f59952708234ea11b5f3f8"
+-checksum = "3f83d0ebf42c6eafb8d7c52f7e5f2d3003b89c7aa4fd2b79229209459a849af8"
++checksum = "6b7d4e43b25d3c994662706a1d4fcfc32aaa6afd287502c111b237093bb23f3a"
  dependencies = [
   "cc",
-  "fs_extra",
-@@ -855,9 +853,9 @@ dependencies = [
+  "cxxbridge-flags",
+@@ -458,9 +458,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "cxx-build"
+-version = "1.0.79"
++version = "1.0.80"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "07d050484b55975889284352b0ffc2ecbda25c0c55978017c132b29ba0818a86"
++checksum = "84f8829ddc213e2c1368e51a2564c552b65a8cb6a28f31e576270ac81d5e5827"
+ dependencies = [
+  "cc",
+  "codespan-reporting",
+@@ -473,15 +473,15 @@ dependencies = [
+ 
+ [[package]]
+ name = "cxxbridge-flags"
+-version = "1.0.79"
++version = "1.0.80"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "99d2199b00553eda8012dfec8d3b1c75fce747cf27c169a270b3b99e3448ab78"
++checksum = "e72537424b474af1460806647c41d4b6d35d09ef7fe031c5c2fa5766047cc56a"
+ 
+ [[package]]
+ name = "cxxbridge-macro"
+-version = "1.0.79"
++version = "1.0.80"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "dcb67a6de1f602736dd7eaead0080cf3435df806c61b24b13328db128c58868f"
++checksum = "309e4fb93eed90e1e14bea0da16b209f81813ba9fc7830c20ed151dd7bc0a4d7"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -675,9 +675,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "getrandom"
+-version = "0.2.7"
++version = "0.2.8"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
++checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
+ dependencies = [
+  "cfg-if",
+  "libc",
+@@ -939,9 +939,9 @@ dependencies = [
  
  [[package]]
  name = "libc"
--version = "0.2.133"
-+version = "0.2.134"
+-version = "0.2.135"
++version = "0.2.136"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
-+checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
+-checksum = "68783febc7782c6c5cb401fbda4de5a9898be1762314da0bb2c10ced61f18b0c"
++checksum = "55edcf6c0bb319052dea84732cf99db461780fd5e8d3eb46ab6ff312ab31f197"
  
  [[package]]
  name = "libflate"
-@@ -1428,9 +1426,9 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
+@@ -1781,18 +1781,18 @@ checksum = "0772c5c30e1a0d91f6834f8e545c69281c099dfa9a3ac58d96a9fd629c8d4898"
  
  [[package]]
- name = "proc-macro2"
--version = "1.0.44"
-+version = "1.0.46"
+ name = "serde"
+-version = "1.0.145"
++version = "1.0.147"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "7bd7356a8122b6c4a24a82b278680c73357984ca2fc79a0f9fa6dea7dced7c58"
-+checksum = "94e2ef8dbfc347b10c094890f778ee2e36ca9bb4262e86dc99cd217e35f3470b"
+-checksum = "728eb6351430bccb993660dfffc5a72f91ccc1295abaa8ce19b27ebe4f75568b"
++checksum = "d193d69bae983fc11a79df82342761dfbf28a99fc8d203dca4c3c1b590948965"
  dependencies = [
-  "unicode-ident",
+  "serde_derive",
  ]
-@@ -1760,9 +1758,9 @@ dependencies = [
  
  [[package]]
- name = "smallvec"
--version = "1.9.0"
-+version = "1.10.0"
+ name = "serde_derive"
+-version = "1.0.145"
++version = "1.0.147"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
-+checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
- 
- [[package]]
- name = "smartstring"
-@@ -1838,9 +1836,9 @@ dependencies = [
+-checksum = "81fa1584d3d1bcacd84c277a0dfe21f5b0f6accf4a23d04d4c6d61f1af522b4c"
++checksum = "4f1d362ca8fc9c3e3a7484440752472d68a6caa98f1ab81d99b5dfe517cec852"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -1955,9 +1955,9 @@ dependencies = [
  
  [[package]]
  name = "syn"
--version = "1.0.100"
-+version = "1.0.101"
+-version = "1.0.102"
++version = "1.0.103"
  source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "52205623b1b0f064a4e71182c3b18ae902267282930c6d5462c91b859668426e"
-+checksum = "e90cde112c4b9690b8cbe810cba9ddd8bc1d7472e2cae317b69e9438c1cba7d2"
+-checksum = "3fcd952facd492f9be3ef0d0b7032a6e442ee9b361d4acc2b1d0c4aaa5f613a1"
++checksum = "a864042229133ada95abf3b54fdc62ef5ccabe9515b64717bcb9a1919e59445d"
  dependencies = [
   "proc-macro2",
   "quote",
-@@ -1855,18 +1853,18 @@ checksum = "c02424087780c9b71cc96799eaeddff35af2bc513278cda5c99fc1f5d026d3c1"
- 
- [[package]]
- name = "thiserror"
--version = "1.0.36"
-+version = "1.0.37"
- source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "0a99cb8c4b9a8ef0e7907cd3b617cc8dc04d571c4e73c8ae403d80ac160bb122"
-+checksum = "10deb33631e3c9018b9baf9dcbbc4f737320d2b576bac10f6aefa048fa407e3e"
- dependencies = [
-  "thiserror-impl",
- ]
- 
- [[package]]
- name = "thiserror-impl"
--version = "1.0.36"
-+version = "1.0.37"
- source = "registry+https://github.com/rust-lang/crates.io-index"
--checksum = "3a891860d3c8d66fec8e73ddb3765f90082374dbaaa833407b904a94f1a7eb43"
-+checksum = "982d17546b47146b28f7c22e3d08465f6b8903d0ea13c1660d9d84a6e7adcdbb"
- dependencies = [
-  "proc-macro2",
-  "quote",
-@@ -2094,8 +2092,3 @@ dependencies = [
+@@ -2280,8 +2280,3 @@ dependencies = [
   "cc",
   "libc",
  ]
@@ -126,10 +139,10 @@ index be5e14c36..a6b1676df 100644
 -version = "0.1.48"
 -source = "git+https://github.com/messense/cmake-rs.git?branch=cross-compile#15ab68baca7c44bcf23c5d91a4201f10d40552a1"
 diff --git a/Cargo.toml b/Cargo.toml
-index 32499e3f3..82dbc7812 100644
+index 8af4c7f8d..dd9f2c5ac 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -156,9 +156,6 @@ features = [
+@@ -157,16 +157,12 @@ features = [
    "date_offset",
  ]
  
@@ -139,3 +152,11 @@ index 32499e3f3..82dbc7812 100644
  [lib]
  name = "polars"
  crate-type = ["cdylib"]
+ 
+ [profile.release]
+-codegen-units = 1
+-lto = "fat"
++lto = "thin"
+ 
+ # This is ignored here; would be set in .cargo/config.toml.
+ # Should not be used when packaging

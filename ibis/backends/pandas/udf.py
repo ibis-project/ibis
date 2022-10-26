@@ -12,6 +12,7 @@ import ibis.udf.vectorized
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.aggcontext import Transform
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
+from ibis.backends.pandas.execution.util import get_grouping
 
 
 def create_gens_from_args_groupby(args: Tuple[SeriesGroupBy]):
@@ -80,8 +81,8 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # perform the operation directly on the underlying Series
         # and regroup after it's finished
         args = [getattr(arg, 'obj', arg) for arg in args]
-        groupings = groupers[0].groupings
-        return func(*args).groupby(groupings)
+        groupings = get_grouping(groupers[0].groupings)
+        return func(*args).groupby(groupings, group_keys=False)
 
     # Define an execution rule for a simple elementwise Series
     # function

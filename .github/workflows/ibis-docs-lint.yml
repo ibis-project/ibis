@@ -28,7 +28,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: lint commits
         run: nix run 'nixpkgs#commitlint' -- --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
@@ -42,7 +42,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v11
@@ -75,7 +75,7 @@ jobs:
           python-version: "3.10"
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential krb5-config libkrb5-dev libgeos-dev
+        run: sudo apt-get install -qq -y build-essential libgeos-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
@@ -87,10 +87,10 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.2'
+      - run: python -m pip install --upgrade pip 'poetry>=1.2'
 
       - name: install ibis
-        run: poetry install --extras all
+        run: poetry install --without dev --without docs --all-extras
 
       - name: make benchmark output dir
         run: mkdir .benchmarks
@@ -122,7 +122,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v11
@@ -137,7 +137,7 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix run -f nix ibisDevEnv310 -- -m mkdocs build
+        run: nix run -f nix ibisDocsEnv310 -- -m mkdocs build
 
       - name: verify internal links
         run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
@@ -154,7 +154,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v11
@@ -206,7 +206,7 @@ jobs:
 
       - uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=./nix
 
       - uses: cachix/cachix-action@v11
         with:

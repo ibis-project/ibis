@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -89,24 +90,38 @@ def create_add_one_struct_udf(result_formatter):
 
 
 add_one_struct_udfs = [
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: (v1, v2)
-    ),  # tuple of pd.Series,
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: [v1, v2]
-    ),  # list of pd.Series,
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: (np.array(v1), np.array(v2))
-    ),  # tuple of np.array,
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
-    ),  # list of np.array,
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: np.array([np.array(v1), np.array(v2)])
-    ),  # np.array of np.array,
-    create_add_one_struct_udf(
-        result_formatter=lambda v1, v2: pd.DataFrame({'col1': v1, 'col2': v2})
-    ),  # pd.DataFrame,
+    param(
+        create_add_one_struct_udf(result_formatter=lambda v1, v2: (v1, v2)),
+        id="tuple_of_series",
+    ),
+    param(
+        create_add_one_struct_udf(result_formatter=lambda v1, v2: [v1, v2]),
+        id="list_of_series",
+    ),
+    param(
+        create_add_one_struct_udf(
+            result_formatter=lambda v1, v2: (np.array(v1), np.array(v2))
+        ),
+        id="tuple_of_ndarray",
+    ),
+    param(
+        create_add_one_struct_udf(
+            result_formatter=lambda v1, v2: [np.array(v1), np.array(v2)]
+        ),
+        id="list_of_ndarray",
+    ),
+    param(
+        create_add_one_struct_udf(
+            result_formatter=lambda v1, v2: np.array([np.array(v1), np.array(v2)])
+        ),
+        id="ndarray_of_ndarray",
+    ),
+    param(
+        create_add_one_struct_udf(
+            result_formatter=lambda v1, v2: pd.DataFrame({'col1': v1, 'col2': v2})
+        ),
+        id="dataframe",
+    ),
 ]
 
 

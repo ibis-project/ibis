@@ -200,7 +200,7 @@ def infer_array(value):
 
 @sch.schema.register(pd.Series)
 def schema_from_series(s):
-    return sch.schema(tuple(s.iteritems()))
+    return sch.schema(tuple(s.items()))
 
 
 @sch.infer.register(pd.DataFrame)

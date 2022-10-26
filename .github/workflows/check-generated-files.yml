@@ -37,13 +37,16 @@ jobs:
         run: sudo apt-get update -y -q
 
       - name: install system dependencies
-        run: sudo apt-get install -y -q build-essential graphviz krb5-config libkrb5-dev libgeos-dev
+        run: sudo apt-get install -y -q build-essential graphviz libgeos-dev
 
       - name: install poetry
-        run: pip install 'poetry<1.2' 'poetry-core>=1.0.8'
+        run: pip install 'poetry>=1.2' 'poetry-core>=1.1'
+
+      - name: check consistency with pyproject.toml
+        run: poetry lock --check
 
       - name: generate requirements.txt
-        run: poetry export --dev --extras all --without-hashes --no-ansi > requirements.txt
+        run: poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
 
       - name: check requirements.txt
         run: git diff --exit-code requirements.txt
@@ -72,23 +75,3 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-  check_poetry_lock:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install nix
-        uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: setup cachix
-        uses: cachix/cachix-action@v11
-        with:
-          name: ibis
-          extraPullNames: nix-community,poetry2nix
-
-      - name: verify lockfile
-        run: ./dev/lockfile_diff.sh

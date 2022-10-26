@@ -538,6 +538,7 @@ def test_self_reference_in_not_exists(
     return semi, anti
 
 
+@sqlgolden
 def test_where_uncorrelated_subquery(con, foo, bar):
     expr = foo[foo.job.isin(bar.job)]
     #
@@ -550,6 +551,7 @@ def test_where_uncorrelated_subquery(con, foo, bar):
     return expr
 
 
+@sqlgolden
 def test_where_correlated_subquery(con, foo):
     t1 = foo
     t2 = t1.view()
@@ -655,6 +657,7 @@ def test_exists(con, foo_t, bar_t):
     return e1, e2
 
 
+@sqlgolden
 def test_not_exists(con, not_exists):
     t1 = con.table("t1")
     t2 = con.table("t2")
