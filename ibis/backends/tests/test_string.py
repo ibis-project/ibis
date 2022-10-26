@@ -208,6 +208,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.substr(2),
             lambda t: t.date_string_col.str[2:],
             id='substr-start-only',
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.date_string_col.left(2),
