@@ -7,8 +7,6 @@ let
   devDeps = with pkgs; [
     # terminal markdown rendering
     glow
-    # yaml diffing for poetry.lock via yj -ty ("t"OML to "y"AML)
-    dyff
     # used in the justfile
     jq
     yj
