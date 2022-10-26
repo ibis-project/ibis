@@ -6,9 +6,9 @@ your backend, but you need to join it to a table in that backend.
 
 You can perform joins on local data to TableExpressions from your backend easily with Ibis MemTables.
 
-In this guide, you will lean how to join a pandas DataFrame to a TableExpression.
+In this guide, you will learn how to join a pandas DataFrame to a TableExpression.
 
-Data Setup:
+## Data Setup:
 
 In this example, we will create two DataFrames: one containing events and one containing event names.
 We will save the events to a parquet file and read that as a TableExpression in the DuckDB backend.
@@ -17,10 +17,6 @@ a pandas DataFrame as a TableExpression and join the two expressions together as
 two TableExpressions in a backend.
 
 ```python
-    Python 3.10.6 (main, Aug 10 2022, 11:40:04) [GCC 11.3.0]
-    Type 'copyright', 'credits' or 'license' for more information
-    IPython 8.5.0 -- An enhanced Interactive Python. Type '?' for help.
-
     In [1]: import ibis
 
     In [2]: import pandas as pd
@@ -111,4 +107,4 @@ and joining is the same as joining any two TableExpressions:
     11         3  2021-07-12          NaN            3         e3
 ```
 
-Note that the return result of the join is a TableExpression and that `execute` returns a pandas DataFrame.
+Note that the return result of the `join` is a TableExpression and that `execute` returns a pandas DataFrame.
