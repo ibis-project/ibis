@@ -82,6 +82,8 @@ def table_from_schema(name, meta, schema, database: str | None = None):
 # TODO(cleanup)
 ibis_type_to_sqla = {
     dt.Null: sa.types.NullType,
+    dt.Enum: sa.Enum,
+    dt.Category: sa.Enum,
     dt.Date: sa.Date,
     dt.Time: sa.Time,
     dt.Boolean: sa.Boolean,

@@ -45,11 +45,14 @@ CREATE OR REPLACE TABLE awards_players (
     notes TEXT
 );
 
+CREATE TYPE enum_t AS ENUM ('alice', 'bob', 'carol');
+
 CREATE OR REPLACE TABLE functional_alltypes (
     "index" BIGINT,
     "Unnamed: 0" BIGINT,
     id INTEGER,
     bool_col BOOLEAN,
+    enum_col enum_t,
     tinyint_col SMALLINT,
     smallint_col SMALLINT,
     int_col INTEGER,
