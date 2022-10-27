@@ -686,3 +686,28 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expected = df.assign(val=column).set_index('id').sort_index()
 
     backend.assert_series_equal(result.val, expected.val)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+def test_grouped_ordered_window_coalesce(backend, alltypes, df):
+    t = alltypes
+    expr = (
+        t.group_by("month")
+        .order_by(["int_col", "id"])
+        .mutate(lagged_value=t.bigint_col.lag())[["id", "lagged_value"]]
+    )
+    result = expr.execute().sort_values(["id"]).lagged_value.reset_index(drop=True)
+
+    def agg(df):
+        df = df.sort_values(["int_col", "id"], kind="mergesort")
+        df = df.assign(bigint_col=lambda df: df.bigint_col.shift())
+        return df
+
+    expected = (
+        df.groupby("month")
+        .apply(agg)
+        .sort_values(["id"])
+        .reset_index(drop=True)
+        .bigint_col.rename("lagged_value")
+    )
+    backend.assert_series_equal(result, expected)

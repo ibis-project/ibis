@@ -10,7 +10,6 @@ dask specific types and pandas types. This cannot be done via the
 dispatcher since the top level container is a list.
 """
 
-import collections
 import functools
 from collections.abc import Sized
 
@@ -19,6 +18,7 @@ import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
 import toolz
+from multipledispatch.variadic import Variadic
 
 import ibis.expr.operations as ops
 from ibis.backends.dask.dispatch import execute_node
@@ -43,28 +43,48 @@ def pairwise_reducer(func, values):
     return functools.reduce(lambda x, y: func(x, y), values)
 
 
-def compute_row_reduction(func, value):
-    final_sizes = {len(x) for x in value if isinstance(x, Sized)}
+def compute_row_reduction(func, values):
+    final_sizes = {len(x) for x in values if isinstance(x, Sized)}
     if not final_sizes:
-        return func(value)
+        return func(values)
     (final_size,) = final_sizes
-    arrays = list(map(promote_to_sequence(final_size), value))
+    arrays = list(map(promote_to_sequence(final_size), values))
     raw = pairwise_reducer(func, arrays)
     return dd.from_array(raw).squeeze()
 
 
-@execute_node.register(ops.Greatest, collections.abc.Sequence)
-def dask_execute_node_greatest_list(op, value, **kwargs):
-    if all(type(v) != dd.Series for v in value):
-        return execute_node_greatest_list(op, value, **kwargs)
-    return compute_row_reduction(da.maximum, value)
+# XXX: there's non-determinism in the dask and pandas dispatch registration of
+# Greatest/Least/Coalesce, because 1) dask and pandas share `execute_node`
+# which is a design flaw and 2) greatest/least/coalesce need to handle
+# mixed-type (the Series types plus any related scalar type) inputs so `object`
+# is used as a possible input type.
+#
+# Here we remove the dispatch for pandas if it exists because the dask rule
+# handles both cases.
+try:
+    del execute_node[ops.Greatest, Variadic[object]]
+except KeyError:
+    pass
 
 
-@execute_node.register(ops.Least, collections.abc.Sequence)
-def dask_execute_node_least_list(op, value, **kwargs):
-    if all(type(v) != dd.Series for v in value):
-        return execute_node_least_list(op, value, **kwargs)
-    return compute_row_reduction(da.minimum, value)
+try:
+    del execute_node[ops.Least, Variadic[object]]
+except KeyError:
+    pass
+
+
+@execute_node.register(ops.Greatest, [(object, dd.Series)])
+def dask_execute_node_greatest_list(op, *values, **kwargs):
+    if all(type(v) != dd.Series for v in values):
+        return execute_node_greatest_list(op, *values, **kwargs)
+    return compute_row_reduction(da.maximum, values)
+
+
+@execute_node.register(ops.Least, [(object, dd.Series)])
+def dask_execute_node_least_list(op, *values, **kwargs):
+    if all(type(v) != dd.Series for v in values):
+        return execute_node_least_list(op, *values, **kwargs)
+    return compute_row_reduction(da.minimum, values)
 
 
 @execute_node.register(ops.Reduction, ddgb.SeriesGroupBy, type(None))

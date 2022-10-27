@@ -7,6 +7,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import binary_infix, window
+from ibis.backends.base.sql.registry.main import varargs
 from ibis.backends.clickhouse.datatypes import serialize
 from ibis.backends.clickhouse.identifiers import quote_identifier
 
@@ -170,13 +171,6 @@ def _xor(translator, op):
     left_ = _parenthesize(translator, op.left)
     right_ = _parenthesize(translator, op.right)
     return f'xor({left_}, {right_})'
-
-
-def _varargs(func_name):
-    def varargs_formatter(translator, op):
-        return _call(translator, func_name, *op.arg.values)
-
-    return varargs_formatter
 
 
 def _arbitrary(translator, op):
@@ -549,7 +543,7 @@ def _string_join(translator, op):
 
 
 def _string_concat(translator, op):
-    args_formatted = ", ".join(map(translator.translate, op.arg.values))
+    args_formatted = ", ".join(map(translator.translate, op.args))
     return f"arrayStringConcat([{args_formatted}])"
 
 
@@ -784,8 +778,8 @@ operation_registry = {
     ops.Cast: _cast,
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse's greatest and least doesn't support varargs
-    ops.Greatest: _varargs('greatest'),
-    ops.Least: _varargs('least'),
+    ops.Greatest: varargs('greatest'),
+    ops.Least: varargs('least'),
     ops.Where: _fixed_arity('if', 3),
     ops.Between: _between,
     ops.SimpleCase: _simple_case,
@@ -876,7 +870,7 @@ _undocumented_operations = {
     ops.NotNull: _unary('isNotNull'),
     ops.IfNull: _fixed_arity('ifNull', 2),
     ops.NullIf: _fixed_arity('nullIf', 2),
-    ops.Coalesce: _varargs('coalesce'),
+    ops.Coalesce: varargs('coalesce'),
     ops.NullIfZero: _null_if_zero,
     ops.ZeroIfNull: _zero_if_null,
     ops.DayOfWeekIndex: _day_of_week_index,

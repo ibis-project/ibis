@@ -314,19 +314,19 @@ def searched_case(op):
 
 @translate.register(ops.Coalesce)
 def coalesce(op):
-    arg = translate(op.arg)
+    arg = translate(ops.NodeList(*op.args))
     return pl.coalesce(arg)
 
 
 @translate.register(ops.Least)
 def least(op):
-    arg = [translate(arg) for arg in op.arg]
+    arg = [translate(arg) for arg in op.args]
     return pl.min(arg)
 
 
 @translate.register(ops.Greatest)
 def greatest(op):
-    arg = [translate(arg) for arg in op.arg]
+    arg = [translate(arg) for arg in op.args]
     return pl.max(arg)
 
 
