@@ -38,7 +38,7 @@ Ibis provides tools for interacting with the following systems:
 - [Polars](https://ibis-project.org/docs/latest/backends/Polars/)
 - [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
 - [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
-- [Snowflake](https://ibis-project.org/docs/latest/backends/Snowflake) (experimental)
+- [Snowflake](https://ibis-project.org/docs/dev/backends/Snowflake) (experimental)
 - [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
 
 Learn more about using the library at https://ibis-project.org.
