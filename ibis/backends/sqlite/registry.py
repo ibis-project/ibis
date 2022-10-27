@@ -238,11 +238,7 @@ def _string_join(t, op):
 
 
 def _string_concat(t, op):
-    # yes, `arg`. for variadic functions `arg` is the list of arguments.
-    #
-    # `args` is always the list of values of the fields declared in the
-    # operation
-    return functools.reduce(operator.add, map(t.translate, op.arg.values))
+    return functools.reduce(operator.add, map(t.translate, op.args))
 
 
 def _date_from_ymd(t, op):

@@ -961,8 +961,8 @@ def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
-@execute_node.register(ops.StringConcat, collections.abc.Sequence)
-def execute_node_string_concat(op, args, **kwargs):
+@execute_node.register(ops.StringConcat, [object])
+def execute_node_string_concat(op, *args, **kwargs):
     return functools.reduce(operator.add, args)
 
 
@@ -1168,30 +1168,33 @@ def coalesce(values):
 
 @toolz.curry
 def promote_to_sequence(length, obj):
-    return obj.values if isinstance(obj, pd.Series) else np.repeat(obj, length)
+    try:
+        return obj.values
+    except AttributeError:
+        return np.repeat(obj, length)
 
 
-def compute_row_reduction(func, value, **kwargs):
-    final_sizes = {len(x) for x in value if isinstance(x, Sized)}
+def compute_row_reduction(func, values, **kwargs):
+    final_sizes = {len(x) for x in values if isinstance(x, Sized)}
     if not final_sizes:
-        return func(value)
+        return func(values)
     (final_size,) = final_sizes
-    raw = func(list(map(promote_to_sequence(final_size), value)), **kwargs)
+    raw = func(list(map(promote_to_sequence(final_size), values)), **kwargs)
     return pd.Series(raw).squeeze()
 
 
-@execute_node.register(ops.Greatest, collections.abc.Sequence)
-def execute_node_greatest_list(op, value, **kwargs):
-    return compute_row_reduction(np.maximum.reduce, value, axis=0)
+@execute_node.register(ops.Greatest, [object])
+def execute_node_greatest_list(op, *values, **kwargs):
+    return compute_row_reduction(np.maximum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Least, collections.abc.Sequence)
-def execute_node_least_list(op, value, **kwargs):
-    return compute_row_reduction(np.minimum.reduce, value, axis=0)
+@execute_node.register(ops.Least, [object])
+def execute_node_least_list(op, *values, **kwargs):
+    return compute_row_reduction(np.minimum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Coalesce, collections.abc.Sequence)
-def execute_node_coalesce(op, values, **kwargs):
+@execute_node.register(ops.Coalesce, [object])
+def execute_node_coalesce(op, *values, **kwargs):
     # TODO: this is slow
     return compute_row_reduction(coalesce, values)
 

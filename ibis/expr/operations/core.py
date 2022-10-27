@@ -6,6 +6,7 @@ from typing import Sequence
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.annotations import attribute
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker, deprecated
@@ -86,6 +87,20 @@ class Value(Node, Named):
 
 
 @public
+class Variadic(Value):
+    output_shape = rlz.shape_like('arg')
+    output_dtype = rlz.dtype_like('arg')
+
+    @attribute.default
+    def output_shape(self):
+        return rlz.highest_precedence_shape(self.args)
+
+    @property
+    def args(self):
+        return self.arg
+
+
+@public
 class Alias(Value):
     arg = rlz.any
     name = rlz.instance_of((str, UnnamedMarker))
@@ -146,6 +161,10 @@ class NodeList(Node, Sequence[Node]):
         import ibis.expr.types as ir
 
         return ir.List(self)
+
+    @property
+    def args(self):
+        return self.values
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, ValueList=NodeList)

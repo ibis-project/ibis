@@ -649,7 +649,7 @@ def compile_arbitrary(t, op, **kwargs):
 
 @compiles(ops.Coalesce)
 def compile_coalesce(t, op, **kwargs):
-    src_columns = t.translate(op.arg, **kwargs)
+    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -658,7 +658,7 @@ def compile_coalesce(t, op, **kwargs):
 
 @compiles(ops.Greatest)
 def compile_greatest(t, op, **kwargs):
-    src_columns = t.translate(op.arg, **kwargs)
+    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -667,7 +667,7 @@ def compile_greatest(t, op, **kwargs):
 
 @compiles(ops.Least)
 def compile_least(t, op, **kwargs):
-    src_columns = t.translate(op.arg, **kwargs)
+    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -1006,7 +1006,7 @@ def compile_string_split(t, op, **kwargs):
 
 @compiles(ops.StringConcat)
 def compile_string_concat(t, op, **kwargs):
-    src_columns = t.translate(op.arg, **kwargs)
+    src_columns = [t.translate(arg, **kwargs) for arg in op.args]
     return F.concat(*src_columns)
 
 

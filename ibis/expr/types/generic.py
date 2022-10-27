@@ -123,7 +123,7 @@ class Value(Expr):
         >>> ibis.coalesce(None, 4, 5)
         Coalesce([ValueList(values=[None, 4, 5])])
         """
-        return ops.Coalesce([self, *args]).to_expr()
+        return ops.Coalesce(self, *args).to_expr()
 
     def greatest(self, *args: ir.Value) -> ir.Value:
         """Compute the largest value among the supplied arguments.
@@ -138,7 +138,7 @@ class Value(Expr):
         Value
             Maximum of the passed arguments
         """
-        return ops.Greatest([self, *args]).to_expr()
+        return ops.Greatest(self, *args).to_expr()
 
     def least(self, *args: ir.Value) -> ir.Value:
         """Compute the smallest value among the supplied arguments.
@@ -153,7 +153,7 @@ class Value(Expr):
         Value
             Minimum of the passed arguments
         """
-        return ops.Least([self, *args]).to_expr()
+        return ops.Least(self, *args).to_expr()
 
     def typeof(self) -> ir.StringValue:
         """Return the data type of the expression.
