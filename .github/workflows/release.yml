@@ -31,7 +31,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
-      - uses: cachix/cachix-action@v11
+      - uses: cachix/cachix-action@v12
         with:
           name: ibis
           extraPullNames: nix-community,poetry2nix
