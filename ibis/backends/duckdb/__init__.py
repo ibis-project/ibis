@@ -222,7 +222,7 @@ class Backend(BaseAlchemyBackend):
                 cursor.cursor.c.register(table_name, dataset)
         elif isinstance(source, (str, Path)):
             sql, table_name = _generate_view_code(
-                source, table_name=table_name, **kwargs
+                str(source), table_name=table_name, **kwargs
             )
             self.con.execute(sql)
         else:
@@ -230,6 +230,21 @@ class Backend(BaseAlchemyBackend):
                 table_name = next(_gen_table_names)
             self.con.execute("register", (table_name, source))
 
+        _table = self.table(table_name)
+        with warnings.catch_warnings():
+            # don't fail or warn if duckdb-engine fails to discover types
+            # mostly (tinyint)
+            warnings.filterwarnings(
+                "ignore",
+                message="Did not recognize type",
+                category=sa.exc.SAWarning,
+            )
+            # We don't rely on index reflection, ignore this warning
+            warnings.filterwarnings(
+                "ignore",
+                message="duckdb-engine doesn't yet support reflection on indices",
+            )
+            self.inspector.reflect_table(_table.op().sqla_table, _table.columns)
         return self.table(table_name)
 
     def to_pyarrow_batches(
