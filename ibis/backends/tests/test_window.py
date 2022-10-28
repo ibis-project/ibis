@@ -689,17 +689,25 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["pandas"], reason="pandas returns incorrect results")
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
         t.group_by("month")
-        .order_by(["int_col", "id"])
-        .mutate(lagged_value=t.bigint_col.lag())[["id", "lagged_value"]]
+        .order_by("id")
+        .mutate(lagged_value=ibis.coalesce(t.bigint_col.lag(), 0))[
+            ["id", "lagged_value"]
+        ]
     )
-    result = expr.execute().sort_values(["id"]).lagged_value.reset_index(drop=True)
+    result = (
+        expr.execute()
+        .sort_values(["id"])
+        .lagged_value.reset_index(drop=True)
+        .astype("int64")
+    )
 
     def agg(df):
-        df = df.sort_values(["int_col", "id"], kind="mergesort")
+        df = df.sort_values(["id"])
         df = df.assign(bigint_col=lambda df: df.bigint_col.shift())
         return df
 
@@ -708,6 +716,8 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         .apply(agg)
         .sort_values(["id"])
         .reset_index(drop=True)
-        .bigint_col.rename("lagged_value")
+        .bigint_col.fillna(0.0)
+        .astype("int64")
+        .rename("lagged_value")
     )
     backend.assert_series_equal(result, expected)
