@@ -120,13 +120,17 @@ conda install ibis-framework -c conda-forge
 
 (It’s a common mistake to `pip install ibis`. If you try to use Ibis and get errors early on try uninstalling `ibis` and installing `ibis-framework`)
 
-For specific backends, include the backend name in brackets:
+For specific backends, include the backend name in brackets for PyPI:
 
 ```
 pip install ibis-framework[duckdb]
-conda install ibis-framework[postgres] -c conda-forge
 ```
 
+Or use `ibis-$BACKEND` where `$BACKEND` the specific backend you want to use:
+
+```
+conda install ibis-postgres -c conda-forge
+```
 
 ## Getting Started with Ibis
 
