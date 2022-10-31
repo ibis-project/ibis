@@ -1,5 +1,4 @@
 # Ibis
-<hr>
 
 [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
@@ -9,7 +8,6 @@
 [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/master.svg)](https://codecov.io/gh/ibis-project/ibis)
 
 ## What is Ibis?
-<hr>
 
 Ibis is a Python project that provides a lightweight, universal interface for data wrangling. It helps Python users explore and transform data of any size, stored anywhere.
 
@@ -23,7 +21,6 @@ Ibis uses deferred execution, meaning that execution of code is pushed to the qu
 This means users can execute at the speed of their backend, not their local computer.
 
 ## Why Use Ibis?
-<hr>
 
 Ibis aims to be a future-proof solution to interacting with data using Python and can accomplish this goal through its main features:
 
@@ -38,7 +35,6 @@ Use one interface to transform with your data wherever it lives: from DataFrames
 * **Minimizing rewrites**: Depending on backend capabilities, teams can often keep most of their Ibis code the same whether a team changes anything on the backend, like increasing or decreasing computing power, changing the number or size of their databases, or switching backend engines. 
 
 ## Common Use Cases
-<hr>
 
 * **Speeding up the prototype to production pipeline for big data.**
 Scale code written and tested locally to the cloud of distributed systems with minimum rewrites.
@@ -52,7 +48,6 @@ Ibis provides one syntax for multiple query engines and dataframe APIs that lets
 Learn the syntax once and use that syntax anywhere. 
 
 ## Backends
-<hr>
 
 Ibis acts as a universal frontend to the following systems:
 - [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
@@ -72,7 +67,6 @@ Ibis acts as a universal frontend to the following systems:
 The list of supported backends is continuously growing. Anyone can get involved in adding new ones! Learn more about contributing to ibis here https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md
 
 ## Installation
-<hr>
 
 Install Ibis from PyPI with: 
 
@@ -95,8 +89,8 @@ pip install ibis-framework[duckdb]
 conda install ibis-framework[postgres] -c conda-forge
 ```
 
+
 ## Getting Started with Ibis 
-<hr>
 
 You can find a number of helpful tutorials on the Ibis website [here](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/).
 Including, among others:
@@ -156,8 +150,7 @@ asian_countries.limit(6)
 |4|Bangladesh|AS|156118464|
 |5|Bahrain|AS|738004|
 
-## Community and Contributing
-<hr>
+## Community and Contributing 
 
 Ibis is an open source project and welcomes contributions from anyone in the community.
 Read more about how you can contribute [here](https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md).
