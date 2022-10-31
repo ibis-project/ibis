@@ -158,8 +158,8 @@ We care about keeping our community welcoming for all to participate and have a 
 The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/master/LICENSE.txt).
 
 Join our community here:
-Twitter: https://twitter.com/IbisData
-Gitter: https://gitter.im/ibis-dev/Lobby
-StackOverflow: https://stackoverflow.com/questions/tagged/ibis
+* Twitter: https://twitter.com/IbisData
+* Gitter: https://gitter.im/ibis-dev/Lobby
+* StackOverflow: https://stackoverflow.com/questions/tagged/ibis
 
 For more information visit our official website [here](https://ibis-project.org/docs/latest/).
