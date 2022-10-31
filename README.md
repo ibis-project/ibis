@@ -138,9 +138,9 @@ You can find a number of helpful tutorials on the Ibis website
 [here](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
 including:
 
-* [Introduction to Ibis](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
-* [Aggregating and Joining Data](https://ibis-project.org/docs/latest/tutorial/02-Aggregates-Joins/)
-* [Creating and Inserting Data](https://ibis-project.org/docs/latest/tutorial/05-IO-Create-Insert-External-Data/)
+- [Introduction to Ibis](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
+- [Aggregating and Joining Data](https://ibis-project.org/docs/latest/tutorial/02-Aggregates-Joins/)
+- [Creating and Inserting Data](https://ibis-project.org/docs/latest/tutorial/05-IO-Create-Insert-External-Data/)
 
 You can also get started analyzing any dataset, anywhere with just a few lines of Ibis code.
 Here’s an example of how to use Ibis with an SQLite database.
@@ -168,14 +168,13 @@ countries = connection.table('countries')
 countries.head()
 ```
 
-| |iso_alpha2|iso_alpha3|iso_numeric|fips|name|capital|area_km2|population|continent|
-|:----|:----|:----|:----|:----|:----|:----|:----|:----|:----|
-|0|AD|AND|20|AN|Andorra|Andorra la Vella|468|84000|EU|
-|1|AE|ARE|784|AE|United Arab Emirates|Abu Dhabi|82880|4975593|AS|
-|2|AF|AFG|4|AF|Afghanistan|Kabul|647500|29121286|AS|
-|3|AG|ATG|28|AC|Antigua and Barbuda|St. Johns|443|86754|NA|
-|4|AI|AIA|660|AV|Anguilla|The Valley|102|13254|NA|
-
+|     | iso_alpha2 | iso_alpha3 | iso_numeric | fips | name                 | capital          | area_km2 | population | continent |
+| :-- | :--------- | :--------- | :---------- | :--- | :------------------- | :--------------- | :------- | :--------- | :-------- |
+| 0   | AD         | AND        | 20          | AN   | Andorra              | Andorra la Vella | 468      | 84000      | EU        |
+| 1   | AE         | ARE        | 784         | AE   | United Arab Emirates | Abu Dhabi        | 82880    | 4975593    | AS        |
+| 2   | AF         | AFG        | 4           | AF   | Afghanistan          | Kabul            | 647500   | 29121286   | AS        |
+| 3   | AG         | ATG        | 28          | AC   | Antigua and Barbuda  | St. Johns        | 443      | 86754      | NA        |
+| 4   | AI         | AIA        | 660         | AV   | Anguilla             | The Valley       | 102      | 13254      | NA        |
 
 ```python
 # Select the name, continent and population columns and filter them to only return countries from Asia
@@ -184,16 +183,16 @@ asian_countries = countries['name', 'continent', 'population'].filter(countries[
 asian_countries.limit(6)
 ```
 
-| |name|continent|population|
-|:----|:----|:----|:----|
-|0|United Arab Emirates|AS|4975593|
-|1|Afghanistan|AS|29121286|
-|2|Armenia|AS|2968000|
-|3|Azerbaijan|AS|8303512|
-|4|Bangladesh|AS|156118464|
-|5|Bahrain|AS|738004|
+|     | name                 | continent | population |
+| :-- | :------------------- | :-------- | :--------- |
+| 0   | United Arab Emirates | AS        | 4975593    |
+| 1   | Afghanistan          | AS        | 29121286   |
+| 2   | Armenia              | AS        | 2968000    |
+| 3   | Azerbaijan           | AS        | 8303512    |
+| 4   | Bangladesh           | AS        | 156118464  |
+| 5   | Bahrain              | AS        | 738004     |
 
-## Community and Contributing 
+## Community and Contributing
 
 Ibis is an open source project and welcomes contributions from anyone in the community.
 Read more about how you can contribute [here](https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md).
@@ -201,8 +200,9 @@ We care about keeping our community welcoming for all to participate and have a 
 The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/master/LICENSE.txt).
 
 Join our community here:
-* Twitter: https://twitter.com/IbisData
-* Gitter: https://gitter.im/ibis-dev/Lobby
-* StackOverflow: https://stackoverflow.com/questions/tagged/ibis
+
+- Twitter: https://twitter.com/IbisData
+- Gitter: https://gitter.im/ibis-dev/Lobby
+- StackOverflow: https://stackoverflow.com/questions/tagged/ibis
 
 For more information visit our official website [here](https://ibis-project.org/docs/latest/).
