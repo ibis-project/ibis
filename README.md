@@ -147,24 +147,26 @@ Here’s an example of how to use Ibis with an SQLite database.
 
 Download the SQLite database from the ibis-tutorial-data GCS (Google Cloud Storage) bucket, then connect to it using ibis.
 
+```bash
+# make a directory called geo_dir and add the geography database to that folder
+mkdir -p geo_dir
+curl -LsS -o geo_dir/geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
+```
+
+Connect to the the database and show the available tables
+
 ```python
-import ibis
-ibis.options.interactive = True
-
-#make a directory called geo_dir and add the geography database top that folder
-
-!mkdir geo_dir
-!curl -LsS -o 'geo_dir/geography.db'  'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
-
-#connect to the database and list the tables in it
-
-connection = ibis.sqlite.connect('geo_dir/geography.db')
-connection.list_tables()
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> connection = ibis.sqlite.connect('geo_dir/geography.db')
+>>> connection.list_tables()
 ['countries', 'gdp', 'independence']
+```
 
-#connect choose the countries table and preview it’s first few rows
+Choose the `countries` table and preview its first few rows
 
-countries = connection.table('countries')
+```python
+>>> countries = connection.table('countries')
 countries.head()
 ```
 
