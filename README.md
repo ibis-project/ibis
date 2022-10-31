@@ -26,7 +26,7 @@ Ibis has three primary components:
 Ibis aims to be a future-proof solution to interacting with data using Python and can accomplish this goal through its main features:
 
 - **Familiar API**: Ibis’s API design borrows from popular APIs like pandas and dplyr that most users already know and like to use.
-- **Consistent syntax**:  Ibis aims to be universal python API for tabular data, big or small.
+- **Consistent syntax**:  Ibis aims to be universal Python API for tabular data, big or small.
 - **Deferred execution**: Ibis pushes code execution to the query engine and only moves required data into memory when it has to.
   This leads to more faster, more efficient analytics workflows
 - **Interactive mode**: Ibis also provides an interactive mode, in which users can quickly diagnose problems, do exploratory data analysis, and mock up workflows locally.
