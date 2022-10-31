@@ -33,11 +33,11 @@ Ibis aims to be a future-proof solution to interacting with data using Python an
 - **Interactive mode**: Ibis also provides an interactive mode, in which users can quickly diagnose problems, do exploratory data analysis, and mock up workflows locally.
 - **10+ supported backends**: Ibis supports multiple query engines and DataFrame APIs.
   Use one interface to transform with your data wherever it lives: from DataFrames in pandas to parquet files through DuckDB to tables in BigQuery.
-- **Minimizing rewrites**: Depending on backend capabilities, teams can often keep most of their Ibis code the same whether a team changes anything on the backend, like increasing or decreasing computing power, changing the number or size of their databases, or switching backend engines.
+- **Minimize rewrites**: Depending on backend capabilities, teams can often keep most of their Ibis code the same whether a team changes anything on the backend, like increasing or decreasing computing power, changing the number or size of their databases, or switching backend engines.
 
 ## Common Use Cases
 
-- **Speeding up the prototype to production pipeline for big data.**
+- **Speed up prototype to production.**
   Scale code written and tested locally to the cloud of distributed systems with minimum rewrites.
 - **Boost performance of existing Python or pandas code.**
   For example a general rule of thumb for pandas is "Have 5 to 10 times as much RAM as the size of your dataset".
