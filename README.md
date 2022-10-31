@@ -85,6 +85,7 @@ use that syntax anywhere.
 ## Backends
 
 Ibis acts as a universal frontend to the following systems:
+
 - [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
 - [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
 - [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
@@ -99,11 +100,13 @@ Ibis acts as a universal frontend to the following systems:
 - [Snowflake](https://ibis-project.org/docs/dev/backends/Snowflake) (experimental)
 - [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
 
-The list of supported backends is continuously growing. Anyone can get involved in adding new ones! Learn more about contributing to ibis here https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md
+The list of supported backends is continuously growing. Anyone can get involved
+in adding new ones! Learn more about contributing to ibis in our contributing
+docs at https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUTING.md
 
 ## Installation
 
-Install Ibis from PyPI with: 
+Install Ibis from PyPI with:
 
 ```
 pip install ibis-framework
@@ -125,10 +128,11 @@ conda install ibis-framework[postgres] -c conda-forge
 ```
 
 
-## Getting Started with Ibis 
+## Getting Started with Ibis
 
-You can find a number of helpful tutorials on the Ibis website [here](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/).
-Including, among others:
+You can find a number of helpful tutorials on the Ibis website
+[here](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
+including:
 
 * [Introduction to Ibis](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
 * [Aggregating and Joining Data](https://ibis-project.org/docs/latest/tutorial/02-Aggregates-Joins/)
@@ -139,14 +143,14 @@ Here’s an example of how to use Ibis with an SQLite database.
 
 Download the SQLite database from the ibis-tutorial-data GCS (Google Cloud Storage) bucket, then connect to it using ibis.
 
-```
-import ibis 
+```python
+import ibis
 ibis.options.interactive = True
 
-#make a directory called geo_dir and add the geography database top that folder 
+#make a directory called geo_dir and add the geography database top that folder
 
 !mkdir geo_dir
-!curl -LsS -o $'geo_dir/geography.db'  'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
+!curl -LsS -o 'geo_dir/geography.db'  'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
 
 #connect to the database and list the tables in it
 
@@ -169,7 +173,7 @@ countries.head()
 |4|AI|AIA|660|AV|Anguilla|The Valley|102|13254|NA|
 
 
-```
+```python
 # Select the name, continent and population columns and filter them to only return countries from Asia
 
 asian_countries = countries['name', 'continent', 'population'].filter(countries['continent'] == 'AS')
