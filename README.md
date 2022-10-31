@@ -9,7 +9,7 @@
 
 ## What is Ibis?
 
-Ibis is a Python project that provides a lightweight, universal interface for data wrangling. It helps Python users explore and transform data of any size, stored anywhere.
+Ibis is a Python library that provides a lightweight, universal interface for data wrangling. It helps Python users explore and transform data of any size, stored anywhere.
 
 Ibis has three primary pieces:
 1. **A dataframe API for Python**.
