@@ -1100,7 +1100,7 @@ python-versions = "*"
 
 [[package]]
 name = "mkdocs"
-version = "1.4.0"
+version = "1.4.2"
 description = "Project documentation with Markdown."
 category = "dev"
 optional = false
@@ -1108,18 +1108,20 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 click = ">=7.0"
+colorama = {version = ">=0.4", markers = "platform_system == \"Windows\""}
 ghp-import = ">=1.0"
 importlib-metadata = {version = ">=4.3", markers = "python_version < \"3.10\""}
-Jinja2 = ">=2.11.1"
-Markdown = ">=3.2.1,<3.4"
+jinja2 = ">=2.11.1"
+markdown = ">=3.2.1,<3.4"
 mergedeep = ">=1.3.4"
 packaging = ">=20.5"
-PyYAML = ">=5.1"
+pyyaml = ">=5.1"
 pyyaml-env-tag = ">=0.1"
 watchdog = ">=2.0"
 
 [package.extras]
 i18n = ["babel (>=2.9.0)"]
+min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4)", "ghp-import (==1.0)", "importlib-metadata (==4.3)", "jinja2 (==2.11.1)", "markdown (==3.2.1)", "markupsafe (==2.0.1)", "mergedeep (==1.3.4)", "packaging (==20.5)", "pyyaml (==5.1)", "pyyaml-env-tag (==0.1)", "typing-extensions (==3.10)", "watchdog (==2.0)"]
 
 [[package]]
 name = "mkdocs-autorefs"
@@ -2555,7 +2557,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f2a695fd64e19beed5f01c9c1b113c0d732f756b195a154eec8d38ca7371cdf3"
+content-hash = "db214d1a154c23d543d8b3cdd1a20f20536e04955eac50222f997daf22d01bdb"
 
 [metadata.files]
 absolufy-imports = [
@@ -2915,6 +2917,19 @@ clickhouse-driver = [
     {file = "clickhouse_driver-0.2.4-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:8c776ab9592d456351ba2c4b05a8149761f36991033257d9c31ef6d26952dbe7"},
     {file = "clickhouse_driver-0.2.4-cp310-cp310-win32.whl", hash = "sha256:bb1423d6daa8736aade0f7d31870c28ab2e7553a21cf923af6f1ff4a219c0ac9"},
     {file = "clickhouse_driver-0.2.4-cp310-cp310-win_amd64.whl", hash = "sha256:3955616073d030dc8cc7b0ef68ffe045510334137c1b5d11447347352d0dec28"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:cd217a28e3821cbba49fc0ea87e0e6dde799e62af327d1f9c5f9480abd71e17c"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6f4863a8eb369a36266f372e9eacc3fe222e4d31e1b2a7a2da759b521fffad1c"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c87ce674ebb2f5e38b68c36464538fffdea4f5432bb136cb6980489ae3c6dbe9"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:383690650fccaffa7f0e56d6fb0b00b9227b408fb3d92291a1f1ed66ce83df7c"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9a68ac4633fd4cf265e619adeec1c0ee67ff1d9b5373c140b8400adcc4831c19"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5551056e5ab9e1dac67abbdf202b6e67590aa79a013a9da8ecbaec828e0790fe"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:93b601573779c5e8c2344cd983ef87de0fc8a31392bdc8571e79ed318f30dbbb"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:f228edc258f9ef6ee29b5618832b38479a0cfaa5bb837150ba62bbc1357a58cd"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-musllinux_1_1_ppc64le.whl", hash = "sha256:4b39c0f962a3664a72e0bfaa30929d0317b5e3427ff8b36d7889f8d31f4ff89e"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-musllinux_1_1_s390x.whl", hash = "sha256:47465598241cdf0b3a7810667c6104ada7b992a797768883ce30635a213568c3"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:e9f31e7ccfd5cf526fd9db50ade94504007992922c8e556ba54e8ba637e9cca0"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-win32.whl", hash = "sha256:da0bcd41aeb50ec4316808c11d591aef60fe1b9de997df10ffcad9ab3cb0efa2"},
+    {file = "clickhouse_driver-0.2.4-cp311-cp311-win_amd64.whl", hash = "sha256:bb64ad0dfcc5ee158b01411e7a828bb3b20e4a2bc2f99da219acff0a9d18808c"},
     {file = "clickhouse_driver-0.2.4-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:b746e83652fbb89cb907adfdd69d6a7c7019bb5bbbdf68454bdcd16b09959a00"},
     {file = "clickhouse_driver-0.2.4-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4b9cf37f0b7165619d2e0188a71018300ed1a937ca518b01a5d168aec0a09add"},
     {file = "clickhouse_driver-0.2.4-cp36-cp36m-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:be4da882979c5a6d5631b5db6acb6407d76c73be6635ab0a76378b98aac8e5ab"},
@@ -3552,8 +3567,8 @@ mistune = [
     {file = "mistune-0.8.4.tar.gz", hash = "sha256:59a3429db53c50b5c6bcc8a07f8848cb00d7dc8bdb431a4ab41920d201d4756e"},
 ]
 mkdocs = [
-    {file = "mkdocs-1.4.0-py3-none-any.whl", hash = "sha256:ce057e9992f017b8e1496b591b6c242cbd34c2d406e2f9af6a19b97dd6248faa"},
-    {file = "mkdocs-1.4.0.tar.gz", hash = "sha256:e5549a22d59e7cb230d6a791edd2c3d06690908454c0af82edc31b35d57e3069"},
+    {file = "mkdocs-1.4.2-py3-none-any.whl", hash = "sha256:c8856a832c1e56702577023cd64cc5f84948280c1c0fcc6af4cd39006ea6aa8c"},
+    {file = "mkdocs-1.4.2.tar.gz", hash = "sha256:8947af423a6d0facf41ea1195b8e1e8c85ad94ac95ae307fe11232e0424b11c5"},
 ]
 mkdocs-autorefs = [
     {file = "mkdocs-autorefs-0.4.1.tar.gz", hash = "sha256:70748a7bd025f9ecd6d6feeba8ba63f8e891a1af55f48e366d6d6e78493aba84"},
