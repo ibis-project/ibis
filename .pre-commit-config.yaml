@@ -1,7 +1,7 @@
 ci:
   autofix_commit_msg: "style: auto fixes from pre-commit.ci hooks"
   autofix_prs: false
-  autoupdate_commit_msg: "style: pre-commit.ci autoupdate"
+  autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
   skip:
     - prettier
     - shellcheck
@@ -9,11 +9,12 @@ ci:
     - just
     - nixpkgs-fmt
     - nix-linter
+    - poetry-check
 default_stages:
   - commit
 repos:
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.2.1
+    rev: 1.2.2
     hooks:
       - id: poetry-check
   - repo: https://github.com/pycqa/isort
