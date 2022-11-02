@@ -134,48 +134,15 @@ in
     format = "setuptools";
   });
 
-  backports-zoneinfo = super.backports-zoneinfo.overridePythonAttrs (attrs:
-    lib.optionalAttrs (self.pythonOlder "3.9") {
-      nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-    }
-  );
+  duckdb = super.duckdb.overridePythonAttrs (_: {
+    prePatch = ''
+      set -eo pipefail
 
-  pybind11 = super.pybind11.overridePythonAttrs (attrs: {
-    buildInputs = attrs.buildInputs or [ ] ++ (lib.optionals (self.pythonOlder "3.9") [ pkgs.libxcrypt ]);
-  });
+      # fail if $NIX_BUILD_CORES is undefined
 
-  duckdb = super.duckdb.overridePythonAttrs (
-    _: {
-      prePatch = ''
-        substituteInPlace setup.py --replace "multiprocessing.cpu_count()" "int(os.getenv('NIX_BUILD_CORES', multiprocessing.cpu_count()))"
-      '';
-    }
-  );
-
-  colorama = super.colorama.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
-
-  # remove this once https://github.com/NixOS/nixpkgs/pull/197757 is merged
-  flit-scm = self.buildPythonPackage rec {
-    pname = "flit-scm";
-    version = "1.7.0";
-
-    format = "pyproject";
-
-    src = pkgs.fetchFromGitLab {
-      owner = "WillDaSilva";
-      repo = "flit_scm";
-      rev = version;
-      sha256 = "sha256-K5sH+oHgX/ftvhkY+vIg6wUokAP96YxrTWds3tnEtyg=";
-      leaveDotGit = true;
-    };
-
-    nativeBuildInputs = [ self.flit-core self.setuptools-scm self.tomli pkgs.git ];
-    propagatedBuildInputs = [ self.flit-core self.setuptools-scm ] ++ lib.optionals (self.pythonOlder "3.11") [ self.tomli ];
-  };
-
-  exceptiongroup = super.exceptiongroup.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.flit-scm ];
+      set -u
+      substituteInPlace setup.py --replace "multiprocessing.cpu_count()" "$NIX_BUILD_CORES"
+      set +u
+    '';
   });
 }
