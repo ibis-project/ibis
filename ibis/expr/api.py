@@ -6,7 +6,8 @@ import datetime
 import functools
 import itertools
 import operator
-from typing import Iterable, Literal, Mapping, Sequence
+from pathlib import Path
+from typing import Any, Iterable, Literal, Mapping, Sequence
 from typing import Tuple as _Tuple
 from typing import TypeVar
 from typing import Union as _Union
@@ -198,6 +199,7 @@ __all__ = (
     'pi',
     'random',
     'range_window',
+    'read',
     'row_number',
     'rows_with_max_lookback',
     'schema',
@@ -869,6 +871,36 @@ def row_number() -> ir.IntegerColumn:
         A column expression enumerating rows
     """
     return ops.RowNumber().to_expr()
+
+
+def read(path: str | Path, **kwargs: Any) -> ir.Table:
+    """Lazily load a data source located at `path`.
+
+    Parameters
+    ----------
+    path
+        A filesystem path or URL. Supports CSV, TSV, and Parquet files.
+    kwargs
+        DuckDB-specific keyword arguments for the file type.
+
+        * CSV/TSV: https://duckdb.org/docs/data/csv#parameters.
+        * Parquet: https://duckdb.org/docs/data/parquet
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> batting = ibis.read("ci/ibis-testing-data/batting.csv")
+    >>> diamonds = ibis.read("ci/ibis-testing-data/parquet/diamonds/diamonds.parquet")
+    >>> ft = ibis.read("parquet://ci/ibis-testing-data/parquet/functional_alltypes/*")
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.register(str(path), **kwargs)
 
 
 e = ops.E().to_expr()
