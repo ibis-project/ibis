@@ -486,6 +486,13 @@ def _covar(t, op):
     return _binary_variance_reduction(func)(t, op)
 
 
+def _mode(t, op):
+    arg = op.arg
+    if op.where is not None:
+        arg = op.where.to_expr().ifelse(arg, None).op()
+    return sa.func.mode().within_group(t.translate(arg))
+
+
 def _binary_variance_reduction(func):
     def variance_compiler(t, op):
         x = op.left
@@ -590,5 +597,6 @@ operation_registry.update(
         ops.Covariance: _covar,
         ops.Correlation: _corr,
         ops.BitwiseXor: _bitwise_op("#"),
+        ops.Mode: _mode,
     }
 )

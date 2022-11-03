@@ -280,7 +280,6 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
                     "mysql",
                     "pandas",
                     "polars",
-                    "postgres",
                     "pyspark",
                     "snowflake",
                     "sqlite",
