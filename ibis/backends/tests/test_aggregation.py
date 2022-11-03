@@ -281,7 +281,6 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
                     "pandas",
                     "polars",
                     "pyspark",
-                    "snowflake",
                     "sqlite",
                 ]
             ),
