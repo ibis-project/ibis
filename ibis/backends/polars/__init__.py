@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping, MutableMapping
 
-import pandas as pd
 import polars as pl
 
 import ibis.common.exceptions as com
@@ -14,6 +14,35 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
+from ibis.common.dispatch import RegexDispatcher
+
+_register_file = RegexDispatcher("_register_file")
+
+
+def _name_from_path(path: Path) -> str:
+    base, *_ = path.name.partition(os.extsep)
+    return base.replace("-", "_")
+
+
+@_register_file.register(r"parquet://(?P<path>.+)", priority=10)
+def _parquet(_, path, table_name=None, **kwargs):
+    path = Path(path).absolute()
+    table_name = table_name or _name_from_path(path)
+    return ("scan_parquet", path, table_name)
+
+
+@_register_file.register(r"csv://(?P<path>.+)", priority=10)
+def _csv(_, path, table_name=None, **kwargs):
+    path = Path(path).absolute()
+    table_name = table_name or _name_from_path(path)
+    return ("scan_csv", path, table_name)
+
+
+@_register_file.register(r"(?:file://)?(?P<path>.+)", priority=9)
+def _file(_, path, table_name=None, **kwargs):
+    num_sep_chars = len(os.extsep)
+    extension = "".join(Path(path).suffixes)[num_sep_chars:]
+    return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
 
 
 class Backend(BaseBackend):
@@ -59,47 +88,25 @@ class Backend(BaseBackend):
         schema = sch.infer(self._tables[name])
         return self.table_class(name, schema, self).to_expr()
 
-    def register_csv(self, name: str, path: str | Path, **scan_csv_kwargs) -> None:
-        """Register a CSV file with with `name` located at `path`.
-
-        Parameters
-        ----------
-        name
-            The name of the table
-        path
-            The path to the CSV file
-        scan_csv_kwargs
-            kwargs passed to `pl.scan_csv`
-        """
-        self._tables[name] = pl.scan_csv(path, **scan_csv_kwargs)
-
-    def register_parquet(
-        self, name: str, path: str | Path, **scan_parquet_args
-    ) -> None:
-        """Register a Parquet file with with `name` located at `path`.
-
-        Parameters
-        ----------
-        name
-            The name of the table
-        path
-            The path to the Parquet file
-        scan_parquet_args
-            kwargs passed to `pl.scan_parquet`
-        """
-        self._tables[name] = pl.scan_parquet(path, **scan_parquet_args)
-
-    def register_pandas(self, name: str, df: pd.DataFrame) -> None:
-        """Register a pandas DataFrame with with `name`.
-
-        Parameters
-        ----------
-        name
-            The name of the table
-        df
-            The pandas DataFrame
-        """
-        self._tables[name] = pl.from_pandas(df).lazy()
+    def register(
+        self,
+        source: str | Path | Any,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        if isinstance(source, (str, Path)):
+            method, path, name = _register_file(
+                str(source), table_name=table_name, **kwargs
+            )
+            self._tables[name] = getattr(pl, method)(path, **kwargs)
+        else:
+            if table_name is None:
+                raise ValueError(
+                    "Must specify table_name for pandas DataFrame registration"
+                )
+            name = table_name
+            self._tables[name] = pl.from_pandas(source, **kwargs).lazy()
+        return self.table(name)
 
     def database(self, name=None):
         return self.database_class(name, self)

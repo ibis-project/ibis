@@ -18,9 +18,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(data_directory: Path):
         client = ibis.polars.connect({})
-        client.register_csv(
-            name='functional_alltypes',
-            path=data_directory / 'functional_alltypes.csv',
+        client.register(
+            data_directory / 'functional_alltypes.csv',
+            table_name='functional_alltypes',
             dtypes={
                 'index': pl.Int64,
                 'Unnamed 0': pl.Int64,
@@ -39,12 +39,12 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 'month': pl.Int64,
             },
         )
-        client.register_csv(name='batting', path=data_directory / 'batting.csv')
-        client.register_csv(
-            name='awards_players', path=data_directory / 'awards_players.csv'
+        client.register(data_directory / 'batting.csv', table_name='batting')
+        client.register(
+            data_directory / 'awards_players.csv', table_name='awards_players'
         )
-        client.register_pandas(name='array_types', df=array_types)
-        client.register_pandas(name='struct', df=struct_types)
+        client.register(array_types, table_name='array_types')
+        client.register(struct_types, table_name='struct')
 
         return client
 
