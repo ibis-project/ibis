@@ -24,6 +24,7 @@ def df():
             'plain_datetimes_utc': pd.Series(
                 pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values
             ).dt.tz_localize('UTC'),
+            'plain_uint64': pd.Series(range(1, 4), dtype=np.dtype('uint64')),
             'dup_strings': list('dad'),
             'dup_ints': [1, 2, 1],
             'float64_as_strings': ['100.01', '234.23', '-999.34'],

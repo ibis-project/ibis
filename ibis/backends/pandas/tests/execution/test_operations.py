@@ -848,3 +848,67 @@ def test_union_with_list_types(t, df, distinct):
     result = expr.execute()
     expected = df if distinct else pd.concat([df, df], axis=0, ignore_index=True)
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        pytest.param(
+            lambda column: column + column,
+            id="sum",
+        ),
+        pytest.param(
+            lambda column: column + 1,
+            id="sum_scalar",
+        ),
+        pytest.param(
+            lambda column: column - column,
+            id="subtract",
+        ),
+        pytest.param(
+            lambda column: column - 1,
+            id="subtract_scalar",
+        ),
+        pytest.param(
+            lambda column: column * column,
+            id="multiply",
+        ),
+        pytest.param(
+            lambda column: column * 2,
+            id="multiply_scalar",
+        ),
+        pytest.param(
+            lambda column: column % column,
+            id="mod",
+            marks=pytest.mark.xfail(
+                raises=ZeroDivisionError,
+                reason=("Ibis cannot modulo divide two unsigned integer columns."),
+            ),
+        ),
+        pytest.param(
+            lambda column: column % 2,
+            id="mod_scalar",
+        ),
+        pytest.param(
+            lambda column: column / column,
+            id="divide",
+        ),
+        pytest.param(
+            lambda column: column / 2,
+            id="divide_scalar",
+        ),
+        pytest.param(
+            lambda column: column // column,
+            id="floordivide",
+        ),
+        pytest.param(
+            lambda column: column // 2,
+            id="floordivide_scalar",
+        ),
+    ],
+)
+def test_unsigned_integers(t, df, operation):
+    expr = operation(t.plain_uint64)
+    result = expr.execute()
+    expected = operation(df.plain_uint64)
+    tm.assert_series_equal(result, expected)

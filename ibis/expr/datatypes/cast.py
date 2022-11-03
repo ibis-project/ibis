@@ -80,10 +80,12 @@ def can_cast_null(source: dt.DataType, target: dt.DataType, **kwargs) -> bool:
 def can_cast_to_differently_signed_integer_type(
     source: dt.Integer, target: dt.Integer, value: int | None = None, **kwargs
 ) -> bool:
-    if value is None:
-        return False
-    bounds = target.bounds
-    return bounds.lower <= value <= bounds.upper
+    if value is not None:
+        return target.bounds.lower <= value <= target.bounds.upper
+    else:
+        return (target.bounds.upper - target.bounds.lower) >= (
+            source.bounds.upper - source.bounds.lower
+        )
 
 
 @castable.register(dt.SignedInteger, dt.SignedInteger)
