@@ -573,6 +573,10 @@ class Column(Value, JupyterMixin):
         """
         return ops.ApproxMedian(self, where).to_expr().name("approx_median")
 
+    def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
+        """Return the mode of a column."""
+        return ops.Mode(self, where).to_expr().name("mode")
+
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column."""
         return ops.Max(self, where).to_expr().name("max")

@@ -50,6 +50,25 @@ aggregate_test_params = [
         id='max',
     ),
     param(
+        # int_col % 3 so there are no ties for most common value
+        lambda t: (t.int_col % 3).mode(),
+        lambda t: (t.int_col % 3).mode().iloc[0],
+        id='mode',
+        marks=pytest.mark.notyet(
+            [
+                "clickhouse",
+                "dask",
+                "datafusion",
+                "impala",
+                "mysql",
+                "pandas",
+                "polars",
+                "pyspark",
+                "sqlite",
+            ]
+        ),
+    ),
+    param(
         lambda t: (t.double_col + 5).sum(),
         lambda t: (t.double_col + 5).sum(),
         id='complex_sum',
@@ -248,6 +267,27 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             id='max',
         ),
         param(
+            # int_col % 3 so there are no ties for most common value
+            lambda t, where: (t.int_col % 3).mode(where=where),
+            lambda t, where: (t.int_col % 3)[where].mode().iloc[0],
+            id='mode',
+            marks=pytest.mark.notyet(
+                [
+                    "clickhouse",
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pandas",
+                    "polars",
+                    "postgres",
+                    "pyspark",
+                    "snowflake",
+                    "sqlite",
+                ]
+            ),
+        ),
+        param(
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
@@ -387,9 +427,6 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: t.count(where=where),
             lambda t, where: len(t[where]),
             id='count_star',
-            marks=[
-                # pytest.mark.notimpl(["polars"]),
-            ],
         ),
     ],
 )
