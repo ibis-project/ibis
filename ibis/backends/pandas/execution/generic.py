@@ -752,6 +752,24 @@ def execute_argmin_series_mask(op, data, key, mask, aggcontext=None, **kwargs):
     return masked.iloc[idx]
 
 
+@execute_node.register(ops.Mode, pd.Series, (pd.Series, type(None)))
+def execute_mode_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data, lambda x: x.mode().iloc[0]
+    )
+
+
+@execute_node.register(ops.Mode, SeriesGroupBy, (SeriesGroupBy, type(None)))
+def execute_mode_series_groupby(_, data, mask, aggcontext=None, **kwargs):
+    def mode(x):
+        return x.mode().iloc[0]
+
+    if mask is not None:
+        mode = functools.partial(_filtered_reduction, mask.obj, mode)
+
+    return aggcontext.agg(data, mode)
+
+
 @execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
 def execute_not_bool(_, data, **kwargs):
     return not data
