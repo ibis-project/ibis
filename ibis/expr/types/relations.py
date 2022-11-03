@@ -400,6 +400,8 @@ class Table(Expr, JupyterMixin):
 
         return agg.to_expr()
 
+    agg = aggregate
+
     def distinct(self) -> Table:
         """Compute the set of unique rows in the table."""
         return ops.Distinct(self).to_expr()
