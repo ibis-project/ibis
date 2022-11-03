@@ -57,7 +57,6 @@ aggregate_test_params = [
         marks=pytest.mark.notyet(
             [
                 "clickhouse",
-                "dask",
                 "datafusion",
                 "impala",
                 "mysql",
@@ -273,7 +272,6 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             marks=pytest.mark.notyet(
                 [
                     "clickhouse",
-                    "dask",
                     "datafusion",
                     "impala",
                     "mysql",
