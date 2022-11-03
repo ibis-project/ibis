@@ -31,7 +31,6 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.common.dispatch import RegexDispatcher
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -379,14 +378,17 @@ class BaseBackend(abc.ABC, ResultHandler):
         Parameters
         ----------
         args
-            Connection parameters
+            Mandatory connection parameters, see the docstring of `do_connect`
+            for details.
         kwargs
-            Additional connection parameters
+            Extra connection parameters, see the docstring of `do_connect` for
+            details.
 
         Notes
         -----
-        This returns a new backend instance with saved `args` and `kwargs`,
-        calling `reconnect` is called before returning.
+        This creates a new backend instance with saved `args` and `kwargs`,
+        then calls `reconnect` and finally returns the newly created and
+        connected backend instance.
 
         Returns
         -------
@@ -731,9 +733,6 @@ class BaseBackend(abc.ABC, ResultHandler):
         )
 
 
-_connect = RegexDispatcher("_connect")
-
-
 @functools.lru_cache(maxsize=None)
 def _get_backend_names() -> frozenset[str]:
     """Return the set of known backend names.
@@ -753,125 +752,83 @@ def _get_backend_names() -> frozenset[str]:
     return frozenset(ep.name for ep in entrypoints)
 
 
-_PATTERN = "|".join(
-    sorted(_get_backend_names().difference(("duckdb", "sqlite", "pyspark")))
-)
+def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
+    """Connect to `resource`, inferring the backend automatically.
 
-
-@_connect.register(rf"(?P<backend>{_PATTERN})://.+", priority=12)
-def _(url: str, *, backend: str, **kwargs: Any) -> BaseBackend:
-    """Connect to given `backend` with `path`.
-
-    Examples
-    --------
-    >>> con = ibis.connect("postgres://user:pass@hostname:port/database")
-    >>> con = ibis.connect("mysql://user:pass@hostname:port/database")
-    """
-    instance: BaseBackend = getattr(ibis, backend)
-    backend += (backend == "postgres") * "ql"
-    params = "?" * bool(kwargs) + urllib.parse.urlencode(kwargs)
-    url += params
-    return instance._from_url(url)
-
-
-@_connect.register(
-    r"(?P<backend>duckdb|sqlite|pyspark)://(?P<path>.*)",
-    priority=12,
-)
-def _(_: str, *, backend: str, path: str, **kwargs: Any) -> BaseBackend:
-    """Connect to given `backend` with `path`.
+    Parameters
+    ----------
+    resource
+        A URL or path to the resource to be connected to.
 
     Examples
     --------
-    >>> con = ibis.connect("duckdb://relative/path/to/data.db")
+    Connect to an on-disk parquet or csv file (uses duckdb by default):
+    >>> con = ibis.connect("/path/to/data.parquet")
+    >>> con = ibis.connect("/path/to/data.csv")
+
+    Connect to an in-memory duckdb database:
+    >>> con = ibis.connect("duckdb://")
+
+    Connect to an on-disk sqlite database:
+    >>> con = ibis.connect("sqlite://relative/path/to/data.db")
     >>> con = ibis.connect("sqlite:///absolute/path/to/data.db")
+
+    Connect to a postgres server:
+    >>> con = ibis.connect("postgres://user:password@hostname:5432")
     """
-    instance: BaseBackend = getattr(ibis, backend)
-    params = "?" * bool(kwargs) + urllib.parse.urlencode(kwargs)
-    path += params
-    # extra slash for sqlalchemy
-    return instance._from_url(f"{backend}:///{path}")
+    url = resource = str(resource)
 
+    if re.match("[A-Za-z]:", url):
+        # windows path with drive, treat it as a file
+        url = f"file://{url}"
 
-@_connect.register(r"file://(?P<path>.*)", priority=10)
-def _(_: str, *, path: str, **kwargs: Any) -> BaseBackend:
-    """Connect to file located at `path`."""
-    return _connect(path, **kwargs)
+    parsed = urllib.parse.urlparse(url)
+    scheme = parsed.scheme or "file"
 
+    # Merge explicit kwargs with query string, explicit kwargs
+    # taking precedence
+    kwargs = dict(urllib.parse.parse_qsl(parsed.query), **kwargs)
 
-@_connect.register(r".+\.(?P<backend>.+)", priority=1)
-def _(path: str, *, backend: str, **kwargs: Any) -> BaseBackend:
-    """Connect to given path.
+    if scheme == "file":
+        path = parsed.netloc + parsed.path
+        if path.endswith(".duckdb"):
+            return ibis.duckdb.connect(path, **kwargs)
+        elif path.endswith((".sqlite", ".db")):
+            return ibis.sqlite.connect(path, **kwargs)
+        elif path.endswith((".parquet", ".csv", ".csv.gz")):
+            # Load parquet/csv/csv.gz files with duckdb by default
+            con = ibis.duckdb.connect(**kwargs)
+            return con.register(path)
+        else:
+            raise ValueError(f"Don't know how to connect to {resource!r}")
 
-    The extension is assumed to be the name of an ibis backend.
+    if kwargs:
+        # If there are kwargs (either explicit or from the query string),
+        # re-add them to the parsed URL
+        query = urllib.parse.urlencode(kwargs)
+        parsed = parsed._replace(query=query)
 
-    Examples
-    --------
-    >>> con = ibis.connect("file://relative/path/to/data.duckdb")
-    """
-    return getattr(ibis, backend).connect(path, **kwargs)
+    if scheme in ("postgres", "postgresql"):
+        # Treat `postgres://` and `postgresql://` the same, just as postgres
+        # does. We normalize to `postgresql` since that's what SQLAlchemy
+        # accepts.
+        scheme = "postgres"
+        parsed = parsed._replace(scheme="postgresql")
 
+    # Convert all arguments back to a single URL string
+    url = parsed.geturl()
+    if "://" not in url:
+        # SQLAlchemy requires a `://`, while urllib may roundtrip
+        # `duckdb://` to `duckdb:`. Here we re-add the missing `//`.
+        url = url.replace(":", "://", 1)
+    if scheme in ("duckdb", "sqlite", "pyspark"):
+        # SQLAlchemy wants an extra slash for URLs where the path
+        # maps to a relative/absolute location on the filesystem
+        url = url.replace(":", ":/", 1)
 
-@functools.singledispatch
-def connect(resource: Path | str, **_: Any) -> BaseBackend:
-    """Connect to `resource`.
+    try:
+        backend = getattr(ibis, scheme)
+    except AttributeError:
+        raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
-    `resource` can be a `pathlib.Path` or a `str` specifying a URL or path.
-
-    Examples
-    --------
-    >>> con = ibis.connect("duckdb:///absolute/path/to/data.db")
-    >>> con = ibis.connect("relative/path/to/data.duckdb")
-    """
-    raise NotImplementedError(type(resource))
-
-
-@connect.register
-def _(path: Path, **kwargs: Any) -> BaseBackend:
-    return _connect(str(path), **kwargs)
-
-
-@connect.register
-def _(url: str, **kwargs: Any) -> BaseBackend:
-    return _connect(url, **kwargs)
-
-
-@_connect.register(
-    r"(?P<backend>.+)://(?P<filename>.+\.(?P<extension>.+))",
-    priority=11,
-)
-def _(
-    _: str,
-    *,
-    backend: str,
-    filename: str,
-    extension: str,
-    **kwargs: Any,
-) -> BaseBackend:
-    """Connect to `backend` and register a file.
-
-    The extension of the file will be used to register the file with
-    the backend.
-
-    Examples
-    --------
-    >>> con = ibis.connect("duckdb://relative/path/to/data.csv")
-    >>> con = ibis.connect("duckdb:///absolute/path/to/more/data.parquet")
-    """
-    con = getattr(ibis, backend).connect(**kwargs)
-    con.register(f"{extension}://{filename}")
-    return con
-
-
-@_connect.register(r".+\.(?:parquet|csv(?:\.gz)?)", priority=8)
-def _(filename: str, **_: Any) -> BaseBackend:
-    """Connect to the default backend (DuckDB) and return a table.
-
-    Examples
-    --------
-    >>> table1 = ibis.connect("relative/path/to/file1.csv")
-    >>> table2 = ibis.connect("relative/path/to/file2.parquet")
-    >>> table3 = ibis.connect("relative/path/to/file3.csv.gz")
-    """
-    con = ibis.duckdb.connect()
-    return con.register(filename)
+    return backend._from_url(url)

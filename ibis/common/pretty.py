@@ -6,13 +6,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.types as ir
 
-_IBIS_TO_SQLGLOT_NAME_MAP = {
-    # not 100% accurate, but very close
-    "impala": "hive",
-    # for now map clickhouse to Hive so that _something_ works
-    "clickhouse": "mysql",
-}
-
 
 def show_sql(
     expr: ir.Expr,
@@ -77,30 +70,25 @@ def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
         except com.IbisError:
             # default to duckdb for sqlalchemy compilation because it supports
             # the widest array of ibis features for SQL backends
+            backend = ibis.duckdb
             read = "duckdb"
             write = ibis.options.sql.default_dialect
         else:
-            read = write = backend.name
+            read = write = getattr(backend, "_sqlglot_dialect", backend.name)
     else:
-        read = write = dialect
+        try:
+            backend = getattr(ibis, dialect)
+        except AttributeError:
+            raise ValueError(f"Unknown dialect {dialect}")
+        else:
+            read = write = getattr(backend, "_sqlglot_dialect", dialect)
 
-    write = _IBIS_TO_SQLGLOT_NAME_MAP.get(write, write)
-
-    try:
-        compiled = expr.compile()
-    except com.IbisError:
-        backend = getattr(ibis, read)
-        compiled = backend.compile(expr)
+    compiled = backend.compile(expr)
     try:
         sql = str(compiled.compile(compile_kwargs={"literal_binds": True}))
     except (AttributeError, TypeError):
         sql = compiled
 
     assert isinstance(sql, str), f"expected `str`, got `{sql.__class__.__name__}`"
-    (pretty,) = sqlglot.transpile(
-        sql,
-        read=_IBIS_TO_SQLGLOT_NAME_MAP.get(read, read),
-        write=write,
-        pretty=True,
-    )
+    (pretty,) = sqlglot.transpile(sql, read=read, write=write, pretty=True)
     return pretty

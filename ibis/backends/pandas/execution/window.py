@@ -344,10 +344,10 @@ def execute_window_op(
                 timecontext=adjusted_timecontext,
                 **kwargs,
             )
-            source = sorted_df.groupby(grouping_keys, sort=True)
+            source = sorted_df.groupby(grouping_keys, sort=True, group_keys=False)
             post_process = _post_process_group_by_order_by
         else:
-            source = data.groupby(grouping_keys, sort=False)
+            source = data.groupby(grouping_keys, sort=False, group_keys=False)
             post_process = _post_process_group_by
     else:
         if order_by:

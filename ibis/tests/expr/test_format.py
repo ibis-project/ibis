@@ -275,6 +275,21 @@ def test_tables_have_format_value_rules(cls):
     assert cls in ibis.expr.format.fmt_value.registry
 
 
+@pytest.mark.parametrize(
+    "f",
+    [
+        lambda t1, t2: t1.count(),
+        lambda t1, t2: t1.join(t2, t1.a == t2.a).count(),
+        lambda t1, t2: ibis.union(t1, t2).count(),
+    ],
+)
+def test_table_value_expr(f):
+    t1 = ibis.table([("a", "int"), ("b", "float")], name="t1")
+    t2 = ibis.table([("a", "int"), ("b", "float")], name="t2")
+    expr = f(t1, t2)
+    repr(expr)  # smoketest
+
+
 def test_window_no_group_by():
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = t.a.mean().over(ibis.window(preceding=0))

@@ -403,6 +403,7 @@ def test_exists_subquery_repr(t1, t2):
     repr(stmt.where[0])
 
 
+@sqlgolden
 def test_filter_inside_exists():
     events = ibis.table(
         [
@@ -460,6 +461,7 @@ def test_multiple_limits(functional_alltypes):
     return expr
 
 
+@sqlgolden
 def test_join_filtered_tables_no_pushdown():
     # #790, #781
     tbl_a = ibis.table(

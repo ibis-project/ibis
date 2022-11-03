@@ -268,16 +268,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> table = ibis.table(dict(string_col='string'))
-        >>> expr = table.string_col.translate('a', 'b')
-        >>> expr
-        r0 := UnboundTable: unbound_table_0
-          string_col string
-        Translate(r0.string_col, from_str='a', to_str='b')
-        >>> expr = table.string_col.translate('a', 'bc')
-        >>> expr
-        r0 := UnboundTable: unbound_table_0
-          string_col string
-        Translate(r0.string_col, from_str='a', to_str='bc')
+        >>> result = table.string_col.translate('a', 'b')
         """
         return ops.Translate(self, from_str, to_str).to_expr()
 
@@ -330,19 +321,11 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(strings='string'))
-        >>> expr = table.strings.lpad(5, '-')
-        >>> expr
-        r0 := UnboundTable: unbound_table_1
-          strings string
-        LPad(r0.strings, length=5, pad='-')
-        >>> expr = ibis.literal('a').lpad(5, '-')  # 'a' becomes '----a'
-        >>> expr
-        LPad('a', length=5, pad='-')
-        >>> expr = ibis.literal('abcdefg').lpad(5, '-')  # 'abcdefg' becomes 'abcde'
-        >>> expr
-        LPad('abcdefg', length=5, pad='-')
-        """  # noqa: E501
+        >>> short_str = ibis.literal("a")
+        >>> result = short_str.lpad(5, "-")  # ----a
+        >>> long_str = ibis.literal("abcdefg")
+        >>> result = long_str.lpad(5, "-")  # abcde
+        """
         return ops.LPad(self, length, pad).to_expr()
 
     def rpad(
@@ -364,24 +347,16 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'))
-        >>> expr = table.string_col.rpad(5, '-')
-        >>> expr
-        r0 := UnboundTable: unbound_table_2
-          string_col string
-        RPad(r0.string_col, length=5, pad='-')
-        >>> expr = ibis.literal('a').rpad(5, '-')  # 'a' becomes 'a----'
-        >>> expr
-        RPad('a', length=5, pad='-')
-        >>> expr = ibis.literal('abcdefg').rpad(5, '-')  # 'abcdefg' becomes 'abcde'
-        >>> expr
-        RPad('abcdefg', length=5, pad='-')
+        >>> short_str = ibis.literal("a")
+        >>> result = short_str.lpad(5, "-")  # a----
+        >>> long_str = ibis.literal("abcdefg")
+        >>> result = long_str.lpad(5, "-")  # abcde
 
         Returns
         -------
         StringValue
             Padded string
-        """  # noqa: E501
+        """
         return ops.RPad(self, length, pad).to_expr()
 
     def find_in_set(self, str_list: Sequence[str]) -> ir.IntegerValue:
@@ -397,12 +372,8 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(strings='string'))
-        >>> result = table.strings.find_in_set(['a', 'b'])
-        >>> result
-        r0 := UnboundTable: unbound_table_0
-          strings string
-        FindInSet(needle=r0.strings, values=[ValueList(values=['a', 'b'])])
+        >>> table = ibis.table(dict(string_col='string'))
+        >>> result = table.string_col.find_in_set(['a', 'b'])
 
         Returns
         -------
@@ -425,8 +396,6 @@ class StringValue(Value):
         >>> import ibis
         >>> sep = ibis.literal(',')
         >>> result = sep.join(['a', 'b', 'c'])
-        >>> result
-        StringJoin(sep=',', [ValueList(values=['a', 'b', 'c'])])
 
         Returns
         -------
@@ -447,8 +416,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> text = ibis.literal('Ibis project')
-        >>> text.startswith('Ibis')
-        StartsWith('Ibis project', start='Ibis')
+        >>> result = text.startswith('Ibis')
 
         Returns
         -------
@@ -469,8 +437,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> text = ibis.literal('Ibis project')
-        >>> text.endswith('project')
-        EndsWith('Ibis project', end='project')
+        >>> result = text.endswith('project')
 
         Returns
         -------
@@ -596,18 +563,14 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(strings='string'))
-        >>> result = table.strings.replace('(b+)', r'<\1>')  # 'aaabbbaa' becomes 'aaa<bbb>aaa'
-        >>> result
-        r0 := UnboundTable: unbound_table_1
-          strings string
-        StringReplace(r0.strings, pattern='(b+)', replacement='<\\1>')
+        >>> str_literal = ibis.literal("aaabbbaaa")
+        >>> result = str_literal.re_replace("(b+)", r"<\1>")  # aaa<bbb>aaa
 
         Returns
         -------
         StringValue
             Modified string
-        """  # noqa: E501
+        """
         return ops.RegexReplace(self, pattern, replacement).to_expr()
 
     def replace(
@@ -627,18 +590,14 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(strings='string'))
-        >>> result = table.strings.replace('aaa', 'foo')  # 'aaabbbaaa' becomes 'foobbbfoo'
-        >>> result
-        r0 := UnboundTable: unbound_table_1
-          strings string
-        StringReplace(r0.strings, pattern='aaa', replacement='foo')
+        >>> str_literal = ibis.literal("aaabbbaaa")
+        >>> result = str_literal.replace("aaa", "ccc")  # cccbbbccc
 
         Returns
         -------
         StringValue
             Replaced string
-        """  # noqa: E501
+        """
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
     def to_timestamp(
@@ -658,8 +617,6 @@ class StringValue(Value):
         >>> import ibis
         >>> date_as_str = ibis.literal('20170206')
         >>> result = date_as_str.to_timestamp('%Y%m%d')
-        >>> result
-        StringToTimestamp('20170206', format_str='%Y%m%d')
 
         Returns
         -------
@@ -695,9 +652,9 @@ class StringValue(Value):
 
         Examples
         --------
-        >>> url = "https://www.youtube.com/watch?v=kEuEcWfewf8&t=10"
-        >>> parse_url(url, 'QUERY', 'v')  # doctest: +SKIP
-        'kEuEcWfewf8'
+        >>> import ibis
+        >>> url = ibis.literal("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10")
+        >>> result = url.parse_url('QUERY', 'v')  # kEuEcWfewf
 
         Returns
         -------
@@ -740,7 +697,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat([self, other, *args]).to_expr()
+        return ops.StringConcat(self, other, *args).to_expr()
 
     def __add__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -755,7 +712,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat([self, other]).to_expr()
+        return ops.StringConcat(self, other).to_expr()
 
     def __radd__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -770,7 +727,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat([other, self]).to_expr()
+        return ops.StringConcat(other, self).to_expr()
 
     def convert_base(
         self,

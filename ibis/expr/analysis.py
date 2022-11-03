@@ -229,7 +229,6 @@ def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | 
     # name does not exist in the original table.
     # Given these two data structures, we can compute the mutation node exprs
     # based on whether any columns are being overwritten.
-    # TODO issue #2649
     overwriting_cols_to_expr: dict[str, ir.Expr | None] = {}
     non_overwriting_exprs: list[ir.Expr] = []
     table_schema = table.schema()

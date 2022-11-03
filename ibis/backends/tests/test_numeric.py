@@ -513,7 +513,7 @@ def test_sa_default_numeric_precision_and_scale(
     table_name = 'test_sa_default_param_decimal'
     engine = con.con
     table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
-    table.create(bind=engine)
+    table.create(bind=engine, checkfirst=True)
 
     try:
         # Check that we can correctly recover the default precision and scale.

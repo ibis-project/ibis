@@ -1623,3 +1623,38 @@ def test_numpy_ufuncs_dont_cast_columns():
     x = np.int64(1)
     for expr in [t.a + x, x + t.a]:
         assert expr.equals(t.a + ibis.literal(x))
+
+
+@pytest.mark.parametrize(
+    'operation',
+    [
+        operator.lt,
+        operator.gt,
+        operator.ge,
+        operator.le,
+        operator.eq,
+        operator.ne,
+    ],
+)
+def test_logical_comparison_rlz_incompatible_error(table, operation):
+    with pytest.raises(TypeError) as exc_info:
+        operation(table.b, "foo")
+
+    assert "b:int16 and Literal(foo):string" in str(exc_info.value)
+
+
+def test_case_rlz_incompatible_error(table):
+    case, result = "foo", table.a
+    with pytest.raises(TypeError) as exc_info:
+        table.g.case().when(case == result, result).end()
+
+    assert "a:int8 and Literal(foo):string" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("func", [ibis.asc, ibis.desc])
+def test_group_by_order_by_deferred(func):
+    from ibis import _
+
+    table = ibis.table(dict(x="string", y="int"), name="t")
+    expr = table.group_by(_.x).aggregate(mean_y=_.y.mean()).order_by(func(_.mean_y))
+    assert isinstance(expr, ir.Table)

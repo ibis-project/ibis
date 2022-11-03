@@ -66,7 +66,7 @@ operations = [
     ops.RegexReplace('asd', 'as', 'a'),
     ops.StringReplace('asd', 'as', 'a'),
     ops.StringSplit('asd', 's'),
-    ops.StringConcat(['s', 'e']),
+    ops.StringConcat('s', 'e'),
     ops.StartsWith('asd', 'as'),
     ops.EndsWith('asd', 'xyz'),
     ops.Not(false),
@@ -80,6 +80,11 @@ operations = [
 
 @pytest.fixture(scope='module', params=operations)
 def op(request):
+    with pytest.warns(FutureWarning):
+        # .op().op() deprecated, do not use for new code
+        r = request.param.op()
+        assert r is request.param
+
     return request.param
 
 

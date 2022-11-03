@@ -41,12 +41,22 @@ class Backend(BasePandasBackend):
         Examples
         --------
         >>> import ibis
-        >>> data = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
+        >>> import dask.dataframe as dd
+        >>> data = {
+        ...     "t": dd.read_parquet("path/to/file.parquet"),
+        ...     "s": dd.read_csv("path/to/file.csv"),
+        ... }
         >>> ibis.dask.connect(data)
         """
         # register dispatchers
         from ibis.backends.dask import udf  # noqa: F401
 
+        for k, v in dictionary.items():
+            if not isinstance(v, (dd.DataFrame, pd.DataFrame)):
+                raise TypeError(
+                    f"Expected an instance of 'dask.dataframe.DataFrame' for {k!r},"
+                    f" got an instance of '{type(v).__name__}' instead."
+                )
         super().do_connect(dictionary)
 
     @property

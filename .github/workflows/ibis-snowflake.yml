@@ -43,13 +43,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.2'
+      - run: python -m pip install --upgrade pip 'poetry>=1.2'
 
       - name: set a compatible pyarrow version
         run: poetry add pyarrow@'>=8.0.0,<8.1.0' --optional
 
       - name: install ibis
-        run: poetry install --extras ${{ matrix.backend.name }}
+        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
 
       - uses: extractions/setup-just@v1
         env:

@@ -38,7 +38,7 @@ from ibis.backends.pandas.core import (
 )
 from ibis.backends.pandas.dispatch import execute_literal, execute_node
 from ibis.backends.pandas.execution import constants
-from ibis.backends.pandas.execution.util import coerce_to_output
+from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import get_time_col
 from ibis.expr.typing import TimeContext
@@ -94,7 +94,7 @@ def execute_limit_frame(op, data, nrows, offset, **kwargs):
 @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
 def execute_cast_series_group_by(op, data, type, **kwargs):
     result = execute_cast_series_generic(op, data.obj, type, **kwargs)
-    return result.groupby(data.grouper.groupings)
+    return result.groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
@@ -201,7 +201,9 @@ def execute_series_negate(op, data, **kwargs):
 
 @execute_node.register(ops.Negate, SeriesGroupBy)
 def execute_series_group_by_negate(op, data, **kwargs):
-    return execute_series_negate(op, data.obj, **kwargs).groupby(data.grouper.groupings)
+    return execute_series_negate(op, data.obj, **kwargs).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 @execute_node.register(ops.Unary, pd.Series)
@@ -463,7 +465,7 @@ def execute_aggregation_dataframe(
             )
             for key in op.by
         ]
-        source = data.groupby(grouping_keys)
+        source = data.groupby(grouping_keys, group_keys=False)
     else:
         source = data
 
@@ -750,6 +752,24 @@ def execute_argmin_series_mask(op, data, key, mask, aggcontext=None, **kwargs):
     return masked.iloc[idx]
 
 
+@execute_node.register(ops.Mode, pd.Series, (pd.Series, type(None)))
+def execute_mode_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data, lambda x: x.mode().iloc[0]
+    )
+
+
+@execute_node.register(ops.Mode, SeriesGroupBy, (SeriesGroupBy, type(None)))
+def execute_mode_series_groupby(_, data, mask, aggcontext=None, **kwargs):
+    def mode(x):
+        return x.mode().iloc[0]
+
+    if mask is not None:
+        mode = functools.partial(_filtered_reduction, mask.obj, mode)
+
+    return aggcontext.agg(data, mode)
+
+
 @execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
 def execute_not_bool(_, data, **kwargs):
     return not data
@@ -803,33 +823,33 @@ def execute_binary_op_date(op, left, right, **kwargs):
 
 @execute_node.register(ops.Binary, SeriesGroupBy, SeriesGroupBy)
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
-    left_groupings = left.grouper.groupings
-    right_groupings = right.grouper.groupings
+    left_groupings = get_grouping(left.grouper.groupings)
+    right_groupings = get_grouping(right.grouper.groupings)
     if left_groupings != right_groupings:
         raise ValueError(
             'Cannot perform {} operation on two series with '
             'different groupings'.format(type(op).__name__)
         )
     result = execute_binary_op(op, left.obj, right.obj, **kwargs)
-    return result.groupby(left_groupings)
+    return result.groupby(left_groupings, group_keys=False)
 
 
 @execute_node.register(ops.Binary, SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
     result = execute_binary_op(op, left.obj, right, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    return result.groupby(get_grouping(left.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.Binary, simple_types, SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
     result = execute_binary_op(op, left, right.obj, **kwargs)
-    return result.groupby(right.grouper.groupings)
+    return result.groupby(get_grouping(right.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.Unary, SeriesGroupBy)
 def execute_unary_op_series_gb(op, operand, **kwargs):
     result = execute_node(op, operand.obj, **kwargs)
-    return result.groupby(operand.grouper.groupings)
+    return result.groupby(get_grouping(operand.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(
@@ -839,13 +859,13 @@ def execute_unary_op_series_gb(op, operand, **kwargs):
 )
 def execute_log_series_gb_others(op, left, right, **kwargs):
     result = execute_node(op, left.obj, right, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    return result.groupby(get_grouping(left.grouper.groupings), group_keys=False)
 
 
 @execute_node.register((ops.Log, ops.Round), SeriesGroupBy, SeriesGroupBy)
 def execute_log_series_gb_series_gb(op, left, right, **kwargs):
     result = execute_node(op, left.obj, right.obj, **kwargs)
-    return result.groupby(left.grouper.groupings)
+    return result.groupby(get_grouping(left.grouper.groupings), group_keys=False)
 
 
 @execute_node.register(ops.Not, pd.Series)
@@ -959,8 +979,8 @@ def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
-@execute_node.register(ops.StringConcat, collections.abc.Sequence)
-def execute_node_string_concat(op, args, **kwargs):
+@execute_node.register(ops.StringConcat, [object])
+def execute_node_string_concat(op, *args, **kwargs):
     return functools.reduce(operator.add, args)
 
 
@@ -993,7 +1013,9 @@ def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
 def execute_node_contains_series_group_by_sequence(op, data, elements, **kwargs):
-    return data.obj.isin(elements).groupby(data.grouper.groupings)
+    return data.obj.isin(elements).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 @execute_node.register(
@@ -1011,7 +1033,9 @@ def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     (collections.abc.Sequence, collections.abc.Set, pd.Series),
 )
 def execute_node_not_contains_series_group_by_sequence(op, data, elements, **kwargs):
-    return (~data.obj.isin(elements)).groupby(data.grouper.groupings)
+    return (~data.obj.isin(elements)).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
 
 
 def pd_where(cond, true, false):
@@ -1162,30 +1186,33 @@ def coalesce(values):
 
 @toolz.curry
 def promote_to_sequence(length, obj):
-    return obj.values if isinstance(obj, pd.Series) else np.repeat(obj, length)
+    try:
+        return obj.values
+    except AttributeError:
+        return np.repeat(obj, length)
 
 
-def compute_row_reduction(func, value, **kwargs):
-    final_sizes = {len(x) for x in value if isinstance(x, Sized)}
+def compute_row_reduction(func, values, **kwargs):
+    final_sizes = {len(x) for x in values if isinstance(x, Sized)}
     if not final_sizes:
-        return func(value)
+        return func(values)
     (final_size,) = final_sizes
-    raw = func(list(map(promote_to_sequence(final_size), value)), **kwargs)
+    raw = func(list(map(promote_to_sequence(final_size), values)), **kwargs)
     return pd.Series(raw).squeeze()
 
 
-@execute_node.register(ops.Greatest, collections.abc.Sequence)
-def execute_node_greatest_list(op, value, **kwargs):
-    return compute_row_reduction(np.maximum.reduce, value, axis=0)
+@execute_node.register(ops.Greatest, [object])
+def execute_node_greatest_list(op, *values, **kwargs):
+    return compute_row_reduction(np.maximum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Least, collections.abc.Sequence)
-def execute_node_least_list(op, value, **kwargs):
-    return compute_row_reduction(np.minimum.reduce, value, axis=0)
+@execute_node.register(ops.Least, [object])
+def execute_node_least_list(op, *values, **kwargs):
+    return compute_row_reduction(np.minimum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Coalesce, collections.abc.Sequence)
-def execute_node_coalesce(op, values, **kwargs):
+@execute_node.register(ops.Coalesce, [object])
+def execute_node_coalesce(op, *values, **kwargs):
     # TODO: this is slow
     return compute_row_reduction(coalesce, values)
 

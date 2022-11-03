@@ -1345,10 +1345,17 @@ your Ibis session to plug in all your own functions.
 ## Working with secure clusters (Kerberos)
 
 Ibis is compatible with Hadoop clusters that are secured with Kerberos (as well
-as SSL and LDAP). Just like the Impala shell and ODBC/JDBC connectors, Ibis
-connects to Impala through the HiveServer2 interface (using the impyla client).
-Therefore, the connection semantics are similar to the other access methods for
-working with secure clusters.
+as SSL and LDAP). Note that to enable this support, you'll also need to install
+the `kerberos` package.
+
+```sh
+$ pip install kerberos
+```
+
+Just like the Impala shell and ODBC/JDBC connectors, Ibis connects to Impala
+through the HiveServer2 interface (using the impyla client). Therefore, the
+connection semantics are similar to the other access methods for working with
+secure clusters.
 
 Specifically, after authenticating yourself against Kerberos (e.g., by issuing
 the appropriate `kinit` commmand), simply pass `auth_mechanism='GSSAPI'` or

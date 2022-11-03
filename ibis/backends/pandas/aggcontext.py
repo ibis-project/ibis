@@ -592,7 +592,7 @@ class Window(AggregationContext):
 
         # regroup if needed
         if group_by:
-            grouped_frame = indexed_by_ordering.groupby(group_by)
+            grouped_frame = indexed_by_ordering.groupby(group_by, group_keys=False)
         else:
             grouped_frame = indexed_by_ordering
         grouped = grouped_frame[name]

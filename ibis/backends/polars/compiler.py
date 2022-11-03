@@ -244,7 +244,9 @@ def fillna(op):
             value = op.replacements.value
 
         if value is not None:
-            column = column.fill_nan(value).fill_null(value)
+            if isinstance(dtype, dt.Floating):
+                column = column.fill_nan(value)
+            column = column.fill_null(value)
 
         # requires special treatment if the fill value has different datatype
         if isinstance(dtype, dt.Timestamp):
@@ -312,19 +314,19 @@ def searched_case(op):
 
 @translate.register(ops.Coalesce)
 def coalesce(op):
-    arg = translate(op.arg)
+    arg = translate(ops.NodeList(*op.args))
     return pl.coalesce(arg)
 
 
 @translate.register(ops.Least)
 def least(op):
-    arg = [translate(arg) for arg in op.arg]
+    arg = [translate(arg) for arg in op.args]
     return pl.min(arg)
 
 
 @translate.register(ops.Greatest)
 def greatest(op):
-    arg = [translate(arg) for arg in op.arg]
+    arg = [translate(arg) for arg in op.args]
     return pl.max(arg)
 
 
@@ -589,6 +591,14 @@ def reduction(op):
         arg = arg.filter(translate(where))
     method = getattr(arg, agg)
     return method()
+
+
+@translate.register(ops.Mode)
+def mode(op):
+    arg = translate(op.arg)
+    if (where := op.where) is not None:
+        arg = arg.filter(translate(where))
+    return arg.mode().min()
 
 
 @translate.register(ops.Distinct)
