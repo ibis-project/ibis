@@ -585,3 +585,12 @@ def window_from(table_ref, win, **kwargs):
         if not isinstance(order_var.output_dtype, dt.Timestamp):
             raise com.IbisInputError(error_msg)
     return win
+
+
+def _arg_type_error_format(op):
+    from ibis.expr.operations.generic import Literal
+
+    if isinstance(op, Literal):
+        return f"Literal({op.value}):{op.output_dtype}"
+    else:
+        return f"{op.name}:{op.output_dtype}"

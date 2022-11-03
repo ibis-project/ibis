@@ -4,6 +4,7 @@ import collections
 import datetime
 import decimal
 import numbers
+from operator import methodcaller
 
 import dask.array as da
 import dask.dataframe as dd
@@ -212,6 +213,50 @@ def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
     if how not in {'first', 'last'}:
         raise com.OperationNotDefinedError(f'Arbitrary {how!r} is not supported')
     return aggcontext.agg(data, how)
+
+
+def _mode_agg(df):
+    return df.sum().sort_values(ascending=False).index[0]
+
+
+@execute_node.register(ops.Mode, dd.Series, (dd.Series, type(None)))
+def execute_mode_series(_, data, mask, **kwargs):
+    if mask is not None:
+        data = data[mask]
+    return data.reduction(
+        chunk=methodcaller("value_counts"),
+        combine=methodcaller("sum"),
+        aggregate=_mode_agg,
+        meta=data.dtype,
+    )
+
+
+def _grouped_mode_agg(gb):
+    return gb.obj.groupby(gb.obj.index.names).sum()
+
+
+def _grouped_mode_finalize(series):
+    counts = "__counts__"
+    values = series.index.names[-1]
+    df = series.reset_index(-1, name=counts)
+    out = df.groupby(df.index.names).apply(
+        lambda g: g.sort_values(counts, ascending=False).iloc[0]
+    )
+    return out[values]
+
+
+@execute_node.register(ops.Mode, ddgb.SeriesGroupBy, (ddgb.SeriesGroupBy, type(None)))
+def execute_mode_series_group_by(_, data, mask, **kwargs):
+    if mask is not None:
+        data = data[mask]
+    return data.agg(
+        dd.Aggregation(
+            name="mode",
+            chunk=methodcaller("value_counts"),
+            agg=_grouped_mode_agg,
+            finalize=_grouped_mode_finalize,
+        )
+    )
 
 
 @execute_node.register(ops.Cast, ddgb.SeriesGroupBy, dt.DataType)

@@ -66,7 +66,10 @@ class SimpleCaseBuilder(TypedCaseBuilder):
         result_expr = rlz.any(result_expr)
 
         if not rlz.comparable(self.base, case_expr):
-            raise TypeError('Base expression and passed case are not ' 'comparable')
+            raise TypeError(
+                f'Base expression {rlz._arg_type_error_format(self.base)} and '
+                f'case {rlz._arg_type_error_format(case_expr)} are not comparable'
+            )
 
         cases = list(self.cases)
         cases.append(case_expr)

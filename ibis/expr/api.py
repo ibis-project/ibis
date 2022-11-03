@@ -6,7 +6,7 @@ import datetime
 import functools
 import itertools
 import operator
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Literal, Mapping, Sequence
 from typing import Tuple as _Tuple
 from typing import TypeVar
 from typing import Union as _Union
@@ -481,6 +481,19 @@ def _memtable_from_dataframe(
     return op.to_expr()
 
 
+def _sort_order(expr, order: Literal["desc"] | Literal["asc"]):
+    method = operator.methodcaller(order)
+    if isinstance(expr, str):
+        value = _[expr]
+    elif isinstance(expr, Deferred):
+        value = expr
+    elif callable(expr):
+        value = expr(_)
+    else:
+        value = expr
+    return method(value)
+
+
 def desc(expr: ir.Column | str) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
@@ -510,12 +523,7 @@ def desc(expr: ir.Column | str) -> ir.Value:
     ir.ValueExpr
         An expression
     """
-    if isinstance(expr, str):
-        return _[expr].desc()
-    elif callable(expr):
-        return expr(_).desc()
-    else:
-        return expr.desc()
+    return _sort_order(expr, "desc")
 
 
 def asc(expr: ir.Column | str) -> ir.Value:
@@ -547,12 +555,7 @@ def asc(expr: ir.Column | str) -> ir.Value:
     ir.ValueExpr
         An expression
     """
-    if isinstance(expr, str):
-        return _[expr].asc()
-    elif callable(expr):
-        return expr(_).asc()
-    else:
-        return expr.asc()
+    return _sort_order(expr, "asc")
 
 
 def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:

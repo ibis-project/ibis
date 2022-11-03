@@ -78,8 +78,6 @@ jobs:
             sys-deps:
               - cmake
               - ninja-build
-              - krb5-config
-              - libkrb5-dev
         exclude:
           - os: windows-latest
             backend:
@@ -138,15 +136,15 @@ jobs:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.2'
+      - run: python -m pip install --upgrade pip 'poetry>=1.2'
 
       - name: install ibis
         if: ${{ matrix.backend.name != 'postgres' }}
-        run: poetry install --extras ${{ matrix.backend.name }}
+        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
 
       - name: install ibis
         if: ${{ matrix.backend.name == 'postgres' }}
-        run: poetry install --extras ${{ matrix.backend.name }} --extras geospatial
+        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }} --extras geospatial
 
       - uses: extractions/setup-just@v1
         env:
@@ -233,7 +231,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.2'
+      - run: python -m pip install --upgrade pip 'poetry>=1.2'
 
       - name: install minimum versions
         run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
@@ -253,11 +251,11 @@ jobs:
 
       - name: install ibis
         if: ${{ matrix.backend.name != 'postgres' }}
-        run: poetry install --extras ${{ matrix.backend.name }}
+        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
 
       - name: install ibis
         if: ${{ matrix.backend.name == 'postgres' }}
-        run: poetry install --extras ${{ matrix.backend.name }} --extras geospatial
+        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }} --extras geospatial
 
       - name: download backend data
         run: just download-data

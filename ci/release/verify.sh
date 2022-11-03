@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#!nix-shell -I nixpkgs=./nix --pure --keep POETRY_PYPI_TOKEN_PYPI -p dyff git poetry-cli yj -i bash
+#!nix-shell -I nixpkgs=./nix --pure --keep POETRY_PYPI_TOKEN_PYPI -p git poetry -i bash
 # shellcheck shell=bash
 
 set -euo pipefail
@@ -9,11 +9,11 @@ dry_run="${1:-false}"
 # verify pyproject.toml
 poetry check
 
-# verify that the lock file is up to date
+# verify that the lock file matches pyproject.toml
 #
-# go through the rigamarole of yj and dyff because poetry is sensitive to
-# PYTHONHASHSEED
-bash ./dev/lockfile_diff.sh
+# the lock file might not be the most fresh, but that's okay: it need only be
+# consistent with pyproject.toml
+poetry lock --check
 
 # verify that we have a token available to push to pypi using set -u
 if [ "${dry_run}" = "false" ]; then

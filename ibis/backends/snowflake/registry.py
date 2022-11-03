@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.registry import fixed_arity
+from ibis.backends.base.sql.alchemy.registry import fixed_arity, reduction
 from ibis.backends.postgres.registry import _literal as _postgres_literal
 from ibis.backends.postgres.registry import operation_registry as _operation_registry
 
@@ -58,5 +58,6 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.Round: _round,
         ops.Modulus: fixed_arity(sa.func.mod, 2),
+        ops.Mode: reduction(sa.func.mode),
     }
 )

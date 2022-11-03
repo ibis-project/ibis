@@ -6,9 +6,10 @@ from typing import Sequence
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.annotations import attribute
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
-from ibis.util import UnnamedMarker
+from ibis.util import UnnamedMarker, deprecated
 
 
 @public
@@ -19,6 +20,11 @@ class Node(Concrete):
                 "invalid equality comparison between Node and " f"{type(other)}"
             )
         return self.__cached_equals__(other)
+
+    @deprecated(version='4.0', instead='remove intermediate .op() calls')
+    def op(self):
+        'For a bit of backwards compatibility with code that uses Expr.op().'
+        return self
 
     @abstractmethod
     def to_expr(self):
@@ -78,6 +84,20 @@ class Value(Node, Named):
             return self.output_dtype.column(self)
         else:
             return self.output_dtype.scalar(self)
+
+
+@public
+class Variadic(Value):
+    output_shape = rlz.shape_like('arg')
+    output_dtype = rlz.dtype_like('arg')
+
+    @attribute.default
+    def output_shape(self):
+        return rlz.highest_precedence_shape(self.args)
+
+    @property
+    def args(self):
+        return self.arg
 
 
 @public
@@ -141,6 +161,10 @@ class NodeList(Node, Sequence[Node]):
         import ibis.expr.types as ir
 
         return ir.List(self)
+
+    @property
+    def args(self):
+        return self.values
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, ValueList=NodeList)

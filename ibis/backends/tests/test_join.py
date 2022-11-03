@@ -86,19 +86,27 @@ def test_mutating_join(backend, batting, awards_players, how):
     result_order = ['playerID', 'yearID', 'lgID', 'stint']
 
     expr = left.join(right, predicate, how=how)
-    result = (
-        expr.execute()
-        .fillna(np.nan)
-        .assign(
-            playerID=lambda df: df.playerID_x.where(
-                df.playerID_x.notnull(),
-                df.playerID_y,
-            )
+    if how == "inner":
+        result = (
+            expr.execute()
+            .fillna(np.nan)[left.columns]
+            .sort_values(result_order)
+            .reset_index(drop=True)
         )
-        .drop(['playerID_x', 'playerID_y'], axis=1)[left.columns]
-        .sort_values(result_order)
-        .reset_index(drop=True)
-    )
+    else:
+        result = (
+            expr.execute()
+            .fillna(np.nan)
+            .assign(
+                playerID=lambda df: df.playerID_x.where(
+                    df.playerID_x.notnull(),
+                    df.playerID_y,
+                )
+            )
+            .drop(['playerID_x', 'playerID_y'], axis=1)[left.columns]
+            .sort_values(result_order)
+            .reset_index(drop=True)
+        )
 
     expected = (
         check_eq(

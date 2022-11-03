@@ -25,7 +25,7 @@ _inferable_dask_dtypes = _inferable_pandas_dtypes
 
 @sch.schema.register(dd.Series)
 def schema_from_series(s):
-    return sch.schema(tuple(s.iteritems()))
+    return sch.schema(tuple(s.items()))
 
 
 @sch.infer.register(dd.DataFrame)
@@ -33,7 +33,7 @@ def infer_dask_schema(df, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name, dask_dtype in df.dtypes.iteritems():
+    for column_name, dask_dtype in df.dtypes.items():
         if not isinstance(column_name, str):
             raise TypeError('Column names must be strings to use the dask backend')
 

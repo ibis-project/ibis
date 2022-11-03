@@ -178,6 +178,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         force
             Check whether a table exists before creating it
         """
+        if isinstance(expr, pd.DataFrame):
+            expr = ibis.memtable(expr)
+
         if database == self.current_database:
             # avoid fully qualified name
             database = None
@@ -426,7 +429,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def insert(
         self,
         table_name: str,
-        obj: pd.DataFrame | ir.Table,
+        obj: pd.DataFrame | ir.Table | list | dict,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -493,6 +496,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
                             from_table_expr.compile(),
                         )
                     )
+        elif isinstance(obj, (list, dict)):
+            to_table = self._get_sqla_table(table_name, schema=database)
+
+            with self.begin() as bind:
+                if overwrite:
+                    bind.execute(to_table.delete())
+                bind.execute(to_table.insert().values(obj))
+
         else:
             raise ValueError(
                 "No operation is being performed. Either the obj parameter "

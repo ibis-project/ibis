@@ -30,12 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: cachix/install-nix-action@v17
+      - uses: cachix/install-nix-action@v18
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
       - name: setup cachix
-        uses: cachix/cachix-action@v10
+        uses: cachix/cachix-action@v12
         with:
           name: ibis
           extraPullNames: nix-community,poetry2nix
@@ -74,7 +74,7 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
-      - uses: cpcloud/compare-commits-action@v5.0.24
+      - uses: cpcloud/compare-commits-action@v5.0.25
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         id: compare_commits
         with:
@@ -97,7 +97,7 @@ jobs:
           body: ${{ steps.compare_commits.outputs.differences }}
           labels: dependencies,autorebase:opt-in
 
-      - uses: juliangruber/approve-pull-request-action@v1.1.1
+      - uses: juliangruber/approve-pull-request-action@v2.0.1
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}

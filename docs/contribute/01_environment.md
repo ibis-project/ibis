@@ -160,7 +160,11 @@ hide:
         pip install -e .
         ```
 
-Once you've set up an environment, try building the documentation:
+## Building the Docs
+
+!!! warning "You **must** set up an environment with Nix as above to build the website and docs."
+
+Then, run:
 
 ```sh
 mkdocs serve

@@ -4,11 +4,13 @@ from ibis.config import options
 
 
 def test_sql_config():
-    assert options.sql.default_limit == 10_000
+    try:
+        assert options.sql.default_limit is None
 
-    with pytest.raises(TypeError):
-        options.sql.default_limit = -1
+        with pytest.raises(TypeError):
+            options.sql.default_limit = -1
 
-    options.sql.default_limit = 100
-    assert options.sql.default_limit == 100
-    options.sql.default_limit = 10_000
+        options.sql.default_limit = 100
+        assert options.sql.default_limit == 100
+    finally:
+        options.sql.default_limit = None

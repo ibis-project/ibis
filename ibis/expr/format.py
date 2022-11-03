@@ -643,7 +643,7 @@ def _fmt_value_table_node(op: ops.TableNode, *, aliases: Aliases, **_: Any) -> s
     This function is called when a table is used in a value expression.
     An example is `table.count()`.
     """
-    return f"{aliases[op.table]}"
+    return f"{aliases[op]}"
 
 
 @fmt_value.register

@@ -3,7 +3,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Unary, Value
+from ibis.expr.operations.core import Unary, Value, Variadic
 
 
 @public
@@ -216,15 +216,8 @@ class StringSplit(Value):
 
 
 @public
-class StringConcat(Value):
-    arg = rlz.nodes_of(rlz.string)
-
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
-
-    @attribute.default
-    def output_shape(self):
-        return rlz.highest_precedence_shape(self.arg.values)
+class StringConcat(Variadic):
+    arg = rlz.variadic(rlz.string)
 
 
 @public

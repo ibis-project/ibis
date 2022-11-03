@@ -245,7 +245,9 @@ def test_grouped_bounded_expanding_window(
     )
 
     result = expr.execute().set_index('id').sort_index()
-    column = expected_fn(df.sort_values('id').groupby('string_col'))
+    column = expected_fn(df.sort_values('id').groupby('string_col', group_keys=True))
+    if column.index.nlevels > 1:
+        column = column.droplevel(0)
     expected = df.assign(val=column).set_index('id').sort_index()
 
     left, right = result.val, expected.val
@@ -684,3 +686,38 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expected = df.assign(val=column).set_index('id').sort_index()
 
     backend.assert_series_equal(result.val, expected.val)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["pandas"], reason="pandas returns incorrect results")
+def test_grouped_ordered_window_coalesce(backend, alltypes, df):
+    t = alltypes
+    expr = (
+        t.group_by("month")
+        .order_by("id")
+        .mutate(lagged_value=ibis.coalesce(t.bigint_col.lag(), 0))[
+            ["id", "lagged_value"]
+        ]
+    )
+    result = (
+        expr.execute()
+        .sort_values(["id"])
+        .lagged_value.reset_index(drop=True)
+        .astype("int64")
+    )
+
+    def agg(df):
+        df = df.sort_values(["id"])
+        df = df.assign(bigint_col=lambda df: df.bigint_col.shift())
+        return df
+
+    expected = (
+        df.groupby("month")
+        .apply(agg)
+        .sort_values(["id"])
+        .reset_index(drop=True)
+        .bigint_col.fillna(0.0)
+        .astype("int64")
+        .rename("lagged_value")
+    )
+    backend.assert_series_equal(result, expected)

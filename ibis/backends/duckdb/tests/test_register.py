@@ -1,4 +1,5 @@
 import contextlib
+import csv
 import gzip
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ from pytest import param
 
 import ibis
 from ibis.backends.conftest import read_tables
+from ibis.backends.duckdb import _generate_view_code
 
 
 @contextlib.contextmanager
@@ -131,3 +133,37 @@ def test_register_pyarrow_tables():
 
     t = con.register(pa_t)
     assert t.x.sum().execute() == 6
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_snippet",
+    [({}, "AUTO_DETECT=True"), ({"COLUMNS": {"foo": "int8"}}, "AUTO_DETECT=False")],
+)
+def test_csv_register_kwargs(kwargs, expected_snippet):
+    view_str, _ = _generate_view_code("bork.csv", **kwargs)
+    assert expected_snippet in view_str
+
+
+def test_csv_reregister_schema(tmp_path):
+    con = ibis.duckdb.connect()
+
+    foo = tmp_path / "foo.csv"
+    with open(foo, "w", newline="") as csvfile:
+        foowriter = csv.writer(
+            csvfile,
+            delimiter=",",
+        )
+        foowriter.writerow(["cola", "colb", "colc"])
+        foowriter.writerow([0, 1, 2])
+        foowriter.writerow([1, 5, 6])
+        foowriter.writerow([2, 3.0, "bar"])
+
+    # For a full file scan, expect correct schema based on final row
+    foo_table = con.register(foo)
+    exp_schema = ibis.schema(dict(cola="int32", colb="float64", colc="string"))
+    assert foo_table.schema() == exp_schema
+
+    # If file scan is limited to first two rows, should be all int32
+    foo_table = con.register(foo, SAMPLE_SIZE=2)
+    exp_schema = ibis.schema(dict(cola="int32", colb="int32", colc="int32"))
+    assert foo_table.schema() == exp_schema

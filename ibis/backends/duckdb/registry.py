@@ -144,6 +144,15 @@ def _regex_extract(t, op):
     return result
 
 
+def _json_get_item(t, op):
+    left, path = map(t.translate, op.args)
+    # Workaround for https://github.com/duckdb/duckdb/issues/5063
+    # In some situations duckdb silently does the wrong thing if
+    # the path is parametrized.
+    sa_path = sa.text(str(path.compile(compile_kwargs=dict(literal_binds=True))))
+    return left.op("->")(sa_path)
+
+
 def _strftime(t, op):
     format_str = op.format_str
     if not isinstance(format_str_op := format_str, ops.Literal):
@@ -213,6 +222,7 @@ operation_registry.update(
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
         ops.ApproxCountDistinct: reduction(sa.func.approx_count_distinct),
+        ops.Mode: reduction(sa.func.mode),
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
         ops.GroupConcat: _string_agg,
@@ -220,6 +230,7 @@ operation_registry.update(
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
+        ops.JSONGetItem: _json_get_item,
     }
 )
 

@@ -18,7 +18,7 @@ import ibis.expr.rules as rlz
 from ibis.common import exceptions as com
 from ibis.common.annotations import attribute
 from ibis.common.grounds import Singleton
-from ibis.expr.operations.core import Named, Unary, Value
+from ibis.expr.operations.core import Named, Unary, Value, Variadic
 from ibis.util import frozendict
 
 try:
@@ -155,31 +155,18 @@ class NullIf(Value):
 
 
 @public
-class CoalesceLike(Value):
-
-    # According to Impala documentation:
-    # Return type: same as the initial argument value, except that integer
-    # values are promoted to BIGINT and floating-point values are promoted to
-    # DOUBLE; use CAST() when inserting into a smaller numeric column
-    arg = rlz.nodes_of(rlz.any)
-
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
+class Coalesce(Variadic):
+    arg = rlz.variadic(rlz.any)
 
 
 @public
-class Coalesce(CoalesceLike):
-    pass
+class Greatest(Variadic):
+    arg = rlz.variadic(rlz.any)
 
 
 @public
-class Greatest(CoalesceLike):
-    pass
-
-
-@public
-class Least(CoalesceLike):
-    pass
+class Least(Variadic):
+    arg = rlz.variadic(rlz.any)
 
 
 @public

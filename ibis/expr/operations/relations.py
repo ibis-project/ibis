@@ -14,7 +14,8 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Named, Node, Value
-from ibis.expr.operations.logical import ExistsSubquery, NotExistsSubquery
+from ibis.expr.operations.generic import TableColumn
+from ibis.expr.operations.logical import Equals, ExistsSubquery, NotExistsSubquery
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
@@ -582,24 +583,46 @@ def _dedup_join_columns(expr, suffixes: tuple[str, str]):
 
     right_columns = frozenset(right.columns)
     overlap = frozenset(column for column in left.columns if column in right_columns)
+    equal = set()
+
+    if isinstance(op, InnerJoin) and util.all_of(op.predicates, Equals):
+        # For inner joins composed exclusively of equality predicates, we can
+        # avoid renaming columns with colliding names if their values are
+        # guaranteed to be equal due to the predicate. Here we collect a set of
+        # colliding column names that are known to have equal values between
+        # the left and right tables in the join.
+        tables = {op.left, op.right}
+        for pred in op.predicates:
+            if (
+                isinstance(pred.left, TableColumn)
+                and isinstance(pred.right, TableColumn)
+                and {pred.left.table, pred.right.table} == tables
+                and pred.left.name == pred.right.name
+            ):
+                equal.add(pred.left.name)
 
     if not overlap:
         return expr
 
     left_suffix, right_suffix = suffixes
 
+    # Rename columns in the left table that overlap, unless they're known to be
+    # equal to a column in the right
     left_projections = [
         left[column].name(f"{column}{left_suffix}")
-        if column in overlap
+        if column in overlap and column not in equal
         else left[column]
         for column in left.columns
     ]
 
+    # Rename columns in the right table that overlap, dropping any columns that
+    # are known to be equal to those in the left table
     right_projections = [
         right[column].name(f"{column}{right_suffix}")
         if column in overlap
         else right[column]
         for column in right.columns
+        if column not in equal
     ]
     return expr.projection(left_projections + right_projections)
 

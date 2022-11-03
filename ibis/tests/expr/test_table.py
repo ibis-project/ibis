@@ -92,6 +92,7 @@ def test_getitem_attribute(table):
     assert_equal(result, table['a'])
 
     assert 'a' in dir(table)
+    assert 'a' in table._ipython_key_completions_()
 
     # Project and add a name that conflicts with a Table built-in
     # attribute
@@ -237,11 +238,37 @@ def test_projection_array_expr(table):
 
 
 def test_mutate(table):
-    one = table.f * 2
-    foo = (table.a + table.b).name('foo')
-
-    expr = table.mutate(foo, one=one, two=2)
-    expected = table[table, foo, one.name('one'), ibis.literal(2).name('two')]
+    expr = table.mutate(
+        [
+            (table.a + 1).name("x1"),
+            table.b.sum().name("x2"),
+            (_.a + 2).name("x3"),
+            lambda _: (_.a + 3).name("x4"),
+            4,
+            "five",
+        ],
+        kw1=(table.a + 6),
+        kw2=table.b.sum(),
+        kw3=(_.a + 7),
+        kw4=lambda _: (_.a + 8),
+        kw5=9,
+        kw6="ten",
+    )
+    expected = table[
+        table,
+        (table.a + 1).name("x1"),
+        table.b.sum().name("x2"),
+        (table.a + 2).name("x3"),
+        (table.a + 3).name("x4"),
+        ibis.literal(4).name("4"),
+        ibis.literal("five").name("'five'"),
+        (table.a + 6).name("kw1"),
+        table.b.sum().name("kw2"),
+        (table.a + 7).name("kw3"),
+        (table.a + 8).name("kw4"),
+        ibis.literal(9).name("kw5"),
+        ibis.literal("ten").name("kw6"),
+    ]
     assert_equal(expr, expected)
 
 
@@ -910,10 +937,9 @@ def test_self_join_no_view_convenience(table):
     # column names to join on rather than referentially-valid expressions
 
     result = table.join(table, [('g', 'g')])
-
-    assert result.columns == [f"{column}_x" for column in table.columns] + [
-        f"{column}_y" for column in table.columns
-    ]
+    expected_cols = [f"{c}_x" if c != 'g' else 'g' for c in table.columns]
+    expected_cols.extend(f"{c}_y" for c in table.columns if c != 'g')
+    assert result.columns == expected_cols
 
 
 def test_join_reference_bug(con):
@@ -990,7 +1016,7 @@ def test_cross_join_multiple(table):
     assert joined.equals(expected)
 
 
-def test_filter_join(table):
+def test_filter_join():
     table1 = ibis.table({'key1': 'string', 'key2': 'string', 'value1': 'double'})
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
 
@@ -1000,17 +1026,27 @@ def test_filter_join(table):
     repr(filtered)
 
 
-def test_join_overlapping_column_names(table):
+def test_inner_join_overlapping_column_names():
     t1 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value1', 'double')])
     t2 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value2', 'double')])
 
     joined = t1.join(t2, 'foo')
     expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar_x", "value1", "bar_y", "value2"]
 
     joined = t1.join(t2, ['foo', 'bar'])
     expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
     assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar", "value1", "value2"]
+
+    # Equality predicates don't have same name, need to rename
+    joined = t1.join(t2, t1.foo == t2.bar)
+    assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
+
+    # Not all predicates are equality, still need to rename
+    joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
+    assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
 
 
 def test_join_key_alternatives(con):
