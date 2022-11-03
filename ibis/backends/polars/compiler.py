@@ -593,6 +593,14 @@ def reduction(op):
     return method()
 
 
+@translate.register(ops.Mode)
+def mode(op):
+    arg = translate(op.arg)
+    if (where := op.where) is not None:
+        arg = arg.filter(translate(where))
+    return arg.mode().min()
+
+
 @translate.register(ops.Distinct)
 def distinct(op):
     table = translate(op.table)

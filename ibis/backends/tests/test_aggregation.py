@@ -60,7 +60,6 @@ aggregate_test_params = [
                 "datafusion",
                 "impala",
                 "mysql",
-                "polars",
                 "pyspark",
                 "sqlite",
             ]
@@ -275,7 +274,6 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
                     "datafusion",
                     "impala",
                     "mysql",
-                    "polars",
                     "pyspark",
                     "sqlite",
                 ]
