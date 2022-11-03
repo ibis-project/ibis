@@ -178,6 +178,12 @@ class Covariance(Filterable, Reduction):
 
 
 @public
+class Mode(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    output_dtype = rlz.dtype_like('arg')
+
+
+@public
 class Max(Filterable, Reduction):
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like('arg')

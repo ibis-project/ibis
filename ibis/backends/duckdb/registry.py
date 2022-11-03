@@ -222,6 +222,7 @@ operation_registry.update(
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
         ops.ApproxCountDistinct: reduction(sa.func.approx_count_distinct),
+        ops.Mode: reduction(sa.func.mode),
         ops.Strftime: _strftime,
         ops.Arbitrary: _arbitrary,
         ops.GroupConcat: _string_agg,
