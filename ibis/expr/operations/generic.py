@@ -132,14 +132,10 @@ class ZeroIfNull(Unary):
 
 @public
 class IfNull(Value):
-    """Equivalent to (but perhaps implemented differently):
-
-    case().when(expr.notnull(), expr)       .else_(null_substitute_expr)
-    """
+    """Set values to ifnull_expr if they are equal to NULL."""
 
     arg = rlz.any
     ifnull_expr = rlz.any
-
     output_dtype = rlz.dtype_like("args")
     output_shape = rlz.shape_like("args")
 

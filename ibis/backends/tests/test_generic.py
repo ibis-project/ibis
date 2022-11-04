@@ -25,7 +25,7 @@ from ibis import literal as L
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
-def test_fillna_nullif(con, expr, expected):
+def test_scalar_fillna_nullif(con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
         # Example 1: Pandas returns np.nan while BigQuery returns None.
@@ -82,33 +82,34 @@ def test_isna(backend, alltypes, col):
 
 
 @pytest.mark.parametrize(
-    "col",
+    "value",
     [
+        None,
         param(
-            "na_col",
+            np.nan,
             marks=pytest.mark.notimpl(
-                ["clickhouse", "duckdb", "impala", "postgres", "snowflake", "polars"]
+                [
+                    "clickhouse",
+                    "duckdb",
+                    "impala",
+                    "postgres",
+                    "mysql",
+                    "snowflake",
+                    "polars",
+                ],
+                reason="NaN != NULL for these backends",
             ),
         ),
-        "none_col",
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mysql"])
-def test_fillna(backend, alltypes, col):
-    table = alltypes.mutate(na_col=np.nan)
-    table = table.mutate(none_col=None)
-    table = table.mutate(none_col=table['none_col'].cast('float64'))
-    table_pandas = table.execute()
+@pytest.mark.notimpl(["datafusion"])
+def test_column_fillna(backend, alltypes, value):
+    table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
+    pd_table = table.execute()
 
-    result = (
-        table.mutate(filled=table[col].fillna(0.0)).execute().reset_index(drop=True)
-    )
-
-    expected = table_pandas.assign(filled=table_pandas[col].fillna(0.0)).reset_index(
-        drop=True
-    )
-
-    backend.assert_frame_equal(result, expected)
+    res = table.mutate(missing=table.missing.fillna(0.0)).execute()
+    sol = pd_table.assign(missing=pd_table.missing.fillna(0.0))
+    backend.assert_frame_equal(res.reset_index(drop=True), sol.reset_index(drop=True))
 
 
 @pytest.mark.parametrize(
@@ -328,59 +329,60 @@ def test_select_filter_mutate(backend, alltypes, df):
     backend.assert_series_equal(result.float_col, expected.float_col)
 
 
-def test_fillna_invalid(alltypes):
-    with pytest.raises(
-        com.IbisTypeError, match=r"\['invalid_col'\] is not a field in.*"
-    ):
+def test_table_fillna_invalid(alltypes):
+    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
         alltypes.fillna({'invalid_col': 0.0})
 
+    with pytest.raises(
+        com.IbisTypeError, match="Cannot fillna on column 'string_col' of type.*"
+    ):
+        alltypes[["int_col", "string_col"]].fillna(0)
 
-def test_dropna_invalid(alltypes):
-    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
-        alltypes.dropna(subset=['invalid_col'])
-
-    with pytest.raises(ValueError, match=r".*is not in.*"):
-        alltypes.dropna(how='invalid')
+    with pytest.raises(
+        com.IbisTypeError, match="Cannot fillna on column 'int_col' of type.*"
+    ):
+        alltypes.fillna({"int_col": "oops"})
 
 
 @pytest.mark.parametrize(
-    'replacements',
+    "replacements",
     [
-        0.0,
-        0,
-        1,
-        ({'na_col': 0.0}),
-        ({'na_col': 1}),
-        ({'none_col': 0.0}),
-        ({'none_col': 1}),
+        {"int_col": 20},
+        {"double_col": -1, "string_col": "missing"},
+        {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "impala",
-        "mysql",
-        "postgres",
-        "sqlite",
-        "snowflake",
-    ]
-)
-@pytest.mark.notyet(["duckdb"], reason="non-finite value support")
-def test_fillna_table(backend, alltypes, replacements):
-    table = alltypes.mutate(na_col=np.nan)
-    table = table.mutate(none_col=None)
-    table = table.mutate(none_col=table['none_col'].cast('float64'))
-    table_pandas = table.execute()
+@pytest.mark.notimpl(["datafusion"])
+def test_table_fillna_mapping(backend, alltypes, replacements):
+    table = alltypes.mutate(
+        int_col=alltypes.int_col.nullif(1),
+        double_col=alltypes.double_col.nullif(3.0),
+        string_col=alltypes.string_col.nullif("2"),
+    ).select("id", "int_col", "double_col", "string_col")
+    pd_table = table.execute()
 
     result = table.fillna(replacements).execute().reset_index(drop=True)
-    expected = table_pandas.fillna(replacements).reset_index(drop=True)
+    expected = pd_table.fillna(replacements).reset_index(drop=True)
 
-    # check_dtype is False here because there are dtype diffs between
-    # Pyspark and Pandas on Java 8 - filling the 'none_col' with an int
-    # results in float in Pyspark, and int in Pandas. This diff does
-    # not exist in Java 11.
     backend.assert_frame_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_table_fillna_scalar(backend, alltypes):
+    table = alltypes.mutate(
+        int_col=alltypes.int_col.nullif(1),
+        double_col=alltypes.double_col.nullif(3.0),
+        string_col=alltypes.string_col.nullif("2"),
+    ).select("id", "int_col", "double_col", "string_col")
+    pd_table = table.execute()
+
+    res = table[["int_col", "double_col"]].fillna(0).execute().reset_index(drop=True)
+    sol = pd_table[["int_col", "double_col"]].fillna(0).reset_index(drop=True)
+    backend.assert_frame_equal(res, sol, check_dtype=False)
+
+    res = table[["string_col"]].fillna("missing").execute().reset_index(drop=True)
+    sol = pd_table[["string_col"]].fillna("missing").reset_index(drop=True)
+    backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
 def test_mutate_rename(alltypes):
@@ -392,6 +394,14 @@ def test_mutate_rename(alltypes):
     # results in float in Pyspark, and int in Pandas. This diff does
     # not exist in Java 11.
     assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
+
+
+def test_dropna_invalid(alltypes):
+    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
+        alltypes.dropna(subset=['invalid_col'])
+
+    with pytest.raises(ValueError, match=r".*is not in.*"):
+        alltypes.dropna(how='invalid')
 
 
 @pytest.mark.parametrize(
