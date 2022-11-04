@@ -125,6 +125,11 @@ class Backend(BaseBackend):
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
+        # Polars doesn't support geospatial ops, but the dispatcher implements
+        # a common base class that makes it appear that it does. Explicitly
+        # exclude these operations.
+        if issubclass(operation, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp)):
+            return False
         op_classes = cls._get_operations()
         return operation in op_classes or any(
             issubclass(operation, op_impl) for op_impl in op_classes

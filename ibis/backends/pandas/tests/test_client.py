@@ -5,7 +5,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.pandas.client import PandasTable  # noqa: E402
+from ibis.backends.pandas.client import PandasTable
 
 
 @pytest.fixture

@@ -12,6 +12,7 @@ from pytest import mark, param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.util import guid
 
@@ -812,3 +813,19 @@ def test_repr_mimebundle(alltypes, interactive, expr_type):
                 assert val not in reprs[format]
     finally:
         ibis.options.interactive = old
+
+
+@pytest.mark.never(
+    ["postgres", "mysql"],
+    reason="These backends explicitly do support Geo operations",
+)
+def test_has_operation_no_geo(con):
+    """Previously some backends mistakenly reported Geo operations as
+    supported.
+
+    Since most backends don't support Geo operations, we test that
+    they're excluded here, skipping the few backends that explicitly do
+    support them.
+    """
+    for op in [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion]:
+        assert not con.has_operation(op)
