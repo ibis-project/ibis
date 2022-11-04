@@ -13,6 +13,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.annotations import attribute
+from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.generic import TableColumn
 from ibis.expr.operations.logical import Equals, ExistsSubquery, NotExistsSubquery
@@ -109,6 +110,9 @@ def _clean_join_predicates(left, right, predicates):
             pred = left.to_expr()[pred] == right.to_expr()[pred]
         elif isinstance(pred, Value):
             pred = pred.to_expr()
+        elif isinstance(pred, Deferred):
+            # resolve deferred expressions on the left table
+            pred = pred.resolve(left.to_expr())
         elif not isinstance(pred, ir.Expr):
             raise NotImplementedError
 
