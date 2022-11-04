@@ -1,6 +1,7 @@
 site_name: Ibis Project
 site_url: https://ibis-project.org
 strict: false # check for strictness when building the docs in CI
+edit_uri: ""
 repo_url: https://github.com/ibis-project/ibis
 extra_css:
   - stylesheets/extra.css
@@ -11,6 +12,8 @@ extra_javascript:
 theme:
   name: material
   features:
+    - navigation.tabs
+    - navigation.tabs.sticky
     - content.code.annotate
     - content.tabs.link
     - header.autohide
@@ -119,20 +122,23 @@ extra:
     provider: mike
   project_name: "ibis"
   team:
-    - name: "Active maintainers"
+    - name: "Maintainers"
       members:
-        - jreback
-        - datapythonista
         - cpcloud
         - kszucs
-    - name: "Former maintainers"
-      members:
-        - wesm
+        - jreback
+        - gforsyth
+        - jcrist
+        - saulpw
   social:
     - icon: fontawesome/brands/twitter
       link: https://twitter.com/IbisData
     - icon: fontawesome/brands/github
-      link: https://github.com/ibis-project/ibis
+      link: https://github.com/ibis-project/ibis/discussions
+    - icon: fontawesome/brands/gitter
+      link: https://gitter.im/ibis-dev/Lobby
+    - icon: fontawesome/brands/stack-overflow
+      link: https://stackoverflow.com/questions/tagged/ibis
   support_levels:
     supported:
       icon: :material-check-decagram:{ .verified }
@@ -144,4 +150,4 @@ extra:
       icon: :material-cancel:{ .cancel }
       description: Unlikely to ever be supported or no upstream support.
 
-copyright: "Copyright &copy; 2014-2022, Ibis developers"
+copyright: "Copyright &copy; 2014-2022"
