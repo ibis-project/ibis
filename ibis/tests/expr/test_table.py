@@ -794,6 +794,14 @@ def test_join_no_predicate_list(con):
     assert_equal(joined, expected)
 
 
+def test_join_deferred(con):
+    region = con.table("tpch_region")
+    nation = con.table("tpch_nation")
+    res = region.join(nation, _.r_regionkey == nation.n_regionkey)
+    exp = region.join(nation, region.r_regionkey == nation.n_regionkey)
+    assert_equal(res, exp)
+
+
 def test_asof_join():
     left = ibis.table([('time', 'int32'), ('value', 'double')])
     right = ibis.table([('time', 'int32'), ('value2', 'double')])
