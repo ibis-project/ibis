@@ -22,6 +22,7 @@ from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
@@ -908,31 +909,44 @@ class Table(Expr, JupyterMixin):
         >>> import ibis
         >>> import ibis.expr.datatypes as dt
         >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
-        >>> t = t.fillna(0.0)  # Replace nulls in all columns with 0.0
-        >>> t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})
-        r0 := UnboundTable[unbound_table_...]
-          a int64
-          b string
-        r1 := FillNa[r0]
-          replacements:
-            0.0
-        FillNa[r1]
-          replacements:
-            frozendict({})
+        >>> res = t.fillna(0.0)  # Replace nulls in all columns with 0.0
+        >>> res = t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})
 
         Returns
         -------
         Table
             Table expression
-        """  # noqa: E501
+        """
+
+        schema = self.schema()
+
         if isinstance(replacements, collections.abc.Mapping):
-            columns = replacements.keys()
-            table_columns = self.schema().names
-            invalid = set(columns) - set(table_columns)
-            if invalid:
-                raise com.IbisTypeError(
-                    f'value {list(invalid)} is not a field in {table_columns}.'
-                )
+            for col, val in replacements.items():
+                try:
+                    col_type = schema[col]
+                except KeyError:
+                    raise com.IbisTypeError(
+                        f'{col!r} is not a field in {schema}.'
+                    ) from None
+                val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
+                if not dt.castable(val_type, col_type):
+                    raise com.IbisTypeError(
+                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"value of type {val_type}"
+                    )
+        else:
+            val_type = (
+                replacements.type()
+                if isinstance(replacements, Expr)
+                else dt.infer(replacements)
+            )
+            for col, col_type in schema.items():
+                if col_type.nullable and not dt.castable(val_type, col_type):
+                    raise com.IbisTypeError(
+                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"value of type {val_type} - pass in an explicit mapping "
+                        f"of fill values to `fillna` instead."
+                    )
         return ops.FillNa(self, replacements).to_expr()
 
     def unpack(self, *columns: str) -> Table:

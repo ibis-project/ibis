@@ -313,10 +313,10 @@ def test_fillna():
     expr = t.fillna({"a": 3})
     repr(expr)
 
-    expr = t.fillna(3)
+    expr = t[["a"]].fillna(3)
     repr(expr)
 
-    expr = t.fillna("foo")
+    expr = t[["b"]].fillna("foo")
     repr(expr)
 
 
