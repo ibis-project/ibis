@@ -220,7 +220,9 @@ def to_rich_table(table, console_width=None):
     formatted_dtypes = []
     remaining = console_width - 1  # 1 char for left boundary
     for name, dtype in table.schema().items():
-        formatted, min_width, max_width = format_column(dtype, result[name].to_list())
+        formatted, min_width, max_width = format_column(
+            dtype, result[name].iloc[:nrows].to_list()
+        )
         dtype_str = format_dtype(dtype)
         if ibis.options.repr.interactive.show_types and not isinstance(
             dtype, (dt.Struct, dt.Map, dt.Array)
