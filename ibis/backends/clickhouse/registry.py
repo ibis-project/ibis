@@ -134,6 +134,17 @@ def _agg(func):
     return formatter
 
 
+def _array_collect(translator, op):
+    func_name = "groupArray"
+    args = ["DISTINCT " * op.distinct + translator.translate(op.arg)]
+
+    if (where := op.where) is not None:
+        args.append(translator.translate(where))
+        func_name += "If"
+
+    return f"{func_name}({', '.join(args)})"
+
+
 def _count_star(translator, op):
     # zero argument count == count(*), countIf when `where` is not None
     return _aggregate(translator, "count", where=op.where)
@@ -717,7 +728,7 @@ operation_registry = {
     ops.Min: _agg('min'),
     ops.ArgMin: _agg('argMin'),
     ops.ArgMax: _agg('argMax'),
-    ops.ArrayCollect: _agg('groupArray'),
+    ops.ArrayCollect: _array_collect,
     ops.StandardDev: _agg_variance_like('stddev'),
     ops.Variance: _agg_variance_like('var'),
     ops.Covariance: _agg_variance_like('covar'),

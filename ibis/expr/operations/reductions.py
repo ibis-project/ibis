@@ -277,8 +277,9 @@ class CountDistinct(Filterable, Reduction):
 
 
 @public
-class ArrayCollect(Reduction):
+class ArrayCollect(Filterable, Reduction):
     arg = rlz.column(rlz.any)
+    distinct = rlz.instance_of(bool)
 
     @attribute.default
     def output_dtype(self):

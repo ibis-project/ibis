@@ -322,3 +322,20 @@ def test_unnest_default_name(con):
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
     tm.assert_series_equal(result, expected.astype("float64"))
+
+
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "dask", "polars"])
+def test_array_distinct_filter(con):
+    t = con.tables.functional_alltypes
+    expr = t.agg(
+        uniqs=t.string_col.collect(where=t.string_col.isin(["1", "2"]), distinct=True)
+    ).uniqs
+    (result,) = expr.execute()
+
+    expected = set(
+        t.select("string_col")
+        .filter(t.string_col.isin(["1", "2"]))
+        .distinct()
+        .string_col.execute()
+    )
+    assert set(result) == expected

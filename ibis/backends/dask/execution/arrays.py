@@ -39,11 +39,19 @@ def execute_array_column(op, cols, **kwargs):
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.ArrayCollect, dd.Series)
-def execute_array_collect(op, data, aggcontext=None, **kwargs):
+@execute_node.register(ops.ArrayCollect, dd.Series, bool, type(None))
+def execute_array_collect(op, data, distinct, where, aggcontext=None, **kwargs):
+    if distinct:
+        raise NotImplementedError(
+            "dask backend doesn't implement the `distinct` argument for .collect()"
+        )
     return aggcontext.agg(data, collect_list)
 
 
-@execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy)
-def execute_array_collect_grouped_series(op, data, aggcontext=None, **kwargs):
+@execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy, bool, type(None))
+def execute_array_collect_grouped_series(op, data, distinct, where, **kwargs):
+    if distinct:
+        raise NotImplementedError(
+            "dask backend doesn't implement the `distinct` argument for .collect()"
+        )
     return data.agg(collect_list)

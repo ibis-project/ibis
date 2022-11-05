@@ -1587,7 +1587,10 @@ def compile_array_repeat(t, op, **kwargs):
 @compiles(ops.ArrayCollect)
 def compile_array_collect(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
-    return F.collect_list(src_column)
+    if (where := op.where) is not None:
+        src_column = F.when(t.translate(where, **kwargs), src_column)
+    func = F.collect_set if op.distinct else F.collect_list
+    return func(src_column)
 
 
 # --------------------------- Null Operations -----------------------------

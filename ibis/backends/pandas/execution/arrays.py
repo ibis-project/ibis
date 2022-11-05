@@ -110,6 +110,21 @@ def execute_array_repeat_scalar(op, data, n, **kwargs):
     return np.tile(data, max(n, 0))
 
 
-@execute_node.register(ops.ArrayCollect, (pd.Series, SeriesGroupBy))
-def execute_array_collect(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, np.array)
+@execute_node.register(ops.ArrayCollect, pd.Series, bool, (type(None), pd.Series))
+def execute_array_collect(op, data, distinct, where, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data.loc[where] if where is not None else data,
+        pd.unique if distinct else np.array,
+    )
+
+
+@execute_node.register(ops.ArrayCollect, SeriesGroupBy, bool, (type(None), pd.Series))
+def execute_array_collect_groupby(op, data, distinct, where, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        (
+            data.obj.loc[where].groupby(data.grouping.grouper)
+            if where is not None
+            else data
+        ),
+        pd.unique if distinct else np.array,
+    )

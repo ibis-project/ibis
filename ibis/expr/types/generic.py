@@ -407,9 +407,11 @@ class Value(Expr):
             builder = builder.when(case, result)
         return builder.else_(default).end()
 
-    def collect(self) -> ir.ArrayValue:
+    def collect(
+        self, where: ir.BooleanValue | None = None, *, distinct: bool = False
+    ) -> ir.ArrayValue:
         """Return an array of the elements of this expression."""
-        return ops.ArrayCollect(self).to_expr()
+        return ops.ArrayCollect(self, where=where, distinct=distinct).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
