@@ -88,6 +88,8 @@ class GroupedTable:
     def aggregate(self, metrics=None, **kwds):
         return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
 
+    agg = aggregate
+
     def having(self, expr: ir.BooleanScalar) -> GroupedTable:
         """Add a post-aggregation result filter `expr`.
 
