@@ -64,8 +64,8 @@ jobs:
             --extras all \
             --mamba
 
-          # not great, but conda-forge is missing packages for duckdb and
-          # clickhouse-cityhash for windows
+          # not great, but conda-forge is missing packages for duckdb,
+          # clickhouse-cityhash, and datafusion for windows
           conda lock \
             --kind explicit \
             --file pyproject.toml \
@@ -73,7 +73,6 @@ jobs:
             --platform win-64 \
             --filename-template "${template}" \
             -e dask \
-            -e datafusion \
             -e geospatial \
             -e impala \
             -e mysql \
