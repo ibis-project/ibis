@@ -3,6 +3,7 @@ ci:
   autofix_prs: false
   autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
   skip:
+    - actionlint
     - prettier
     - shellcheck
     - shfmt
@@ -12,6 +13,10 @@ ci:
 default_stages:
   - commit
 repos:
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.6.22
+    hooks:
+      - id: actionlint
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
     hooks:
