@@ -88,6 +88,7 @@ in
       preCommitShell = pkgs.mkShell {
         name = "preCommitShell";
         buildInputs = with pkgs; [
+          actionlint
           git
           just
           nix-linter
