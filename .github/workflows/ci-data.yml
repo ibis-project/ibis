@@ -14,7 +14,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "::set-output name=yesterday::$(date --date=yesterday +%Y-%m-%d)"
+          echo "yesterday=$(date --date=yesterday +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: generate data
         id: generate_data

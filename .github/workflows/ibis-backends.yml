@@ -82,18 +82,37 @@ jobs:
           - os: windows-latest
             backend:
               name: mysql
+              title: MySQL
+              services:
+                - mysql
           - os: windows-latest
             backend:
               name: clickhouse
+              title: ClickHouse
+              services:
+                - clickhouse
           - os: windows-latest
             backend:
               name: pyspark
+              title: PySpark
           - os: windows-latest
             backend:
               name: postgres
+              title: PostgreSQL
+              services:
+                - postgres
+              sys-deps:
+                - libgeos-dev
           - os: windows-latest
             backend:
               name: impala
+              title: Impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
     steps:
       - name: update and install system dependencies
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null }}
@@ -210,9 +229,25 @@ jobs:
           - os: windows-latest
             backend:
               name: postgres
+              title: PostgreSQL
+              deps:
+                - "psycopg2@2.8.4"
+                - "GeoAlchemy2@0.6.3"
+                - "geopandas@0.6"
+                - "Shapely@1.6"
+              services:
+                - postgres
           - python-version: "3.10"
             backend:
               name: postgres
+              title: PostgreSQL
+              deps:
+                - "psycopg2@2.8.4"
+                - "GeoAlchemy2@0.6.3"
+                - "geopandas@0.6"
+                - "Shapely@1.6"
+              services:
+                - postgres
     steps:
       - name: checkout
         uses: actions/checkout@v3
