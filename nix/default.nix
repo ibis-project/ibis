@@ -20,7 +20,7 @@ in
 
       rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
 
-      mkPoetryEnv = { python, groups }: pkgs.poetry2nix.mkPoetryEnv {
+      mkPoetryEnv = groups: python: pkgs.poetry2nix.mkPoetryEnv {
         inherit python groups;
         projectDir = ../.;
         editablePackageSources = {
@@ -31,20 +31,9 @@ in
         );
       };
 
-      mkPoetryDocsEnv = python: pkgs.mkPoetryEnv {
-        inherit python;
-        groups = [ "docs" ];
-      };
-
-      mkPoetryDevEnv = python: pkgs.mkPoetryEnv {
-        inherit python;
-        groups = [ "dev" "test" ];
-      };
-
-      mkPoetryFullDevEnv = python: pkgs.mkPoetryEnv {
-        inherit python;
-        groups = [ "dev" "docs" "test" ];
-      };
+      mkPoetryDocsEnv = pkgs.mkPoetryEnv [ "docs" ];
+      mkPoetryDevEnv = pkgs.mkPoetryEnv [ "dev" "test" ];
+      mkPoetryFullDevEnv = pkgs.mkPoetryEnv [ "dev" "docs" "test" ];
 
       prettierTOML = pkgs.writeShellScriptBin "prettier" ''
         ${pkgs.nodePackages.prettier}/bin/prettier \

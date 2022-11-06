@@ -123,15 +123,14 @@ in
       };
     });
 
-  mkdocs-table-reader-plugin = super.mkdocs-table-reader-plugin.overridePythonAttrs (attrs: {
-    propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.tabulate ];
+  mkdocs-table-reader-plugin = super.mkdocs-table-reader-plugin.overridePythonAttrs (_: {
     postPatch = ''
       substituteInPlace setup.py --replace "tabulate>=0.8.7" "tabulate"
     '';
   });
 
   fiona = super.fiona.overridePythonAttrs (_: {
-    format = "setuptools";
+    format = "pyproject";
   });
 
   duckdb = super.duckdb.overridePythonAttrs (_: {
