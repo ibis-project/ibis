@@ -123,6 +123,12 @@ in
       };
     });
 
+  mkdocs = super.mkdocs.overrideAttrs (_: {
+    postFixup = ''
+      wrapProgram $out/bin/mkdocs --prefix PYTHONPATH : ${builtins.toPath ./.}
+    '';
+  });
+
   mkdocs-table-reader-plugin = super.mkdocs-table-reader-plugin.overridePythonAttrs (_: {
     postPatch = ''
       substituteInPlace setup.py --replace "tabulate>=0.8.7" "tabulate"
