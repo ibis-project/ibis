@@ -420,6 +420,16 @@ def test_aggregate_multikey_group_reduction(backend, alltypes, df):
             lambda t, where: len(t[where]),
             id='count_star',
         ),
+        param(
+            lambda t, where: t.string_col.collect(where=where),
+            lambda t, where: list(t.string_col[where]),
+            id="collect",
+            marks=[
+                pytest.mark.notimpl(
+                    ["impala", "datafusion", "snowflake", "dask", "polars"]
+                )
+            ],
+        ),
     ],
 )
 @pytest.mark.parametrize(

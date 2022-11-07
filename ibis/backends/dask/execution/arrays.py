@@ -39,11 +39,11 @@ def execute_array_column(op, cols, **kwargs):
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.ArrayCollect, dd.Series)
-def execute_array_collect(op, data, aggcontext=None, **kwargs):
+@execute_node.register(ops.ArrayCollect, dd.Series, type(None))
+def execute_array_collect(op, data, where, aggcontext=None, **kwargs):
     return aggcontext.agg(data, collect_list)
 
 
-@execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy)
-def execute_array_collect_grouped_series(op, data, aggcontext=None, **kwargs):
+@execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy, type(None))
+def execute_array_collect_grouped_series(op, data, where, **kwargs):
     return data.agg(collect_list)

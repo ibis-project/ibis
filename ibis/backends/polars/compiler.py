@@ -746,6 +746,8 @@ def array_column(op):
 @translate.register(ops.ArrayCollect)
 def array_collect(op):
     arg = translate(op.arg)
+    if (where := op.where) is not None:
+        arg = arg.filter(translate(where))
     return arg.list()
 
 
