@@ -137,7 +137,7 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix run -f nix ibisDocsEnv310 -- -m mkdocs build
+        run: nix run -f nix ibisDocsEnv310 -- -m mkdocs build --strict
 
       - name: verify internal links
         run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
