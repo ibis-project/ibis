@@ -34,9 +34,9 @@ _dialect = sa.dialects.postgresql.dialect()
 _gen_table_names = (f"registered_table{i:d}" for i in itertools.count())
 
 
-def _name_from_path(path: str) -> str:
+def _name_from_path(path: str | Path) -> str:
     # https://github.com/duckdb/duckdb/issues/5203
-    return path.replace(".", "_")
+    return str(path).replace(".", "_")
 
 
 def _name_from_dataset(dataset: pa.dataset.FileSystemDataset) -> str:
@@ -117,8 +117,7 @@ def _s3(full_path, table_name=None):
 
     dataset = ds.dataset(full_path)
     table_name = table_name or _name_from_dataset(dataset)
-    quoted_table_name = _quote(table_name)
-    return quoted_table_name, dataset, ()
+    return table_name, dataset, []
 
 
 @_generate_view_code.register(r".+", priority=1)
