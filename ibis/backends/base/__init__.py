@@ -147,15 +147,17 @@ class Database:
         qualified_name = self._qualify(name)
         return self.client.table(qualified_name, self.name)
 
-    def list_tables(self, like=None):
+    def list_tables(self, like=None, database=None):
         """List the tables in the database.
 
         Parameters
         ----------
         like
             A pattern to use for listing tables.
+        database
+            The database to perform the list against
         """
-        return self.client.list_tables(like, database=self.name)
+        return self.client.list_tables(like, database=database or self.name)
 
 
 class TablesAccessor(collections.abc.Mapping):
