@@ -69,7 +69,15 @@ def main():
         "backends",
         "support_matrix.csv",
     )
-    table.to_csv(dst, index_label="Backends")
+
+    if dst.exists():
+        old = pd.read_csv(dst, index_col="Backends")
+        should_write = not old.equals(table)
+    else:
+        should_write = True
+
+    if should_write:
+        table.to_csv(dst, index_label="Backends")
 
 
 main()
