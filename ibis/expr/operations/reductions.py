@@ -277,7 +277,7 @@ class CountDistinct(Filterable, Reduction):
 
 
 @public
-class ArrayCollect(Reduction):
+class ArrayCollect(Filterable, Reduction):
     arg = rlz.column(rlz.any)
 
     @attribute.default

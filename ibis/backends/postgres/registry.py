@@ -488,8 +488,8 @@ def _covar(t, op):
 
 def _mode(t, op):
     arg = op.arg
-    if op.where is not None:
-        arg = op.where.to_expr().ifelse(arg, None).op()
+    if (where := op.where) is not None:
+        arg = ops.Where(where, arg, None)
     return sa.func.mode().within_group(t.translate(arg))
 
 
@@ -506,14 +506,18 @@ def _binary_variance_reduction(func):
         result = func(t.translate(x), t.translate(y))
 
         if (where := op.where) is not None:
-            if t._has_reduction_filter_syntax:
-                result = result.filter(t.translate(where))
-            else:
-                result = sa.case((t.translate(where), result), else_=sa.null())
+            return result.filter(t.translate(where))
 
         return result
 
     return variance_compiler
+
+
+def _array_collect(t, op):
+    result = sa.func.array_agg(t.translate(op.arg))
+    if (where := op.where) is not None:
+        return result.filter(t.translate(where))
+    return result
 
 
 operation_registry.update(
@@ -585,7 +589,7 @@ operation_registry.update(
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
         ops.ArrayLength: unary(_cardinality),
-        ops.ArrayCollect: unary(sa.func.array_agg),
+        ops.ArrayCollect: _array_collect,
         ops.ArrayColumn: _array_column,
         ops.ArraySlice: _array_slice,
         ops.ArrayIndex: fixed_arity(
