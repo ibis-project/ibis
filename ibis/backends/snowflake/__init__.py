@@ -107,7 +107,7 @@ class Backend(BaseAlchemyBackend):
 
     def _get_schema_using_query(self, query):
         with self.begin() as bind:
-            result = bind.execute(query)
+            result = bind.execute(f"SELECT * FROM ({query}) t0 LIMIT 0")
             info_rows = bind.execute(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
 
         schema = {}

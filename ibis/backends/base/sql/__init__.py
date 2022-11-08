@@ -90,23 +90,26 @@ class BaseSQLBackend(BaseBackend):
         # XXX
         return name
 
-    def sql(self, query: str) -> ir.Table:
+    def sql(self, query: str, schema: sch.Schema | None = None) -> ir.Table:
         """Convert a SQL query to an Ibis table expression.
 
         Parameters
         ----------
         query
             SQL string
+        schema
+            The expected schema for this query. If not provided, will be
+            inferred automatically if possible.
 
         Returns
         -------
         Table
             Table expression
         """
-        # Get the schema by adding a LIMIT 0 on to the end of the query. If
-        # there is already a limit in the query, we find and remove it
-        limited_query = f'SELECT * FROM ({query}) t0 LIMIT 0'
-        schema = self._get_schema_using_query(limited_query)
+        if schema is None:
+            schema = self._get_schema_using_query(query)
+        else:
+            schema = sch.schema(schema)
         return ops.SQLQueryResult(query, schema, self).to_expr()
 
     def _get_schema_using_query(self, query):
@@ -387,5 +390,5 @@ class BaseSQLBackend(BaseBackend):
 
     def _create_temp_view(self, view, definition):
         raise NotImplementedError(
-            f"The {self.name} backend does not implement temporary view " "creation"
+            f"The {self.name} backend does not implement temporary view creation"
         )
