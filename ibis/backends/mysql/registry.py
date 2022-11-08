@@ -29,6 +29,19 @@ def _capitalize(t, op):
     )
 
 
+def _startswith(t, op):
+    arg = t.translate(op.arg)
+    start = t.translate(op.start)
+    # LIKE in mysql is case insensitive
+    return arg.op("LIKE BINARY")(sa.func.concat(start, "%"))
+
+
+def _endswith(t, op):
+    arg = t.translate(op.arg)
+    end = t.translate(op.end)
+    return arg.op("LIKE BINARY")(sa.func.concat("%", end))
+
+
 def _extract(fmt):
     def translator(t, op):
         sa_arg = t.translate(op.arg)
@@ -181,6 +194,8 @@ operation_registry.update(
         # strings
         ops.StringFind: _gen_string_find(sa.func.locate),
         ops.FindInSet: _find_in_set,
+        ops.StartsWith: _startswith,
+        ops.EndsWith: _endswith,
         ops.Capitalize: _capitalize,
         ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
         # math
