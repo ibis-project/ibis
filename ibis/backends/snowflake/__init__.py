@@ -75,10 +75,11 @@ class Backend(BaseAlchemyBackend):
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **_: Any
     ) -> sa.Table:
-        inspected = self.inspector.get_columns(name)
+        inspected = self.inspector.get_columns(name, schema)
         cols = []
+        identifier = name if not schema else schema + "." + name
         for (colname, *_), colinfo in zip(
-            self.con.execute(f"DESCRIBE {name}"), inspected
+            self.con.execute(f"DESCRIBE TABLE {identifier}"), inspected
         ):
             del colinfo["name"]
             colinfo["type_"] = colinfo.pop("type")
