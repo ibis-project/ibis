@@ -405,7 +405,7 @@ def string_replace(op):
 def string_startswith(op):
     arg = translate(op.arg)
     _assert_literal(op.start)
-    return arg.str.ends_with(op.start.value)
+    return arg.str.starts_with(op.start.value)
 
 
 @translate.register(ops.EndsWith)
