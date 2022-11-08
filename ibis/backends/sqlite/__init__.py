@@ -146,6 +146,7 @@ class Backend(BaseAlchemyBackend):
         def connect(dbapi_connection, connection_record):
             """Register UDFs on connection."""
             udf.register_all(dbapi_connection)
+            dbapi_connection.execute("PRAGMA case_sensitive_like=ON")
 
         super().do_connect(engine)
 

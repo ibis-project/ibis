@@ -167,15 +167,33 @@ def test_string_col_is_unicode(alltypes, df):
             id='length',
         ),
         param(
-            lambda t: t.string_col.startswith('foo'),
-            lambda t: t.string_col.str.startswith('foo'),
+            lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").startswith(
+                "abc"
+            ),
+            lambda t: t.int_col == 1,
             id='startswith',
+            # pyspark doesn't support `cases` yet
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pyspark", "pandas"]),
+        ),
+        param(
+            lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").endswith(
+                "bcd"
+            ),
+            lambda t: t.int_col == 1,
+            id='endswith',
+            # pyspark doesn't support `cases` yet
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pyspark", "pandas"]),
+        ),
+        param(
+            lambda t: t.date_string_col.startswith("2010-01"),
+            lambda t: t.date_string_col.str.startswith("2010-01"),
+            id='startswith-simple',
             marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
         ),
         param(
-            lambda t: t.string_col.endswith('foo'),
-            lambda t: t.string_col.str.endswith('foo'),
-            id='endswith',
+            lambda t: t.date_string_col.endswith("100"),
+            lambda t: t.date_string_col.str.endswith("100"),
+            id='endswith-simple',
             marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
         ),
         param(
