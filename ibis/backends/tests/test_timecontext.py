@@ -10,6 +10,7 @@ from ibis.config import option_context
 
 pytestmark = pytest.mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "impala",

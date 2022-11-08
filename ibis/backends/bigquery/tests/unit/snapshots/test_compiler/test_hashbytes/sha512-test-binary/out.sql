@@ -1,0 +1,1 @@
+SELECT sha512(FROM_BASE64('dGVzdA==')) AS `tmp`

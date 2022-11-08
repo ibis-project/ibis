@@ -16,6 +16,13 @@ class ImpalaTableSetFormatter(TableSetFormatter):
 
 class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops}
+    _forbids_frame_clause = (
+        *ExprTranslator._forbids_frame_clause,
+        ops.Lag,
+        ops.Lead,
+        ops.FirstValue,
+        ops.LastValue,
+    )
 
 
 rewrites = ImpalaExprTranslator.rewrites

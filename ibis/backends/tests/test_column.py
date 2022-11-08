@@ -7,6 +7,7 @@ import pytest
 
 @pytest.mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",
@@ -34,6 +35,7 @@ def test_rowid(con):
 
 @pytest.mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",

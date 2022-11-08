@@ -165,19 +165,19 @@ def test_isnan_isinf(
             L(5.556).radians(),
             math.radians(5.556),
             id='radians',
-            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["bigquery", "datafusion", "impala"]),
         ),
         param(
             L(5.556).degrees(),
             math.degrees(5.556),
             id='degrees',
-            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["bigquery", "datafusion", "impala"]),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
 )
 def test_math_functions_literals(con, expr, expected):
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
     if isinstance(result, decimal.Decimal):
         # in case of Impala the result is decimal
         # >>> decimal.Decimal('5.56') == 5.56
@@ -201,7 +201,7 @@ def test_math_functions_literals(con, expr, expected):
     ],
 )
 def test_trig_functions_literals(con, expr, expected):
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
     assert pytest.approx(result) == expected
 
 
@@ -387,7 +387,7 @@ def test_complex_math_functions_columns(
 )
 def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected_fn):
     expr = expr_fn(backend, alltypes)
-    result = backend.default_series_rename(con.execute(expr))
+    result = backend.default_series_rename(con.execute(expr.name("tmp")))
     expected = backend.default_series_rename(expected_fn(backend, df))
     backend.assert_series_equal(result, expected)
 
@@ -436,6 +436,7 @@ def test_mod(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["mssql"])
+@pytest.mark.notyet(["bigquery"], reason="bigquery doesn't support floating modulus")
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name('tmp')
 
@@ -499,6 +500,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 @pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
 @pytest.mark.never(
     [
+        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",
@@ -551,7 +553,7 @@ def test_sa_default_numeric_precision_and_scale(
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "pandas", "sqlite", "polars", "mssql"]
+    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars", "mssql"]
 )
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -585,7 +587,7 @@ def test_random(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "impala"])
 def test_clip(alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
@@ -597,5 +599,5 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
 @pytest.mark.notimpl(["dask", "datafusion", "pandas", "pyspark", "polars"])
 def test_histogram(con, alltypes):
     n = 10
-    results = con.execute(alltypes.int_col.histogram(n))
+    results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
     assert len(results.value_counts()) == n

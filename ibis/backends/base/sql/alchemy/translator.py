@@ -33,7 +33,6 @@ class AlchemyContext(QueryContext):
 
 
 class AlchemyExprTranslator(ExprTranslator):
-
     _registry = sqlalchemy_operation_registry
     _rewrites = ExprTranslator._rewrites.copy()
     _type_map = ibis_type_to_sqla
@@ -46,6 +45,14 @@ class AlchemyExprTranslator(ExprTranslator):
     integer_to_timestamp = sa.func.to_timestamp
     native_json_type = True
     _always_quote_columns = False
+
+    _require_order_by = (
+        ops.DenseRank,
+        ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
+        ops.CumeDist,
+    )
 
     def name(self, translated, name, force=True):
         return translated.label(name)

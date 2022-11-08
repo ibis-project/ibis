@@ -128,11 +128,11 @@ def test_mutating_join(backend, batting, awards_players, how):
     [
         param(
             "semi",
-            marks=pytest.mark.notimpl(["dask", "datafusion"]),
+            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
         ),
         param(
             "anti",
-            marks=pytest.mark.notimpl(["dask", "datafusion"]),
+            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
         ),
     ],
 )

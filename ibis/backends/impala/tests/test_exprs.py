@@ -687,21 +687,16 @@ def test_not(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_where_with_timestamp():
+def test_where_with_timestamp(snapshot):
     t = ibis.table(
         [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
         name='t',
     )
     expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
-    result = ibis.impala.compile(expr)
-    expected = """\
-SELECT `uuid`, min(if(`search_level` = 1, `ts`, NULL)) AS `min_date`
-FROM t
-GROUP BY 1"""
-    assert result == expected
+    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
 
 
-def test_filter_with_analytic():
+def test_filter_with_analytic(snapshot):
     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
     filtered = with_filter_col[with_filter_col['filter'].isnull()]
@@ -710,53 +705,21 @@ def test_filter_with_analytic():
     with_analytic = subquery[['col', subquery.count().name('analytic')]]
     expr = with_analytic[with_analytic.columns]
 
-    result = ibis.impala.compile(expr)
-    expected = """\
-SELECT `col`, `analytic`
-FROM (
-  SELECT `col`, count(1) OVER () AS `analytic`
-  FROM (
-    SELECT `col`, `filter`
-    FROM (
-      SELECT *
-      FROM (
-        SELECT `col`, NULL AS `filter`
-        FROM x
-      ) t3
-      WHERE `filter` IS NULL
-    ) t2
-  ) t1
-) t0"""
-
-    assert result == expected
+    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
 
 
-def test_named_from_filter_group_by():
+def test_named_from_filter_group_by(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
     expr = gb.aggregate(abc=sum_expr)
-    expected = """\
-SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `abc`
-FROM t0
-WHERE `value` = 42
-GROUP BY 1"""
-    assert ibis.impala.compile(expr) == expected
+    snapshot.assert_match(ibis.impala.compile(expr), "abc.sql")
 
     expr = gb.aggregate(foo=sum_expr)
-    expected = """\
-SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `foo`
-FROM t0
-WHERE `value` = 42
-GROUP BY 1"""
-    assert ibis.impala.compile(expr) == expected
+    snapshot.assert_match(ibis.impala.compile(expr), "foo.sql")
 
 
-def test_nunique_where():
+def test_nunique_where(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     expr = t.key.nunique(where=t.value >= 1.0)
-    expected = """\
-SELECT count(DISTINCT if(`value` >= 1.0, `key`, NULL)) AS `nunique`
-FROM t0"""  # noqa: E501
-    result = ibis.impala.compile(expr)
-    assert result == expected
+    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")

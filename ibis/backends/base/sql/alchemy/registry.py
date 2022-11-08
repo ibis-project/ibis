@@ -332,14 +332,6 @@ def _window(t, op):
 
     window_op = arg
 
-    _require_order_by = (
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.CumeDist,
-    )
-
     if isinstance(window_op, ops.CumulativeOp):
         arg = _cumulative_to_window(t, arg, window).op()
         return t.translate(arg)
@@ -352,29 +344,18 @@ def _window(t, op):
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if isinstance(window_op, _require_order_by) and not window._order_by:
+    if isinstance(window_op, t._require_order_by) and not window._order_by:
         order_by = t.translate(window_op.args[0])
     else:
         order_by = [t.translate(arg) for arg in window._order_by]
 
     partition_by = [t.translate(arg) for arg in window._group_by]
 
-    frame_clause_not_allowed = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.CumeDist,
-        ops.RowNumber,
-    )
-
     how = {'range': 'range_'}.get(window.how, window.how)
     preceding = window.preceding
     additional_params = (
         {}
-        if isinstance(window_op, frame_clause_not_allowed)
+        if t._forbids_frame_clause and isinstance(window_op, t._forbids_frame_clause)
         else {
             how: (
                 -preceding if preceding is not None else preceding,

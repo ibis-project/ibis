@@ -533,9 +533,9 @@ def test_join_filtered_tables_no_pushdown(snapshot):
     tbl_b_filter = tbl_b.filter([tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29])
 
     joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
-    result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b].op()
+    result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
 
-    join_op = result.table
+    join_op = result.op().table
     assert join_op.left == tbl_a_filter.op()
     assert join_op.right == tbl_b_filter.op()
 

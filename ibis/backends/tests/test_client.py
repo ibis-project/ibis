@@ -95,14 +95,15 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     ["dask", "pandas"],
     reason="dask and pandas do not support SQL",
 )
-def test_sql(con):
+def test_sql(backend, con):
     # execute the expression using SQL query
-    expr = con.sql("SELECT * FROM functional_alltypes LIMIT 10")
+    table = backend.format_table("functional_alltypes")
+    expr = con.sql(f"SELECT * FROM {table} LIMIT 10")
     result = expr.execute()
     assert len(result) == 10
 
 
-@mark.notimpl(["clickhouse", "datafusion", "polars"])
+@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
@@ -114,6 +115,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 
 @mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",
@@ -141,7 +143,7 @@ def test_rename_table(con, temp_table, new_schema):
         con.drop_table(temp_table, force=True)
 
 
-@mark.notimpl(["clickhouse", "datafusion", "polars"])
+@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
@@ -163,6 +165,7 @@ def test_nullable_input_output(con, temp_table):
 
 @mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "duckdb",
@@ -383,7 +386,7 @@ def test_list_databases(alchemy_con):
 
 
 @pytest.mark.never(
-    ["postgres", "mysql", "snowflake"],
+    ["bigquery", "postgres", "mysql", "snowflake"],
     reason="postgres and mysql do not support in-memory tables",
     raises=(sa.exc.OperationalError, TypeError),
 )
@@ -647,11 +650,11 @@ def test_deprecated_path_argument(backend_name, tmp_path):
     ],
 )
 @pytest.mark.notyet(
-    ["mysql", "sqlite"],
+    ["bigquery", "mysql", "sqlite"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 def test_in_memory_table(backend, con, expr, expected):
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
@@ -662,7 +665,7 @@ def test_in_memory_table(backend, con, expr, expected):
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 def test_filter_memory_table(backend, con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
@@ -676,7 +679,7 @@ def test_filter_memory_table(backend, con):
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 def test_agg_memory_table(con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.count()
@@ -701,7 +704,9 @@ def test_agg_memory_table(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notimpl(
+    ["bigquery", "clickhouse", "dask", "datafusion", "pandas", "polars"]
+)
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
@@ -827,7 +832,7 @@ def test_repr_mimebundle(alltypes, interactive, expr_type):
 
 
 @pytest.mark.never(
-    ["postgres", "mysql"],
+    ["postgres", "mysql", "bigquery"],
     reason="These backends explicitly do support Geo operations",
 )
 def test_has_operation_no_geo(con):

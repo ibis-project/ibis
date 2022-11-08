@@ -1,5 +1,5 @@
 from operator import add, mul, sub
-from typing import Optional, Union
+from typing import Optional
 
 import ibis
 import ibis.common.exceptions as com
@@ -41,7 +41,7 @@ _cumulative_to_reduction = {
 }
 
 
-def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
+def _replace_interval_with_scalar(op: ops.Node):
     """Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
 
@@ -54,37 +54,22 @@ def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
     -------
     preceding : float or ir.FloatingScalar, depending upon the expr
     """
-    if isinstance(expr, ir.Expr):
-        expr_op = expr.op()
-    else:
-        expr_op = None
-
-    # TODO: fix this to use to_interval if possible
-    if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
-        # Literal expressions have op method but native types do not.
-        if isinstance(expr_op, ops.Literal):
-            return expr_op.value
-        else:
-            return expr
-    elif isinstance(expr, dt.Interval):
+    if isinstance(op, ops.Literal):
+        unit = getattr(op.output_dtype, "unit", "us")
         try:
-            microseconds = _map_interval_to_microseconds[expr.unit]
-            return microseconds
+            micros = _map_interval_to_microseconds[unit]
+            return op.value * micros
         except KeyError:
-            raise ValueError(
-                "Expected preceding values of week(), "
-                + "day(), hour(), minute(), second(), millisecond(), "
-                + f"microseconds(), nanoseconds(); got {expr}"
-            )
-    elif expr_op.args and isinstance(expr, ir.IntervalValue):
-        if len(expr_op.args) > 2:
+            raise ValueError(f"Unsupported unit {unit!r}")
+    elif op.args and isinstance(op.output_dtype, dt.Interval):
+        if len(op.args) > 2:
             raise NotImplementedError("'preceding' argument cannot be parsed.")
-        left_arg = _replace_interval_with_scalar(expr_op.args[0])
-        right_arg = _replace_interval_with_scalar(expr_op.args[1])
-        method = _map_interval_op_to_op[type(expr_op)]
+        left_arg = _replace_interval_with_scalar(op.args[0])
+        right_arg = _replace_interval_with_scalar(op.args[1])
+        method = _map_interval_op_to_op[type(op)]
         return method(left_arg, right_arg)
     else:
-        raise TypeError(f'expr has unknown type {type(expr).__name__}')
+        raise TypeError(f'input has unknown type {type(op)}')
 
 
 def cumulative_to_window(translator, op, window):
@@ -105,20 +90,20 @@ def cumulative_to_window(translator, op, window):
 
 def time_range_to_range_window(_, window):
     # Check that ORDER BY column is a single time column:
-    order_by_vars = [x.op().args[0] for x in window._order_by]
+    order_by_vars = [x.args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
         raise com.IbisInputError(
             f"Expected 1 order-by variable, got {len(order_by_vars)}"
         )
 
-    order_var = window._order_by[0].op().args[0]
-    timestamp_order_var = order_var.cast('int64')
+    order_var = order_by_vars[0]
+    timestamp_order_var = ops.Cast(order_var, dt.int64).to_expr()
     window = window._replace(order_by=timestamp_order_var, how='range')
 
     # Need to change preceding interval expression to scalars
     preceding = window.preceding
     if isinstance(preceding, ir.IntervalScalar):
-        new_preceding = _replace_interval_with_scalar(preceding)
+        new_preceding = _replace_interval_with_scalar(preceding.op())
         window = window._replace(preceding=new_preceding)
 
     return window
@@ -165,22 +150,12 @@ def format_window(translator, op, window):
 
         return f'{prefix} FOLLOWING'
 
-    frame_clause_not_allowed = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.CumeDist,
-        ops.RowNumber,
-    )
-
-    if isinstance(op.expr, frame_clause_not_allowed):
+    if translator._forbids_frame_clause and isinstance(
+        op.expr, translator._forbids_frame_clause
+    ):
         frame = None
     elif p is not None and f is not None:
         frame = f'{window.how.upper()} BETWEEN {_prec(p)} AND {_foll(f)}'
-
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
@@ -200,7 +175,6 @@ def format_window(translator, op, window):
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = f'{kind} BETWEEN UNBOUNDED PRECEDING AND {_foll(f)}'
     else:
-        # no-op, default is full sample
         frame = None
 
     if frame is not None:
@@ -223,18 +197,6 @@ _expr_transforms = {
 def window(translator, op):
     arg, window = op.args
 
-    _require_order_by = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.FirstValue,
-        ops.LastValue,
-        ops.PercentRank,
-        ops.CumeDist,
-        ops.NTile,
-    )
-
     _unsupported_reductions = (
         ops.ApproxMedian,
         ops.GroupConcat,
@@ -252,15 +214,18 @@ def window(translator, op):
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if isinstance(arg, _require_order_by) and not window._order_by:
+    if isinstance(arg, translator._require_order_by) and not window._order_by:
         window = window.order_by(arg.args[0])
 
     # Time ranges need to be converted to microseconds.
     # FIXME(kszucs): avoid the expression roundtrip
     if window.how == 'range':
-        order_by_types = [type(x.op().args[0]) for x in window._order_by]
-        time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
-        if any(col_type in time_range_types for col_type in order_by_types):
+        time_range_types = (dt.Time, dt.Date, dt.Timestamp)
+        if any(
+            isinstance(c.output_dtype, time_range_types)
+            and c.output_shape.is_columnar()
+            for c in window._order_by
+        ):
             window = time_range_to_range_window(translator, window)
 
     window_formatted = format_window(translator, op, window)

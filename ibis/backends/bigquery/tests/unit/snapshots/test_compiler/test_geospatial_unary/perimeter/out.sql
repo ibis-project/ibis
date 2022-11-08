@@ -1,0 +1,2 @@
+SELECT ST_PERIMETER(`geog`) AS `tmp`
+FROM t

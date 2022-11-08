@@ -38,6 +38,7 @@ def test_union(backend, union_subsets, distinct):
 
 
 @pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notyet(["bigquery"])
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -56,7 +57,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["dask", "pandas", "sqlite", "snowflake", "mssql"],
+                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
                 reason="backend doesn't support INTERSECT ALL",
             ),
             id="all",
@@ -94,7 +95,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["dask", "pandas", "sqlite", "snowflake", "mssql"],
+                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
                 reason="backend doesn't support EXCEPT ALL",
             ),
             id="all",

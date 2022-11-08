@@ -13,8 +13,8 @@ from ibis.backends.clickhouse.registry import operation_registry
 
 
 class ClickhouseUnion(Union):
-    @staticmethod
-    def keyword(distinct):
+    @classmethod
+    def keyword(cls, distinct):
         return 'UNION DISTINCT' if distinct else 'UNION ALL'
 
 
@@ -60,7 +60,6 @@ class ClickhouseSelect(Select):
 
 
 class ClickhouseTableSetFormatter(TableSetFormatter):
-
     _join_names = {
         ops.InnerJoin: 'ALL INNER JOIN',
         ops.LeftJoin: 'ALL LEFT OUTER JOIN',
@@ -81,6 +80,15 @@ class ClickhouseTableSetFormatter(TableSetFormatter):
 
 class ClickhouseExprTranslator(ExprTranslator):
     _registry = operation_registry
+    _require_order_by = (
+        ops.DenseRank,
+        ops.MinRank,
+        ops.FirstValue,
+        ops.LastValue,
+        ops.PercentRank,
+        ops.CumeDist,
+        ops.NTile,
+    )
 
 
 rewrites = ClickhouseExprTranslator.rewrites

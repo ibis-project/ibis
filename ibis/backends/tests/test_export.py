@@ -37,6 +37,7 @@ limit = [
             pytest.mark.notimpl(
                 [
                     # limit not implemented for pandas backend execution
+                    "bigquery",
                     "clickhouse",
                     "dask",
                     "datafusion",
@@ -56,6 +57,7 @@ no_limit = [
         marks=[
             pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "dask",
                     "impala",
@@ -134,7 +136,7 @@ def test_scalar_to_pyarrow_scalar(limit, backend, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["dask", "clickhouse", "impala", "pyspark"])
+@pytest.mark.notimpl(["bigquery", "dask", "clickhouse", "impala", "pyspark"])
 @pytest.mark.notyet(
     ["datafusion"],
     reason="""
@@ -148,7 +150,7 @@ def test_table_to_pyarrow_table_schema(backend, awards_players):
     assert table.schema == awards_players.schema().to_pyarrow()
 
 
-@pytest.mark.notimpl(["dask", "clickhouse", "impala", "pyspark"])
+@pytest.mark.notimpl(["bigquery", "dask", "clickhouse", "impala", "pyspark"])
 def test_column_to_pyarrow_table_schema(backend, awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
@@ -157,7 +159,7 @@ def test_column_to_pyarrow_table_schema(backend, awards_players):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
+    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
 )
 def test_table_pyarrow_batch_chunk_size(backend, awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
@@ -168,7 +170,7 @@ def test_table_pyarrow_batch_chunk_size(backend, awards_players):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
+    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
 )
 def test_column_pyarrow_batch_chunk_size(backend, awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(
@@ -181,7 +183,7 @@ def test_column_pyarrow_batch_chunk_size(backend, awards_players):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
+    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
 )
 @pytest.mark.broken(
     ["sqlite"],
@@ -198,7 +200,7 @@ def test_to_pyarrow_batches_borked_types(backend, batting):
     assert len(batch) == 42
 
 
-def test_no_pyarrow_message(backend, awards_players, no_pyarrow):
+def test_no_pyarrow_message(awards_players, no_pyarrow):
     with pytest.raises(ModuleNotFoundError) as excinfo:
         awards_players.to_pyarrow()
 

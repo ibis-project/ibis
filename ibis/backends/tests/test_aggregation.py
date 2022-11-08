@@ -27,6 +27,7 @@ aggregate_test_params = [
         marks=[
             pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "datafusion",
                     "postgres",
                     "clickhouse",
@@ -57,6 +58,7 @@ aggregate_test_params = [
         id='mode',
         marks=pytest.mark.notyet(
             [
+                "bigquery",
                 "clickhouse",
                 "datafusion",
                 "impala",
@@ -80,6 +82,7 @@ aggregate_test_params = [
 ]
 
 argidx_not_grouped_marks = [
+    "bigquery",
     "datafusion",
     "impala",
     "mysql",
@@ -158,6 +161,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
 @mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "duckdb",
@@ -253,6 +257,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='sum',
         ),
         param(
+            lambda t, where: (t.int_col > 0).sum(where=where),
+            lambda t, where: (t.int_col > 0)[where].sum(),
+            id="bool_sum",
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "pyspark", "mssql"]),
+        ),
+        param(
             lambda t, where: t.double_col.mean(where=where),
             lambda t, where: t.double_col[where].mean(),
             id='mean',
@@ -274,6 +284,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='mode',
             marks=pytest.mark.notyet(
                 [
+                    "bigquery",
                     "clickhouse",
                     "datafusion",
                     "impala",
@@ -290,6 +301,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmin',
             marks=pytest.mark.notyet(
                 [
+                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
@@ -308,6 +320,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmax',
             marks=pytest.mark.notyet(
                 [
+                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
@@ -373,6 +386,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='arbitrary_last',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     'impala',
                     'postgres',
                     'mysql',
@@ -391,6 +405,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             # only clickhouse implements this option
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "dask",
                     "datafusion",
                     "duckdb",
@@ -521,7 +536,9 @@ def test_reduction_ops(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id='corr_pop',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
+                ),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -535,6 +552,7 @@ def test_reduction_ops(
                 pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
                 pytest.mark.notyet(
                     [
+                        "bigquery",
                         "duckdb",
                         "impala",
                         "mysql",
@@ -568,7 +586,9 @@ def test_reduction_ops(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id='corr_pop_bool',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
+                ),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -602,7 +622,7 @@ def test_corr_cov(
     ibis_cond,
     pandas_cond,
 ):
-    expr = result_fn(batting, ibis_cond(batting))
+    expr = result_fn(batting, ibis_cond(batting)).name("tmp")
     result = expr.execute()
 
     expected = expected_fn(batting_df, pandas_cond(batting_df))
@@ -668,7 +688,7 @@ def test_approx_median(alltypes):
             L(":") + ":",
             "::",
             id="expr",
-            marks=mark.notyet(["duckdb", "mysql", "pyspark"]),
+            marks=mark.notyet(["bigquery", "duckdb", "mysql", "pyspark"]),
         ),
     ],
 )
@@ -746,7 +766,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.notimpl(["datafusion", "pandas", "dask"])
+@mark.notimpl(["bigquery", "datafusion", "pandas", "dask"])
 def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -769,6 +789,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
 )
 @mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "duckdb",
@@ -802,6 +823,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
 
 @mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "duckdb",
@@ -882,3 +904,11 @@ def test_filter(backend, alltypes, df):
         .reset_index()
     )
     backend.assert_frame_equal(result, expected, check_like=True)
+
+
+@pytest.mark.notimpl(["polars", "datafusion", "pyspark", "mssql"])
+def test_column_summary(alltypes):
+    bool_col_summary = alltypes.bool_col.summary()
+    expr = alltypes.aggregate(bool_col_summary)
+    result = expr.execute()
+    assert result.shape == (1, 7)

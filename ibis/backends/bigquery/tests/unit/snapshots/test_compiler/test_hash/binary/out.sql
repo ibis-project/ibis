@@ -1,0 +1,1 @@
+SELECT farm_fingerprint(FROM_BASE64('dGVzdCBvZiBoYXNo')) AS `tmp`

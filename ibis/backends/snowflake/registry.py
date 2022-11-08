@@ -41,6 +41,22 @@ def _random(t, op):
     return sa.func.uniform(min_value, max_value, sa.func.random())
 
 
+def _day_of_week_name(t, op):
+    return sa.case(
+        value=sa.func.dayname(t.translate(op.arg)),
+        whens=[
+            ("Sun", "Sunday"),
+            ("Mon", "Monday"),
+            ("Tues", "Tuesday"),
+            ("Wed", "Wednesday"),
+            ("Thu", "Thursday"),
+            ("Fri", "Friday"),
+            ("Sat", "Saturday"),
+        ],
+        else_=None,
+    )
+
+
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
 _SF_NEG_INF = -_SF_POS_INF
 _SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
@@ -70,5 +86,6 @@ operation_registry.update(
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
         ops.RowID: (lambda *_: sa.func.seq8() + 1),
+        ops.DayOfWeekName: _day_of_week_name,
     }
 )

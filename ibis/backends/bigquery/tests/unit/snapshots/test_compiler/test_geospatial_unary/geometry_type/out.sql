@@ -1,0 +1,2 @@
+SELECT ST_GEOMETRYTYPE(`geog`) AS `tmp`
+FROM t

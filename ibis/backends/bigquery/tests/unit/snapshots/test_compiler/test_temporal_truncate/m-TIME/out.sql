@@ -1,0 +1,2 @@
+SELECT TIME_TRUNC(`a`, MINUTE) AS `tmp`
+FROM t
