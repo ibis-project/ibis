@@ -255,7 +255,7 @@ class Backend(BaseSQLBackend):
         return _PySparkCursor(query)
 
     def _get_schema_using_query(self, query):
-        cur = self.raw_sql(query)
+        cur = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
         return spark_dataframe_schema(cur.query)
 
     def _get_jtable(self, name, database=None):

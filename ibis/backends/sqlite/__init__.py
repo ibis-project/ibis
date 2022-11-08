@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     import ibis.expr.datatypes as dt
 
+import ibis.expr.schema as sch
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
@@ -205,3 +206,10 @@ class Backend(BaseAlchemyBackend):
     @property
     def _current_schema(self) -> str | None:
         return self.current_database
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        raise ValueError(
+            "The SQLite backend cannot infer schemas from raw SQL - "
+            "please specify the schema directly when calling `.sql` "
+            "using the `schema` keyword argument"
+        )

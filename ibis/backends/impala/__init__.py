@@ -981,7 +981,7 @@ class Backend(BaseSQLBackend):
         self.raw_sql(statement)
 
     def _get_schema_using_query(self, query):
-        cur = self.raw_sql(query)
+        cur = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
         # resets the state of the cursor and closes operation
         cur.fetchall()
         names, ibis_types = self._adapt_types(cur.description)
