@@ -19,6 +19,7 @@ pytestmark = [
         ],
         reason="Not implemented yet",
     ),
+    pytest.mark.notyet(["bigquery"], reason="BigQuery doesn't implement map types"),
 ]
 
 

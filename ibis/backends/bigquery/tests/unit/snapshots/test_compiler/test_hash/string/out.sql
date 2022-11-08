@@ -1,0 +1,1 @@
+SELECT farm_fingerprint('test of hash') AS `tmp`

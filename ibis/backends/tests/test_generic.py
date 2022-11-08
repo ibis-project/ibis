@@ -41,47 +41,32 @@ def test_scalar_fillna_nullif(con, expr, expected):
         assert con.execute(expr) == expected
 
 
-na_none_cols = pytest.mark.parametrize(
-    "col",
+@pytest.mark.parametrize(
+    ("col", "filt"),
     [
         param(
-            "na_col",
+            "nan_col",
+            _.nan_col.isnan(),
             marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
-            id="na_col",
+            id="nan_col",
         ),
         param(
             "none_col",
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "datafusion",
-                        "impala",
-                        "mysql",
-                        "postgres",
-                        "sqlite",
-                        "snowflake",
-                        "polars",
-                    ]
-                ),
-                pytest.mark.notyet(["duckdb"], reason="non-finite value support"),
-            ],
+            _.none_col.isnull(),
+            marks=[pytest.mark.notimpl(["datafusion", "mysql"])],
             id="none_col",
         ),
     ],
 )
-
-
-@na_none_cols
 @pytest.mark.notimpl(["mssql"])
-def test_isna(backend, alltypes, col):
-    table = alltypes.mutate(na_col=np.nan)
-    table = table.mutate(none_col=None)
-    table = table.mutate(none_col=table['none_col'].cast('float64'))
-    table_pandas = table.execute()
+def test_isna(backend, alltypes, col, filt):
+    table = alltypes.select(
+        nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
+    )
+    df = table.execute()
 
-    result = table[table[col].isnan()].execute().reset_index(drop=True)
-    expected = table_pandas[table_pandas[col].isna()].reset_index(drop=True)
+    result = table[filt].execute().reset_index(drop=True)
+    expected = df[df[col].isna()].reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected)
 
@@ -94,6 +79,7 @@ def test_isna(backend, alltypes, col):
             np.nan,
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "duckdb",
                     "impala",
@@ -104,6 +90,7 @@ def test_isna(backend, alltypes, col):
                 ],
                 reason="NaN != NULL for these backends",
             ),
+            id="nan_col",
         ),
     ],
 )
@@ -135,7 +122,7 @@ def test_column_fillna(backend, alltypes, value):
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_coalesce(con, expr, expected):
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
 
     if isinstance(result, decimal.Decimal):
         # in case of Impala the result is decimal
@@ -252,6 +239,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
 
 @pytest.mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "duckdb",
@@ -476,7 +464,9 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars", "mssql"])
+@pytest.mark.notimpl(
+    ["bigquery", "dask", "datafusion", "impala", "pandas", "polars", "mssql"]
+)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
@@ -600,7 +590,7 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
     ],
 )
 def test_logical_negation_literal(con, expr, expected, op):
-    assert con.execute(op(ibis.literal(expr))) == expected
+    assert con.execute(op(ibis.literal(expr)).name("tmp")) == expected
 
 
 @pytest.mark.parametrize(
@@ -612,12 +602,12 @@ def test_logical_negation_literal(con, expr, expected, op):
     ],
 )
 def test_logical_negation_column(backend, alltypes, df, op):
-    result = op(alltypes["bool_col"]).execute()
+    result = op(alltypes["bool_col"]).name("tmp").execute()
     expected = op(df["bool_col"])
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["bigquery", "datafusion"])
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -627,7 +617,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["bigquery", "datafusion"])
 @pytest.mark.min_version(
     dask="2022.01.1",
     reason="unsupported operation with later versions of pandas",
@@ -706,7 +696,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -740,7 +730,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -770,7 +760,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -778,7 +768,7 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -786,7 +776,7 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()

@@ -1,0 +1,2 @@
+SELECT DATE_TRUNC(`a`, MONTH) AS `tmp`
+FROM t

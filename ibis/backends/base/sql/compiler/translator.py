@@ -162,6 +162,25 @@ class ExprTranslator:
 
     _registry = operation_registry
     _rewrites: dict[ops.Node, Callable] = {}
+    _forbids_frame_clause = (
+        ops.DenseRank,
+        ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
+        ops.CumeDist,
+        ops.RowNumber,
+    )
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.FirstValue,
+        ops.LastValue,
+        ops.PercentRank,
+        ops.CumeDist,
+        ops.NTile,
+    )
 
     def __init__(self, node, context, named=False, permit_subquery=False):
         self.node = node

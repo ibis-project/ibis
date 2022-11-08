@@ -1,0 +1,2 @@
+SELECT DATE_TRUNC(`a`, DAY) AS `tmp`
+FROM t

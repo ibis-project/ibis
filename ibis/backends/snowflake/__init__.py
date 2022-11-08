@@ -6,6 +6,7 @@ import snowflake.connector as sfc
 import sqlalchemy as sa
 from snowflake.sqlalchemy import URL
 
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
@@ -27,6 +28,11 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = False
+    _forbids_frame_clause = (
+        *AlchemyExprTranslator._forbids_frame_clause,
+        ops.Lag,
+        ops.Lead,
+    )
 
 
 class SnowflakeCompiler(AlchemyCompiler):

@@ -20,7 +20,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -38,7 +38,7 @@ def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
 
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
     expected = np.array([1.0, 2.0, 3.0])
 
     # This does not check whether `result` is an np.array or a list,
@@ -52,7 +52,7 @@ def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
     expr = left + right
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
     expected = np.array([1, 2, 3, 2, 1])
 
     # This does not check whether `result` is an np.array or a list,
@@ -63,14 +63,14 @@ def test_array_concat(con):
 @pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
-    assert con.execute(expr) == 3
+    assert con.execute(expr.name("tmp")) == 3
 
 
 @pytest.mark.notimpl(["impala", "snowflake"])
 def test_list_literal(con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
 
     # This does not check whether `result` is an np.array or a list,
     # because it varies across backends and backend configurations
@@ -81,11 +81,22 @@ def test_list_literal(con):
 def test_np_array_literal(con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
-    result = con.execute(expr)
+    result = con.execute(expr.name("tmp"))
 
     # This does not check whether `result` is an np.array or a list,
     # because it varies across backends and backend configurations
     assert np.array_equal(result, arr)
+
+
+@pytest.mark.parametrize("idx", range(3))
+@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
+@pytest.mark.notyet(["postgres"], reason="generated code is invalid")
+def test_array_index(con, idx):
+    arr = [1, 2, 3]
+    expr = ibis.literal(arr)
+    expr = expr[idx]
+    result = con.execute(expr)
+    assert result == arr[idx]
 
 
 duckdb_0_4_0 = pytest.mark.xfail(
@@ -124,7 +135,10 @@ builtin_array = toolz.compose(
 
 unnest = toolz.compose(
     builtin_array,
-    pytest.mark.notimpl(["pandas", "snowflake"]),
+    pytest.mark.notimpl(["pandas"]),
+    pytest.mark.notyet(
+        ["bigquery", "snowflake"], reason="doesn't support unnest in SELECT position"
+    ),
 )
 
 
@@ -133,6 +147,7 @@ unnest = toolz.compose(
     ["clickhouse", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
 )
+@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_postgres_duckdb(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -153,6 +168,7 @@ def test_array_discovery_postgres_duckdb(con):
     ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars"],
     reason="backend supports nullable nested types",
 )
+@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_clickhouse(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -176,6 +192,7 @@ def test_array_discovery_clickhouse(con):
     ["clickhouse", "duckdb", "postgres"],
     reason="backend does not support nullable nested types",
 )
+@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_desired(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -193,6 +210,7 @@ def test_array_discovery_desired(con):
 
 @pytest.mark.never(
     [
+        "bigquery",
         "clickhouse",
         "dask",
         "datafusion",

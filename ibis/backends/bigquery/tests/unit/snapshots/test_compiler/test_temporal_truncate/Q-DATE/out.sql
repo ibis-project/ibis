@@ -1,0 +1,2 @@
+SELECT DATE_TRUNC(`a`, QUARTER) AS `tmp`
+FROM t

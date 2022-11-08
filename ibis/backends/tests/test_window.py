@@ -105,7 +105,7 @@ def calc_zscore(s):
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["pandas", "snowflake"]),
+                pytest.mark.notimpl(["bigquery", "pandas", "snowflake"]),
                 pytest.mark.notyet(["impala"]),
             ],
         ),
@@ -276,6 +276,7 @@ def test_grouped_bounded_expanding_window(
             marks=[
                 pytest.mark.notimpl(
                     [
+                        "bigquery",
                         "clickhouse",
                         "duckdb",
                         "impala",
@@ -403,6 +404,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             id='mean_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "dask",
                     "duckdb",
@@ -470,8 +472,11 @@ def test_grouped_unbounded_window(
             True,
             id='ordered-mean',
             marks=[
-                pytest.mark.notimpl(["dask", "impala", "pandas"]),
-                pytest.mark.broken(["clickhouse"], reason="upstream appears broken"),
+                pytest.mark.notimpl(["dask", "pandas"]),
+                pytest.mark.broken(
+                    ["clickhouse", "bigquery", "impala"],
+                    reason="default window semantics are different",
+                ),
             ],
         ),
         param(
@@ -490,6 +495,7 @@ def test_grouped_unbounded_window(
             id='ordered-mean_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "dask",
                     "duckdb",
@@ -509,6 +515,7 @@ def test_grouped_unbounded_window(
             id='unordered-mean_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "duckdb",
                     "impala",
@@ -535,6 +542,13 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-lag',
             marks=[
+                pytest.mark.broken(
+                    ["bigquery"],
+                    reason=(
+                        "this isn't actually broken: the bigquery backend "
+                        "automatically inserts an order by"
+                    ),
+                ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
                 pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering"),
             ],
@@ -544,16 +558,14 @@ def test_grouped_unbounded_window(
             lambda df: df.float_col.shift(-1),
             True,
             id='ordered-lead',
-            marks=pytest.mark.notimpl(["clickhouse", "dask"]),
+            marks=pytest.mark.notimpl(["dask", "clickhouse"]),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
             lambda df: df.float_col.shift(-1),
             False,
             id='unordered-lead',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "dask", "mysql", "pyspark", "snowflake"]
-            ),
+            marks=pytest.mark.notimpl(["dask", "mysql", "pyspark", "snowflake"]),
         ),
         param(
             lambda t, win: calc_zscore(t.double_col).over(win),
@@ -562,6 +574,7 @@ def test_grouped_unbounded_window(
             id='ordered-zscore_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "dask",
                     "duckdb",
@@ -582,6 +595,7 @@ def test_grouped_unbounded_window(
             id='unordered-zscore_udf',
             marks=pytest.mark.notimpl(
                 [
+                    "bigquery",
                     "clickhouse",
                     "duckdb",
                     "impala",
@@ -598,7 +612,7 @@ def test_grouped_unbounded_window(
 # Some backends do not support non-grouped window specs
 @pytest.mark.notimpl(["datafusion", "polars"])
 def test_ungrouped_unbounded_window(
-    backend, alltypes, df, con, result_fn, expected_fn, ordered
+    backend, alltypes, df, result_fn, expected_fn, ordered
 ):
     # Define a window that is
     # 1) Ungrouped
@@ -606,12 +620,7 @@ def test_ungrouped_unbounded_window(
     # 3) Unbounded
     order_by = [alltypes.id] if ordered else None
     window = ibis.window(order_by=order_by)
-    expr = alltypes.mutate(
-        val=result_fn(
-            alltypes,
-            win=window,
-        )
-    )
+    expr = alltypes.mutate(val=result_fn(alltypes, win=window))
     result = expr.execute()
     result = result.set_index('id').sort_index()
 

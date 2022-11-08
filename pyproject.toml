@@ -12,10 +12,10 @@ license = "Apache-2.0"
 readme = "README.md"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
-  "Operating System :: OS Independent",
   "Intended Audience :: Science/Research",
-  "Programming Language :: Python",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python",
   "Topic :: Scientific/Engineering",
 ]
 
@@ -44,11 +44,14 @@ dask = { version = ">=2021.10.0,<2022.8.0", optional = true, extras = [
   "dataframe"
 ] }
 datafusion = { version = ">=0.6,<0.7", optional = true }
+db-dtypes = { version = ">=0.3,<2", optional = true }
 duckdb = { version = ">=0.3.2,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 GeoAlchemy2 = { version = ">=0.6.3,<1", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
+google-cloud-bigquery = { version = ">=3,<4", optional = true }
+google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
 graphviz = { version = ">=0.16,<1", optional = true }
 impyla = { version = ">=0.17,<1", optional = true }
 lz4 = { version = ">=3.1.10,<5", optional = true }
@@ -56,13 +59,14 @@ polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=1,<10", optional = true }
 pymssql = { version = ">=2.2.7,<3", optional = true }
+pydata-google-auth = { version = "^1.4.0", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<2", optional = true }
 sqlglot = { version = ">=4.5.0,<11", optional = true }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 black = { version = ">=22.1.0,<23", optional = true }
 
 [tool.poetry.group.dev.dependencies]
@@ -114,6 +118,13 @@ requests = ">=2,<3"
 tomli = ">=2.0.1,<3"
 
 [tool.poetry.extras]
+bigquery = [
+  "db-dtypes",
+  "google-cloud-bigquery",
+  "google-cloud-bigquery-storage",
+  "pydata-google-auth",
+  "sqlglot"
+]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow"]
 datafusion = ["datafusion"]
@@ -128,10 +139,12 @@ postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
 sqlite = ["sqlalchemy", "sqlglot"]
+# non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
 
 [tool.poetry.plugins."ibis.backends"]
+bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
@@ -250,6 +263,7 @@ markers = [
   "never: tests for functionality that a backend is likely to never implement",
   "broken: test has exposed existing broken functionality",
   "sqlalchemy_only: tests for SQLAlchemy based backends",
+  "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",
   "datafusion: Apache Datafusion tests",

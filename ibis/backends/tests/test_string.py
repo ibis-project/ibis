@@ -64,7 +64,9 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
             marks=[
-                pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars"]),
+                pytest.mark.notimpl(
+                    ["bigquery", "datafusion", "impala", "pyspark", "polars"]
+                ),
                 pytest.mark.notyet(
                     ["mssql"], reason="mssql doesn't allow like outside of filters"
                 ),
@@ -136,7 +138,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "datafusion", "mysql", "polars", "mssql"]
+                ["bigquery", "clickhouse", "datafusion", "mysql", "polars", "mssql"]
             ),
         ),
         param(
@@ -162,7 +164,15 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
             marks=pytest.mark.notimpl(
-                ["datafusion", "pyspark", "sqlite", "snowflake", "polars", "mssql"]
+                [
+                    "bigquery",
+                    "datafusion",
+                    "pyspark",
+                    "sqlite",
+                    "snowflake",
+                    "polars",
+                    "mssql",
+                ]
             ),
         ),
         param(
@@ -170,7 +180,15 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
             marks=pytest.mark.notimpl(
-                ["datafusion", "pyspark", "sqlite", "snowflake", "polars", "mssql"]
+                [
+                    "bigquery",
+                    "datafusion",
+                    "pyspark",
+                    "sqlite",
+                    "snowflake",
+                    "polars",
+                    "mssql",
+                ]
             ),
         ),
         param(
@@ -253,7 +271,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "mssql"]),
+            marks=pytest.mark.notimpl(["bigquery", "clickhouse", "duckdb", "mssql"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),

@@ -75,6 +75,10 @@ class BackendTest(abc.ABC):
     supports_json = True
     reduction_tolerance = 1e-7
 
+    @staticmethod
+    def format_table(name: str) -> str:
+        return name
+
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)
         self.data_directory = data_directory

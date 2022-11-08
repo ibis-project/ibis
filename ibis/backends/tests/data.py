@@ -62,6 +62,32 @@ array_types = pd.DataFrame(
     ],
 )
 
+non_null_array_types = pd.DataFrame(
+    [
+        (
+            [np.int64(1), 2, 3],
+            ['a', 'b', 'c'],
+            [1.0, 2.0, 3.0],
+            'a',
+            1.0,
+            [[], [np.int64(1), 2, 3]],
+        ),
+        ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0, []),
+        ([6], ['f'], [6.0], 'a', 3.0, [[]]),
+        ([1], ['a'], [], 'b', 4.0, [[1], [2], [], [3, 4, 5]]),
+        ([2, 3], ['b', 'c'], np.nan, 'b', 5.0, None),
+        ([4, 5], ['d', 'e'], [4.0, 5.0], 'c', 6.0, [[1, 2, 3]]),
+    ],
+    columns=[
+        "x",
+        "y",
+        "z",
+        "grouper",
+        "scalar_column",
+        "multi_dim",
+    ],
+)
+
 json_types = pd.DataFrame(
     {
         "js": [

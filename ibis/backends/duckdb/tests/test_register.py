@@ -2,6 +2,7 @@ import contextlib
 import csv
 import gzip
 import os
+import platform
 import re
 import tempfile
 from pathlib import Path
@@ -217,6 +218,13 @@ def test_temp_directory(tmp_path):
 
 @pytest.mark.parametrize(
     "path", ["s3://data-lake/dataset/", "s3://data-lake/dataset/file_1.parquet"]
+)
+@pytest.mark.xfail(
+    condition=(
+        platform.system() == "Darwin"
+        and any(key.startswith("NIX_") for key in os.environ.keys())
+    ),
+    reason="pyarrow isn't built with S3 support in macOS nix builds",
 )
 def test_s3_parquet(path):
     with pytest.raises(OSError):

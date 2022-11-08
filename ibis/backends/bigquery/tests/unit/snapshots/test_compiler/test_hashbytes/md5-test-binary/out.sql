@@ -1,0 +1,1 @@
+SELECT md5(FROM_BASE64('dGVzdA==')) AS `tmp`

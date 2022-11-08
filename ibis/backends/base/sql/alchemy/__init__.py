@@ -142,16 +142,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return df
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-
         import pandas as pd
 
-        df = pd.DataFrame.from_records(
-            cursor,
-            columns=cursor.keys(),
-            coerce_float=True,
-        )
+        df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
         df = schema.apply_to(df)
-        if len(df) and geospatial_supported:
+        if not df.empty and geospatial_supported:
             return self._to_geodataframe(df, schema)
         return df
 
