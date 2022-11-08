@@ -35,8 +35,6 @@ jobs:
         with:
           python-version: "3.10"
 
-      - run: python -m pip install --upgrade pip 'coverage[toml]'
-
       - name: install tpc-queries dependencies
         working-directory: tpc-queries
         run: |
@@ -52,16 +50,4 @@ jobs:
 
       - name: run tpc-h queries
         working-directory: tpc-queries
-        run: coverage run --rcfile=../pyproject.toml ./runtpc -i ibis -i duckdb -d 'tpch.ddb' -b 'duckdb'
-
-      - name: generate coverage report
-        working-directory: tpc-queries
-        run: coverage xml --rcfile=../pyproject.toml -o ./junit.xml
-
-      - name: upload code coverage
-        if: success()
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./tpc-queries/junit.xml
-          fail_ci_if_error: true
-          flags: tpc,tpch,duckdb,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+        run: ./runtpc -i ibis -i duckdb -d 'tpch.ddb' -b 'duckdb'
