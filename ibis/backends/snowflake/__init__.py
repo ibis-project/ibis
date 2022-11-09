@@ -114,3 +114,12 @@ class Backend(BaseAlchemyBackend):
             typ = parse(raw_type)
             schema[name] = typ(nullable=null.upper() == "Y")
         return sch.Schema.from_dict(schema)
+
+    def list_databases(self, like=None) -> list[str]:
+        databases = [
+            row.database_name
+            for row in self.con.execute(
+                'select database_name from information_schema.databases'
+            )
+        ]
+        return self._filter_with_like(databases, like)
