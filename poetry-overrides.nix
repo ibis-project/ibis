@@ -135,6 +135,19 @@ in
     '';
   });
 
+  # hatch-requirements-txt has a huge set of (circular!) dependencies, only
+  # used at build time none of which are required to build documentation so we
+  # remove the part of pyproject.toml that requires it
+  mkdocs-material = super.mkdocs-material.overridePythonAttrs (attrs: {
+    postPatch = ''
+      substituteInPlace pyproject.toml \
+        --replace ', "hatch-requirements-txt"' "" \
+        --replace '[tool.hatch.metadata.hooks.requirements_txt]' "" \
+        --replace 'filename = "requirements.txt"' ""
+    '';
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling self.hatch-nodejs-version ];
+  });
+
   fiona = super.fiona.overridePythonAttrs (_: {
     format = "pyproject";
   });
