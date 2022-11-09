@@ -29,10 +29,10 @@
         "homepage": "",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "ef89591c717bf24f08a304179fce1ec195e7fc19",
-        "sha256": "1i75mn1xm6j9n6kv8qzmyzg15fa612vaplhbq656xdpnkyypim5g",
+        "rev": "6c2f092d74360102dcc4eb16cc93d562e5d35dcc",
+        "sha256": "1rwvhazlczm5sspamwsmqmh5bhj9j38i9h00rh72mil0hxn77yii",
         "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/ef89591c717bf24f08a304179fce1ec195e7fc19.tar.gz",
+        "url": "https://github.com/nix-community/poetry2nix/archive/6c2f092d74360102dcc4eb16cc93d562e5d35dcc.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "rust-overlay": {
