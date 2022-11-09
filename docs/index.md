@@ -23,7 +23,7 @@ hide:
 >>> con = ibis.connect('movielens.sqlite')
 >>> movies = con.tables.movies
 >>> rating_by_year = movies.group_by('year').avg_rating.mean()
->>> q = rating_by_year.order_by(query.year.desc())
+>>> q = rating_by_year.order_by(rating_by_year.year.desc())
 ```
 
 ```py title="Compile to SQL"
