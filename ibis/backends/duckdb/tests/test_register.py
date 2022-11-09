@@ -2,6 +2,7 @@ import contextlib
 import csv
 import gzip
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -32,9 +33,9 @@ def gzip_csv(data_directory, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "fname, in_table_name, out_table_name",
+    ("fname", "in_table_name", "out_table_name"),
     [
-        param("diamonds.csv", None, "diamonds", id="default"),
+        param("diamonds.csv", None, None, id="default"),
         param("csv://diamonds.csv", "Diamonds", "Diamonds", id="csv_name"),
         param(
             "file://diamonds.csv",
@@ -55,14 +56,17 @@ def test_register_csv(
     data_directory, fname, in_table_name, out_table_name, ext, gzip_csv
 ):
     con = ibis.duckdb.connect()
-    if ext is not None:
+    if ext:
         fname = gzip_csv
     with pushd(data_directory):
-        con.register(fname, table_name=in_table_name)
+        table = con.register(fname, table_name=in_table_name)
 
-    assert out_table_name in con.list_tables()
+    if out_table_name is not None:
+        out_table_name += (os.extsep * bool(ext) + (ext or "")) * (
+            in_table_name is None
+        )
+        assert out_table_name in con.list_tables()
 
-    table = con.table(out_table_name)
     assert table.count().execute()
 
 
@@ -73,18 +77,17 @@ def test_register_with_dotted_name(data_directory, tmp_path):
     f.parent.mkdir()
     data = data_directory.joinpath("diamonds.csv").read_bytes()
     f.write_bytes(data)
-    con.register(str(f.absolute()))
-    table = con.table("diamonds")
+    table = con.register(str(f.absolute()))
     assert table.count().execute()
 
 
 @pytest.mark.parametrize(
-    "fname, in_table_name, out_table_name",
+    ("fname", "in_table_name", "out_table_name"),
     [
-        (
+        pytest.param(
             "parquet://functional_alltypes.parquet",
             None,
-            "functional_alltypes",
+            "functional_alltypes_parquet",
         ),
         ("functional_alltypes.parquet", "funk_all", "funk_all"),
         ("parquet://functional_alltypes.parq", "funk_all", "funk_all"),
@@ -103,11 +106,10 @@ def test_register_parquet(
 
     con = ibis.duckdb.connect()
     with pushd(tmp_path):
-        con.register(f"parquet://{fname.name}", table_name=in_table_name)
+        table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
-    assert out_table_name in con.list_tables()
+    assert any(out_table_name in t for t in con.list_tables())
 
-    table = con.table(out_table_name)
     assert table.count().execute()
 
 
@@ -137,10 +139,10 @@ def test_register_pyarrow_tables():
 
 @pytest.mark.parametrize(
     "kwargs, expected_snippet",
-    [({}, "AUTO_DETECT=True"), ({"COLUMNS": {"foo": "int8"}}, "AUTO_DETECT=False")],
+    [({}, "auto_detect=True"), ({"columns": {"foo": "int8"}}, "auto_detect=False")],
 )
 def test_csv_register_kwargs(kwargs, expected_snippet):
-    view_str, _ = _generate_view_code("bork.csv", **kwargs)
+    view_str, _, _ = _generate_view_code("bork.csv", **kwargs)
     assert expected_snippet in view_str
 
 
@@ -167,3 +169,21 @@ def test_csv_reregister_schema(tmp_path):
     foo_table = con.register(foo, SAMPLE_SIZE=2)
     exp_schema = ibis.schema(dict(cola="int32", colb="int32", colc="int32"))
     assert foo_table.schema() == exp_schema
+
+
+def test_read_csv(data_directory):
+    t = ibis.read(data_directory / "functional_alltypes.csv")
+    assert t.count().execute()
+
+
+def test_read_parquet(data_directory):
+    t = ibis.read(data_directory / "functional_alltypes.parquet")
+    assert t.count().execute()
+
+
+@pytest.mark.parametrize("basename", ["functional_alltypes.*", "df.xlsx"])
+def test_read_invalid(data_directory, basename):
+    path = data_directory / basename
+    msg = f"^Unrecognized file type or extension: {re.escape(str(path))}"
+    with pytest.raises(ValueError, match=msg):
+        ibis.read(path)

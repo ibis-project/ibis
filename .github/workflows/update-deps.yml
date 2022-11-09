@@ -19,7 +19,7 @@ jobs:
           set -euo pipefail
 
           deps="$(jq -rcM '{dep: keys}' < nix/sources.json)"
-          echo "::set-output name=matrix::$deps"
+          echo "matrix=${deps}" >> "$GITHUB_OUTPUT"
 
   niv_update:
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "::set-output name=did_change::${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}"
+          echo "did_change=${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}" >> "$GITHUB_OUTPUT"
 
       - uses: tibdex/github-app-token@v1
         if: ${{ fromJSON(steps.needs_pr.outputs.did_change) }}

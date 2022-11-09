@@ -14,7 +14,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "::set-output name=yesterday::$(date --date=yesterday +%Y-%m-%d)"
+          echo "yesterday=$(date --date=yesterday +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: generate data
         id: generate_data
@@ -39,11 +39,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: google-github-actions/auth@v0
+      - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/setup-gcloud@v1
 
       - run: gcloud info
 
