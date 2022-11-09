@@ -2274,7 +2274,7 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "9.0.6"
+version = "10.0.0"
 description = "An easily customizable SQL parser and transpiler"
 category = "main"
 optional = true
@@ -2556,7 +2556,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f2a695fd64e19beed5f01c9c1b113c0d732f756b195a154eec8d38ca7371cdf3"
+content-hash = "3e60ee0bbd54bc020bbd9e1611c10700dbdec93651a60d4b29f485ec0bc6b177"
 
 [metadata.files]
 absolufy-imports = [
@@ -2822,6 +2822,19 @@ clickhouse-cityhash = [
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:aa1bae67f262046e2c362c3bdd39747bc3fd77e75b663501687a70827bf7201f"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win32.whl", hash = "sha256:14d1646e25595c63de3e228ead0a129e2a0b7959d159406321a217752c16dd49"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:b5a9f092d1a0d3c6b90699f94202b4bf8c3e5a51ce8cfd163ba686081152d506"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:67d0b09fbf8f1de1afcf6aac0347feb384ae76a2cef8a51c5a740046c319793f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ddf17e633cc2b28e5f597b6a63aed5e2c33917ae02b1b851ecd74cdfaba7913b"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:853408fa07bdc891c07794445a3cd401c3aed049698597e3a75d722e38aa099d"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:03e59cd528329a044f254b071134c957d4ea23bbdb8c45e758adc5f1b9034c6f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:18673ea9338969a33ce78c1300171d12bde07f4e9b882bd49adfadcc5f3692a7"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1f1dba048334908db83eaab73c3dd66dfaf2e61efd728afec6326fbb1f1d8c48"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:897891a4f7504e8238a4341abfad88bf0ca12ac0559833d6b135186101d87d0f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:02433adbf620af0fa906bc47e3472eda19af7da87a84e069cd6fbe970968f069"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_ppc64le.whl", hash = "sha256:0a6bb39c3124fdd5374507a036b0730ccba6535d18d53012c702efd5a9617e3e"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_s390x.whl", hash = "sha256:6701779e2ea422579d48df4467bbf7d6c2743b4a422e86ee5932f858a99539db"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:3879e029e7db87598c7e49319597d0af404baac85ab16f0ed29396f0019a974a"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win32.whl", hash = "sha256:f0c22f97d55665478c530ff035703bbcadf1aed21ed711da3762b53f7ca76d23"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:e960e510157bc657f632f3b6c58db0a632ff33024ffe54d5115240a81f757d20"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-macosx_10_6_intel.whl", hash = "sha256:94cb7234d6b27fb2a3d1042d8bf22c6b37ed0f4c22d496b255918f13e0db3515"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_i686.whl", hash = "sha256:23db430b9c3bd2f800d78efc19429586edf4b33fc25c88682de22bd9fd1be20e"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_x86_64.whl", hash = "sha256:d556ff29cb66e73fdadf75831761912d660634635c4e915a865da51c79a4aa87"},
@@ -3816,6 +3829,8 @@ psutil = [
 psycopg2 = [
     {file = "psycopg2-2.9.5-cp310-cp310-win32.whl", hash = "sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f"},
     {file = "psycopg2-2.9.5-cp310-cp310-win_amd64.whl", hash = "sha256:4cb9936316d88bfab614666eb9e32995e794ed0f8f6b3b718666c22819c1d7ee"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win32.whl", hash = "sha256:093e3894d2d3c592ab0945d9eba9d139c139664dcf83a1c440b8a7aa9bb21955"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win_amd64.whl", hash = "sha256:920bf418000dd17669d2904472efeab2b20546efd0548139618f8fa305d1d7ad"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win32.whl", hash = "sha256:b9ac1b0d8ecc49e05e4e182694f418d27f3aedcfca854ebd6c05bb1cffa10d6d"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win_amd64.whl", hash = "sha256:fc04dd5189b90d825509caa510f20d1d504761e78b8dfb95a0ede180f71d50e5"},
     {file = "psycopg2-2.9.5-cp37-cp37m-win32.whl", hash = "sha256:922cc5f0b98a5f2b1ff481f5551b95cd04580fd6f0c72d9b22e6c0145a4840e0"},
@@ -4435,8 +4450,8 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.42.tar.gz", hash = "sha256:177e41914c476ed1e1b77fd05966ea88c094053e17a85303c4ce007f88eff363"},
 ]
 sqlglot = [
-    {file = "sqlglot-9.0.6-py3-none-any.whl", hash = "sha256:0523633fc9c5fc53eaa01ea00cb04612eb5ffe547a0093b875d19c345aa23b45"},
-    {file = "sqlglot-9.0.6.tar.gz", hash = "sha256:f4b3f6f7ea52810815f71655c1d52d7da147c019010d7699e243be474be7f090"},
+    {file = "sqlglot-10.0.0-py3-none-any.whl", hash = "sha256:2b2717b51eca5477d8375134b54182262a99cc310be6cfe930dee5384e7aa763"},
+    {file = "sqlglot-10.0.0.tar.gz", hash = "sha256:607686058bd3d3e77002d077ac3c285bb0a1dbf8eadb8c66ca57a1733f39c1a6"},
 ]
 stack-data = [
     {file = "stack_data-0.6.0-py3-none-any.whl", hash = "sha256:b92d206ef355a367d14316b786ab41cb99eb453a21f2cb216a4204625ff7bc07"},
