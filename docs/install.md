@@ -1,3 +1,10 @@
+---
+hide:
+  - toc
+  - navigation
+  - footer
+---
+
 # Install Ibis
 
 === "pip"
@@ -32,4 +39,6 @@
 
 After you've successfully installed Ibis, try going through the tutorial:
 
-[Go to the Tutorial](/tutorial){ .md-button }
+<div class="install-tutorial-button" markdown>
+[Go to the Tutorial](./tutorial/index.md){ .md-button .md-button--primary }
+</div>
