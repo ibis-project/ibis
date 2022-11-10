@@ -18,7 +18,7 @@ def test_version(backend):
 #    databases
 @pytest.mark.never(["dask", "pandas"], reason="pass")
 @pytest.mark.notimpl(["datafusion", "duckdb", "polars"])
-def test_database_consistency(con):
+def test_database_consistency(backend, con):
     # every backend has a different set of databases, not testing the
     # exact names for now
     databases = con.list_databases()
@@ -28,7 +28,10 @@ def test_database_consistency(con):
 
     current_database = con.current_database
     assert isinstance(current_database, str)
-    assert current_database in databases
+    if backend.name() == "snowflake":
+        assert current_database.upper() in databases
+    else:
+        assert current_database in databases
 
 
 def test_list_tables(con):

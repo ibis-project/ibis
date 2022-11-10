@@ -355,7 +355,7 @@ def test_list_databases(alchemy_con):
         'postgres': ['postgres', 'ibis_testing'],
         'mysql': ['ibis_testing', 'information_schema'],
         'duckdb': ['information_schema', 'main', 'temp'],
-        'snowflake': ['ibis_testing', 'information_schema', 'public'],
+        'snowflake': ['IBIS_TESTING'],
     }
     assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
 
