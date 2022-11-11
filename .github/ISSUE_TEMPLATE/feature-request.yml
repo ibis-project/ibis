@@ -32,8 +32,7 @@ body:
   - type: textarea
     id: backends
     attributes:
-      label: Backend(s)
-      description: What backend(s) are you using, if any?
+      label: What backend(s) are you using, if any?
       placeholder: "Ex: DuckDB"
     validations:
       required: false
