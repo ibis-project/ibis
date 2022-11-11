@@ -528,13 +528,13 @@ def test_sa_default_numeric_precision_and_scale(
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
-    reason="backend doesn't implement a [0.0, 1.0) random function",
+    reason="backend doesn't implement a [0.0, 1.0) or [0.0, 1.0] RANDOM() function",
 )
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
     assert isinstance(result, float)
-    assert 0 <= result < 1
+    assert 0 <= result <= 1
 
 
 @pytest.mark.parametrize(
