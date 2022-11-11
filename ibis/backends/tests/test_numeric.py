@@ -536,12 +536,6 @@ def test_random(con):
     assert isinstance(result, float)
     assert 0 <= result < 1
 
-    # Ensure a different random number of produced on subsequent calls
-    result2 = con.execute(expr)
-    assert isinstance(result2, float)
-    assert 0 <= result2 < 1
-    assert result != result2
-
 
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
