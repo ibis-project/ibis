@@ -58,6 +58,7 @@ jobs:
             title: Polars
           - name: mysql
             title: MySQL
+            has_geo: true
             services:
               - mysql
           - name: clickhouse
@@ -66,6 +67,7 @@ jobs:
               - clickhouse
           - name: postgres
             title: PostgreSQL
+            has_geo: true
             services:
               - postgres
             sys-deps:
@@ -83,6 +85,7 @@ jobs:
             backend:
               name: mysql
               title: MySQL
+              has_geo: true
               services:
                 - mysql
           - os: windows-latest
@@ -99,6 +102,7 @@ jobs:
             backend:
               name: postgres
               title: PostgreSQL
+              has_geo: true
               services:
                 - postgres
               sys-deps:
@@ -158,11 +162,11 @@ jobs:
       - run: python -m pip install --upgrade pip 'poetry>=1.2'
 
       - name: install ibis
-        if: ${{ matrix.backend.name != 'postgres' }}
+        if: ${{ !matrix.backend.has_geo || matrix.backend.has_geo == null }}
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
 
       - name: install ibis
-        if: ${{ matrix.backend.name == 'postgres' }}
+        if: ${{ matrix.backend.has_geo }}
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }} --extras geospatial
 
       - uses: extractions/setup-just@v1
