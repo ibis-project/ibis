@@ -787,9 +787,7 @@ def test_timestamp_literal(con):
     assert result == '2022-02-04 16:20:00'
 
 
-@pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake", "polars"]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "polars"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)

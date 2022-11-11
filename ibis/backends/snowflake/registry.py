@@ -67,5 +67,7 @@ operation_registry.update(
         ops.Mode: reduction(sa.func.mode),
         # numbers
         ops.RandomScalar: _random,
+        # time and dates
+        ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
     }
 )
