@@ -69,5 +69,7 @@ operation_registry.update(
         ops.RandomScalar: _random,
         # time and dates
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
+        # columns
+        ops.RowID: (lambda *_: sa.func.seq8() + 1),
     }
 )
