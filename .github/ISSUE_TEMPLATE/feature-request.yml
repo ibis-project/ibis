@@ -17,7 +17,8 @@ body:
   - type: textarea
     id: request
     attributes:
-      description: Describe the solution you'd like and any alternatives you may have considered.
+      label: Describe the solution you'd like
+      description: Also discuss any alternatives you may have considered if applicable.
       placeholder: "I'd like ..."
     validations:
       required: true
