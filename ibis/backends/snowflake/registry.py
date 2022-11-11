@@ -36,6 +36,12 @@ def _round(t, op):
     return sa.func.round(*args)
 
 
+def _random(t, op):
+    min_value = sa.cast(0, sa.dialects.postgresql.FLOAT())
+    max_value = sa.cast(1, sa.dialects.postgresql.FLOAT())
+    return sa.func.uniform(min_value, max_value, sa.func.random())
+
+
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
 _SF_NEG_INF = -_SF_POS_INF
 _SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
@@ -59,5 +65,7 @@ operation_registry.update(
         ops.Round: _round,
         ops.Modulus: fixed_arity(sa.func.mod, 2),
         ops.Mode: reduction(sa.func.mode),
+        # numbers
+        ops.RandomScalar: _random,
     }
 )
