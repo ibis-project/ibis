@@ -527,7 +527,7 @@ def test_sa_default_numeric_precision_and_scale(
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
 @pytest.mark.notyet(
-    ["clickhouse", "snowflake"],
+    ["clickhouse"],
     reason="backend doesn't implement a [0.0, 1.0) random function",
 )
 def test_random(con):
