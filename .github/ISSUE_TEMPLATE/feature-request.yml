@@ -25,8 +25,7 @@ body:
   - type: textarea
     id: version
     attributes:
-      label: Ibis Version
-      description: What version of ibis are you running?
+      label: What version of ibis are you running?
       placeholder: "Ex: 3.2.0"
     validations:
       required: true

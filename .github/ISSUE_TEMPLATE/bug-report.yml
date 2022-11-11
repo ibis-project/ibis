@@ -17,16 +17,14 @@ body:
   - type: textarea
     id: version
     attributes:
-      label: Ibis Version
-      description: What version of ibis are you using?
+      label: What version of ibis are you using?
       placeholder: "Ex: 3.2.0"
     validations:
       required: true
   - type: textarea
     id: backends
     attributes:
-      label: Backend(s)
-      description: What backend(s) are you using, if any?
+      label: What backend(s) are you using, if any?
       placeholder: "Ex: DuckDB"
     validations:
       required: false
@@ -35,7 +33,7 @@ body:
     attributes:
       label: Relevant log output
       description: Please copy and paste any relevant log output or tracebacks. This will be automatically formatted into code, so no need for backticks.
-      render: shell
+      render: "sh"
   - type: checkboxes
     id: terms
     attributes:
