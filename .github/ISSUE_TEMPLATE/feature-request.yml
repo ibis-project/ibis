@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest an idea for ibis
-title: "feat: superb idea"
+title: "feat: "
 labels: ["feature"]
 body:
   - type: markdown
