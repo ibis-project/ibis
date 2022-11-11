@@ -676,7 +676,7 @@ def test_string_to_timestamp_tz_error(alltypes):
         param('2017-01-07', 5, 'Saturday', id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "impala"])
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index())
@@ -686,7 +686,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -713,7 +713,6 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
             id="day_of_week_full_name",
-            marks=[pytest.mark.notimpl(["snowflake"])],
         ),
     ],
 )

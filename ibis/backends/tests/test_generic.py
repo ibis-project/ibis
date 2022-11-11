@@ -37,7 +37,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         assert con.execute(expr) == expected
 
 
-na_none_cols = pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "col",
     [
         param(
@@ -56,7 +56,6 @@ na_none_cols = pytest.mark.parametrize(
                         "mysql",
                         "postgres",
                         "sqlite",
-                        "snowflake",
                         "polars",
                     ]
                 ),
@@ -66,9 +65,6 @@ na_none_cols = pytest.mark.parametrize(
         ),
     ],
 )
-
-
-@na_none_cols
 def test_isna(backend, alltypes, col):
     table = alltypes.mutate(na_col=np.nan)
     table = table.mutate(none_col=None)
