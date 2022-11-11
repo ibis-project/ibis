@@ -1215,7 +1215,7 @@ test = ["mkdocs-include-markdown-plugin", "mkdocs-macros-test", "mkdocs-material
 
 [[package]]
 name = "mkdocs-material"
-version = "8.5.9"
+version = "8.5.10"
 description = "Documentation that simply works"
 category = "dev"
 optional = false
@@ -2556,7 +2556,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f6f1cce458699b74af3a6febf6f1d6c75c1ea81d9187a084635c01f725b84f16"
+content-hash = "1b74ec4f597d5f6bbb9b2dd9063f21b7e0b6e8391e05b99303d12d39f5fcac27"
 
 [metadata.files]
 absolufy-imports = [
@@ -2822,6 +2822,19 @@ clickhouse-cityhash = [
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:aa1bae67f262046e2c362c3bdd39747bc3fd77e75b663501687a70827bf7201f"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win32.whl", hash = "sha256:14d1646e25595c63de3e228ead0a129e2a0b7959d159406321a217752c16dd49"},
     {file = "clickhouse_cityhash-1.0.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:b5a9f092d1a0d3c6b90699f94202b4bf8c3e5a51ce8cfd163ba686081152d506"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:67d0b09fbf8f1de1afcf6aac0347feb384ae76a2cef8a51c5a740046c319793f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ddf17e633cc2b28e5f597b6a63aed5e2c33917ae02b1b851ecd74cdfaba7913b"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:853408fa07bdc891c07794445a3cd401c3aed049698597e3a75d722e38aa099d"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:03e59cd528329a044f254b071134c957d4ea23bbdb8c45e758adc5f1b9034c6f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:18673ea9338969a33ce78c1300171d12bde07f4e9b882bd49adfadcc5f3692a7"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1f1dba048334908db83eaab73c3dd66dfaf2e61efd728afec6326fbb1f1d8c48"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:897891a4f7504e8238a4341abfad88bf0ca12ac0559833d6b135186101d87d0f"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:02433adbf620af0fa906bc47e3472eda19af7da87a84e069cd6fbe970968f069"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_ppc64le.whl", hash = "sha256:0a6bb39c3124fdd5374507a036b0730ccba6535d18d53012c702efd5a9617e3e"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_s390x.whl", hash = "sha256:6701779e2ea422579d48df4467bbf7d6c2743b4a422e86ee5932f858a99539db"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:3879e029e7db87598c7e49319597d0af404baac85ab16f0ed29396f0019a974a"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win32.whl", hash = "sha256:f0c22f97d55665478c530ff035703bbcadf1aed21ed711da3762b53f7ca76d23"},
+    {file = "clickhouse_cityhash-1.0.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:e960e510157bc657f632f3b6c58db0a632ff33024ffe54d5115240a81f757d20"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-macosx_10_6_intel.whl", hash = "sha256:94cb7234d6b27fb2a3d1042d8bf22c6b37ed0f4c22d496b255918f13e0db3515"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_i686.whl", hash = "sha256:23db430b9c3bd2f800d78efc19429586edf4b33fc25c88682de22bd9fd1be20e"},
     {file = "clickhouse_cityhash-1.0.2.3-cp34-cp34m-manylinux1_x86_64.whl", hash = "sha256:d556ff29cb66e73fdadf75831761912d660634635c4e915a865da51c79a4aa87"},
@@ -3584,8 +3597,8 @@ mkdocs-macros-plugin = [
     {file = "mkdocs_macros_plugin-0.7.0-py3-none-any.whl", hash = "sha256:96bdabeb98b96139544f0048ea2f5cb80c7befde6b21e94c6d4596c22774cbcf"},
 ]
 mkdocs-material = [
-    {file = "mkdocs_material-8.5.9-py3-none-any.whl", hash = "sha256:143ea55843b3747b640e1110824d91e8a4c670352380e166e64959f9abe98862"},
-    {file = "mkdocs_material-8.5.9.tar.gz", hash = "sha256:45eeabb23d2caba8fa3b85c91d9ec8e8b22add716e9bba8faf16d56af8aa5622"},
+    {file = "mkdocs_material-8.5.10-py3-none-any.whl", hash = "sha256:51760fa4c9ee3ca0b3a661ec9f9817ec312961bb84ff19e5b523fdc5256e1d6c"},
+    {file = "mkdocs_material-8.5.10.tar.gz", hash = "sha256:7623608f746c6d9ff68a8ef01f13eddf32fa2cae5e15badb251f26d1196bc8f1"},
 ]
 mkdocs-material-extensions = [
     {file = "mkdocs_material_extensions-1.1-py3-none-any.whl", hash = "sha256:bcc2e5fc70c0ec50e59703ee6e639d87c7e664c0c441c014ea84461a90f1e902"},
@@ -3816,6 +3829,8 @@ psutil = [
 psycopg2 = [
     {file = "psycopg2-2.9.5-cp310-cp310-win32.whl", hash = "sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f"},
     {file = "psycopg2-2.9.5-cp310-cp310-win_amd64.whl", hash = "sha256:4cb9936316d88bfab614666eb9e32995e794ed0f8f6b3b718666c22819c1d7ee"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win32.whl", hash = "sha256:093e3894d2d3c592ab0945d9eba9d139c139664dcf83a1c440b8a7aa9bb21955"},
+    {file = "psycopg2-2.9.5-cp311-cp311-win_amd64.whl", hash = "sha256:920bf418000dd17669d2904472efeab2b20546efd0548139618f8fa305d1d7ad"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win32.whl", hash = "sha256:b9ac1b0d8ecc49e05e4e182694f418d27f3aedcfca854ebd6c05bb1cffa10d6d"},
     {file = "psycopg2-2.9.5-cp36-cp36m-win_amd64.whl", hash = "sha256:fc04dd5189b90d825509caa510f20d1d504761e78b8dfb95a0ede180f71d50e5"},
     {file = "psycopg2-2.9.5-cp37-cp37m-win32.whl", hash = "sha256:922cc5f0b98a5f2b1ff481f5551b95cd04580fd6f0c72d9b22e6c0145a4840e0"},
