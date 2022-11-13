@@ -50,7 +50,7 @@ https://conda.anaconda.org/conda-forge/noarch/certifi-2022.9.24-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/click-8.1.3-unix_pyhd8ed1ab_2.tar.bz2#20e4087407c7cb04a40817114b333dbf
 https://conda.anaconda.org/conda-forge/noarch/cloudpickle-2.2.0-pyhd8ed1ab_0.tar.bz2#a6cf47b09786423200d7982d1faa19eb
 https://conda.anaconda.org/conda-forge/noarch/dataclasses-0.8-pyhc8e2a94_3.tar.bz2#a362b2124b06aad102e2ee4581acee7d
-https://conda.anaconda.org/conda-forge/noarch/fsspec-2022.10.0-pyhd8ed1ab_0.tar.bz2#ee4d78b97e857cb8d845c8fa4c898433
+https://conda.anaconda.org/conda-forge/noarch/fsspec-2022.11.0-pyhd8ed1ab_0.tar.bz2#eb919f2119a6db5d0192f9e9c3711572
 https://conda.anaconda.org/conda-forge/noarch/future-0.18.2-pyhd8ed1ab_6.tar.bz2#a6966947ba28bbe60f9904653da7fed5
 https://conda.anaconda.org/conda-forge/noarch/heapdict-1.0.1-py_0.tar.bz2#77242bfb1e74a627fb06319b5a2d3b95
 https://conda.anaconda.org/conda-forge/noarch/idna-3.4-pyhd8ed1ab_0.tar.bz2#34272b248891bddccc64479f9a7fffed
@@ -78,7 +78,7 @@ https://conda.anaconda.org/conda-forge/linux-64/numpy-1.23.4-py39h3d75532_1.tar.
 https://conda.anaconda.org/conda-forge/noarch/packaging-21.3-pyhd8ed1ab_0.tar.bz2#71f1ab2de48613876becddd496371c85
 https://conda.anaconda.org/conda-forge/noarch/partd-1.3.0-pyhd8ed1ab_0.tar.bz2#af8c82d121e63082926062d61d9abb54
 https://conda.anaconda.org/conda-forge/linux-64/pillow-9.2.0-py39hf3a2cdf_3.tar.bz2#2bd111c38da69056e5fe25a51b832eba
-https://conda.anaconda.org/conda-forge/linux-64/psutil-5.9.3-py39hb9d737c_1.tar.bz2#0f50870227259af1edbb7b8bd04f2e07
+https://conda.anaconda.org/conda-forge/linux-64/psutil-5.9.4-py39hb9d737c_0.tar.bz2#12184951da572828fb986b06ffb63eed
 https://conda.anaconda.org/conda-forge/noarch/pygments-2.13.0-pyhd8ed1ab_0.tar.bz2#9f478e8eedd301008b5f395bad0caaed
 https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.8.2-pyhd8ed1ab_0.tar.bz2#dd999d1cc9f79e67dbb855c8924c7984
 https://conda.anaconda.org/conda-forge/linux-64/pyyaml-6.0-py39hb9d737c_5.tar.bz2#ef9db3c38ae7275f6b14491cfe61a248
