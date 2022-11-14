@@ -2,65 +2,61 @@ import datetime
 
 import ibis
 from ibis.backends.base.sql.compiler import Compiler
-from ibis.tests.sql.conftest import sqlgolden
+from ibis.tests.sql.conftest import to_sql
 
 
-@sqlgolden
-def test_union(union):
-    return union
+def test_union(union, snapshot):
+    snapshot.assert_match(to_sql(union), "out.sql")
 
 
-@sqlgolden
-def test_union_project_column(union_all):
+def test_union_project_column(union_all, snapshot):
     # select a column, get a subquery
-    return union_all[[union_all.key]]
+    expr = union_all[[union_all.key]]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_table_intersect(intersect):
-    return intersect
+def test_table_intersect(intersect, snapshot):
+    snapshot.assert_match(to_sql(intersect), "out.sql")
 
 
-@sqlgolden
-def test_table_difference(difference):
-    return difference
+def test_table_difference(difference, snapshot):
+    snapshot.assert_match(to_sql(difference), "out.sql")
 
 
-@sqlgolden
-def test_intersect_project_column(intersect):
+def test_intersect_project_column(intersect, snapshot):
     # select a column, get a subquery
-    return intersect[[intersect.key]]
+    expr = intersect[[intersect.key]]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_difference_project_column(difference):
+def test_difference_project_column(difference, snapshot):
     # select a column, get a subquery
-    return difference[[difference.key]]
+    expr = difference[[difference.key]]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_table_distinct(con):
+def test_table_distinct(con, snapshot):
     t = con.table('functional_alltypes')
 
-    return t[t.string_col, t.int_col].distinct()
+    expr = t[t.string_col, t.int_col].distinct()
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_column_distinct(con):
+def test_column_distinct(con, snapshot):
     t = con.table('functional_alltypes')
-    return t[t.string_col].distinct()
+    expr = t[t.string_col].distinct()
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_count_distinct(con):
+def test_count_distinct(con, snapshot):
     t = con.table('functional_alltypes')
 
     metric = t.int_col.nunique().name('nunique')
-    return t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
+    expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_multiple_count_distinct(con):
+def test_multiple_count_distinct(con, snapshot):
     # Impala and some other databases will not execute multiple
     # count-distincts in a single aggregation query. This error reporting
     # will be left to the database itself, for now.
@@ -70,11 +66,11 @@ def test_multiple_count_distinct(con):
         t.smallint_col.nunique().name('smallint_card'),
     ]
 
-    return t.group_by('string_col').aggregate(metrics)
+    expr = t.group_by('string_col').aggregate(metrics)
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_pushdown_with_or():
+def test_pushdown_with_or(snapshot):
     t = ibis.table(
         [
             ('double_col', 'float64'),
@@ -85,11 +81,11 @@ def test_pushdown_with_or():
         'functional_alltypes',
     )
     subset = t[(t.double_col > 3.14) & t.string_col.contains('foo')]
-    return subset[(subset.int_col - 1 == 0) | (subset.float_col <= 1.34)]
+    expr = subset[(subset.int_col - 1 == 0) | (subset.float_col <= 1.34)]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_having_size():
+def test_having_size(snapshot):
     t = ibis.table(
         [
             ('double_col', 'double'),
@@ -99,53 +95,53 @@ def test_having_size():
         ],
         'functional_alltypes',
     )
-    return t.group_by(t.string_col).having(t.double_col.max() == 1).size()
+    expr = t.group_by(t.string_col).having(t.double_col.max() == 1).size()
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_having_from_filter():
+def test_having_from_filter(snapshot):
     t = ibis.table([('a', 'int64'), ('b', 'string')], 't')
     filt = t[t.b == 'm']
     gb = filt.group_by(filt.b)
     having = gb.having(filt.a.max() == 2)
-    return having.aggregate(filt.a.sum().name('sum'))
+    expr = having.aggregate(filt.a.sum().name('sum'))
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_simple_agg_filter():
-    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
-    filt = t[t.a < 100]
-    return filt[filt.a == filt.a.max()]
-
-
-@sqlgolden
-def test_agg_and_non_agg_filter():
+def test_simple_agg_filter(snapshot):
     t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
-    return expr[expr.b == 'a']
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_agg_filter():
+def test_agg_and_non_agg_filter(snapshot):
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    expr = expr[expr.b == 'a']
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+def test_agg_filter(snapshot):
     t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
     t = t.mutate(b2=t.b * 2)
     t = t[['a', 'b2']]
     filt = t[t.a < 100]
-    return filt[filt.a == filt.a.max().name('blah')]
+    expr = filt[filt.a == filt.a.max().name('blah')]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_agg_filter_with_alias():
+def test_agg_filter_with_alias(snapshot):
     t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
     t = t.mutate(b2=t.b * 2)
     t = t[['a', 'b2']]
     filt = t[t.a < 100]
-    return filt[filt.a.name('A') == filt.a.max().name('blah')]
+    expr = filt[filt.a.name('A') == filt.a.max().name('blah')]
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_table_drop_with_filter():
+def test_table_drop_with_filter(snapshot):
     left = ibis.table(
         [('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t'
     ).relabel({'c': 'C'})
@@ -156,7 +152,8 @@ def test_table_drop_with_filter():
     right = ibis.table([('b', 'string')], name='s')
     joined = left.join(right, left.b == right.b)
     joined = joined[left.a]
-    return joined.filter(joined.a < 1.0)
+    expr = joined.filter(joined.a < 1.0)
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_table_drop_consistency():
@@ -170,8 +167,7 @@ def test_table_drop_consistency():
     assert set(result.columns) == {"a", "c"}
 
 
-@sqlgolden
-def test_subquery_where_location():
+def test_subquery_where_location(snapshot):
     t = ibis.table(
         [
             ("float_col", "float32"),
@@ -190,26 +186,17 @@ def test_subquery_where_location():
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
     )
-    return Compiler.to_sql(expr, params={param: "20140101"})
+    out = Compiler.to_sql(expr, params={param: "20140101"})
+    snapshot.assert_match(out, "out.sql")
 
 
-@sqlgolden
-def test_column_expr_retains_name():
-    t = ibis.table(
-        [
-            ('int_col', 'int32'),
-        ],
-        'int_col_table',
-    )
-    return (t.int_col + 4).name('foo')
+def test_column_expr_retains_name(snapshot):
+    t = ibis.table([('int_col', 'int32')], name='int_col_table')
+    expr = (t.int_col + 4).name('foo')
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_column_expr_default_name():
-    t = ibis.table(
-        [
-            ('int_col', 'int32'),
-        ],
-        'int_col_table',
-    )
-    return t.int_col + 4
+def test_column_expr_default_name(snapshot):
+    t = ibis.table([('int_col', 'int32')], name='int_col_table')
+    expr = t.int_col + 4
+    snapshot.assert_match(to_sql(expr), "out.sql")
