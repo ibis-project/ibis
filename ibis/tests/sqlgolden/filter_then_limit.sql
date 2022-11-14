@@ -1,4 +1,0 @@
-SELECT *
-FROM star1
-WHERE `f` > 0
-LIMIT 10
