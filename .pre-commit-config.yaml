@@ -40,7 +40,7 @@ repos:
     hooks:
       - id: absolufy-imports
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.1.0
+    rev: v3.2.2
     hooks:
       - id: pyupgrade
         entry: pyupgrade --py38-plus --keep-runtime-typing
@@ -110,6 +110,6 @@ repos:
         types_or:
           - file
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.3.0
     hooks:
       - id: debug-statements
