@@ -1,0 +1,1 @@
+SELECT now() AS `tmp`
