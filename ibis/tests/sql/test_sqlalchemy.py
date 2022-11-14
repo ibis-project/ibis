@@ -28,13 +28,17 @@ from ibis.backends.base.sql.alchemy import (
     to_sqla_type,
 )
 from ibis.tests.expr.mocks import MockAlchemyBackend
-from ibis.tests.sql.conftest import sqlgolden, sqlgoldens
 from ibis.tests.util import assert_equal
 
 sa = pytest.importorskip('sqlalchemy')
 
 
 L = sa.literal
+
+
+def to_sql(expr, *args, **kwargs) -> str:
+    compiled = AlchemyCompiler.to_sql(expr, *args, **kwargs)
+    return str(compiled.compile(compile_kwargs=dict(literal_binds=True)))
 
 
 @pytest.fixture(scope="module")
@@ -318,7 +322,7 @@ def test_full_outer_join(con):
     assert 'left' not in joined_sql_str.lower()
 
 
-def test_simple_case(sa_alltypes, alltypes, simple_case):
+def test_simple_case(sa_alltypes, simple_case):
     st = sa_alltypes
     expr = simple_case.name("tmp")
     expected = sa.select(
@@ -335,7 +339,7 @@ def test_simple_case(sa_alltypes, alltypes, simple_case):
     _check(expr, expected)
 
 
-def test_searched_case(sa_alltypes, alltypes, search_case):
+def test_searched_case(sa_alltypes, search_case):
     st = sa_alltypes.alias("t0")
     expr = search_case.name("tmp")
     expected = sa.select(
@@ -352,14 +356,13 @@ def test_searched_case(sa_alltypes, alltypes, search_case):
     _check(expr, expected)
 
 
-@sqlgolden
-def test_where_simple_comparisons(sa_star1, star1):
+def test_where_simple_comparisons(sa_star1, star1, snapshot):
     t1 = star1
     expr = t1.filter([t1.f > 0, t1.c < t1.f * 2])
     st = sa_star1.alias("t0")
     expected = sa.select([st]).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
     _check(expr, expected)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -452,7 +455,7 @@ def test_order_by(con, star1, sa_star1, expr_fn, expected_fn):
         ),
     ],
 )
-def test_limit(con, star1, sa_star1, expr_fn, expected_fn):
+def test_limit(star1, sa_star1, expr_fn, expected_fn):
     expr = expr_fn(star1)
     expected = expected_fn(sa.select([sa_star1.alias("t0")]))
     _check(expr, expected)
@@ -472,11 +475,7 @@ def test_limit_subquery(con, star1, sa_star1):
     _check(expr, expected)
 
 
-@sqlgolden
-def test_cte_factor_distinct_but_equal(
-    con,
-    sa_alltypes,
-):
+def test_cte_factor_distinct_but_equal(con, sa_alltypes, snapshot):
     t = con.table('alltypes')
     tt = con.table('alltypes')
 
@@ -495,11 +494,10 @@ def test_cte_factor_distinct_but_equal(
     stmt = sa.select([t0]).select_from(table_set)
 
     _check(expr, stmt)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_self_reference_join(con, star1, sa_star1):
+def test_self_reference_join(star1, sa_star1, snapshot):
     t1 = star1
     t2 = t1.view()
     expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
@@ -510,14 +508,10 @@ def test_self_reference_join(con, star1, sa_star1):
     table_set = t0.join(t1, t0.c.foo_id == t1.c.bar_id)
     expected = sa.select([t0]).select_from(table_set)
     _check(expr, expected)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgoldens
-def test_self_reference_in_not_exists(
-    con,
-    sa_functional_alltypes,
-):
+def test_self_reference_in_not_exists(con, sa_functional_alltypes, snapshot):
     t = con.table('functional_alltypes')
     t2 = t.view()
 
@@ -534,12 +528,13 @@ def test_self_reference_in_not_exists(
     ex_anti = sa.select([s1]).where(~cond)
 
     _check(semi, ex_semi)
+    snapshot.assert_match(to_sql(semi), "semi.sql")
+
     _check(anti, ex_anti)
-    return semi, anti
+    snapshot.assert_match(to_sql(anti), "anti.sql")
 
 
-@sqlgolden
-def test_where_uncorrelated_subquery(con, foo, bar):
+def test_where_uncorrelated_subquery(con, foo, bar, snapshot):
     expr = foo[foo.job.isin(bar.job)]
     #
     foo = con.meta.tables["foo"].alias("t0")
@@ -548,11 +543,10 @@ def test_where_uncorrelated_subquery(con, foo, bar):
     subq = sa.select([bar.c.job])
     stmt = sa.select([foo]).where(foo.c.job.in_(subq))
     _check(expr, stmt)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_where_correlated_subquery(con, foo):
+def test_where_correlated_subquery(con, foo, snapshot):
     t1 = foo
     t2 = t1.view()
 
@@ -569,11 +563,10 @@ def test_where_correlated_subquery(con, foo):
         subq = subq.scalar_subquery()
     stmt = sa.select([t0]).where(t0.c.y > subq)
     _check(expr, stmt)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_subquery_aliased(con, star1, star2):
+def test_subquery_aliased(con, star1, star2, snapshot):
     t1 = star1
     t2 = star2
 
@@ -593,11 +586,10 @@ def test_subquery_aliased(con, star1, star2):
     expected = sa.select([agged, s2.c.value1]).select_from(joined)
 
     _check(expr, expected)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@sqlgolden
-def test_lower_projection_sort_key(con, star1, star2):
+def test_lower_projection_sort_key(con, star1, star2, snapshot):
     t1 = star1
     t2 = star2
 
@@ -628,11 +620,10 @@ def test_lower_projection_sort_key(con, star1, star2):
 
     expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
     _check(expr2, expected)
-    return expr2
+    snapshot.assert_match(to_sql(expr2), "out.sql")
 
 
-@sqlgoldens
-def test_exists(con, foo_t, bar_t):
+def test_exists(con, foo_t, bar_t, snapshot):
     t1 = foo_t
     t2 = bar_t
     cond = (t1.key1 == t2.key1).any()
@@ -653,12 +644,13 @@ def test_exists(con, foo_t, bar_t):
     ex2 = sa.select([t1]).where(cond2)
 
     _check(e1, ex1)
+    snapshot.assert_match(to_sql(e1), "e1.sql")
+
     _check(e2, ex2)
-    return e1, e2
+    snapshot.assert_match(to_sql(e2), "e2.sql")
 
 
-@sqlgolden
-def test_not_exists(con, not_exists):
+def test_not_exists(con, not_exists, snapshot):
     t1 = con.table("t1")
     t2 = con.table("t2")
 
@@ -672,7 +664,7 @@ def test_not_exists(con, not_exists):
     )
 
     _check(expr, expected)
-    return expr
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 @pytest.mark.parametrize(
