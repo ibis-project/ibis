@@ -90,8 +90,8 @@ class Table(Expr, JupyterMixin):
 
     __array_ufunc__ = None
 
-    def __array__(self):
-        return self.execute().__array__()
+    def __array__(self, dtype=None):
+        return self.execute().__array__(dtype)
 
     def __contains__(self, name):
         return name in self.schema()
