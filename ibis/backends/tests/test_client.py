@@ -753,20 +753,24 @@ FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
 
 
-def test_dunder_array_table(alltypes, df):
+@pytest.mark.parametrize("dtype", [None, "f8"])
+def test_dunder_array_table(alltypes, df, dtype):
     expr = alltypes.group_by("string_col").int_col.sum().order_by("string_col")
-    result = np.array(expr)
-    expected = np.array(
-        df.groupby("string_col").int_col.sum().reset_index().sort_values(["string_col"])
-    )
+    result = np.asarray(expr, dtype=dtype)
+    expected = np.asarray(expr.execute(), dtype=dtype)
     np.testing.assert_array_equal(result, expected)
 
 
-@pytest.mark.broken(["dask"], reason="Dask backend duplicates data")
-def test_dunder_array_column(alltypes, df):
-    expr = alltypes.order_by("id").head(10).int_col
-    result = np.array(expr)
-    expected = df.sort_values(["id"]).head(10).int_col
+@pytest.mark.parametrize("dtype", [None, "f8"])
+def test_dunder_array_column(alltypes, df, dtype):
+    expr = (
+        alltypes.group_by("string_col")
+        .agg(int_col=lambda _: _.int_col.sum())
+        .order_by("string_col")
+        .int_col
+    )
+    result = np.asarray(expr, dtype=dtype)
+    expected = np.asarray(expr.execute(), dtype=dtype)
     np.testing.assert_array_equal(result, expected)
 
 

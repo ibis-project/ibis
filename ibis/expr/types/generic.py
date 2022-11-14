@@ -514,8 +514,8 @@ class Column(Value, JupyterMixin):
 
     __array_ufunc__ = None
 
-    def __array__(self):
-        return self.execute().__array__()
+    def __array__(self, dtype=None):
+        return self.execute().__array__(dtype)
 
     def __rich_console__(self, console, options):
         named = self.name(self.op().name)
