@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop
 
 if TYPE_CHECKING:
@@ -777,7 +778,7 @@ class NullValue(Value):
 
 
 @public
-class NullScalar(Scalar, NullValue):
+class NullScalar(Scalar, NullValue, Singleton):
     pass  # noqa: E701,E302
 
 
@@ -804,20 +805,10 @@ class List(Expr, Sequence[Expr]):
         return len(self.values)
 
 
-_NULL = None
-
-
 @public
 def null():
     """Create a NULL/NA scalar."""
-
-    # TODO(kszucs): NullLiteral is a singleton, so we should be able to remove
-    # the global _NULL variable
-    global _NULL
-    if _NULL is None:
-        _NULL = ops.NullLiteral().to_expr()
-
-    return _NULL
+    return ops.NullLiteral().to_expr()
 
 
 @public
@@ -873,46 +864,12 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
-    import ibis.expr.datatypes as dt
+    import ibis.expr.rules as rlz
 
-    if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
-        return value
+    if isinstance(value, Expr):
+        value = value.op()
 
-    try:
-        inferred_dtype = dt.infer(value)
-    except com.InputTypeError:
-        has_inferred = False
-    else:
-        has_inferred = True
-
-    if type is None:
-        has_explicit = False
-    else:
-        has_explicit = True
-        explicit_dtype = dt.dtype(type)
-
-    if has_explicit and has_inferred:
-        try:
-            # ensure type correctness: check that the inferred dtype is
-            # implicitly castable to the explicitly given dtype and value
-            dtype = dt.cast(inferred_dtype, explicit_dtype, value=value)
-        except com.IbisTypeError:
-            raise TypeError(f'Value {value!r} cannot be safely coerced to {type}')
-    elif has_explicit:
-        dtype = explicit_dtype
-    elif has_inferred:
-        dtype = inferred_dtype
-    else:
-        raise TypeError(
-            'The datatype of value {!r} cannot be inferred, try '
-            'passing it explicitly with the `type` keyword.'.format(value)
-        )
-
-    if isinstance(dtype, dt.Null):
-        return null().cast(dtype)
-    else:
-        value = dt.normalize(dtype, value)
-        return ops.Literal(value, dtype=dtype).to_expr()
+    return rlz.literal(type, value).to_expr()
 
 
 public(

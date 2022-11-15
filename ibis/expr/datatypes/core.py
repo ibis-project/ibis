@@ -66,17 +66,17 @@ class DataType(Concrete):
             )
         return super().__cached_equals__(other)
 
-    def cast(self, other):
+    def cast(self, other, **kwargs):
         # TODO(kszucs): remove it or deprecate it?
         from ibis.expr.datatypes.cast import cast
 
-        return cast(self, other)
+        return cast(self, other, **kwargs)
 
-    def castable(self, other):
+    def castable(self, other, **kwargs):
         # TODO(kszucs): remove it or deprecate it?
         from ibis.expr.datatypes.cast import castable
 
-        return castable(self, other)
+        return castable(self, other, **kwargs)
 
 
 @dtype.register(DataType)
