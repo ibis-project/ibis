@@ -5,7 +5,6 @@ import operator
 import numpy as np
 import sqlalchemy as sa
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 from ibis.backends.base.sql.alchemy.registry import (
@@ -76,9 +75,9 @@ def _literal(_, op):
     sqla_type = to_sqla_type(dtype)
     value = op.value
 
-    if isinstance(dtype, dt.Interval):
+    if dtype.is_interval():
         return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
-    elif isinstance(dtype, dt.Set) or (
+    elif dtype.is_set() or (
         isinstance(value, collections.abc.Sequence) and not isinstance(value, str)
     ):
         return sa.cast(sa.func.list_value(*value), sqla_type)
@@ -87,7 +86,7 @@ def _literal(_, op):
     elif isinstance(value, (numbers.Real, np.floating)) and np.isnan(value):
         return sa.cast(sa.literal("NaN"), sqla_type)
     elif isinstance(value, collections.abc.Mapping):
-        if isinstance(dtype, dt.Struct):
+        if dtype.is_struct():
             placeholders = ", ".join(
                 f"{key} := :v{i}" for i, key in enumerate(value.keys())
             )

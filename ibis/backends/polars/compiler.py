@@ -68,17 +68,17 @@ def _make_duration(value, dtype):
 
 @translate.register(ops.Literal)
 def literal(op):
-    if isinstance(op.dtype, dt.Array):
+    if op.dtype.is_array():
         value = pl.Series("", op.value)
         typ = to_polars_type(op.dtype)
         return pl.lit(value, dtype=typ).list()
-    elif isinstance(op.dtype, dt.Struct):
+    elif op.dtype.is_struct():
         values = [
             pl.lit(v, dtype=to_polars_type(op.dtype[k])).alias(k)
             for k, v in op.value.items()
         ]
         return pl.struct(values)
-    elif isinstance(op.dtype, dt.Interval):
+    elif op.dtype.is_interval():
         return _make_duration(op.value, op.dtype)
     else:
         typ = to_polars_type(op.dtype)
@@ -89,13 +89,13 @@ def literal(op):
 def cast(op):
     arg = translate(op.arg)
 
-    if isinstance(op.to, dt.Interval):
+    if op.to.is_interval():
         return _make_duration(arg, op.to)
-    elif isinstance(op.to, dt.Date):
-        if isinstance(op.arg.output_dtype, dt.String):
+    elif op.to.is_date():
+        if op.arg.output_dtype.is_string():
             return arg.str.strptime(pl.Date, "%Y-%m-%d")
-    elif isinstance(op.to, dt.Timestamp):
-        if isinstance(op.arg.output_dtype, dt.Integer):
+    elif op.to.is_timestamp():
+        if op.arg.output_dtype.is_integer():
             return (arg * 1_000_000).cast(pl.Datetime).alias(op.name)
 
     typ = to_polars_type(op.to)
@@ -244,12 +244,12 @@ def fillna(op):
             value = op.replacements.value
 
         if value is not None:
-            if isinstance(dtype, dt.Floating):
+            if dtype.is_floating():
                 column = column.fill_nan(value)
             column = column.fill_null(value)
 
         # requires special treatment if the fill value has different datatype
-        if isinstance(dtype, dt.Timestamp):
+        if dtype.is_timestamp():
             column = column.cast(pl.Datetime)
 
         columns.append(column)

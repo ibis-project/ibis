@@ -364,7 +364,7 @@ class Schema(Concrete):
                 # assume not equal
                 not_equal = True
 
-            if not_equal or not isinstance(dtype, dt.Primitive):
+            if not_equal or not dtype.is_primitive():
                 new_col = convert(col_dtype, dtype, col)
             else:
                 new_col = col

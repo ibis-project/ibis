@@ -192,7 +192,7 @@ def literal(dtype, value, **kwargs):
             'passing it explicitly with the `type` keyword.'.format(value)
         )
 
-    if isinstance(dtype, dt.Null):
+    if dtype.is_null():
         return ops.NullLiteral()
 
     value = dt.normalize(dtype, value)
@@ -582,7 +582,7 @@ def window_from(table_ref, win, **kwargs):
         if len(win._order_by) != 1:
             raise com.IbisInputError(error_msg)
         order_var = win._order_by[0].args[0]
-        if not isinstance(order_var.output_dtype, dt.Timestamp):
+        if not order_var.output_dtype.is_timestamp():
             raise com.IbisInputError(error_msg)
     return win
 

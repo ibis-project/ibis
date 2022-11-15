@@ -59,6 +59,7 @@ def _replace_interval_with_scalar(expr: Union[ir.Expr, dt.Interval, float]):
     else:
         expr_op = None
 
+    # TODO: fix this to use to_interval if possible
     if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
         # Literal expressions have op method but native types do not.
         if isinstance(expr_op, ops.Literal):

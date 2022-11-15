@@ -1,7 +1,6 @@
 import numpy as np
 import sqlalchemy as sa
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import fixed_arity, reduction
 from ibis.backends.postgres.registry import _literal as _postgres_literal
@@ -11,7 +10,7 @@ operation_registry = _operation_registry.copy()
 
 
 def _literal(t, op):
-    if isinstance(op, ops.Literal) and isinstance(op.output_dtype, dt.Floating):
+    if isinstance(op, ops.Literal) and op.output_dtype.is_floating():
         value = op.value
 
         if np.isnan(value):

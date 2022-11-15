@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     import pandas as pd
     from ibis.expr import types as ir
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
@@ -217,7 +216,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if isinstance(other.output_dtype, dt.Time):
+        if other.output_dtype.is_time():
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -235,7 +234,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
         other = rlz.any(other)
 
-        if isinstance(other.output_dtype, dt.Time):
+        if other.output_dtype.is_time():
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -294,7 +293,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if isinstance(other.output_dtype, dt.Date):
+        if other.output_dtype.is_date():
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -316,7 +315,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
         other = rlz.one_of([rlz.date, rlz.interval], other)
 
-        if isinstance(other.output_dtype, dt.Date):
+        if other.output_dtype.is_date():
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -389,7 +388,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
         right = rlz.any(other)
 
-        if isinstance(right.output_dtype, dt.Timestamp):
+        if right.output_dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate
@@ -412,7 +411,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
         right = rlz.any(other)
 
-        if isinstance(right.output_dtype, dt.Timestamp):
+        if right.output_dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate

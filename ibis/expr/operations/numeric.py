@@ -122,7 +122,7 @@ class Ceil(Unary):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Decimal):
+        if self.arg.output_dtype.is_decimal():
             return self.arg.output_dtype
         else:
             return dt.int64
@@ -144,7 +144,7 @@ class Floor(Unary):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Decimal):
+        if self.arg.output_dtype.is_decimal():
             return self.arg.output_dtype
         else:
             return dt.int64
@@ -160,7 +160,7 @@ class Round(Value):
 
     @property
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Decimal):
+        if self.arg.output_dtype.is_decimal():
             return self.arg.output_dtype
         elif self.digits is None:
             return dt.int64

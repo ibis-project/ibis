@@ -11,7 +11,6 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as win
 from ibis.backends.pandas import aggcontext as agg_ctx
@@ -258,8 +257,7 @@ def execute_window_op(
     **kwargs,
 ):
     if window.how == "range" and any(
-        not isinstance(ob.output_dtype, (dt.Time, dt.Date, dt.Timestamp))
-        for ob in window._order_by
+        not ob.output_dtype.is_temporal() for ob in window._order_by
     ):
         raise NotImplementedError(
             "The pandas backend only implements range windows with temporal "

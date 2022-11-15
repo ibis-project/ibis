@@ -5,7 +5,6 @@ from typing import Callable, Iterable, Iterator
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import operation_registry, quote_identifier
 from ibis.expr.types.core import unnamed
@@ -228,9 +227,9 @@ class ExprTranslator:
     def _trans_param(self, op):
         raw_value = self.context.params[op]
         dtype = op.output_dtype
-        if isinstance(dtype, dt.Struct):
+        if dtype.is_struct():
             literal = ibis.struct(raw_value, type=dtype)
-        elif isinstance(dtype, dt.Map):
+        elif dtype.is_map():
             literal = ibis.map(raw_value, type=dtype)
         else:
             literal = ibis.literal(raw_value, type=dtype)
@@ -348,7 +347,7 @@ def _notall_expand(op):
 @rewrites(ops.Cast)
 def _rewrite_cast(op):
     # TODO(kszucs): avoid the expression roundtrip
-    if isinstance(op.to, dt.Interval) and isinstance(op.arg.output_dtype, dt.Integer):
+    if op.to.is_interval() and op.arg.output_dtype.is_integer():
         return op.arg.to_expr().to_interval(unit=op.to.unit).op()
     return op
 

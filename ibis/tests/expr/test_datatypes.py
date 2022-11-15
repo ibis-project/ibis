@@ -577,65 +577,65 @@ def get_leaf_classes(op):
 def test_is_methods(dtype_class):
     name = dtype_class.__name__.lower()
     dtype = getattr(dt, name)
-    is_dtype = getattr(dtype, f"is_{name}")
+    is_dtype = getattr(dtype, f"is_{name}")()
     assert is_dtype is True
 
 
 def test_is_array():
-    assert dt.Array(dt.string).is_array
-    assert not dt.string.is_array
+    assert dt.Array(dt.string).is_array()
+    assert not dt.string.is_array()
 
 
 def test_is_floating():
-    assert dt.float64.is_floating
+    assert dt.float64.is_floating()
 
 
 def test_is_geospatial():
-    assert dt.geometry.is_geospatial
+    assert dt.geometry.is_geospatial()
 
 
 def test_is_integer():
-    assert dt.int32.is_integer
+    assert dt.int32.is_integer()
 
 
 def test_is_map():
-    assert dt.Map(dt.int8, dt.Array(dt.string)).is_map
+    assert dt.Map(dt.int8, dt.Array(dt.string)).is_map()
 
 
 def test_is_numeric():
-    assert dt.int64.is_numeric
-    assert dt.float32.is_numeric
-    assert dt.decimal.is_numeric
-    assert not dt.string.is_numeric
+    assert dt.int64.is_numeric()
+    assert dt.float32.is_numeric()
+    assert dt.decimal.is_numeric()
+    assert not dt.string.is_numeric()
 
 
 def test_is_primitive():
-    assert dt.bool.is_primitive
-    assert dt.uint8.is_primitive
-    assert not dt.decimal.is_primitive
+    assert dt.bool.is_primitive()
+    assert dt.uint8.is_primitive()
+    assert not dt.decimal.is_primitive()
 
 
 def test_is_signed_integer():
-    assert dt.int8.is_signed_integer
-    assert not dt.uint8.is_signed_integer
+    assert dt.int8.is_signed_integer()
+    assert not dt.uint8.is_signed_integer()
 
 
 def test_is_struct():
-    assert dt.Struct.from_dict({"a": dt.string}).is_struct
+    assert dt.Struct.from_dict({"a": dt.string}).is_struct()
 
 
 def test_is_unsigned_integer():
-    assert dt.uint8.is_unsigned_integer
-    assert not dt.int8.is_unsigned_integer
+    assert dt.uint8.is_unsigned_integer()
+    assert not dt.int8.is_unsigned_integer()
 
 
 def test_is_variadic():
-    assert dt.string.is_variadic
-    assert not dt.int8.is_variadic
+    assert dt.string.is_variadic()
+    assert not dt.int8.is_variadic()
 
 
 def test_is_temporal():
-    assert dt.time.is_temporal
-    assert dt.date.is_temporal
-    assert dt.timestamp.is_temporal
-    assert not dt.Array(dt.Map(dt.string, dt.string)).is_temporal
+    assert dt.time.is_temporal()
+    assert dt.date.is_temporal()
+    assert dt.timestamp.is_temporal()
+    assert not dt.Array(dt.Map(dt.string, dt.string)).is_temporal()

@@ -11,7 +11,7 @@ _sql_type_names = dict(sql_type_names, date='date')
 
 
 def type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
+    if tval.is_decimal():
         return f'decimal({tval.precision}, {tval.scale})'
     name = tval.name.lower()
     try:

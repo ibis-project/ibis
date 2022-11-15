@@ -20,12 +20,10 @@ def variance_reduction(func_name):
     suffix = {'sample': 'samp', 'pop': 'pop'}
 
     def variance_compiler(t, op):
-        arg, how, where = op.args
+        arg = op.arg
 
-        if isinstance(op.arg.output_dtype, dt.Boolean):
+        if arg.output_dtype.is_boolean():
             arg = ops.Cast(op.arg, to=dt.int32)
-        else:
-            arg = op.arg
 
         func = getattr(sa.func, f'{func_name}_{suffix[op.how]}')
 
@@ -166,18 +164,18 @@ def _cast(t, op):
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.output_dtype, dt.Integer) and isinstance(sa_type, sa.DateTime):
+    if arg.output_dtype.is_integer() and isinstance(sa_type, sa.DateTime):
         return t.integer_to_timestamp(sa_arg)
 
-    if isinstance(arg.output_dtype, dt.Binary) and isinstance(typ, dt.String):
+    if arg.output_dtype.is_binary() and typ.is_string():
         return sa.func.encode(sa_arg, 'escape')
 
-    if isinstance(typ, dt.Binary):
+    if typ.is_binary():
         #  decode yields a column of memoryview which is annoying to deal with
         # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
         return sa.cast(sa_arg, sa.LargeBinary())
 
-    if isinstance(typ, dt.JSON) and not t.native_json_type:
+    if typ.is_json() and not t.native_json_type:
         return sa_arg
     return sa.cast(sa_arg, sa_type)
 
@@ -224,7 +222,7 @@ def _literal(_, op):
     dtype = op.output_dtype
     value = op.value
 
-    if isinstance(dtype, dt.Set):
+    if dtype.is_set():
         return list(map(sa.literal, value))
 
     return sa.literal(value)
@@ -283,7 +281,7 @@ def _translate_case(t, cases, results, default):
 
 def _negate(t, op):
     arg = t.translate(op.arg)
-    return sa.not_(arg) if isinstance(op.arg.output_dtype, dt.Boolean) else -arg
+    return sa.not_(arg) if op.arg.output_dtype.is_boolean() else -arg
 
 
 def unary(sa_func):

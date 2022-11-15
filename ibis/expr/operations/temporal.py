@@ -354,7 +354,7 @@ class IntervalBinary(Binary):
     def output_dtype(self):
         integer_args = [
             Cast(arg, to=arg.output_dtype.value_type)
-            if isinstance(arg.output_dtype, dt.Interval)
+            if arg.output_dtype.is_interval()
             else arg
             for arg in (self.left, self.right)
         ]

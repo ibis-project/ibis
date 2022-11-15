@@ -138,7 +138,7 @@ def _(itype, **kwargs):
 def _(itype, **kwargs):
     # Unwrap the array element type because sqlalchemy doesn't allow arrays of
     # arrays. This doesn't affect the underlying data.
-    while isinstance(itype, dt.Array):
+    while itype.is_array():
         itype = itype.value_type
     return sa.ARRAY(to_sqla_type(itype, **kwargs))
 

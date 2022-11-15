@@ -232,7 +232,7 @@ def compile_self_reference(t, op, **kwargs):
 
 @compiles(ops.Cast)
 def compile_cast(t, op, **kwargs):
-    if isinstance(op.to, dt.Interval):
+    if op.to.is_interval():
         if isinstance(op.arg, ops.Literal):
             return interval(op.arg.value, op.to.unit).op()
         else:
@@ -241,7 +241,7 @@ def compile_cast(t, op, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
-    if isinstance(op.to, dt.Array):
+    if op.to.is_array():
         cast_type = ibis_array_dtype_to_spark_dtype(op.to)
     else:
         cast_type = ibis_dtype_to_spark_dtype(op.to)
@@ -333,7 +333,7 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     if raw:
         return value
 
-    if isinstance(dtype, dt.Interval):
+    if dtype.is_interval():
         # execute returns a Timedelta and value is nanoseconds
         return execute(op).value
 
@@ -786,7 +786,7 @@ def compile_modulus(t, op, **kwargs):
 @compiles(ops.Negate)
 def compile_negate(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
-    if isinstance(op.output_dtype, dt.Boolean):
+    if op.output_dtype.is_boolean():
         return ~src_column
     return -src_column
 
@@ -1111,9 +1111,7 @@ def compile_window_op(t, op, **kwargs):
 
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(sort.name).cast('long')
-        if isinstance(sort.output_dtype, dt.Timestamp)
-        else sort.name
+        F.col(sort.name).cast('long') if sort.output_dtype.is_timestamp() else sort.name
         for sort in window._order_by
     ]
     aggcontext = AggregationContext.WINDOW
@@ -1401,7 +1399,7 @@ def compiles_day_of_week_name(t, op, **kwargs):
 
 def _get_interval_col(t, op, allowed_units=None, **kwargs):
     dtype = op.output_dtype
-    if not isinstance(dtype, dt.Interval):
+    if not dtype.is_interval():
         raise com.UnsupportedArgumentError(
             f'{dtype} expression cannot be converted to interval column. '
             'Must be Interval dtype.'
@@ -1836,7 +1834,7 @@ def compile_bitwise_not(t, op, **kwargs):
 def compile_json_getitem(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
     index = t.translate(op.index, raw=True, **kwargs)
-    if isinstance(op.index.output_dtype, dt.Integer):
+    if op.index.output_dtype.is_integer():
         path = f"$[{index}]"
     else:
         path = f"$.{index}"

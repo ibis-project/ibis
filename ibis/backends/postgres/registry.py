@@ -360,7 +360,7 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
     out_expr = get_col_or_deferred_col(sa_table, op.name)
 
-    if isinstance(op.output_dtype, dt.Timestamp):
+    if op.output_dtype.is_timestamp():
         timezone = op.output_dtype.timezone
         if timezone is not None:
             out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
@@ -384,7 +384,7 @@ def _round(t, op):
     # number of digits (though simple truncation on doubles is allowed) so
     # we cast to numeric and then cast back if necessary
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
-    if digits is not None and isinstance(arg.output_dtype, dt.Decimal):
+    if digits is not None and arg.output_dtype.is_decimal():
         return result
     result = sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
     return result
@@ -395,12 +395,12 @@ def _mod(t, op):
 
     # postgres doesn't allow modulus of double precision values, so upcast and
     # then downcast later if necessary
-    if not isinstance(op.output_dtype, dt.Integer):
+    if not op.output_dtype.is_integer():
         left = sa.cast(left, sa.NUMERIC)
         right = sa.cast(right, sa.NUMERIC)
 
     result = left % right
-    if isinstance(op.output_dtype, dt.Float64):
+    if op.output_dtype.is_float64():
         return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
     else:
         return result
@@ -435,12 +435,12 @@ def _literal(_, op):
     dtype = op.output_dtype
     value = op.value
 
-    if isinstance(dtype, dt.Interval):
+    if dtype.is_interval():
         return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
-    elif isinstance(dtype, dt.Set):
+    elif dtype.is_set():
         return list(map(sa.literal, value))
     # geo spatial data type
-    elif isinstance(dtype, dt.GeoSpatial):
+    elif dtype.is_geospatial():
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
     elif isinstance(value, tuple):
@@ -496,11 +496,11 @@ def _mode(t, op):
 def _binary_variance_reduction(func):
     def variance_compiler(t, op):
         x = op.left
-        if isinstance(x_type := x.output_dtype, dt.Boolean):
+        if (x_type := x.output_dtype).is_boolean():
             x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
 
         y = op.right
-        if isinstance(y_type := y.output_dtype, dt.Boolean):
+        if (y_type := y.output_dtype).is_boolean():
             y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
         result = func(t.translate(x), t.translate(y))

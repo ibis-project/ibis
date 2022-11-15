@@ -124,10 +124,10 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     tz = type.timezone
 
-    if isinstance(from_type, (dt.Timestamp, dt.Date)):
+    if from_type.is_timestamp() or from_type.is_date():
         return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
 
-    if isinstance(from_type, (dt.String, dt.Integer)):
+    if from_type.is_string() or from_type.is_integer():
         timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
         if getattr(timestamps.dtype, "tz", None) is not None:
             method_name = "tz_convert"
@@ -153,12 +153,13 @@ def execute_cast_series_date(op, data, type, **kwargs):
     if from_type.equals(type):
         return data
 
-    if isinstance(from_type, dt.Timestamp):
+    if from_type.is_timestamp():
         return _normalize(
             data.values, data.index, data.name, timezone=from_type.timezone
         )
 
-    if from_type.equals(dt.string):
+    # TODO: remove String as subclass of JSON
+    if from_type.is_string() and not from_type.is_json():
         values = data.values
         datetimes = pd.to_datetime(values, infer_datetime_format=True)
         try:
@@ -168,7 +169,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
         dates = _normalize(datetimes, data.index, data.name)
         return pd.Series(dates, index=data.index, name=data.name)
 
-    if isinstance(from_type, dt.Integer):
+    if from_type.is_integer():
         return pd.Series(
             pd.to_datetime(data.values, unit='D').values,
             index=data.index,

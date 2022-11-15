@@ -2,7 +2,6 @@ from datetime import date, datetime
 from io import StringIO
 
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
@@ -329,20 +328,21 @@ def _interval_from_integer(translator, op):
 
 def _literal(translator, op):
     value = op.value
+    dtype = op.output_dtype
     if value is None and op.output_dtype.nullable:
         return _null_literal(translator, op)
-    if isinstance(op.output_dtype, dt.Boolean):
+    if dtype.is_boolean():
         return '1' if value else '0'
-    elif isinstance(op.output_dtype, dt.INET):
+    elif dtype.is_inet():
         v = str(value)
         return f"toIPv6({v!r})" if ':' in v else f"toIPv4({v!r})"
-    elif isinstance(op.output_dtype, dt.String):
+    elif dtype.is_string():
         return "'{!s}'".format(value.replace("'", "\\'"))
-    elif isinstance(op.output_dtype, (dt.Integer, dt.Decimal, dt.Floating)):
+    elif dtype.is_numeric():
         return repr(value)
-    elif isinstance(op.output_dtype, dt.Interval):
+    elif dtype.is_interval():
         return _interval_format(translator, op)
-    elif isinstance(op.output_dtype, dt.Timestamp):
+    elif dtype.is_timestamp():
         func = "toDateTime"
         args = []
 
@@ -367,19 +367,19 @@ def _literal(translator, op):
         joined_args = ", ".join(map(repr, args))
         return f"{func}({joined_args})"
 
-    elif isinstance(op.output_dtype, dt.Date):
+    elif dtype.is_date():
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
         return f"toDate('{value!s}')"
-    elif isinstance(op.output_dtype, dt.Array):
+    elif dtype.is_array():
         values = ", ".join(_array_literal_values(translator, op))
         return f"[{values}]"
-    elif isinstance(op.output_dtype, dt.Map):
+    elif dtype.is_map():
         values = ", ".join(_map_literal_values(translator, op))
         return f"map({values})"
-    elif isinstance(op.output_dtype, dt.Set):
+    elif dtype.is_set():
         return '({})'.format(', '.join(map(repr, value)))
-    elif isinstance(op.output_dtype, dt.Struct):
+    elif dtype.is_struct():
         fields = ", ".join(f"{value} as `{key}`" for key, value in op.value.items())
         return f"tuple({fields})"
     else:
@@ -601,7 +601,7 @@ def _cotangent(translator, op):
 def _bit_agg(func):
     def compile(translator, op):
         arg_ = translator.translate(op.arg)
-        if not isinstance((type := op.arg.output_dtype), dt.UnsignedInteger):
+        if not (type := op.arg.output_dtype).is_unsigned_integer():
             nbits = type._nbytes * 8
             arg_ = f"reinterpretAsUInt{nbits}({arg_})"
 

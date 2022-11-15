@@ -392,7 +392,7 @@ class Transform(AggregationContext):
         # "transform" here (Data must be 1-dimensional)
         # Instead, we need to use "apply", which can return a non
         # numeric type, e.g, tuple of two double.
-        if isinstance(self.output_type, dt.Struct):
+        if self.output_type.is_struct():
             res = grouped_data.apply(function, *args, **kwargs)
         else:
             res = grouped_data.transform(function, *args, **kwargs)

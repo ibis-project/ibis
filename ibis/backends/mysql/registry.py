@@ -5,7 +5,6 @@ import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
@@ -124,7 +123,7 @@ def _string_to_timestamp(t, op):
 
 
 def _literal(_, op):
-    if isinstance(op.output_dtype, dt.Interval):
+    if op.output_dtype.is_interval():
         if op.output_dtype.unit in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
                 'MySQL does not allow operation '
@@ -133,7 +132,7 @@ def _literal(_, op):
         text_unit = op.output_dtype.resolution.upper()
         sa_text = sa.text(f'INTERVAL :value {text_unit}')
         return sa_text.bindparams(value=op.value)
-    elif isinstance(op.output_dtype, dt.Set):
+    elif op.output_dtype.is_set():
         return list(map(sa.literal, op.value))
     else:
         value = op.value
@@ -141,7 +140,7 @@ def _literal(_, op):
             value = value.to_pydatetime()
 
         lit = sa.literal(value)
-        if isinstance(op.output_dtype, dt.Timestamp):
+        if op.output_dtype.is_timestamp():
             return sa.cast(lit, to_sqla_type(op.output_dtype))
         return lit
 
@@ -180,7 +179,7 @@ def _find_in_set(t, op):
 def _json_get_item(t, op):
     arg = t.translate(op.arg)
     index = t.translate(op.index)
-    if isinstance(op.index.output_dtype, dt.Integer):
+    if op.index.output_dtype.is_integer():
         path = "$[" + sa.cast(index, sa.TEXT) + "]"
     else:
         path = "$." + index
