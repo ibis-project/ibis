@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import getpass
-from operator import methodcaller
 from typing import Any, Literal
 
 import pandas as pd
@@ -186,7 +185,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Creating tables from a different database is not yet ' 'implemented'
+                'Creating tables from a different database is not yet implemented'
             )
 
         if expr is None and schema is None:
@@ -206,31 +205,46 @@ class BaseAlchemyBackend(BaseSQLBackend):
             name, schema, database=database or self.current_database
         )
 
-        if has_expr := expr is not None:
-            # this has to happen outside the `begin` block, so that in-memory
-            # tables are visible inside the transaction created by it
-            self._register_in_memory_tables(expr)
+        if expr is None:
+            with self.begin() as bind:
+                table.create(bind=bind, checkfirst=force)
+            return
+
+        # this has to happen outside the `begin` block, so that in-memory
+        # tables are visible inside the transaction created by it
+        self._register_in_memory_tables(expr)
+
+        backends, _ = expr._find_backends()
+        if len(backends) == 1:
+            same_backend = backends[0] == self
+        elif len(backends) > 1:
+            raise ValueError('Multiple backends found')
+        else:
+            # Treat unbound exprs as based on this backend, matching `execute`
+            same_backend = True
 
         with self.begin() as bind:
             table.create(bind=bind, checkfirst=force)
-            if has_expr:
-                method = self._get_insert_method(expr)
-                bind.execute(method(table.insert()))
+            if same_backend:
+                self._insert_from_same_backend(bind, table, expr)
+            else:
+                self._insert_from_other_backend(bind, table, expr)
 
-    def _get_insert_method(self, expr):
-        compiled = self.compile(expr)
-
-        # if in memory tables aren't cheap then try to pull out their data
-        # FIXME: queries that *select* from in memory tables are still broken
-        # for mysql/sqlite/postgres because the generated SQL is wrong
-        if not self.compiler.cheap_in_memory_tables and isinstance(
-            expr.op(), ops.InMemoryTable
+    def _insert_from_same_backend(self, bind, table, expr):
+        op = expr.op()
+        if (
+            isinstance(op, ops.InMemoryTable)
+            and not self.compiler.cheap_in_memory_tables
         ):
-            (from_,) = compiled.get_final_froms()
-            (rows,) = from_._data
-            return methodcaller("values", rows)
+            rows = op.data.to_frame().to_dict(orient="records")
+            bind.execute(table.insert(), rows)
+        else:
+            compiled = self.compile(expr)
+            bind.execute(table.insert().from_select(list(expr.columns), compiled))
 
-        return methodcaller("from_select", list(expr.columns), compiled)
+    def _insert_from_other_backend(self, bind, table, expr):
+        for batch in expr.to_pyarrow_batches():
+            bind.execute(table.insert(), batch.to_pylist())
 
     def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
         return [

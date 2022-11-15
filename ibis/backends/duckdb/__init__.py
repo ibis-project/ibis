@@ -360,6 +360,10 @@ class Backend(BaseAlchemyBackend):
         df = table_op.data.to_frame()
         self.con.execute("register", (table_op.name, df))
 
+    def _insert_from_other_backend(self, bind, table, expr):
+        batches = expr.to_pyarrow_batches()
+        bind.connection.connection.c.append(table.name, batches)
+
     def _get_sqla_table(
         self,
         name: str,
