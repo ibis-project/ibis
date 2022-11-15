@@ -569,6 +569,7 @@ def get_leaf_classes(op):
         dt.Set,
         dt.SignedInteger,
         dt.Struct,
+        dt.Temporal,
         dt.UnsignedInteger,
         dt.Variadic,
     },
@@ -631,3 +632,10 @@ def test_is_unsigned_integer():
 def test_is_variadic():
     assert dt.string.is_variadic
     assert not dt.int8.is_variadic
+
+
+def test_is_temporal():
+    assert dt.time.is_temporal
+    assert dt.date.is_temporal
+    assert dt.timestamp.is_temporal
+    assert not dt.Array(dt.Map(dt.string, dt.string)).is_temporal

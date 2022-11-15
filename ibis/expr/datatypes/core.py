@@ -231,6 +231,10 @@ class DataType(Concrete):
         return isinstance(self, Struct)
 
     @property
+    def is_temporal(self) -> bool:
+        return isinstance(self, Temporal)
+
+    @property
     def is_time(self) -> bool:
         return isinstance(self, Time)
 
@@ -358,7 +362,12 @@ class Binary(Variadic, Singleton):
 
 
 @public
-class Date(Primitive):
+class Temporal(DataType):
+    """Data types related to time."""
+
+
+@public
+class Date(Temporal, Primitive):
     """Date values."""
 
     scalar = ir.DateScalar
@@ -366,7 +375,7 @@ class Date(Primitive):
 
 
 @public
-class Time(Primitive):
+class Time(Temporal, Primitive):
     """Time values."""
 
     scalar = ir.TimeScalar
@@ -374,7 +383,7 @@ class Time(Primitive):
 
 
 @public
-class Timestamp(DataType):
+class Timestamp(Temporal):
     """Timestamp values."""
 
     timezone = optional(instance_of(str))
