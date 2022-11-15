@@ -9,17 +9,11 @@ from ibis.expr.types.core import Expr
 
 @public
 class Analytic(Expr):
-
-    # TODO(kszucs): should be removed
-    def type(self):
-        return 'analytic'
+    pass
 
 
 @public
 class TopK(Analytic):
-    def type(self):
-        return 'topk'
-
     def _semi_join_components(self):
         predicate = self._to_filter()
         right = predicate.op().right.table
