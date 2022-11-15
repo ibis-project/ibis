@@ -1,7 +1,6 @@
 import datetime
 import math
 
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 
@@ -75,19 +74,19 @@ def literal(translator, op):
 
     dtype = op.output_dtype
 
-    if isinstance(dtype, dt.Boolean):
+    if dtype.is_boolean():
         typeclass = 'boolean'
-    elif isinstance(dtype, dt.String):
+    elif dtype.is_string():
         typeclass = 'string'
-    elif isinstance(dtype, dt.Date):
+    elif dtype.is_date():
         typeclass = 'date'
-    elif isinstance(dtype, (dt.Integer, dt.Floating, dt.Decimal)):
+    elif dtype.is_numeric():
         typeclass = 'number'
-    elif isinstance(dtype, dt.Timestamp):
+    elif dtype.is_timestamp():
         typeclass = 'timestamp'
-    elif isinstance(dtype, dt.Interval):
+    elif dtype.is_interval():
         typeclass = 'interval'
-    elif isinstance(dtype, dt.Set):
+    elif dtype.is_set():
         typeclass = 'set'
     else:
         raise NotImplementedError

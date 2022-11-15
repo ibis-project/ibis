@@ -53,10 +53,12 @@ def timestamp_op(func):
         formatted_left = translator.translate(op.left)
         formatted_right = translator.translate(op.right)
 
-        if isinstance(op.left.output_dtype, (dt.Timestamp, dt.Date)):
+        left_dtype = op.left.output_dtype
+        if left_dtype.is_timestamp() or left_dtype.is_date():
             formatted_left = f'cast({formatted_left} as timestamp)'
 
-        if isinstance(op.right.output_dtype, (dt.Timestamp, dt.Date)):
+        right_dtype = op.right.output_dtype
+        if right_dtype.is_timestamp() or right_dtype.is_date():
             formatted_right = f'cast({formatted_right} as timestamp)'
 
         return f'{func}({formatted_left}, {formatted_right})'

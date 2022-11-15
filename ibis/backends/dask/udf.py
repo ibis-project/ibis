@@ -7,7 +7,6 @@ import dask.delayed
 import numpy as np
 import pandas
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
@@ -74,9 +73,8 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         except KeyError:
             pass
 
-        if isinstance(op.return_type, dt.Struct):
+        if op.return_type.is_struct():
             meta = make_struct_op_meta(op)
-
             df = dd.map_partitions(op.func, *args, meta=meta)
         else:
             name = args[0].name if len(args) == 1 else None
@@ -119,7 +117,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # Depending on the type of operation, lazy_result is a Delayed that
         # could become a dd.Series or a dd.core.Scalar
         if isinstance(op, ops.AnalyticVectorizedUDF):
-            if isinstance(op.return_type, dt.Struct):
+            if op.return_type.is_struct():
                 meta = make_struct_op_meta(op)
             else:
                 meta = make_meta_series(
@@ -144,7 +142,8 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 result = result.repartition(divisions=original_divisions)
         else:
             # lazy_result is a dd.core.Scalar from an ungrouped reduction
-            if isinstance(op.return_type, (dt.Array, dt.Struct)):
+            return_type = op.return_type
+            if return_type.is_array() or return_type.is_struct():
                 # we're outputing a dt.Struct that will need to be destructured
                 # or an array of an unknown size.
                 # we compute so we can work with items inside downstream.
@@ -228,7 +227,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             cols = (df[col] for col in col_names)
             return apply_func(*cols)
 
-        if isinstance(op.return_type, dt.Struct):
+        if op.return_type.is_struct():
             # with struct output we destruct to a dataframe directly
             meta = dd.utils.make_meta(make_struct_op_meta(op))
             meta.index.name = parent_df.index.name

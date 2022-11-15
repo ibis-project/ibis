@@ -9,7 +9,6 @@ import pandas as pd
 import sqlalchemy as sa
 
 import ibis
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -129,7 +128,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         geom_col = None
         for name, dtype in schema.items():
-            if isinstance(dtype, dt.GeoSpatial):
+            if dtype.is_geospatial():
                 geom_col = geom_col or name
                 df[name] = df[name].map(
                     lambda row: None if row is None else shape.to_shape(row)

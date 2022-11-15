@@ -146,7 +146,7 @@ def _(dtype, values):
 
 def format_column(dtype, values):
     null_str = Text.styled("∅", "dim")
-    if isinstance(dtype, dt.Floating):
+    if dtype.is_floating():
         # We don't want to treat `nan` as `NULL` for floating point types
         def isnull(x):
             return x is None or x is pd.NA
@@ -172,7 +172,7 @@ def format_column(dtype, values):
         max_width = None
         min_width = 20
     else:
-        if isinstance(dtype, dt.String):
+        if dtype.is_string():
             min_width = min(20, max_width)
         else:
             min_width = max_width
@@ -282,7 +282,7 @@ def to_rich_table(table, console_width=None):
     for name, dtype, _, max_width in col_info:
         rich_table.add_column(
             Align(name, align="left"),
-            justify="right" if isinstance(dtype, dt.Numeric) else "left",
+            justify="right" if dtype.is_numeric() else "left",
             vertical="middle",
             width=None if max_width is None else col_widths[name],
             min_width=None if max_width is not None else col_widths[name],

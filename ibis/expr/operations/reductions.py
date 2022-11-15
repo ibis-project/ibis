@@ -96,7 +96,7 @@ class Sum(Filterable, Reduction):
 
     @attribute.default
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Boolean):
+        if self.arg.output_dtype.is_boolean():
             return dt.int64
         else:
             return self.arg.output_dtype.largest
@@ -108,7 +108,7 @@ class Mean(Filterable, Reduction):
 
     @attribute.default
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Boolean):
+        if self.arg.output_dtype.is_boolean():
             return dt.float64
         else:
             return dt.higher_precedence(self.arg.output_dtype, dt.float64)
@@ -139,7 +139,7 @@ class VarianceBase(Filterable, Reduction):
 
     @attribute.default
     def output_dtype(self):
-        if isinstance(self.arg.output_dtype, dt.Decimal):
+        if self.arg.output_dtype.is_decimal():
             return self.arg.output_dtype.largest
         else:
             return dt.float64

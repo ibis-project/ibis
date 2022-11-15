@@ -196,7 +196,7 @@ class UserDefinedFunction:
     def _get_coercion_function(self):
         """Return the appropriate function to coerce the result of the UDF,
         according to the func type and output type of the UDF."""
-        if isinstance(self.output_type, dt.Struct):
+        if self.output_type.is_struct():
             # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
             if (
                 self.func_type is ElementWiseVectorizedUDF
@@ -213,7 +213,7 @@ class UserDefinedFunction:
         ):
             return _coerce_to_series
         # Case 4: Array output type, reduction UDF -> coerce to np.ndarray
-        elif isinstance(self.output_type, dt.Array):
+        elif self.output_type.is_array():
             return _coerce_to_np_array
         else:
             # Case 5: Default, do nothing (e.g. reduction UDF returning

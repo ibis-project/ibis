@@ -4,7 +4,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -55,7 +54,7 @@ class ClickhouseTable(ir.Table):
         # because clickhouse-driver 0.0.10 does arithmetic operations on it
         obj = obj.copy()
         for col in obj.select_dtypes(include=[np.datetime64]):
-            if isinstance(schema[col], dt.Date):
+            if schema[col].is_date():
                 obj[col] = obj[col].dt.date
 
         settings = kwargs.pop("settings", {})

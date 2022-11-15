@@ -55,7 +55,7 @@ def not_(translator, op):
 def negate(translator, op):
     arg = op.args[0]
     formatted_arg = translator.translate(arg)
-    if isinstance(op.output_dtype, dt.Boolean):
+    if op.output_dtype.is_boolean():
         return not_(translator, op)
     else:
         if helpers.needs_parens(arg):
@@ -77,7 +77,7 @@ def sign(translator, op):
     translated_arg = translator.translate(op.arg)
     dtype = op.output_dtype
     translated_type = helpers.type_to_sql_string(dtype)
-    if not isinstance(dtype, dt.Float32):
+    if not dtype.is_float32():
         return f'CAST(sign({translated_arg}) AS {translated_type})'
     return f'sign({translated_arg})'
 
@@ -117,12 +117,9 @@ def value_list(translator, op):
 def cast(translator, op):
     arg_formatted = translator.translate(op.arg)
 
-    if isinstance(op.arg.output_dtype, dt.Category) and op.to == dt.int32:
+    if op.arg.output_dtype.is_category() and op.to.is_int32():
         return arg_formatted
-    if (
-        isinstance(op.arg.output_dtype, (dt.Timestamp, dt.Date, dt.Time))
-        and op.to == dt.int64
-    ):
+    if op.arg.output_dtype.is_temporal() and op.to.is_int64():
         return f'1000000 * unix_timestamp({arg_formatted})'
     else:
         sql_type = helpers.type_to_sql_string(op.to)

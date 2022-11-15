@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from public import public
 
@@ -10,6 +10,9 @@ from ibis.common.annotations import attribute
 from ibis.common.grounds import Concrete
 from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker, deprecated
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
 
 
 @public
@@ -59,7 +62,7 @@ class Value(Node, Named):
 
     @property
     @abstractmethod
-    def output_dtype(self):
+    def output_dtype(self) -> dt.DataType:
         """Ibis datatype of the produced value expression.
 
         Returns

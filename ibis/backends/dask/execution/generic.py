@@ -275,10 +275,10 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     tz = type.timezone
 
-    if isinstance(from_type, (dt.Timestamp, dt.Date)):
+    if from_type.is_timestamp() or from_type.is_date():
         return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
 
-    if isinstance(from_type, (dt.String, dt.Integer)):
+    if from_type.is_string() or from_type.is_integer():
         timestamps = data.map_partitions(
             to_datetime,
             infer_datetime_format=True,
@@ -305,7 +305,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
     # TODO - we return slightly different things depending on the branch
     # double check what the logic should be
 
-    if isinstance(from_type, dt.Timestamp):
+    if from_type.is_timestamp():
         return data.dt.normalize()
 
     if from_type.equals(dt.string):
@@ -319,7 +319,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
         # TODO - we are getting rid of the index here
         return datetimes.dt.normalize()
 
-    if isinstance(from_type, dt.Integer):
+    if from_type.is_integer():
         return data.map_partitions(
             to_datetime, unit='D', meta=(data.name, 'datetime64[ns]')
         )

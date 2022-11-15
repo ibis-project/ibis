@@ -78,195 +78,147 @@ class DataType(Concrete):
 
         return castable(self, other, **kwargs)
 
-    @property
     def is_array(self) -> bool:
         return isinstance(self, Array)
 
-    @property
     def is_binary(self) -> bool:
         return isinstance(self, Binary)
 
-    @property
     def is_boolean(self) -> bool:
         return isinstance(self, Boolean)
 
-    @property
     def is_category(self) -> bool:
         return isinstance(self, Category)
 
-    @property
     def is_date(self) -> bool:
         return isinstance(self, Date)
 
-    @property
     def is_decimal(self) -> bool:
         return isinstance(self, Decimal)
 
-    @property
     def is_enum(self) -> bool:
         return isinstance(self, Enum)
 
-    @property
     def is_float16(self) -> bool:
         return isinstance(self, Float16)
 
-    @property
     def is_float32(self) -> bool:
         return isinstance(self, Float32)
 
-    @property
     def is_float64(self) -> bool:
         return isinstance(self, Float64)
 
-    @property
     def is_floating(self) -> bool:
         return isinstance(self, Floating)
 
-    @property
     def is_geography(self) -> bool:
         return isinstance(self, Geography)
 
-    @property
     def is_geometry(self) -> bool:
         return isinstance(self, Geometry)
 
-    @property
     def is_geospatial(self) -> bool:
         return isinstance(self, GeoSpatial)
 
-    @property
     def is_inet(self) -> bool:
         return isinstance(self, INET)
 
-    @property
     def is_int16(self) -> bool:
         return isinstance(self, Int16)
 
-    @property
     def is_int32(self) -> bool:
         return isinstance(self, Int32)
 
-    @property
     def is_int64(self) -> bool:
         return isinstance(self, Int64)
 
-    @property
     def is_int8(self) -> bool:
         return isinstance(self, Int8)
 
-    @property
     def is_integer(self) -> bool:
         return isinstance(self, Integer)
 
-    @property
     def is_interval(self) -> bool:
         return isinstance(self, Interval)
 
-    @property
     def is_json(self) -> bool:
         return isinstance(self, JSON)
 
-    @property
     def is_jsonb(self) -> bool:
         return isinstance(self, JSONB)
 
-    @property
     def is_linestring(self) -> bool:
         return isinstance(self, LineString)
 
-    @property
     def is_macaddr(self) -> bool:
         return isinstance(self, MACADDR)
 
-    @property
     def is_map(self) -> bool:
         return isinstance(self, Map)
 
-    @property
     def is_multilinestring(self) -> bool:
         return isinstance(self, MultiLineString)
 
-    @property
     def is_multipoint(self) -> bool:
         return isinstance(self, MultiPoint)
 
-    @property
     def is_multipolygon(self) -> bool:
         return isinstance(self, MultiPolygon)
 
-    @property
     def is_null(self) -> bool:
         return isinstance(self, Null)
 
-    @property
     def is_numeric(self) -> bool:
         return isinstance(self, Numeric)
 
-    @property
     def is_point(self) -> bool:
         return isinstance(self, Point)
 
-    @property
     def is_polygon(self) -> bool:
         return isinstance(self, Polygon)
 
-    @property
     def is_primitive(self) -> bool:
         return isinstance(self, Primitive)
 
-    @property
     def is_set(self) -> bool:
         return isinstance(self, Set)
 
-    @property
     def is_signed_integer(self) -> bool:
         return isinstance(self, SignedInteger)
 
-    @property
     def is_string(self) -> bool:
         return isinstance(self, String)
 
-    @property
     def is_struct(self) -> bool:
         return isinstance(self, Struct)
 
-    @property
     def is_temporal(self) -> bool:
         return isinstance(self, Temporal)
 
-    @property
     def is_time(self) -> bool:
         return isinstance(self, Time)
 
-    @property
     def is_timestamp(self) -> bool:
         return isinstance(self, Timestamp)
 
-    @property
     def is_uint16(self) -> bool:
         return isinstance(self, UInt16)
 
-    @property
     def is_uint32(self) -> bool:
         return isinstance(self, UInt32)
 
-    @property
     def is_uint64(self) -> bool:
         return isinstance(self, UInt64)
 
-    @property
     def is_uint8(self) -> bool:
         return isinstance(self, UInt8)
 
-    @property
     def is_unsigned_integer(self) -> bool:
         return isinstance(self, UnsignedInteger)
 
-    @property
     def is_uuid(self) -> bool:
         return isinstance(self, UUID)
 
-    @property
     def is_variadic(self) -> bool:
         return isinstance(self, Variadic)
 

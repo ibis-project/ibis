@@ -1,4 +1,3 @@
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
@@ -107,7 +106,7 @@ class SearchedCaseBuilder(TypedCaseBuilder):
         case_expr = rlz.any(case_expr)
         result_expr = rlz.any(result_expr)
 
-        if not isinstance(case_expr.output_dtype, dt.Boolean):
+        if not case_expr.output_dtype.is_boolean():
             raise TypeError(case_expr)
 
         cases = list(self.cases)

@@ -559,14 +559,14 @@ def _fmt_value_binary_op(op: ops.Binary, *, aliases: Aliases) -> str:
 
 @fmt_value.register
 def _fmt_value_negate(op: ops.Negate, *, aliases: Aliases) -> str:
-    op_name = "Not" if isinstance(op.output_dtype, dt.Boolean) else "Negate"
+    op_name = "Not" if op.output_dtype.is_boolean() else "Negate"
     operand = fmt_value(op.arg, aliases=aliases)
     return f"{op_name}({operand})"
 
 
 @fmt_value.register
 def _fmt_value_literal(op: ops.Literal, **_: Any) -> str:
-    if isinstance(op.dtype, dt.Interval):
+    if op.dtype.is_interval():
         return f"{op.value} {op.dtype.unit}"
     return repr(op.value)
 

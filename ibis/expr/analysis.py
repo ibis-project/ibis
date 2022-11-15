@@ -7,7 +7,6 @@ from collections import Counter
 import toolz
 
 import ibis.common.graph as g
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
@@ -725,7 +724,7 @@ def find_predicates(node, flatten=True):
     # flatten_predicates instead
     def predicate(node):
         assert isinstance(node, ops.Node), type(node)
-        if isinstance(node, ops.Value) and isinstance(node.output_dtype, dt.Boolean):
+        if isinstance(node, ops.Value) and node.output_dtype.is_boolean():
             if flatten and isinstance(node, ops.And):
                 return g.proceed, None
             else:

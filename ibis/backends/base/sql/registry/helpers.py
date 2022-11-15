@@ -1,5 +1,4 @@
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import identifiers
 
@@ -70,7 +69,7 @@ sql_type_names = {
 
 
 def type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
+    if tval.is_decimal():
         return f'decimal({tval.precision}, {tval.scale})'
     name = tval.name.lower()
     try:

@@ -222,20 +222,18 @@ def infer_pandas_schema(df, schema=None):
     return sch.schema(pairs)
 
 
-def ibis_dtype_to_pandas(ibis_dtype):
+def ibis_dtype_to_pandas(ibis_dtype: dt.DataType):
     """Convert ibis dtype to the pandas / numpy alternative."""
     assert isinstance(ibis_dtype, dt.DataType)
 
-    if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
+    if ibis_dtype.is_timestamp() and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
-    elif isinstance(ibis_dtype, dt.Interval):
+    elif ibis_dtype.is_interval():
         return np.dtype(f'timedelta64[{ibis_dtype.unit}]')
-    elif isinstance(ibis_dtype, dt.Category):
+    elif ibis_dtype.is_category():
         return CategoricalDtype()
-    elif type(ibis_dtype) in _ibis_dtypes:
-        return _ibis_dtypes[type(ibis_dtype)]
     else:
-        return np.dtype(np.object_)
+        return _ibis_dtypes.get(type(ibis_dtype), np.dtype(np.object_))
 
 
 def ibis_schema_to_pandas(schema):
@@ -243,7 +241,7 @@ def ibis_schema_to_pandas(schema):
 
 
 @sch.convert.register(DatetimeTZDtype, dt.Timestamp, pd.Series)
-def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
+def convert_datetimetz_to_timestamp(_, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
         return column.dt.tz_convert(output_timezone)

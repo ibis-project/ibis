@@ -97,7 +97,7 @@ class Value(Expr):
             # noop case if passed type is the same
             return self
 
-        if isinstance(op.to, (dt.Geography, dt.Geometry)):
+        if op.to.is_geography() or op.to.is_geometry():
             from_geotype = self.type().geotype or 'geometry'
             to_geotype = op.to.geotype
             if from_geotype == to_geotype:

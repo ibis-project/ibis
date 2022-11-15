@@ -1,7 +1,12 @@
-from typing import Iterable, List, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Iterable, List, TypeVar
 
 import ibis.expr.datatypes as dt
 from ibis.common import exceptions as ex
+
+if TYPE_CHECKING:
+    import ibis.expr.operations as ops
 
 # TODO(kszucs): move this module to the base sql backend
 
@@ -94,48 +99,48 @@ def translate_point(value: Iterable) -> str:
     return f"POINT ({_format_point_value(value)})"
 
 
-def translate_linestring(value: List) -> str:
+def translate_linestring(value: list) -> str:
     """Translate a linestring to WKT."""
     return f"LINESTRING ({_format_linestring_value(value)})"
 
 
-def translate_polygon(value: List) -> str:
+def translate_polygon(value: list) -> str:
     """Translate a polygon to WKT."""
     return f"POLYGON ({_format_polygon_value(value)})"
 
 
-def translate_multilinestring(value: List) -> str:
+def translate_multilinestring(value: list) -> str:
     """Translate a multilinestring to WKT."""
     return f"MULTILINESTRING ({_format_multilinestring_value(value)})"
 
 
-def translate_multipoint(value: List) -> str:
+def translate_multipoint(value: list) -> str:
     """Translate a multipoint to WKT."""
     return f"MULTIPOINT ({_format_multipoint_value(value)})"
 
 
-def translate_multipolygon(value: List) -> str:
+def translate_multipolygon(value: list) -> str:
     """Translate a multipolygon to WKT."""
     return f"MULTIPOLYGON ({_format_multipolygon_value(value)})"
 
 
-def translate_literal(op, inline_metadata: bool = False) -> str:
+def translate_literal(op: ops.Literal, inline_metadata: bool = False) -> str:
     value = op.value
     dtype = op.output_dtype
 
     if isinstance(value, dt._WellKnownText):
         result = value.text
-    elif isinstance(dtype, dt.Point):
+    elif dtype.is_point():
         result = translate_point(value)
-    elif isinstance(dtype, dt.LineString):
+    elif dtype.is_linestring():
         result = translate_linestring(value)
-    elif isinstance(dtype, dt.Polygon):
+    elif dtype.is_polygon():
         result = translate_polygon(value)
-    elif isinstance(dtype, dt.MultiLineString):
+    elif dtype.is_multilinestring():
         result = translate_multilinestring(value)
-    elif isinstance(dtype, dt.MultiPoint):
+    elif dtype.is_multipoint():
         result = translate_multipoint(value)
-    elif isinstance(dtype, dt.MultiPolygon):
+    elif dtype.is_multipolygon():
         result = translate_multipolygon(value)
     else:
         raise ex.UnboundExpressionError('Geo Spatial type not supported.')
