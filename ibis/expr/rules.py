@@ -179,7 +179,7 @@ def literal(dtype, value, **kwargs):
         try:
             # ensure type correctness: check that the inferred dtype is
             # implicitly castable to the explicitly given dtype and value
-            dtype = inferred_dtype.cast(explicit_dtype, value=value)
+            dtype = dt.cast(inferred_dtype, target=explicit_dtype, value=value)
         except com.IbisTypeError:
             raise TypeError(f'Value {value!r} cannot be safely coerced to {type}')
     elif has_explicit:
