@@ -89,3 +89,19 @@ def test_limit_chain(alltypes, expr_fn):
     expr = expr_fn(alltypes)
     result = expr.execute()
     assert len(result) == 5
+
+
+@pytest.mark.parametrize(
+    "expr_fn",
+    [
+        param(lambda t: t, id="alltypes table"),
+        param(lambda t: t.join(t.view(), t.id == t.view().int_col), id="self join"),
+    ],
+)
+def test_unbind(alltypes, expr_fn):
+    expr = expr_fn(alltypes)
+    assert expr.unbind() != expr
+    assert expr.unbind().schema() == expr.schema()
+
+    assert "Unbound" not in repr(expr)
+    assert "Unbound" in repr(expr.unbind())
