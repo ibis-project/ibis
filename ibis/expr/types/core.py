@@ -371,6 +371,13 @@ class Expr(Immutable):
             self, params=params, limit=limit, **kwargs
         )
 
+    def unbind(self) -> ir.Table:
+        """Return equivalent expression built on `UnboundTable` instead of
+        backend-specific table objects."""
+        from ibis.expr.analysis import substitute_unbound
+
+        return substitute_unbound(self.op()).to_expr()
+
 
 unnamed = UnnamedMarker()
 
