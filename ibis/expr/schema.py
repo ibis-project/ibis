@@ -197,6 +197,18 @@ class Schema(Concrete):
         names, types = zip(*dictionary.items()) if dictionary else ([], [])
         return cls(names, types)
 
+    def to_pandas(self):
+        """Return the equivalent pandas datatypes."""
+        from ibis.backends.pandas.client import ibis_schema_to_pandas
+
+        return ibis_schema_to_pandas(self)
+
+    def to_pyarrow(self):
+        """Return the equivalent pyarrow schema."""
+        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_schema
+
+        return ibis_to_pyarrow_schema(self)
+
     def __gt__(self, other: Schema) -> bool:
         """Return whether `self` is a strict superset of `other`."""
         return set(self.items()) > set(other.items())

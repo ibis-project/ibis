@@ -308,10 +308,6 @@ def convert_json_to_series(in_, out, col: pd.Series):
     return pd.Series(list(map(try_json, col)), dtype="object")
 
 
-dt.DataType.to_pandas = ibis_dtype_to_pandas  # type: ignore
-sch.Schema.to_pandas = ibis_schema_to_pandas  # type: ignore
-
-
 class DataFrameProxy(Immutable, util.ToFrame):
     __slots__ = ('_df', '_hash')
 

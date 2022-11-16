@@ -78,6 +78,18 @@ class DataType(Concrete):
 
         return castable(self, other, **kwargs)
 
+    def to_pandas(self):
+        """Return the equivalent pandas datatype."""
+        from ibis.backends.pandas.client import ibis_dtype_to_pandas
+
+        return ibis_dtype_to_pandas(self)
+
+    def to_pyarrow(self):
+        """Return the equivalent pyarrow datatype."""
+        from ibis.backends.pyarrow.datatypes import to_pyarrow_type
+
+        return to_pyarrow_type(self)
+
     def is_array(self) -> bool:
         return isinstance(self, Array)
 
