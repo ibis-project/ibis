@@ -219,31 +219,13 @@ def substitute_unbound(node):
     equivalent unbound table."""
     assert isinstance(node, ops.Node), type(node)
 
-    def fn(node):
+    def fn(node, *args, **kwargs):
         if isinstance(node, ops.DatabaseTable):
             return ops.UnboundTable(name=node.name, schema=node.schema)
-        elif isinstance(node, ops.TableColumn):
-            # For table column references, in the event that we're on top of a
-            # projection, we need to check whether the ref comes from the base
-            # table schema or is a derived field. If we've projected out of
-            # something other than a physical table, then lifting should not
-            # occur
-            table = node.table
+        else:
+            return node.__class__(*args, **kwargs)
 
-            if isinstance(table, ops.Selection):
-                for val in table.selections:
-                    if isinstance(val, ops.PhysicalTable) and node.name in val.schema:
-                        return ops.TableColumn(val, node.name)
-        elif isinstance(node, ops.Join):
-            return node.__class__(
-                substitute_unbound(node.left),
-                substitute_unbound(node.right),
-                map(substitute_unbound, node.predicates),
-            )
-        # keep looking for nodes to substitute
-        return g.proceed
-
-    return substitute(fn, node)
+    return node.substitute(fn)
 
 
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:

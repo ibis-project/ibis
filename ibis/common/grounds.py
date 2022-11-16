@@ -277,6 +277,9 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
 
         return results
 
+    def substitute(self, fn, filter=None):
+        return self.map(fn, filter=filter)[self]
+
     def replace(self, subs, filter=None):
         def fn(node, *args, **kwargs):
             try:
@@ -284,4 +287,4 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
             except KeyError:
                 return node.__class__(*args, **kwargs)
 
-        return self.map(fn, filter=filter)[self]
+        return self.substitute(fn, filter=filter)
