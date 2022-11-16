@@ -138,7 +138,3 @@ def ibis_to_pyarrow_struct(schema: sch.Schema) -> pa.StructType:
 
 def ibis_to_pyarrow_schema(schema: sch.Schema) -> pa.Schema:
     return pa.schema(_schema_to_pyarrow_schema_fields(schema))
-
-
-dt.DataType.to_pyarrow = to_pyarrow_type  # type: ignore
-sch.Schema.to_pyarrow = ibis_to_pyarrow_schema  # type: ignore
