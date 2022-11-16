@@ -207,7 +207,12 @@ operation_registry.update(
         ops.TimestampDiff: fixed_arity(sa.func.age, 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Translate: fixed_arity(sa.func.replace, 3),
-        ops.TimestampNow: fixed_arity(sa.func.now, 0),
+        ops.TimestampNow: fixed_arity(
+            # duckdb 0.6.0 changes now to be a tiemstamp with time zone force
+            # it back to the original for backwards compatibility
+            lambda *_: sa.cast(sa.func.now(), sa.TIMESTAMP),
+            0,
+        ),
         ops.RegexExtract: _regex_extract,
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
