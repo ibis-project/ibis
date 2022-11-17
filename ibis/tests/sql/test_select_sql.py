@@ -809,3 +809,15 @@ def test_filter_self_join_analysis_bug(snapshot):
     result = joined[left.region, (left.total - right.total).name('diff')]
 
     snapshot.assert_match(to_sql(result), "result.sql")
+
+
+def test_sort_then_group_by_propagates_keys(snapshot):
+    t = ibis.table(schema={"a": "string", "b": "int64"}, name="t")
+
+    # a IS NOT in the output's order by clause
+    result = t.order_by("a").b.value_counts()
+    snapshot.assert_match(to_sql(result), "result1.sql")
+
+    # b IS in the output's order by clause
+    result = t.order_by("b").b.value_counts()
+    snapshot.assert_match(to_sql(result), "result2.sql")
