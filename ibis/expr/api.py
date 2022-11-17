@@ -22,10 +22,10 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import connect
-from ibis.common.pretty import show_sql, to_sql
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
+from ibis.expr.sql import parse_sql, show_sql, to_sql
 from ibis.expr.types import (  # noqa: F401
     ArrayColumn,
     ArrayScalar,
@@ -200,6 +200,7 @@ __all__ = (
     'null',
     'or_',
     'param',
+    'parse_sql',
     'pi',
     'random',
     'range_window',
