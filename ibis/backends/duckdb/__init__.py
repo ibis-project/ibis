@@ -159,6 +159,7 @@ class Backend(BaseAlchemyBackend):
         database: str | Path = ":memory:",
         path: str | Path = None,
         read_only: bool = False,
+        temp_directory: Path | str | None = None,
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to a DuckDB database.
@@ -169,6 +170,9 @@ class Backend(BaseAlchemyBackend):
             Path to a duckdb database.
         read_only
             Whether the database is read-only.
+        temp_directory
+            Directory to use for spilling to disk. Only set by default for
+            in-memory connections.
         config
             DuckDB configuration parameters. See the [DuckDB configuration
             documentation](https://duckdb.org/docs/sql/configuration) for
@@ -187,6 +191,16 @@ class Backend(BaseAlchemyBackend):
             database = path
         if not (in_memory := database == ":memory:"):
             database = Path(database).absolute()
+        else:
+            if temp_directory is None:
+                temp_directory = (
+                    Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+                    / "duckdb"
+                )
+
+        if temp_directory is not None:
+            config["temp_directory"] = str(temp_directory)
+
         super().do_connect(
             sa.create_engine(
                 f"duckdb:///{database}",

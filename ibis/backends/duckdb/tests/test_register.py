@@ -3,6 +3,7 @@ import csv
 import gzip
 import os
 import re
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -187,3 +188,28 @@ def test_read_invalid(data_directory, basename):
     msg = f"^Unrecognized file type or extension: {re.escape(str(path))}"
     with pytest.raises(ValueError, match=msg):
         ibis.read(path)
+
+
+def test_temp_directory(tmp_path):
+    query = "SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'"
+
+    # 1. in-memory + no temp_directory specified
+    con = ibis.duckdb.connect()
+    [(value,)] = con.con.execute(query).fetchall()
+    assert value  # we don't care what the specific value is
+
+    temp_directory = Path(tempfile.gettempdir()) / "duckdb"
+
+    # 2. in-memory + temp_directory specified
+    con = ibis.duckdb.connect(temp_directory=temp_directory)
+    [(value,)] = con.con.execute(query).fetchall()
+    assert value == str(temp_directory)
+
+    # 3. on-disk + no temp_directory specified
+    # untested, duckdb sets the temp_directory to something implementation
+    # defined
+
+    # 4. on-disk + temp_directory specified
+    con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
+    [(value,)] = con.con.execute(query).fetchall()
+    assert value == str(temp_directory)
