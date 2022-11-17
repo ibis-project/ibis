@@ -78,11 +78,7 @@ module.exports = {
     [
       "@semantic-release/git",
       {
-        assets: [
-          "pyproject.toml",
-          "docs/release_notes.md",
-          "ibis/__init__.py",
-        ],
+        assets: ["pyproject.toml", "docs/release_notes.md", "ibis/__init__.py"],
         message: "chore(release): ${nextRelease.version}",
       },
     ],
