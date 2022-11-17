@@ -482,13 +482,20 @@ def simplify_aggregation(agg):
         having_valid, lowered_having = _pushdown(agg.having)
 
         if metrics_valid and by_valid and having_valid:
+            valid_lowered_sort_keys = frozenset(lowered_metrics).union(lowered_by)
             return ops.Aggregation(
                 agg.table.table,
                 lowered_metrics,
                 by=lowered_by,
                 having=lowered_having,
                 predicates=agg.table.predicates,
-                sort_keys=agg.table.sort_keys,
+                # only the sort keys that exist as grouping keys or metrics can
+                # be included
+                sort_keys=[
+                    key
+                    for key in agg.table.sort_keys
+                    if key.expr in valid_lowered_sort_keys
+                ],
             )
 
     return agg
