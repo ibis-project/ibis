@@ -145,24 +145,35 @@ in
         --replace '[tool.hatch.metadata.hooks.requirements_txt]' "" \
         --replace 'filename = "requirements.txt"' ""
     '';
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling self.hatch-nodejs-version ];
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      self.hatchling
+      self.hatch-nodejs-version
+    ];
   });
 
   fiona = super.fiona.overridePythonAttrs (_: {
     format = "pyproject";
   });
 
-  duckdb = super.duckdb.overridePythonAttrs (_: {
-    prePatch = ''
-      set -eo pipefail
+  duckdb = super.duckdb.overridePythonAttrs (attrs: {
+    postPatch =
+      let
+        rawLines = [
+          "'multiprocessing.cpu_count()' $NIX_BUILD_CORES"
+        ] ++ lib.optionals (lib.versionAtLeast attrs.version "0.6.0") [
+          "'setuptools_scm<7.0.0' 'setuptools_scm'"
+        ];
+        replacedLines = map (line: "--replace ${line}") rawLines;
+        lines = lib.concatStringsSep " " replacedLines;
+      in
+      ''
+        set -eo pipefail
 
-      # fail if $NIX_BUILD_CORES is undefined
+        # fail if $NIX_BUILD_CORES is undefined
 
-      set -u
-      substituteInPlace setup.py \
-        --replace "multiprocessing.cpu_count()" "$NIX_BUILD_CORES" \
-        --replace "setuptools_scm<7.0.0" "setuptools_scm"
-      set +u
-    '';
+        set -u
+        substituteInPlace setup.py ${lines}
+        set +u
+      '';
   });
 }
