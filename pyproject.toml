@@ -30,6 +30,7 @@ numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
 parsy = ">=1.3.0,<3"
 rich = ">=12.4.4,<13"
+sqlglot = ">=10.1.3,<11"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<23", optional = true }
@@ -64,10 +65,9 @@ pyspark = { version = ">=3,<4", optional = true }
 regex = { version = ">=2021.7.6", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<2", optional = true }
-sqlglot = { version = ">=10.1.3,<11", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 absolufy-imports = ">=0.3.1,<1"
@@ -124,23 +124,22 @@ bigquery = [
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
   "pydata-google-auth",
-  "sqlglot"
 ]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
-mssql = ["sqlalchemy", "pymssql", "sqlglot"]
-mysql = ["sqlalchemy", "pymysql", "sqlglot"]
+impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
+mssql = ["sqlalchemy", "pymssql"]
+mysql = ["sqlalchemy", "pymysql"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
-postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
+postgres = ["psycopg2", "sqlalchemy"]
 pyspark = ["pyarrow", "pyspark"]
-snowflake = ["snowflake-sqlalchemy", "sqlglot"]
-sqlite = ["regex", "sqlalchemy", "sqlglot"]
-trino = ["trino", "sqlalchemy", "sqlglot"]
+snowflake = ["snowflake-sqlalchemy"]
+sqlite = ["regex", "sqlalchemy"]
+trino = ["trino", "sqlalchemy"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
@@ -292,7 +291,7 @@ markers = [
 [tool.black]
 line_length = 88
 skip_string_normalization = true
-extend_exclude = '\.ipynb|\.direnv|result(-\d+)?'
+extend_exclude = '\.ipynb|\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
 
 [tool.isort]
 ensure_newline_before_comments = true
@@ -301,7 +300,7 @@ multi_line_output = 3
 include_trailing_comma = true
 profile = "black"
 extend_skip = [".direnv"]
-extend_skip_glob = ["result*", "ibis/tests/*/snapshots/*"]
+extend_skip_glob = ["result*", "ibis/tests/*/snapshots/*", "*_py310.py"]
 skip_gitignore = true
 
 [tool.conda-lock]

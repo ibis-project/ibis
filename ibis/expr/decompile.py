@@ -301,7 +301,7 @@ def binary(op, left, right):
 
 
 class CodeContext:
-    always_assign = (ops.ScalarParameter, ops.UnboundTable)
+    always_assign = (ops.ScalarParameter, ops.UnboundTable, ops.Aggregation)
     always_ignore = (ops.TableColumn, dt.Primitive, dt.Variadic, dt.Temporal)
     shorthands = {
         ops.Aggregation: "agg",

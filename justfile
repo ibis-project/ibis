@@ -34,7 +34,7 @@ ci-check *args:
 lint:
     black -q . --check
     isort -q . --check
-    flake8 .
+    flake8 --exclude ibis/tests/sql/snapshots/ .
 
 # run the test suite for one or more backends
 test +backends:

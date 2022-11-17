@@ -14,9 +14,6 @@ alltypes = ibis.table(
 proj = alltypes.select(
     [alltypes.float_col, alltypes.timestamp_col, alltypes.int_col, alltypes.string_col]
 ).filter(alltypes.timestamp_col < param)
+agg = proj.group_by(proj.string_col).aggregate(proj.float_col.sum().name("foo"))
 
-result = (
-    proj.group_by(proj.string_col)
-    .aggregate(proj.float_col.sum().name("foo"))
-    .foo.count()
-)
+result = agg.foo.count()
