@@ -1140,3 +1140,32 @@ def test_to_sqla_type_array_of_non_primitive():
     assert result_name == expected_name
     assert type(result_type) == type(expected_type)
     assert isinstance(result, sa.ARRAY)
+
+
+def test_no_cart_join(con, snapshot):
+    facts = ibis.table(dict(product_id="!int32"), name="facts")
+    products = ibis.table(
+        dict(
+            ancestor_level_name="string",
+            ancestor_level_number="int32",
+            ancestor_node_sort_order="int64",
+            descendant_node_natural_key="int32",
+        ),
+        name="products",
+    )
+
+    products = products.mutate(
+        product_level_name=lambda t: ibis.literal('-')
+        .lpad(((t.ancestor_level_number - 1) * 7), '-')
+        .concat(t.ancestor_level_name)
+    )
+
+    predicate = facts.product_id == products.descendant_node_natural_key
+    joined = facts.join(products, predicate)
+
+    gb = joined.group_by(products.ancestor_node_sort_order)
+    agg = gb.aggregate(n=ibis.literal(1))
+    ob = agg.order_by(products.ancestor_node_sort_order)
+
+    out = str(con.compile(ob).compile(compile_kwargs=dict(literal_binds=True)))
+    snapshot.assert_match(out, "out.sql")

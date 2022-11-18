@@ -147,7 +147,7 @@ class Join(TableNode):
         # TODO(kszucs): predicates should be already a list of operations, need
         # to update the validation rule for the Join classes which is a noop
         # currently
-        import ibis.expr.analysis as L
+        import ibis.expr.analysis as an
         import ibis.expr.operations as ops
 
         # TODO(kszucs): need to factor this out to appropiate join predicate
@@ -169,7 +169,7 @@ class Join(TableNode):
             old = right
             new = right = ops.SelfReference(right)
             predicates = [
-                L.sub_for(pred, {old: new}) if isinstance(pred, ops.Node) else pred
+                an.sub_for(pred, {old: new}) if isinstance(pred, ops.Node) else pred
                 for pred in predicates
             ]
 
@@ -358,17 +358,20 @@ class Selection(Projection):
         )
 
     def order_by(self, sort_exprs):
-        from ibis.expr.analysis import shares_all_roots
+        from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
 
         keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
 
         if not self.selections:
-            if shares_all_roots(keys, self.table):
+            if shares_all_roots(keys, table := self.table):
+                sort_keys = tuple(self.sort_keys) + tuple(
+                    sub_immediate_parents(key, table) for key in keys
+                )
                 return Selection(
-                    self.table,
+                    table,
                     self.selections,
                     predicates=self.predicates,
-                    sort_keys=self.sort_keys + keys,
+                    sort_keys=sort_keys,
                 )
 
         return Selection(self, [], sort_keys=keys)
@@ -474,18 +477,21 @@ class Aggregation(TableNode):
         return sch.Schema(names, types)
 
     def order_by(self, sort_exprs):
-        from ibis.expr.analysis import shares_all_roots
+        from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
 
         keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
 
-        if shares_all_roots(keys, self.table):
+        if shares_all_roots(keys, table := self.table):
+            sort_keys = tuple(self.sort_keys) + tuple(
+                sub_immediate_parents(key, table) for key in keys
+            )
             return Aggregation(
-                self.table,
-                self.metrics,
+                table,
+                metrics=self.metrics,
                 by=self.by,
                 having=self.having,
                 predicates=self.predicates,
-                sort_keys=self.sort_keys + keys,
+                sort_keys=sort_keys,
             )
 
         return Selection(self, [], sort_keys=keys)
