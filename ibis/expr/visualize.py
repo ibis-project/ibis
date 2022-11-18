@@ -115,6 +115,10 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
                     if isinstance(v, ops.NodeList):
                         index = v.values.index(u)
                         arg_name = f"values[{index}]"
+                    elif isinstance(v, ops.Join):
+                        arg_name = ""
+                        if u in v.predicates:
+                            arg_name = "predicates"
                     else:
                         index = v.args.index(u)
                         arg_name = v.argnames[index]
