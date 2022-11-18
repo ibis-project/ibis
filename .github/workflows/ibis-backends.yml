@@ -61,6 +61,8 @@ jobs:
             has_geo: true
             services:
               - mysql
+            sys-deps:
+              - libgeos-dev
           - name: clickhouse
             title: ClickHouse
             services:
@@ -88,6 +90,8 @@ jobs:
               has_geo: true
               services:
                 - mysql
+              sys-deps:
+                - libgeos-dev
           - os: windows-latest
             backend:
               name: clickhouse
