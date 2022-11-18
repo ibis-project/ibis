@@ -19,7 +19,7 @@ You can use `ibis.read("https://storage.googleapis.com/ibis-tutorial-data/wowah_
 
 Our data contains the following:
 
-- `char` : a unique identifier for a character (or a player). This is our `entity_col`
+- `char` : a unique identifier for a character (or a player). This is our entity column
 - `timestamp`: a timestamp denoting when a `char` was polled. This occurs every ~10 minutes
 
 We can take this information, along with a definition of what separates two sessions for an entity, and break our dataset up into sessions **without using any joins**:
@@ -30,24 +30,20 @@ import ibis
 from ibis import _ as c
 
 # Read files into table expressions with ibis.read:
-data = ibis.read("https://storage.googleapis.com/ibis-tutorial-data/wowah_data/wowah_data.csv", timestampformat='%m/%d/%y %H:%M:%S')
+data = ibis.read("https://storage.googleapis.com/ibis-tutorial-data/wowah_data/wowah_data_raw.parquet")
 
-# name of a column noting an entity identifier, e.g. an event or user
-entity_col = 'char'
-# name of a column noting the timestamp for a row, e.g. when entity polled
-timestamp_col = 'timestamp'
 # integer delay in seconds noting if a row should be included in the previous session for an entity
 session_boundary_threshold = 30 * 60
 
 # Window for finding session ids per character
-entity_window = ibis.cumulative_window(group_by=entity_col, order_by=timestamp_col)
+entity_window = ibis.cumulative_window(group_by=c.char, order_by=c.timestamp)
 
-# Take the previous timestamp within a window (by charcter ordered by timestamp):
+# Take the previous timestamp within a window (by character ordered by timestamp):
 # Note: the first value in a window will be null
-ts_lag = data[timestamp_col].lag().over(entity_window)
+ts_lag = c.timestamp.lag().over(entity_window)
 
 # Subtract the lag from the current timestamp to get a timedelta
-ts_delta = data[timestamp_col] - ts_lag
+ts_delta = c.timestamp - ts_lag
 
 # Compare timedelta to our session delay in seconds to determine if the
 # current timestamp falls outside of the session.
@@ -55,24 +51,24 @@ ts_delta = data[timestamp_col] - ts_lag
 is_new_session = (ts_delta > ibis.interval(seconds=session_boundary_threshold))
 
 # Window for finding session min/max
-session_window = ibis.window(group_by=[entity_col, 'session_id'])
+session_window = ibis.window(group_by=[c.char, c.session_id])
 
 # Generate all of the data we need to analyze sessions:
 sessionized = (
     data
     # Create a session id for each character by using a cumulative sum
     # over the `new_session` column
-    .mutate(new_session=is_new_session.fillna(True).cast("int32"))
+    .mutate(new_session=is_new_session.fillna(True))
     # Create a session id for each character by using a cumulative sum
     # over the `new_session` column
     .mutate(session_id=c.new_session.sum().over(entity_window))
     # Drop `new_session` because it is no longer needed
-    .drop('new_session')
+    .drop("new_session")
     .mutate(
         # Get session duration using max(timestamp) - min(timestamp) over our window
-        session_duration=c[timestamp_col].max().over(session_window) - c[timestamp_col].min().over(session_window)
+        session_duration=c.timestamp.max().over(session_window) - c.timestamp.min().over(session_window)
     )
     # Sort for convenience
-    .order_by([entity_col, timestamp_col])
+    .order_by([c.char, c.timestamp])
 )
 ```
