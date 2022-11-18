@@ -60,7 +60,6 @@ hide:
 
     !!! info "Some optional dependencies for Windows are not available through `conda`/`mamba`"
 
-        1. `python-duckdb` and `duckdb-engine`. Required for the DuckDB backend.
         1. `clickhouse-cityhash`. Required for compression support in the ClickHouse backend.
 
     #### Support Matrix
