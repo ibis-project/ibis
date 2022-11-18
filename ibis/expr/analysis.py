@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import Counter
+from typing import Mapping
 
 import toolz
 
@@ -19,22 +20,21 @@ from ibis.expr.window import window
 # compilation later
 
 
-def sub_for(node, substitutions):
-    """Substitute subexpressions in `expr` with expression to expression
-    mapping `substitutions`.
+def sub_for(node: ops.Node, substitutions: Mapping[ops.node, ops.Node]) -> ops.Node:
+    """Substitute operations in `node` with nodes in `substitutions`.
 
     Parameters
     ----------
-    expr : ibis.expr.types.Expr
-        An Ibis expression
-    substitutions : List[Tuple[ibis.expr.types.Expr, ibis.expr.types.Expr]]
-        A mapping from expression to expression. If any subexpression of `expr`
-        is equal to any of the keys in `substitutions`, the value for that key
-        will replace the corresponding expression in `expr`.
+    node
+        An Ibis operation
+    substitutions
+        A mapping from node to node. If any subnode of `node` is equal to any
+        of the keys in `substitutions`, the value for that key will replace the
+        corresponding node in `node`.
 
     Returns
     -------
-    ibis.expr.types.Expr
+    Node
         An Ibis expression
     """
     assert isinstance(node, ops.Node), type(node)
@@ -48,6 +48,11 @@ def sub_for(node, substitutions):
             return g.proceed
 
     return substitute(fn, node)
+
+
+def sub_immediate_parents(op: ops.Node, table: ops.TableNode) -> ops.Node:
+    """Replace immediate parent tables in `op` with `table`."""
+    return sub_for(op, {base: table for base in find_immediate_parent_tables(op)})
 
 
 class ScalarAggregate:

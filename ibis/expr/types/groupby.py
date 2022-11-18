@@ -19,9 +19,7 @@ from __future__ import annotations
 import types
 from typing import Iterable, Sequence
 
-import toolz
-
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
@@ -36,7 +34,7 @@ _function_types = tuple(
             types.FunctionType,
             types.LambdaType,
             types.MethodType,
-            getattr(types, 'UnboundMethodType', None),
+            getattr(types, "UnboundMethodType", None),
         ),
     )
 )
@@ -49,6 +47,8 @@ def _get_group_by_key(table, value):
         return value(table)
     elif isinstance(value, Deferred):
         return value.resolve(table)
+    elif isinstance(value, ir.Expr):
+        return an.sub_immediate_parents(value.op(), table.op()).to_expr()
     else:
         return value
 
@@ -61,8 +61,7 @@ class GroupedTable:
     ):
         self.table = table
         self.by = [_get_group_by_key(table, v) for v in util.promote_list(by)] + [
-            _get_group_by_key(table, v).name(k)
-            for k, v in sorted(expressions.items(), key=toolz.first)
+            _get_group_by_key(table, v).name(k) for k, v in expressions.items()
         ]
         self._order_by = order_by or []
         self._having = having or []
@@ -207,7 +206,7 @@ class GroupedTable:
         windowed_exprs = []
         for expr in util.promote_list(exprs):
             expr = self.table._ensure_expr(expr)
-            expr = L.windowize_function(expr, w=w)
+            expr = an.windowize_function(expr, w=w)
             windowed_exprs.append(expr)
         return self.table.projection(windowed_exprs)
 
