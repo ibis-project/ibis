@@ -349,6 +349,21 @@ def test_insert_overwrite_from_list(
     assert len(alchemy_con.table(employee_data_1_temp_table).execute()) == 3
 
 
+def test_insert_from_memtable(alchemy_con):
+    df = pd.DataFrame({"x": range(3)})
+    table_name = "memtable_test"
+    alchemy_con.insert(table_name, ibis.memtable(df))
+    alchemy_con.insert(table_name, ibis.memtable(df))
+
+    try:
+        table = alchemy_con.tables[table_name]
+        assert len(table.execute()) == 6
+        assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
+    finally:
+        alchemy_con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        assert table_name not in alchemy_con.list_tables()
+
+
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {

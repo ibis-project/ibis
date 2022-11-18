@@ -473,6 +473,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 'yet implemented'
             )
 
+        # If we've been passed a `memtable`, pull out the underlying dataframe
+        if isinstance(obj, ir.Table) and isinstance(
+            in_mem_table := obj.op(), ops.InMemoryTable
+        ):
+            obj = in_mem_table.data.to_frame()
+
         if isinstance(obj, pd.DataFrame):
             obj.to_sql(
                 table_name,
