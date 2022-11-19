@@ -43,6 +43,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
         stage = "ibis_testing_stage"
         con = TestConf.connect(data_dir)
         with con.con.connect() as con:
+            con.execute("DROP SCHEMA IF EXISTS ibis_testing")
+            con.execute("CREATE SCHEMA IF NOT EXISTS ibis_testing")
+            con.execute("USE SCHEMA ibis_testing")
             con.execute(
                 """\
 CREATE OR REPLACE FILE FORMAT ibis_csv_fmt

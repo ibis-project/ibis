@@ -349,6 +349,10 @@ def test_insert_overwrite_from_list(
     assert len(alchemy_con.table(employee_data_1_temp_table).execute()) == 3
 
 
+@pytest.mark.broken(
+    ["snowflake"],
+    reason="quoting is incorrect because pandas doesn't expose sqlalchemy column quoting",
+)
 def test_insert_from_memtable(alchemy_con):
     df = pd.DataFrame({"x": range(3)})
     table_name = "memtable_test"
