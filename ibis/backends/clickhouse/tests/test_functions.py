@@ -417,12 +417,12 @@ def test_regexp(con, expr, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
+        param(L('abcd').re_extract('([a-z]+)', 0), 'abcd', id="simple"),
         # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
-        # valid group number but no match => empty string
-        (L('abcd').re_extract(r'(\\d)', 0), ''),
+        # valid group number but no match => None
+        param(L('abcd').re_extract(r'(\\d)', 0), None, id="valid_group_no_match"),
         # match but not a valid group number => NULL
-        # (L('abcd').re_extract('abcd', 3), None),
+        param(L('abcd').re_extract('abcd', 3), None, id="invalid_group_match"),
     ],
 )
 def test_regexp_extract(con, expr, expected):
