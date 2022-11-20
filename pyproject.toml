@@ -55,6 +55,7 @@ lz4 = { version = ">=3.1.10,<5", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=1,<10", optional = true }
+pymssql = { version = ">=2.2.7,<3", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 requests = { version = ">=2,<3", optional = true }
@@ -119,6 +120,7 @@ datafusion = ["datafusion"]
 duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
+mssql = ["sqlalchemy", "pymssql", "sqlglot"]
 mysql = ["sqlalchemy", "pymysql", "sqlglot"]
 pandas = []
 polars = ["polars", "pyarrow"]
@@ -136,6 +138,7 @@ datafusion = "ibis.backends.datafusion"
 duckdb = "ibis.backends.duckdb"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
+mssql = "ibis.backends.mssql"
 pandas = "ibis.backends.pandas"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
@@ -252,6 +255,7 @@ markers = [
   "duckdb: DuckDB tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",
+  "mssql: MS SQL Server tests",
   "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",

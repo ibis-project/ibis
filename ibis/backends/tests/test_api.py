@@ -17,7 +17,7 @@ def test_version(backend):
 # 2. list_databases() returns directories which don't make sense as HDF5
 #    databases
 @pytest.mark.never(["dask", "pandas"], reason="pass")
-@pytest.mark.notimpl(["datafusion", "duckdb", "polars"])
+@pytest.mark.notimpl(["datafusion", "duckdb", "polars", "mssql"])
 def test_database_consistency(backend, con):
     # every backend has a different set of databases, not testing the
     # exact names for now
@@ -52,9 +52,10 @@ def test_tables_accessor_mapping(con):
         con.tables["doesnt_exist"]
 
     tables = con.list_tables()
+    con_tables = con.tables
 
-    assert len(con.tables) == len(tables)
-    assert sorted(con.tables) == sorted(tables)
+    assert len(con_tables) == len(tables)
+    assert sorted(con_tables) == sorted(tables)
 
 
 def test_tables_accessor_getattr(con):

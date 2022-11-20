@@ -131,7 +131,7 @@ def recreate_database(
     database: str,
     **kwargs: Any,
 ) -> None:
-    """Drop the {database} at {url}, if it exists.
+    """Drop the `database` at `url`, if it exists.
 
     Create a new, blank database with the same name.
 
@@ -142,7 +142,7 @@ def recreate_database(
     database : str
         Name of the database to be dropped.
     """
-    engine = sa.create_engine(url, **kwargs)
+    engine = sa.create_engine(url.set(database=""), **kwargs)
 
     if url.database is not None:
         with engine.connect() as conn:
@@ -157,9 +157,9 @@ def init_database(
     recreate: bool = True,
     **kwargs: Any,
 ) -> sa.engine.Engine:
-    """Initialise {database} at {url} with {schema}.
+    """Initialise `database` at `url` with `schema`.
 
-    If {recreate}, drop the {database} at {url}, if it exists.
+    If `recreate`, drop the `database` at `url`, if it exists.
 
     Parameters
     ----------

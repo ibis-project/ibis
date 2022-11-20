@@ -21,6 +21,7 @@ pytest.importorskip("sqlglot")
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, AssertionError),
 )
+@mark.notimpl(["mssql"], raises=ValueError, reason="no sqlglot dialect for mssql")
 def test_table(con):
     expr = con.tables.functional_alltypes.select(c=_.int_col + 1)
     buf = io.StringIO()
@@ -30,13 +31,14 @@ def test_table(con):
 
 simple_literal = param(
     ibis.literal(1),
+    marks=[pytest.mark.notimpl(["mssql"], reason="no sqlglot dialect for mssql")],
     id="simple_literal",
 )
 array_literal = param(
     ibis.array([1]),
     marks=[
         mark.never(
-            ["mysql", "sqlite"],
+            ["mysql", "sqlite", "mssql"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
@@ -59,12 +61,12 @@ array_literal = param(
     id="array_literal",
 )
 no_structs = mark.never(
-    ["impala", "mysql", "sqlite"],
+    ["impala", "mysql", "sqlite", "mssql"],
     raises=(NotImplementedError, sa.exc.CompileError),
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["postgres", "snowflake"],
+    ["postgres", "snowflake", "mssql"],
     reason="struct literals are not yet implemented",
 )
 not_sql = mark.never(

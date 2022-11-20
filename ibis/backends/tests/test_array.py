@@ -15,7 +15,9 @@ try:
 except ImportError:
     duckdb = None
 
-pytestmark = [pytest.mark.never(["sqlite", "mysql"], reason="No array support")]
+pytestmark = [
+    pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support")
+]
 
 
 @pytest.mark.notimpl(["impala", "datafusion", "snowflake"])

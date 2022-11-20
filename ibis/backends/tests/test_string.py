@@ -24,73 +24,97 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.contains('6'),
             lambda t: t.string_col.str.contains('6'),
             id='contains',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
         ),
         param(
             lambda t: t.string_col.like('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='like',
-            marks=pytest.mark.notimpl(["datafusion", "polars"]),
+            marks=[
+                pytest.mark.notimpl(["datafusion", "polars"]),
+                pytest.mark.notyet(
+                    ["mssql"], reason="mssql doesn't allow like outside of filters"
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.like('6^%'),
             lambda t: t.string_col.str.contains('6%'),
             id='complex_like_escape',
-            marks=pytest.mark.notimpl(["datafusion", "polars"]),
+            marks=[
+                pytest.mark.notimpl(["datafusion", "polars"]),
+                pytest.mark.notyet(
+                    ["mssql"], reason="mssql doesn't allow like outside of filters"
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.like('6^%%'),
             lambda t: t.string_col.str.contains('6%.*'),
             id='complex_like_escape_match',
-            marks=pytest.mark.notimpl(["datafusion", "polars"]),
+            marks=[
+                pytest.mark.notimpl(["datafusion", "polars"]),
+                pytest.mark.notyet(
+                    ["mssql"], reason="mssql doesn't allow like outside of filters"
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.ilike('6%'),
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
-            marks=pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars"]),
+            marks=[
+                pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars"]),
+                pytest.mark.notyet(
+                    ["mssql"], reason="mssql doesn't allow like outside of filters"
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
-            marks=pytest.mark.notimpl(["impala", "datafusion", "snowflake"]),
+            marks=pytest.mark.notimpl(["impala", "datafusion", "snowflake", "mssql"]),
         ),
         param(
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search_posix',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake", "mssql"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 1),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
-            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
+            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake", "mssql"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 1),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_posix',
-            marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake", "mssql"]),
         ),
         param(
             lambda t: (t.string_col + "1").re_extract(r'\d(\d+)', 0),
             lambda t: (t.string_col + "1").str.extract(r'(\d+)', expand=False),
             id='re_extract_whole_group',
-            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
+            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake", "mssql"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_posix',
-            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(
+                ['datafusion', "mysql", "pyspark", "snowflake", "mssql"]
+            ),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
-            marks=pytest.mark.notimpl(["impala", "datafusion", "mysql", "snowflake"]),
+            marks=pytest.mark.notimpl(
+                ["impala", "datafusion", "mysql", "snowflake", "mssql"]
+            ),
         ),
         param(
             lambda t: t.string_col.repeat(2),
@@ -111,7 +135,9 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.translate('0', 'a'),
             lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
             id='translate',
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "mysql", "polars"]),
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "datafusion", "mysql", "polars", "mssql"]
+            ),
         ),
         param(
             lambda t: t.string_col.find('a'),
@@ -123,18 +149,20 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.lpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
             id='lpad',
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.string_col.rpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='right'),
             id='rpad',
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.string_col.find_in_set(['1']),
             lambda t: t.string_col.str.find('1'),
             id='find_in_set',
             marks=pytest.mark.notimpl(
-                ["datafusion", "pyspark", "sqlite", "snowflake", "polars"]
+                ["datafusion", "pyspark", "sqlite", "snowflake", "polars", "mssql"]
             ),
         ),
         param(
@@ -142,7 +170,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.find('a'),
             id='find_in_set_all_missing',
             marks=pytest.mark.notimpl(
-                ["datafusion", "pyspark", "sqlite", "snowflake", "polars"]
+                ["datafusion", "pyspark", "sqlite", "snowflake", "polars", "mssql"]
             ),
         ),
         param(
@@ -179,7 +207,9 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.int_col == 1,
             id='startswith',
             # pyspark doesn't support `cases` yet
-            marks=pytest.mark.notimpl(["dask", "datafusion", "pyspark", "pandas"]),
+            marks=pytest.mark.notimpl(
+                ["dask", "datafusion", "pyspark", "pandas", "mssql"]
+            ),
         ),
         param(
             lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").endswith(
@@ -188,19 +218,21 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.int_col == 1,
             id='endswith',
             # pyspark doesn't support `cases` yet
-            marks=pytest.mark.notimpl(["dask", "datafusion", "pyspark", "pandas"]),
+            marks=pytest.mark.notimpl(
+                ["dask", "datafusion", "pyspark", "pandas", "mssql"]
+            ),
         ),
         param(
             lambda t: t.date_string_col.startswith("2010-01"),
             lambda t: t.date_string_col.str.startswith("2010-01"),
             id='startswith-simple',
-            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas", "mssql"]),
         ),
         param(
             lambda t: t.date_string_col.endswith("100"),
             lambda t: t.date_string_col.str.endswith("100"),
             id='endswith-simple',
-            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas"]),
+            marks=pytest.mark.notimpl(["dask", "datafusion", "pandas", "mssql"]),
         ),
         param(
             lambda t: t.string_col.strip(),
@@ -221,7 +253,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb"]),
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "mssql"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
@@ -232,7 +264,10 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.substr(2),
             lambda t: t.date_string_col.str[2:],
             id='substr-start-only',
-            marks=pytest.mark.notimpl(["datafusion", "polars", "pyspark"]),
+            marks=[
+                pytest.mark.notimpl(["datafusion", "polars", "pyspark"]),
+                pytest.mark.notyet(["mssql"], reason="substr requires 3 arguments"),
+            ],
         ),
         param(
             lambda t: t.date_string_col.left(2),
@@ -292,6 +327,7 @@ def test_string_col_is_unicode(alltypes, df):
                     "mysql",
                     "sqlite",
                     "snowflake",
+                    "mssql",
                 ]
             ),
         ),
@@ -332,7 +368,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()

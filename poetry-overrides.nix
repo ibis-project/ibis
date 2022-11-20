@@ -176,4 +176,9 @@ in
         set +u
       '';
   });
+
+  pymssql = super.pymssql.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+    buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libkrb5 ];
+  });
 }

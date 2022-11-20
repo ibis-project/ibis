@@ -1,11 +1,12 @@
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 from ibis import util
 
 REQUIRES_EXPLICIT_SCHEMA = {"sqlite"}
-table_dot_sql_notimpl = pytest.mark.notimpl(["sqlite", "clickhouse", "impala"])
+table_dot_sql_notimpl = pytest.mark.notimpl(["sqlite", "clickhouse", "impala", "mssql"])
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake"],
@@ -22,14 +23,16 @@ pytestmark = pytest.mark.xdist_group("dot_sql")
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.parametrize("explicit_schema", [False, True])
-def test_con_dot_sql(backend, con, explicit_schema):
-    if not explicit_schema and con.name in REQUIRES_EXPLICIT_SCHEMA:
+@pytest.mark.parametrize(
+    "schema",
+    [
+        param(None, marks=pytest.mark.notimpl(["mssql"]), id="implicit_schema"),
+        param({"s": "string", "new_col": "double"}, id="explicit_schema"),
+    ],
+)
+def test_con_dot_sql(backend, con, schema):
+    if schema is None and con.name in REQUIRES_EXPLICIT_SCHEMA:
         pytest.xfail(f"{con.name} requires an explicit schema for .sql")
-    if explicit_schema:
-        schema = {"s": "string", "new_col": "double"}
-    else:
-        schema = None
     alltypes = con.table("functional_alltypes")
     t = (
         con.sql(
