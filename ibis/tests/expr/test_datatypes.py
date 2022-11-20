@@ -444,7 +444,7 @@ class Foo(enum.Enum):
                 ]
             ),
         ),
-        (Foo.a, dt.Enum(dt.string, dt.int8)),
+        (Foo.a, dt.Enum()),
     ],
 )
 def test_infer_dtype(value, expected_dtype):

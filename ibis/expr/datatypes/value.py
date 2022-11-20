@@ -175,8 +175,8 @@ def infer_integer(value: int, prefer_unsigned: bool = False) -> dt.Integer:
 
 
 @infer.register(enum.Enum)
-def infer_enum(value: enum.Enum) -> dt.Enum:
-    return dt.Enum(infer(value.name), infer(value.value))
+def infer_enum(_: enum.Enum) -> dt.String:
+    return dt.string
 
 
 @infer.register(bool)
