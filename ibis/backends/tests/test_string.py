@@ -81,6 +81,12 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
         ),
         param(
+            lambda t: (t.string_col + "1").re_extract(r'\d(\d+)', 0),
+            lambda t: (t.string_col + "1").str.extract(r'(\d+)', expand=False),
+            id='re_extract_whole_group',
+            marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
+        ),
+        param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace',
