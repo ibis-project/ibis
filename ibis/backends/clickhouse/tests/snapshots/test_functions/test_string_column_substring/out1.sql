@@ -1,0 +1,1 @@
+substring(`string_col`, 2 + 1)

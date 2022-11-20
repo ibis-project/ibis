@@ -1,0 +1,1 @@
+ceil(`double_col`)
