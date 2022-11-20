@@ -4,8 +4,10 @@ import operator
 import datafusion as df
 import datafusion.functions
 import pyarrow as pa
+import pyarrow.compute as pc
 
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.datafusion.datatypes import to_pyarrow_type
 
@@ -259,13 +261,6 @@ def substring(op):
     return df.functions.substr(arg, start, length)
 
 
-@translate.register(ops.RegexExtract)
-def regex_extract(op):
-    arg = translate(op.arg)
-    pattern = translate(op.pattern)
-    return df.functions.regexp_match(arg, pattern)
-
-
 @translate.register(ops.Repeat)
 def repeat(op):
     arg = translate(op.arg)
@@ -447,3 +442,22 @@ def elementwise_udf(op):
 @translate.register(ops.StringConcat)
 def string_concat(op):
     return df.functions.concat(*map(translate, op.args))
+
+
+@translate.register(ops.RegexExtract)
+def regex_extract(op):
+    arg = translate(op.arg)
+    pattern = translate(ops.StringConcat("(", op.pattern, ")"))
+    if (index := getattr(op.index, "value", None)) is None:
+        raise ValueError(
+            "re_extract `index` expressions must be literals. "
+            "Arbitrary expressions are not supported in the DataFusion backend"
+        )
+    string_array_get = df.udf(
+        lambda arr, index=index: pc.list_element(arr, index),
+        input_types=[to_pyarrow_type(dt.Array(dt.string))],
+        return_type=to_pyarrow_type(dt.string),
+        volatility="immutable",
+        name="string_array_get",
+    )
+    return string_array_get(df.functions.regexp_match(arg, pattern))

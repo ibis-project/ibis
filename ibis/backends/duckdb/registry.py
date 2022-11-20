@@ -131,9 +131,7 @@ def _regex_extract(t, op):
                     # DuckDB requires the index to be a constant so we compile
                     # the value and inline it using sa.text
                     sa.text(
-                        str(
-                            (index + 1).compile(compile_kwargs=dict(literal_binds=True))
-                        )
+                        str(index.compile(compile_kwargs=dict(literal_binds=True)))
                     ),
                 ),
             )
