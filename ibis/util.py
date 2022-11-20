@@ -14,7 +14,16 @@ import textwrap
 import types
 import warnings
 from numbers import Real
-from typing import TYPE_CHECKING, Any, Hashable, Iterator, Mapping, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Hashable,
+    Iterator,
+    Mapping,
+    Sequence,
+    TypeVar,
+)
 from uuid import uuid4
 
 import toolz
@@ -435,6 +444,33 @@ def warn_deprecated(name, *, instead, version='', stacklevel=1):
     warnings.warn(msg, FutureWarning, stacklevel=stacklevel + 1)
 
 
+def append_admonition(
+    func: Callable, *, msg: str, body: str = "", kind: str = "warning"
+) -> str:
+    """Append a `kind` admonition with `msg` to `func`'s docstring."""
+    if docstr := func.__doc__:
+        preamble, *rest = docstr.split("\n\n", maxsplit=1)
+
+        # count leading spaces and add them to the deprecation warning so the
+        # docstring parses correctly
+        leading_spaces = " " * sum(
+            1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
+        )
+
+        admonition_doc = f'{leading_spaces}!!! {kind} "{msg}"'
+
+        if body:
+            rest = [indent(body, spaces=len(leading_spaces) + 4), *rest]
+
+        docstr = "\n\n".join([preamble, admonition_doc, *rest])
+    else:
+        admonition_doc = f'!!! {kind} "{msg}"'
+        if body:
+            admonition_doc += f"\n\n{indent(body, spaces=4)}"
+        docstr = admonition_doc
+    return docstr
+
+
 def deprecated(*, instead, version=''):
     """Decorate deprecated function to warn of usage, with stacktrace, and what
     to do instead."""
@@ -442,15 +478,7 @@ def deprecated(*, instead, version=''):
     def decorator(func):
         msg = deprecated_msg(func.__name__, instead=instead, version=version)
 
-        docstr = func.__doc__ or ""
-        first, *rest = docstr.split("\n\n", maxsplit=1)
-        # count leading spaces and add them to the deprecation warning so the
-        # docstring parses correctly
-        leading_spaces = " " * sum(
-            1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
-        )
-        warning_doc = f'{leading_spaces}!!! warning "DEPRECATED: {msg}"'
-        func.__doc__ = "\n\n".join([first, warning_doc, *rest])
+        func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -464,31 +492,28 @@ def deprecated(*, instead, version=''):
     return decorator
 
 
+def backend_sensitive(
+    *,
+    msg: str = "This operation differs between backends.",
+    why: str = "",
+):
+    """Indicate that an API may be sensitive to a backend."""
+
+    def wrapper(func):
+        func.__doc__ = append_admonition(func, msg=msg, body=why, kind="info")
+        return func
+
+    return wrapper
+
+
 def experimental(func):
     """Decorate experimental function to add warning about potential API
     instability in docstring."""
 
-    msg = "This API is experimental and subject to change."
-
-    if docstr := func.__doc__:
-        preamble, *rest = docstr.split("\n\n", maxsplit=1)
-
-        leading_spaces = " " * sum(
-            1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
-        )
-
-        warning_doc = f'{leading_spaces}!!! warning "{msg}"'
-
-        docstr = "\n\n".join([preamble, warning_doc, *rest])
-    else:
-        docstr = f'!!! warning "{msg}"'
-    func.__doc__ = docstr
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    return wrapper
+    func.__doc__ = append_admonition(
+        func, msg="This API is experimental and subject to change."
+    )
+    return func
 
 
 class ToFrame(abc.ABC):

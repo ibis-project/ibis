@@ -506,6 +506,9 @@ class StringValue(Value):
             ),
         )
 
+    @util.backend_sensitive(
+        why="Different backends support different regular expression syntax."
+    )
     def re_search(self, pattern: str | StringValue) -> ir.BooleanValue:
         """Return whether the values match `pattern`.
 
@@ -525,6 +528,9 @@ class StringValue(Value):
 
     rlike = re_search
 
+    @util.backend_sensitive(
+        why="Different backends support different regular expression syntax."
+    )
     def re_extract(
         self,
         pattern: str | StringValue,
@@ -546,6 +552,9 @@ class StringValue(Value):
         """
         return ops.RegexExtract(self, pattern, index).to_expr()
 
+    @util.backend_sensitive(
+        why="Different backends support different regular expression syntax."
+    )
     def re_replace(
         self,
         pattern: str | StringValue,
