@@ -51,28 +51,16 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars"]),
         ),
         param(
-            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
-            lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search_posix',
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake"]),
-        ),
-        param(
-            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 1),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_posix',
-            marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake"]),
-        ),
-        param(
-            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace_posix',
-            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark", "snowflake"]),
-        ),
-        param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
             marks=pytest.mark.notimpl(["impala", "datafusion", "snowflake"]),
+        ),
+        param(
+            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
+            lambda t: t.string_col.str.contains(r'\d+'),
+            id='re_search_posix',
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_extract(r'(\d+)', 1),
@@ -81,10 +69,22 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
         ),
         param(
+            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 1),
+            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
+            id='re_extract_posix',
+            marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake"]),
+        ),
+        param(
             lambda t: (t.string_col + "1").re_extract(r'\d(\d+)', 0),
             lambda t: (t.string_col + "1").str.extract(r'(\d+)', expand=False),
             id='re_extract_whole_group',
             marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
+        ),
+        param(
+            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
+            id='re_replace_posix',
+            marks=pytest.mark.notimpl(['datafusion', "mysql", "pyspark", "snowflake"]),
         ),
         param(
             lambda t: t.string_col.re_replace(r'\d+', 'a'),
