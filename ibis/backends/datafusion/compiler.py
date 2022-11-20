@@ -442,3 +442,8 @@ def elementwise_udf(op):
     args = map(translate, op.func_args)
 
     return udf(*args)
+
+
+@translate.register(ops.StringConcat)
+def string_concat(op):
+    return df.functions.concat(*map(translate, op.args))
