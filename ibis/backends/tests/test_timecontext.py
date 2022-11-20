@@ -18,6 +18,7 @@ pytestmark = pytest.mark.notimpl(
         "sqlite",
         "snowflake",
         "polars",
+        "mssql",
     ]
 )
 

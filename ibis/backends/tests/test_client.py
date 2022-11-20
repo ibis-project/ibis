@@ -89,7 +89,7 @@ def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
     assert schema.equals(expected)
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake", "polars"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
 @pytest.mark.notyet(["sqlite"])
 @pytest.mark.never(
     ["dask", "pandas"],
@@ -124,6 +124,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         "sqlite",
         "snowflake",
         "polars",
+        "mssql",
     ]
 )
 def test_rename_table(con, temp_table, new_schema):
@@ -170,6 +171,7 @@ def test_nullable_input_output(con, temp_table):
         "sqlite",
         "snowflake",
         "polars",
+        "mssql",
     ]
 )
 @mark.notyet(["pyspark"])
@@ -597,24 +599,10 @@ def test_invalid_connect():
         ibis.connect(url)
 
 
-@pytest.mark.never(
-    [
-        "clickhouse",
-        "dask",
-        "datafusion",
-        "impala",
-        "mysql",
-        "pandas",
-        "postgres",
-        "pyspark",
-        "snowflake",
-        "polars",
-    ],
-    reason="backend isn't file-based",
-)
-def test_deprecated_path_argument(backend, tmp_path):
+@pytest.mark.parametrize("backend_name", ["sqlite", "duckdb"])
+def test_deprecated_path_argument(backend_name, tmp_path):
     with pytest.warns(UserWarning, match="The `path` argument is deprecated"):
-        getattr(ibis, backend.name()).connect(path=str(tmp_path / "test.db"))
+        getattr(ibis, backend_name).connect(path=str(tmp_path / "test.db"))
 
 
 @pytest.mark.parametrize(

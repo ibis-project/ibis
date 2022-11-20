@@ -32,6 +32,8 @@ jobs:
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    env:
+      MSSQL_SA_PASSWORD: "1bis_Testing!"
     strategy:
       fail-fast: false
       matrix:
@@ -82,6 +84,13 @@ jobs:
             sys-deps:
               - cmake
               - ninja-build
+          - name: mssql
+            title: MS SQL Server
+            services:
+              - mssql
+            sys-deps:
+              - libkrb5-dev
+              - krb5-config
         exclude:
           - os: windows-latest
             backend:
@@ -121,6 +130,15 @@ jobs:
               sys-deps:
                 - cmake
                 - ninja-build
+          - os: windows-latest
+            backend:
+              name: mssql
+              title: MS SQL Server
+              services:
+                - mssql
+              sys-deps:
+                - libkrb5-dev
+                - krb5-config
     steps:
       - name: update and install system dependencies
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null }}
@@ -142,6 +160,13 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v3
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
 
       - name: start services
         if: ${{ matrix.backend.services != null }}
@@ -172,13 +197,6 @@ jobs:
       - name: install ibis
         if: ${{ matrix.backend.has_geo }}
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }} --extras geospatial
-
-      - uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download backend data
-        run: just download-data
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ matrix.backend.name != 'pyspark' && matrix.backend.name != 'impala' }}
@@ -264,6 +282,13 @@ jobs:
         if: ${{ matrix.backend.name == 'postgres' }}
         run: sudo apt-get install -qq -y build-essential libgeos-dev
 
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download backend data
+        run: just download-data
+
       - name: start services
         if: ${{ matrix.backend.services != null }}
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
@@ -288,10 +313,6 @@ jobs:
         # without updating anything except the requested versions
         run: poetry lock --no-update
 
-      - uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: install ibis
         if: ${{ matrix.backend.name != 'postgres' }}
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
@@ -299,9 +320,6 @@ jobs:
       - name: install ibis
         if: ${{ matrix.backend.name == 'postgres' }}
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }} --extras geospatial
-
-      - name: download backend data
-        run: just download-data
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup

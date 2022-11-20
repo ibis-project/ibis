@@ -66,4 +66,5 @@ pkgs.mkShell {
 
   PGPASSWORD = "postgres";
   MYSQL_PWD = "ibis";
+  MSSQL_SA_PASSWORD = "1bis_Testing!";
 }

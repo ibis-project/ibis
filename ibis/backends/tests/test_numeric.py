@@ -51,7 +51,7 @@ except ImportError:
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.notimpl(["mysql", "sqlite", "datafusion"])
+@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql"])
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -98,7 +98,12 @@ def test_isnan_isinf(
             id='greatest',
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
-        param(L(5.5).round(), 6.0, id='round'),
+        param(
+            L(5.5).round(),
+            6.0,
+            id='round',
+            marks=pytest.mark.notimpl(["mssql"]),
+        ),
         param(
             L(5.556).round(2),
             5.56,
@@ -136,11 +141,26 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
         ),
-        param(L(5.556).ln(), math.log(5.556), id='ln'),
-        param(L(5.556).log2(), math.log(5.556, 2), id='log2'),
-        param(L(5.556).log10(), math.log10(5.556), id='log10'),
+        param(
+            L(5.556).ln(),
+            math.log(5.556),
+            id='ln',
+            marks=pytest.mark.notimpl(["mssql"]),
+        ),
+        param(
+            L(5.556).log2(),
+            math.log(5.556, 2),
+            id='log2',
+            marks=pytest.mark.notimpl(["mssql"]),
+        ),
+        param(
+            L(5.556).log10(),
+            math.log10(5.556),
+            id='log10',
+            marks=pytest.mark.notimpl(["mssql"]),
+        ),
         param(
             L(5.556).radians(),
             math.radians(5.556),
@@ -282,17 +302,19 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
             lambda t: np.log(t.double_col + 1),
             id='ln',
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -305,7 +327,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "mssql"]),
         ),
     ],
 )
@@ -325,6 +347,7 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.round(),
             lambda be, t: be.round(t.double_col),
             id='round',
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda be, t: t.double_col.add(0.05).round(3),
@@ -412,6 +435,7 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
+@pytest.mark.notimpl(["mssql"])
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name('tmp')
 
@@ -449,6 +473,7 @@ def test_floating_mod(backend, alltypes, df):
         "pyspark",
         "sqlite",
         "snowflake",
+        "mssql",
     ]
 )
 @pytest.mark.parametrize('denominator', [0, 0.0])
@@ -471,7 +496,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite", "duckdb"])
+@pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
 @pytest.mark.never(
     [
         "clickhouse",
@@ -525,7 +550,9 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "impala", "pandas", "sqlite", "polars", "mssql"]
+)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="backend doesn't implement a [0.0, 1.0) or [0.0, 1.0] RANDOM() function",

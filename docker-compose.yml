@@ -112,9 +112,28 @@ services:
       - 5432:5432
     networks:
       - postgres
+  mssql:
+    environment:
+      MSSQL_SA_PASSWORD: 1bis_Testing!
+      ACCEPT_EULA: "Y"
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
+      timeout: 10s
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - 1433:1433
+    networks:
+      - mssql
+    volumes:
+      - $PWD/ci/ibis-testing-data:/data:ro
 
 networks:
   impala:
   mysql:
+  mssql:
   clickhouse:
   postgres:
