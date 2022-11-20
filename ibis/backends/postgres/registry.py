@@ -298,20 +298,13 @@ def _log(t, op):
 
 def _regex_extract(t, op):
     arg = t.translate(op.arg)
-    pattern = t.translate(op.pattern)
-    return sa.case(
-        [
-            (
-                sa.func.textregexeq(arg, pattern),
-                sa.func.regexp_match(
-                    arg,
-                    pattern,
-                    type_=postgresql.ARRAY(sa.TEXT),
-                )[t.translate(op.index) + 1],
-            )
-        ],
-        else_="",
-    )
+    # wrap in parens to support 0th group being the whole string
+    pattern = "(" + t.translate(op.pattern) + ")"
+    # arrays are 1-based in postgres
+    index = t.translate(op.index) + 1
+    does_match = sa.func.textregexeq(arg, pattern)
+    matches = sa.func.regexp_match(arg, pattern, type_=postgresql.ARRAY(sa.TEXT))
+    return sa.case([(does_match, matches[index])], else_=None)
 
 
 def _cardinality(array):

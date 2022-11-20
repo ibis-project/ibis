@@ -220,14 +220,28 @@ def _string_find(translator, op):
 
 
 def _regex_extract(translator, op):
-    arg_ = translator.translate(op.arg)
-    pattern_ = translator.translate(op.pattern)
-    index = op.index
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    index = "Null" if op.index is None else translator.translate(op.index)
 
-    base = f"extractAll(CAST({arg_} AS String), {pattern_})"
-    if index is not None:
-        return f"{base}[{translator.translate(index)} + 1]"
-    return base
+    # arg can be Nullable, which is not allowed in extractAll, so cast to non
+    # nullable type
+    arg = f"CAST({arg} AS String)"
+
+    # extract all matches in pattern
+    extracted = f"CAST(extractAll({arg}, {pattern}) AS Array(Nullable(String)))"
+
+    # if there's a match
+    #   if the index IS zero or null
+    #     return the full string
+    #   else
+    #     return the Nth match group
+    # else
+    #   return null
+    does_match = f"match({arg}, {pattern})"
+    idx = f"CAST(nullIf({index}, 0) AS Nullable(Int64))"
+    then = f"if({idx} IS NULL, {arg}, {extracted}[{idx}])"
+    return f"if({does_match}, {then}, NULL)"
 
 
 def _parse_url(translator, op):

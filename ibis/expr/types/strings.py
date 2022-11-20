@@ -535,14 +535,19 @@ class StringValue(Value):
         Parameters
         ----------
         pattern
-            Reguar expression string
+            Reguar expression pattern string
         index
-            Zero-based index of match to return
+            The index of the match group to return.
+
+            The behavior of this function follows the behavior of Python's
+            [`re.match`](https://docs.python.org/3/library/re.html#match-objects):
+            when `index` is zero and there's a match, return the entire string,
+            otherwise return the content of the `index`-th match group.
 
         Returns
         -------
         StringValue
-            Extracted match
+            Extracted match or whole string if `index` is zero
         """
         return ops.RegexExtract(self, pattern, index).to_expr()
 
