@@ -367,9 +367,10 @@ def test_regexp(con, expr, expected):
     ('expr', 'expected'),
     [
         param(L('abcd').re_extract('([a-z]+)', 0), 'abcd', id='re_extract_whole'),
-        param(L('abcd').re_extract('(ab)(cd)', 1), 'cd', id='re_extract_first'),
+        param(L('abcd').re_extract('(ab)(cd)', 1), 'ab', id='re_extract_first'),
+        param(L('abcd').re_extract('(ab)(cd)', 2), 'cd', id='re_extract_second'),
         # valid group number but no match => empty string
-        param(L('abcd').re_extract(r'(\d)', 0), '', id='re_extract_no_match'),
+        param(L('abcd').re_extract(r'(\d)', 0), None, id='re_extract_no_match'),
         # match but not a valid group number => NULL
         param(L('abcd').re_extract('abcd', 3), None, id='re_extract_match'),
     ],
