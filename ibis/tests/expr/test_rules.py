@@ -1,5 +1,3 @@
-import enum
-
 import parsy
 import pytest
 from pytest import param
@@ -145,21 +143,6 @@ def test_valid_isin(values, value, expected):
 def test_invalid_isin(values, value, expected):
     with pytest.raises(expected):
         rlz.isin(values, value)
-
-
-class Foo(enum.Enum):
-    a = 1
-    b = 2
-
-
-class Bar:
-    a = 'A'
-    b = 'B'
-
-
-class Baz:
-    def __init__(self, a):
-        self.a = a
 
 
 @pytest.mark.parametrize(
