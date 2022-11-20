@@ -1,0 +1,1 @@
+least(`int_col`, `bigint_col`)

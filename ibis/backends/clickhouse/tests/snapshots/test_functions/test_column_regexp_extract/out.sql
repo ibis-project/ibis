@@ -1,0 +1,1 @@
+extractAll(CAST(`string_col` AS String), '[\d]+')[3 + 1]

@@ -1,0 +1,1 @@
+position(`string_col`, `string_col`) - 1

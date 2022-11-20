@@ -15,48 +15,28 @@ from ibis import literal as L
 pytest.importorskip("clickhouse_driver")
 
 
-@pytest.mark.parametrize(
-    ('to_type', 'expected'),
-    [
-        param('int8', 'CAST(`double_col` AS Nullable(Int8))', id="int8"),
-        param('int16', 'CAST(`double_col` AS Nullable(Int16))', id="int16"),
-        param('float32', 'CAST(`double_col` AS Nullable(Float32))', id="float32"),
-        param('float', '`double_col`', id="float"),
-        # alltypes.double_col is non-nullable
-        param(
-            dt.Float64(nullable=False),
-            'CAST(`double_col` AS Float64)',
-            id="float64",
-        ),
-    ],
-)
-def test_cast_double_col(alltypes, translate, to_type, expected):
+@pytest.mark.parametrize('to_type', ['int8', 'int16', 'float32', 'float', '!float64'])
+def test_cast_double_col(alltypes, translate, to_type, snapshot):
     expr = alltypes.double_col.cast(to_type)
-    assert translate(expr.op()) == expected
+    result = translate(expr.op())
+    snapshot.assert_match(result, "out.sql")
 
 
 @pytest.mark.parametrize(
-    ('to_type', 'expected'),
+    'to_type',
     [
-        ('int8', 'CAST(`string_col` AS Nullable(Int8))'),
-        ('int16', 'CAST(`string_col` AS Nullable(Int16))'),
-        (dt.String(nullable=False), 'CAST(`string_col` AS String)'),
-        ('timestamp', 'CAST(`string_col` AS Nullable(DateTime64(6)))'),
-        ('date', 'CAST(`string_col` AS Nullable(Date))'),
-        (
-            '!map<string, int64>',
-            # map key cannot be nullable
-            'CAST(`string_col` AS Map(String, Nullable(Int64)))',
-        ),
-        (
-            '!struct<a: string, b: int64>',
-            ('CAST(`string_col` AS ' 'Tuple(a Nullable(String), b Nullable(Int64)))'),
-        ),
+        'int8',
+        'int16',
+        '!string',
+        'timestamp',
+        'date',
+        '!map<string, int64>',
+        '!struct<a: string, b: int64>',
     ],
 )
-def test_cast_string_col(alltypes, translate, to_type, expected):
+def test_cast_string_col(alltypes, translate, to_type, snapshot):
     expr = alltypes.string_col.cast(to_type)
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -79,14 +59,14 @@ def test_cast_string_col(alltypes, translate, to_type, expected):
         'month',
     ],
 )
-def test_noop_cast(alltypes, translate, column):
+def test_noop_cast(alltypes, translate, column, snapshot):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    assert translate(result.op()) == f'`{column}`'
+    snapshot.assert_match(translate(result.op()), "out.sql")
 
 
-def test_timestamp_cast(alltypes, translate):
+def test_timestamp_cast(alltypes, translate, snapshot):
     target = dt.Timestamp(nullable=False)
     result1 = alltypes.timestamp_col.cast(target)
     result2 = alltypes.int_col.cast(target)
@@ -94,8 +74,8 @@ def test_timestamp_cast(alltypes, translate):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    assert translate(result1.op()) == 'CAST(`timestamp_col` AS DateTime64(6))'
-    assert translate(result2.op()) == 'CAST(`int_col` AS DateTime64(6))'
+    snapshot.assert_match(translate(result1.op()), "out1.sql")
+    snapshot.assert_match(translate(result2.op()), "out2.sql")
 
 
 def test_timestamp_now(translate):
@@ -103,21 +83,11 @@ def test_timestamp_now(translate):
     assert translate(expr.op()) == 'now()'
 
 
-@pytest.mark.parametrize(
-    ('unit', 'expected'),
-    [
-        ('y', '2009-01-01'),
-        param('m', '2009-05-01', marks=pytest.mark.xfail),
-        ('d', '2009-05-17'),
-        ('w', '2009-05-11'),
-        ('h', '2009-05-17 12:00:00'),
-        ('minute', '2009-05-17 12:34:00'),
-    ],
-)
-def test_timestamp_truncate(con, unit, expected):
+@pytest.mark.parametrize('unit', ['y', 'm', 'd', 'w', 'h', 'minute'])
+def test_timestamp_truncate(con, unit, snapshot):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
-    assert con.execute(expr) == pd.Timestamp(expected)
+    snapshot.assert_match(con.compile(expr), "out.sql")
 
 
 @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
@@ -214,13 +184,13 @@ def test_string_substring(con, op, expected):
     assert con.execute(op(value)) == expected
 
 
-def test_string_column_substring(con, alltypes, translate):
+def test_string_column_substring(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.substr(2)
-    assert translate(expr.op()) == 'substring(`string_col`, 2 + 1)'
+    snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.substr(0, 3)
-    assert translate(expr.op()) == 'substring(`string_col`, 0 + 1, 3)'
+    snapshot.assert_match(translate(expr.op()), "out2.sql")
     assert len(con.execute(expr))
 
 
@@ -273,12 +243,12 @@ def test_find_in_set(con, value, expected):
     assert con.execute(expr) == expected
 
 
-def test_string_column_find_in_set(con, alltypes, translate):
+def test_string_column_find_in_set(con, alltypes, translate, snapshot):
     s = alltypes.string_col
     vals = list('abc')
 
     expr = s.find_in_set(vals)
-    assert translate(expr.op()) == "indexOf(['a','b','c'], `string_col`) - 1"
+    snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -332,52 +302,47 @@ def test_string_find_like(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_string_column_like(con, alltypes, translate):
+def test_string_column_like(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.like('foo%')
-    assert translate(expr.op()) == "`string_col` LIKE 'foo%'"
+    snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.like(['foo%', '%bar'])
-    expected = "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'"
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out2.sql")
     assert len(con.execute(expr))
 
 
-def test_string_column_find(con, alltypes, translate):
+def test_string_column_find(con, alltypes, translate, snapshot):
     s = alltypes.string_col
 
     expr = s.find('a')
-    assert translate(expr.op()) == "position(`string_col`, 'a') - 1"
+    snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
     expr = s.find(s)
-    assert translate(expr.op()) == "position(`string_col`, `string_col`) - 1"
+    snapshot.assert_match(translate(expr.op()), "out2.sql")
     assert len(con.execute(expr))
 
 
 @pytest.mark.parametrize(
-    ('call', 'expected'),
+    'call',
     [
-        (methodcaller('log'), 'log(`double_col`)'),
-        (methodcaller('log2'), 'log2(`double_col`)'),
-        (methodcaller('log10'), 'log10(`double_col`)'),
-        (methodcaller('round'), 'round(`double_col`)'),
-        (methodcaller('round', 0), 'round(`double_col`, 0)'),
-        (methodcaller('round', 2), 'round(`double_col`, 2)'),
-        (methodcaller('exp'), 'exp(`double_col`)'),
-        (methodcaller('abs'), 'abs(`double_col`)'),
-        (methodcaller('ceil'), 'ceil(`double_col`)'),
-        (methodcaller('floor'), 'floor(`double_col`)'),
-        (methodcaller('sqrt'), 'sqrt(`double_col`)'),
-        (
-            methodcaller('sign'),
-            'intDivOrZero(`double_col`, abs(`double_col`))',
-        ),
+        param(methodcaller('log'), id="log"),
+        param(methodcaller('log2'), id="log2"),
+        param(methodcaller('log10'), id="log10"),
+        param(methodcaller('round'), id="round"),
+        param(methodcaller('round', 0), id="round_0"),
+        param(methodcaller('round', 2), id="round_2"),
+        param(methodcaller('exp'), id="exp"),
+        param(methodcaller('abs'), id="abs"),
+        param(methodcaller('ceil'), id="ceil"),
+        param(methodcaller('sqrt'), id="sqrt"),
+        param(methodcaller('sign'), id="sign"),
     ],
 )
-def test_translate_math_functions(con, alltypes, translate, call, expected):
+def test_translate_math_functions(con, alltypes, translate, call, snapshot):
     expr = call(alltypes.double_col)
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -418,24 +383,21 @@ def test_math_functions(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_greatest(con, alltypes, translate):
+def test_greatest_least(con, alltypes, translate, snapshot):
     expr = ibis.greatest(alltypes.int_col, 10)
-
-    assert translate(expr.op()) == "greatest(`int_col`, 10)"
+    snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
     expr = ibis.greatest(alltypes.int_col, alltypes.bigint_col)
-    assert translate(expr.op()) == "greatest(`int_col`, `bigint_col`)"
+    snapshot.assert_match(translate(expr.op()), "out2.sql")
     assert len(con.execute(expr))
 
-
-def test_least(con, alltypes, translate):
     expr = ibis.least(alltypes.int_col, 10)
-    assert translate(expr.op()) == "least(`int_col`, 10)"
+    snapshot.assert_match(translate(expr.op()), "out3.sql")
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, alltypes.bigint_col)
-    assert translate(expr.op()) == "least(`int_col`, `bigint_col`)"
+    snapshot.assert_match(translate(expr.op()), "out4.sql")
     assert len(con.execute(expr))
 
 
@@ -467,19 +429,15 @@ def test_regexp_extract(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_column_regexp_extract(con, alltypes, translate):
-    expected = r"extractAll(CAST(`string_col` AS String), '[\d]+')[3 + 1]"
-
+def test_column_regexp_extract(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.re_extract(r'[\d]+', 3)
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
-def test_column_regexp_replace(con, alltypes, translate):
-    expected = r"replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
-
+def test_column_regexp_replace(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -511,10 +469,10 @@ def test_literal_none_to_nullable_colum(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_timestamp_from_integer(con, alltypes, translate):
+def test_timestamp_from_integer(con, alltypes, translate, snapshot):
     # timestamp_col has datetime type
     expr = alltypes.int_col.to_timestamp()
-    assert translate(expr.op()) == 'toDateTime(`int_col`)'
+    snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -527,26 +485,14 @@ def test_count_distinct_with_filter(alltypes):
 
 
 @pytest.mark.parametrize(
-    ('sep', 'where_case', 'expected'),
+    ('sep', 'where_case'),
     [
-        (
-            ',',
-            None,
-            "CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), ',') END",  # noqa: E501
-        ),
-        (
-            '-',
-            None,
-            "CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), '-') END",  # noqa: E501
-        ),
-        pytest.param(
-            ',',
-            0,
-            "CASE WHEN empty(groupArrayIf(`string_col`, `bool_col` = 0)) THEN NULL ELSE arrayStringConcat(groupArrayIf(`string_col`, `bool_col` = 0), ',') END",  # noqa: E501
-        ),
+        param(',', None, id="comma_none"),
+        param('-', None, id="minus_none"),
+        param(',', 0, id="comma_zero"),
     ],
 )
-def test_group_concat(alltypes, sep, where_case, expected, translate):
+def test_group_concat(alltypes, sep, where_case, translate, snapshot):
     where = None if where_case is None else alltypes.bool_col == where_case
     expr = alltypes.string_col.group_concat(sep, where)
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
