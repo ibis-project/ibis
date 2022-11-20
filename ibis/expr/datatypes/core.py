@@ -753,17 +753,6 @@ class Set(Variadic):
 
 
 @public
-class Enum(DataType):
-    """Enumeration values."""
-
-    rep_type = datatype
-    value_type = datatype
-
-    scalar = ir.EnumScalar
-    column = ir.EnumColumn
-
-
-@public
 class Map(Variadic):
     """Associative array values."""
 
@@ -959,6 +948,8 @@ macaddr = MACADDR()
 inet = INET()
 decimal = Decimal()
 
+Enum = String
+
 public(
     null=null,
     boolean=boolean,
@@ -995,4 +986,5 @@ public(
     macaddr=macaddr,
     inet=inet,
     decimal=decimal,
+    Enum=Enum,
 )
