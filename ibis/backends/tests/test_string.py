@@ -57,7 +57,7 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["datafusion", "pyspark", "snowflake"]),
         ),
         param(
-            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
+            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 1),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract_posix',
             marks=pytest.mark.notimpl(["mysql", "pyspark", "snowflake"]),
@@ -75,7 +75,7 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["impala", "datafusion", "snowflake"]),
         ),
         param(
-            lambda t: t.string_col.re_extract(r'(\d+)', 0),
+            lambda t: t.string_col.re_extract(r'(\d+)', 1),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
             marks=pytest.mark.notimpl(["impala", "mysql", "snowflake"]),
