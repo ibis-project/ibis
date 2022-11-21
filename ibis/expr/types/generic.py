@@ -523,9 +523,6 @@ class Column(Value, JupyterMixin):
         projection = named.to_projection()
         return console.render(projection, options=options)
 
-    def bottomk(self, k: int, by: Value | None = None) -> ir.TopK:
-        raise NotImplementedError("bottomk is not implemented")
-
     def approx_nunique(
         self,
         where: ir.BooleanValue | None = None,
@@ -609,15 +606,39 @@ class Column(Value, JupyterMixin):
         k
             Return this number of rows
         by
-            An expression. Defaults to the count
+            An expression. Defaults to `count`.
 
         Returns
         -------
-        TopK
+        TableExpr
             A top-k expression
         """
-        op = ops.TopK(self, k, by=by if by is not None else self.count())
-        return op.to_expr()
+
+        from ibis.expr.analysis import find_first_base_table
+
+        arg_table = find_first_base_table(self.op()).to_expr()
+
+        if by is None:
+            by = self.count()
+
+        if callable(by):
+            by = by(arg_table)
+            by_table = arg_table
+        elif isinstance(by, Value):
+            by_table = find_first_base_table(by.op()).to_expr()
+        else:
+            raise com.IbisTypeError(f"Invalid `by` argument with type {type(by)}")
+
+        assert by.op().name != self.op().name
+
+        if not arg_table.equals(by_table):
+            raise com.IbisError('Cross-table TopK; must provide a parent joined table')
+
+        return (
+            arg_table.aggregate(by, by=[self])
+            .order_by(ibis.desc(by.get_name()))
+            .limit(k)
+        )
 
     def summary(
         self,

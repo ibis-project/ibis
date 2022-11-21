@@ -711,7 +711,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
     ('result_fn', 'expected_fn'),
     [
         param(
-            lambda t: t[t.string_col.topk(3)],
+            lambda t: t.semi_join(t.string_col.topk(3), "string_col"),
             lambda t: t[
                 t.string_col.isin(
                     t.groupby('string_col')['string_col'].count().head(3).index

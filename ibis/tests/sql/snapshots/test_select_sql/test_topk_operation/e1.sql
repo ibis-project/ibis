@@ -1,4 +1,4 @@
-SELECT t0.*
+SELECT *
 FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
