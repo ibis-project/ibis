@@ -283,10 +283,10 @@ def test_bug_project_multiple_times(customer, nation, region, snapshot):
     step1 = joined[proj1]
 
     topk_by = step1.c_acctbal.cast('double').sum()
-    pred = step1.n_name.topk(10, by=topk_by)
 
     proj_exprs = [step1.c_name, step1.r_name, step1.n_name]
-    step2 = step1[pred]
+    step2 = step1.semi_join(step1.n_name.topk(10, by=topk_by), "n_name")
+
     expr = step2.projection(proj_exprs)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -370,8 +370,9 @@ def test_topk_predicate_pushdown_bug(nation, customer, region, snapshot):
         customer, nation.n_name, region.r_name
     ]
 
-    pred = cplusgeo.n_name.topk(10, by=cplusgeo.c_acctbal.sum())
-    expr = cplusgeo.filter([pred])
+    expr = cplusgeo.semi_join(
+        cplusgeo.n_name.topk(10, by=cplusgeo.c_acctbal.sum()), "n_name"
+    )
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -383,9 +384,12 @@ def test_topk_analysis_bug(snapshot):
     )
 
     dests = ('ORD', 'JFK', 'SFO')
-    delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
     t = airlines[airlines.dest.isin(dests)]
-    expr = t[delay_filter].group_by('origin').size()
+    expr = (
+        t.semi_join(t.dest.topk(10, by=t.arrdelay.mean()), "dest")
+        .group_by('origin')
+        .count()
+    )
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -762,13 +766,11 @@ def test_topk_operation(snapshot):
         'tbl',
     )
 
-    what = table.city.topk(10, by=table.v2.mean())
-    e1 = table[what]
+    e1 = table.semi_join(table.city.topk(10, by=table.v2.mean()), "city")
     snapshot.assert_match(to_sql(e1), "e1.sql")
 
     # Test the default metric (count)
-    what = table.city.topk(10)
-    e2 = table[what]
+    e2 = table.semi_join(table.city.topk(10), "city")
     snapshot.assert_match(to_sql(e2), "e2.sql")
 
 

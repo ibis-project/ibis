@@ -107,7 +107,6 @@ class Table(Expr, JupyterMixin):
         return console.render(table, options=options)
 
     def __getitem__(self, what):
-        from ibis.expr.types.analytic import TopK
         from ibis.expr.types.generic import Column
         from ibis.expr.types.logical import BooleanColumn
 
@@ -131,9 +130,7 @@ class Table(Expr, JupyterMixin):
 
         what = bind_expr(self, what)
 
-        if isinstance(what, TopK):
-            return what._to_semi_join(self)[self]
-        elif isinstance(what, (list, tuple, Table)):
+        if isinstance(what, (list, tuple, Table)):
             # Projection case
             return self.select(what)
         elif isinstance(what, BooleanColumn):
@@ -790,17 +787,12 @@ class Table(Expr, JupyterMixin):
         """
         import ibis.expr.analysis as an
 
-        resolved_predicates, top_ks = _resolve_predicates(self, predicates)
-        table = self
-        for predicate, right in top_ks:
-            table = table.semi_join(right, predicate)[table]
-
-        # FIXME(kszucs): handle operations here only
+        resolved_predicates = _resolve_predicates(self, predicates)
         predicates = [
             an._rewrite_filter(pred.op() if isinstance(pred, Expr) else pred)
             for pred in resolved_predicates
         ]
-        return an.apply_filter(table.op(), predicates).to_expr()
+        return an.apply_filter(self.op(), predicates).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
@@ -1356,16 +1348,13 @@ def _resolve_predicates(
     predicates = an.flatten_predicate(predicates)
 
     resolved_predicates = []
-    top_ks = []
     for pred in predicates:
-        if isinstance(pred, ops.TopK):
-            top_ks.append(pred.to_expr()._semi_join_components())
-        elif isinstance(pred, ops.logical._UnresolvedSubquery):
+        if isinstance(pred, ops.logical._UnresolvedSubquery):
             resolved_predicates.append(pred._resolve(table.op()))
         else:
             resolved_predicates.append(pred)
 
-    return resolved_predicates, top_ks
+    return resolved_predicates
 
 
 def bind_expr(table, expr):

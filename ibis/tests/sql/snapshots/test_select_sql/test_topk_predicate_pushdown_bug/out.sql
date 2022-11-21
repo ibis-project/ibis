@@ -6,7 +6,7 @@ WITH t0 AS (
     INNER JOIN tpch_region t4
       ON t3.`n_regionkey` = t4.`r_regionkey`
 )
-SELECT t0.*
+SELECT *
 FROM t0
   LEFT SEMI JOIN (
     SELECT *

@@ -1,21 +1,19 @@
 SELECT `origin`, count(1) AS `count`
 FROM (
-  SELECT t1.*
-  FROM (
-    SELECT *
-    FROM airlines
-    WHERE `dest` IN ('ORD', 'JFK', 'SFO')
-  ) t1
-    LEFT SEMI JOIN (
-      SELECT *
-      FROM (
-        SELECT `dest`, avg(`arrdelay`) AS `mean`
-        FROM airlines
-        GROUP BY 1
-      ) t3
-      ORDER BY `mean` DESC
-      LIMIT 10
-    ) t2
-      ON `dest` = t2.`dest`
+  SELECT *
+  FROM airlines
+  WHERE `dest` IN ('ORD', 'JFK', 'SFO')
 ) t0
+  LEFT SEMI JOIN (
+    SELECT *
+    FROM (
+      SELECT `dest`, avg(`arrdelay`) AS `mean`
+      FROM airlines
+      WHERE `dest` IN ('ORD', 'JFK', 'SFO')
+      GROUP BY 1
+    ) t2
+    ORDER BY `mean` DESC
+    LIMIT 10
+  ) t1
+    ON t0.`dest` = t1.`dest`
 GROUP BY 1

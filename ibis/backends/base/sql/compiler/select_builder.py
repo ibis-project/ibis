@@ -182,10 +182,6 @@ class SelectBuilder:
                 return table_expr.op(), result_handler
             else:
                 raise com.TranslationError(f"Unexpected shape {node.output_shape}")
-
-        elif isinstance(node, (ops.Analytic, ops.TopK)):
-            return node.to_expr().to_aggregation().op(), toolz.identity
-
         else:
             raise com.TranslationError(f'Do not know how to execute: {type(node)}')
 
