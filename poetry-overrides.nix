@@ -101,7 +101,7 @@ in
         owner = "pola-rs";
         repo = "polars";
         rev = "py-${version}";
-        sha256 = "sha256-fg6rmfu2N6prnWQPRVePs+p9m+/ALAzUVjEvnBo43Og=";
+        sha256 = "sha256-cWhJRRXKbOipXXEpztEOrrJXG5WQcJc7cRjgiIx0XFQ=";
       };
       sourceRoot = "source/py-polars";
       nightlyRustPlatform = pkgs.makeRustPlatform {
@@ -119,7 +119,7 @@ in
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
         inherit src sourceRoot patches;
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-r253JbZpKXKwxpSCPSrKrIWQGdUL4GoO/n3Qo9/rosc=";
+        sha256 = "sha256-fMeeYrSnCudU8PTMmoU2drlWluj+QiIQ+1DmiUb3AOo=";
       };
     });
 
@@ -156,25 +156,18 @@ in
   });
 
   duckdb = super.duckdb.overridePythonAttrs (attrs: {
-    postPatch =
-      let
-        rawLines = [
-          "'multiprocessing.cpu_count()' $NIX_BUILD_CORES"
-        ] ++ lib.optionals (lib.versionAtLeast attrs.version "0.6.0") [
-          "'setuptools_scm<7.0.0' 'setuptools_scm'"
-        ];
-        replacedLines = map (line: "--replace ${line}") rawLines;
-        lines = lib.concatStringsSep " " replacedLines;
-      in
-      ''
-        set -eo pipefail
+    postPatch = ''
+      set -eo pipefail
 
-        # fail if $NIX_BUILD_CORES is undefined
+      # fail if $NIX_BUILD_CORES is undefined
+      set -u
 
-        set -u
-        substituteInPlace setup.py ${lines}
-        set +u
-      '';
+      substituteInPlace setup.py \
+        --replace 'multiprocessing.cpu_count()' $NIX_BUILD_CORES \
+        --replace 'setuptools_scm<7.0.0' 'setuptools_scm'
+
+      set +u
+    '';
   });
 
   pymssql = super.pymssql.overridePythonAttrs (attrs: {
