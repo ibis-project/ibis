@@ -694,7 +694,6 @@ def test_group_concat(
     ],
 )
 @mark.notimpl(["pandas", "dask"])
-@pytest.mark.notyet(["pyspark"])
 def test_topk_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
