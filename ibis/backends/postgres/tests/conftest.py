@@ -21,7 +21,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, init_database
+from ibis.backends.conftest import TEST_TABLES, _random_identifier, init_database
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 PG_USER = os.environ.get(
@@ -101,10 +101,6 @@ class TestConf(BackendTest, RoundHalfToEven):
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
         )
-
-
-def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{ibis.util.guid()}'
 
 
 @pytest.fixture(scope='session')

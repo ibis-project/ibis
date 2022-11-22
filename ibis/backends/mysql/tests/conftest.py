@@ -105,10 +105,6 @@ class TestConf(BackendTest, RoundHalfToEven):
         )
 
 
-def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{ibis.util.guid()}'
-
-
 @pytest.fixture(scope='session')
 def con():
     return ibis.mysql.connect(
