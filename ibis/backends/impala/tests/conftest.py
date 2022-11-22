@@ -16,7 +16,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 from ibis import options
 from ibis.backends.base import BaseBackend
-from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 from ibis.tests.expr.mocks import MockBackend
@@ -349,10 +349,6 @@ def alltypes(con):
 @pytest.fixture(scope="module")
 def alltypes_df(alltypes):
     return alltypes.execute()
-
-
-def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 @pytest.fixture

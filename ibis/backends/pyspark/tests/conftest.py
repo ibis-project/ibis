@@ -9,6 +9,7 @@ import pytest
 
 import ibis
 from ibis import util
+from ibis.backends.conftest import _random_identifier
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 pytest.importorskip("pyspark")
@@ -330,10 +331,6 @@ class IbisWindow:
 @pytest.fixture
 def ibis_windows(request):
     return IbisWindow(request.param).get_windows()
-
-
-def _random_identifier(suffix):
-    return f'__ibis_test_{suffix}_{util.guid()}'
 
 
 @pytest.fixture(scope='session', autouse=True)
