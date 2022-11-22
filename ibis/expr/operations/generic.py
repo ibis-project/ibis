@@ -291,8 +291,8 @@ class HashBytes(Value):
 @public
 class SimpleCase(Value):
     base = rlz.any
-    cases = rlz.nodes_of(rlz.any)
-    results = rlz.nodes_of(rlz.any)
+    cases = rlz.tuple_of(rlz.any)
+    results = rlz.tuple_of(rlz.any)
     default = rlz.any
 
     output_shape = rlz.shape_like("base")
@@ -309,8 +309,8 @@ class SimpleCase(Value):
 
 @public
 class SearchedCase(Value):
-    cases = rlz.nodes_of(rlz.boolean)
-    results = rlz.nodes_of(rlz.any)
+    cases = rlz.tuple_of(rlz.boolean)
+    results = rlz.tuple_of(rlz.any)
     default = rlz.any
 
     def __init__(self, cases, results, default):

@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.expr.rules import Shape
 from ibis.expr.window import window
 
 # ---------------------------------------------------------------------
@@ -736,7 +735,7 @@ def is_reduction(node):
 
 def is_scalar_reduction(node):
     assert isinstance(node, ops.Node), type(node)
-    return node.output_shape is Shape.SCALAR and is_reduction(node)
+    return node.output_shape.is_scalar() and is_reduction(node)
 
 
 _ANY_OP_MAPPING = {
@@ -859,7 +858,7 @@ def _rewrite_filter_value(op, **kwargs):
     return op.__class__(*visited)
 
 
-@_rewrite_filter.register(ops.NodeList)
+@_rewrite_filter.register(tuple)
 def _rewrite_filter_value_list(op, **kwargs):
     visited = [
         _rewrite_filter(arg, **kwargs) if isinstance(arg, ops.Node) else arg

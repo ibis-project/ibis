@@ -92,18 +92,12 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
     edges = set()
 
     for v, us in graph.items():
-        if isinstance(v, ops.NodeList) and not v:
-            continue
-
         vhash = str(hash(v))
         if v not in seen:
             g.node(vhash, label=get_label(v))
             seen.add(v)
 
         for u in us:
-            if isinstance(u, ops.NodeList) and not u:
-                continue
-
             uhash = str(hash(u))
             if u not in seen:
                 g.node(uhash, label=get_label(u))
@@ -112,17 +106,16 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
                 if not label_edges:
                     label = None
                 else:
-                    if isinstance(v, ops.NodeList):
-                        index = v.values.index(u)
-                        arg_name = f"values[{index}]"
-                    elif isinstance(v, ops.Join):
-                        arg_name = ""
-                        if u in v.predicates:
-                            arg_name = "predicates"
+                    for name, arg in zip(v.argnames, v.args):
+                        if isinstance(arg, tuple) and u in arg:
+                            index = arg.index(u)
+                            name = f"{name}[{index}]"
+                            break
+                        elif arg == u:
+                            break
                     else:
-                        index = v.args.index(u)
-                        arg_name = v.argnames[index]
-                    label = f"<.{arg_name}>"
+                        name = None
+                    label = f"<.{name}>"
 
                 g.edge(uhash, vhash, label=label)
                 edges.add(edge)

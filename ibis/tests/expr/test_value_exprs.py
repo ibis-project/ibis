@@ -267,8 +267,8 @@ def test_mixed_arity(table):
     what = ["bar", table.g, "foo"]
     expr = api.sequence(what)
 
-    values = expr.op().values
-    assert isinstance(values[1], ops.TableColumn)
+    assert isinstance(expr, tuple)
+    assert isinstance(expr[1], ops.TableColumn)
 
     # it works!
     repr(expr)

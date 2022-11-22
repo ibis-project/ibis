@@ -1,11 +1,11 @@
 from datetime import date, datetime
-from io import StringIO
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.backends.base.sql.registry import binary_infix, window
+from ibis.backends.base.sql.registry.case import searched_case, simple_case
 from ibis.backends.base.sql.registry.main import varargs
 from ibis.backends.clickhouse.datatypes import serialize
 from ibis.backends.clickhouse.identifiers import quote_identifier
@@ -264,7 +264,7 @@ def _parse_url(translator, op):
 
 def _index_of(translator, op):
     needle_ = translator.translate(op.needle)
-    values_ = ','.join(map(translator.translate, op.values.values))
+    values_ = ','.join(map(translator.translate, op.values))
     return f"indexOf([{values_}], {needle_}) - 1"
 
 
@@ -415,65 +415,6 @@ def _map_literal_values(translator, op):
         yield _literal(translator, value)
 
 
-class _CaseFormatter:
-    def __init__(self, translator, base, cases, results, default):
-        self.translator = translator
-        self.base = base
-        self.cases = cases
-        self.results = results
-        self.default = default
-
-        # HACK
-        self.indent = 2
-        self.multiline = len(cases.values) > 1
-        self.buf = StringIO()
-
-    def _trans(self, expr):
-        return self.translator.translate(expr)
-
-    def get_result(self):
-        self.buf.seek(0)
-
-        self.buf.write('CASE')
-        if self.base is not None:
-            base_str = self._trans(self.base)
-            self.buf.write(f' {base_str}')
-
-        for case, result in zip(self.cases.values, self.results.values):
-            self._next_case()
-            case_str = self._trans(case)
-            result_str = self._trans(result)
-            self.buf.write(f'WHEN {case_str} THEN {result_str}')
-
-        if self.default is not None:
-            self._next_case()
-            default_str = self._trans(self.default)
-            self.buf.write(f'ELSE {default_str}')
-
-        if self.multiline:
-            self.buf.write('\nEND')
-        else:
-            self.buf.write(' END')
-
-        return self.buf.getvalue()
-
-    def _next_case(self):
-        if self.multiline:
-            self.buf.write('\n{}'.format(' ' * self.indent))
-        else:
-            self.buf.write(' ')
-
-
-def _simple_case(translator, op):
-    formatter = _CaseFormatter(translator, op.base, op.cases, op.results, op.default)
-    return formatter.get_result()
-
-
-def _searched_case(translator, op):
-    formatter = _CaseFormatter(translator, None, op.cases, op.results, op.default)
-    return formatter.get_result()
-
-
 def _table_array_view(translator, op):
     ctx = translator.context
     query = ctx.get_compiled_expr(op.table)
@@ -558,12 +499,8 @@ def _string_split(translator, op):
 
 
 def _string_join(translator, op):
-    sep, elements = op.args
-    assert isinstance(
-        elements, ops.NodeList
-    ), f'elements must be a Sequence, got {type(elements)}'
-    sep_ = translator.translate(sep)
-    elements_ = ', '.join(map(translator.translate, elements.values))
+    sep_ = translator.translate(op.sep)
+    elements_ = ', '.join(map(translator.translate, op.arg))
     return f'arrayStringConcat([{elements_}], {sep_})'
 
 
@@ -628,7 +565,7 @@ def _bit_agg(func):
 
 
 def _array_column(translator, op):
-    args = ", ".join(map(translator.translate, op.cols.values))
+    args = ", ".join(map(translator.translate, op.cols))
     return f"[{args}]"
 
 
@@ -799,7 +736,6 @@ operation_registry = {
     # Other operations
     ops.E: lambda *_: 'e()',
     ops.Literal: _literal,
-    ops.NodeList: _value_list,
     ops.Cast: _cast,
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse's greatest and least doesn't support varargs
@@ -807,8 +743,8 @@ operation_registry = {
     ops.Least: varargs('least'),
     ops.Where: _fixed_arity('if', 3),
     ops.Between: _between,
-    ops.SimpleCase: _simple_case,
-    ops.SearchedCase: _searched_case,
+    ops.SimpleCase: simple_case,
+    ops.SearchedCase: searched_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
     ops.DateAdd: binary_infix.binary_infix_op('+'),

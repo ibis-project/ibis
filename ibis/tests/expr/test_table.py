@@ -458,7 +458,7 @@ def test_order_by_asc_deferred_sort_key(table):
 )
 def test_order_by_scalar(table, key, expected):
     result = table.order_by(key)
-    assert result.op().sort_keys == ops.NodeList(ops.SortKey(expected))
+    assert result.op().sort_keys == (ops.SortKey(expected),)
 
 
 def test_slice(table):

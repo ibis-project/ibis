@@ -287,6 +287,7 @@ def param(type: dt.DataType) -> ir.Scalar:
     return ops.ScalarParameter(type).to_expr()
 
 
+# TODO(kszucs): should be deprecated
 def sequence(values: Sequence[T | None]) -> ir.List:
     """Wrap a list of Python values as an Ibis sequence type.
 
@@ -300,7 +301,7 @@ def sequence(values: Sequence[T | None]) -> ir.List:
     List
         A list expression
     """
-    return rlz.nodes_of(rlz.any, values).to_expr()
+    return rlz.tuple_of(rlz.any, values)
 
 
 def schema(
@@ -847,7 +848,7 @@ def case() -> bl.SearchedCaseBuilder:
     >>> (ibis.case()
     ...  .when(cond1, 3)
     ...  .when(cond2, 4).end())
-    >>> SearchedCase(cases=[ValueList(values=[1 == 1, 2 == 1])], results=[ValueList(values=[3, 4])], default=Cast(None, to=int8))
+    >>> SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
 
     Returns
     -------

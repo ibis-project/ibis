@@ -171,7 +171,7 @@ def _find_in_set(t, op):
     return (
         sa.func.find_in_set(
             t.translate(op.needle),
-            sa.func.concat_ws(",", *map(t.translate, op.values.values)),
+            sa.func.concat_ws(",", *map(t.translate, op.values)),
         )
         - 1
     )

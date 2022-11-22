@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import collections
 import datetime
 import decimal
 import numbers
@@ -51,11 +50,13 @@ from ibis.backends.pandas.execution.generic import (
     execute_intersection_dataframe_dataframe,
     execute_isinf,
     execute_isnan,
+    execute_node_contains_series_nodes,
     execute_node_contains_series_sequence,
     execute_node_dropna_dataframe,
     execute_node_fillna_dataframe_dict,
     execute_node_fillna_dataframe_scalar,
     execute_node_ifnull_series,
+    execute_node_not_contains_series_nodes,
     execute_node_not_contains_series_sequence,
     execute_node_nullif_series,
     execute_node_nullif_series_scalar,
@@ -136,22 +137,12 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.IsInf: [((dd.Series,), execute_isinf)],
     ops.SelfReference: [((dd.DataFrame,), execute_node_self_reference_dataframe)],
     ops.Contains: [
-        (
-            (
-                dd.Series,
-                (collections.abc.Sequence, collections.abc.Set, dd.Series),
-            ),
-            execute_node_contains_series_sequence,
-        )
+        ((dd.Series, tuple), execute_node_contains_series_nodes),
+        ((dd.Series, dd.Series), execute_node_contains_series_sequence),
     ],
     ops.NotContains: [
-        (
-            (
-                dd.Series,
-                (collections.abc.Sequence, collections.abc.Set, dd.Series),
-            ),
-            execute_node_not_contains_series_sequence,
-        )
+        ((dd.Series, tuple), execute_node_not_contains_series_nodes),
+        ((dd.Series, dd.Series), execute_node_not_contains_series_sequence),
     ],
     ops.IfNull: [
         ((dd.Series, simple_types), execute_node_ifnull_series),
@@ -174,11 +165,6 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
 execute_node.register(DaskTable, DaskBackend)(execute_database_table_client)
-
-
-@execute_node.register(ops.NodeList, collections.abc.Sequence)
-def execute_node_value_list(op, _, **kwargs):
-    return [execute(arg, **kwargs) for arg in op.values]
 
 
 @execute_node.register(ops.Alias, object)
@@ -470,14 +456,17 @@ def wrap_case_result(raw: np.ndarray, expr: ir.Value):
     return result
 
 
-@execute_node.register(ops.SearchedCase, list, list, object)
-def execute_searched_case_dask(op, whens, thens, otherwise, **kwargs):
+@execute_node.register(ops.SearchedCase, tuple, tuple, object)
+def execute_searched_case_dask(op, when_nodes, then_nodes, otherwise, **kwargs):
+    whens = [execute(arg, **kwargs) for arg in when_nodes]
+    thens = [execute(arg, **kwargs) for arg in then_nodes]
     if not isinstance(whens[0], dd.Series):
         # if we are not dealing with dask specific objects, fallback to the
         # pandas logic. For example, in the case of ibis literals.
         # See `test_functions/test_ifelse_returning_bool` or
         # `test_operations/test_searched_case_scalar` for code that hits this.
-        return execute_searched_case(op, whens, thens, otherwise, **kwargs)
+        return execute_searched_case(op, when_nodes, then_nodes, otherwise, **kwargs)
+
     if otherwise is None:
         otherwise = np.nan
     idx = whens[0].index
@@ -496,8 +485,10 @@ def execute_searched_case_dask(op, whens, thens, otherwise, **kwargs):
     return out
 
 
-@execute_node.register(ops.SimpleCase, dd.Series, list, list, object)
+@execute_node.register(ops.SimpleCase, dd.Series, tuple, tuple, object)
 def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
+    whens = [execute(arg, **kwargs) for arg in whens]
+    thens = [execute(arg, **kwargs) for arg in thens]
     if otherwise is None:
         otherwise = np.nan
     raw = np.select([value == when for when in whens], thens, otherwise)

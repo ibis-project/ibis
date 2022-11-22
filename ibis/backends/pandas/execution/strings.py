@@ -11,7 +11,7 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
 import ibis.util
-from ibis.backends.pandas.core import integer_types, scalar_types
+from ibis.backends.pandas.core import execute, integer_types, scalar_types
 from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution.util import get_grouping
 
@@ -343,8 +343,9 @@ def execute_series_string_replace(_, data, needle, replacement, **kwargs):
     return data.str.replace(needle, replacement)
 
 
-@execute_node.register(ops.StringJoin, (pd.Series, str), list)
-def execute_series_join_scalar_sep(op, sep, data, **kwargs):
+@execute_node.register(ops.StringJoin, (pd.Series, str), tuple)
+def execute_series_join_scalar_sep(op, sep, args, **kwargs):
+    data = [execute(arg, **kwargs) for arg in args]
     return reduce(lambda x, y: x + sep + y, data)
 
 
@@ -365,8 +366,9 @@ def haystack_to_series_of_lists(haystack, index=None):
     return pieces
 
 
-@execute_node.register(ops.FindInSet, pd.Series, list)
+@execute_node.register(ops.FindInSet, pd.Series, tuple)
 def execute_series_find_in_set(op, needle, haystack, **kwargs):
+    haystack = [execute(arg, **kwargs) for arg in haystack]
     pieces = haystack_to_series_of_lists(haystack, index=needle.index)
     return pieces.map(
         lambda elements, needle=needle, index=itertools.count(): (

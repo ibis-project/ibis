@@ -268,7 +268,7 @@ def _find_in_set(t, op):
     return (
         sa.func.coalesce(
             sa.func.array_position(
-                postgresql.array(list(map(t.translate, op.values.values))),
+                postgresql.array(list(map(t.translate, op.values))),
                 t.translate(op.needle),
             ),
             0,
@@ -453,7 +453,7 @@ def _day_of_week_name(t, op):
 
 
 def _array_column(t, op):
-    return postgresql.array(list(map(t.translate, op.cols.values)))
+    return postgresql.array(list(map(t.translate, op.cols)))
 
 
 def _string_agg(t, op):

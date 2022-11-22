@@ -109,11 +109,6 @@ def log(translator, op):
     return f'log({base_formatted}, {arg_formatted})'
 
 
-def value_list(translator, op):
-    formatted = [translator.translate(x) for x in op.values]
-    return helpers.parenthesize(', '.join(formatted))
-
-
 def cast(translator, op):
     arg_formatted = translator.translate(op.arg)
 
@@ -365,7 +360,6 @@ operation_registry = {
     ops.E: lambda *args: 'e()',
     ops.Literal: literal,
     ops.NullLiteral: null_literal,
-    ops.NodeList: value_list,
     ops.Cast: cast,
     ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),

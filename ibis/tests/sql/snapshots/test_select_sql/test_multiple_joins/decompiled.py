@@ -1,13 +1,13 @@
 import ibis
 
 
-star3 = ibis.table(name="star3", schema={"bar_id": "string", "value2": "float64"})
-star2 = ibis.table(
-    name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
-)
 star1 = ibis.table(
     name="star1",
     schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+)
+star3 = ibis.table(name="star3", schema={"bar_id": "string", "value2": "float64"})
+star2 = ibis.table(
+    name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
 )
 
 result = (

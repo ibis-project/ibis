@@ -149,25 +149,25 @@ def test_invalid_isin(values, value, expected):
     ('validator', 'values', 'expected'),
     [
         param(
-            rlz.nodes_of(rlz.integer),
+            rlz.tuple_of(rlz.integer),
             (3, 2),
             ibis.sequence([3, 2]),
             id="list_int",
         ),
         param(
-            rlz.nodes_of(rlz.integer),
+            rlz.tuple_of(rlz.integer),
             (3, None),
             ibis.sequence([3, ibis.NA]),
             id="list_int_null",
         ),
         param(
-            rlz.nodes_of(rlz.string),
+            rlz.tuple_of(rlz.string),
             ('a',),
             ibis.sequence(['a']),
             id="list_string_one",
         ),
         param(
-            rlz.nodes_of(rlz.string),
+            rlz.tuple_of(rlz.string),
             ['a', 'b'],
             ibis.sequence(['a', 'b']),
             id="list_string_two",
@@ -181,25 +181,23 @@ def test_invalid_isin(values, value, expected):
         #     id="list_list_string",
         # ),
         param(
-            rlz.nodes_of(rlz.boolean, min_length=2),
+            rlz.tuple_of(rlz.boolean, min_length=2),
             [True, False],
             ibis.sequence([True, False]),
             id="boolean",
         ),
     ],
 )
-def test_valid_list_of(validator, values, expected):
+def test_valid_tuple_of(validator, values, expected):
     result = validator(values)
-    assert isinstance(result, ops.NodeList)
-    assert len(result.values) == len(values)
-    assert result == expected.op()
+    assert isinstance(result, tuple)
 
 
 def test_valid_list_of_extra():
     validator = rlz.tuple_of(identity)
     assert validator((3, 2)) == tuple([3, 2])
 
-    validator = rlz.nodes_of(rlz.nodes_of(rlz.string))
+    validator = rlz.tuple_of(rlz.tuple_of(rlz.string))
     result = validator([[], ['a']])
     assert result[1][0].equals(ibis.literal('a').op())
 
@@ -207,10 +205,10 @@ def test_valid_list_of_extra():
 @pytest.mark.parametrize(
     ('validator', 'values'),
     [
-        (rlz.nodes_of(rlz.double, min_length=2), [1]),
-        (rlz.nodes_of(rlz.integer), 1.1),
-        (rlz.nodes_of(rlz.string), 'asd'),
-        (rlz.nodes_of(identity), 3),
+        (rlz.tuple_of(rlz.double, min_length=2), [1]),
+        (rlz.tuple_of(rlz.integer), 1.1),
+        (rlz.tuple_of(rlz.string), 'asd'),
+        (rlz.tuple_of(identity), 3),
     ],
 )
 def test_invalid_list_of(validator, values):
@@ -326,7 +324,7 @@ def test_table_with_schema_invalid(table):
 @pytest.mark.parametrize(
     ('validator', 'input'),
     [
-        (rlz.nodes_of(rlz.integer), (3, 2)),
+        (rlz.tuple_of(rlz.integer), (3, 2)),
         (rlz.instance_of(int), 32),
     ],
 )

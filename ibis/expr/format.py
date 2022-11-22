@@ -450,7 +450,7 @@ def type_info(datatype: dt.DataType) -> str:
 
 
 @fmt_selection_column.register
-def _fmt_selection_column_sequence(node: ops.NodeList, **kwargs):
+def _fmt_selection_column_sequence(node: tuple, **kwargs):
     return "\n".join(fmt_selection_column(value, **kwargs) for value in node.values)
 
 
@@ -532,7 +532,7 @@ def _fmt_value_node(op: ops.Node, **_: Any) -> str:
 
 
 @fmt_value.register
-def _fmt_value_sequence(op: ops.NodeList, **kwargs: Any) -> str:
+def _fmt_value_sequence(op: tuple, **kwargs: Any) -> str:
     return ", ".join([fmt_value(value, **kwargs) for value in op])
 
 

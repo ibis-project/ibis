@@ -397,13 +397,21 @@ def compile_difference(t, op, **kwargs):
 @compiles(ops.Contains)
 def compile_contains(t, op, **kwargs):
     col = t.translate(op.value, **kwargs)
-    return col.isin(t.translate(op.options, **kwargs))
+    if isinstance(op.options, tuple):
+        options = [t.translate(option, **kwargs) for option in op.options]
+    else:
+        options = t.translate(op.options, **kwargs)
+    return col.isin(options)
 
 
 @compiles(ops.NotContains)
 def compile_not_contains(t, op, **kwargs):
     col = t.translate(op.value, **kwargs)
-    return ~(col.isin(t.translate(op.options, **kwargs)))
+    if isinstance(op.options, tuple):
+        options = [t.translate(option, **kwargs) for option in op.options]
+    else:
+        options = t.translate(op.options, **kwargs)
+    return ~(col.isin(options))
 
 
 @compiles(ops.StartsWith)
@@ -650,7 +658,8 @@ def compile_arbitrary(t, op, **kwargs):
 
 @compiles(ops.Coalesce)
 def compile_coalesce(t, op, **kwargs):
-    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
+    kwargs["raw"] = False  # override to force column literals
+    src_columns = [t.translate(col, **kwargs) for col in op.args]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -659,7 +668,8 @@ def compile_coalesce(t, op, **kwargs):
 
 @compiles(ops.Greatest)
 def compile_greatest(t, op, **kwargs):
-    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
+    kwargs["raw"] = False  # override to force column literals
+    src_columns = [t.translate(col, **kwargs) for col in op.args]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -668,7 +678,8 @@ def compile_greatest(t, op, **kwargs):
 
 @compiles(ops.Least)
 def compile_least(t, op, **kwargs):
-    src_columns = t.translate(ops.NodeList(*op.args), **kwargs)
+    kwargs["raw"] = False  # override to force column literals
+    src_columns = [t.translate(col, **kwargs) for col in op.args]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -960,7 +971,7 @@ def compile_string_join(t, op, **kwargs):
         return sep.join(arr)
 
     sep_column = t.translate(op.sep, **kwargs)
-    arg = t.translate(op.arg, **kwargs)
+    arg = [t.translate(arg, **kwargs) for arg in op.arg]
     return join(sep_column, F.array(arg))
 
 
@@ -1007,6 +1018,7 @@ def compile_string_split(t, op, **kwargs):
 
 @compiles(ops.StringConcat)
 def compile_string_concat(t, op, **kwargs):
+    kwargs["raw"] = False  # override to force column literals
     src_columns = [t.translate(arg, **kwargs) for arg in op.args]
     return F.concat(*src_columns)
 
@@ -1022,12 +1034,6 @@ def compile_string_like(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
     pattern = op.pattern.value
     return src_column.like(pattern)
-
-
-@compiles(ops.ValueList)
-def compile_value_list(t, op, **kwargs):
-    kwargs["raw"] = False  # override to force column literals
-    return [t.translate(col, **kwargs) for col in op.values]
 
 
 @compiles(ops.InnerJoin)
@@ -1540,7 +1546,7 @@ def compile_interval_from_integer(t, op, **kwargs):
 
 @compiles(ops.ArrayColumn)
 def compile_array_column(t, op, **kwargs):
-    cols = t.translate(op.cols, **kwargs)
+    cols = [t.translate(col, **kwargs) for col in op.cols]
     return F.array(cols)
 
 
@@ -1681,7 +1687,7 @@ def compile_reduction_udf(t, op, *, aggcontext=None, **kwargs):
 def compile_searched_case(t, op, **kwargs):
     existing_when = None
 
-    for case, result in zip(op.cases.values, op.results.values):
+    for case, result in zip(op.cases, op.results):
         if existing_when is not None:
             # Spark allowed chained when statement
             when = existing_when.when

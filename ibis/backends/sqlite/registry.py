@@ -229,11 +229,9 @@ def _extract_week_of_year(t, op):
 
 
 def _string_join(t, op):
-    # TODO(kszucs): use explicit argument names instead
-    sep, elements = op.args
     return functools.reduce(
         operator.add,
-        toolz.interpose(t.translate(sep), map(t.translate, elements.values)),
+        toolz.interpose(t.translate(op.sep), map(t.translate, op.arg)),
     )
 
 

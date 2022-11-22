@@ -17,7 +17,6 @@ from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import constants, util
 from ibis.backends.pandas.execution.util import coerce_to_output
-from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
 
 if TYPE_CHECKING:
@@ -68,7 +67,7 @@ def compute_projection(
         name = node.name
         assert name is not None, 'Value selection name is None'
 
-        if node.output_shape is Shape.SCALAR:
+        if node.output_shape.is_scalar():
             data_columns = frozenset(data.columns)
 
             if scope is None:

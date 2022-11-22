@@ -12,7 +12,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.util as util
 from ibis.backends.base.sql.compiler.base import _extract_common_table_expressions
-from ibis.expr.rules import Shape
 
 
 class _LimitSpec(NamedTuple):
@@ -42,13 +41,15 @@ class _CorrelatedRefCheck:
 
         in_subquery |= self.is_subquery(node)
 
-        args = node if isinstance(node, ops.NodeList) else node.args
-
-        for arg in args:
+        for arg in node.args:
             if isinstance(arg, ops.TableNode):
                 self.visit_table(arg, in_subquery=in_subquery)
             elif isinstance(arg, ops.Node):
                 self.visit(arg, in_subquery=in_subquery)
+            elif isinstance(arg, tuple):
+                for item in arg:
+                    self.visit(item, in_subquery=in_subquery)
+
         self.seen.add(node)
 
     def is_subquery(self, node):
@@ -66,11 +67,7 @@ class _CorrelatedRefCheck:
             self.ref_check(node, in_subquery=in_subquery)
 
         for arg in node.args:
-            # TODO(kszucs): shouldn't be required since ops.NodeList is
-            # properly traversable, but otherwise there will be more table
-            # references than expected (probably has something to do with the
-            # traversal order)
-            if isinstance(arg, ops.NodeList):
+            if isinstance(arg, tuple):
                 for item in arg:
                     self.visit(item, in_subquery=in_subquery)
             elif isinstance(arg, ops.Node):
@@ -170,13 +167,13 @@ class SelectBuilder:
             return node, toolz.identity
 
         elif isinstance(node, ops.Value):
-            if node.output_shape is Shape.SCALAR:
+            if node.output_shape.is_scalar():
                 if L.is_scalar_reduction(node):
                     table_expr = L.reduction_to_aggregation(node)
                     return table_expr.op(), _get_scalar(node.name)
                 else:
                     return node, _get_scalar(node.name)
-            elif node.output_shape is Shape.COLUMNAR:
+            elif node.output_shape.is_columnar():
                 if isinstance(node, ops.TableColumn):
                     table_expr = node.table.to_expr()[[node.name]]
                     result_handler = _get_column(node.name)

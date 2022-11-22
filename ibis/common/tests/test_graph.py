@@ -1,6 +1,6 @@
 import pytest
 
-from ibis.common.graph import Graph, Traversable, bfs, dfs, toposort
+from ibis.common.graph import Graph, Traversable, bfs, children, dfs, toposort
 
 
 class Node(Traversable):
@@ -59,10 +59,10 @@ def test_dfs():
 
 def test_invert():
     g = dfs(A)
-    assert g == {D: [], E: [], B: [D, E], C: [], A: [B, C]}
+    assert g == {D: (), E: (), B: (D, E), C: (), A: (B, C)}
 
     i = g.invert()
-    assert i == {D: [B], E: [B], B: [A], C: [A], A: []}
+    assert i == {D: (B,), E: (B,), B: (A,), C: (A,), A: ()}
 
     j = i.invert()
     assert j == g
@@ -81,3 +81,13 @@ def test_toposort_cycle_detection():
     # A depends on B which depends on A
     with pytest.raises(ValueError, match="cycle detected in the graph"):
         toposort(A)
+
+
+def test_nested_children():
+    a = Node(name="a", children=[])
+    b = Node(name="b", children=[a])
+    c = Node(name="c", children=[])
+    d = Node(name="d", children=[])
+    e = Node(name="e", children=[[b, c], d])
+
+    assert children(e) == (b, c, d)

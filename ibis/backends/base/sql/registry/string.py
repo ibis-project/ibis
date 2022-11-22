@@ -41,15 +41,14 @@ def string_find(translator, op):
 
 
 def find_in_set(translator, op):
-    arg, str_list = op.args
-    arg_formatted = translator.translate(arg)
-    str_formatted = ','.join([x.value for x in str_list.values])
+    arg_formatted = translator.translate(op.needle)
+    str_formatted = ','.join([x.value for x in op.values])
     return f"find_in_set({arg_formatted}, '{str_formatted}') - 1"
 
 
 def string_join(translator, op):
     arg, strings = op.args
-    return helpers.format_call(translator, 'concat_ws', arg, *strings.values)
+    return helpers.format_call(translator, 'concat_ws', arg, *strings)
 
 
 def string_like(translator, op):

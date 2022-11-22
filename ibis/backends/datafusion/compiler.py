@@ -378,22 +378,17 @@ def mean(op):
     return df.functions.avg(arg)
 
 
-@translate.register(ops.NodeList)
-def value_list(op):
-    return list(map(translate, op.values))
-
-
 @translate.register(ops.Contains)
 def contains(op):
     value = translate(op.value)
-    options = translate(op.options)
+    options = list(map(translate, op.options))
     return df.functions.in_list(value, options, negated=False)
 
 
 @translate.register(ops.NotContains)
 def not_contains(op):
     value = translate(op.value)
-    options = translate(op.options)
+    options = list(map(translate, op.options))
     return df.functions.in_list(value, options, negated=True)
 
 

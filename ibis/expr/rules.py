@@ -30,14 +30,14 @@ class Shape(enum.IntEnum):
     # TABULAR = 2
 
     def is_scalar(self):
-        return self == Shape.SCALAR
+        return self is Shape.SCALAR
 
     def is_columnar(self):
-        return self == Shape.COLUMNAR
+        return self is Shape.COLUMNAR
 
 
 def highest_precedence_shape(nodes):
-    if builtins.any(node.output_shape is Shape.COLUMNAR for node in nodes):
+    if builtins.any(node.output_shape.is_columnar() for node in nodes):
         return Shape.COLUMNAR
     else:
         return Shape.SCALAR
@@ -97,14 +97,6 @@ class rule(validator):
 @rule
 def just(arg):
     return lambda **_: arg
-
-
-@rule
-def nodes_of(inner, arg, **kwargs):
-    import ibis.expr.operations as ops
-
-    values = tuple_of(inner, arg, **kwargs)
-    return ops.NodeList(*values)
 
 
 @rule
@@ -257,7 +249,7 @@ def value(dtype, arg, **kwargs):
 @rule
 def scalar(inner, arg, **kwargs):
     arg = inner(arg, **kwargs)
-    if arg.output_shape is Shape.SCALAR:
+    if arg.output_shape.is_scalar():
         return arg
     else:
         raise com.IbisTypeError(f"{arg} it not a scalar")
@@ -266,7 +258,7 @@ def scalar(inner, arg, **kwargs):
 @rule
 def column(inner, arg, **kwargs):
     arg = inner(arg, **kwargs)
-    if arg.output_shape is Shape.COLUMNAR:
+    if arg.output_shape.is_columnar():
         return arg
     else:
         raise com.IbisTypeError(f"{arg} it not a column")

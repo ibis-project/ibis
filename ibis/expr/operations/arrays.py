@@ -9,12 +9,12 @@ from ibis.expr.operations.core import Unary, Value
 
 @public
 class ArrayColumn(Value):
-    cols = rlz.nodes_of(rlz.column(rlz.any), min_length=1)
+    cols = rlz.tuple_of(rlz.column(rlz.any), min_length=1)
 
     output_shape = rlz.Shape.COLUMNAR
 
     def __init__(self, cols):
-        unique_dtypes = {col.output_dtype for col in cols.values}
+        unique_dtypes = {col.output_dtype for col in cols}
         if len(unique_dtypes) > 1:
             raise com.IbisTypeError(
                 f'The types of all input columns must match exactly in a '
@@ -24,7 +24,7 @@ class ArrayColumn(Value):
 
     @attribute.default
     def output_dtype(self):
-        first_dtype = self.cols.values[0].output_dtype
+        first_dtype = self.cols[0].output_dtype
         return dt.Array(first_dtype)
 
 

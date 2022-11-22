@@ -979,11 +979,6 @@ def execute_alias(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ops.NodeList, collections.abc.Sequence)
-def execute_node_value_list(op, _, **kwargs):
-    return [execute(arg, **kwargs) for arg in op.values]
-
-
 @execute_node.register(ops.StringConcat, [object])
 def execute_node_string_concat(op, *args, **kwargs):
     return functools.reduce(operator.add, args)
@@ -994,49 +989,63 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-@execute_node.register(
-    ops.Contains,
-    object,
-    (collections.abc.Sequence, collections.abc.Set, np.ndarray),
-)
-def execute_node_contains_value_sequence(op, data, elements, **kwargs):
+@execute_node.register(ops.Contains, object, tuple)
+def execute_node_contains_value_nodes(op, data, elements, **kwargs):
+    elements = [execute(arg, **kwargs) for arg in elements]
     return data in elements
 
 
-@execute_node.register(
-    ops.Contains,
-    pd.Series,
-    (collections.abc.Sequence, collections.abc.Set, pd.Series),
-)
+@execute_node.register(ops.Contains, object, np.ndarray)
+def execute_node_contains_value_array(op, data, elements, **kwargs):
+    return data in elements
+
+
+@execute_node.register(ops.Contains, pd.Series, tuple)
+def execute_node_contains_series_nodes(op, data, elements, **kwargs):
+    elements = [execute(arg, **kwargs) for arg in elements]
+    return data.isin(elements)
+
+
+@execute_node.register(ops.Contains, pd.Series, pd.Series)
 def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
-@execute_node.register(
-    ops.Contains,
-    SeriesGroupBy,
-    (collections.abc.Sequence, collections.abc.Set, pd.Series),
-)
+@execute_node.register(ops.Contains, SeriesGroupBy, tuple)
+def execute_node_contains_series_group_by_nodes(op, data, elements, **kwargs):
+    elements = [execute(arg, **kwargs) for arg in elements]
+    return data.obj.isin(elements).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
+
+
+@execute_node.register(ops.Contains, SeriesGroupBy, pd.Series)
 def execute_node_contains_series_group_by_sequence(op, data, elements, **kwargs):
     return data.obj.isin(elements).groupby(
         get_grouping(data.grouper.groupings), group_keys=False
     )
 
 
-@execute_node.register(
-    ops.NotContains,
-    pd.Series,
-    (collections.abc.Sequence, collections.abc.Set, pd.Series),
-)
+@execute_node.register(ops.NotContains, pd.Series, tuple)
+def execute_node_not_contains_series_nodes(op, data, elements, **kwargs):
+    elements = [execute(arg, **kwargs) for arg in elements]
+    return ~(data.isin(elements))
+
+
+@execute_node.register(ops.NotContains, pd.Series, pd.Series)
 def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     return ~(data.isin(elements))
 
 
-@execute_node.register(
-    ops.NotContains,
-    SeriesGroupBy,
-    (collections.abc.Sequence, collections.abc.Set, pd.Series),
-)
+@execute_node.register(ops.NotContains, SeriesGroupBy, tuple)
+def execute_node_not_contains_series_group_by_nodes(op, data, elements, **kwargs):
+    elements = [execute(arg, **kwargs) for arg in elements]
+    return (~data.obj.isin(elements)).groupby(
+        get_grouping(data.grouper.groupings), group_keys=False
+    )
+
+
+@execute_node.register(ops.NotContains, SeriesGroupBy, pd.Series)
 def execute_node_not_contains_series_group_by_sequence(op, data, elements, **kwargs):
     return (~data.obj.isin(elements)).groupby(
         get_grouping(data.grouper.groupings), group_keys=False
@@ -1248,24 +1257,30 @@ def wrap_case_result(raw, expr):
     return result
 
 
-@execute_node.register(ops.SearchedCase, list, list, object)
+@execute_node.register(ops.SearchedCase, tuple, tuple, object)
 def execute_searched_case(op, whens, thens, otherwise, **kwargs):
+    whens = [execute(arg, **kwargs) for arg in whens]
+    thens = [execute(arg, **kwargs) for arg in thens]
     if otherwise is None:
         otherwise = np.nan
     raw = np.select(whens, thens, otherwise)
     return wrap_case_result(raw, op.to_expr())
 
 
-@execute_node.register(ops.SimpleCase, object, list, list, object)
+@execute_node.register(ops.SimpleCase, object, tuple, tuple, object)
 def execute_simple_case_scalar(op, value, whens, thens, otherwise, **kwargs):
+    whens = [execute(arg, **kwargs) for arg in whens]
+    thens = [execute(arg, **kwargs) for arg in thens]
     if otherwise is None:
         otherwise = np.nan
     raw = np.select(np.asarray(whens) == value, thens, otherwise)
     return wrap_case_result(raw, op.to_expr())
 
 
-@execute_node.register(ops.SimpleCase, pd.Series, list, list, object)
+@execute_node.register(ops.SimpleCase, pd.Series, tuple, tuple, object)
 def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
+    whens = [execute(arg, **kwargs) for arg in whens]
+    thens = [execute(arg, **kwargs) for arg in thens]
     if otherwise is None:
         otherwise = np.nan
     raw = np.select([value == when for when in whens], thens, otherwise)

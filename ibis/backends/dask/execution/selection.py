@@ -26,7 +26,6 @@ from ibis.backends.pandas.execution.selection import (
     remap_overlapping_column_names,
 )
 from ibis.backends.pandas.execution.util import get_join_suffix_for_op
-from ibis.expr.rules import Shape
 from ibis.expr.scope import Scope
 
 if TYPE_CHECKING:
@@ -79,7 +78,7 @@ def compute_projection(
         name = node.name
         assert name is not None, 'Value selection name is None'
 
-        if node.output_shape is Shape.SCALAR:
+        if node.output_shape.is_scalar():
             data_columns = frozenset(data.columns)
 
             if scope is None:

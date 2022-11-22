@@ -13,7 +13,6 @@ import ibis.expr.types as ir
 import ibis.expr.window as W
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
-from ibis.expr.rules import Shape
 
 
 def variance_reduction(func_name):
@@ -183,17 +182,13 @@ def _cast(t, op):
 def _contains(func):
     def translate(t, op):
         left = t.translate(op.value)
-        right = t.translate(op.options)
 
-        if (
-            # not a list expr
-            not isinstance(op.options, ops.NodeList)
-            # but still a column expr
-            and op.options.output_shape is Shape.COLUMNAR
-            # wasn't already compiled into a select statement
-            and not isinstance(right, sa.sql.Selectable)
-        ):
-            right = sa.select(right)
+        if isinstance(op.options, tuple):
+            right = [t.translate(x) for x in op.options]
+        elif op.options.output_shape.is_columnar():
+            right = t.translate(op.options)
+            if not isinstance(right, sa.sql.Selectable):
+                right = sa.select(right)
         else:
             right = t.translate(op.options)
 
@@ -228,10 +223,6 @@ def _literal(_, op):
     return sa.literal(value)
 
 
-def _value_list(t, op):
-    return [t.translate(x) for x in op.values]
-
-
 def _is_null(t, op):
     arg = t.translate(op.arg)
     return arg.is_(sa.null())
@@ -261,12 +252,12 @@ def _floor_divide(t, op):
 
 
 def _simple_case(t, op):
-    cases = [ops.Equals(op.base, case) for case in op.cases.values]
-    return _translate_case(t, cases, op.results.values, op.default)
+    cases = [ops.Equals(op.base, case) for case in op.cases]
+    return _translate_case(t, cases, op.results, op.default)
 
 
 def _searched_case(t, op):
-    return _translate_case(t, op.cases.values, op.results.values, op.default)
+    return _translate_case(t, op.cases, op.results, op.default)
 
 
 def _translate_case(t, cases, results, default):
@@ -400,7 +391,7 @@ def _sort_key(t, op):
 
 
 def _string_join(t, op):
-    return sa.func.concat_ws(t.translate(op.sep), *map(t.translate, op.arg.values))
+    return sa.func.concat_ws(t.translate(op.sep), *map(t.translate, op.arg))
 
 
 def reduction(sa_func):
@@ -520,7 +511,6 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Round: _round,
     ops.TypeOf: unary(sa.func.typeof),
     ops.Literal: _literal,
-    ops.NodeList: _value_list,
     ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
