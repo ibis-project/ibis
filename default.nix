@@ -5,6 +5,7 @@
     "datafusion"
     "duckdb"
     "pandas"
+    "polars"
     "sqlite"
   ]
 }:

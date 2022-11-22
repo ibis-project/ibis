@@ -74,7 +74,7 @@ docformatter = ">=1.5.0,<2"
 flake8 = ">=4.0.0,<7"
 ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
-mypy = ">=0.942,<1"
+mypy = "0.982"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 pyupgrade = ">=2.26.0,<4"
 
@@ -244,6 +244,7 @@ markers = [
   "hdfs: Hadoop file system tests",
   "min_version: backend tests that require a specific version of a dependency to pass",
   "min_server_version: backend tests that require a specific version of a backend's server to pass",
+  "xfail_version: backend tests that for a specific version of a backend",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",
   "never: tests for functionality that a backend is likely to never implement",

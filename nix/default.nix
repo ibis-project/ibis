@@ -82,9 +82,18 @@ in
         ];
       };
 
-      arrow-cpp = super.arrow-cpp.override {
+      arrow-cpp = (super.arrow-cpp.override {
         enableS3 = !super.stdenv.isDarwin;
-      };
+      }).overrideAttrs
+        (attrs: {
+          # tests hang for some reason on macos with python 3.9 and 3.10
+          doInstallCheck = !super.stdenv.isDarwin;
+          buildInputs = attrs.buildInputs or [ ]
+            ++ pkgs.lib.optionals super.stdenv.isDarwin [
+            pkgs.libxcrypt
+            pkgs.sqlite
+          ];
+        });
     })
   ];
 } // args)
