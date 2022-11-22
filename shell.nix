@@ -2,6 +2,8 @@
 let
   pkgs = import ./nix { };
 
+  pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
+
   pythonEnv = pkgs."ibisFullDevEnv${pythonShortVersion}";
 
   devDeps = with pkgs; [
@@ -13,16 +15,11 @@ let
     # linting
     commitlint
     lychee
-    # packaging
+    # external nix dependencies
     niv
-    pythonEnv.pkgs.poetry
   ];
 
-  impalaUdfDeps = with pkgs; [
-    clang_12
-    cmake
-    ninja
-  ];
+  impalaUdfDeps = with pkgs; [ clang_12 cmake ninja ];
   snowflakeDeps = [ pkgs.openssl ];
   backendTestDeps = [ pkgs.docker-compose ];
   vizDeps = [ pkgs.graphviz-nox ];
@@ -31,7 +28,7 @@ let
   pysparkDeps = [ pkgs.openjdk11_headless ];
 
   postgresDeps = [ pkgs.postgresql ];
-  geospatialDeps = [ pkgs.gdal pkgs.proj ];
+  geospatialDeps = with pkgs; [ gdal proj ];
   sqliteDeps = [ pkgs.sqlite-interactive ];
 
   libraryDevDeps = impalaUdfDeps
@@ -44,15 +41,6 @@ let
     ++ duckdbDeps
     ++ mysqlDeps
     ++ snowflakeDeps;
-
-  pythonShortVersion = builtins.replaceStrings [ "." ] [ "" ] python;
-
-  updateLockFiles = pkgs.writeShellApplication {
-    name = "update-lock-files";
-    text = ''
-      ${./dev/update-lock-files.sh} "$PWD"
-    '';
-  };
 in
 pkgs.mkShell {
   name = "ibis${pythonShortVersion}";
@@ -71,7 +59,6 @@ pkgs.mkShell {
 
   nativeBuildInputs = devDeps ++ libraryDevDeps ++ [
     pythonEnv
-    updateLockFiles
   ] ++ pkgs.preCommitShell.buildInputs ++ (with pkgs; [
     changelog
     mic
