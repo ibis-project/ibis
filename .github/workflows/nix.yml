@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: Nix
 
 on:
@@ -20,6 +19,9 @@ on:
     branches:
       - master
       - "*.x.x"
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
@@ -54,6 +56,14 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - name: nix build and run tests
-        continue-on-error: ${{ matrix.os == 'macos-latest' && matrix.python-version == '3.8' }}
-        run: nix build --fallback --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
+      - name: set target path for build
+        run: |
+          event_name="${{ github.event_name }}"
+          target="$PWD"
+          if [ "$event_name" == "schedule" ] || [ "$event_name" == "workflow_dispatch" ]; then
+            target+="/shell.nix"
+          fi
+          echo "TARGET_PATH=$target" >> "$GITHUB_ENV"
+
+      - name: nix build
+        run: nix build --fallback --keep-going --print-build-logs --file "$TARGET_PATH" --argstr python ${{ matrix.python-version }}
