@@ -52,7 +52,7 @@ def test_tables_accessor_mapping(con):
         con.tables["doesnt_exist"]
 
     tables = con.list_tables()
-    con_tables = con.tables
+    con_tables = list(con.tables)
 
     assert len(con_tables) == len(tables)
     assert sorted(con_tables) == sorted(tables)

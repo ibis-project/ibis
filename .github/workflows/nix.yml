@@ -56,14 +56,13 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - name: set target path for build
-        run: |
-          event_name="${{ github.event_name }}"
-          target="$PWD"
-          if [ "$event_name" == "schedule" ] || [ "$event_name" == "workflow_dispatch" ]; then
-            target+="/shell.nix"
-          fi
-          echo "TARGET_PATH=$target" >> "$GITHUB_ENV"
-
       - name: nix build
-        run: nix build --fallback --keep-going --print-build-logs --file "$TARGET_PATH" --argstr python ${{ matrix.python-version }}
+        run: nix build --fallback --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
+
+      - name: nix build shell environment
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+
+          version="${{ matrix.python-version }}"
+          nix build --fallback --keep-going --print-build-logs --file nix "ibisFullDevEnv${version//./}"

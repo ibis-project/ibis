@@ -443,6 +443,21 @@ def pytest_runtest_call(item):
                 )
             )
 
+    for marker in item.iter_markers(name="xfail_version"):
+        kwargs = marker.kwargs
+        if backend not in kwargs:
+            continue
+
+        provided_reason = kwargs.pop("reason", None)
+        broken_version = kwargs.pop(backend)
+        module = importlib.import_module(backend)
+        version = getattr(module, "__version__", None)
+        condition = vparse(version) == vparse(broken_version)
+        reason = f"{backend} backend test requires {backend} != {version}"
+        if provided_reason is not None:
+            reason += f"; {provided_reason}"
+        item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
+
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
 def backend(request, data_directory, script_directory, tmp_path_factory, worker_id):

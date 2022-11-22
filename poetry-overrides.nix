@@ -116,6 +116,9 @@ in
       nativeBuildInputs = attrs.nativeBuildInputs or [ ]
         ++ (with nightlyRustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
+      buildInputs = attrs.buildInputs or [ ]
+        ++ lib.optionals stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ];
+
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
         inherit src sourceRoot patches;
         name = "${attrs.pname}-${version}";
@@ -155,7 +158,7 @@ in
     format = "pyproject";
   });
 
-  duckdb = super.duckdb.overridePythonAttrs (attrs: {
+  duckdb = super.duckdb.overridePythonAttrs (_: {
     postPatch = ''
       set -eo pipefail
 
