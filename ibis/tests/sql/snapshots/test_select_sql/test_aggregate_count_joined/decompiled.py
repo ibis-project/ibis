@@ -1,10 +1,6 @@
 import ibis
 
 
-tpch_region = ibis.table(
-    name="tpch_region",
-    schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
-)
 tpch_nation = ibis.table(
     name="tpch_nation",
     schema={
@@ -13,6 +9,10 @@ tpch_nation = ibis.table(
         "n_regionkey": "int16",
         "n_comment": "string",
     },
+)
+tpch_region = ibis.table(
+    name="tpch_region",
+    schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
 )
 
 result = (

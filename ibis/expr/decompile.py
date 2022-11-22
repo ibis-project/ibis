@@ -69,13 +69,6 @@ def _maybe_add_parens(op, string):
         return string
 
 
-# helpers classes to let parent nodes decide about omitting certain parts of the statement
-class ListStatement(list):
-    def __str__(self):
-        values = ", ".join(self)
-        return f"[{values}]"
-
-
 class CallStatement:
     def __init__(self, func, args):
         self.func = func
@@ -143,10 +136,10 @@ def table(op, schema, name, **kwargs):
 
 
 def _try_unwrap(stmt):
-    if isinstance(stmt, list):
-        return stmt[0] if len(stmt) == 1 else stmt
+    if len(stmt) == 1:
+        return stmt[0]
     else:
-        return stmt
+        return f"[{', '.join(stmt)}]"
 
 
 @translate.register(ops.Selection)
@@ -180,9 +173,6 @@ def aggregation(op, table, by, metrics, predicates, having, sort_keys):
 @translate.register(ops.Join)
 def join(op, left, right, predicates):
     method = _get_method_name(op)
-    # TODO(kszucs): Join.predicates is a tuple of predicates, we need to clean
-    # up the implementation to use NodeList
-    predicates = ListStatement(predicates)
     return f"{left}.{method}({right}, {_try_unwrap(predicates)})"
 
 
@@ -252,11 +242,6 @@ def literal(op, value, dtype):
         return CallStatement("ibis.literal", repr(value))
 
 
-@translate.register(ops.NodeList)
-def node_list(op, *values):
-    return ListStatement(values)
-
-
 @translate.register(ops.Cast)
 def cast(op, arg, to):
     return f"{arg}.cast({to})"
@@ -321,7 +306,6 @@ class CodeContext:
     shorthands = {
         ops.Aggregation: "agg",
         ops.Literal: "lit",
-        ops.NodeList: "lst",
         ops.ScalarParameter: "param",
         ops.Selection: "proj",
         ops.TableNode: "t",

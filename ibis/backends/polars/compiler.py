@@ -314,7 +314,7 @@ def searched_case(op):
 
 @translate.register(ops.Coalesce)
 def coalesce(op):
-    arg = translate(ops.NodeList(*op.args))
+    arg = list(map(translate, op.args))
     return pl.coalesce(arg)
 
 
@@ -333,20 +333,24 @@ def greatest(op):
 @translate.register(ops.Contains)
 def contains(op):
     value = translate(op.value)
-    options = translate(op.options)
-    if isinstance(options, list):
+
+    if isinstance(op.options, tuple):
+        options = list(map(translate, op.options))
         return pl.any([value == option for option in options])
     else:
+        options = translate(op.options)
         return value.is_in(options)
 
 
 @translate.register(ops.NotContains)
 def not_contains(op):
     value = translate(op.value)
-    options = translate(op.options)
-    if isinstance(options, list):
+
+    if isinstance(op.options, tuple):
+        options = list(map(translate, op.options))
         return ~pl.any([value == option for option in options])
     else:
+        options = translate(op.options)
         return ~value.is_in(options)
 
 
@@ -417,7 +421,7 @@ def string_endswith(op):
 
 @translate.register(ops.StringConcat)
 def string_concat(op):
-    args = [translate(arg) for arg in op.arg]
+    args = [translate(arg) for arg in op.args]
     return pl.concat_str(args)
 
 
@@ -615,11 +619,6 @@ def count_star(op):
     return pl.count()
 
 
-@translate.register(ops.NodeList)
-def node_list(op):
-    return list(map(translate, op.values))
-
-
 @translate.register(ops.TimestampNow)
 def timestamp_now(op):
     now = pd.Timestamp("now", tz="UTC").tz_localize(None)
@@ -739,7 +738,7 @@ def array_concat(op):
 
 @translate.register(ops.ArrayColumn)
 def array_column(op):
-    cols = translate(op.cols)
+    cols = list(map(translate, op.cols))
     return pl.concat_list(cols)
 
 
@@ -920,7 +919,7 @@ def binop(op):
 
 @translate.register(ops.ElementWiseVectorizedUDF)
 def elementwise_udf(op):
-    func_args = translate(op.func_args)
+    func_args = list(map(translate, op.func_args))
     return_type = to_polars_type(op.return_type)
 
     return pl.map(func_args, lambda args: op.func(*args), return_dtype=return_type)

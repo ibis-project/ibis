@@ -3,17 +3,53 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from typing import Any, Callable, Dict, Iterable, Iterator, Sequence
+from collections.abc import Hashable, Iterable, Iterator, Mapping
+from typing import Any, Callable, Dict, Sequence
 
 
-class Traversable:
+def _flatten_collections(node, filter):
+    """Flatten collections of nodes into a single iterator.
+
+    We treat common collection types inherently traversable (e.g. list, tuple, dict)
+    but as undesired in a graph representation, so we traverse them implicitly.
+
+    Parameters
+    ----------
+    node : Any
+        Flattaneble object unless it's an instance of the types passed as filter.
+    filter : type
+        Type to filter out for the traversal, e.g. Traversable.
+
+    Returns
+    -------
+    Iterator : Any
+    """
+    if isinstance(node, filter):
+        yield node
+    elif isinstance(node, (str, bytes)):
+        pass
+    elif isinstance(node, Sequence):
+        for item in node:
+            yield from _flatten_collections(item, filter)
+    elif isinstance(node, Mapping):
+        for key, value in node.items():
+            yield from _flatten_collections(key, filter)
+            yield from _flatten_collections(value, filter)
+
+
+class Traversable(Hashable):
 
     __slots__ = ()
 
     @property
     @abstractmethod
-    def __children__(self) -> Sequence[Traversable]:
+    def __children__(self) -> Sequence:
         ...
+
+
+def children(node, filter=Traversable):
+    # TODO(kszucs): perhaps this should be a set instead of a tuple
+    return tuple(_flatten_collections(node.__children__, filter))
 
 
 class Graph(Dict[Traversable, Sequence[Traversable]]):
@@ -32,9 +68,9 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while queue:
             if (node := queue.popleft()) not in graph:
-                children = [c for c in node.__children__ if isinstance(c, filter)]
-                graph[node] = children
-                queue.extend(children)
+                dependencies = children(node, filter)
+                graph[node] = dependencies
+                queue.extend(dependencies)
 
         return graph
 
@@ -48,9 +84,9 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
 
         while stack:
             if (node := stack.pop()) not in graph:
-                children = [c for c in node.__children__ if isinstance(c, filter)]
-                graph[node] = children
-                stack.extend(children)
+                dependencies = children(node, filter)
+                graph[node] = dependencies
+                stack.extend(dependencies)
 
         return cls(reversed(graph.items()))
 
@@ -61,11 +97,11 @@ class Graph(Dict[Traversable, Sequence[Traversable]]):
         return self.keys()
 
     def invert(self) -> Graph:
-        result = self.__class__({node: [] for node in self.keys()})
-        for node, children in self.items():
-            for child in children:
-                result[child].append(node)
-        return result
+        result = {node: [] for node in self.keys()}
+        for node, dependencies in self.items():
+            for dependency in dependencies:
+                result[dependency].append(node)
+        return self.__class__({k: tuple(v) for k, v in result.items()})
 
     def toposort(self) -> Graph:
         dependents = self.invert()
@@ -143,7 +179,7 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                args = [c for c in node.__children__ if isinstance(c, filter)]
+                args = children(node, filter)
             elif isinstance(control, Iterable):
                 args = control
             else:

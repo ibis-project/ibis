@@ -5,12 +5,12 @@ from copy import copy
 from typing import Any
 from weakref import WeakValueDictionary
 
-from ibis.common.annotations import Argument, Attribute, Signature
+from ibis.common.annotations import Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Graph, Traversable
 from ibis.common.typing import evaluate_typehint
 from ibis.common.validators import Validator
-from ibis.util import frozendict, recursive_get, recursive_iter
+from ibis.util import frozendict, recursive_get
 
 
 class BaseMeta(ABCMeta):
@@ -138,6 +138,10 @@ class Annotable(Base, metaclass=AnnotableMeta):
             for n in self.__attributes__.keys()
         )
 
+    @property
+    def __args__(self):
+        return tuple(getattr(self, name) for name in self.__argnames__)
+
     def __getstate__(self) -> dict[str, Any]:
         return {n: getattr(self, n, None) for n in self.__attributes__.keys()}
 
@@ -229,21 +233,13 @@ class Comparable(Base):
 class Concrete(Immutable, Comparable, Annotable, Traversable):
     """Opinionated base class for immutable data classes."""
 
-    __slots__ = ("__args__", "__children__", "__precomputed_hash__")
+    @attribute.default
+    def __args__(self):
+        return tuple(getattr(self, name) for name in self.__argnames__)
 
-    def __post_init__(self) -> None:
-        # optimizations to store frequently accessed attributes
-        args = tuple(getattr(self, name) for name in self.__argnames__)
-        # precompute children for faster traversal
-        children = (c for c in recursive_iter(args) if isinstance(c, Concrete))
-        # precompute the hash value to avoid repeating expensive hashing
-        hashvalue = hash((self.__class__, args))
-        # actually set the attributes
-        object.__setattr__(self, "__args__", args)
-        object.__setattr__(self, "__children__", tuple(children))
-        object.__setattr__(self, "__precomputed_hash__", hashvalue)
-        # initialize the remaining attributes
-        super().__post_init__()
+    @attribute.default
+    def __precomputed_hash__(self):
+        return hash((self.__class__, self.__args__))
 
     def __getstate__(self):
         # assuming immutability and idempotency of the __init__ method, we can
@@ -257,6 +253,10 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
         return self.__args__ == other.__args__
 
     @property
+    def __children__(self):
+        return self.__args__
+
+    @property
     def args(self):
         return self.__args__
 
@@ -264,6 +264,7 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     def argnames(self):
         return self.__argnames__
 
+    # TODO(kszucs): perhaps move it to graph.py traversable class
     def map(self, fn, filter=None):
         if filter is None:
             filter = Concrete

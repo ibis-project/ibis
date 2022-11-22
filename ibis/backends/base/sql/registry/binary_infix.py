@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Literal
 
 import ibis.expr.analysis as an
-import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import helpers
-from ibis.expr.rules import Shape
 
 
 def binary_infix_op(infix_sym):
@@ -56,37 +54,33 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
     def translate(translator, op):
         from ibis.backends.base.sql.registry.main import table_array_view
 
-        left, right = op.args
-        if isinstance(right, ops.NodeList) and not right.values:
+        if isinstance(op.options, tuple) and not op.options:
             return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
 
-        left_arg = translator.translate(left)
-        if helpers.needs_parens(left):
-            left_arg = helpers.parenthesize(left_arg)
+        left = translator.translate(op.value)
+        if helpers.needs_parens(op.value):
+            left = helpers.parenthesize(left)
 
         ctx = translator.context
 
-        # special case non-foreign isin/notin expressions
-        if (
-            not isinstance(right, ops.NodeList)
-            and right.output_shape is Shape.COLUMNAR
-            # foreign refs are already been compiled correctly during
-            # TableColumn compilation
-            and not any(
+        if isinstance(op.options, tuple):
+            values = [translator.translate(x) for x in op.options]
+            right = helpers.parenthesize(', '.join(values))
+        elif op.options.output_shape.is_columnar():
+            right = translator.translate(op.options)
+            if not any(
                 ctx.is_foreign_expr(leaf)
-                for leaf in an.find_immediate_parent_tables(right)
-            )
-        ):
-            right_arg = table_array_view(
-                translator,
-                right.to_expr().to_projection().to_array().op(),
-            )
+                for leaf in an.find_immediate_parent_tables(op.options)
+            ):
+                array = op.options.to_expr().to_projection().to_array().op()
+                right = table_array_view(translator, array)
+            else:
+                right = translator.translate(op.options)
         else:
-            right_arg = translator.translate(right)
+            right = translator.translate(op.options)
 
         # we explicitly do NOT parenthesize the right side because it doesn't
         # make sense to do so for Sequence operations
-
-        return f"{left_arg} {op_string} {right_arg}"
+        return f"{left} {op_string} {right}"
 
     return translate

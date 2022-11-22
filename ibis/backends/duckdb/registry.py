@@ -108,7 +108,7 @@ def _literal(_, op):
 def _array_column(t, op):
     (arg,) = op.args
     sqla_type = to_sqla_type(op.output_dtype)
-    return sa.cast(sa.func.list_value(*map(t.translate, arg.values)), sqla_type)
+    return sa.cast(sa.func.list_value(*map(t.translate, arg)), sqla_type)
 
 
 def _struct_field(t, op):

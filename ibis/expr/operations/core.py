@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from public import public
 
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
 from ibis.common.grounds import Concrete
-from ibis.expr.rules import Shape
 from ibis.util import UnnamedMarker, deprecated
 
 if TYPE_CHECKING:
@@ -83,20 +81,18 @@ class Value(Node, Named):
         """
 
     def to_expr(self):
-        if self.output_shape is Shape.COLUMNAR:
+        if self.output_shape.is_columnar():
             return self.output_dtype.column(self)
         else:
             return self.output_dtype.scalar(self)
 
 
+# TODO(kszucs): this base class is not required, using rlz.variadic() rule should be
+# enough once all the analysis code starts to use the traversal functions
 @public
 class Variadic(Value):
     output_shape = rlz.shape_like('arg')
     output_dtype = rlz.dtype_like('arg')
-
-    @attribute.default
-    def output_shape(self):
-        return rlz.highest_precedence_shape(self.args)
 
     @property
     def args(self):
@@ -135,39 +131,4 @@ class Binary(Value):
         return max(self.left.output_shape, self.right.output_shape)
 
 
-@public
-class NodeList(Node, Sequence[Node]):
-    """Data structure for grouping arbitrary node objects."""
-
-    # https://peps.python.org/pep-0653/#additions-to-the-object-model
-    # TODO(kszucs): __match_container__ = MATCH_SEQUENCE
-    # TODO(kszucs): should be able to remove this class with some additional
-    # work on the pandas backend
-
-    values = rlz.variadic(rlz.instance_of(Node))
-
-    def __len__(self):
-        return len(self.values)
-
-    def __getitem__(self, index):
-        return self.values[index]
-
-    def __add__(self, other):
-        values = self.values + tuple(other)
-        return self.__class__(*values)
-
-    def __radd__(self, other):
-        values = tuple(other) + self.values
-        return self.__class__(*values)
-
-    def to_expr(self):
-        import ibis.expr.types as ir
-
-        return ir.List(self)
-
-    @property
-    def args(self):
-        return self.values
-
-
-public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, ValueList=NodeList)
+public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

@@ -119,10 +119,10 @@ values = Values(one, two, three)
 
 def test_node_base():
     assert one.__args__ == (1, Name("one"))
-    assert one.__children__ == (Name("one"),)
+    assert one.__children__ == one.__args__
 
     assert values.__args__ == ((one, two, three),)
-    assert values.__children__ == (one, two, three)
+    assert values.__children__ == values.__args__
 
     calls = []
     returns = {
@@ -258,7 +258,6 @@ def test_operation_class_aliases():
     assert ops.BinaryOp is ops.Binary
     assert ops.WindowOp is ops.Window
     assert ops.AnalyticOp is ops.Analytic
-    assert ops.ValueList is ops.NodeList
 
 
 def test_expression_class_aliases():
@@ -269,5 +268,3 @@ def test_expression_class_aliases():
     assert ir.AnyValue is ir.Value
     assert ir.AnyScalar is ir.Scalar
     assert ir.AnyColumn is ir.Column
-    assert ir.ListExpr is ir.List
-    assert ir.ValueList is ir.List

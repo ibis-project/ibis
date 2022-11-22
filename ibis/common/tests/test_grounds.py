@@ -1,5 +1,6 @@
 import pickle
 import weakref
+from collections.abc import Hashable
 
 import pytest
 
@@ -13,7 +14,7 @@ from ibis.common.annotations import (
     variadic,
 )
 from ibis.common.caching import WeakCache
-from ibis.common.graph import Traversable
+from ibis.common.graph import Traversable, bfs, children
 from ibis.common.grounds import (
     Annotable,
     Base,
@@ -22,7 +23,7 @@ from ibis.common.grounds import (
     Immutable,
     Singleton,
 )
-from ibis.common.validators import instance_of, validator
+from ibis.common.validators import instance_of, one_of, tuple_of, validator
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
@@ -743,6 +744,7 @@ def test_concrete():
         Annotable,
         Base,
         Traversable,
+        Hashable,
         object,
     )
 
@@ -799,7 +801,11 @@ def test_concrete_with_traversable_children():
 
     node = All(T, F, strict=True)
     assert node.__args__ == ((T, F), True)
-    assert node.__children__ == (T, F)
+    assert node.__children__ == node.__args__
+    assert children(node) == (
+        T,
+        F,
+    )
 
     node = Either(T, F)
     assert node.__args__ == (T, F)
@@ -807,7 +813,8 @@ def test_concrete_with_traversable_children():
 
     node = All(T, Either(T, Either(T, F)), strict=False)
     assert node.__args__ == ((T, Either(T, Either(T, F))), False)
-    assert node.__children__ == (T, Either(T, Either(T, F)))
+    assert node.__children__ == node.__args__
+    assert children(node) == (T, Either(T, Either(T, F)))
 
     copied = node.copy(arguments=(T, F))
     assert copied == All(T, F, strict=False)
@@ -835,3 +842,55 @@ def test_composition_of_concrete_and_singleton():
 
 
 # TODO(kszucs): test that annotable subclasses can use __init_subclass__ kwargs
+
+
+class Example(Annotable, Traversable):
+    @property
+    def __children__(self):
+        return tuple(getattr(self, name) for name in self.__argnames__)
+
+    def __hash__(self):
+        return hash((self.__class__, self.__children__))
+
+
+class Literal(Example):
+    value = is_any
+
+
+class BoolLiteral(Literal):
+    value = is_bool
+
+
+class And(Example):
+    operands = variadic(instance_of(BoolLiteral))
+
+
+class Or(Example):
+    operands = variadic(instance_of(BoolLiteral))
+
+
+class Collect(Example):
+    arguments = tuple_of(one_of([tuple_of(instance_of(Example)), instance_of(Example)]))
+
+
+def test_example():
+    a = BoolLiteral(True)
+    b = BoolLiteral(False)
+    c = BoolLiteral(True)
+    d = BoolLiteral(False)
+
+    and_ = And(a, b, c, d)
+    or_ = Or(a, c)
+    collect = Collect([and_, (or_, or_)])
+
+    graph = bfs(collect)
+
+    expected = {
+        collect: (and_, or_, or_),
+        or_: (a, c),
+        and_: (a, b, c, d),
+        a: (),
+        b: (),
+        # c and d are identical with a and b
+    }
+    assert graph == expected

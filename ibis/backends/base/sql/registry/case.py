@@ -11,7 +11,7 @@ class _CaseFormatter:
 
         # HACK
         self.indent = 2
-        self.multiline = len(cases.values) > 1
+        self.multiline = len(cases) > 1
         self.buf = StringIO()
 
     def get_result(self):
@@ -22,7 +22,7 @@ class _CaseFormatter:
             base_str = self.translator.translate(self.base)
             self.buf.write(f' {base_str}')
 
-        for case, result in zip(self.cases.values, self.results.values):
+        for case, result in zip(self.cases, self.results):
             self._next_case()
             case_str = self.translator.translate(case)
             result_str = self.translator.translate(result)

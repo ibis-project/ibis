@@ -281,6 +281,5 @@ variadic = Argument.variadic
 default = Argument.default
 immutable_property = Attribute.default
 
-
 # TODO(kszucs): try to cache validator objects
 # TODO(kszucs): try a quicker curry implementation

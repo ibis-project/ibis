@@ -5,6 +5,7 @@ import dask.dataframe.groupby as ddgb
 import numpy as np
 
 import ibis.expr.operations as ops
+from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
     TypeRegistrationDict,
@@ -30,8 +31,9 @@ collect_list = dd.Aggregation(
 )
 
 
-@execute_node.register(ops.ArrayColumn, list)
+@execute_node.register(ops.ArrayColumn, tuple)
 def execute_array_column(op, cols, **kwargs):
+    cols = [execute(arg, **kwargs) for arg in cols]
     df = dd.concat(cols, axis=1)
     return df.apply(
         lambda row: np.array(row, dtype=object), axis=1, meta=(None, 'object')

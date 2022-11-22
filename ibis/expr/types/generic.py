@@ -122,7 +122,7 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.coalesce(None, 4, 5)
-        Coalesce([ValueList(values=[None, 4, 5])])
+        Coalesce((None, 4, 5))
         """
         return ops.Coalesce(self, *args).to_expr()
 
@@ -259,7 +259,7 @@ class Value(Expr):
         >>> table.string_col.isin(['foo', 'bar', 'baz'])
         r0 := UnboundTable: unbound_table_1
           string_col string
-        Contains(value=r0.string_col, options=[ValueList(values=['foo', 'bar', 'baz'])])
+        Contains(value=r0.string_col, options=('foo', 'bar', 'baz'))
 
         Check whether a column's values are contained in another table's column
 
@@ -809,24 +809,6 @@ class NullColumn(Column, NullValue):
 
 
 @public
-class List(Expr, Sequence[Expr]):
-    @property
-    def values(self):
-        return self.op().values
-
-    def __getitem__(self, key):
-        return self.values[key]
-
-    def __bool__(self):
-        return bool(self.values)
-
-    __nonzero__ = __bool__
-
-    def __len__(self):
-        return len(self.values)
-
-
-@public
 def null():
     """Create a NULL/NA scalar."""
     return ops.NullLiteral().to_expr()
@@ -900,6 +882,4 @@ public(
     AnyValue=Value,
     AnyScalar=Scalar,
     AnyColumn=Column,
-    ListExpr=List,
-    ValueList=List,
 )

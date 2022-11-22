@@ -6,11 +6,13 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
+from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
 
 
-@execute_node.register(ops.ArrayColumn, list)
+@execute_node.register(ops.ArrayColumn, tuple)
 def execute_array_column(op, cols, **kwargs):
+    cols = [execute(arg, **kwargs) for arg in cols]
     df = pd.concat(cols, axis=1)
     return df.apply(lambda row: np.array(row, dtype=object), axis=1)
 

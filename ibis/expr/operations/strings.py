@@ -117,7 +117,7 @@ class RPad(Value):
 @public
 class FindInSet(Value):
     needle = rlz.string
-    values = rlz.nodes_of(rlz.string, min_length=1)
+    values = rlz.tuple_of(rlz.string, min_length=1)
 
     output_shape = rlz.shape_like("needle")
     output_dtype = dt.int64
@@ -126,13 +126,13 @@ class FindInSet(Value):
 @public
 class StringJoin(Value):
     sep = rlz.string
-    arg = rlz.nodes_of(rlz.string, min_length=1)
+    arg = rlz.tuple_of(rlz.string, min_length=1)
 
     output_dtype = dt.string
 
     @attribute.default
     def output_shape(self):
-        return rlz.highest_precedence_shape(self.arg.values)
+        return rlz.highest_precedence_shape(self.arg)
 
 
 @public
