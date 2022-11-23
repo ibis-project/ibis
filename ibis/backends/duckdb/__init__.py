@@ -109,7 +109,7 @@ def _parquet_file_or_url(_, path, table_name=None, **kwargs):
     return _parquet(f"parquet://{path}", path=path, table_name=table_name, **kwargs)
 
 
-@_generate_view_code.register(r"s3://.+", priority=10)
+@_generate_view_code.register(r"s3://.+", priority=13)
 def _s3(full_path, table_name=None):
     # TODO: gate this import once the ResultHandler mixin is merged #4454
     import pyarrow.dataset as ds

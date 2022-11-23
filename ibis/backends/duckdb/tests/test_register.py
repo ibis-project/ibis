@@ -213,3 +213,11 @@ def test_temp_directory(tmp_path):
     con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
     [(value,)] = con.con.execute(query).fetchall()
     assert value == str(temp_directory)
+
+
+@pytest.mark.parametrize(
+    "path", ["s3://data-lake/dataset/", "s3://data-lake/dataset/file_1.parquet"]
+)
+def test_s3_parquet(path):
+    with pytest.raises(OSError):
+        _generate_view_code(path)
