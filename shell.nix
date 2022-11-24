@@ -17,6 +17,7 @@ let
     lychee
     # external nix dependencies
     niv
+    pythonEnv.pkgs.poetry
   ];
 
   impalaUdfDeps = with pkgs; [ clang_12 cmake ninja ];
@@ -57,12 +58,10 @@ pkgs.mkShell {
     TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
   '';
 
-  nativeBuildInputs = devDeps ++ libraryDevDeps ++ [
-    pythonEnv
-  ] ++ pkgs.preCommitShell.buildInputs ++ (with pkgs; [
-    changelog
-    mic
-  ]);
+  nativeBuildInputs = devDeps
+    ++ libraryDevDeps
+    ++ [ pythonEnv pkgs.changelog ]
+    ++ pkgs.preCommitShell.buildInputs;
 
   PGPASSWORD = "postgres";
   MYSQL_PWD = "ibis";

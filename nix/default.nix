@@ -59,24 +59,6 @@ in
 
       ibisFullDevEnv = pkgs.ibisFullDevEnv310;
 
-      mic = pkgs.writeShellApplication {
-        name = "mic";
-        runtimeInputs = [ pkgs.ibisDocsEnv pkgs.coreutils ];
-        # The immediate reason setting PYTHONPATH is necessary is to allow the
-        # subprocess invocations of `mkdocs` by `mike` to see Python dependencies.
-        #
-        # This shouldn't be necessary, but I think the nix wrappers may be
-        # inadvertently preventing this.
-        text = ''
-          export PYTHONPATH TEMPDIR
-
-          PYTHONPATH="$(python -c 'import os, sys; print(os.pathsep.join(sys.path))')"
-          TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
-
-          mike "$@"
-        '';
-      };
-
       changelog = pkgs.writeShellApplication {
         name = "changelog";
         runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
