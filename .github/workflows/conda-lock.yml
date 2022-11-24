@@ -168,7 +168,7 @@ jobs:
             dependencies
             autorebase:opt-in
 
-      - uses: juliangruber/approve-pull-request-action@v2.0.1
+      - uses: juliangruber/approve-pull-request-action@v2.0.3
         if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
