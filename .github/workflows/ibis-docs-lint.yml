@@ -187,13 +187,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          nix run -f nix ibisDocsEnv.pkgs.mike -- \
-            deploy \
-              --push \
-              --rebase \
-              --prefix docs \
-              --message 'docs(dev): ibis@${{ github.sha }}' \
-                dev
+          nix-shell --run 'mike deploy --push --rebase --prefix docs --message "docs(dev): ibis@${{ github.sha }}" dev'
         env:
           PYTHONPATH: .
 

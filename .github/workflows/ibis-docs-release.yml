@@ -53,13 +53,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          nix run -f nix ibisDocsEnv.pkgs.mike -- \
-            deploy \
-              --push \
-              --rebase \
-              --update-aliases \
-              --prefix docs \
-              --message "docs(release): ibis@${GITHUB_REF_NAME}" \
-              "${GITHUB_REF_NAME}" latest
+          nix-shell --run "mike deploy --push --rebase --update-aliases --prefix docs --message 'docs(release): ibis@${GITHUB_REF_NAME}' ${GITHUB_REF_NAME} latest"
         env:
           PYTHONPATH: .
