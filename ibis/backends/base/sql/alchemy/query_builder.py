@@ -5,7 +5,6 @@ import functools
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
@@ -136,30 +135,6 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         result = alias if hasattr(alias, "name") else result.alias(alias)
         ctx.set_ref(op, result)
         return result
-
-
-def _can_lower_sort_column(table_set, expr):
-    # TODO(wesm): This code is pending removal through cleaner internal
-    # semantics
-
-    # we can currently sort by just-appeared aggregate metrics, but the way
-    # these are references in the expression DSL is as a SortBy (blocking
-    # table operation) on an aggregation. There's a hack in _collect_SortBy
-    # in the generic SQL compiler that "fuses" the sort with the
-    # aggregation so they appear in same query. It's generally for
-    # cosmetics and doesn't really affect query semantics.
-    bases = an.find_immediate_parent_tables(expr)
-    if len(bases) != 1:
-        return False
-
-    base = bases[0]
-
-    if isinstance(base, ops.Aggregation):
-        return base.table.equals(table_set)
-    elif isinstance(base, ops.Selection):
-        return base.equals(table_set)
-    else:
-        return False
 
 
 class AlchemySelect(Select):
@@ -309,14 +284,7 @@ class AlchemySelect(Select):
         clauses = []
         for key in self.order_by:
             sort_expr = key.expr
-
-            # here we have to determine if key.expr is in the select set (as it
-            # will be in the case of order_by fused with an aggregation
-            if _can_lower_sort_column(self.table_set, sort_expr):
-                arg = sort_expr.name
-            else:
-                arg = self._translate(sort_expr)
-
+            arg = self._translate(sort_expr)
             fn = sa.asc if key.ascending else sa.desc
 
             clauses.append(fn(arg))
