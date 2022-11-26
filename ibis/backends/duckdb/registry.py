@@ -212,7 +212,9 @@ operation_registry.update(
             0,
         ),
         ops.RegexExtract: _regex_extract,
-        ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.RegexReplace: fixed_arity(
+            lambda *args: sa.func.regexp_replace(*args, "g"), 3
+        ),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
         ops.CMSMedian: reduction(
             lambda arg: sa.func.approx_quantile(arg, sa.text(str(0.5)))
