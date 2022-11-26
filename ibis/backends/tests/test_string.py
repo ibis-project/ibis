@@ -386,6 +386,13 @@ def test_string(backend, alltypes, df, result_func, expected_func):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(["datafusion", "mysql", "snowflake", "mssql"])
+def test_re_replace_global(con):
+    expr = ibis.literal("aba").re_replace("a", "c")
+    result = con.execute(expr)
+    assert result == "cbc"
+
+
 @pytest.mark.notimpl(["datafusion", "mssql"])
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
