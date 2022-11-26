@@ -1169,3 +1169,12 @@ def test_no_cart_join(con, snapshot):
 
     out = str(con.compile(ob).compile(compile_kwargs=dict(literal_binds=True)))
     snapshot.assert_match(out, "out.sql")
+
+
+def test_order_by_expr(con, snapshot):
+    from ibis import _
+
+    t = ibis.table(dict(a="int", b="string"), name="t")
+    expr = t[_.a == 1].order_by(_.b + "a")
+    out = str(con.compile(expr).compile(compile_kwargs=dict(literal_binds=True)))
+    snapshot.assert_match(out, "out.sql")
