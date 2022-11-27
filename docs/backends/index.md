@@ -22,7 +22,9 @@ another kind of expression and typically have high-level APIs for execution.
 
 - [Dask](Dask.md)
 - [Datafusion](Datafusion.md)
+- [DuckDB](DuckDB.md)
 - [MySQL](MySQL.md)
+- [MS SQL Server](MSSQL.md)
 - [PostgreSQL](PostgreSQL.md)
 - [PySpark](PySpark.md)
 - [SQLite](SQLite.md)
