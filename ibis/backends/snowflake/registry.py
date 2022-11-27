@@ -47,7 +47,7 @@ def _day_of_week_name(t, op):
         whens=[
             ("Sun", "Sunday"),
             ("Mon", "Monday"),
-            ("Tues", "Tuesday"),
+            ("Tue", "Tuesday"),
             ("Wed", "Wednesday"),
             ("Thu", "Thursday"),
             ("Fri", "Friday"),
