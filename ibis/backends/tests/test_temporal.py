@@ -710,17 +710,7 @@ def test_string_to_timestamp_tz_error(alltypes):
     [
         param('2017-01-01', 6, 'Sunday', id="sunday"),
         param('2017-01-02', 0, 'Monday', id="monday"),
-        param(
-            '2017-01-03',
-            1,
-            'Tuesday',
-            id="tuesday",
-            marks=[
-                pytest.mark.notyet(
-                    ["snowflake"], reason="snowflake is not a fan of Tuesdays"
-                )
-            ],
-        ),
+        param('2017-01-03', 1, 'Tuesday', id="tuesday"),
         param('2017-01-04', 2, 'Wednesday', id="wednesday"),
         param('2017-01-05', 3, 'Thursday', id="thursday"),
         param('2017-01-06', 4, 'Friday', id="friday"),
