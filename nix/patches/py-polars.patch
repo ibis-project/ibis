@@ -1,5 +1,5 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index 3bfbf36bc..f10467501 100644
+index 22daebc6b..f495870f7 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -27,9 +27,9 @@ dependencies = [
@@ -142,6 +142,18 @@ index 3bfbf36bc..f10467501 100644
  
  [[package]]
  name = "fallible-streaming-iterator"
+@@ -569,9 +569,9 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
+ 
+ [[package]]
+ name = "flate2"
+-version = "1.0.24"
++version = "1.0.25"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f82b0f4c27ad9f8bfd1f3208d882da2b09c301bc1c828fd3a00d0216d2fbbff6"
++checksum = "a8a2db397cb1c8772f31494cb8917e48cd1e64f0fa7efac59fbd741a0a8ce841"
+ dependencies = [
+  "crc32fast",
+  "miniz_oxide",
 @@ -712,10 +712,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
  dependencies = [
@@ -153,16 +165,7 @@ index 3bfbf36bc..f10467501 100644
  ]
  
  [[package]]
-@@ -780,7 +778,7 @@ version = "0.13.1"
- source = "registry+https://github.com/rust-lang/crates.io-index"
- checksum = "33ff8ae62cd3a9102e5637afc8452c55acf3844001bd5374e0b0bd7b6616c038"
- dependencies = [
-- "ahash 0.8.1",
-+ "ahash 0.8.2",
-  "rayon",
- ]
- 
-@@ -841,9 +839,9 @@ dependencies = [
+@@ -832,9 +830,9 @@ dependencies = [
  
  [[package]]
  name = "indexmap"
@@ -173,8 +176,8 @@ index 3bfbf36bc..f10467501 100644
 +checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
  dependencies = [
   "autocfg",
-  "hashbrown 0.12.3",
-@@ -1043,17 +1041,18 @@ dependencies = [
+  "hashbrown",
+@@ -1034,17 +1032,18 @@ dependencies = [
  
  [[package]]
  name = "libm"
@@ -197,7 +200,7 @@ index 3bfbf36bc..f10467501 100644
  ]
  
  [[package]]
-@@ -1133,27 +1132,27 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+@@ -1124,36 +1123,36 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
  
  [[package]]
  name = "memmap2"
@@ -231,7 +234,18 @@ index 3bfbf36bc..f10467501 100644
  dependencies = [
   "libmimalloc-sys",
  ]
-@@ -1489,7 +1488,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "miniz_oxide"
+-version = "0.5.4"
++version = "0.6.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "96590ba8f175222643a85693f33d26e9c8a015f599c216509b1a6894af675d34"
++checksum = "b275950c28b37e794e8c55d88aeb5e139d0ce23fdbbeda68f8d7174abdf9e8fa"
+ dependencies = [
+  "adler",
+ ]
+@@ -1480,7 +1479,7 @@ dependencies = [
  name = "polars-core"
  version = "0.25.1"
  dependencies = [
@@ -240,7 +254,7 @@ index 3bfbf36bc..f10467501 100644
   "anyhow",
   "arrow2",
   "base64",
-@@ -1519,7 +1518,7 @@ dependencies = [
+@@ -1510,7 +1509,7 @@ dependencies = [
  name = "polars-io"
  version = "0.25.1"
  dependencies = [
@@ -249,7 +263,7 @@ index 3bfbf36bc..f10467501 100644
   "anyhow",
   "arrow2",
   "csv-core",
-@@ -1547,7 +1546,7 @@ dependencies = [
+@@ -1538,7 +1537,7 @@ dependencies = [
  name = "polars-lazy"
  version = "0.25.1"
  dependencies = [
@@ -258,7 +272,7 @@ index 3bfbf36bc..f10467501 100644
   "bitflags",
   "glob",
   "polars-arrow",
-@@ -1594,7 +1593,7 @@ dependencies = [
+@@ -1585,7 +1584,7 @@ dependencies = [
  name = "polars-plan"
  version = "0.25.1"
  dependencies = [
@@ -267,16 +281,16 @@ index 3bfbf36bc..f10467501 100644
   "polars-arrow",
   "polars-core",
   "polars-io",
-@@ -1660,7 +1659,7 @@ dependencies = [
+@@ -1651,7 +1650,7 @@ dependencies = [
  name = "py-polars"
- version = "0.14.31"
+ version = "0.14.29"
  dependencies = [
 - "ahash 0.8.1",
 + "ahash 0.8.2",
   "bincode",
   "built",
   "jemallocator",
-@@ -1801,11 +1800,10 @@ checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
+@@ -1792,11 +1791,10 @@ checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
  
  [[package]]
  name = "rayon"
@@ -290,7 +304,7 @@ index 3bfbf36bc..f10467501 100644
   "crossbeam-deque",
   "either",
   "rayon-core",
-@@ -1813,9 +1811,9 @@ dependencies = [
+@@ -1804,9 +1802,9 @@ dependencies = [
  
  [[package]]
  name = "rayon-core"
@@ -302,7 +316,7 @@ index 3bfbf36bc..f10467501 100644
  dependencies = [
   "crossbeam-channel",
   "crossbeam-deque",
-@@ -1936,9 +1934,9 @@ dependencies = [
+@@ -1927,9 +1925,9 @@ dependencies = [
  
  [[package]]
  name = "serde_json"
@@ -314,7 +328,7 @@ index 3bfbf36bc..f10467501 100644
  dependencies = [
   "indexmap",
   "itoa",
-@@ -2030,9 +2028,9 @@ dependencies = [
+@@ -2021,9 +2019,9 @@ dependencies = [
  
  [[package]]
  name = "snap"
@@ -326,7 +340,7 @@ index 3bfbf36bc..f10467501 100644
  
  [[package]]
  name = "sqlparser"
-@@ -2066,9 +2064,9 @@ checksum = "d55dd09aaa2f85ef8767cc9177294d63c30d62c8533329e75aa51d8b94976e22"
+@@ -2057,9 +2055,9 @@ checksum = "d55dd09aaa2f85ef8767cc9177294d63c30d62c8533329e75aa51d8b94976e22"
  
  [[package]]
  name = "strength_reduce"
@@ -338,7 +352,19 @@ index 3bfbf36bc..f10467501 100644
  
  [[package]]
  name = "strum"
-@@ -2225,9 +2223,9 @@ dependencies = [
+@@ -2128,9 +2126,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "time"
+-version = "0.1.44"
++version = "0.1.45"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
++checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
+ dependencies = [
+  "libc",
+  "wasi 0.10.0+wasi-snapshot-preview1",
+@@ -2216,9 +2214,9 @@ dependencies = [
  
  [[package]]
  name = "value-trait"
@@ -350,7 +376,7 @@ index 3bfbf36bc..f10467501 100644
  dependencies = [
   "float-cmp",
   "halfbrown",
-@@ -2422,15 +2420,10 @@ dependencies = [
+@@ -2413,15 +2411,10 @@ dependencies = [
  
  [[package]]
  name = "zstd-sys"
@@ -369,17 +395,17 @@ index 3bfbf36bc..f10467501 100644
 -version = "0.1.48"
 -source = "git+https://github.com/messense/cmake-rs.git?branch=cross-compile#15ab68baca7c44bcf23c5d91a4201f10d40552a1"
 diff --git a/Cargo.toml b/Cargo.toml
-index 404bb785b..721f280fe 100644
+index 973529b2d..b209967b8 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -161,16 +161,12 @@ features = [
+@@ -161,16 +161,11 @@ features = [
    "date_offset",
  ]
  
 -[patch.crates-io]
 -cmake = { git = "https://github.com/messense/cmake-rs.git", branch = "cross-compile" }
 -
- [lib]
+-[lib]
  name = "polars"
  crate-type = ["cdylib"]
  
