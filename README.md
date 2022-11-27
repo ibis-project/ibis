@@ -58,6 +58,7 @@ Ibis acts as a universal frontend to the following systems:
 - [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
+- [Microsoft SQL Server](https://ibis-project.org/docs/latest/backends/MSSQL/)
 - [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
 - [Polars](https://ibis-project.org/docs/latest/backends/Polars/)
 - [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
