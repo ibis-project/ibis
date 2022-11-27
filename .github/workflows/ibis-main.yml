@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - "docs/**"
       - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
@@ -15,6 +16,7 @@ on:
     paths-ignore:
       - "docs/**"
       - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
