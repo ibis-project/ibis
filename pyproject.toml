@@ -78,7 +78,7 @@ docformatter = ">=1.5.0,<2"
 flake8 = ">=4.0.0,<7"
 ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
-mypy = "0.982"
+mypy = "0.991"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 pyupgrade = ">=2.26.0,<4"
 
