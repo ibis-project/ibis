@@ -173,6 +173,10 @@ in
     '';
   });
 
+  mypy = super.mypy.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.types-psutil ];
+  });
+
   pymssql = super.pymssql.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libkrb5 ];
