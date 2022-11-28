@@ -1636,3 +1636,22 @@ def test_array_string_compare():
     t = ibis.table(schema=dict(by="string", words="array<string>"), name="t")
     expr = t[t.by == "foo"].mutate(words=_.words.unnest()).filter(_.words == "the")
     assert expr is not None
+
+
+@pytest.mark.parametrize("value", [True, False])
+@pytest.mark.parametrize(
+    "api",
+    [
+        param(lambda t, value: t[value], id="getitem"),
+        param(lambda t, value: t.filter(value), id="filter"),
+    ],
+)
+def test_filter_with_literal(value, api):
+    t = ibis.table(dict(a="string"))
+    filt = api(t, ibis.literal(value))
+    assert filt is not None
+
+    # ints are invalid predicates
+    int_val = ibis.literal(int(value))
+    with pytest.raises((NotImplementedError, com.IbisTypeError)):
+        api(t, int_val)

@@ -346,7 +346,10 @@ class Selection(Projection):
             )
 
         for predicate in predicates:
-            if not shares_some_roots(predicate, table):
+            if isinstance(predicate, ops.Literal):
+                if not (dtype := predicate.output_dtype).is_boolean():
+                    raise com.IbisTypeError(f"Invalid predicate dtype: {dtype}")
+            elif not shares_some_roots(predicate, table):
                 raise com.RelationError("Predicate doesn't share any roots with table")
 
         super().__init__(
