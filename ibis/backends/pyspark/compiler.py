@@ -659,7 +659,7 @@ def compile_arbitrary(t, op, **kwargs):
 @compiles(ops.Coalesce)
 def compile_coalesce(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
-    src_columns = [t.translate(col, **kwargs) for col in op.args]
+    src_columns = [t.translate(col, **kwargs) for col in op.arg]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -669,7 +669,7 @@ def compile_coalesce(t, op, **kwargs):
 @compiles(ops.Greatest)
 def compile_greatest(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
-    src_columns = [t.translate(col, **kwargs) for col in op.args]
+    src_columns = [t.translate(col, **kwargs) for col in op.arg]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -679,7 +679,7 @@ def compile_greatest(t, op, **kwargs):
 @compiles(ops.Least)
 def compile_least(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
-    src_columns = [t.translate(col, **kwargs) for col in op.args]
+    src_columns = [t.translate(col, **kwargs) for col in op.arg]
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -1019,7 +1019,7 @@ def compile_string_split(t, op, **kwargs):
 @compiles(ops.StringConcat)
 def compile_string_concat(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
-    src_columns = [t.translate(arg, **kwargs) for arg in op.args]
+    src_columns = [t.translate(arg, **kwargs) for arg in op.arg]
     return F.concat(*src_columns)
 
 

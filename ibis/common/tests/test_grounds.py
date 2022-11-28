@@ -11,7 +11,6 @@ from ibis.common.annotations import (
     immutable_property,
     mandatory,
     optional,
-    variadic,
 )
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Traversable, bfs, children
@@ -78,32 +77,6 @@ def test_annotable():
 
     obj2 = InBetween(10, lower=8)
     assert obj.copy(lower=8) == obj2
-
-
-def test_variadic_annotable():
-    class Test(Annotable):
-        value = is_int
-        rest = variadic(is_int)
-
-    t = Test(1, 2, 3, 4)
-    assert t.value == 1
-    assert t.rest == (2, 3, 4)
-
-    class Test2(Test):
-        option = is_str
-
-    with pytest.raises(TypeError):
-        Test2(1, 2, 3, 4, 'foo')
-
-    t2 = Test2(1, 2, 3, 4, option='foo')
-    assert t2.value == 1
-    assert t2.rest == (2, 3, 4)
-    assert t2.option == 'foo'
-
-    assert t2 == t2.copy()
-
-    t3 = t2.copy(rest=(5, 6, 7, 8))
-    assert t3 == Test2(1, 5, 6, 7, 8, option='foo')
 
 
 def test_annotable_is_mutable_by_default():
@@ -794,12 +767,12 @@ def test_concrete_with_traversable_children():
         right = instance_of(Bool)
 
     class All(Bool):
-        arguments = variadic(instance_of(Bool))
+        arguments = tuple_of(instance_of(Bool))
         strict = is_bool
 
     T, F = Value(True), Value(False)
 
-    node = All(T, F, strict=True)
+    node = All((T, F), strict=True)
     assert node.__args__ == ((T, F), True)
     assert node.__children__ == node.__args__
     assert children(node) == (
@@ -811,13 +784,13 @@ def test_concrete_with_traversable_children():
     assert node.__args__ == (T, F)
     assert node.__children__ == (T, F)
 
-    node = All(T, Either(T, Either(T, F)), strict=False)
+    node = All((T, Either(T, Either(T, F))), strict=False)
     assert node.__args__ == ((T, Either(T, Either(T, F))), False)
     assert node.__children__ == node.__args__
     assert children(node) == (T, Either(T, Either(T, F)))
 
     copied = node.copy(arguments=(T, F))
-    assert copied == All(T, F, strict=False)
+    assert copied == All((T, F), strict=False)
 
 
 def test_composition_of_concrete_and_singleton():
@@ -862,11 +835,11 @@ class BoolLiteral(Literal):
 
 
 class And(Example):
-    operands = variadic(instance_of(BoolLiteral))
+    operands = tuple_of(instance_of(BoolLiteral))
 
 
 class Or(Example):
-    operands = variadic(instance_of(BoolLiteral))
+    operands = tuple_of(instance_of(BoolLiteral))
 
 
 class Collect(Example):
@@ -879,8 +852,8 @@ def test_example():
     c = BoolLiteral(True)
     d = BoolLiteral(False)
 
-    and_ = And(a, b, c, d)
-    or_ = Or(a, c)
+    and_ = And((a, b, c, d))
+    or_ = Or((a, c))
     collect = Collect([and_, (or_, or_)])
 
     graph = bfs(collect)

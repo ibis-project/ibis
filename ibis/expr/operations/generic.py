@@ -17,7 +17,7 @@ import ibis.expr.rules as rlz
 from ibis.common import exceptions as com
 from ibis.common.annotations import attribute
 from ibis.common.grounds import Singleton
-from ibis.expr.operations.core import Named, Unary, Value, Variadic
+from ibis.expr.operations.core import Named, Unary, Value
 from ibis.util import frozendict
 
 try:
@@ -150,18 +150,24 @@ class NullIf(Value):
 
 
 @public
-class Coalesce(Variadic):
-    arg = rlz.variadic(rlz.any)
+class Coalesce(Value):
+    arg = rlz.tuple_of(rlz.any)
+    output_shape = rlz.shape_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
-class Greatest(Variadic):
-    arg = rlz.variadic(rlz.any)
+class Greatest(Value):
+    arg = rlz.tuple_of(rlz.any)
+    output_shape = rlz.shape_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public
-class Least(Variadic):
-    arg = rlz.variadic(rlz.any)
+class Least(Value):
+    arg = rlz.tuple_of(rlz.any)
+    output_shape = rlz.shape_like('arg')
+    output_dtype = rlz.dtype_like('arg')
 
 
 @public

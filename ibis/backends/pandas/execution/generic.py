@@ -979,9 +979,10 @@ def execute_alias(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ops.StringConcat, [object])
-def execute_node_string_concat(op, *args, **kwargs):
-    return functools.reduce(operator.add, args)
+@execute_node.register(ops.StringConcat, tuple)
+def execute_node_string_concat(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
+    return functools.reduce(operator.add, values)
 
 
 @execute_node.register(ops.StringJoin, collections.abc.Sequence)
@@ -1215,19 +1216,22 @@ def compute_row_reduction(func, values, **kwargs):
     return pd.Series(raw).squeeze()
 
 
-@execute_node.register(ops.Greatest, [object])
-def execute_node_greatest_list(op, *values, **kwargs):
+@execute_node.register(ops.Greatest, tuple)
+def execute_node_greatest_list(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
     return compute_row_reduction(np.maximum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Least, [object])
-def execute_node_least_list(op, *values, **kwargs):
+@execute_node.register(ops.Least, tuple)
+def execute_node_least_list(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
     return compute_row_reduction(np.minimum.reduce, values, axis=0)
 
 
-@execute_node.register(ops.Coalesce, [object])
-def execute_node_coalesce(op, *values, **kwargs):
+@execute_node.register(ops.Coalesce, tuple)
+def execute_node_coalesce(op, values, **kwargs):
     # TODO: this is slow
+    values = [execute(arg, **kwargs) for arg in values]
     return compute_row_reduction(coalesce, values)
 
 

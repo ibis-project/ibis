@@ -314,19 +314,19 @@ def searched_case(op):
 
 @translate.register(ops.Coalesce)
 def coalesce(op):
-    arg = list(map(translate, op.args))
+    arg = list(map(translate, op.arg))
     return pl.coalesce(arg)
 
 
 @translate.register(ops.Least)
 def least(op):
-    arg = [translate(arg) for arg in op.args]
+    arg = [translate(arg) for arg in op.arg]
     return pl.min(arg)
 
 
 @translate.register(ops.Greatest)
 def greatest(op):
-    arg = [translate(arg) for arg in op.args]
+    arg = [translate(arg) for arg in op.arg]
     return pl.max(arg)
 
 
@@ -421,7 +421,7 @@ def string_endswith(op):
 
 @translate.register(ops.StringConcat)
 def string_concat(op):
-    args = [translate(arg) for arg in op.args]
+    args = [translate(arg) for arg in op.arg]
     return pl.concat_str(args)
 
 

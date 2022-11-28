@@ -271,10 +271,8 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
 
         results = {}
         for node in Graph.from_bfs(self, filter=filter).toposort():
-            args, kwargs = node.__signature__.unbind(node)
-            args = recursive_get(args, results)
-            kwargs = recursive_get(kwargs, results)
-            results[node] = fn(node, *args, **kwargs)
+            kwargs = recursive_get(node.__getstate__(), results)
+            results[node] = fn(node, **kwargs)
 
         return results
 
@@ -282,10 +280,10 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
         return self.map(fn, filter=filter)[self]
 
     def replace(self, subs, filter=None):
-        def fn(node, *args, **kwargs):
+        def fn(node, **kwargs):
             try:
                 return subs[node]
             except KeyError:
-                return node.__class__(*args, **kwargs)
+                return node.__class__(**kwargs)
 
         return self.substitute(fn, filter=filter)

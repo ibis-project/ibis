@@ -436,13 +436,14 @@ def elementwise_udf(op):
 
 @translate.register(ops.StringConcat)
 def string_concat(op):
-    return df.functions.concat(*map(translate, op.args))
+    return df.functions.concat(*map(translate, op.arg))
 
 
 @translate.register(ops.RegexExtract)
 def regex_extract(op):
     arg = translate(op.arg)
-    pattern = translate(ops.StringConcat("(", op.pattern, ")"))
+    concat = ops.StringConcat(("(", op.pattern, ")"))
+    pattern = translate(concat)
     if (index := getattr(op.index, "value", None)) is None:
         raise ValueError(
             "re_extract `index` expressions must be literals. "

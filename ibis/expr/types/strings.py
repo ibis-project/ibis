@@ -711,7 +711,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat(self, other, *args).to_expr()
+        return ops.StringConcat((self, other, *args)).to_expr()
 
     def __add__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -726,7 +726,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat(self, other).to_expr()
+        return ops.StringConcat((self, other)).to_expr()
 
     def __radd__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -741,7 +741,7 @@ class StringValue(Value):
         StringValue
             All strings concatenated
         """
-        return ops.StringConcat(other, self).to_expr()
+        return ops.StringConcat((other, self)).to_expr()
 
     def convert_base(
         self,

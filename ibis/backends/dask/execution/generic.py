@@ -38,6 +38,8 @@ from ibis.backends.pandas.core import (
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.generic import (
     _execute_binary_op_impl,
+    coalesce,
+    compute_row_reduction,
     execute_between,
     execute_cast_series_array,
     execute_cast_series_generic,
@@ -493,3 +495,22 @@ def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
         otherwise = np.nan
     raw = np.select([value == when for when in whens], thens, otherwise)
     return wrap_case_result(raw, op.to_expr())
+
+
+@execute_node.register(ops.Greatest, tuple)
+def execute_node_greatest_list(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
+    return compute_row_reduction(np.maximum.reduce, values, axis=0)
+
+
+@execute_node.register(ops.Least, tuple)
+def execute_node_least_list(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
+    return compute_row_reduction(np.minimum.reduce, values, axis=0)
+
+
+@execute_node.register(ops.Coalesce, tuple)
+def execute_node_coalesce(op, values, **kwargs):
+    # TODO: this is slow
+    values = [execute(arg, **kwargs) for arg in values]
+    return compute_row_reduction(coalesce, values)
