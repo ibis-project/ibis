@@ -18,13 +18,6 @@ ignore:
 
 coverage:
   status:
-    project:
-      default:
-        # Allow for slight decreases in code coverage, makes
-        # the coverage status checks a little less finicky
-        target: auto
-        threshold: 1%
-        only_pulls: true
     patch:
       default:
         target: auto
