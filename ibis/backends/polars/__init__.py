@@ -39,9 +39,16 @@ def _csv(_, path, table_name=None, **kwargs):
 
 
 @_register_file.register(r"(?:file://)?(?P<path>.+)", priority=9)
-def _file(_, path, table_name=None, **kwargs):
+def _file(raw, path, table_name=None, **kwargs):
     num_sep_chars = len(os.extsep)
     extension = "".join(Path(path).suffixes)[num_sep_chars:]
+    if not extension:
+        raise ValueError(
+            f"""Unrecognized file type or extension: {raw}
+
+        Valid prefixes are parquet://, csv://, or file://
+        Supported file extensions are parquet and csv"""
+        )
     return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
 
 

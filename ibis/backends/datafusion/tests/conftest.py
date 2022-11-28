@@ -25,9 +25,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
         #   parquet file path
         #   csv file path
         client = ibis.datafusion.connect({})
-        client.register_csv(
-            name='functional_alltypes',
-            path=data_directory / 'functional_alltypes.csv',
+        client.register(
+            data_directory / 'functional_alltypes.csv',
+            table_name='functional_alltypes',
             schema=pa.schema(
                 [
                     ('index', 'int64'),
@@ -48,9 +48,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 ]
             ),
         )
-        client.register_csv(name='batting', path=data_directory / 'batting.csv')
-        client.register_csv(
-            name='awards_players', path=data_directory / 'awards_players.csv'
+        client.register(data_directory / 'batting.csv', table_name='batting')
+        client.register(
+            data_directory / 'awards_players.csv', table_name='awards_players'
         )
         return client
 
