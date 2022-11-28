@@ -20,11 +20,6 @@ from ibis.common.grounds import Singleton
 from ibis.expr.operations.core import Named, Unary, Value
 from ibis.util import frozendict
 
-try:
-    from shapely.geometry.base import BaseGeometry
-except ImportError:
-    BaseGeometry = type(None)
-
 
 @public
 class TableColumn(Value, Named):
@@ -172,28 +167,32 @@ class Least(Value):
 
 @public
 class Literal(Value):
-    value = rlz.instance_of(
+    value = rlz.one_of(
         (
-            BaseGeometry,
-            bytes,
-            datetime.date,
-            datetime.datetime,
-            datetime.time,
-            datetime.timedelta,
-            decimal.Decimal,
-            enum.Enum,
-            float,
-            frozendict,
-            frozenset,
-            int,
-            ipaddress.IPv4Address,
-            ipaddress.IPv6Address,
-            np.generic,
-            np.ndarray,
-            str,
-            tuple,
-            type(None),
-            uuid.UUID,
+            rlz.instance_of(
+                (
+                    bytes,
+                    datetime.date,
+                    datetime.datetime,
+                    datetime.time,
+                    datetime.timedelta,
+                    decimal.Decimal,
+                    enum.Enum,
+                    float,
+                    frozendict,
+                    frozenset,
+                    int,
+                    ipaddress.IPv4Address,
+                    ipaddress.IPv6Address,
+                    np.generic,
+                    np.ndarray,
+                    str,
+                    tuple,
+                    type(None),
+                    uuid.UUID,
+                )
+            ),
+            rlz.lazy_instance_of("shapely.geometry.BaseGeometry"),
         )
     )
     dtype = rlz.datatype
