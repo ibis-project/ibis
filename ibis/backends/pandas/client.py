@@ -1,7 +1,6 @@
 """The pandas client implementation."""
 
 import json
-from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -15,9 +14,6 @@ import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base import Database
 from ibis.common.grounds import Immutable
-
-infer_pandas_dtype = pd.api.types.infer_dtype
-
 
 _ibis_dtypes = toolz.valmap(
     np.dtype,
@@ -46,64 +42,6 @@ _ibis_dtypes = toolz.valmap(
 )
 
 
-_numpy_dtypes = toolz.keymap(
-    np.dtype,
-    {
-        'bool': dt.boolean,
-        'int8': dt.int8,
-        'int16': dt.int16,
-        'int32': dt.int32,
-        'int64': dt.int64,
-        'uint8': dt.uint8,
-        'uint16': dt.uint16,
-        'uint32': dt.uint32,
-        'uint64': dt.uint64,
-        'float16': dt.float16,
-        'float32': dt.float32,
-        'float64': dt.float64,
-        'double': dt.double,
-        'unicode': dt.string,
-        'str': dt.string,
-        'datetime64': dt.timestamp,
-        'datetime64[ns]': dt.timestamp,
-        'timedelta64': dt.interval,
-        'timedelta64[ns]': dt.Interval('ns'),
-    },
-)
-
-
-_inferable_pandas_dtypes = {
-    'string': dt.string,
-    'bytes': dt.string,
-    'floating': dt.float64,
-    'integer': dt.int64,
-    'mixed-integer': dt.binary,
-    'mixed-integer-float': dt.float64,
-    'decimal': dt.float64,
-    'complex': dt.binary,
-    'categorical': dt.category,
-    'boolean': dt.boolean,
-    'datetime64': dt.timestamp,
-    'datetime': dt.timestamp,
-    'date': dt.date,
-    'timedelta64': dt.interval,
-    'timedelta': dt.interval,
-    'time': dt.time,
-    'period': dt.binary,
-    'mixed': dt.binary,
-    'empty': dt.binary,
-    'unicode': dt.string,
-}
-
-
-@dt.dtype.register(np.dtype)
-def from_numpy_dtype(value):
-    try:
-        return _numpy_dtypes[value]
-    except KeyError:
-        raise TypeError(f'numpy dtype {value!r} is not supported in the pandas backend')
-
-
 @dt.dtype.register(DatetimeTZDtype)
 def from_pandas_tzdtype(value):
     return dt.Timestamp(timezone=str(value.tz))
@@ -117,85 +55,6 @@ def from_pandas_categorical(_):
 @dt.dtype.register(pd.core.arrays.string_.StringDtype)
 def from_pandas_string(_):
     return dt.String()
-
-
-@dt.infer.register(np.generic)
-def infer_numpy_scalar(value):
-    return dt.dtype(value.dtype)
-
-
-def _infer_pandas_series_contents(s: pd.Series) -> dt.DataType:
-    """Infer the type of the **contents** of a pd.Series.
-
-    No dispatch for this because there is no class representing "the contents
-    of a Series". Instead, this is meant to be used internally, mainly by
-    `infer_pandas_series`.
-
-    Parameters
-    ----------
-    s : pd.Series
-        The Series whose contents we want to know the type of
-
-    Returns
-    -------
-    dtype : dt.DataType
-        The dtype of the contents of the Series
-    """
-    if s.dtype == np.object_:
-        inferred_dtype = infer_pandas_dtype(s, skipna=True)
-        if inferred_dtype == 'mixed':
-            # We need to inspect an element to determine the Ibis dtype
-            value = s.iloc[0]
-            if isinstance(value, (np.ndarray, pd.Series, Sequence, Mapping)):
-                # Defer to individual `infer` functions for these
-                return dt.infer(value)
-            else:
-                return dt.dtype('binary')
-        else:
-            return _inferable_pandas_dtypes[inferred_dtype]
-    else:
-        return dt.dtype(s.dtype)
-
-
-@dt.infer.register(pd.Series)
-def infer_pandas_series(s):
-    """Infer the type of a pd.Series.
-
-    Note that the returned datatype will be an array type, which
-    corresponds to the fact that a Series is a collection of elements.
-    Please use `_infer_pandas_series_contents` if you are interested in
-    the datatype of the **contents** of the Series.
-    """
-    return dt.Array(_infer_pandas_series_contents(s))
-
-
-@dt.infer.register(pd.Timestamp)
-def infer_pandas_timestamp(value):
-    if value.tz is not None:
-        return dt.Timestamp(timezone=str(value.tz))
-    else:
-        return dt.timestamp
-
-
-@dt.infer.register(np.ndarray)
-def infer_array(value):
-    # In this function, by default we'll directly map the dtype of the
-    # np.array to a corresponding Ibis dtype (see bottom)
-    np_dtype = value.dtype
-
-    # However, there are some special cases where we can't use the np.array's
-    # dtype:
-    if np_dtype.type == np.object_:
-        # np.array dtype is `dtype('O')`, which is ambiguous.
-        inferred_dtype = infer_pandas_dtype(value, skipna=True)
-        return dt.Array(_inferable_pandas_dtypes[inferred_dtype])
-    elif np_dtype.type == np.str_:
-        # np.array dtype is `dtype('<U1')` (for np.arrays containing strings),
-        # which is ambiguous.
-        return dt.Array(dt.string)
-
-    # The dtype of the np.array is not ambiguous, and can be used directly.
-    return dt.Array(dt.dtype(np_dtype))
 
 
 @sch.schema.register(pd.Series)
@@ -215,7 +74,7 @@ def infer_pandas_schema(df, schema=None):
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])
         else:
-            ibis_dtype = _infer_pandas_series_contents(df[column_name])
+            ibis_dtype = dt.infer(df[column_name]).value_type
 
         pairs.append((column_name, ibis_dtype))
 

@@ -6,22 +6,14 @@ import decimal
 import enum
 import ipaddress
 import uuid
-from typing import (
-    TYPE_CHECKING,
-    AbstractSet,
-    Any,
-    Mapping,
-    NamedTuple,
-    Sequence,
-    SupportsFloat,
-)
+from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
 
 import numpy as np
 import toolz
-from multipledispatch import Dispatcher
 from public import public
 
 import ibis.expr.datatypes.core as dt
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.expr.datatypes.cast import highest_precedence
 from ibis.util import frozendict
@@ -29,38 +21,10 @@ from ibis.util import frozendict
 if TYPE_CHECKING:
     import pandas as pd
 
-try:
-    import shapely.geometry as geo
 
-    IS_SHAPELY_AVAILABLE = True
-except ImportError:
-    IS_SHAPELY_AVAILABLE = False
-
-
-infer = Dispatcher("infer")
-normalize = Dispatcher(
-    "normalize",
-    doc="""\
-Ensure that the Python type underlying an
-:class:`~ibis.expr.operations.generic.Literal` resolves to a single acceptable
-type regardless of the input value.
-
-Parameters
-----------
-typ : DataType
-value :
-
-Returns
--------
-value
-    the input ``value`` normalized to the expected type
-""",
-)
-
-
-@infer.register(object)
-def infer_dtype_default(value: Any) -> dt.DataType:
-    """Default implementation of :func:`~ibis.expr.datatypes.infer`."""
+@lazy_singledispatch
+def infer(value: Any) -> dt.DataType:
+    """Infer the corresponding ibis dtype for a python object."""
     raise InputTypeError(value)
 
 
@@ -196,79 +160,6 @@ def infer_ipaddr(
     return dt.inet
 
 
-@normalize.register(dt.DataType, object)
-def normalize_default(typ: dt.DataType, value: object) -> object:
-    return value
-
-
-@normalize.register(dt.Integer, (int, float, np.integer, np.floating))
-def normalize_int(typ: dt.Integer, value: float) -> float:
-    return int(value)
-
-
-@normalize.register(dt.Floating, (int, float, np.integer, np.floating, SupportsFloat))
-def normalize_float(typ: dt.Floating, value: float) -> float:
-    return float(value)
-
-
-@normalize.register(dt.UUID, str)
-def normalize_str_to_uuid(typ: dt.UUID, value: str) -> uuid.UUID:
-    return uuid.UUID(value)
-
-
-@normalize.register(dt.String, uuid.UUID)
-def normalize_uuid_to_str(typ: dt.String, value: uuid.UUID) -> str:
-    return str(value)
-
-
-@normalize.register(dt.Decimal, int)
-def normalize_int_to_decimal(typ: dt.Decimal, value: int) -> decimal.Decimal:
-    return decimal.Decimal(value).scaleb(-typ.scale)
-
-
-@normalize.register(dt.Array, (tuple, list, np.ndarray))
-def normalize_array_to_tuple(typ: dt.Array, values: Sequence) -> tuple:
-    return tuple(normalize(typ.value_type, item) for item in values)
-
-
-@normalize.register(dt.Set, (set, frozenset))
-def normalize_set_to_frozenset(typ: dt.Set, values: AbstractSet) -> frozenset:
-    return frozenset(normalize(typ.value_type, item) for item in values)
-
-
-@normalize.register(dt.Map, dict)
-def normalize_map_to_frozendict(typ: dt.Map, values: Mapping) -> decimal.Decimal:
-    values = {k: normalize(typ.value_type, v) for k, v in values.items()}
-    return frozendict(values)
-
-
-@normalize.register(dt.Struct, dict)
-def normalize_struct_to_frozendict(typ: dt.Struct, values: Mapping) -> decimal.Decimal:
-    value_types = typ.pairs
-    values = {k: normalize(typ[k], v) for k, v in values.items() if k in value_types}
-    return frozendict(values)
-
-
-@normalize.register(dt.Point, (tuple, list))
-def normalize_point_to_tuple(typ: dt.Point, values: Sequence) -> tuple:
-    return tuple(normalize(dt.float64, item) for item in values)
-
-
-@normalize.register((dt.LineString, dt.MultiPoint), (tuple, list))
-def normalize_linestring_to_tuple(typ: dt.LineString, values: Sequence) -> tuple:
-    return tuple(normalize(dt.point, item) for item in values)
-
-
-@normalize.register((dt.Polygon, dt.MultiLineString), (tuple, list))
-def normalize_polygon_to_tuple(typ: dt.Polygon, values: Sequence) -> tuple:
-    return tuple(normalize(dt.linestring, item) for item in values)
-
-
-@normalize.register(dt.MultiPolygon, (tuple, list))
-def normalize_multipolygon_to_tuple(typ: dt.MultiPolygon, values: Sequence) -> tuple:
-    return tuple(normalize(dt.polygon, item) for item in values)
-
-
 @public
 class _WellKnownText(NamedTuple):
     text: str
@@ -280,39 +171,151 @@ class _WellKnownText(NamedTuple):
         return self.text
 
 
-if IS_SHAPELY_AVAILABLE:
+def _infer_object_array_dtype(x):
+    import pandas as pd
+    from pandas.api.types import infer_dtype
 
-    @infer.register(geo.Point)
-    def infer_shapely_point(value: geo.Point) -> dt.Point:
-        return dt.point
+    classifier = infer_dtype(x, skipna=True)
+    if classifier == "mixed":
+        value = x.iloc[0] if isinstance(x, pd.Series) else x[0]
+        if isinstance(value, (np.ndarray, pd.Series, Sequence, Mapping)):
+            return infer(value)
+        else:
+            return dt.binary
+    else:
+        return {
+            'string': dt.string,
+            'bytes': dt.string,
+            'floating': dt.float64,
+            'integer': dt.int64,
+            'mixed-integer': dt.binary,
+            'mixed-integer-float': dt.float64,
+            'decimal': dt.float64,
+            'complex': dt.binary,
+            'categorical': dt.category,
+            'boolean': dt.boolean,
+            'datetime64': dt.timestamp,
+            'datetime': dt.timestamp,
+            'date': dt.date,
+            'timedelta64': dt.interval,
+            'timedelta': dt.interval,
+            'time': dt.time,
+            'period': dt.binary,
+            'empty': dt.binary,
+            'unicode': dt.string,
+        }[classifier]
 
-    @infer.register(geo.LineString)
-    def infer_shapely_linestring(value: geo.LineString) -> dt.LineString:
-        return dt.linestring
 
-    @infer.register(geo.Polygon)
-    def infer_shapely_polygon(value: geo.Polygon) -> dt.Polygon:
-        return dt.polygon
+@infer.register(np.generic)
+def infer_numpy_scalar(value):
+    return dt.dtype(value.dtype)
 
-    @infer.register(geo.MultiLineString)
-    def infer_shapely_multilinestring(
-        value: geo.MultiLineString,
-    ) -> dt.MultiLineString:
-        return dt.multilinestring
 
-    @infer.register(geo.MultiPoint)
-    def infer_shapely_multipoint(value: geo.MultiPoint) -> dt.MultiPoint:
-        return dt.multipoint
+@infer.register(np.ndarray)
+def infer_numpy_array(value):
+    np_dtype = value.dtype
+    if np_dtype.type == np.object_:
+        return dt.Array(_infer_object_array_dtype(value))
+    elif np_dtype.type == np.str_:
+        return dt.Array(dt.string)
+    return dt.Array(dt.dtype(np_dtype))
 
-    @infer.register(geo.MultiPolygon)
-    def infer_shapely_multipolygon(value: geo.MultiPolygon) -> dt.MultiPolygon:
-        return dt.multipolygon
 
-    @normalize.register(dt.GeoSpatial, geo.base.BaseGeometry)
-    def normalize_geom_to_wkt(
-        typ: dt.GeoSpatial, base_geom: geo.base.BaseGeometry
-    ) -> _WellKnownText:
-        return _WellKnownText(base_geom.wkt)
+@infer.register("pandas.Series")
+def _(value):
+    if value.dtype == np.object_:
+        value_dtype = _infer_object_array_dtype(value)
+    else:
+        value_dtype = dt.dtype(value.dtype)
+
+    return dt.Array(value_dtype)
+
+
+@infer.register("pandas.Timestamp")
+def _(value):
+    if value.tz is not None:
+        return dt.Timestamp(timezone=str(value.tz))
+    else:
+        return dt.timestamp
+
+
+@infer.register("shapely.geometry.Point")
+def infer_shapely_point(value) -> dt.Point:
+    return dt.point
+
+
+@infer.register("shapely.geometry.LineString")
+def infer_shapely_linestring(value) -> dt.LineString:
+    return dt.linestring
+
+
+@infer.register("shapely.geometry.Polygon")
+def infer_shapely_polygon(value) -> dt.Polygon:
+    return dt.polygon
+
+
+@infer.register("shapely.geometry.MultiLineString")
+def infer_shapely_multilinestring(value) -> dt.MultiLineString:
+    return dt.multilinestring
+
+
+@infer.register("shapely.geometry.MultiPoint")
+def infer_shapely_multipoint(value) -> dt.MultiPoint:
+    return dt.multipoint
+
+
+@infer.register("shapely.geometry.MultiPolygon")
+def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
+    return dt.multipolygon
+
+
+def normalize(typ, value):
+    """Ensure that the Python type underlying an
+    :class:`~ibis.expr.operations.generic.Literal` resolves to a single
+    acceptable type regardless of the input value."""
+    if value is None:
+        if not typ.nullable:
+            raise TypeError("Cannot convert `None` to non-nullable type {typ!r}")
+        return None
+
+    if typ.is_boolean():
+        return bool(value)
+    elif typ.is_integer():
+        return int(value)
+    elif typ.is_floating():
+        return float(value)
+    elif typ.is_string() and not typ.is_json():
+        return str(value)
+    elif typ.is_decimal():
+        out = decimal.Decimal(value)
+        if isinstance(value, int):
+            return out.scaleb(-typ.scale)
+        return out
+    elif typ.is_uuid():
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
+    elif typ.is_array():
+        return tuple(normalize(typ.value_type, item) for item in value)
+    elif typ.is_set():
+        return frozenset(normalize(typ.value_type, item) for item in value)
+    elif typ.is_map():
+        return frozendict({k: normalize(typ.value_type, v) for k, v in value.items()})
+    elif typ.is_struct():
+        return frozendict(
+            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.pairs}
+        )
+    elif typ.is_geospatial():
+        if isinstance(value, (tuple, list)):
+            if typ.is_point():
+                return tuple(normalize(dt.float64, item) for item in value)
+            elif typ.is_linestring() or typ.is_multipoint():
+                return tuple(normalize(dt.point, item) for item in value)
+            elif typ.is_polygon() or typ.is_multilinestring():
+                return tuple(normalize(dt.linestring, item) for item in value)
+            elif typ.is_multipolygon():
+                return tuple(normalize(dt.polygon, item) for item in value)
+        return _WellKnownText(value.wkt)
+    else:
+        return value
 
 
 public(infer=infer, normalize=normalize)

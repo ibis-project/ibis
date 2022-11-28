@@ -3,6 +3,7 @@ from __future__ import annotations
 import numbers
 from typing import Any, Iterable, Mapping, NamedTuple
 
+import numpy as np
 from multipledispatch import Dispatcher
 from public import public
 
@@ -949,6 +950,37 @@ inet = INET()
 decimal = Decimal()
 
 Enum = String
+
+_numpy_dtypes = {
+    np.dtype("bool"): boolean,
+    np.dtype("int8"): int8,
+    np.dtype("int16"): int16,
+    np.dtype("int32"): int32,
+    np.dtype("int64"): int64,
+    np.dtype("uint8"): uint8,
+    np.dtype("uint16"): uint16,
+    np.dtype("uint32"): uint32,
+    np.dtype("uint64"): uint64,
+    np.dtype("float16"): float16,
+    np.dtype("float32"): float32,
+    np.dtype("float64"): float64,
+    np.dtype("double"): float64,
+    np.dtype("unicode"): string,
+    np.dtype("str"): string,
+    np.dtype("datetime64"): timestamp,
+    np.dtype("datetime64[ns]"): timestamp,
+    np.dtype("timedelta64"): interval,
+    np.dtype("timedelta64[ns]"): Interval("ns"),
+}
+
+
+@dtype.register(np.dtype)
+def _(value):
+    try:
+        return _numpy_dtypes[value]
+    except KeyError:
+        raise TypeError(f"numpy dtype {value!r} is not supported")
+
 
 public(
     null=null,

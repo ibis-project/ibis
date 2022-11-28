@@ -2,7 +2,6 @@
 
 import dask.dataframe as dd
 import numpy as np
-import pandas as pd
 from pandas.api.types import DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
@@ -12,15 +11,9 @@ from ibis.backends.base import Database
 from ibis.backends.pandas.client import (
     PANDAS_DATE_TYPES,
     PANDAS_STRING_TYPES,
-    _inferable_pandas_dtypes,
     ibis_dtype_to_pandas,
     ibis_schema_to_pandas,
 )
-
-infer_dask_dtype = pd.api.types.infer_dtype
-
-
-_inferable_dask_dtypes = _inferable_pandas_dtypes
 
 
 @sch.schema.register(dd.Series)
@@ -40,16 +33,11 @@ def infer_dask_schema(df, schema=None):
         if column_name in schema:
             ibis_dtype = dt.dtype(schema[column_name])
         elif dask_dtype == np.object_:
-            inferred_dtype = infer_dask_dtype(df[column_name].compute(), skipna=True)
-            if inferred_dtype in {'mixed', 'decimal'}:
-                # TODO: in principal we can handle decimal (added in pandas
-                # 0.23)
-                raise TypeError(
-                    'Unable to infer type of column {0!r}. Try instantiating '
-                    'your table from the client with client.table('
-                    "'my_table', schema={{{0!r}: <explicit type>}})".format(column_name)
-                )
-            ibis_dtype = _inferable_dask_dtypes[inferred_dtype]
+            # TODO: don't call compute here. ibis should just assume that
+            # object dtypes are strings, which is what dask does. The user
+            # can always explicitly pass in `schema=...` when creating a
+            # table if they want to use a different dtype.
+            ibis_dtype = dt.infer(df[column_name].compute()).value_type
         else:
             ibis_dtype = dt.dtype(dask_dtype)
 

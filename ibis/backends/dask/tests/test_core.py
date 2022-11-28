@@ -161,10 +161,6 @@ def test_is_computable_input():
     execute_node.reorder()
     execute_node._cache.clear()
 
-    del dt.infer.funcs[(MyObject,)]
-    dt.infer.reorder()
-    dt.infer._cache.clear()
-
 
 def test_scope_look_up():
     # test if scope could lookup items properly
