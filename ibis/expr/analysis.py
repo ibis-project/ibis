@@ -427,16 +427,14 @@ def windowize_function(expr, w=None):
     assert isinstance(expr, ir.Expr), type(expr)
 
     def _windowize(op, w):
-        if not isinstance(op, ops.Window):
-            walked = _walk(op, w)
-        else:
+        if isinstance(op, ops.Window):
             window_arg, window_w = op.args
             walked_child = _walk(window_arg, w)
-
-            if walked_child is not window_arg:
-                walked = ops.Window(walked_child, window_w)
-            else:
-                walked = op
+            walked = ops.Window(walked_child, window_w)
+        elif isinstance(op, ops.Value):
+            walked = _walk(op, w)
+        else:
+            walked = op
 
         if isinstance(walked, (ops.Analytic, ops.Reduction)):
             if w is None:
@@ -454,12 +452,12 @@ def windowize_function(expr, w=None):
         # TODO(kszucs): rewrite to use the substitute utility
         windowed_args = []
         for arg in op.args:
-            if not isinstance(arg, ops.Value):
-                windowed_args.append(arg)
-                continue
+            if isinstance(arg, ops.Value):
+                arg = _windowize(arg, w)
+            elif isinstance(arg, tuple):
+                arg = tuple(_windowize(x, w) for x in arg)
 
-            new_arg = _windowize(arg, w)
-            windowed_args.append(new_arg)
+            windowed_args.append(arg)
 
         return type(op)(*windowed_args)
 

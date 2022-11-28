@@ -314,11 +314,6 @@ def _log(translator, op):
     return _call(translator, func, op.arg)
 
 
-def _value_list(translator, op):
-    values_ = map(translator.translate, op.values)
-    return '({})'.format(', '.join(values_))
-
-
 def _interval_format(translator, op):
     dtype = op.output_dtype
     if dtype.unit in {'ms', 'us', 'ns'}:
