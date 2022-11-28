@@ -692,3 +692,16 @@ def test_compile_with_drops(
         pytest.skip(str(e))
     else:
         benchmark(mod.compile, expr)
+
+
+def test_repr_join(benchmark, customers, orders, orders_items, products):
+    expr = (
+        customers.join(orders, "customerid")
+        .join(orders_items, "orderid")
+        .join(products, "sku")
+        .drop("customerid", "qty", "total", "items")
+        .drop("dims_cm", "cost")
+        .mutate(o_date=lambda t: t.shipped.date())
+    )
+    op = expr.op()
+    benchmark(repr, op)
