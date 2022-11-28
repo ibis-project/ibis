@@ -1793,7 +1793,7 @@ plugin = ["poetry (>=1.2.0,<2.0.0)"]
 
 [[package]]
 name = "polars"
-version = "0.15.1"
+version = "0.14.31"
 description = "Blazingly fast DataFrame library"
 category = "main"
 optional = true
@@ -4282,12 +4282,12 @@ poetry-dynamic-versioning = [
     {file = "poetry_dynamic_versioning-0.21.1.tar.gz", hash = "sha256:0ba2a991a388f4ef202b0cf63629510cf64e7fef3ad232574f9598dd8c379d46"},
 ]
 polars = [
-    {file = "polars-0.15.1-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:a8f94c76306f9742c7742d81fd5bbe2d8481827614714d121877b396bf17e5ae"},
-    {file = "polars-0.15.1-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:2042ae1e80d6b5a4a60dbeffc68bd3063b588a28c2898561f2c0e93a81c666c4"},
-    {file = "polars-0.15.1-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5bf736ca0e4d971154648f2a23ac840f128a74c5fc1e7dcd72b456c55bcf0d34"},
-    {file = "polars-0.15.1-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b89afb8e811f469a521bc1a61479953a1ef468ee6237572e2cc2a4a038407666"},
-    {file = "polars-0.15.1-cp37-abi3-win_amd64.whl", hash = "sha256:deeac0a8184d1bd6791c476c905364c1e4f9e924203b1f33e6a5a0f46877706e"},
-    {file = "polars-0.15.1.tar.gz", hash = "sha256:a00ef0f53752ca4a7e33d92fb71ee2ce4e1d336b54e937fadc94dfb9c66fd606"},
+    {file = "polars-0.14.31-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:b15ce2e2c68722b13cc98b50bb62dcd67590766e230f9a03d6f5c41b4cf5319e"},
+    {file = "polars-0.14.31-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:0189242c3a36b8cb983a72235950f7e14504d9b6cd82b90e5c6cc240e00cd60d"},
+    {file = "polars-0.14.31-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ef8532e537d5d44d47a606abcdc00ca7755e537ccfdc281fb5744b2240b2f8a7"},
+    {file = "polars-0.14.31-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:208d286e1a4438eddd9fb134d1ea2e419dc2e3f37c6087513bfface8972d8be5"},
+    {file = "polars-0.14.31-cp37-abi3-win_amd64.whl", hash = "sha256:db44d05e2eaf7f9a022cb0329fe6415743a188ea17de78a64404731ba036fb93"},
+    {file = "polars-0.14.31.tar.gz", hash = "sha256:7964bbce8293ad4d9b2889b53660102a6111cb2150a2e5001d7b0daa980a9bb7"},
 ]
 pprintpp = [
     {file = "pprintpp-0.4.0-py2.py3-none-any.whl", hash = "sha256:b6b4dcdd0c0c0d75e4d7b2f21a9e933e5b2ce62b26e1a54537f9651ae5a5c01d"},
