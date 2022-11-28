@@ -602,3 +602,93 @@ def test_multiple_joins(benchmark, num_joins, num_columns):
         name="t",
     )
     benchmark(multiple_joins, table, num_joins)
+
+
+@pytest.fixture
+def customers():
+    return ibis.table(
+        dict(
+            customerid="int32",
+            name="string",
+            address="string",
+            citystatezip="string",
+            birthdate="date",
+            phone="string",
+            timezone="string",
+            lat="float64",
+            long="float64",
+        ),
+        name="customers",
+    )
+
+
+@pytest.fixture
+def orders():
+    return ibis.table(
+        dict(
+            orderid="int32",
+            customerid="int32",
+            ordered="timestamp",
+            shipped="timestamp",
+            items="string",
+            total="float64",
+        ),
+        name="orders",
+    )
+
+
+@pytest.fixture
+def orders_items():
+    return ibis.table(
+        dict(orderid="int32", sku="string", qty="int32", unit_price="float64"),
+        name="orders_items",
+    )
+
+
+@pytest.fixture
+def products():
+    return ibis.table(
+        dict(
+            sku="string",
+            desc="string",
+            weight_kg="float64",
+            cost="float64",
+            dims_cm="string",
+        ),
+        name="products",
+    )
+
+
+@pytest.mark.benchmark(group="compilation")
+@pytest.mark.parametrize(
+    "module",
+    [
+        pytest.param(
+            mod,
+            marks=pytest.mark.xfail(
+                condition=mod in _XFAIL_COMPILE_BACKENDS,
+                reason=f"{mod} backend doesn't support compiling UnboundTable",
+            ),
+        )
+        for mod in _backends
+    ],
+)
+def test_compile_with_drops(
+    benchmark, module, customers, orders, orders_items, products
+):
+    expr = (
+        customers.join(orders, "customerid")
+        .join(orders_items, "orderid")
+        .join(products, "sku")
+        .drop("customerid", "qty", "total", "items")
+        .drop("dims_cm", "cost")
+        .mutate(o_date=lambda t: t.shipped.date())
+        .filter(lambda t: t.ordered == t.shipped)
+    )
+
+    try:
+        mod = getattr(ibis, module)
+    except (AttributeError, ImportError) as e:
+        pytest.skip(str(e))
+    else:
+        benchmark(mod.compile, expr)
