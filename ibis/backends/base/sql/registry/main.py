@@ -123,7 +123,7 @@ def cast(translator, op):
 
 def varargs(func_name):
     def varargs_formatter(translator, op):
-        return helpers.format_call(translator, func_name, *op.args)
+        return helpers.format_call(translator, func_name, *op.arg)
 
     return varargs_formatter
 
@@ -210,7 +210,7 @@ def hash(translator, op):
 
 
 def concat(translator, op):
-    joined_args = ', '.join(map(translator.translate, op.args))
+    joined_args = ', '.join(map(translator.translate, op.arg))
     return f"concat({joined_args})"
 
 

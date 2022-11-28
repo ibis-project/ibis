@@ -3,13 +3,11 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
-from ibis.common.validators import option, tuple_of
+from ibis.common.validators import option
 from ibis.util import DotDict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
-VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
-KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
 
 
 def _noop(arg, **kwargs):
@@ -19,10 +17,21 @@ def _noop(arg, **kwargs):
 class Annotation:
     """Base class for all annotations."""
 
-    __slots__ = ('_validator',)
+    __slots__ = (
+        '_default',
+        '_validator',
+    )
 
-    def __init__(self, validator=None):
+    def __init__(self, validator=None, default=EMPTY):
+        self._default = default
         self._validator = validator
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other)
+            and self._default == other._default
+            and self._validator == other._validator
+        )
 
     def validate(self, arg, **kwargs):
         if self._validator is None:
@@ -40,24 +49,13 @@ class Attribute(Annotation):
     ----------
     validator : Validator, default noop
         Validator to validate the field.
+    default : Callable, default EMPTY
+        Callable to compute the default value of the field.
     """
-
-    __slots__ = ('_default',)
-
-    def __init__(self, validator=None, default=EMPTY):
-        self._default = default
-        self._validator = validator
 
     @classmethod
     def default(self, fn):
         return Attribute(default=fn)
-
-    def __eq__(self, other):
-        return (
-            type(self) is type(other)
-            and self._default == other._default
-            and self._validator == other._validator
-        )
 
     def initialize(self, this):
         if self._default is EMPTY:
@@ -69,42 +67,15 @@ class Attribute(Annotation):
 class Argument(Annotation):
     """Base class for all fields which should be passed as arguments."""
 
-    __slots__ = ('_kind', '_default')
-
-    def __init__(self, kind, default=EMPTY, validator=None):
-        self._kind = kind
-        self._default = default
-        self._validator = validator
-
-    def __eq__(self, other):
-        return (
-            type(self) is type(other)
-            and self._kind == other._kind
-            and self._default == other._default
-            and self._validator == other._validator
-        )
-
-    def replace(self, **kwargs):
-        return self.__class__(
-            kind=kwargs.get('kind', self._kind),
-            default=kwargs.get('default', self._default),
-            validator=kwargs.get('validator', self._validator),
-        )
-
     @classmethod
     def mandatory(cls, validator=None):
         """Annotation to mark a mandatory argument."""
-        return cls(POSITIONAL_OR_KEYWORD, validator=validator)
-
-    @classmethod
-    def mandatory_keyword(cls, validator=None):
-        """Annotation to mark a mandatory keyword only argument."""
-        return cls(KEYWORD_ONLY, validator=validator)
+        return cls(validator)
 
     @classmethod
     def default(cls, default, validator=None):
         """Annotation to allow missing arguments with a default value."""
-        return cls(POSITIONAL_OR_KEYWORD, default=default, validator=validator)
+        return cls(validator, default=default)
 
     @classmethod
     def optional(cls, validator=None, default=None):
@@ -113,16 +84,7 @@ class Argument(Annotation):
             validator = option(_noop, default=default)
         else:
             validator = option(validator, default=default)
-        return cls(POSITIONAL_OR_KEYWORD, default=None, validator=validator)
-
-    @classmethod
-    def variadic(cls, validator=None):
-        """Annotation variadic positional arguments."""
-        if validator is None:
-            validator = tuple_of(_noop)
-        else:
-            validator = tuple_of(validator)
-        return cls(VAR_POSITIONAL, validator=validator)
+        return cls(validator, default=None)
 
 
 class Parameter(inspect.Parameter):
@@ -137,7 +99,7 @@ class Parameter(inspect.Parameter):
             )
         super().__init__(
             name,
-            kind=annotation._kind,
+            kind=POSITIONAL_OR_KEYWORD,
             default=annotation._default,
             annotation=annotation._validator,
         )
@@ -176,20 +138,12 @@ class Signature(inspect.Signature):
         Signature
         """
         params = {}
-        inherited = set()
-        is_variadic = False
         for sig in signatures:
-            for name, param in sig.parameters.items():
-                is_variadic |= param.kind == VAR_POSITIONAL
-                params[name] = param
-                inherited.add(name)
+            params.update(sig.parameters)
 
+        inherited = set(params.keys())
         for name, annot in annotations.items():
-            if is_variadic:
-                annot = annot.replace(kind=KEYWORD_ONLY)
-            param = Parameter(name, annotation=annot)
-            is_variadic |= param.kind == VAR_POSITIONAL
-            params[name] = param
+            params[name] = Parameter(name, annotation=annot)
 
         # mandatory fields without default values must preceed the optional
         # ones in the function signature, the partial ordering will be kept
@@ -213,10 +167,7 @@ class Signature(inspect.Signature):
     def unbind(self, this: Any):
         """Reverse bind of the parameters.
 
-        Attempts to reconstructs the original arguments as positional and
-        keyword arguments. Since keyword arguments are the preferred, the
-        positional arguments are filled only if the signature has variadic
-        args.
+        Attempts to reconstructs the original arguments as keyword only arguments.
 
         Parameters
         ----------
@@ -229,19 +180,7 @@ class Signature(inspect.Signature):
             Tuple of positional and keyword arguments.
         """
         # does the reverse of bind, but doesn't apply defaults
-        args, kwargs = (), {}
-
-        for name, param in self.parameters.items():
-            value = getattr(this, name)
-            if param.kind == VAR_POSITIONAL:
-                # need to adjust due to the variadic argument: fn(a, b, *args)
-                # cannot be called again as fn(*args, a=..., b=...)
-                args = tuple(kwargs.values()) + value
-                kwargs = {}
-            else:
-                kwargs[name] = value
-
-        return args, kwargs
+        return {name: getattr(this, name) for name in self.parameters.keys()}
 
     def validate(self, *args, **kwargs):
         """Validate the arguments against the signature.
@@ -277,7 +216,6 @@ class Signature(inspect.Signature):
 attribute = Attribute
 mandatory = Argument.mandatory
 optional = Argument.optional
-variadic = Argument.variadic
 default = Argument.default
 immutable_property = Attribute.default
 

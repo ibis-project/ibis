@@ -236,7 +236,7 @@ def _string_join(t, op):
 
 
 def _string_concat(t, op):
-    return functools.reduce(operator.add, map(t.translate, op.args))
+    return functools.reduce(operator.add, map(t.translate, op.arg))
 
 
 def _date_from_ymd(t, op):

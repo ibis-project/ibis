@@ -505,7 +505,7 @@ def _string_join(translator, op):
 
 
 def _string_concat(translator, op):
-    args_formatted = ", ".join(map(translator.translate, op.args))
+    args_formatted = ", ".join(map(translator.translate, op.arg))
     return f"arrayStringConcat([{args_formatted}])"
 
 

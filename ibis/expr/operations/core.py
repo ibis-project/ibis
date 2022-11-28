@@ -90,18 +90,6 @@ class Value(Node, Named):
             return self.output_dtype.scalar(self)
 
 
-# TODO(kszucs): this base class is not required, using rlz.variadic() rule should be
-# enough once all the analysis code starts to use the traversal functions
-@public
-class Variadic(Value):
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
-
-    @property
-    def args(self):
-        return self.arg
-
-
 @public
 class Alias(Value):
     arg = rlz.any

@@ -122,8 +122,7 @@ def test_signature_unbind():
     sig = Signature(parameters=[other, this])
     params = sig.validate(1, this=2)
 
-    args, kwargs = sig.unbind(params)
-    assert args == ()
+    kwargs = sig.unbind(params)
     assert kwargs == {"other": 1, "this": 3}
 
 
@@ -131,37 +130,27 @@ def as_float(x, this):
     return float(x)
 
 
-a = Parameter('a', annotation=Argument.mandatory(as_float))
-b = Parameter('b', annotation=Argument.mandatory(as_float))
-c = Parameter('c', annotation=Argument.default(as_float))
-d = Parameter('d', annotation=Argument.variadic(as_float))
-e = Parameter('e', annotation=Argument.mandatory_keyword(as_float))
+def as_tuple_of_floats(x, this):
+    return tuple(float(i) for i in x)
+
+
+a = Parameter('a', annotation=Argument.mandatory(validator=as_float))
+b = Parameter('b', annotation=Argument.mandatory(validator=as_float))
+c = Parameter('c', annotation=Argument.default(default=0, validator=as_float))
+d = Parameter(
+    'd', annotation=Argument.default(default=tuple(), validator=as_tuple_of_floats)
+)
+e = Parameter('e', annotation=Argument.optional(validator=as_float))
 sig = Signature(parameters=[a, b, c, d, e])
 
 
-def test_signature_unbind_with_empty_variadic():
-    params = sig.validate(1, 2, 3, e=4)
-    assert params == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': (), 'e': 4.0}
+@pytest.mark.parametrize('d', [(), (5, 6, 7)])
+def test_signature_unbind_with_empty_variadic(d):
+    params = sig.validate(1, 2, 3, d, e=4)
+    assert params == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': d, 'e': 4.0}
 
-    args, kwargs = sig.unbind(params)
-    assert args == (1.0, 2.0, 3.0)
-    assert kwargs == {'e': 4.0}
-    params_again = sig.validate(*args, **kwargs)
-    assert params_again == params
+    kwargs = sig.unbind(params)
+    assert kwargs == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': d, 'e': 4.0}
 
-
-def test_signature_unbind_nonempty_variadic():
-    params = sig.validate(1, 2, 3, 10, 11, 12, 13, 14, e=4)
-    assert params == {
-        'a': 1.0,
-        'b': 2.0,
-        'c': 3.0,
-        'd': (10, 11, 12, 13, 14),
-        'e': 4.0,
-    }
-
-    args, kwargs = sig.unbind(params)
-    assert args == (1.0, 2.0, 3.0, 10, 11, 12, 13, 14)
-    assert kwargs == {'e': 4.0}
-    params_again = sig.validate(*args, **kwargs)
+    params_again = sig.validate(**kwargs)
     assert params_again == params

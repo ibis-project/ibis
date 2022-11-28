@@ -62,7 +62,7 @@ def _varargs_call(sa_func, t, args):
 
 def varargs(sa_func):
     def formatter(t, op):
-        return _varargs_call(sa_func, t, op.args)
+        return _varargs_call(sa_func, t, op.arg)
 
     return formatter
 

@@ -1,5 +1,6 @@
 import functools
 import itertools
+import operator
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
@@ -201,6 +202,12 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
         return value[begin:end]
 
     return data.map(iterate)
+
+
+@execute_node.register(ops.StringConcat, tuple)
+def execute_node_string_concat(op, values, **kwargs):
+    values = [execute(arg, **kwargs) for arg in values]
+    return functools.reduce(operator.add, values)
 
 
 @execute_node.register(ops.StringSQLLike, ddgb.SeriesGroupBy, str, str)

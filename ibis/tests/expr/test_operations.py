@@ -66,7 +66,7 @@ operations = [
     ops.RegexReplace('asd', 'as', 'a'),
     ops.StringReplace('asd', 'as', 'a'),
     ops.StringSplit('asd', 's'),
-    ops.StringConcat('s', 'e'),
+    ops.StringConcat(('s', 'e')),
     ops.StartsWith('asd', 'as'),
     ops.EndsWith('asd', 'xyz'),
     ops.Not(false),
@@ -108,13 +108,13 @@ class NamedValue(Base):
 
 
 class Values(Base):
-    lst = rlz.variadic(rlz.instance_of(ops.Node))
+    lst = rlz.tuple_of(rlz.instance_of(ops.Node))
 
 
 one = NamedValue(value=1, name=Name("one"))
 two = NamedValue(value=2, name=Name("two"))
 three = NamedValue(value=3, name=Name("three"))
-values = Values(one, two, three)
+values = Values((one, two, three))
 
 
 def test_node_base():
@@ -151,8 +151,8 @@ def test_node_base():
         (three, (), {"value": 3, "name": "Name_three"}),
         (
             values,
-            ("NamedValue_1_one", "NamedValue_2_two", "NamedValue_3_three"),
-            {},
+            (),
+            {"lst": ("NamedValue_1_one", "NamedValue_2_two", "NamedValue_3_three")},
         ),
     ]
 
@@ -166,7 +166,7 @@ def test_node_subtitution():
     subs = {Name("one"): Name("zero"), two: ketto}
 
     new_values = values.replace(subs)
-    expected = Values(NamedValue(value=1, name=Name("zero")), ketto, three)
+    expected = Values((NamedValue(value=1, name=Name("zero")), ketto, three))
 
     assert expected == new_values
 

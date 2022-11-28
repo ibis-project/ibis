@@ -6,6 +6,7 @@ import numbers
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
+import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.dask.dispatch import execute_node
@@ -83,7 +84,9 @@ def vectorize_object(op, arg, *args, **kwargs):
 
 
 @execute_node.register(
-    ops.Log, dd.Series, (dd.Series, numbers.Real, decimal.Decimal, type(None))
+    ops.Log,
+    dd.Series,
+    (dd.Series, pd.Series, numbers.Real, decimal.Decimal, type(None)),
 )
 def execute_series_log_with_base(op, data, base, **kwargs):
     if data.dtype == np.dtype(np.object_):

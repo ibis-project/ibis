@@ -8,7 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
-from ibis.common.annotations import attribute, optional, variadic  # noqa: F401
+from ibis.common.annotations import attribute, optional  # noqa: F401
 from ibis.common.validators import (  # noqa: F401
     bool_,
     instance_of,
