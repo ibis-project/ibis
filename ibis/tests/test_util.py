@@ -56,3 +56,16 @@ def test_dotdict():
         assert d['x']
     with pytest.raises(AttributeError):
         assert d.x
+
+
+def test_import_object():
+    import collections
+
+    assert util.import_object("collections.defaultdict") is collections.defaultdict
+    assert util.import_object("collections.abc.Mapping") is collections.abc.Mapping
+
+    with pytest.raises(ImportError):
+        util.import_object("this_module_probably.doesnt_exist")
+
+    with pytest.raises(ImportError):
+        util.import_object("collections.this_attribute_doesnt_exist")
