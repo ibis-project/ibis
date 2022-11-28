@@ -31,6 +31,10 @@ class Node(Concrete):
     def to_expr(self):
         ...
 
+    def __repr__(self) -> str:
+        cls = self.__class__
+        return f"<{cls.__module__}.{cls.__name__} at 0x{hex(id(self))}>"
+
 
 @public
 class Named(ABC):
