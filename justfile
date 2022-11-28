@@ -77,7 +77,7 @@ down:
 
 # run the benchmark suite
 bench +args='ibis/tests/benchmarks':
-    pytest --benchmark-only --benchmark-autosave {{ args }}
+    pytest --benchmark-only --benchmark-enable --benchmark-autosave {{ args }}
 
 # check for invalid links in a locally built version of the docs
 checklinks *args:

@@ -700,8 +700,6 @@ def test_repr_join(benchmark, customers, orders, orders_items, products):
         .join(orders_items, "orderid")
         .join(products, "sku")
         .drop("customerid", "qty", "total", "items")
-        .drop("dims_cm", "cost")
-        .mutate(o_date=lambda t: t.shipped.date())
     )
     op = expr.op()
     benchmark(repr, op)
