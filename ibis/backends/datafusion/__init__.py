@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -14,6 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.datafusion.compiler import translate
+from ibis.common.dispatch import RegexDispatcher
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -21,6 +23,41 @@ except ImportError:
     from datafusion import SessionContext
 
 import datafusion
+
+_register_file = RegexDispatcher("_register_file")
+
+
+def _name_from_path(path: Path) -> str:
+    base, *_ = path.name.partition(os.extsep)
+    return base.replace("-", "_")
+
+
+@_register_file.register(r"parquet://(?P<path>.+)", priority=10)
+def _parquet(_, path, table_name=None, **kwargs):
+    path = Path(path).absolute()
+    table_name = table_name or _name_from_path(path)
+    return ("register_parquet", path, table_name)
+
+
+@_register_file.register(r"csv://(?P<path>.+)", priority=10)
+def _csv(_, path, table_name=None, **kwargs):
+    path = Path(path).absolute()
+    table_name = table_name or _name_from_path(path)
+    return ("register_csv", path, table_name)
+
+
+@_register_file.register(r"(?:file://)?(?P<path>.+)", priority=9)
+def _file(raw, path, table_name=None, **kwargs):
+    num_sep_chars = len(os.extsep)
+    extension = "".join(Path(path).suffixes)[num_sep_chars:]
+    if not extension:
+        raise ValueError(
+            f"""Unrecognized file type or extension: {raw}
+
+        Valid prefixes are parquet://, csv://, or file://
+        Supported file extensions are parquet and csv"""
+        )
+    return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
 
 
 def _to_pyarrow_table(frame):
@@ -46,7 +83,7 @@ class Backend(BaseBackend):
 
     def do_connect(
         self,
-        config: Mapping[str, str | Path] | SessionContext,
+        config: Mapping[str, str | Path] | SessionContext | None = None,
     ) -> None:
         """Create a Datafusion backend for use with Ibis.
 
@@ -66,18 +103,10 @@ class Backend(BaseBackend):
         else:
             self._context = SessionContext()
 
+        config = config or {}
+
         for name, path in config.items():
-            strpath = str(path)
-            if strpath.endswith('.csv'):
-                self.register_csv(name, path)
-            elif strpath.endswith('.parquet'):
-                self.register_parquet(name, path)
-            else:
-                raise ValueError(
-                    "Currently the DataFusion backend only supports CSV "
-                    "files with the extension .csv and Parquet files with "
-                    "the .parquet extension."
-                )
+            self.register(path, table_name=name)
 
     def current_database(self) -> str:
         raise NotImplementedError()
@@ -122,40 +151,30 @@ class Backend(BaseBackend):
         schema = sch.schema(table.schema)
         return self.table_class(name, schema, self).to_expr()
 
-    def register_csv(
+    def register(
         self,
-        name: str,
-        path: str | Path,
-        schema: sch.Schema | None = None,
-    ) -> None:
-        """Register a CSV file with with `name` located at `path`.
+        source: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a CSV or Parquet file with `table_name` located at
+        `source`.
 
         Parameters
         ----------
-        name
+        source
+            The path to the file
+        table_name
             The name of the table
-        path
-            The path to the CSV file
-        schema
-            An optional schema
         """
-        self._context.register_csv(name, str(path), schema=schema)
-
-    def register_parquet(
-        self,
-        name: str,
-        path: str | Path,
-    ) -> None:
-        """Register a parquet file with with `name` located at `path`.
-
-        Parameters
-        ----------
-        name
-            The name of the table
-        path
-            The path to the Parquet file
-        """
-        self._context.register_parquet(name, str(path))
+        if isinstance(source, (str, Path)):
+            method, path, name = _register_file(
+                str(source), table_name=table_name, **kwargs
+            )
+            getattr(self._context, method)(name, str(path), **kwargs)
+        else:
+            raise ValueError("`source` must be either a string or a pathlib.Path")
+        return self.table(name)
 
     def _get_frame(
         self,
