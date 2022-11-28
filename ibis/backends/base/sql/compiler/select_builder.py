@@ -30,12 +30,16 @@ class _CorrelatedRefCheck:
         )
         self.has_foreign_root = False
         self.has_query_root = False
+        self.seen = set()
 
     def get_result(self):
         self.visit(self.node, in_subquery=False)
         return self.has_query_root and self.has_foreign_root
 
     def visit(self, node, in_subquery):
+        if node in self.seen:
+            return
+
         in_subquery |= self.is_subquery(node)
 
         args = node if isinstance(node, ops.NodeList) else node.args
@@ -45,6 +49,7 @@ class _CorrelatedRefCheck:
                 self.visit_table(arg, in_subquery=in_subquery)
             elif isinstance(arg, ops.Node):
                 self.visit(arg, in_subquery=in_subquery)
+        self.seen.add(node)
 
     def is_subquery(self, node):
         return isinstance(
