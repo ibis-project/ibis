@@ -6,7 +6,7 @@ codecov:
 
 comment:
   after_n_builds: 32
-  layout: "reach, diff, files"
+  layout: "diff, files"
   behavior: default
   require_changes: true # if true: only post the comment if coverage changes
   require_base: false # [yes :: must have a base report to post]
