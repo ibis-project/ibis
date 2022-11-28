@@ -1,3 +1,5 @@
+import decimal
+
 import parsy
 import pytest
 from pytest import param
@@ -63,6 +65,15 @@ def test_valid_instance_of(klass, value, expected):
 def test_invalid_instance_of(klass, value, expected):
     with pytest.raises(expected):
         assert rlz.instance_of(klass, value)
+
+
+def test_lazy_instance_of():
+    rule = rlz.lazy_instance_of("decimal.Decimal")
+    assert "decimal.Decimal" in repr(rule)
+    d = decimal.Decimal(1)
+    assert rule(d) == d
+    with pytest.raises(IbisTypeError, match=r"decimal\.Decimal"):
+        rule(1)
 
 
 @pytest.mark.parametrize(

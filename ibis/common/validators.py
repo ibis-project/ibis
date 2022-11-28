@@ -7,6 +7,7 @@ from typing import Any, Callable, Union
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
 
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
 from ibis.util import flatten_iterable, is_function, is_iterable
 
@@ -89,9 +90,34 @@ def instance_of(klasses, arg, **kwargs):
     if not isinstance(arg, klasses):
         # TODO(kszucs): unify errors coming from various validators
         raise IbisTypeError(
-            f'Given argument with type {type(arg)} ' f'is not an instance of {klasses}'
+            f"Given argument with type {type(arg)} is not an instance of {klasses}"
         )
     return arg
+
+
+class lazy_instance_of(Validator):
+    """A version of `instance_of` that accepts class qualnames instead of "
+    "already imported classes.
+
+    Useful for delaying imports.
+    """
+
+    def __init__(self, classes):
+        classes = (classes,) if isinstance(classes, str) else tuple(classes)
+        self._classes = classes
+        self._check = lazy_singledispatch(lambda x: False)
+        self._check.register(classes, lambda x: True)
+
+    def __repr__(self):
+        return f"lazy_instance_of(classes={self._classes!r})"
+
+    def __call__(self, arg, **kwargs):
+        if self._check(arg):
+            return arg
+        raise IbisTypeError(
+            f"Given argument with type {type(arg)} is not an instance of "
+            f"{self._classes}"
+        )
 
 
 @validator

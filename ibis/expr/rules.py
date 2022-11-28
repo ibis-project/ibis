@@ -13,6 +13,7 @@ from ibis.common.validators import (  # noqa: F401
     bool_,
     instance_of,
     isin,
+    lazy_instance_of,
     map_to,
     one_of,
     ref,
