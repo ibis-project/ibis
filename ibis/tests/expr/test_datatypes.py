@@ -6,7 +6,6 @@ import pandas as pd
 import parsy
 import pytest
 import pytz
-from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -510,10 +509,6 @@ def test_implicit_castable_values(source, target, value):
 )
 def test_implicitly_uncastable_values(source, target, value):
     assert not dt.castable(source, target, value=value)
-
-
-def test_no_infer_ambiguities():
-    assert not ambiguities(dt.infer.funcs)
 
 
 def test_struct_datatype_subclass_from_tuples():

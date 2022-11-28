@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from multipledispatch.conflict import ambiguities
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis
@@ -9,10 +8,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
 dd = pytest.importorskip("dask.dataframe")
-
-
-def test_no_infer_ambiguities():
-    assert not ambiguities(dt.infer.funcs)
 
 
 @pytest.mark.parametrize(
