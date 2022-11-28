@@ -4,7 +4,7 @@ from __future__ import annotations
 import abc
 import collections
 import functools
-import importlib.metadata as _importlib_metadata
+import importlib.metadata
 import itertools
 import logging
 import operator
@@ -506,11 +506,30 @@ class ToFrame(abc.ABC):
         ...
 
 
-def backend_entry_points() -> list[_importlib_metadata.EntryPoint]:
+def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints."""
 
     if sys.version_info < (3, 10):
-        eps = _importlib_metadata.entry_points()["ibis.backends"]
+        eps = importlib.metadata.entry_points()["ibis.backends"]
     else:
-        eps = _importlib_metadata.entry_points(group="ibis.backends")
+        eps = importlib.metadata.entry_points(group="ibis.backends")
     return sorted(eps)
+
+
+def import_object(qualname: str) -> Any:
+    """Attempt to import an object given its full qualname.
+
+    Examples:
+    ---------
+    >>> out = import_object("foo.bar.baz")
+
+    Is the same as
+
+    >>> from foo.bar import baz
+    """
+    mod_name, name = qualname.rsplit(".", 1)
+    mod = importlib.import_module(mod_name)
+    try:
+        return getattr(mod, name)
+    except AttributeError:
+        raise ImportError(f"cannot import name {name!r} from {mod_name!r}") from None
