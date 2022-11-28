@@ -108,7 +108,7 @@ class Table(Expr, JupyterMixin):
 
     def __getitem__(self, what):
         from ibis.expr.types.generic import Column
-        from ibis.expr.types.logical import BooleanColumn
+        from ibis.expr.types.logical import BooleanValue
 
         if isinstance(what, (str, int)):
             return self.get_column(what)
@@ -133,7 +133,7 @@ class Table(Expr, JupyterMixin):
         if isinstance(what, (list, tuple, Table)):
             # Projection case
             return self.select(what)
-        elif isinstance(what, BooleanColumn):
+        elif isinstance(what, BooleanValue):
             # Boolean predicate
             return self.filter([what])
         elif isinstance(what, Column):
