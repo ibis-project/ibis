@@ -75,7 +75,10 @@ black = ">=22.1.0,<23"
 click = ">=8.0.1,<9"
 commitizen = ">=2.20.3,<3"
 docformatter = ">=1.5.0,<2"
-flake8 = ">=4.0.0,<7"
+flake8 = [
+  { version = ">=6,<7", python = ">=3.8.1" },
+  { version = ">=5,<7", python = "<3.8.1" }
+]
 ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
 mypy = "0.991"
