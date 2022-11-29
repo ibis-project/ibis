@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
 import toolz
 from public import public
@@ -311,9 +311,8 @@ class Expr(Immutable):
         params: Mapping[ir.Value, Any] | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> Iterable[pa.RecordBatch]:
-        """Execute expression and return results in an iterator of pyarrow
-        record batches.
+    ) -> pa.RecordBatchReader:
+        """Execute expression and return a RecordBatchReader.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -330,8 +329,8 @@ class Expr(Immutable):
 
         Returns
         -------
-        record_batches
-            An iterator of pyarrow record batches.
+        results
+            RecordBatchReader
         """
         return self._find_backend().to_pyarrow_batches(
             self,

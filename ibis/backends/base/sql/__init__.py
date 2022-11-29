@@ -188,8 +188,8 @@ class BaseSQLBackend(BaseBackend):
 
         Returns
         -------
-        record_batches
-            An iterator of pyarrow record batches.
+        results
+            RecordBatchReader
         """
         pa = self._import_pyarrow()
 
