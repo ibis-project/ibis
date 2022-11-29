@@ -1,4 +1,4 @@
-# Use `register` to load external data files with the DuckDB backend
+# How to Use `register` to load external data files with the DuckDB backend
 
 <!-- prettier-ignore-start -->
 Here we use the [`register`][ibis.backends.duckdb.Backend.register] method to load external data files and join them.

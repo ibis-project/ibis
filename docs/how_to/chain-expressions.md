@@ -1,4 +1,4 @@
-# Chaining Expressions with Underscore
+# How to Chain Expressions with Underscore
 
 Expressions can easily be chained using the deferred expression API, also known as the Underscore (`_`) API.
 
