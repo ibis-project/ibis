@@ -69,8 +69,6 @@ def udf(input_type, output_type, strict=True, libraries=None):
 
     Examples
     --------
-    >>> if PY38:
-    ...     import pytest; pytest.skip("Issue #2085")
     >>> from ibis.backends.bigquery import udf
     >>> import ibis.expr.datatypes as dt
     >>> @udf(input_type=[dt.double], output_type=dt.double)
