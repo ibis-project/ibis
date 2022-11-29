@@ -1,5 +1,4 @@
 import os
-import re
 
 import pandas as pd
 import pandas.testing as tm
@@ -42,7 +41,7 @@ def test_udf(alltypes, df):
     )
 
 
-def test_udf_with_struct(alltypes, df):
+def test_udf_with_struct(alltypes, df, snapshot):
     @udf(
         input_type=[dt.double, dt.double],
         output_type=dt.Struct.from_tuples(
@@ -57,25 +56,8 @@ def test_udf_with_struct(alltypes, df):
 
         return Rectangle(a, b)
 
-    assert (
-        my_struct_thing.js
-        == '''\
-CREATE TEMPORARY FUNCTION my_struct_thing_0(a FLOAT64, b FLOAT64)
-RETURNS STRUCT<width FLOAT64, height FLOAT64>
-LANGUAGE js AS """
-'use strict';
-function my_struct_thing(a, b) {
-    class Rectangle {
-        constructor(width, height) {
-            this.width = width;
-            this.height = height;
-        }
-    }
-    return (new Rectangle(a, b));
-}
-return my_struct_thing(a, b);
-""";'''
-    )
+    result = my_struct_thing.js
+    snapshot.assert_match(result, "out.sql")
 
     expr = my_struct_thing(alltypes.double_col, alltypes.double_col)
     result = expr.execute()
@@ -111,7 +93,7 @@ def test_udf_scalar(client):
     assert result == 3
 
 
-def test_multiple_calls_has_one_definition(client):
+def test_multiple_calls_has_one_definition(client, snapshot):
     @udf([dt.string], dt.double)
     def my_str_len(s):
         return s.length
@@ -119,19 +101,7 @@ def test_multiple_calls_has_one_definition(client):
     s = ibis.literal("abcd")
     expr = my_str_len(s) + my_str_len(s)
     sql = client.compile(expr)
-    expected = '''\
-CREATE TEMPORARY FUNCTION my_str_len_0\\(s STRING\\)
-RETURNS FLOAT64
-LANGUAGE js AS """
-'use strict';
-function my_str_len\\(s\\) \\{
-    return s\\.length;
-\\}
-return my_str_len\\(s\\);
-""";
-
-SELECT my_str_len_\\d\\('abcd'\\) \\+ my_str_len_\\d\\('abcd'\\) AS `tmp`'''
-    assert re.match(expected, sql)
+    snapshot.assert_match(sql, "out.sql")
     result = client.execute(expr)
     assert result == 8.0
 
