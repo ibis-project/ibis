@@ -293,6 +293,11 @@ def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
     return data.apply(replacer)
 
 
+@execute_node.register(ops.RegexReplace, str, str, str)
+def execute_str_regex_replace(_, arg, pattern, replacement, **kwargs):
+    return re.sub(pattern, replacement, arg)
+
+
 @execute_node.register(ops.RegexReplace, SeriesGroupBy, str, str)
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
