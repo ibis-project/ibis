@@ -374,7 +374,7 @@ test = ["pre-commit", "pytest", "pytest-rerunfailures", "pytest-xdist"]
 
 [[package]]
 name = "datafusion"
-version = "0.6.0"
+version = "0.7.0"
 description = "Build and run queries against data"
 category = "main"
 optional = true
@@ -2911,7 +2911,7 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "2e16779005f5fb0107af3fa1543b647abbdd2571c0d747fffc5fbc02f07a7b47"
+content-hash = "a3989da93e4274a0c7787fbb3f9649d897551dbde875fd12452cf2f136a509f9"
 
 [metadata.files]
 absolufy-imports = [
@@ -3456,11 +3456,10 @@ dask = [
     {file = "dask-2022.7.1.tar.gz", hash = "sha256:a3972489c46456e54070fe140a2178e002c2e96912ed9ef85c3896b74f469194"},
 ]
 datafusion = [
-    {file = "datafusion-0.6.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:74c6bb54453e800c7cfdd93dc7f0b41ca20ef92f07012bdf92db02759b2eb695"},
-    {file = "datafusion-0.6.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:7fdebba1a723a548bae54c452958477c7a102155555a83905a6f114f69be3bed"},
-    {file = "datafusion-0.6.0-cp37-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:8c591aef3e0ffc6a5f043d429af1d1db903ef31892531582569ef61d48d1ff5e"},
-    {file = "datafusion-0.6.0-cp37-abi3-win_amd64.whl", hash = "sha256:acb3881d2af7b876d09e594c26f4fe7158a94524ce2dca86809194bc3a671b23"},
-    {file = "datafusion-0.6.0.tar.gz", hash = "sha256:c622c0fa1965a16ca09537a31fd1c7ed2b2fc6d15225eeff66331a44db975579"},
+    {file = "datafusion-0.7.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:d717d965f3f632615694e2e0211ede41a6252f1715bb9ba9e656a9392a2b5eda"},
+    {file = "datafusion-0.7.0-cp37-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:55f1ac40004d2e20ca903946c2f138e39ea71e08aedf7554958875e23b7895d3"},
+    {file = "datafusion-0.7.0-cp37-abi3-win_amd64.whl", hash = "sha256:5aa2a14bbcc3c40cc42b6c1da30c002a6baa52209fbfe14836a3e9d4a623ce20"},
+    {file = "datafusion-0.7.0.tar.gz", hash = "sha256:5d85d9328acfb3651eec4dfc0c049de2b9b1bd7d30971f00eac0a901b6148782"},
 ]
 db-dtypes = [
     {file = "db-dtypes-1.0.4.tar.gz", hash = "sha256:6527cd2ae956e1d91c6c79387fb2a2217938139efc14449f6c662bd768994e9e"},
