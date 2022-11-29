@@ -1,6 +1,7 @@
 import collections
 import enum
 import functools
+import operator
 
 import pyspark
 import pyspark.sql.functions as F
@@ -1460,7 +1461,7 @@ def compile_date_add(t, op, **kwargs):
     return _compile_datetime_binop(
         t,
         op,
-        fn=(lambda l, r: (l + r).cast('timestamp')),
+        fn=lambda lhs, rhs: (lhs + rhs).cast('timestamp'),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1472,7 +1473,7 @@ def compile_date_sub(t, op, **kwargs):
     return _compile_datetime_binop(
         t,
         op,
-        fn=(lambda l, r: (l - r).cast('timestamp')),
+        fn=lambda lhs, rhs: (lhs - rhs).cast('timestamp'),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1491,7 +1492,7 @@ def compile_timestamp_add(t, op, **kwargs):
     return _compile_datetime_binop(
         t,
         op,
-        fn=(lambda l, r: (l + r).cast('timestamp')),
+        fn=lambda lhs, rhs: (lhs + rhs).cast('timestamp'),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1503,7 +1504,7 @@ def compile_timestamp_sub(t, op, **kwargs):
     return _compile_datetime_binop(
         t,
         op,
-        fn=(lambda l, r: (l - r).cast('timestamp')),
+        fn=lambda lhs, rhs: (lhs - rhs).cast('timestamp'),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1526,12 +1527,12 @@ def _compile_interval_binop(t, op, fn, **kwargs):
 
 @compiles(ops.IntervalAdd)
 def compile_interval_add(t, op, **kwargs):
-    return _compile_interval_binop(t, op, fn=(lambda l, r: l + r), **kwargs)
+    return _compile_interval_binop(t, op, fn=operator.add, **kwargs)
 
 
 @compiles(ops.IntervalSubtract)
 def compile_interval_subtract(t, op, **kwargs):
-    return _compile_interval_binop(t, op, fn=(lambda l, r: l - r), **kwargs)
+    return _compile_interval_binop(t, op, fn=operator.sub, **kwargs)
 
 
 @compiles(ops.IntervalFromInteger)
