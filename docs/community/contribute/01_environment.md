@@ -54,7 +54,7 @@ hide:
         nix-shell
         ```
 
-        This may take awhile due to artifact download from the cache.
+        This may take a while due to artifact download from the cache.
 
 === "Conda"
 
@@ -150,6 +150,7 @@ hide:
     1. Install development dependencies
 
         ```sh
+        pip install 'poetry>=1.2'
         pip install -r requirements.txt
         ```
 
