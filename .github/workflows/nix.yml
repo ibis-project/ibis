@@ -60,7 +60,7 @@ jobs:
         run: nix build --fallback --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
 
       - name: nix build shell environment
-        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           set -euo pipefail
 

@@ -6,7 +6,7 @@ on:
 jobs:
   assign_issue:
     runs-on: ubuntu-latest
-    if: ${{ github.event.comment.body == '/take' }}
+    if: github.event.comment.body == '/take'
     steps:
       - uses: pozil/auto-assign-issue@v1.11.0
         with:
