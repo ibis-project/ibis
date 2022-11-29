@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: Docs/Linting/Benchmarks
 
 on:
@@ -18,7 +17,7 @@ concurrency:
 jobs:
   commitlint:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: github.event_name == 'pull_request'
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -53,17 +52,17 @@ jobs:
 
       # run against a smaller shell for speed for pull requests
       - name: pre-commit checks pull_request
-        if: ${{ github.event_name == 'pull_request' }}
+        if: github.event_name == 'pull_request'
         run: nix develop -f nix preCommitShell --ignore-environment --keep-going -c pre-commit run --all-files
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks push
-        if: ${{ github.event_name == 'push' }}
+        if: github.event_name == 'push'
         run: nix develop -f shell.nix --ignore-environment --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
+    if: github.event_name == 'push'
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -116,7 +115,7 @@ jobs:
 
   docs_pr:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'push' }}
+    if: github.event_name != 'push'
     concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
     steps:
       - name: install nix
@@ -144,7 +143,7 @@ jobs:
 
   docs_push:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' }}
+    if: github.event_name == 'push'
     concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
     needs:
       # wait on benchmarks to prevent a race condition when pushing to the

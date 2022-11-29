@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: TPC-H
 
 on:
@@ -46,7 +45,7 @@ jobs:
 
       - name: generate tpc-h data
         working-directory: tpc-queries
-        run: python -c "import duckdb; con = duckdb.connect('tpch.ddb'); con.execute('CALL dbgen(sf=0.1);')"
+        run: python -c "import duckdb; duckdb.connect('tpch.ddb').execute('CALL dbgen(sf=0.1)')"
 
       - name: run tpc-h queries
         working-directory: tpc-queries

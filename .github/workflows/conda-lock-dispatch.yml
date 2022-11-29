@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: Dispatch conda lock
 
 on:

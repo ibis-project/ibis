@@ -1,4 +1,3 @@
-# vim: filetype=yaml
 name: Generate Conda Lockfiles
 
 on:
@@ -125,7 +124,7 @@ jobs:
           path: conda-lock/*-${{ matrix.python-version }}.lock
 
   condalock_pr:
-    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs:
       - condalock
@@ -169,20 +168,20 @@ jobs:
             autorebase:opt-in
 
       - uses: juliangruber/approve-pull-request-action@v2.0.3
-        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
+        if: steps.create_pr.outputs.pull-request-operation == 'created'
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
           number: ${{ steps.create_pr.outputs.pull-request-number }}
 
       - uses: peter-evans/enable-pull-request-automerge@v2
-        if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
+        if: steps.create_pr.outputs.pull-request-operation == 'created'
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
           pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
           merge-method: rebase
 
   condalock_push:
-    if: ${{ github.event_name == 'repository_dispatch' }}
+    if: github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
     needs:
       - condalock
