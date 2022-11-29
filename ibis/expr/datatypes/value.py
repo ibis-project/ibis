@@ -222,7 +222,7 @@ def infer_numpy_array(value):
 
 
 @infer.register("pandas.Series")
-def _(value):
+def infer_pandas_series(value):
     if value.dtype == np.object_:
         value_dtype = _infer_object_array_dtype(value)
     else:
@@ -232,7 +232,7 @@ def _(value):
 
 
 @infer.register("pandas.Timestamp")
-def _(value):
+def infer_pandas_timestamp(value):
     if value.tz is not None:
         return dt.Timestamp(timezone=str(value.tz))
     else:
