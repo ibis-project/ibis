@@ -299,8 +299,7 @@ class ResultHandler:
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.RecordBatchReader:
-        """Execute expression and return results in an iterator of pyarrow
-        record batches.
+        """Execute expression and return a RecordBatchReader.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -319,8 +318,8 @@ class ResultHandler:
 
         Returns
         -------
-        record_batches
-            An iterator of pyarrow record batches.
+        results
+            RecordBatchReader
         """
         raise NotImplementedError
 

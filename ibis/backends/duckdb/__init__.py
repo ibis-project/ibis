@@ -308,7 +308,7 @@ class Backend(BaseAlchemyBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-    ) -> Iterator[pa.RecordBatch]:
+    ) -> IbisRecordBatchReader:
         _ = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
