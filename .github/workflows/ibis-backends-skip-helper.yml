@@ -8,6 +8,7 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "**/*.md"
+      - "codecov.yml"
     branches:
       - master
       - "*.x.x"
@@ -16,6 +17,7 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "**/*.md"
+      - "codecov.yml"
     branches:
       - master
       - "*.x.x"
