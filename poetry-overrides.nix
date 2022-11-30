@@ -28,30 +28,26 @@ in
   datafusion = super.datafusion.overridePythonAttrs (attrs: rec {
     inherit (attrs) version;
     src = pkgs.fetchFromGitHub {
-      owner = "datafusion-contrib";
-      repo = "datafusion-python";
+      owner = "apache";
+      repo = "arrow-datafusion-python";
       rev = attrs.version;
-      sha256 = "sha256-9muPSFb4RjxP7X+qtUQ41rypgn0s9yWgmkyTA+edehU=";
+      sha256 = "sha256-offZPEn+gL50ue36eonSQ3K4XNDrQItqorUI85CWVIE=";
     };
 
-    patches = attrs.patches or [ ] ++ [
-      (pkgs.fetchpatch {
-        name = "optional-mimalloc.patch";
-        url = "https://github.com/datafusion-contrib/datafusion-python/commit/a5b10e8ef19514361fc6062a8ad63d7a793c2111.patch";
-        sha256 = "sha256-vmB1FKb2VeecrQt91J+pDp+2jvdtOrGd4w4wjhDMJK8=";
-      })
-    ];
+    patches = [ ./nix/patches/datafusion.patch ];
 
     cargoBuildNoDefaultFeatures = stdenv.isDarwin;
     nativeBuildInputs = attrs.nativeBuildInputs or [ ]
       ++ (with pkgs.rustPlatform; [ cargoSetupHook maturinBuildHook ]);
 
-    buildInputs = attrs.buildInputs or [ ]
-      ++ lib.optionals stdenv.isDarwin [ pkgs.libiconv ];
+    buildInputs = attrs.buildInputs or [ ] ++ lib.optionals stdenv.isDarwin [
+      pkgs.libiconv
+      pkgs.darwin.apple_sdk.frameworks.Security
+    ];
 
     cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
       inherit src patches;
-      sha256 = "sha256-rGXSmn3MF2wFyMqzF15gB9DK5f9W4Gk08J7tOsZ7IH0=";
+      sha256 = "sha256-h6fnPAgp9xoVjmi7cI56qPty1l6NlPFXzTir7qTgsaQ=";
     };
   });
 
