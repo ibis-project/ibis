@@ -247,7 +247,7 @@ class Primitive(DataType, Singleton):
 
 
 @public
-class Null(DataType, Singleton):
+class Null(Primitive):
     """Null values."""
 
     scalar = ir.NullScalar
@@ -560,31 +560,28 @@ class Decimal(Numeric):
 class Interval(DataType):
     """Interval values."""
 
-    unit = optional(
-        map_to(
-            {
-                'days': 'D',
-                'hours': 'h',
-                'minutes': 'm',
-                'seconds': 's',
-                'milliseconds': 'ms',
-                'microseconds': 'us',
-                'nanoseconds': 'ns',
-                'Y': 'Y',
-                'Q': 'Q',
-                'M': 'M',
-                'W': 'W',
-                'D': 'D',
-                'h': 'h',
-                'm': 'm',
-                's': 's',
-                'ms': 'ms',
-                'us': 'us',
-                'ns': 'ns',
-            }
-        ),
-        default="s",
-    )
+    __valid_units__ = {
+        'days': 'D',
+        'hours': 'h',
+        'minutes': 'm',
+        'seconds': 's',
+        'milliseconds': 'ms',
+        'microseconds': 'us',
+        'nanoseconds': 'ns',
+        'Y': 'Y',
+        'Q': 'Q',
+        'M': 'M',
+        'W': 'W',
+        'D': 'D',
+        'h': 'h',
+        'm': 'm',
+        's': 's',
+        'ms': 'ms',
+        'us': 'us',
+        'ns': 'ns',
+    }
+
+    unit = optional(map_to(__valid_units__), default='s')
     """The time unit of the interval."""
 
     value_type = optional(all_of([datatype, instance_of(Integer)]), default=Int32())
@@ -657,6 +654,13 @@ class Struct(DataType):
 
     scalar = ir.StructScalar
     column = ir.StructColumn
+
+    def __init__(self, names, types, **kwargs):
+        if len(names) != len(types):
+            raise IbisTypeError(
+                'Struct datatype names and types must have the same length'
+            )
+        super().__init__(names=names, types=types, **kwargs)
 
     @classmethod
     def from_tuples(
