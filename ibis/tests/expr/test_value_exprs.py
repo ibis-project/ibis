@@ -1627,28 +1627,16 @@ def test_numpy_ufuncs_dont_cast_columns():
 
 @pytest.mark.parametrize(
     'operation',
-    [
-        operator.lt,
-        operator.gt,
-        operator.ge,
-        operator.le,
-        operator.eq,
-        operator.ne,
-    ],
+    [operator.lt, operator.gt, operator.ge, operator.le, operator.eq, operator.ne],
 )
 def test_logical_comparison_rlz_incompatible_error(table, operation):
-    with pytest.raises(TypeError) as exc_info:
+    with pytest.raises(TypeError, match=r"b:int16 and Literal\(foo\):string"):
         operation(table.b, "foo")
-
-    assert "b:int16 and Literal(foo):string" in str(exc_info.value)
 
 
 def test_case_rlz_incompatible_error(table):
-    case, result = "foo", table.a
-    with pytest.raises(TypeError) as exc_info:
-        table.g.case().when(case == result, result).end()
-
-    assert "a:int8 and Literal(foo):string" in str(exc_info.value)
+    with pytest.raises(TypeError, match=r"a:int8 and Literal\(foo\):string"):
+        "foo" == table.a
 
 
 @pytest.mark.parametrize("func", [ibis.asc, ibis.desc])
