@@ -19,4 +19,6 @@ pushd "${clone}/py-polars"
 cargo generate-lockfile
 popd
 
+mkdir -p "${top}/nix/patches"
+
 git -C "${clone}" diff | sd 'py-polars/' '' > "${top}/nix/patches/py-polars.patch"

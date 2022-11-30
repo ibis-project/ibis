@@ -181,4 +181,8 @@ in
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libkrb5 ];
   });
+
+  nbclient = super.nbclient.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
+  });
 }
