@@ -223,9 +223,10 @@ class ApproxCountDistinct(Filterable, Reduction):
 
 
 @public
-@deprecated(version='4.0', instead='use ApproxCountDistinct')
 class HLLCardinality(ApproxCountDistinct):
-    pass
+    @deprecated(version="4.0", instead="use ApproxCountDistinct")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 @public
@@ -249,9 +250,10 @@ class ApproxMedian(Filterable, Reduction):
 
 
 @public
-@deprecated(version="4.0", instead="use ApproxMedian")
 class CMSMedian(ApproxMedian):
-    pass
+    @deprecated(version="4.0", instead="use ApproxMedian")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 @public

@@ -53,15 +53,13 @@ def test_attach_file(dbpath):
     assert foo_tables == bar_tables
 
 
-def test_compile_toplevel():
+def test_compile_toplevel(snapshot):
     t = ibis.table([('foo', 'double')], name='t0')
 
     # it works!
     expr = t.foo.sum()
     result = ibis.sqlite.compile(expr)
-    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"  # noqa: W291
-
-    assert str(result) == expected
+    snapshot.assert_match(str(result), "out.sql")
 
 
 def test_create_and_drop_table(con):

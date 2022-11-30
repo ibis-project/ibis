@@ -1,1 +1,1 @@
-position(`string_col`, 'a') - 1
+position('a' IN string_col) - 1

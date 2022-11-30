@@ -135,7 +135,7 @@ def test_node_base():
         values: "final",
     }
 
-    def record(node, *args, **kwargs):
+    def record(node, _, *args, **kwargs):
         calls.append((node, args, kwargs))
         return returns[node]
 

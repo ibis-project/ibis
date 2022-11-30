@@ -133,6 +133,7 @@ FROM \\(
         .group_by("string_col")
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
+        .name("count")
     )
     result = expr.compile(params={p: "20140101"})
     assert re.match(expected, result) is not None

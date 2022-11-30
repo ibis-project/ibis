@@ -1,1 +1,1 @@
-least(`int_col`, 10)
+least(int_col, 10)

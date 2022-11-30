@@ -1,1 +1,1 @@
-CAST(`double_col` AS Nullable(Int8))
+CAST(double_col AS Nullable(Int8))

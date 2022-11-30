@@ -1,2 +1,2 @@
-SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
+SELECT sum(CAST(`bool_col` AS INT64)) AS `tmp`
 FROM functional_alltypes

@@ -1,1 +1,1 @@
-SELECT EXTRACT(year from DATE '2017-01-01') AS `year`
+SELECT EXTRACT(year from DATE '2017-01-01') AS `tmp`

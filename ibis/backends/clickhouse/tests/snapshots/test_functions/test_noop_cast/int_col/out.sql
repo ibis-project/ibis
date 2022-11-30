@@ -1,1 +1,1 @@
-`int_col`
+int_col

@@ -563,18 +563,13 @@ def test_cov_invalid_how(alltypes):
         d.cov(d, how="error")
 
 
-def test_compile_toplevel():
+def test_compile_toplevel(snapshot):
     t = ibis.table([("foo", "double")], name="t0")
 
     # it works!
     expr = t.foo.sum()
     result = to_sql(expr)
-    # FIXME: remove quotes because bigquery can't use anythig that needs
-    # quoting?
-    expected = """\
-SELECT sum(`foo`) AS `sum`
-FROM t0"""  # noqa
-    assert str(result) == expected
+    snapshot.assert_match(result, "out.sql")
 
 
 def test_scalar_param_scope(alltypes):

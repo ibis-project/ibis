@@ -65,20 +65,19 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
 @mark.parametrize(
     ('expr_fn', 'expected'),
     [
-        (lambda t: t.string_col, [('string_col', dt.String)]),
-        (
+        param(lambda t: t.string_col, [('string_col', dt.String)], id="column"),
+        param(
             lambda t: t[t.string_col, t.bigint_col],
             [('string_col', dt.String), ('bigint_col', dt.Int64)],
+            id="table",
         ),
     ],
 )
-@mark.notimpl(["datafusion", "polars"])
-def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
+def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
 
     # we might need a public API for it
-    ast = ddl_con.compiler.to_ast(expr, ddl_backend.make_context())
-    schema = ddl_con.ast_schema(ast)
+    schema = expr.as_table().schema()
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
@@ -761,7 +760,7 @@ def test_default_backend():
     sql = ibis.to_sql(expr)
     rx = """\
 SELECT
-  SUM\\((\\w+)\\.a\\) AS sum
+  SUM\\((\\w+)\\.a\\) AS ".+"
 FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
 

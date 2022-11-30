@@ -1,2 +1,2 @@
-SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `approx_nunique`
+SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `tmp`
 FROM functional_alltypes

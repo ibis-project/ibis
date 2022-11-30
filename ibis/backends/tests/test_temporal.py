@@ -102,7 +102,7 @@ def test_timestamp_extract_literal(con, func, expected):
 @pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake"])
 @pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
-    expr = alltypes.timestamp_col.millisecond()
+    expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
     expected = backend.default_series_rename(
         (df.timestamp_col.dt.microsecond // 1_000).astype('int32')
@@ -875,9 +875,9 @@ def test_date_column_from_ymd(con, alltypes, df):
 @pytest.mark.notimpl(["datafusion", "impala"])
 def test_date_scalar_from_iso(con):
     expr = ibis.literal('2022-02-24')
-    expr2 = ibis.date(expr.name("tmp"))
+    expr2 = ibis.date(expr)
 
-    result = con.execute(expr2.name("tmp"))
+    result = con.execute(expr2)
     assert result.strftime('%Y-%m-%d') == '2022-02-24'
 
 

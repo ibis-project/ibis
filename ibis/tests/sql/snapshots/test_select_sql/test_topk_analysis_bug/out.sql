@@ -7,12 +7,12 @@ FROM (
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `dest`, avg(`arrdelay`) AS `mean`
+      SELECT `dest`, avg(`arrdelay`) AS `Mean(arrdelay)`
       FROM airlines
       WHERE `dest` IN ('ORD', 'JFK', 'SFO')
       GROUP BY 1
     ) t2
-    ORDER BY `mean` DESC
+    ORDER BY `Mean(arrdelay)` DESC
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`

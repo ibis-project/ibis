@@ -67,7 +67,7 @@ def test_verbose_log_queries(con):
         with config.option_context('verbose_log', logger):
             con.table('functional_alltypes')
 
-    expected = 'DESCRIBE ibis_testing.`functional_alltypes`'
+    expected = 'DESCRIBE ibis_testing.functional_alltypes'
 
     assert len(queries) == 1
     assert queries[0] == expected

@@ -92,6 +92,9 @@ class Table(Expr, JupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
+    def as_table(self):
+        return self
+
     def __contains__(self, name):
         return name in self.schema()
 

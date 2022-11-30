@@ -124,13 +124,14 @@ services:
         - CMD-SHELL
         - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
       timeout: 10s
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    build:
+      context: .
+      dockerfile: ./docker/mssql/Dockerfile
+    image: ibis-mssql
     ports:
       - 1433:1433
     networks:
       - mssql
-    volumes:
-      - $PWD/ci/ibis-testing-data:/data:ro
   trino-postgres:
     user: postgres
     environment:

@@ -1,1 +1,1 @@
-round(`double_col`, 0)
+round(double_col, 0)

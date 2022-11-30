@@ -158,7 +158,6 @@ def calc_zscore(s):
             id='cumnotany',
             marks=pytest.mark.notyet(
                 (
-                    "clickhouse",
                     "duckdb",
                     'impala',
                     'postgres',
@@ -192,7 +191,6 @@ def calc_zscore(s):
             id='cumnotall',
             marks=pytest.mark.notyet(
                 (
-                    "clickhouse",
                     "duckdb",
                     'impala',
                     'postgres',

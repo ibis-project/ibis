@@ -19,5 +19,4 @@ result = (
     proj.group_by(proj.string_col)
     .aggregate(proj.float_col.sum().name("foo"))
     .foo.count()
-    .name("count")
 )

@@ -385,6 +385,15 @@ class Selection(Projection):
 
 
 @public
+class DummyTable(TableNode):
+    values = rlz.tuple_of(rlz.scalar(rlz.any), min_length=1)
+
+    @property
+    def schema(self):
+        return sch.Schema.from_dict({op.name: op.output_dtype for op in self.values})
+
+
+@public
 class Aggregation(TableNode):
     """
     metrics : per-group scalar aggregates

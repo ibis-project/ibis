@@ -377,6 +377,10 @@ class Expr(Immutable):
 
         return substitute_unbound(self.op()).to_expr()
 
+    def as_table(self) -> ir.Table:
+        """Convert an expression to a table."""
+        raise NotImplementedError(type(self))
+
 
 unnamed = UnnamedMarker()
 

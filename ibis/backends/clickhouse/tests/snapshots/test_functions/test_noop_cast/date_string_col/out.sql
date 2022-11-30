@@ -1,1 +1,1 @@
-`date_string_col`
+date_string_col
