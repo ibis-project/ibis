@@ -52,6 +52,11 @@ class Schema(Concrete):
     """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
     representing type of each column."""
 
+    def __init__(self, names, types):
+        if len(names) != len(types):
+            raise IntegrityError('Schema names and types must have the same length')
+        super().__init__(names=names, types=types)
+
     @attribute.default
     def _name_locs(self) -> dict[str, int]:
         # validate unique field names
