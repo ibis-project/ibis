@@ -1,1 +1,1 @@
-CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), '-') END
+CASE WHEN empty(groupArray(string_col)) THEN NULL ELSE arrayStringConcat(groupArray(string_col), '-') END

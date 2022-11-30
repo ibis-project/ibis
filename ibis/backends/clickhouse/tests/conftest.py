@@ -48,10 +48,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         clickhouse_driver = pytest.importorskip("clickhouse_driver")
 
         client = clickhouse_driver.Client(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
+            host=host, port=port, user=user, password=password
         )
 
         client.execute(f"DROP DATABASE IF EXISTS {database}")
@@ -66,11 +63,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
 
         for table, df in read_tables(TEST_TABLES, data_dir):
             query = f"INSERT INTO {table} VALUES"
-            client.insert_dataframe(
-                query,
-                df.to_pandas(),
-                settings={"use_numpy": True},
-            )
+            client.insert_dataframe(query, df.to_pandas(), settings={"use_numpy": True})
 
     @staticmethod
     def connect(data_directory: Path):
@@ -127,10 +120,16 @@ def df(alltypes):
 
 @pytest.fixture
 def translate():
-    from ibis.backends.clickhouse.compiler import (
-        ClickhouseCompiler,
-        ClickhouseExprTranslator,
-    )
+    from ibis.backends.clickhouse.compiler.values import translate_val
 
-    context = ClickhouseCompiler.make_context()
-    return lambda expr: ClickhouseExprTranslator(expr, context).get_result()
+    def t(*args, **kwargs):
+        cache = kwargs.pop("cache", {})
+        # we don't care about table aliases for the purposes of testing
+        # individual function calls/expressions
+        res = translate_val(*args, aliases={}, cache=cache, **kwargs)
+        try:
+            return res.sql(dialect="clickhouse")
+        except AttributeError:
+            return res
+
+    return t

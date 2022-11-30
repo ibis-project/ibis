@@ -903,7 +903,7 @@ def test_filter(backend, alltypes, df):
         alltypes[_.string_col == "1"]
         .mutate(x=L(1, "int64"))
         .group_by(_.x)
-        .aggregate(_.double_col.sum())
+        .aggregate(sum=_.double_col.sum())
     )
 
     # TODO: The pyspark backend doesn't apply schemas to outputs

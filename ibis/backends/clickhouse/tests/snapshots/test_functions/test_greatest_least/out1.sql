@@ -1,1 +1,1 @@
-greatest(`int_col`, 10)
+greatest(int_col, 10)

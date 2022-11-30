@@ -1,1 +1,0 @@
-SELECT now() AS `tmp`

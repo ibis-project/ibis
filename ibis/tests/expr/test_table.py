@@ -502,26 +502,20 @@ def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
     result = table[int_col].sum()
     assert isinstance(result, ir.IntegerScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Sum)
-    assert result.get_name() == "sum"
+    assert isinstance(result.op(), ops.Sum)
 
 
 def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
     result = table[float_col].sum()
     assert isinstance(result, ir.FloatingScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Sum)
-    assert result.get_name() == "sum"
+    assert isinstance(result.op(), ops.Sum)
 
 
 def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
     assert isinstance(result, ir.FloatingScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Mean)
-    assert result.get_name() == "mean"
+    assert isinstance(result.op(), ops.Mean)
 
 
 def test_aggregate_no_keys(table):
@@ -766,22 +760,6 @@ def test_aggregate_unnamed_expr(con):
     schema = agg.schema()
     assert schema.names == ('Substring(Lowercase(n_name), 0, 1)', 'metric')
     assert schema.types == (dt.string, dt.int64)
-
-
-def test_default_reduction_names(table):
-    d = table.f
-    cases = [
-        (d.count(), 'count'),
-        (d.sum(), 'sum'),
-        (d.mean(), 'mean'),
-        (d.approx_nunique(), 'approx_nunique'),
-        (d.approx_median(), 'approx_median'),
-        (d.min(), 'min'),
-        (d.max(), 'max'),
-    ]
-
-    for expr, ex_name in cases:
-        assert expr.get_name() == ex_name
 
 
 def test_join_no_predicate_list(con):

@@ -2,11 +2,18 @@ import numpy as np
 import sqlalchemy as sa
 
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.registry import fixed_arity, reduction
+from ibis.backends.base.sql.alchemy.registry import (
+    fixed_arity,
+    geospatial_functions,
+    reduction,
+)
 from ibis.backends.postgres.registry import _literal as _postgres_literal
 from ibis.backends.postgres.registry import operation_registry as _operation_registry
 
-operation_registry = _operation_registry.copy()
+operation_registry = {
+    op: _operation_registry[op]
+    for op in _operation_registry.keys() - geospatial_functions.keys()
+}
 
 
 def _literal(t, op):

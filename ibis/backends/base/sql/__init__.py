@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
 
-import ibis.common.graph as graph
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -24,10 +24,6 @@ if TYPE_CHECKING:
 __all__ = [
     'BaseSQLBackend',
 ]
-
-
-def _find_memtables(op):
-    return graph.proceed, op if isinstance(op, ops.InMemoryTable) else None
 
 
 class BaseSQLBackend(BaseBackend):
@@ -270,7 +266,7 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_tables(self, expr):
         if self.compiler.cheap_in_memory_tables:
-            for memtable in graph.traverse(_find_memtables, expr.op()):
+            for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)
 
     @abc.abstractmethod

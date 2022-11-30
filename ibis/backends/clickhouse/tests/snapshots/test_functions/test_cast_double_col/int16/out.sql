@@ -1,1 +1,1 @@
-CAST(`double_col` AS Nullable(Int16))
+CAST(double_col AS Nullable(Int16))

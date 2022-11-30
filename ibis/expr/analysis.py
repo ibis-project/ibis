@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import Counter
-from typing import Mapping
+from typing import Iterator, Mapping
 
 import toolz
 
@@ -107,22 +107,27 @@ def reduction_to_aggregation(node):
     tables = find_immediate_parent_tables(node)
 
     # TODO(kszucs): avoid the expression roundtrip
+    node = ops.Alias(node, node.name)
+    expr = node.to_expr()
     if len(tables) == 1:
         (table,) = tables
-        agg = table.to_expr().aggregate([node.to_expr()])
+        agg = table.to_expr().aggregate([expr])
     else:
-        agg = ScalarAggregate(node.to_expr()).get_result()
+        agg = ScalarAggregate(expr).get_result()
 
     return agg
 
 
-def find_immediate_parent_tables(node):
+def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a :class:`ibis.expr.types.Table` object
     in `expr`.
 
     Parameters
     ----------
-    expr : ir.Expr
+    input_node
+        Input node
+    keep_input
+        Whether to keep the input when traversing
 
     Yields
     ------
@@ -149,15 +154,18 @@ def find_immediate_parent_tables(node):
         r0
         foo: r0.a + 1
     """
-    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(input_node))
 
     def finder(node):
         if isinstance(node, ops.TableNode):
-            return g.halt, node
+            if keep_input or node != input_node:
+                return g.halt, node
+            else:
+                return g.proceed, None
         else:
             return g.proceed, None
 
-    return list(toolz.unique(g.traverse(finder, node)))
+    return list(toolz.unique(g.traverse(finder, input_node)))
 
 
 def substitute(fn, node):
@@ -223,7 +231,7 @@ def substitute_unbound(node):
     equivalent unbound table."""
     assert isinstance(node, ops.Node), type(node)
 
-    def fn(node, *args, **kwargs):
+    def fn(node, _, *args, **kwargs):
         if isinstance(node, ops.DatabaseTable):
             return ops.UnboundTable(name=node.name, schema=node.schema)
         else:
@@ -866,3 +874,12 @@ def _rewrite_filter_value_list(op, **kwargs):
         return op
 
     return op.__class__(*visited)
+
+
+def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
+    """Find all in-memory tables in `node`."""
+
+    def finder(node):
+        return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
+
+    return g.traverse(finder, node, filter=ops.Node)

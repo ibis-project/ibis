@@ -1,1 +1,1 @@
-intDivOrZero(`double_col`, abs(`double_col`))
+intDivOrZero(double_col, abs(double_col))

@@ -355,7 +355,7 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -370,7 +370,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),

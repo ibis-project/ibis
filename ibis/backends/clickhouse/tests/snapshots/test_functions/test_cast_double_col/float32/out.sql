@@ -1,1 +1,1 @@
-CAST(`double_col` AS Nullable(Float32))
+CAST(double_col AS Nullable(Float32))

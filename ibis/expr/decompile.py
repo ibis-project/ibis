@@ -377,7 +377,7 @@ def decompile(node, render_import=True, assign_result_to='result', format=False)
     ctx = CodeContext(assign_result_to=assign_result_to)
     dependents = Graph(node).invert()
 
-    def fn(node, *args, **kwargs):
+    def fn(node, _, *args, **kwargs):
         code = translate(node, *args, **kwargs)
         n_dependents = len(dependents[node])
 

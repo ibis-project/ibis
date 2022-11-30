@@ -54,18 +54,18 @@ def test_subsecond_timestamp_literals(con, translate, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected'),
+    "value",
     [
-        ('simple', "'simple'"),
-        ('I can\'t', "'I can\\'t'"),
-        ('An "escape"', "'An \"escape\"'"),
+        param("simple", id="simple"),
+        param("I can't", id="nested_quote"),
+        param('An "escape"', id="nested_token"),
     ],
 )
-def test_string_literals(con, translate, value, expected):
+def test_string_literals(con, translate, value, snapshot):
     expr = ibis.literal(value)
-    assert translate(expr.op()) == expected
-    # TODO clickhouse-driver escaping problem
-    # assert con.execute(expr) == expected
+    result = translate(expr.op())
+    snapshot.assert_match(result, "out.sql")
+    assert con.execute(expr) == value
 
 
 @pytest.mark.parametrize(('value', 'expected'), [(5, '5'), (1.5, '1.5')])

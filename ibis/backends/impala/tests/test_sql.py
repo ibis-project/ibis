@@ -268,7 +268,7 @@ def test_join_key_name(tpch, snapshot):
 
     pre_sizes = tpch.group_by(year).size()
     t2 = tpch.view()
-    conditional_avg = t2[t2.region == tpch.region].o_totalprice.mean()
+    conditional_avg = t2[t2.region == tpch.region].o_totalprice.mean().name("mean")
     amount_filter = tpch.o_totalprice > conditional_avg
     post_sizes = tpch[amount_filter].group_by(year).size()
 

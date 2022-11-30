@@ -113,9 +113,9 @@ def test_adjust_context_scope(client):
     )
     # the argument needs to be pull out from the alias
     # any extensions must do the same
-    value_count_over_win = CustomWindow(value_count.op().arg, win).to_expr()
+    value_count_over_win = CustomWindow(value_count.op(), win).to_expr()
 
-    expr = table.mutate(value_count_over_win.name('value_count_over_win'))
+    expr = table.mutate(value_count_over_win=value_count_over_win)
 
     context = (pd.Timestamp('20170105'), pd.Timestamp('20170111'))
     expr.execute(timecontext=context)

@@ -1,1 +1,1 @@
-sqrt(`double_col`)
+sqrt(double_col)
