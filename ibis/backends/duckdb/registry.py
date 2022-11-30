@@ -204,7 +204,6 @@ operation_registry.update(
         ops.TableColumn: _table_column,
         ops.TimestampDiff: fixed_arity(sa.func.age, 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.Translate: fixed_arity(sa.func.replace, 3),
         ops.TimestampNow: fixed_arity(
             # duckdb 0.6.0 changes now to be a tiemstamp with time zone force
             # it back to the original for backwards compatibility

@@ -134,11 +134,19 @@ def test_string_col_is_unicode(alltypes, df):
             id="repeat_right",
         ),
         param(
-            lambda t: t.string_col.translate('0', 'a'),
-            lambda t: t.string_col.str.translate(str.maketrans('0', 'a')),
+            lambda t: t.string_col.translate('01', 'ab'),
+            lambda t: t.string_col.str.translate(str.maketrans('01', 'ab')),
             id='translate',
             marks=pytest.mark.notimpl(
-                ["bigquery", "clickhouse", "datafusion", "mysql", "polars", "mssql"]
+                [
+                    "bigquery",
+                    "clickhouse",
+                    "datafusion",
+                    "duckdb",
+                    "mssql",
+                    "mysql",
+                    "polars",
+                ]
             ),
         ),
         param(
