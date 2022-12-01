@@ -1,0 +1,1 @@
+floor(`int_col`)

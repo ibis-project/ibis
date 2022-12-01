@@ -1,0 +1,1 @@
+`g` NOT IN ('foo', 'bar', 'baz')

@@ -1,0 +1,1 @@
+nullifzero(`double_col`)

@@ -1,0 +1,1 @@
+SHOW FUNCTIONS IN test

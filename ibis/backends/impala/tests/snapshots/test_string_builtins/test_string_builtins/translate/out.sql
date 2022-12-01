@@ -1,0 +1,1 @@
+translate(`string_col`, 'a', 'b')

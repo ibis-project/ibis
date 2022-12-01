@@ -1,0 +1,1 @@
+reverse(`string_col`)

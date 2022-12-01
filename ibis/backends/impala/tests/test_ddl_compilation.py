@@ -11,24 +11,22 @@ from ibis.backends.impala import ddl
 from ibis.backends.impala.compiler import ImpalaCompiler
 
 
-def test_drop_table_compile():
-    statement = DropTable('foo', database='bar', must_exist=True)
-    query = statement.compile()
-    expected = "DROP TABLE bar.`foo`"
-    assert query == expected
-
-    statement = DropTable('foo', database='bar', must_exist=False)
-    query = statement.compile()
-    expected = "DROP TABLE IF EXISTS bar.`foo`"
-    assert query == expected
-
-
 @pytest.fixture
 def t(mockcon):
     return mockcon.table('functional_alltypes')
 
 
-def test_select_basics(t):
+def test_drop_table_compile(snapshot):
+    statement = DropTable('foo', database='bar', must_exist=True)
+    query = statement.compile()
+    snapshot.assert_match(query, "out1.sql")
+
+    statement = DropTable('foo', database='bar', must_exist=False)
+    query = statement.compile()
+    snapshot.assert_match(query, "out2.sql")
+
+
+def test_select_basics(t, snapshot):
     name = 'testing123456'
 
     expr = t.limit(10)
@@ -36,45 +34,26 @@ def test_select_basics(t):
 
     stmt = InsertSelect(name, select, database='foo')
     result = stmt.compile()
-
-    expected = """\
-INSERT INTO foo.`testing123456`
-SELECT *
-FROM functional_alltypes
-LIMIT 10"""
-    assert result == expected
+    snapshot.assert_match(result, "out1.sql")
 
     stmt = InsertSelect(name, select, database='foo', overwrite=True)
     result = stmt.compile()
-
-    expected = """\
-INSERT OVERWRITE foo.`testing123456`
-SELECT *
-FROM functional_alltypes
-LIMIT 10"""
-    assert result == expected
+    snapshot.assert_match(result, "out2.sql")
 
 
-def test_load_data_unpartitioned():
+def test_load_data_unpartitioned(snapshot):
     path = '/path/to/data'
     stmt = ddl.LoadData('functional_alltypes', path, database='foo')
 
     result = stmt.compile()
-    expected = (
-        "LOAD DATA INPATH '/path/to/data' " "INTO TABLE foo.`functional_alltypes`"
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out1.sql")
 
     stmt.overwrite = True
     result = stmt.compile()
-    expected = (
-        "LOAD DATA INPATH '/path/to/data' "
-        "OVERWRITE INTO TABLE foo.`functional_alltypes`"
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out2.sql")
 
 
-def test_load_data_partitioned():
+def test_load_data_partitioned(snapshot):
     path = '/path/to/data'
     part = {'year': 2007, 'month': 7}
     part_schema = ibis.schema([('year', 'int32'), ('month', 'int32')])
@@ -87,29 +66,21 @@ def test_load_data_partitioned():
     )
 
     result = stmt.compile()
-    expected = """\
-LOAD DATA INPATH '/path/to/data' INTO TABLE foo.`functional_alltypes`
-PARTITION (year=2007, month=7)"""
-    assert result == expected
+    snapshot.assert_match(result, "out1.sql")
 
     stmt.overwrite = True
     result = stmt.compile()
-    expected = """\
-LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
-PARTITION (year=2007, month=7)"""
-    assert result == expected
+    snapshot.assert_match(result, "out2.sql")
 
 
-def test_cache_table_pool_name():
+def test_cache_table_pool_name(snapshot):
     statement = ddl.CacheTable('foo', database='bar')
     query = statement.compile()
-    expected = "ALTER TABLE bar.`foo` SET CACHED IN 'default'"
-    assert query == expected
+    snapshot.assert_match(query, "out1.sql")
 
     statement = ddl.CacheTable('foo', database='bar', pool='my_pool')
     query = statement.compile()
-    expected = "ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'"
-    assert query == expected
+    snapshot.assert_match(query, "out2.sql")
 
 
 @pytest.fixture
@@ -122,45 +93,39 @@ def table_name():
     return 'tbl'
 
 
-def test_add_partition(part_schema, table_name):
+def test_add_partition(part_schema, table_name, snapshot):
     stmt = ddl.AddPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
-    expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_add_partition_string_key():
+def test_add_partition_string_key(snapshot):
     part_schema = ibis.schema([('foo', 'int32'), ('bar', 'string')])
     stmt = ddl.AddPartition('tbl', {'foo': 5, 'bar': 'qux'}, part_schema)
 
     result = stmt.compile()
-    expected = 'ALTER TABLE tbl ADD PARTITION (foo=5, bar="qux")'
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_drop_partition(part_schema, table_name):
+def test_drop_partition(part_schema, table_name, snapshot):
     stmt = ddl.DropPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
-    expected = 'ALTER TABLE tbl DROP PARTITION (year=2007, month=4)'
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_add_partition_with_props(part_schema, table_name):
+def test_add_partition_with_props(part_schema, table_name, snapshot):
     props = {'location': '/users/foo/my-data'}
     stmt = ddl.AddPartition(
         table_name, {'year': 2007, 'month': 4}, part_schema, **props
     )
 
     result = stmt.compile()
-    expected = """\
-ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
-LOCATION '/users/foo/my-data'"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_alter_partition_properties(part_schema, table_name):
+def test_alter_partition_properties(part_schema, table_name, snapshot):
     part = {'year': 2007, 'month': 4}
 
     def _get_ddl_string(props):
@@ -168,36 +133,19 @@ def test_alter_partition_properties(part_schema, table_name):
         return stmt.compile()
 
     result = _get_ddl_string({'location': '/users/foo/my-data'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET LOCATION '/users/foo/my-data'"""
-    assert result == expected
+    snapshot.assert_match(result, "out1.sql")
 
     result = _get_ddl_string({'format': 'avro'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET FILEFORMAT AVRO"""
-    assert result == expected
+    snapshot.assert_match(result, "out2.sql")
 
     result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES (
-  'bar'='2',
-  'foo'='1'
-)"""
-    assert result == expected
+    snapshot.assert_match(result, "out3.sql")
 
     result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES (
-  'baz'='3'
-)"""
-    assert result == expected
+    snapshot.assert_match(result, "out4.sql")
 
 
-def test_alter_table_properties(part_schema, table_name):
+def test_alter_table_properties(part_schema, table_name, snapshot):
     part = {'year': 2007, 'month': 4}
 
     def _get_ddl_string(props):
@@ -205,33 +153,16 @@ def test_alter_table_properties(part_schema, table_name):
         return stmt.compile()
 
     result = _get_ddl_string({'location': '/users/foo/my-data'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET LOCATION '/users/foo/my-data'"""
-    assert result == expected
+    snapshot.assert_match(result, "out1.sql")
 
     result = _get_ddl_string({'format': 'avro'})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET FILEFORMAT AVRO"""
-    assert result == expected
+    snapshot.assert_match(result, "out2.sql")
 
     result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES (
-  'bar'='2',
-  'foo'='1'
-)"""
-    assert result == expected
+    snapshot.assert_match(result, "out3.sql")
 
     result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    expected = """\
-ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES (
-  'baz'='3'
-)"""
-    assert result == expected
+    snapshot.assert_match(result, "out4.sql")
 
 
 @pytest.fixture
@@ -239,7 +170,7 @@ def expr(t):
     return t[t.bigint_col > 0]
 
 
-def test_create_external_table_as(mockcon):
+def test_create_external_table_as(mockcon, snapshot):
     path = '/path/to/table'
     select, _ = _get_select(mockcon.table('test1'))
     statement = CTAS(
@@ -251,20 +182,10 @@ def test_create_external_table_as(mockcon):
         database='foo',
     )
     result = statement.compile()
-
-    expected = """\
-CREATE EXTERNAL TABLE foo.`another_table`
-STORED AS PARQUET
-LOCATION '{}'
-AS
-SELECT *
-FROM test1""".format(
-        path
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_with_location_compile():
+def test_create_table_with_location_compile(snapshot):
     path = '/path/to/table'
     schema = ibis.schema([('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')])
     statement = CreateTableWithSchema(
@@ -276,20 +197,10 @@ def test_create_table_with_location_compile():
         database='foo',
     )
     result = statement.compile()
-
-    expected = """\
-CREATE TABLE foo.`another_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-STORED AS PARQUET
-LOCATION '{}'""".format(
-        path
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_like_parquet():
+def test_create_table_like_parquet(snapshot):
     directory = '/path/to/'
     path = '/path/to/parquetfile'
     statement = ddl.CreateTableParquet(
@@ -301,18 +212,10 @@ def test_create_table_like_parquet():
     )
 
     result = statement.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE PARQUET '{}'
-STORED AS PARQUET
-LOCATION '{}'""".format(
-        path, directory
-    )
-
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_parquet_like_other():
+def test_create_table_parquet_like_other(snapshot):
     # alternative to "LIKE PARQUET"
     directory = '/path/to/'
     example_table = 'db.other'
@@ -326,18 +229,10 @@ def test_create_table_parquet_like_other():
     )
 
     result = statement.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE {}
-STORED AS PARQUET
-LOCATION '{}'""".format(
-        example_table, directory
-    )
-
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_parquet_with_schema():
+def test_create_table_parquet_with_schema(snapshot):
     directory = '/path/to/'
 
     schema = ibis.schema([('foo', 'string'), ('bar', 'int8'), ('baz', 'int16')])
@@ -352,20 +247,10 @@ def test_create_table_parquet_with_schema():
     )
 
     result = statement.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-STORED AS PARQUET
-LOCATION '{}'""".format(
-        directory
-    )
-
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_delimited():
+def test_create_table_delimited(snapshot):
     path = '/path/to/files/'
     schema = ibis.schema(
         [
@@ -388,24 +273,10 @@ def test_create_table_delimited():
     )
 
     result = stmt.compile()
-    expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`a` string,
- `b` int,
- `c` double,
- `d` decimal(12, 2))
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY '|'
-ESCAPED BY '\\'
-LINES TERMINATED BY '\0'
-STORED AS TEXTFILE
-LOCATION '{}'""".format(
-        path
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_external_table_avro():
+def test_create_external_table_avro(snapshot):
     path = '/path/to/files/'
 
     avro_schema = {
@@ -430,81 +301,25 @@ def test_create_external_table_avro():
     )
 
     result = stmt.compile()
-    expected = (
-        """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-STORED AS AVRO
-LOCATION '%s'
-TBLPROPERTIES (
-  'avro.schema.literal'='{
-  "fields": [
-    {
-      "name": "a",
-      "type": "string"
-    },
-    {
-      "name": "b",
-      "type": "int"
-    },
-    {
-      "name": "c",
-      "type": "double"
-    },
-    {
-      "logicalType": "decimal",
-      "name": "d",
-      "precision": 4,
-      "scale": 2,
-      "type": "bytes"
-    }
-  ],
-  "name": "my_record",
-  "type": "record"
-}'
-)"""
-        % path
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_table_parquet(expr):
+def test_create_table_parquet(expr, snapshot):
     statement = _create_table('some_table', expr, database='bar', can_exist=False)
     result = statement.compile()
-
-    expected = """\
-CREATE TABLE bar.`some_table`
-STORED AS PARQUET
-AS
-SELECT *
-FROM functional_alltypes
-WHERE `bigint_col` > 0"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_no_overwrite(expr):
+def test_no_overwrite(expr, snapshot):
     statement = _create_table('tname', expr, can_exist=True)
     result = statement.compile()
-
-    expected = """\
-CREATE TABLE IF NOT EXISTS `tname`
-STORED AS PARQUET
-AS
-SELECT *
-FROM functional_alltypes
-WHERE `bigint_col` > 0"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_avro_other_formats(t):
+def test_avro_other_formats(t, snapshot):
     statement = _create_table('tname', t, format='avro', can_exist=True)
     result = statement.compile()
-    expected = """\
-CREATE TABLE IF NOT EXISTS `tname`
-STORED AS AVRO
-AS
-SELECT *
-FROM functional_alltypes"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
     with pytest.raises(ValueError):
         _create_table('tname', t, format='foo')

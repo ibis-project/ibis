@@ -1,0 +1,1 @@
+CAST(sign(`double_col`) AS double)

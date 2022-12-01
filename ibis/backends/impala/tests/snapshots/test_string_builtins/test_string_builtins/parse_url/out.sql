@@ -1,0 +1,1 @@
+parse_url(`string_col`, 'HOST')

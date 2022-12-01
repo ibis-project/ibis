@@ -94,27 +94,21 @@ def all_cols(i8, i16, i32, i64, d, f, dec, s, b, t):
     ]
 
 
-def test_sql_generation():
+def test_sql_generation(snapshot):
     func = api.scalar_function(['string'], 'string', name='Tester')
     func.register('identity', 'udf_testing')
 
     result = func('hello world')
-    expected = (
-        "SELECT udf_testing.identity('hello world') AS " "`UDF_Tester('hello world')`"
-    )
-    assert ibis.impala.compile(result) == expected
+    snapshot.assert_match(ibis.impala.compile(result), "out.sql")
 
 
-def test_sql_generation_from_infoclass():
+def test_sql_generation_from_infoclass(snapshot):
     func = api.wrap_udf('test.so', ['string'], 'string', 'info_test')
     repr(func)
 
     func.register('info_test', 'udf_testing')
     result = func('hello world').name('tmp')
-    assert (
-        ibis.impala.compile(result)
-        == "SELECT udf_testing.info_test('hello world') AS `tmp`"
-    )
+    snapshot.assert_match(ibis.impala.compile(result), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -604,7 +598,7 @@ def name():
     return "test_name"
 
 
-def test_create_udf(inputs, output, name):
+def test_create_udf(inputs, output, name, snapshot):
     func = api.wrap_udf(
         '/foo/bar.so',
         inputs,
@@ -614,15 +608,10 @@ def test_create_udf(inputs, output, name):
     )
     stmt = ddl.CreateUDF(func)
     result = stmt.compile()
-    expected = (
-        "CREATE FUNCTION `test_name`(string, string) "
-        "returns bigint "
-        "location '/foo/bar.so' symbol='testFunc'"
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_create_udf_type_conversions(output, name):
+def test_create_udf_type_conversions(output, name, snapshot):
     inputs = ['string', 'int8', 'int16', 'int32']
     func = api.wrap_udf(
         '/foo/bar.so',
@@ -632,61 +621,36 @@ def test_create_udf_type_conversions(output, name):
         name=name,
     )
     stmt = ddl.CreateUDF(func)
-
-    # stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
-    #                           ,
-    #                           output, name)
     result = stmt.compile()
-    expected = (
-        "CREATE FUNCTION `test_name`(string, tinyint, "
-        "smallint, int) returns bigint "
-        "location '/foo/bar.so' symbol='testFunc'"
-    )
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_delete_udf_simple(name, inputs):
+def test_delete_udf_simple(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs)
     result = stmt.compile()
-    expected = "DROP FUNCTION `test_name`(string, string)"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_delete_udf_if_exists(name, inputs):
+def test_delete_udf_if_exists(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, must_exist=False)
     result = stmt.compile()
-    expected = "DROP FUNCTION IF EXISTS `test_name`(string, string)"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_delete_udf_aggregate(name, inputs):
+def test_delete_udf_aggregate(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, aggregate=True)
     result = stmt.compile()
-    expected = "DROP AGGREGATE FUNCTION `test_name`(string, string)"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_delete_udf_db(name, inputs):
+def test_delete_udf_db(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, database='test')
     result = stmt.compile()
-    expected = "DROP FUNCTION test.`test_name`(string, string)"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
 @pytest.mark.parametrize("ser", [True, False])
-def test_create_uda(name, inputs, output, ser):
-    def make_ex(serialize=False):
-        lines = [
-            f"CREATE AGGREGATE FUNCTION bar.`{name}`(string, string) returns bigint location '/foo/bar.so'",  # noqa: E501
-            "init_fn='Init'",
-            "update_fn='Update'",
-            "merge_fn='Merge'",
-        ]
-        if serialize:
-            lines.append("serialize_fn='Serialize'")
-        lines.append("finalize_fn='Finalize'")
-        return "\n".join(lines)
-
+def test_create_uda(name, inputs, output, ser, snapshot):
     func = api.wrap_uda(
         '/foo/bar.so',
         inputs,
@@ -699,33 +663,28 @@ def test_create_uda(name, inputs, output, ser):
     )
     stmt = ddl.CreateUDA(func, name=name, database='bar')
     result = stmt.compile()
-    expected = make_ex(ser)
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_list_udf():
+def test_list_udf(snapshot):
     stmt = ddl.ListFunction('test')
     result = stmt.compile()
-    expected = 'SHOW FUNCTIONS IN test'
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_list_udfs_like():
+def test_list_udfs_like(snapshot):
     stmt = ddl.ListFunction('test', like='identity')
     result = stmt.compile()
-    expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_list_udafs():
+def test_list_udafs(snapshot):
     stmt = ddl.ListFunction('test', aggregate=True)
     result = stmt.compile()
-    expected = 'SHOW AGGREGATE FUNCTIONS IN test'
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_list_udafs_like():
+def test_list_udafs_like(snapshot):
     stmt = ddl.ListFunction('test', like='identity', aggregate=True)
     result = stmt.compile()
-    expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")

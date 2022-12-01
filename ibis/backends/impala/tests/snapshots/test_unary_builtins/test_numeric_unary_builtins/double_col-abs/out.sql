@@ -1,0 +1,1 @@
+abs(`double_col`)

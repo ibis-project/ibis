@@ -1,0 +1,1 @@
+precision(`l_extendedprice`)

@@ -1,0 +1,1 @@
+lpad(`string_col`, 25, ' ')

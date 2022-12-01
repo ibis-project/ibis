@@ -1,0 +1,1 @@
+isnull(`l_extendedprice`, 0)

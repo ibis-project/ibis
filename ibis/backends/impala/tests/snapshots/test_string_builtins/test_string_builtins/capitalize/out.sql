@@ -1,0 +1,1 @@
+initcap(`string_col`)
