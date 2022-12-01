@@ -929,8 +929,8 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "pyspark", "mssql"])
-def test_integer_cast_to_timestamp_scalar(backend, alltypes, df):
+@pytest.mark.notimpl(["bigquery", "datafusion", "pyspark", "mssql"])
+def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
     expected = pd.to_datetime(df.int_col.min(), unit="s")
