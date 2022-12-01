@@ -1,23 +1,24 @@
-#!/usr/bin/env nix-shell
-#!nix-shell -I nixpkgs=./nix -p git gnused rustNightly yj jq -i bash
-# shellcheck shell=bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 top="$PWD"
 clone="${1}"
-tag="$(yj -tj < "${top}/poetry.lock" | jq '.package[] | select(.name == "datafusion") | .version' -rcM)"
+tag="$(nix develop -c yj -tj < "${top}/poetry.lock" | nix develop -c jq -rcM '.package[] | select(.name == "datafusion") | .version')"
 
-git -C "${clone}" fetch
-git -C "${clone}" checkout .
-git -C "${clone}" checkout "${tag}"
+nix develop -c git -C "${clone}" fetch
+nix develop -c git -C "${clone}" checkout .
+nix develop -c git -C "${clone}" checkout "${tag}"
 
-# 1. use thin lto to dramatically speed up builds
-sed -i -e '/codegen-units = 1/d' -e 's/lto = true/lto = "thin"/g' "${clone}/Cargo.toml"
+# use thin lto to dramatically speed up builds
+Nix develop -c sed -i \
+  -e '/codegen-units = 1/d' \
+  -e 's/lto = true/lto = "thin"/g' \
+  "${clone}/Cargo.toml"
 
 pushd "${clone}"
-cargo generate-lockfile
+nix develop -c cargo generate-lockfile
 popd
 
 mkdir -p "${top}/nix/patches"
 
-git -C "${clone}" diff > "${top}/nix/patches/datafusion.patch"
+nix develop -c git -C "${clone}" diff > "${top}/nix/patches/datafusion.patch"

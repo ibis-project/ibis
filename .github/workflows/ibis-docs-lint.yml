@@ -27,7 +27,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v18
         with:
-          nix_path: nixpkgs=./nix
+          nix_path: nixpkgs=channel:nixos-unstable-small
 
       - name: lint commits
         run: nix run 'nixpkgs#commitlint' -- --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
@@ -40,8 +40,6 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -50,15 +48,9 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      # run against a smaller shell for speed for pull requests
-      - name: pre-commit checks pull_request
-        if: github.event_name == 'pull_request'
-        run: nix develop -f nix preCommitShell --ignore-environment --keep-going -c pre-commit run --all-files
-
       # run against the full shell.nix on push so it gets pushed to cachix
-      - name: pre-commit checks push
-        if: github.event_name == 'push'
-        run: nix develop -f shell.nix --ignore-environment --keep-going -c pre-commit run --all-files
+      - name: pre-commit checks
+        run: nix develop --ignore-environment --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -115,13 +107,11 @@ jobs:
 
   docs_pr:
     runs-on: ubuntu-latest
-    if: github.event_name != 'push'
+    if: github.event_name == 'pull_request'
     concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -136,10 +126,10 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix run -f nix ibisDocsEnv310 -- -m mkdocs build --strict
+        run: nix develop -c mkdocs build --strict
 
       - name: verify internal links
-        run: nix shell -f nix --ignore-environment bash findutils just lychee -c just checklinks --offline --no-progress
+        run: nix develop -c just checklinks --offline --no-progress
 
   docs_push:
     runs-on: ubuntu-latest
@@ -152,8 +142,6 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -184,11 +172,7 @@ jobs:
 
       - name: build and push dev docs
         run: |
-          set -euo pipefail
-
-          nix-shell --run 'mike deploy --push --rebase --prefix docs --message "docs(dev): ibis@${{ github.sha }}" dev'
-        env:
-          PYTHONPATH: .
+          nix develop -c mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
 
   simulate_release:
     runs-on: ubuntu-latest
@@ -198,8 +182,6 @@ jobs:
           fetch-depth: 0
 
       - uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - uses: cachix/cachix-action@v12
         with:
