@@ -85,16 +85,11 @@ def test_bucket_error_cases(alltypes):
 
 
 def test_histogram(alltypes):
-    d = alltypes.double_col
-
     with pytest.raises(ValueError):
-        d.histogram(nbins=10, binwidth=5)
+        alltypes.histogram("double_col", nbins=10, binwidth=5)
 
-    with pytest.raises(ValueError):
-        d.histogram()
-
-    with pytest.raises(ValueError):
-        d.histogram(10, closed="foo")
+    with pytest.raises(ValueError, match="`nbins` is required"):
+        alltypes.histogram("double_col")
 
 
 def test_topk_analysis_bug(airlines):

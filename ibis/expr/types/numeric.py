@@ -526,38 +526,6 @@ class NumericColumn(Column, NumericValue):
             include_over=include_over,
         ).to_expr()
 
-    def histogram(
-        self,
-        nbins: int | None = None,
-        binwidth: float | None = None,
-        base: float | None = None,
-        closed: Literal["left", "right"] = "left",
-        aux_hash: str | None = None,
-    ) -> ir.CategoryColumn:
-        """Compute a histogram with fixed width bins.
-
-        Parameters
-        ----------
-        nbins
-            If supplied, will be used to compute the binwidth
-        binwidth
-            If not supplied, computed from the data (actual max and min values)
-        base
-            Histogram base
-        closed
-            Which side of each interval is closed
-        aux_hash
-            Auxiliary hash value to add to bucket names
-
-        Returns
-        -------
-        CategoryColumn
-            Coded value expression
-        """
-        return ops.Histogram(
-            self, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
-        ).to_expr()
-
     def summary(
         self,
         exact_nunique: bool = False,

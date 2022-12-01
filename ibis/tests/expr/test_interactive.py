@@ -106,8 +106,8 @@ def test_interactive_non_compilable_repr_not_fail(con):
 
 def test_histogram_repr_no_query_execute(con):
     t = con.table('functional_alltypes')
-    tier = t.double_col.histogram(10).name('bucket')
-    expr = t.group_by(tier).size()
+    tier = t.histogram("double_col", 10)
+    expr = tier.group_by("double_col_bucket").size()
     with config.option_context('interactive', True):
         expr._repr()
     assert con.executed_queries == []

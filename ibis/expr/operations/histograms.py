@@ -49,29 +49,6 @@ class Bucket(BucketLike):
 
 
 @public
-class Histogram(BucketLike):
-    arg = rlz.numeric
-    nbins = rlz.optional(rlz.instance_of(int))
-    binwidth = rlz.optional(rlz.scalar(rlz.numeric))
-    base = rlz.optional(rlz.scalar(rlz.numeric))
-    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
-    aux_hash = rlz.optional(rlz.instance_of(str))
-
-    def __init__(self, nbins, binwidth, **kwargs):
-        if nbins is None:
-            if binwidth is None:
-                raise ValueError('Must indicate nbins or binwidth')
-        elif binwidth is not None:
-            raise ValueError('nbins and binwidth are mutually exclusive')
-        super().__init__(nbins=nbins, binwidth=binwidth, **kwargs)
-
-    @property
-    def output_dtype(self):
-        # always undefined cardinality (for now)
-        return dt.category
-
-
-@public
 class CategoryLabel(Value):
     arg = rlz.category
     labels = rlz.tuple_of(rlz.instance_of(str))

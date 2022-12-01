@@ -596,8 +596,8 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "pyspark", "polars"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "polars"])
 def test_histogram(con, alltypes):
     n = 10
-    results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
-    assert len(results.value_counts()) == n
+    results = con.execute(alltypes.histogram("int_col", n))
+    assert len(results.int_col_bucket.value_counts()) == n

@@ -3,6 +3,7 @@ from decimal import Decimal
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.api as api
@@ -120,9 +121,6 @@ def test_builtins(con, alltypes):
         d.bucket([0, 10, 25, 50], include_over=True),
         d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
         d.bucket([10, 25, 50, 100], include_under=True),
-        d.histogram(10),
-        d.histogram(5, base=10),
-        d.histogram(base=10, binwidth=5),
         # coalesce-like cases
         api.coalesce(
             table.int_col, api.null(), table.smallint_col, table.bigint_col, 5
@@ -156,12 +154,26 @@ def test_builtins(con, alltypes):
         s.repeat(i1),
     ]
 
-    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name(f"e{i:d}") for i, expr in enumerate(exprs)]
 
     projection = table[proj_exprs]
     projection.limit(10).execute()
 
     _check_impala_output_types_match(con, projection)
+
+
+@pytest.mark.parametrize(
+    ("args", "kwargs"),
+    [
+        param((10,), {}, id="bins"),
+        param((5,), {"base": 10}, id="base"),
+        param((), {"base": 10, "binwidth": 5}, id="base_binwidth"),
+    ],
+)
+def test_histogram(con, alltypes, args, kwargs):
+    expr = alltypes.histogram("double_col", *args, **kwargs).limit(10)
+    expr.execute()
+    _check_impala_output_types_match(con, expr)
 
 
 def _check_impala_output_types_match(con, table):
@@ -180,8 +192,7 @@ def _check_impala_output_types_match(con, table):
 
         if left != right:
             pytest.fail(
-                'Value for {} had left type {}'
-                ' and right type {}\nquery:\n{}'.format(n, left, right, query)
+                f"Value for {n} had left type {left} and right type {right}\nquery:\n{query}"
             )
 
 
@@ -388,8 +399,7 @@ def test_filter_predicates(con):
 
 
 def test_histogram_value_counts(alltypes):
-    t = alltypes
-    expr = t.double_col.histogram(10).value_counts()
+    expr = alltypes.histogram("double_col", nbins=10).double_col_bucket.value_counts()
     expr.execute()
 
 

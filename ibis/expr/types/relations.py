@@ -1334,6 +1334,79 @@ class Table(Expr, JupyterMixin):
         )
         return op.to_expr()
 
+    def histogram(
+        self,
+        column: str,
+        nbins: int | None = None,
+        binwidth: float | None = None,
+        base: float | None = None,
+        suffix: str | None = None,
+        eps: float = 1e-13,
+    ):
+        """Compute a histogram with fixed width bins.
+
+        Parameters
+        ----------
+        column
+            Column to bucket
+        nbins
+            If supplied, will be used to compute the binwidth
+        binwidth
+            If not supplied, computed from the data (actual max and min values)
+        base
+            The value of the first histogram bin. Defaults to the minimum value
+            of `column`.
+        suffix
+            Auxiliary hash value to add to bucket names
+        eps
+            Allowed floating point epsilon for histogram base
+
+        Returns
+        -------
+        Table
+            New table expression with a bucketed column expression
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="float64"), name="t")
+        >>> hist = t.histogram("a", nbins=10)
+        >>> hist.schema()
+        ibis.Schema {
+          a         float64
+          a_bucket  int64
+        }
+        """
+        col = self[column]
+
+        if nbins is not None and binwidth is not None:
+            raise ValueError(
+                f"Cannot pass both `nbins` (got {nbins}) and `binwidth` (got {binwidth})"
+            )
+
+        if binwidth is None or base is None:
+            if nbins is None:
+                raise ValueError("`nbins` is required if `binwidth` is not provided")
+            if suffix is None:
+                suffix = f"_{util.guid()[:6]}"
+
+            min_name = f"min{suffix}"
+            max_name = f"max{suffix}"
+
+            table = self.cross_join(
+                self.aggregate(**{min_name: col.min(), max_name: col.max()})
+            )
+
+            if base is None:
+                base = table[min_name] - eps
+
+            binwidth = (table[max_name] - base) / (nbins - 1)
+            table = table.drop(min_name, max_name)
+        else:
+            table = self
+
+        bucket = ((col - base) / binwidth).floor()
+        return table.mutate(**{f"{column}_bucket": bucket})
+
 
 def _resolve_predicates(
     table: Table, predicates
