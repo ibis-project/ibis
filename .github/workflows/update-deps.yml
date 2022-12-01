@@ -1,4 +1,4 @@
-name: Update Dependencies
+name: Update Nix Flakes
 on:
   schedule:
     # run every 3 days at midnight
@@ -6,33 +6,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate_updates:
+  get-flakes:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.get-flakes.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
-
-      - name: output dependency list
-        id: set-matrix
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - name: generate flake matrix
+        id: get-flakes
         run: |
           set -euo pipefail
 
-          deps="$(jq -rcM '{dep: keys}' < nix/sources.json)"
-          echo "matrix=${deps}" >> "$GITHUB_OUTPUT"
+          flakes="$(nix flake metadata --json | jq -rcM '.locks.nodes.root.inputs | {flake: keys}')"
+          echo "matrix=${flakes}" >> "$GITHUB_OUTPUT"
 
-  niv_update:
+  flake-update:
     runs-on: ubuntu-latest
     needs:
-      - generate_updates
+      - get-flakes
     strategy:
-      matrix: ${{ fromJSON(needs.generate_updates.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.get-flakes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
 
       - uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -40,25 +41,22 @@ jobs:
           name: ibis
           extraPullNames: nix-community,poetry2nix
 
-      - uses: cpcloud/niv-dep-info-action@v2.0.8
+      - uses: cpcloud/flake-dep-info-action@v1.1.0
         id: get_current_commit
         with:
-          dependency: ${{ matrix.dep }}
+          input: ${{ matrix.dep }}
 
       - name: update ${{ matrix.dep }}
-        run: nix run 'nixpkgs#niv' -- update ${{ matrix.dep }}
+        run: nix flake lock --update-input ${{ matrix.dep }}
 
-      - uses: cpcloud/niv-dep-info-action@v2.0.8
+      - uses: cpcloud/flake-dep-info-action@v1.1.0
         id: get_new_commit
         with:
-          dependency: ${{ matrix.dep }}
+          input: ${{ matrix.dep }}
 
       - name: create an output indicating whether a PR is needed
         id: needs_pr
-        run: |
-          set -euo pipefail
-
-          echo "did_change=${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}" >> "$GITHUB_OUTPUT"
+        run: echo "did_change=${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}" >> "$GITHUB_OUTPUT"
 
       - uses: tibdex/github-app-token@v1
         if: fromJSON(steps.needs_pr.outputs.did_change)
@@ -89,13 +87,13 @@ jobs:
         id: create_pr
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
-          commit-message: "chore(deps/${{ matrix.dep }}): update"
+          commit-message: "chore(flake/${{ matrix.dep }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
           branch: "create-pull-request/update-${{ matrix.dep }}"
           delete-branch: true
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
-          title: "chore(deps/${{ matrix.dep }}): update"
+          title: "chore(flake/${{ matrix.dep }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
           body: ${{ steps.compare_commits.outputs.differences }}
-          labels: dependencies,autorebase:opt-in
+          labels: dependencies,nix,autorebase:opt-in
 
       - uses: juliangruber/approve-pull-request-action@v2.0.3
         if: fromJSON(steps.needs_pr.outputs.did_change)

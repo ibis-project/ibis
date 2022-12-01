@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -50,8 +48,4 @@ jobs:
 
       - name: build and push docs on tag
         run: |
-          set -euo pipefail
-
-          nix-shell --run "mike deploy --push --rebase --update-aliases --prefix docs --message 'docs(release): ibis@${GITHUB_REF_NAME}' ${GITHUB_REF_NAME} latest"
-        env:
-          PYTHONPATH: .
+          nix develop -c mike deploy --push --rebase --update-aliases --prefix docs --message "docs(release): ibis@${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}" latest

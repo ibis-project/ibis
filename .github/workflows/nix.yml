@@ -7,6 +7,9 @@ on:
       - "pyproject.toml"
       - "poetry.lock"
       - "nix/**"
+      - "!docs/**"
+      - "!mkdocs.yml"
+      - "!**/*.md"
     branches:
       - master
       - "*.x.x"
@@ -16,12 +19,12 @@ on:
       - "pyproject.toml"
       - "poetry.lock"
       - "nix/**"
+      - "!docs/**"
+      - "!mkdocs.yml"
+      - "!**/*.md"
     branches:
       - master
       - "*.x.x"
-  schedule:
-    - cron: "0 0 * * *"
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
@@ -46,8 +49,6 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v18
-        with:
-          nix_path: nixpkgs=./nix
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -55,14 +56,9 @@ jobs:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
-
-      - name: nix build
-        run: nix build --fallback --keep-going --print-build-logs --file . --argstr python ${{ matrix.python-version }}
-
-      - name: nix build shell environment
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      - name: nix build and test
         run: |
           set -euo pipefail
 
-          version="${{ matrix.python-version }}"
-          nix build --fallback --keep-going --print-build-logs --file nix "ibisFullDevEnv${version//./}"
+          version='${{ matrix.python-version }}'
+          nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
