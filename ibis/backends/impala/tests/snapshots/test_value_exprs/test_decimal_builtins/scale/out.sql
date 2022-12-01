@@ -1,0 +1,1 @@
+scale(`l_extendedprice`)

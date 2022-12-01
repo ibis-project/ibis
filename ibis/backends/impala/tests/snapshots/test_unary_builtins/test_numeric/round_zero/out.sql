@@ -1,0 +1,1 @@
+round(`double_col`, 0)

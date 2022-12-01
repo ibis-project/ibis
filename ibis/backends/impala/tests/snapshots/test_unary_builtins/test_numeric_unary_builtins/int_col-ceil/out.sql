@@ -1,0 +1,1 @@
+ceil(`int_col`)

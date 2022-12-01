@@ -1,0 +1,1 @@
+upper(`string_col`)

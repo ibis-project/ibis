@@ -1,0 +1,1 @@
+ltrim(`string_col`)

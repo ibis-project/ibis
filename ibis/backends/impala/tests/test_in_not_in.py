@@ -10,64 +10,28 @@ def table(mockcon):
     return mockcon.table("alltypes")
 
 
-@pytest.mark.parametrize(
-    ("expr_fn", "expected_fn"),
-    [
-        pytest.param(
-            lambda t, values: t.g.isin(values),
-            lambda values: f"`g` IN {tuple(values)}",
-            id="in",
-        ),
-        pytest.param(
-            lambda t, values: t.g.notin(values),
-            lambda values: f"`g` NOT IN {tuple(values)}",
-            id="not_in",
-        ),
-    ],
-)
-def test_field_in_literals(table, expr_fn, expected_fn):
-    values = {'foo', 'bar', 'baz'}
-    expr = expr_fn(table, values)
-    expected = expected_fn(values)
+@pytest.mark.parametrize("method_name", ["isin", "notin"])
+def test_field_in_literals(table, method_name, snapshot):
+    values = ['foo', 'bar', 'baz']
+    method = getattr(table.g, method_name)
+    expr = method(values)
     result = translate(expr)
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-@pytest.mark.parametrize(
-    ("expr_fn", "expected"),
-    [
-        pytest.param(
-            lambda t: L(2).isin([t.a, t.b, t.c]),
-            '2 IN (`a`, `b`, `c`)',
-            id="in",
-        ),
-        pytest.param(
-            lambda t: L(2).notin([t.a, t.b, t.c]),
-            '2 NOT IN (`a`, `b`, `c`)',
-            id="not_in",
-        ),
-    ],
-)
-def test_literal_in_fields(table, expr_fn, expected):
-    expr = expr_fn(table)
+@pytest.mark.parametrize("method_name", ["isin", "notin"])
+def test_literal_in_fields(table, method_name, snapshot):
+    values = [table.a, table.b, table.c]
+    method = getattr(L(2), method_name)
+    expr = method(values)
     result = translate(expr)
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_isin_notin_in_select(table):
-    values = {'foo', 'bar'}
-    values_formatted = tuple(values)
-
-    filtered = table[table.g.isin(values)]
+@pytest.mark.parametrize("method_name", ["isin", "notin"])
+def test_isin_notin_in_select(table, method_name, snapshot):
+    values = ['foo', 'bar']
+    method = getattr(table.g, method_name)
+    filtered = table[method(values)]
     result = ImpalaCompiler.to_sql(filtered)
-    expected = f"""SELECT *
-FROM alltypes
-WHERE `g` IN {values_formatted}"""
-    assert result == expected
-
-    filtered = table[table.g.notin(values)]
-    result = ImpalaCompiler.to_sql(filtered)
-    expected = f"""SELECT *
-FROM alltypes
-WHERE `g` NOT IN {values_formatted}"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")

@@ -1,0 +1,1 @@
+ndv(`double_col`)

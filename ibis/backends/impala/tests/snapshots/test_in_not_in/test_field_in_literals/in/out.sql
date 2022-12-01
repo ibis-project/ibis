@@ -1,0 +1,1 @@
+`g` IN ('bar', 'foo', 'baz')

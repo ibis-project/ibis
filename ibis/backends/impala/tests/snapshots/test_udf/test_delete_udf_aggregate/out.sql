@@ -1,0 +1,1 @@
+DROP AGGREGATE FUNCTION `test_name`(string, string)
