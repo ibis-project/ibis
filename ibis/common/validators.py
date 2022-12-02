@@ -9,6 +9,7 @@ from typing_extensions import Annotated, get_args, get_origin
 
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
+from ibis.common.typing import evaluate_typehint
 from ibis.util import flatten_iterable, is_function, is_iterable
 
 
@@ -18,8 +19,9 @@ class Validator(Callable):
     __slots__ = ()
 
     @classmethod
-    def from_annotation(cls, annot):
+    def from_annotation(cls, annot, module=None):
         # TODO(kszucs): cache the result of this function
+        annot = evaluate_typehint(annot, module)
         origin_type = get_origin(annot)
 
         if origin_type is Union:
@@ -43,10 +45,10 @@ class Validator(Callable):
             return instance_of(annot)
 
 
+# TODO(kszucs): in order to cache valiadator instances we could subclass
+# grounds.Singleton, but the imports would need to be reorganized
 class Curried(toolz.curry, Validator):
     """Enable convenient validator definition by decorating plain functions."""
-
-    __slots__ = ()
 
     def __repr__(self):
         return '{}({}{})'.format(

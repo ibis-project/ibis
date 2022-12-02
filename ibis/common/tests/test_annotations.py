@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import inspect
+from typing import Union
 
 import pytest
 from toolz import identity
+from typing_extensions import Annotated
 
-from ibis.common.annotations import Argument, Attribute, Parameter, Signature
+from ibis.common.annotations import Argument, Attribute, Parameter, Signature, annotated
 from ibis.common.validators import instance_of, option
 
 is_int = instance_of(int)
@@ -109,6 +113,43 @@ def test_signature():
     assert sig.validate(this=2, other=1) == {'other': 1, 'this': 3}
 
 
+def test_signature_from_callable():
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    sig = Signature.from_callable(test)
+    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
+
+    with pytest.raises(TypeError):
+        sig.validate(2, 3, "4")
+
+
+def test_signature_from_callable_unsupported_argument_kinds():
+    def test(a: int, b: int, *args):
+        pass
+
+    with pytest.raises(TypeError, match="unsupported parameter kind VAR_POSITIONAL"):
+        Signature.from_callable(test)
+
+    def test(a: int, b: int, **kwargs):
+        pass
+
+    with pytest.raises(TypeError, match="unsupported parameter kind VAR_KEYWORD"):
+        Signature.from_callable(test)
+
+    def test(a: int, b: int, *, c: int):
+        pass
+
+    with pytest.raises(TypeError, match="unsupported parameter kind KEYWORD_ONLY"):
+        Signature.from_callable(test)
+
+    def test(a: int, b: int, /, c: int = 1):
+        pass
+
+    with pytest.raises(TypeError, match="unsupported parameter kind POSITIONAL_ONLY"):
+        Signature.from_callable(test)
+
+
 def test_signature_unbind():
     def to_int(x, this):
         return int(x)
@@ -154,3 +195,83 @@ def test_signature_unbind_with_empty_variadic(d):
 
     params_again = sig.validate(**kwargs)
     assert params_again == params
+
+
+def test_annotated_function():
+    @annotated(a=instance_of(int), b=instance_of(int), c=instance_of(int))
+    def test(a, b, c=1):
+        return a + b + c
+
+    assert test(2, 3) == 6
+    assert test(2, 3, 4) == 9
+    assert test(2, 3, c=4) == 9
+    assert test(a=2, b=3, c=4) == 9
+
+    with pytest.raises(TypeError):
+        test(2, 3, c='4')
+
+    @annotated(a=instance_of(int))
+    def test(a, b, c=1):
+        return (a, b, c)
+
+    assert test(2, "3") == (2, "3", 1)
+
+
+def test_annotated_function_with_type_annotations():
+    @annotated()
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    assert test(2, 3) == 6
+
+    @annotated
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    assert test(2, 3) == 6
+
+    @annotated
+    def test(a: int, b, c=1):
+        return (a, b, c)
+
+    assert test(2, 3, "4") == (2, 3, "4")
+
+
+def test_annotated_function_with_type_annotations_and_overrides():
+    @annotated(b=instance_of(float))
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    with pytest.raises(TypeError):
+        test(2, 3)
+
+    assert test(2, 3.0) == 6.0
+
+
+def short_str(x, this):
+    if len(x) > 3:
+        return x
+    raise ValueError("too short")
+
+
+def endswith_d(x, this):
+    if x.endswith('d'):
+        return x
+    else:
+        raise ValueError("doesn't end with d")
+
+
+def test_annotated_function_with_complex_type_annotations():
+    @annotated
+    def test(a: Annotated[str, short_str, endswith_d], b: Union[int, float]):
+        return a, b
+
+    assert test("abcd", 1) == ("abcd", 1)
+    assert test("---d", 1.0) == ("---d", 1.0)
+
+    with pytest.raises(ValueError, match="doesn't end with d"):
+        test("---c", 1)
+    with pytest.raises(ValueError, match="too short"):
+        test("123", 1)
+    with pytest.raises(TypeError, match="passes none of the following rules"):
+        test("abcd", "qweqwe")

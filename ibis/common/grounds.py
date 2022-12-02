@@ -8,7 +8,6 @@ from weakref import WeakValueDictionary
 from ibis.common.annotations import Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
 from ibis.common.graph import Graph, Traversable
-from ibis.common.typing import evaluate_typehint
 from ibis.common.validators import Validator
 from ibis.util import frozendict, recursive_get
 
@@ -58,8 +57,7 @@ class AnnotableMeta(BaseMeta):
         module = dct.get('__module__')
         annots = dct.get('__annotations__', {})
         for name, annot in annots.items():
-            typehint = evaluate_typehint(annot, module)
-            validator = Validator.from_annotation(typehint)
+            validator = Validator.from_annotation(annot, module)
             if name in dct:
                 dct[name] = Argument.default(dct[name], validator)
             else:

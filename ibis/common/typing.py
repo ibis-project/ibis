@@ -3,6 +3,8 @@ from typing import Any, ForwardRef
 
 import toolz
 
+# TODO(kszucs): try to use inspect.get_annotations() backport instead
+
 if sys.version_info >= (3, 9):
 
     @toolz.memoize
