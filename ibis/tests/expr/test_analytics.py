@@ -93,9 +93,6 @@ def test_histogram(alltypes):
     with pytest.raises(ValueError):
         d.histogram()
 
-    with pytest.raises(ValueError):
-        d.histogram(10, closed="foo")
-
 
 def test_topk_analysis_bug(airlines):
     # GH #398

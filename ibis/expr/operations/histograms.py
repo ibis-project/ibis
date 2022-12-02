@@ -6,26 +6,18 @@ from ibis.expr.operations.core import Value
 
 
 @public
-class BucketLike(Value):
-    output_shape = rlz.Shape.COLUMNAR
-
-    @property
-    def nbuckets(self):
-        return None
-
-    @property
-    def output_dtype(self):
-        return dt.Category(self.nbuckets)
-
-
-@public
-class Bucket(BucketLike):
+class Bucket(Value):
     arg = rlz.column(rlz.any)
     buckets = rlz.tuple_of(rlz.scalar(rlz.any))
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
     close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
     include_under = rlz.optional(rlz.instance_of(bool), default=False)
     include_over = rlz.optional(rlz.instance_of(bool), default=False)
+    output_shape = rlz.Shape.COLUMNAR
+
+    @property
+    def output_dtype(self):
+        return dt.Category(self.nbuckets)
 
     def __init__(self, buckets, include_under, include_over, **kwargs):
         if not len(buckets):
@@ -46,29 +38,6 @@ class Bucket(BucketLike):
     @property
     def nbuckets(self):
         return len(self.buckets) - 1 + self.include_over + self.include_under
-
-
-@public
-class Histogram(BucketLike):
-    arg = rlz.numeric
-    nbins = rlz.optional(rlz.instance_of(int))
-    binwidth = rlz.optional(rlz.scalar(rlz.numeric))
-    base = rlz.optional(rlz.scalar(rlz.numeric))
-    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
-    aux_hash = rlz.optional(rlz.instance_of(str))
-
-    def __init__(self, nbins, binwidth, **kwargs):
-        if nbins is None:
-            if binwidth is None:
-                raise ValueError('Must indicate nbins or binwidth')
-        elif binwidth is not None:
-            raise ValueError('nbins and binwidth are mutually exclusive')
-        super().__init__(nbins=nbins, binwidth=binwidth, **kwargs)
-
-    @property
-    def output_dtype(self):
-        # always undefined cardinality (for now)
-        return dt.category
 
 
 @public

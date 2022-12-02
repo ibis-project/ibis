@@ -10,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.util as util
 from ibis.backends.base.sql.compiler.base import _extract_common_table_expressions
 
 
@@ -277,41 +276,6 @@ class SelectBuilder:
             return type(op)(*new_args)
         else:
             return op
-
-    # TODO(kszucs): avoid roundtripping between extpressions and operations
-    def _visit_select_Histogram(self, op):
-        assert isinstance(op, ops.Node), type(op)
-        EPS = 1e-13
-
-        if op.binwidth is None or op.base is None:
-            aux_hash = op.aux_hash or util.guid()[:6]
-            min_name = 'min_%s' % aux_hash
-            max_name = 'max_%s' % aux_hash
-
-            minmax = self.table_set.to_expr().aggregate(
-                [
-                    op.arg.to_expr().min().name(min_name),
-                    op.arg.to_expr().max().name(max_name),
-                ]
-            )
-            self.table_set = self.table_set.to_expr().cross_join(minmax).op()
-
-            if op.base is None:
-                base = minmax[min_name] - EPS
-            else:
-                base = op.base.to_expr()
-
-            binwidth = (minmax[max_name] - base) / (op.nbins - 1)
-        else:
-            # Have both a bin width and a base
-            binwidth = op.binwidth.to_expr()
-            base = op.base.to_expr()
-
-        bucket = ((op.arg.to_expr() - base) / binwidth).floor()
-        if isinstance(op, ops.Named):
-            bucket = bucket.name(op.name)
-
-        return bucket.op()
 
     # ---------------------------------------------------------------------
     # Analysis of table set
