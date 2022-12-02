@@ -5,6 +5,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
 )
 
@@ -74,6 +75,7 @@ def _extract(fmt):
 
 
 operation_registry = sqlalchemy_operation_registry.copy()
+operation_registry.update(sqlalchemy_window_functions_registry)
 
 operation_registry.update(
     {

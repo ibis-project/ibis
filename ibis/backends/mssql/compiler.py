@@ -27,6 +27,12 @@ class MsSqlExprTranslator(AlchemyExprTranslator):
     integer_to_timestamp = sa.func.from_unixtime
     native_json_type = False
 
+    _forbids_frame_clause = AlchemyExprTranslator._forbids_frame_clause + (
+        ops.Lag,
+        ops.Lead,
+    )
+    _require_order_by = AlchemyExprTranslator._require_order_by + (ops.Reduction,)
+
 
 rewrites = MsSqlExprTranslator.rewrites
 
