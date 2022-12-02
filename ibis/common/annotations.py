@@ -1,26 +1,26 @@
 from __future__ import annotations
 
+import functools
 import inspect
 from typing import Any
 
-from ibis.common.validators import option
+import toolz
+
+from ibis.common.validators import Validator, any_, option
 from ibis.util import DotDict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
+KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
+POSITIONAL_ONLY = inspect.Parameter.POSITIONAL_ONLY
 POSITIONAL_OR_KEYWORD = inspect.Parameter.POSITIONAL_OR_KEYWORD
-
-
-def _noop(arg, **kwargs):
-    return arg
+VAR_KEYWORD = inspect.Parameter.VAR_KEYWORD
+VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 
 
 class Annotation:
     """Base class for all annotations."""
 
-    __slots__ = (
-        '_default',
-        '_validator',
-    )
+    __slots__ = ('_default', '_validator')
 
     def __init__(self, validator=None, default=EMPTY):
         self._default = default
@@ -81,7 +81,7 @@ class Argument(Annotation):
     def optional(cls, validator=None, default=None):
         """Annotation to allow and treat `None` values as missing arguments."""
         if validator is None:
-            validator = option(_noop, default=default)
+            validator = option(any_, default=default)
         else:
             validator = option(validator, default=default)
         return cls(validator, default=None)
@@ -164,6 +164,52 @@ class Signature(inspect.Signature):
 
         return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
 
+    @classmethod
+    def from_callable(cls, fn, validators=None):
+        """Create a validateable signature from a callable.
+
+        Parameters
+        ----------
+        fn : Callable
+            Callable to create a signature from.
+        validators : dict, default None
+            Pass validators for missing type annotations.
+
+        Returns
+        -------
+        Signature
+        """
+        sig = super().from_callable(fn)
+        params = []
+        validators = validators or {}
+
+        for param in sig.parameters.values():
+            if param.kind in {
+                VAR_POSITIONAL,
+                VAR_KEYWORD,
+                POSITIONAL_ONLY,
+                KEYWORD_ONLY,
+            }:
+                raise TypeError(f"unsupported parameter kind {param.kind} in {fn}")
+
+            if param.name in validators:
+                validator = validators[param.name]
+            elif param.annotation is EMPTY:
+                validator = any_
+            else:
+                validator = Validator.from_annotation(
+                    param.annotation, module=fn.__module__
+                )
+
+            if param.default is EMPTY:
+                annot = Argument.mandatory(validator)
+            else:
+                annot = Argument.default(param.default, validator)
+
+            params.append(Parameter(param.name, annot))
+
+        return cls(params)
+
     def unbind(self, this: Any):
         """Reverse bind of the parameters.
 
@@ -219,5 +265,52 @@ optional = Argument.optional
 default = Argument.default
 immutable_property = Attribute.default
 
+
 # TODO(kszucs): try to cache validator objects
 # TODO(kszucs): try a quicker curry implementation
+
+
+@toolz.curry
+def annotated(fn, **validators):
+    """Create functions with arguments validated at runtime.
+
+    There are three ways to apply this decorator:
+
+    1. With type annotations
+
+    >>> @annotated
+    ... def foo(x: int, y: str) -> float:
+    ...     return float(x) + float(y)
+
+    2. With validators
+
+    >>> from ibis.common.validate import instance_of
+    >>> @annotated(x=instance_of(int), y=instance_of(str))
+    ... def foo(x, y):
+    ...     return float(x) + float(y)
+
+    3. With mixing type annotations and validators where the latter takes precedence
+
+    >>> @annotated(x=instance_of(float))
+    ... def foo(x: int, y: str) -> float:
+    ...     return x + float(y)
+
+    Parameters
+    ----------
+    fn : Callable
+        Callable to wrap.
+    **validators : dict[str, Validator]
+        Validators for the arguments.
+
+    Returns
+    -------
+    Callable
+    """
+    sig = Signature.from_callable(fn, validators=validators)
+
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        kwargs = sig.validate(*args, **kwargs)
+        return fn(**kwargs)
+
+    return wrapped
