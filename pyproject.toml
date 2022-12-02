@@ -294,7 +294,7 @@ multi_line_output = 3
 include_trailing_comma = true
 profile = "black"
 extend_skip = [".direnv"]
-extend_skip_glob = ["result*"]
+extend_skip_glob = ["result*", "ibis/tests/*/snapshots/*"]
 skip_gitignore = true
 
 [tool.pydocstyle]
