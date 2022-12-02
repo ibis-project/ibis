@@ -41,7 +41,7 @@ jobs:
           name: ibis
           extraPullNames: nix-community,poetry2nix
 
-      - uses: cpcloud/flake-dep-info-action@v1.1.0
+      - uses: cpcloud/flake-dep-info-action@v2.0.8
         id: get_current_commit
         with:
           input: ${{ matrix.dep }}
@@ -49,7 +49,7 @@ jobs:
       - name: update ${{ matrix.dep }}
         run: nix flake lock --update-input ${{ matrix.dep }}
 
-      - uses: cpcloud/flake-dep-info-action@v1.1.0
+      - uses: cpcloud/flake-dep-info-action@v2.0.8
         id: get_new_commit
         with:
           input: ${{ matrix.dep }}
