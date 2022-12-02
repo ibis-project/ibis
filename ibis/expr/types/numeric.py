@@ -531,9 +531,8 @@ class NumericColumn(Column, NumericValue):
         nbins: int | None = None,
         binwidth: float | None = None,
         base: float | None = None,
-        closed: Literal["left", "right"] = "left",
-        aux_hash: str | None = None,
-    ) -> ir.CategoryColumn:
+        eps: float = 1e-13,
+    ):
         """Compute a histogram with fixed width bins.
 
         Parameters
@@ -543,20 +542,36 @@ class NumericColumn(Column, NumericValue):
         binwidth
             If not supplied, computed from the data (actual max and min values)
         base
-            Histogram base
-        closed
-            Which side of each interval is closed
-        aux_hash
-            Auxiliary hash value to add to bucket names
+            The value of the first histogram bin. Defaults to the minimum value
+            of `column`.
+        eps
+            Allowed floating point epsilon for histogram base
 
         Returns
         -------
-        CategoryColumn
-            Coded value expression
+        Column
+            Bucketed column
         """
-        return ops.Histogram(
-            self, nbins, binwidth, base, closed=closed, aux_hash=aux_hash
-        ).to_expr()
+
+        if nbins is not None and binwidth is not None:
+            raise ValueError(
+                f"Cannot pass both `nbins` (got {nbins}) and `binwidth` (got {binwidth})"
+            )
+
+        if binwidth is None or base is None:
+            import ibis
+
+            if nbins is None:
+                raise ValueError("`nbins` is required if `binwidth` is not provided")
+
+            empty_window = ibis.window()
+
+            if base is None:
+                base = self.min().over(empty_window) - eps
+
+            binwidth = (self.max().over(empty_window) - base) / (nbins - 1)
+
+        return ((self - base) / binwidth).floor()
 
     def summary(
         self,
