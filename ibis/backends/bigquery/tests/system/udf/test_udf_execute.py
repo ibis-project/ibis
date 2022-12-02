@@ -93,17 +93,19 @@ def test_udf_scalar(client):
     assert result == 3
 
 
-def test_multiple_calls_has_one_definition(client, snapshot):
+def test_multiple_calls_has_one_definition(client):
     @udf([dt.string], dt.double)
     def my_str_len(s):
         return s.length
 
     s = ibis.literal("abcd")
     expr = my_str_len(s) + my_str_len(s)
-    sql = client.compile(expr)
-    snapshot.assert_match(sql, "out.sql")
-    result = client.execute(expr)
-    assert result == 8.0
+
+    add = expr.op()
+
+    # generated javascript is identical
+    assert add.left.op().js == add.right.op().js
+    assert client.execute(expr) == 8.0
 
 
 def test_udf_libraries(client):
