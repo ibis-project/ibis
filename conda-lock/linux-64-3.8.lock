@@ -71,7 +71,7 @@ https://conda.anaconda.org/conda-forge/noarch/six-1.16.0-pyh6c4a22f_0.tar.bz2#e5
 https://conda.anaconda.org/conda-forge/noarch/sortedcontainers-2.4.0-pyhd8ed1ab_0.tar.bz2#6d6552722448103793743dabfbda532d
 https://conda.anaconda.org/conda-forge/noarch/tblib-1.7.0-pyhd8ed1ab_0.tar.bz2#3d4afc31302aa7be471feb6be048ed76
 https://conda.anaconda.org/conda-forge/noarch/toolz-0.12.0-pyhd8ed1ab_0.tar.bz2#92facfec94bc02d6ccf42e7173831a36
-https://conda.anaconda.org/conda-forge/linux-64/tornado-6.1-py38h0a891b7_3.tar.bz2#d9e2836a4a46935f84b858462d54a7c3
+https://conda.anaconda.org/conda-forge/linux-64/tornado-6.2-py38h0a891b7_1.tar.bz2#358beb228a53b5e1031862de3525d1d3
 https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.4.0-pyha770c72_0.tar.bz2#2d93b130d148d7fc77e583677792fc6a
 https://conda.anaconda.org/conda-forge/linux-64/cffi-1.15.1-py38h4a40e3a_2.tar.bz2#2276b1f4d1ede3f5f14cc7e4ae6f9a33
 https://conda.anaconda.org/conda-forge/noarch/commonmark-0.9.1-py_0.tar.bz2#6aa0173c14befcd577ded130cf6f22f5
@@ -86,11 +86,11 @@ https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.8.2-pyhd8ed1ab_0
 https://conda.anaconda.org/conda-forge/noarch/zict-2.2.0-pyhd8ed1ab_0.tar.bz2#cd563d01df94e51f968645dbf3b310b0
 https://conda.anaconda.org/conda-forge/noarch/bokeh-2.4.3-pyhd8ed1ab_3.tar.bz2#e4c6e6d99add99cede5328d811cacb21
 https://conda.anaconda.org/conda-forge/linux-64/brotlipy-0.7.0-py38h0a891b7_1005.tar.bz2#e99e08812dfff30fdd17b3f8838e2759
-https://conda.anaconda.org/conda-forge/linux-64/cryptography-38.0.3-py38h80a4ca7_0.tar.bz2#9822ec88bb44cddbe3fdeebc41135808
-https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.11.1-pyhd8ed1ab_0.conda#383ee12e7c9c27adab310a884bc359ab
+https://conda.anaconda.org/conda-forge/linux-64/cryptography-38.0.4-py38h80a4ca7_0.conda#d3c4698fd7475640f4d9eff8d792deac
+https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.12.0-pyhd8ed1ab_0.conda#3a0f020d07998e1ae711df071f97fc19
 https://conda.anaconda.org/conda-forge/linux-64/pandas-1.4.4-py38h47df419_0.tar.bz2#2d32bac7cbadc044a7008452adee8c4e
 https://conda.anaconda.org/conda-forge/noarch/rich-12.6.0-pyhd8ed1ab_0.tar.bz2#162ed4cc104133be23e592faa1e055e3
 https://conda.anaconda.org/conda-forge/noarch/pyopenssl-22.1.0-pyhd8ed1ab_0.tar.bz2#fbfa0a180d48c800f922a10a114a8632
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.13-pyhd8ed1ab_0.conda#3078ef2359efd6ecadbc7e085c5e0592
-https://conda.anaconda.org/conda-forge/noarch/distributed-2022.11.1-pyhd8ed1ab_0.conda#b416f82d39b8e0cd14c697aafc0536ef
-https://conda.anaconda.org/conda-forge/noarch/dask-2022.11.1-pyhd8ed1ab_0.conda#cbaf14c6796cadd8d43aba812a6abef4
+https://conda.anaconda.org/conda-forge/noarch/distributed-2022.12.0-pyhd8ed1ab_0.conda#2c934253dc579d314ac2a1f43b4be15c
+https://conda.anaconda.org/conda-forge/noarch/dask-2022.12.0-pyhd8ed1ab_0.conda#db0f9c381d65054afdb6ae1e547d8b2e
