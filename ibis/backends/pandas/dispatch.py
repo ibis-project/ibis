@@ -19,7 +19,14 @@ execute_node = TraceTwoLevelDispatcher(
 
 
 @execute_node.register(ops.Node)
-def execute_node_without_scope(node, **kwargs):
+def raise_unknown_op(node, **kwargs):
+    raise NotImplementedError(
+        f"Operation {type(node).__name__!r} is not implemented " f"for this backend"
+    )
+
+
+@execute_node.register(ops.TableNode)
+def raise_unknown_table_node(node, **kwargs):
     raise com.UnboundExpressionError(
         (
             'Node of type {!r} has no data bound to it. '
