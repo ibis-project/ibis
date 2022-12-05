@@ -2,6 +2,11 @@
   description = "Expressive Python analytics at any scale.";
 
   inputs = {
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
 
     gitignore = {
@@ -31,6 +36,7 @@
     , nixpkgs
     , poetry2nix
     , rust-overlay
+    , ...
     }:
     let
       backends = [
