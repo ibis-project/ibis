@@ -766,7 +766,7 @@ FROM \\w+ AS \\1"""
 
 
 @pytest.mark.parametrize("dtype", [None, "f8"])
-def test_dunder_array_table(alltypes, df, dtype):
+def test_dunder_array_table(alltypes, dtype):
     expr = alltypes.group_by("string_col").int_col.sum().order_by("string_col")
     result = np.asarray(expr, dtype=dtype)
     expected = np.asarray(expr.execute(), dtype=dtype)
@@ -774,15 +774,12 @@ def test_dunder_array_table(alltypes, df, dtype):
 
 
 @pytest.mark.parametrize("dtype", [None, "f8"])
-def test_dunder_array_column(alltypes, df, dtype):
-    expr = (
-        alltypes.group_by("string_col")
-        .agg(int_col=lambda _: _.int_col.sum())
-        .order_by("string_col")
-        .int_col
-    )
-    result = np.asarray(expr, dtype=dtype)
-    expected = np.asarray(expr.execute(), dtype=dtype)
+def test_dunder_array_column(alltypes, dtype):
+    from ibis import _
+
+    expr = alltypes.group_by("string_col").agg(int_col=_.int_col.sum()).int_col
+    result = np.sort(np.asarray(expr, dtype=dtype))
+    expected = np.sort(np.asarray(expr.execute(), dtype=dtype))
     np.testing.assert_array_equal(result, expected)
 
 
