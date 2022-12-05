@@ -1303,11 +1303,6 @@ def execute_distinct_dataframe(op, df, **kwargs):
     return df.drop_duplicates()
 
 
-@execute_node.register(ops.RowID)
-def execute_rowid(op, *args, **kwargs):
-    raise com.UnsupportedOperationError('rowid is not supported in pandas backends')
-
-
 @execute_node.register(ops.TableArrayView, pd.DataFrame)
 def execute_table_array_view(op, _, **kwargs):
     return execute(op.table).squeeze()
