@@ -26,7 +26,7 @@ Here's how to define an element-wise function:
 
 ```python
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas import udf
+from ibis.backends.pandas.udf import udf
 
 @udf.elementwise(input_type=[dt.int64], output_type=dt.double)
 def add_one(x):
@@ -44,7 +44,7 @@ Here's how to define a reduction function:
 
 ```python
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas import udf
+from ibis.backends.pandas.udf import udf
 
 @udf.reduction(input_type=[dt.double], output_type=dt.double)
 def double_mean(series):
@@ -62,7 +62,7 @@ Here's how to define an analytic function:
 
 ```python
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas import udf
+from ibis.backends.pandas.udf import udf
 
 @udf.analytic(input_type=[dt.double], output_type=dt.double)
 def zscore(series):
@@ -114,7 +114,7 @@ in your function:
 
 ```python
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas import udf
+from ibis.backends.pandas.udf import udf
 
 @udf.elementwise([dt.int64], dt.double)
 def add_two(x, **kwargs): # do stuff with kwargs
@@ -128,7 +128,7 @@ For example:
 
 ```python
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas import udf
+from ibis.backends.pandas.udf import udf
 
 @udf.elementwise([dt.int64], dt.double)
 def add_two_with_none(x, y=None):
