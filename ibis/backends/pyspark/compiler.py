@@ -1125,26 +1125,38 @@ def compile_window_op(t, op, **kwargs):
     aggcontext = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
+    # Checks for invalid user input e.g. passing in tuple for preceding and
+    # non-None value for following are caught and raised in expr/window.py
+    # if we're here, then the input is valid, we just need to interpret it
+    # correctly
+    if isinstance(window.preceding, tuple):
+        start, end = window.preceding
+    elif isinstance(window.following, tuple):
+        start, end = window.following
+    else:
+        start = window.preceding
+        end = window.following
+
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
     # bounds. Only set window bounds here if not a shift operation.
     if not isinstance(operand, ops.ShiftBase):
-        if window.preceding is None:
-            start = Window.unboundedPreceding
+        if start is None:
+            win_start = Window.unboundedPreceding
         else:
-            start = -_canonicalize_interval(t, window.preceding, **kwargs)
-        if window.following is None:
-            end = Window.unboundedFollowing
+            win_start = -_canonicalize_interval(t, start, **kwargs)
+        if end is None:
+            win_end = Window.unboundedFollowing
         else:
-            end = _canonicalize_interval(t, window.following, **kwargs)
+            win_end = _canonicalize_interval(t, end, **kwargs)
 
         if (
-            isinstance(window.preceding, ir.IntervalScalar)
-            or isinstance(window.following, ir.IntervalScalar)
+            isinstance(start, ir.IntervalScalar)
+            or isinstance(end, ir.IntervalScalar)
             or window.how == "range"
         ):
-            pyspark_window = pyspark_window.rangeBetween(start, end)
+            pyspark_window = pyspark_window.rangeBetween(win_start, win_end)
         else:
-            pyspark_window = pyspark_window.rowsBetween(start, end)
+            pyspark_window = pyspark_window.rowsBetween(win_start, win_end)
 
     res_op = operand
     if isinstance(res_op, (ops.NotAll, ops.NotAny)):

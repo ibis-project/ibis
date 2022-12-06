@@ -333,6 +333,18 @@ def _window(t, op):
             'for SQLAlchemy-based backends.'
         )
 
+    # Checks for invalid user input e.g. passing in tuple for preceding and
+    # non-None value for following are caught and raised in expr/window.py
+    # if we're here, then the input is valid, we just need to interpret it
+    # correctly
+    if isinstance(window.preceding, tuple):
+        start, end = map(lambda x: -1 * x if x is not None else None, window.preceding)
+    elif isinstance(window.following, tuple):
+        start, end = window.following
+    else:
+        start = -window.preceding if window.preceding is not None else window.preceding
+        end = window.following
+
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
     if isinstance(window_op, t._require_order_by) and not window._order_by:
@@ -343,16 +355,10 @@ def _window(t, op):
     partition_by = [t.translate(arg) for arg in window._group_by]
 
     how = {'range': 'range_'}.get(window.how, window.how)
-    preceding = window.preceding
     additional_params = (
         {}
         if t._forbids_frame_clause and isinstance(window_op, t._forbids_frame_clause)
-        else {
-            how: (
-                -preceding if preceding is not None else preceding,
-                window.following,
-            )
-        }
+        else {how: (start, end)}
     )
     result = reduction.over(
         partition_by=partition_by, order_by=order_by, **additional_params
