@@ -312,11 +312,18 @@ def test_ungrouped_bounded_expanding_window(
     backend.assert_series_equal(left, right)
 
 
+@pytest.mark.parametrize(
+    "preceding, following",
+    [
+        (0, 2),
+        (None, (0, 2)),
+    ],
+)
 @pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
-def test_grouped_bounded_following_window(backend, alltypes, df):
+def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
-        preceding=0,
-        following=2,
+        preceding=preceding,
+        following=following,
         group_by=[alltypes.string_col],
         order_by=[alltypes.id],
     )
@@ -358,6 +365,16 @@ def test_grouped_bounded_following_window(backend, alltypes, df):
                 order_by=[t.id],
             ),
             id='preceding-2-following-0',
+        ),
+        param(
+            lambda t: ibis.window(
+                preceding=(2, 0),
+                following=None,
+                group_by=[t.string_col],
+                order_by=[t.id],
+            ),
+            id='preceding-2-following-0-tuple',
+            marks=pytest.mark.notimpl(["pandas"]),
         ),
         param(
             lambda t: ibis.trailing_window(
