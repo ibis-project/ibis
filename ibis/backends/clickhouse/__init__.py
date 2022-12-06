@@ -134,11 +134,15 @@ class Backend(BaseSQLBackend):
         return self._filter_with_like(databases, like)
 
     def list_tables(self, like=None, database=None):
-        data, _ = self.raw_sql('SHOW TABLES')
+        if database is not None:
+            query = f"SHOW TABLES FROM `{database}`"
+        else:
+            query = "SHOW TABLES"
+        data, _ = self.raw_sql(query)
         if not data:
             return []
-        databases = list(data[0])
-        return self._filter_with_like(databases, like)
+        tables = list(data[0])
+        return self._filter_with_like(tables, like)
 
     def raw_sql(
         self,

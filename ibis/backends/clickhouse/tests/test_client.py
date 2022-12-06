@@ -173,13 +173,16 @@ def test_get_schema_using_query(con, query, expected_schema):
     assert result == expected_schema
 
 
-def test_list_tables_empty(con, worker_id):
+def test_list_tables_database(con):
+    tables = con.list_tables()
+    tables2 = con.list_tables(database=con.current_database)
+    assert tables == tables2
+
+
+def test_list_tables_empty_database(con, worker_id):
     dbname = f"tmpdb_{worker_id}"
-    db = con.current_database
     con.raw_sql(f"CREATE DATABASE IF NOT EXISTS {dbname}")
     try:
-        con.raw_sql(f"USE {dbname}")
-        assert not con.list_tables()
+        assert not con.list_tables(database=dbname)
     finally:
-        con.raw_sql(f"USE {db}")
         con.raw_sql(f"DROP DATABASE IF EXISTS {dbname}")
