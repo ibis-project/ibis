@@ -2,6 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mssql
 
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.mssql.registry import operation_registry
 
