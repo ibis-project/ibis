@@ -33,6 +33,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
         ops.Lag,
         ops.Lead,
     )
+    _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
 
 
 class SnowflakeCompiler(AlchemyCompiler):
