@@ -44,15 +44,15 @@ jobs:
       - uses: cpcloud/flake-dep-info-action@v2.0.8
         id: get_current_commit
         with:
-          input: ${{ matrix.dep }}
+          input: ${{ matrix.flake }}
 
-      - name: update ${{ matrix.dep }}
-        run: nix flake lock --update-input ${{ matrix.dep }}
+      - name: update ${{ matrix.flake }}
+        run: nix flake lock --update-input ${{ matrix.flake }}
 
       - uses: cpcloud/flake-dep-info-action@v2.0.8
         id: get_new_commit
         with:
-          input: ${{ matrix.dep }}
+          input: ${{ matrix.flake }}
 
       - name: create an output indicating whether a PR is needed
         id: needs_pr
@@ -87,11 +87,11 @@ jobs:
         id: create_pr
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
-          commit-message: "chore(flake/${{ matrix.dep }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
-          branch: "create-pull-request/update-${{ matrix.dep }}"
+          commit-message: "chore(flake/${{ matrix.flake }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
+          branch: "create-pull-request/update-${{ matrix.flake }}"
           delete-branch: true
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
-          title: "chore(flake/${{ matrix.dep }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
+          title: "chore(flake/${{ matrix.flake }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
           body: ${{ steps.compare_commits.outputs.differences }}
           labels: dependencies,nix,autorebase:opt-in
 
