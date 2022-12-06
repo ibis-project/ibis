@@ -248,13 +248,14 @@
 
             export TEMPDIR
             TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
+
+            # necessary for mkdocs
+            export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
           '';
 
           PGPASSWORD = "postgres";
           MYSQL_PWD = "ibis";
           MSSQL_SA_PASSWORD = "1bis_Testing!";
-          # necessary for mkdocs
-          PYTHONPATH = builtins.toPath ./.;
         };
       in
       rec {
