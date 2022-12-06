@@ -7,10 +7,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.udf.vectorized import analytic, reduction
 
-pytestmark = [
-    pytest.mark.notimpl(["mssql"], reason="window functions aren't implemented")
-]
-
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
@@ -106,7 +102,7 @@ def calc_zscore(s):
             id="nth",
             marks=[
                 pytest.mark.notimpl(["bigquery", "pandas", "snowflake"]),
-                pytest.mark.notyet(["impala"]),
+                pytest.mark.notyet(["impala", "mssql"]),
             ],
         ),
         param(
@@ -147,6 +143,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumany',
+            marks=[pytest.mark.notyet(["mssql"])],
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -163,6 +160,7 @@ def calc_zscore(s):
                     "duckdb",
                     'impala',
                     'postgres',
+                    'mssql',
                     'mysql',
                     'sqlite',
                     'snowflake',
@@ -179,6 +177,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumall',
+            marks=[pytest.mark.notyet(["mssql"])],
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -195,6 +194,7 @@ def calc_zscore(s):
                     "duckdb",
                     'impala',
                     'postgres',
+                    'mssql',
                     'mysql',
                     'sqlite',
                     'snowflake',
@@ -280,6 +280,7 @@ def test_grouped_bounded_expanding_window(
                         "clickhouse",
                         "duckdb",
                         "impala",
+                        "mssql",
                         "mysql",
                         "postgres",
                         "sqlite",
@@ -409,6 +410,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                     "dask",
                     "duckdb",
                     "impala",
+                    "mssql",
                     "mysql",
                     "postgres",
                     "sqlite",
@@ -426,7 +428,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             False,
             id='unordered',
             marks=[
-                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering")
+                pytest.mark.notyet(["snowflake"], reason="backend requires ordering")
             ],
         ),
     ],
@@ -485,7 +487,7 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-mean',
             marks=[
-                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering")
+                pytest.mark.notyet(["snowflake"], reason="backend requires ordering")
             ],
         ),
         param(
@@ -500,6 +502,7 @@ def test_grouped_unbounded_window(
                     "dask",
                     "duckdb",
                     "impala",
+                    "mssql",
                     "mysql",
                     "pandas",
                     "postgres",
@@ -519,6 +522,7 @@ def test_grouped_unbounded_window(
                     "clickhouse",
                     "duckdb",
                     "impala",
+                    "mssql",
                     "mysql",
                     "postgres",
                     "sqlite",
@@ -550,7 +554,9 @@ def test_grouped_unbounded_window(
                     ),
                 ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
-                pytest.mark.notyet(["snowflake"], reason="snowflake requires ordering"),
+                pytest.mark.notyet(
+                    ["snowflake", "mssql"], reason="backend requires ordering"
+                ),
             ],
         ),
         param(
@@ -565,7 +571,12 @@ def test_grouped_unbounded_window(
             lambda df: df.float_col.shift(-1),
             False,
             id='unordered-lead',
-            marks=pytest.mark.notimpl(["dask", "mysql", "pyspark", "snowflake"]),
+            marks=[
+                pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+                pytest.mark.notyet(
+                    ["snowflake", "mssql"], reason="backend requires ordering"
+                ),
+            ],
         ),
         param(
             lambda t, win: calc_zscore(t.double_col).over(win),
@@ -579,6 +590,7 @@ def test_grouped_unbounded_window(
                     "dask",
                     "duckdb",
                     "impala",
+                    "mssql",
                     "mysql",
                     "pandas",
                     "postgres",
@@ -599,6 +611,7 @@ def test_grouped_unbounded_window(
                     "clickhouse",
                     "duckdb",
                     "impala",
+                    "mssql",
                     "mysql",
                     "postgres",
                     "pyspark",
@@ -639,7 +652,11 @@ def test_ungrouped_unbounded_window(
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "snowflake", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
-    reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",  # noqa: E501
+    reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    reason="RANGE is only supported with UNBOUNDED and CURRENT ROW window frame delimiters",
 )
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
