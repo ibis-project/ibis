@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import contextlib
 import json
-from typing import TYPE_CHECKING, Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
+import clickhouse_driver
 import toolz
-from clickhouse_driver.client import Client as _DriverClient
 
 import ibis
 import ibis.config
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.clickhouse.client import ClickhouseTable, fully_qualified_re
 from ibis.backends.clickhouse.compiler import ClickhouseCompiler
@@ -99,7 +101,7 @@ class Backend(BaseSQLBackend):
         >>> client  # doctest: +ELLIPSIS
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
         """  # noqa: E501
-        self.con = _DriverClient(
+        options = dict(
             host=host,
             port=port,
             database=database,
@@ -109,24 +111,30 @@ class Backend(BaseSQLBackend):
             compression=compression,
             **kwargs,
         )
+        # We use the client for any ibis-native queries for efficiency
+        self._client = clickhouse_driver.Client(**options)
+        # We use the dbapi for `raw_sql` calls to provide a cursor object.
+        # This won't start a connection until `cursor` is called, so in
+        # the common case this is cheap.
+        self.con = clickhouse_driver.dbapi.connect(**options)
         self._external_tables = external_tables or {}
 
     @property
     def version(self) -> str:
-        self.con.connection.force_connect()
+        self._client.connection.force_connect()
         try:
-            info = self.con.connection.server_info
+            info = self._client.connection.server_info
         finally:
-            self.con.connection.disconnect()
+            self._client.connection.disconnect()
 
         return f'{info.version_major}.{info.version_minor}.{info.revision}'
 
     @property
     def current_database(self):
-        return self.con.connection.database
+        return self._client.connection.database
 
     def list_databases(self, like=None):
-        data, _ = self.raw_sql('SELECT name FROM system.databases')
+        data, _ = self._client_execute('SELECT name FROM system.databases')
         # in theory this should never be empty
         if not data:  # pragma: no cover
             return []
@@ -138,11 +146,59 @@ class Backend(BaseSQLBackend):
             query = f"SHOW TABLES FROM `{database}`"
         else:
             query = "SHOW TABLES"
-        data, _ = self.raw_sql(query)
+        data, _ = self._client_execute(query)
         if not data:
             return []
         tables = list(data[0])
         return self._filter_with_like(tables, like)
+
+    def _normalize_external_tables(self, external_tables=None):
+        """Merge registered external tables with any new external tables, and
+        process them to be passed to clickhouse_driver."""
+        import pandas as pd
+
+        external_tables_list = []
+        if external_tables is None:
+            external_tables = {}
+        for name, df in toolz.merge(self._external_tables, external_tables).items():
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError('External table is not an instance of pandas dataframe')
+            schema = sch.infer(df)
+            external_tables_list.append(
+                {
+                    "name": name,
+                    "data": df.to_dict("records"),
+                    "structure": list(zip(schema.names, map(serialize, schema.types))),
+                }
+            )
+        return external_tables_list
+
+    def _client_execute(self, query, external_tables=None):
+        external_tables = self._normalize_external_tables(external_tables)
+        ibis.util.log(query)
+        with self._client as con:
+            return con.execute(
+                query,
+                columnar=True,
+                with_column_types=True,
+                external_tables=external_tables,
+            )
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+    ) -> Iterable[list]:
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+        cursor = self.raw_sql(str(sql))
+        try:
+            while batch := cursor.fetchmany(chunk_size):
+                yield batch
+        finally:
+            cursor.close()
 
     def raw_sql(
         self,
@@ -161,34 +217,21 @@ class Backend(BaseSQLBackend):
 
         Returns
         -------
-        Any
-            The resutls of executing the query
+        Cursor
+            Clickhouse cursor
         """
-        import pandas as pd
-
-        external_tables_list = []
-        if external_tables is None:
-            external_tables = {}
-        for name, df in toolz.merge(self._external_tables, external_tables).items():
-            if not isinstance(df, pd.DataFrame):
-                raise TypeError('External table is not an instance of pandas dataframe')
-            schema = sch.infer(df)
-            external_tables_list.append(
-                {
-                    'name': name,
-                    'data': df.to_dict('records'),
-                    'structure': list(zip(schema.names, map(serialize, schema.types))),
-                }
-            )
+        cursor = self.con.cursor()
+        for kws in self._normalize_external_tables(external_tables):
+            cursor.set_external_table(**kws)
 
         ibis.util.log(query)
-        with self.con as con:
-            return con.execute(
-                query,
-                columnar=True,
-                with_column_types=True,
-                external_tables=external_tables_list,
-            )
+        cursor.execute(query)
+        return cursor
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        results = self._client_execute(*args, **kwargs)
+        yield results
 
     def fetch_from_cursor(self, cursor, schema):
         import pandas as pd
@@ -203,7 +246,8 @@ class Backend(BaseSQLBackend):
 
     def close(self):
         """Close Clickhouse connection and drop any temporary objects."""
-        self.con.disconnect()
+        self._client.disconnect()
+        self.con.close()
 
     def _fully_qualified_name(self, name, database):
         if fully_qualified_re.search(name):
@@ -232,16 +276,11 @@ class Backend(BaseSQLBackend):
             Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        (column_names, types, *_), *_ = self.raw_sql(f"DESCRIBE {qualified_name}")
+        (column_names, types, *_), *_ = self._client_execute(
+            f"DESCRIBE {qualified_name}"
+        )
 
         return sch.Schema.from_tuples(zip(column_names, map(parse, types)))
-
-    def set_options(self, options):
-        self.con.set_options(options)
-
-    def reset_options(self):
-        # Must nuke all cursors
-        raise NotImplementedError
 
     def _ensure_temp_db_exists(self):
         name = (options.clickhouse.temp_db,)
@@ -249,7 +288,7 @@ class Backend(BaseSQLBackend):
             self.create_database(name, force=True)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        [(raw_plans,)] = self.con.execute(
+        [(raw_plans,)] = self._client.execute(
             f"EXPLAIN json = 1, description = 0, header = 1 {query}"
         )
         [plan] = json.loads(raw_plans)
