@@ -38,7 +38,6 @@ limit = [
                 [
                     # limit not implemented for pandas backend execution
                     "bigquery",
-                    "clickhouse",
                     "dask",
                     "datafusion",
                     "impala",
@@ -58,7 +57,6 @@ no_limit = [
             pytest.mark.notimpl(
                 [
                     "bigquery",
-                    "clickhouse",
                     "dask",
                     "impala",
                     "pyspark",
@@ -136,14 +134,14 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "clickhouse", "impala", "pyspark"])
+@pytest.mark.notimpl(["bigquery", "dask", "impala", "pyspark"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
     assert table.schema == awards_players.schema().to_pyarrow()
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "clickhouse", "impala", "pyspark"])
+@pytest.mark.notimpl(["bigquery", "dask", "impala", "pyspark"])
 def test_column_to_pyarrow_table_schema(awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
@@ -151,9 +149,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == expr.type().to_pyarrow()
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
-)
+@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
 def test_table_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
     assert isinstance(batch_reader, pa.RecordBatchReader)
@@ -162,9 +158,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
     assert len(batch) == 2048
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
-)
+@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
 def test_column_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(
         limit=2050, chunk_size=2048
@@ -175,9 +169,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     assert len(batch) == 2048
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "pandas", "dask", "clickhouse", "impala", "pyspark", "datafusion"]
-)
+@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,

@@ -59,7 +59,7 @@ class ClickhouseTable(ir.Table):
 
         settings = kwargs.pop("settings", {})
         settings["use_numpy"] = True
-        return self._client.con.insert_dataframe(
+        return self._client._client.insert_dataframe(
             query,
             obj,
             settings=settings,
