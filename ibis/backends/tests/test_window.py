@@ -424,13 +424,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     ('ordered'),
     [
         param(True, id='ordered', marks=pytest.mark.notimpl(["dask", "pandas"])),
-        param(
-            False,
-            id='unordered',
-            marks=[
-                pytest.mark.notyet(["snowflake"], reason="backend requires ordering")
-            ],
-        ),
+        param(False, id='unordered'),
     ],
 )
 @pytest.mark.notimpl(["datafusion", "polars"])
@@ -486,9 +480,6 @@ def test_grouped_unbounded_window(
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
             id='unordered-mean',
-            marks=[
-                pytest.mark.notyet(["snowflake"], reason="backend requires ordering")
-            ],
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
