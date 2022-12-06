@@ -101,7 +101,7 @@
         };
     in
     {
-      overlay = nixpkgs.lib.composeManyExtensions [
+      overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
         poetry2nix.overlay
         rust-overlay.overlays.default
@@ -177,7 +177,7 @@
       let
         pkgs = import nixpkgs {
           inherit localSystem;
-          overlays = [ self.overlay ];
+          overlays = [ self.overlays.default ];
         };
         inherit (pkgs) lib;
 
@@ -263,6 +263,91 @@
           ibis39 = pkgs.ibis39;
           ibis310 = pkgs.ibis310;
           default = ibis310;
+
+          update-polars = pkgs.writeShellApplication {
+            name = "update-polars";
+            runtimeInputs = with pkgs; [
+              git
+              gnused
+              jq
+              rustNightly
+              sd
+              yj
+            ];
+            text = ''
+              top="$PWD"
+              clone="''${1}"
+              tag="py-$(yj -tj < "''${top}/poetry.lock" | jq '.package[] | select(.name == "polars") | .version' -rcM)"
+
+              git -C "''${clone}" fetch
+              git -C "''${clone}" checkout .
+              git -C "''${clone}" checkout "''${tag}"
+
+              # remove patch dependencies and use thin lto to dramatically speed up builds
+              sed -i \
+                -e '/\[patch\.crates-io\]/d' \
+                -e '/cmake = .*/,+2d' \
+                -e '/codegen-units = 1/d' \
+                -e 's/lto = "fat"/lto = "thin"/g' \
+                "''${clone}/py-polars/Cargo.toml"
+
+              pushd "''${clone}/py-polars"
+              cargo generate-lockfile
+              popd
+
+              mkdir -p "''${top}/nix/patches"
+
+              git -C "''${clone}" diff | sd "py-polars/" "" > "''${top}/nix/patches/py-polars.patch"
+            '';
+          };
+          update-datafusion = pkgs.writeShellApplication {
+            name = "update-datafusion";
+            runtimeInputs = with pkgs; [
+              git
+              gnused
+              jq
+              rustNightly
+              yj
+            ];
+
+            text = ''
+              top="''${PWD}"
+              clone="''${1}"
+              tag="$(yj -tj < "''${top}/poetry.lock" | jq -rcM '.package[] | select(.name == "datafusion") | .version')"
+
+              git -C "''${clone}" fetch
+              git -C "''${clone}" checkout .
+              git -C "''${clone}" checkout "''${tag}"
+
+              # use thin lto to dramatically speed up builds
+              sed -i \
+                -e '/codegen-units = 1/d' \
+                -e 's/lto = true/lto = "thin"/g' \
+                "''${clone}/Cargo.toml"
+
+              pushd "''${clone}"
+              cargo generate-lockfile
+              popd
+
+              mkdir -p "''${top}/nix/patches"
+
+              git -C "''${clone}" diff > "''${top}/nix/patches/datafusion.patch"
+            '';
+          };
+
+          update-lock-files = pkgs.writeShellApplication {
+            name = "update-lock-files";
+            runtimeInputs = with pkgs; [ poetry ];
+
+            text = ''
+              export PYTHONHASHSEED=0
+
+              TOP="''${PWD}"
+
+              poetry lock --no-update
+              poetry export --with dev --with test --with docs --without-hashes --no-ansi > "''${TOP}/requirements.txt"
+            '';
+          };
         };
 
         devShells = rec {

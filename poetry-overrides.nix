@@ -47,7 +47,7 @@ in
 
     cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
       inherit src patches;
-      sha256 = "sha256-h6fnPAgp9xoVjmi7cI56qPty1l6NlPFXzTir7qTgsaQ=";
+      sha256 = "sha256-mAVLZPQDmtXrh3nHfbIf1x5zWRWTInXKUC+pF41wCQY=";
     };
   });
 
@@ -161,10 +161,6 @@ in
 
       set +u
     '';
-  });
-
-  mypy = super.mypy.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.types-psutil ];
   });
 
   pymssql = super.pymssql.overridePythonAttrs (attrs: {
