@@ -729,10 +729,13 @@ class Column(Value, JupyterMixin):
         """
         from ibis.expr.analysis import find_first_base_table
 
-        base = find_first_base_table(self.op()).to_expr()
-        metric = base.count().name(metric_name)
-
-        return base.group_by(self).aggregate(metric)
+        return (
+            find_first_base_table(self.op())
+            .to_expr()
+            .select(self)
+            .group_by(self.get_name())
+            .agg(**{metric_name: lambda t: t.count()})
+        )
 
     def first(self) -> Column:
         return ops.FirstValue(self).to_expr()

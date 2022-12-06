@@ -738,7 +738,7 @@ def test_group_by_column_select_api(table):
 def test_value_counts_convenience(table):
     # #152
     result = table.g.value_counts()
-    expected = table.group_by('g').aggregate(table.count().name('count'))
+    expected = table.select('g').group_by('g').aggregate(count=lambda t: t.count())
 
     assert_equal(result, expected)
 
