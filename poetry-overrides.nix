@@ -86,10 +86,6 @@ in
     buildInputs = attrs.buildInputs or [ ] ++ lib.optionals (self.pythonOlder "3.9") [ pkgs.libxcrypt ];
   });
 
-  mkdocs-material-extensions = super.mkdocs-material-extensions.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
-
   polars = super.polars.overridePythonAttrs (attrs:
     let
       inherit (attrs) version;
@@ -144,10 +140,6 @@ in
     ];
   });
 
-  fiona = super.fiona.overridePythonAttrs (_: {
-    format = "pyproject";
-  });
-
   duckdb = super.duckdb.overridePythonAttrs (_: {
     postPatch = ''
       set -eo pipefail
@@ -163,12 +155,5 @@ in
     '';
   });
 
-  pymssql = super.pymssql.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-    buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.libkrb5 ];
-  });
-
-  nbclient = super.nbclient.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
+  ipython-genutils = self.ipython_genutils;
 }
