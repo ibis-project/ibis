@@ -644,7 +644,7 @@ def temporal_truncate(op):
     arg = translate(op.arg)
     unit = "mo" if op.unit == "M" else op.unit
     unit = f"1{unit.lower()}"
-    return arg.dt.truncate(unit)
+    return arg.dt.truncate(unit, "-1w")
 
 
 @translate.register(ops.DateFromYMD)

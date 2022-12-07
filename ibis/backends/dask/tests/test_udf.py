@@ -146,8 +146,8 @@ def zscore(series):
     input_type=[dt.double],
     output_type=dt.Array(dt.double),
 )
-def quantiles(series, *, quantiles):
-    return list(series.quantile(quantiles))
+def collect(series):
+    return list(series)
 
 
 # -----
@@ -163,10 +163,10 @@ def test_udf(t, df):
     result = expr.execute()
     expected = df.a.str.len().mul(2).compute()
 
-    tm.assert_series_equal(result, expected, check_names=False)
+    tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
-def test_multiple_argument_udf(con, t, df):
+def test_multiple_argument_udf(t, df):
     expr = my_add(t.b, t.c)
 
     assert isinstance(expr, ir.Column)
@@ -175,10 +175,10 @@ def test_multiple_argument_udf(con, t, df):
 
     result = expr.execute()
     expected = (df.b + df.c).compute()
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_index=False)
 
 
-def test_multiple_argument_udf_group_by(con, t, df):
+def test_multiple_argument_udf_group_by(t):
     expr = t.group_by(t.key).aggregate(my_add=my_add(t.b, t.c).sum())
 
     assert isinstance(expr, ir.Table)
@@ -190,10 +190,12 @@ def test_multiple_argument_udf_group_by(con, t, df):
     expected = pd.DataFrame(
         {'key': list('ab'), 'my_add': [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0]}
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
-def test_udaf(con, t, df):
+def test_udaf(t):
     expr = my_string_length_sum(t.a)
 
     assert isinstance(expr, ir.Scalar)
@@ -203,7 +205,7 @@ def test_udaf(con, t, df):
     assert result == expected
 
 
-def test_udaf_analytic_tzcol(con, t_timestamp, df_timestamp):
+def test_udaf_analytic_tzcol(t_timestamp, df_timestamp):
     expr = my_tz_min(t_timestamp.a)
 
     result = expr.execute()
@@ -212,16 +214,16 @@ def test_udaf_analytic_tzcol(con, t_timestamp, df_timestamp):
     assert result == expected
 
 
-def test_udaf_elementwise_tzcol(con, t_timestamp, df_timestamp):
+def test_udaf_elementwise_tzcol(t_timestamp, df_timestamp):
     expr = my_tz_add_one(t_timestamp.a)
 
     result = expr.execute().reset_index(drop=True)
 
     expected = my_tz_add_one.func(df_timestamp.a.compute())
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_index=False)
 
 
-def test_udaf_analytic(con, t, df):
+def test_udaf_analytic(t, df):
     expr = zscore(t.c)
 
     assert isinstance(expr, ir.Column)
@@ -232,10 +234,10 @@ def test_udaf_analytic(con, t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = (f(df.c)).compute()
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_index=False)
 
 
-def test_udaf_analytic_group_by(con, t, df):
+def test_udaf_analytic_group_by(t, df):
     expr = zscore(t.c).over(ibis.window(group_by=t.key))
 
     assert isinstance(expr, ir.Column)
@@ -249,7 +251,9 @@ def test_udaf_analytic_group_by(con, t, df):
     # We don't check names here because the udf is used "directly".
     # We could potentially special case this and set the name directly
     # if the udf is only being run on one column.
-    tm.assert_series_equal(result, expected, check_names=False)
+    tm.assert_series_equal(
+        result.sort_index(), expected.sort_index(), check_names=False, check_index=False
+    )
 
 
 def test_udaf_group_by(t2, df2):
@@ -267,7 +271,9 @@ def test_udaf_group_by(t2, df2):
         }
     )
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 def test_udaf_group_by_multikey(t2, df2):
@@ -285,7 +291,9 @@ def test_udaf_group_by_multikey(t2, df2):
             ],
         }
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 def test_udaf_group_by_multikey_tzcol(t_timestamp, df_timestamp):
@@ -301,14 +309,16 @@ def test_udaf_group_by_multikey_tzcol(t_timestamp, df_timestamp):
         .rename(columns={'a': "my_min_time"})
         .compute()
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 def test_compose_udfs(t2, df2):
     expr = times_two(add_one(t2.a))
     result = expr.execute().reset_index(drop=True)
     expected = df2.a.add(1.0).mul(2.0).compute()
-    tm.assert_series_equal(result, expected, check_names=False)
+    tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
 @pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
@@ -322,7 +332,9 @@ def test_udaf_window(t2, df2):
         .mean()
         .reset_index(level=0, drop=True)
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 @pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
@@ -361,7 +373,9 @@ def test_udaf_window_interval(npartitions):
         )
     ).reset_index(drop=False)
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 @pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
@@ -415,7 +429,9 @@ def test_multiple_argument_udaf_window(npartitions):
     )
     expected = expected.sort_values(['key', 'a'])
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
 @pytest.mark.xfail(raises=NotImplementedError, reason='TODO - windowing - #2553')
@@ -440,41 +456,41 @@ def test_udaf_window_nan(npartitions):
         .apply(lambda x: x.mean(), raw=True)
         .reset_index(level=0, drop=True)
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.reset_index(drop=True), expected.reset_index(drop=True)
+    )
 
 
-@pytest.fixture(params=[[0.25, 0.75], [0.01, 0.99]])
-def qs(request):
-    return request.param
-
-
-def test_array_return_type_reduction(con, t, df, qs):
+def test_array_return_type_reduction(t, df):
     """Tests reduction UDF returning an array."""
-    expr = quantiles(t.b, quantiles=qs)
+    expr = collect(t.b)
     result = expr.execute()
-    expected = df.b.quantile(qs).compute()
-    assert list(result) == expected.tolist()
+    expected = df.b.compute().tolist()
+    assert list(result) == expected
 
 
-def test_array_return_type_reduction_window(con, t, df, qs):
+def test_array_return_type_reduction_window(t, df):
     """Tests reduction UDF returning an array, used over a window."""
-    expr = quantiles(t.b, quantiles=qs).over(ibis.window())
+    expr = collect(t.b).over(ibis.window())
     result = expr.execute()
-    expected_raw = df.b.quantile(qs).compute().tolist()
+    expected_raw = df.b.compute().tolist()
     expected = pd.Series([expected_raw] * len(df))
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_index=False)
 
 
-def test_array_return_type_reduction_group_by(con, t, df, qs):
+def test_array_return_type_reduction_group_by(t, df):
     """Tests reduction UDF returning an array, used in a grouped agg."""
-    expr = t.group_by(t.key).aggregate(quantiles_col=quantiles(t.b, quantiles=qs))
+    expr = t.group_by(t.key).aggregate(quantiles_col=collect(t.b))
     result = expr.execute()
 
     df = df.compute()  # Convert to Pandas
-    expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())
+    expected_col = df.groupby(df.key).b.agg(lambda s: s.tolist())
     expected = pd.DataFrame({'quantiles_col': expected_col}).reset_index()
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.sort_values("key").reset_index(drop=True),
+        expected.sort_values("key").reset_index(drop=True),
+    )
 
 
 def test_elementwise_udf_with_many_args(t2):
@@ -511,7 +527,7 @@ def test_elementwise_udf_with_many_args(t2):
     result = expr.execute()
     expected = t2.a.execute()
 
-    tm.assert_series_equal(result, expected, check_names=False)
+    tm.assert_series_equal(result, expected, check_names=False, check_index=False)
 
 
 # -----------------

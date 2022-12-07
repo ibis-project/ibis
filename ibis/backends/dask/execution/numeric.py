@@ -79,7 +79,6 @@ def vectorize_object(op, arg, *args, **kwargs):
     # TODO - this works for now, but I think we can do something much better
     func = np.vectorize(functools.partial(execute_node, op, **kwargs))
     out = dd.from_array(func(arg, *args), columns=arg.name)
-    out.index = arg.index
     return out
 
 

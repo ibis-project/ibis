@@ -80,11 +80,20 @@ def execute_timestamp_date(op, data, **kwargs):
     return data.dt.floor('d')
 
 
+PANDAS_UNITS = {
+    "m": "Min",
+    "ms": "L",
+}
+
+
 @execute_node.register((ops.TimestampTruncate, ops.DateTruncate), pd.Series)
 def execute_timestamp_truncate(op, data, **kwargs):
-    dtype = f'datetime64[{op.unit}]'
-    array = data.values.astype(dtype)
-    return pd.Series(array, name=data.name)
+    dt = data.dt
+    unit = PANDAS_UNITS.get(op.unit, op.unit)
+    try:
+        return dt.floor(unit)
+    except ValueError:
+        return dt.to_period(unit).dt.to_timestamp()
 
 
 OFFSET_CLASS = {

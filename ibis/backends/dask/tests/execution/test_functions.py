@@ -7,6 +7,7 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -33,7 +34,10 @@ def test_binary_operations(t, df, op):
     expr = op(t.plain_float64, t.plain_int64)
     result = expr.compile()
     expected = op(df.plain_float64, df.plain_int64)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize('op', [operator.and_, operator.or_, operator.xor])
@@ -41,7 +45,10 @@ def test_binary_boolean_operations(t, df, op):
     expr = op(t.plain_int64 == 1, t.plain_int64 == 2)
     result = expr.compile()
     expected = op(df.plain_int64 == 1, df.plain_int64 == 2)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def operate(func):
@@ -58,33 +65,40 @@ def operate(func):
 @pytest.mark.parametrize(
     ('ibis_func', 'dask_func'),
     [
-        (methodcaller('round'), lambda x: np.int64(round(x))),
-        (
+        param(methodcaller('round'), lambda x: np.int64(round(x)), id="round"),
+        param(
             methodcaller('round', 2),
             lambda x: x.quantize(decimal.Decimal('.00')),
+            id="round_2",
         ),
-        (
+        param(
             methodcaller('round', 0),
             lambda x: x.quantize(decimal.Decimal('0.')),
+            id="round_0",
         ),
-        (methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x))),
-        (methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x))),
-        (methodcaller('exp'), methodcaller('exp')),
-        (
+        param(methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
+        param(
+            methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x)), id="floor"
+        ),
+        param(methodcaller('exp'), methodcaller('exp'), id="exp"),
+        param(
             methodcaller('sign'),
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
+            id="sign",
         ),
-        (methodcaller('sqrt'), operate(lambda x: x.sqrt())),
-        (
+        param(methodcaller('sqrt'), operate(lambda x: x.sqrt()), id="sqrt"),
+        param(
             methodcaller('log', 2),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            id="log_2",
         ),
-        (methodcaller('ln'), operate(lambda x: x.ln())),
-        (
+        param(methodcaller('ln'), operate(lambda x: x.ln()), id="ln"),
+        param(
             methodcaller('log2'),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            id="log2",
         ),
-        (methodcaller('log10'), operate(lambda x: x.log10())),
+        param(methodcaller('log10'), operate(lambda x: x.log10()), id="log10"),
     ],
 )
 def test_math_functions_decimal(t, df, ibis_func, dask_func):
@@ -94,16 +108,16 @@ def test_math_functions_decimal(t, df, ibis_func, dask_func):
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
-                '{}.{}'.format('0' * (dtype.precision - dtype.scale), '0' * dtype.scale)
+                f"{'0' * (dtype.precision - dtype.scale)}.{'0' * dtype.scale}"
             )
         ),
         meta=("float64_as_strings", "object"),
     ).apply(dask_func, meta=("float64_as_strings", "object"))
     # dask.dataframe.Series doesn't do direct item assignment
     # TODO - maybe use .where instead
-    computed_result = result.compute()
+    computed_result = result.compute().reset_index(drop=True)
     computed_result[computed_result.apply(math.isnan)] = -99999
-    computed_expected = expected.compute()
+    computed_expected = expected.compute().reset_index(drop=True)
     computed_expected[computed_expected.apply(math.isnan)] = -99999
     # result[result.apply(math.isnan)] = -99999
     # expected[expected.apply(math.isnan)] = -99999
@@ -121,7 +135,10 @@ def test_round_decimal_with_negative_places(t, df):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.xfail(

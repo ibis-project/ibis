@@ -44,6 +44,7 @@ from ibis.backends.pandas.execution.temporal import (
     execute_timestamp_interval_add_series_delta,
     execute_timestamp_interval_add_series_series,
     execute_timestamp_sub_series_timedelta,
+    execute_timestamp_truncate,
 )
 
 DASK_DISPATCH_TYPES: TypeRegistrationDict = {
@@ -134,6 +135,8 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, dd.Series), execute_date_sub_diff),
         ((dd.Series, date_types), execute_date_sub_diff),
     ],
+    ops.TimestampTruncate: [((dd.Series,), execute_timestamp_truncate)],
+    ops.DateTruncate: [((dd.Series,), execute_timestamp_truncate)],
 }
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
@@ -153,12 +156,6 @@ def execute_between_time(op, data, lower, upper, **kwargs):
     result = da.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
     return dd.from_array(result)
-
-
-@execute_node.register((ops.TimestampTruncate, ops.DateTruncate), dd.Series)
-def execute_timestamp_truncate(op, data, **kwargs):
-    dtype = f'datetime64[{op.unit}]'
-    return data.astype(dtype)
 
 
 @execute_node.register(ops.DayOfWeekIndex, ddgb.SeriesGroupBy)

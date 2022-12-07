@@ -202,7 +202,7 @@ def mean_struct(v, w):
 
 def create_mean_struct_udf(result_formatter):
     return reduction(
-        input_type=[dt.double, dt.double],
+        input_type=[dt.double, dt.int64],
         output_type=dt.Struct(['mean', 'mean_weight'], [dt.double, dt.double]),
     )(_format_struct_udf_return_type(mean_struct, result_formatter))
 
@@ -219,7 +219,7 @@ mean_struct_udfs = [
 
 
 @reduction(
-    input_type=[dt.double, dt.double],
+    input_type=[dt.double, dt.int64],
     output_type=dt.Struct(['double_col', 'mean_weight'], [dt.double, dt.double]),
 )
 def overwrite_struct_reduction(v, w):

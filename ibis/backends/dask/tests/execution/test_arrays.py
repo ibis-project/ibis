@@ -30,7 +30,10 @@ def test_array_length(t):
         npartitions=1,
     )
 
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_array_length_scalar(client):
@@ -51,7 +54,10 @@ def test_array_collect(t, df):
         .reset_index()
         .rename(columns={'float64_with_zeros': 'collected'})
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().sort_values(["dup_strings"]).reset_index(drop=True),
+        expected.compute().sort_values(["dup_strings"]).reset_index(drop=True),
+    )
 
 
 @pytest.mark.notimpl(["dask"], reason="windowing - #2553")
@@ -70,7 +76,10 @@ def test_array_collect_rolling_partitioned(t, df):
         ),
         npartitions=1,
     )[expr.columns]
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 # Need an ops.ArraySlice execution func that dispatches on dd.Series
@@ -95,7 +104,10 @@ def test_array_slice(t, df, start, stop):
     result = expr.compile()
     slicer = operator.itemgetter(slice(start, stop))
     expected = df.array_of_strings.apply(slicer)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -137,7 +149,10 @@ def test_array_index(t, df, index):
         ),
         npartitions=1,
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
@@ -175,7 +190,10 @@ def test_array_concat(t, df, op):
         df.array_of_float64.apply(lambda x: list(map(str, x))),
         df.array_of_strings,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])

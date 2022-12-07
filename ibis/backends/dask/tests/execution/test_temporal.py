@@ -74,7 +74,10 @@ def test_cast_datetime_strings_to_date(t, df, column):
         ).dt.normalize(),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -91,7 +94,10 @@ def test_cast_datetime_strings_to_timestamp(t, df, column):
     )
     if getattr(expected.dtype, 'tz', None) is not None:
         expected = expected.dt.tz_convert(None)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -111,7 +117,10 @@ def test_cast_integer_to_temporal_type(t, df, column):
         ).dt.tz_localize(column_type.timezone),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_cast_integer_to_date(t, df):
@@ -126,17 +135,26 @@ def test_cast_integer_to_date(t, df):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_times_ops(t, df):
     result = t.plain_datetimes_naive.time().between('10:00', '10:00').compile()
     expected = dd.from_array(np.zeros(len(df), dtype=bool))
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
     result = t.plain_datetimes_naive.time().between('01:00', '02:00').compile()
     expected = dd.from_array(np.ones(len(df), dtype=bool))
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -151,13 +169,19 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     time = t[column].time()
     expr = time.between('01:00', '02:00', timezone=tz)
     result = expr.compile()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
     # Test that casting behavior is the same as using the timezone kwarg
     ts = t[column].cast(dt.Timestamp(timezone=tz))
     expr = ts.time().between('01:00', '02:00')
     result = expr.compile()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -197,4 +221,7 @@ def test_interval_arithmetic(op, expected):
         pd.Series(expected(data, data), name='td'),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )

@@ -104,7 +104,7 @@ def test_string_ops(t, df, case_func, expected_func):
         expr = case_func(t.strings_with_space)
         result = expr.compile()
         series = expected_func(df.strings_with_space)
-        tm.assert_series_equal(result.compute(), series.compute())
+        tm.assert_series_equal(result.compute(), series.compute(), check_index=False)
 
 
 def test_grouped_string_re_search(t, df):

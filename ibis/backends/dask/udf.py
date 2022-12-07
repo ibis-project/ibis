@@ -176,6 +176,14 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         func = op.func
         groupings = args[0].index
         parent_df = args[0].obj
+
+        columns = [parent_df[idx] for idx in args[0].index]
+        for arg in args:
+            df = arg.obj
+            column = df[arg._meta.obj.name]
+            columns.append(column)
+        parent_df = dd.concat(columns, axis=1)
+
         out_type = op.return_type.to_dask()
 
         grouped_df = parent_df.groupby(groupings)
@@ -218,6 +226,11 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         func = op.func
         groupings = args[0].index
         parent_df = args[0].obj
+
+        columns = [parent_df[idx] for idx in groupings]
+        columns.extend(arg.obj[arg._meta.obj.name] for arg in args)
+        parent_df = dd.concat(columns, axis=1)
+
         out_type = op.return_type.to_dask()
 
         grouped_df = parent_df.groupby(groupings)
@@ -254,17 +267,6 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 col_names,
                 meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
             )
-            # If you use the UDF directly (as in `test_udaf_analytic_groupby`)
-            # we need to do some renaming/cleanup to get the result to
-            # conform to what the pandas output would look like. Nomrally this
-            # is handled in `util.coerce_to_output`.
-            parent_idx_name = parent_df.index.name
-            # These defaults are chosen by pandas
-            result_idx_name = parent_idx_name if parent_idx_name else "level_1"
-            result_value_name = result.name if result.name else 0
-            # align the results back to the parent frame
-            result = result.reset_index().set_index(result_idx_name)
-            result = result[result_value_name]
 
         return result
 
