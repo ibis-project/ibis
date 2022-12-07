@@ -149,7 +149,7 @@ jobs:
           set -euo pipefail
 
           sudo apt-get update -qq -y
-          sudo apt-get install -qq -y build-essential python-dev ${{ join(matrix.backend.sys-deps, ' ') }}
+          sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
 
       - name: install sqlite
         if: matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite'
