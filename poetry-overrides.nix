@@ -156,4 +156,8 @@ in
   });
 
   ipython-genutils = self.ipython_genutils;
+
+  mkdocs = super.mkdocs.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.babel ];
+  });
 }
