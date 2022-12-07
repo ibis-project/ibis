@@ -14,7 +14,7 @@ def test_map_length_expr(t):
         pd.Series([0, None, 2], name='map_of_integers_strings'),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_map_value_for_key_expr(t):
@@ -24,7 +24,7 @@ def test_map_value_for_key_expr(t):
         pd.Series([None, None, 'a'], name='map_of_integers_strings'),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_map_value_or_default_for_key_expr(t):
@@ -38,7 +38,7 @@ def test_map_value_or_default_for_key_expr(t):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def safe_sorter(element):
@@ -56,7 +56,7 @@ def test_map_keys_expr(t):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_map_values_expr(t):
@@ -70,7 +70,7 @@ def test_map_values_expr(t):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_map_concat_expr(t):
@@ -88,7 +88,7 @@ def test_map_concat_expr(t):
         ),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_map_value_for_key_literal_broadcast(t):
@@ -99,4 +99,4 @@ def test_map_value_for_key_literal_broadcast(t):
         pd.Series([4, 1, 4], name='dup_strings'),
         npartitions=1,
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)

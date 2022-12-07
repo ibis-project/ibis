@@ -136,6 +136,12 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+PANDAS_UNITS = {
+    "m": "Min",
+    "ms": "L",
+}
+
+
 @pytest.mark.parametrize(
     'unit',
     [
@@ -149,18 +155,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     ["bigquery"],
                     reason="BigQuery returns different results from pandas",
                 ),
-                pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "duckdb",
-                        "impala",
-                        "mysql",
-                        "postgres",
-                        "pyspark",
-                        "sqlite",
-                        "snowflake",
-                    ]
-                ),
+                pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
             ],
         ),
         param('h', marks=pytest.mark.notimpl(["sqlite"])),
@@ -169,25 +164,13 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
         param(
             'ms',
             marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                    "impala",
-                    "mysql",
-                    "pyspark",
-                    "sqlite",
-                ]
+                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
             'us',
             marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                    "impala",
-                    "mysql",
-                    "pyspark",
-                    "sqlite",
-                ]
+                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
@@ -209,12 +192,17 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
         ),
     ],
 )
+@pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
 @pytest.mark.notimpl(["datafusion", "mssql"])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name('tmp')
 
-    dtype = f'datetime64[{unit}]'
-    expected = pd.Series(df.timestamp_col.values.astype(dtype))
+    unit = PANDAS_UNITS.get(unit, unit)
+
+    try:
+        expected = df.timestamp_col.dt.floor(unit)
+    except ValueError:
+        expected = df.timestamp_col.dt.to_period(unit).dt.to_timestamp()
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)
@@ -235,28 +223,22 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
                     ["bigquery"],
                     reason="BigQuery returns different results from pandas",
                 ),
-                pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "duckdb",
-                        "impala",
-                        "mysql",
-                        "postgres",
-                        "pyspark",
-                        "sqlite",
-                        "snowflake",
-                    ]
-                ),
+                pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
             ],
         ),
     ],
 )
+@pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
 @pytest.mark.notimpl(["datafusion", "mssql"])
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name('tmp')
 
-    dtype = f"datetime64[{unit}]"
-    expected = pd.Series(df.timestamp_col.values.astype(dtype))
+    unit = PANDAS_UNITS.get(unit, unit)
+
+    try:
+        expected = df.timestamp_col.dt.floor(unit)
+    except ValueError:
+        expected = df.timestamp_col.dt.to_period(unit).dt.to_timestamp()
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)
@@ -856,9 +838,11 @@ def test_timestamp_literal(con):
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
-    if not isinstance(result, str):
-        result = result.strftime('%H:%M:%S')
-    assert result == '16:20:00'
+    try:
+        result = result.to_pytimedelta()
+    except AttributeError:
+        pass
+    assert str(result) == '16:20:00'
 
 
 @pytest.mark.notimpl(

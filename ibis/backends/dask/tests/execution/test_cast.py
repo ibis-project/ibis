@@ -132,7 +132,7 @@ def test_cast_date(t, df, column):
     expr = t[column].cast('date')
     result = expr.compile()
     expected = df[column].dt.normalize()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize('type', [dt.Decimal(9, 0), dt.Decimal(12, 3)])
@@ -148,7 +148,7 @@ def test_cast_to_decimal(t, df, type):
         ),
         meta=("float64_as_strings", "object"),
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
     assert all(
         abs(element.as_tuple().exponent) == type.scale
         for element in result.compute().values
@@ -165,4 +165,6 @@ def test_cast_to_decimal(t, df, type):
 )
 def test_cast_to_category(t, df, column):
     test = t[column].cast('category').compile()
-    tm.assert_series_equal(test.compute(), df[column].astype('category').compute())
+    tm.assert_series_equal(
+        test.compute(), df[column].astype('category').compute(), check_index=False
+    )

@@ -21,7 +21,7 @@ def test_table_column(t, df):
     expr = t.plain_int64
     result = expr.compile()
     expected = df.plain_int64
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_literal(client):
@@ -33,15 +33,21 @@ def test_selection(t, df):
     result = expr.compile()
     expected = df[
         ((df.plain_strings == 'a') | (df.plain_int64 == 3)) & (df.dup_strings == 'd')
-    ].reset_index(drop=True)
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    ]
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_mutate(t, df):
     expr = t.mutate(x=t.plain_int64 + 1, y=t.plain_int64 * 2)
     result = expr.compile()
     expected = df.assign(x=df.plain_int64 + 1, y=df.plain_int64 * 2)
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.xfail(reason='TODO - windowing - #2553')
@@ -66,7 +72,10 @@ def test_project_scope_does_not_override(t, df):
         ],
         axis=1,
     )[['new_col', 'grouped']]
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -165,7 +174,7 @@ def test_aggregation_without_group_by(t, df):
         'plain_float64': 'sum_plain_float64',
         'plain_int64': 'avg_plain_int64',
     }
-    pandas_df = df.compute()
+    pandas_df = df.compute().reset_index(drop=True)
     expected = (
         pd.Series(
             [
@@ -177,7 +186,7 @@ def test_aggregation_without_group_by(t, df):
         .to_frame()
         .T.rename(columns=new_names)
     )
-    lhs = result[expected.columns].compute()
+    lhs = result[expected.columns].compute().reset_index(drop=True)
     tm.assert_frame_equal(lhs, expected)
 
 
@@ -197,7 +206,10 @@ def test_group_by_with_having(t, df):
     )
     expected = expected.loc[expected.sum_c == 5, ['avg_a', 'sum_c']]
 
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_group_by_rename_key(t, df):
@@ -216,7 +228,10 @@ def test_group_by_rename_key(t, df):
         .reset_index()
         .rename(columns={'dup_strings': 'foo'})
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize('reduction', ['mean', 'sum', 'count', 'std', 'var'])
@@ -338,7 +353,7 @@ def test_null_if_zero(t, df, column):
     expr = t[column].nullifzero()
     result = expr.compile()
     expected = df[column].replace(0, np.nan)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize(
@@ -387,7 +402,10 @@ def test_nullif(t, df, left, right, expected, compare):
     expr = left(t).nullif(right(t))
     result = execute(expr.op())
     if isinstance(result, (dd.Series, dd.DataFrame)):
-        compare(result.compute(), expected(df).compute())
+        compare(
+            result.compute().reset_index(drop=True),
+            expected(df).compute().reset_index(drop=True),
+        )
     else:
         compare(result, expected(df))
 
@@ -407,19 +425,32 @@ def test_nullif_inf(npartitions):
     ).reset_index(
         drop=True
     )  # match dask reset index behavior
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_group_concat(t, df):
-    expr = t.group_by(t.dup_strings).aggregate(foo=t.plain_int64.group_concat(','))
+    expr = (
+        t[t.dup_ints == 1]
+        .group_by(t.dup_strings)
+        .aggregate(foo=t.dup_ints.group_concat(','))
+    )
     result = expr.compile()
     expected = (
-        df.groupby('dup_strings')
-        .apply(lambda df: ','.join(df.plain_int64.astype(str)))
+        df[df.dup_ints == 1]
+        .groupby('dup_strings')
+        .apply(lambda df: ','.join(df.dup_ints.astype(str)))
         .reset_index()
         .rename(columns={0: 'foo'})
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+
+    left = (
+        result[expected.columns]
+        .compute()
+        .sort_values("dup_strings")
+        .reset_index(drop=True)
+    )
+    right = expected.compute().sort_values("dup_strings").reset_index(drop=True)
+    tm.assert_frame_equal(left, right)
 
 
 @pytest.mark.parametrize('offset', [0, 2])
@@ -428,7 +459,10 @@ def test_frame_limit(t, df, offset):
     df_expr = t.limit(n, offset=offset)
     result = df_expr.compile()
     expected = df.loc[offset : offset + n].reset_index(drop=True)
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.xfail(raises=AttributeError, reason='TableColumn does not implement limit')
@@ -437,7 +471,9 @@ def test_series_limit(t, df, offset):
     n = 5
     s_expr = t.plain_int64.limit(n, offset=offset)
     result = s_expr.compile()
-    tm.assert_series_equal(result, df.plain_int64.iloc[offset : offset + n])
+    tm.assert_series_equal(
+        result, df.plain_int64.iloc[offset : offset + n], check_index=False
+    )
 
 
 @pytest.mark.parametrize(
@@ -475,7 +511,9 @@ def test_order_by(t, df, column, key, dask_by, dask_ascending):
         .sort_values(dask_by(column), ascending=dask_ascending)
         .reset_index(drop=True)
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected)
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True), expected
+    )
 
 
 @pytest.mark.xfail(reason="TODO - sorting - #2553")
@@ -489,7 +527,10 @@ def test_complex_order_by(t, df):
         .reset_index(drop=True)
     )
 
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_count_distinct(t, df):
@@ -511,7 +552,9 @@ def test_value_counts(t, df):
         .sort_values(['dup_strings'])
         .reset_index(drop=True)
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected)
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True), expected
+    )
 
 
 def test_table_count(t, df):
@@ -534,7 +577,10 @@ def test_weighted_average(t, df):
         .reset_index()
         .rename(columns={0: 'avg'})
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_group_by_multiple_keys(t, df):
@@ -548,7 +594,15 @@ def test_group_by_multiple_keys(t, df):
         .reset_index()
         .rename(columns={'plain_float64': 'avg_plain_float64'})
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns]
+        .compute()
+        .sort_values(["dup_strings", "dup_ints"])
+        .reset_index(drop=True),
+        expected.compute()
+        .sort_values(["dup_strings", "dup_ints"])
+        .reset_index(drop=True),
+    )
 
 
 def test_mutate_after_group_by(t, df):
@@ -562,7 +616,13 @@ def test_mutate_after_group_by(t, df):
         .rename(columns={'plain_float64': 'avg_plain_float64'})
     )
     expected = expected.assign(x=expected.avg_plain_float64)
-    tm.assert_frame_equal(result[expected.columns].compute(), expected.compute())
+    tm.assert_frame_equal(
+        result[expected.columns]
+        .compute()
+        .sort_values("dup_strings")
+        .reset_index(drop=True),
+        expected.compute().sort_values("dup_strings").reset_index(drop=True),
+    )
 
 
 def test_group_by_with_unnamed_arithmetic(t, df):
@@ -578,21 +638,23 @@ def test_group_by_with_unnamed_arithmetic(t, df):
         .reset_index()
         .rename(columns={'plain_float64': 'naive_variance'})
     )
-    tm.assert_frame_equal(result[expected.columns].compute(), expected)
+    tm.assert_frame_equal(
+        result[expected.columns].compute().reset_index(drop=True), expected
+    )
 
 
 def test_isnull(t, df):
     expr = t.strings_with_nulls.isnull()
     result = expr.compile()
     expected = df.strings_with_nulls.isnull()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_notnull(t, df):
     expr = t.strings_with_nulls.notnull()
     result = expr.compile()
     expected = df.strings_with_nulls.notnull()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize('raw_value', [0.0, 1.0])
@@ -601,7 +663,7 @@ def test_scalar_parameter(t, df, raw_value):
     expr = t.float64_with_zeros == value
     result = expr.compile(params={value: raw_value})
     expected = df.float64_with_zeros == raw_value
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize('elements', [[1], (1,), {1}, frozenset({1})])
@@ -609,7 +671,7 @@ def test_isin(t, df, elements):
     expr = t.plain_float64.isin(elements)
     expected = df.plain_float64.isin(elements)
     result = expr.compile()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize('elements', [[1], (1,), {1}, frozenset({1})])
@@ -617,7 +679,7 @@ def test_notin(t, df, elements):
     expr = t.plain_float64.notin(elements)
     expected = ~df.plain_float64.isin(elements)
     result = expr.compile()
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_cast_on_group_by(t, df):
@@ -632,7 +694,10 @@ def test_cast_on_group_by(t, df):
         .reset_index()
         .rename(columns={'float64_with_zeros': 'casted'})
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(
@@ -653,7 +718,7 @@ def test_left_binary_op(t, df, op, args):
     expr = op(*args(t.float64_with_zeros))
     result = expr.compile()
     expected = op(*args(df.float64_with_zeros))
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 @pytest.mark.parametrize(
@@ -681,7 +746,10 @@ def test_left_binary_op_gb(t, df, op, argfunc):
         .reset_index()
         .rename(columns={'float64_with_zeros': 'foo'})
     )
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize("left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None])
@@ -699,7 +767,7 @@ def test_where_series(t, df, left_f, right_f):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
     expected = left.where(cond, right_f(ser))
 
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_index=False)
 
 
 @pytest.mark.parametrize(
@@ -713,7 +781,7 @@ def test_where_scalar(t, df, cond, expected_func):
     expr = ibis.where(cond, t['plain_int64'], 3.0)
     result = expr.compile()
     expected = expected_func(df)
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_where_long(batting, batting_df):
@@ -723,7 +791,7 @@ def test_where_long(batting, batting_df):
     ser = batting_df['AB']
     expected = ser.where(ser > ser.mean(), other=0.0)
 
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_round(t, df):
@@ -755,7 +823,7 @@ def test_quantile_group_by(batting, batting_df):
         .RBI.transform(q_fun, quantile=[frac, 1 - frac], interpolation=intp)
         .rename('res')
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_summary_numeric(batting, batting_df):
@@ -779,26 +847,22 @@ def test_summary_numeric(batting, batting_df):
 def test_summary_numeric_group_by(batting, batting_df):
     expr = batting.group_by('teamID').G.summary()
     result = expr.execute()
-    expected = (
-        batting_df.groupby('teamID')
-        .G.apply(
-            lambda s: pd.DataFrame(
-                {
-                    'count': s.count(),
-                    'nulls': s.isnull().sum(),
-                    'min': s.min(),
-                    'max': s.max(),
-                    'sum': s.sum(),
-                    'mean': s.mean(),
-                    'approx_nunique': s.nunique(),
-                },
-                index=[0],
-            )
+
+    def agg(s):
+        return pd.DataFrame(
+            {
+                'count': s.count(),
+                'nulls': s.isnull().sum(),
+                'min': s.min(),
+                'max': s.max(),
+                'sum': s.sum(),
+                'mean': s.mean(),
+                'approx_nunique': s.nunique(),
+            },
+            index=pd.Index([s.name], name="teamID"),
         )
-        .compute()
-        .reset_index(level=1, drop=True)
-        .reset_index()
-    )
+
+    expected = batting_df.groupby('teamID').G.apply(agg).reset_index().compute()
     columns = expected.columns
 
     tm.assert_frame_equal(result[columns], expected)
@@ -829,12 +893,11 @@ def test_summary_non_numeric_group_by(batting, batting_df):
                     'nulls': s.isnull().sum(),
                     'uniques': s.nunique(),
                 },
-                index=[0],
+                index=pd.Index([s.name], name="teamID"),
             )
         )
-        .compute()
-        .reset_index(level=1, drop=True)
         .reset_index()
+        .compute()
     )
     columns = expected.columns
     tm.assert_frame_equal(result[columns], expected, check_dtype=False)
@@ -865,7 +928,7 @@ def test_searched_case_column(batting, batting_df):
             df.teamID,
         )
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_simple_case_scalar(client):
@@ -895,14 +958,17 @@ def test_simple_case_column(batting, batting_df):
             'could be good?',
         )
     )
-    tm.assert_series_equal(result.compute(), expected.compute())
+    tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
 def test_table_distinct(t, df):
     expr = t[['dup_strings']].distinct()
     result = expr.compile()
     expected = df[['dup_strings']].drop_duplicates()
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize("distinct", [True, False])
@@ -925,7 +991,10 @@ def test_intersect(client, df1, intersect_df2):
     expr = t1.intersect(t2)
     result = expr.compile()
     expected = df1.merge(intersect_df2, on=list(df1.columns))
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
 
 
 def test_difference(client, df1, intersect_df2):
@@ -962,4 +1031,7 @@ def test_union_with_list_types(t, df, distinct):
     expr = t.union(t, distinct=distinct)
     result = expr.compile()
     expected = df if distinct else dd.concat([df, df], axis=0, ignore_index=True)
-    tm.assert_frame_equal(result.compute(), expected.compute())
+    tm.assert_frame_equal(
+        result.compute().reset_index(drop=True),
+        expected.compute().reset_index(drop=True),
+    )
