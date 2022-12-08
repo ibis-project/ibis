@@ -158,6 +158,6 @@ in
   ipython-genutils = self.ipython_genutils;
 
   mkdocs = super.mkdocs.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.babel ];
+    propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.babel ];
   });
 }
