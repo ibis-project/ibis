@@ -36,10 +36,6 @@ lint:
     isort -q . --check
     flake8 .
 
-# type check code using mypy
-typecheck:
-    mypy .
-
 # run the test suite for one or more backends
 test +backends:
     #!/usr/bin/env bash

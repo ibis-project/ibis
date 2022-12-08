@@ -12,3 +12,4 @@ docs/SUMMARY.md
 site
 ci/udf/CMakeFiles
 poetry.lock
+ibis/**/*.js
