@@ -16,6 +16,7 @@ pytestmark = [
             "snowflake",
             "polars",
             "mssql",
+            "trino",
         ],
         reason="Not implemented yet",
     ),

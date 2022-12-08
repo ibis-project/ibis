@@ -1,16 +1,14 @@
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
-import toolz
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.base.sql.alchemy.registry import _geospatial_functions
 from ibis.backends.mysql.registry import operation_registry
 
 
 class MySQLExprTranslator(AlchemyExprTranslator):
     # https://dev.mysql.com/doc/refman/8.0/en/spatial-function-reference.html
-    _registry = toolz.merge(operation_registry, _geospatial_functions)
+    _registry = operation_registry.copy()
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _type_map.update(

@@ -33,6 +33,7 @@ regex = ">=2021.7.6"
 rich = ">=12.4.4,<13"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
+black = { version = ">=22.1.0,<23", optional = true }
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
   "numpy"
@@ -66,7 +67,7 @@ Shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<2", optional = true }
 sqlglot = { version = ">=4.5.0,<11", optional = true }
-black = { version = ">=22.1,<23", optional = true }
+trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
 absolufy-imports = ">=0.3.1,<1"
@@ -146,6 +147,7 @@ postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
 sqlite = ["sqlalchemy", "sqlglot"]
+trino = ["trino", "sqlalchemy", "sqlglot"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
@@ -166,6 +168,7 @@ pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
 spark = "ibis.backends.pyspark"
 sqlite = "ibis.backends.sqlite"
+trino = "ibis.backends.trino"
 
 [tool.pytest.ini_options]
 doctest_optionflags = [
@@ -288,6 +291,7 @@ markers = [
   "pyspark: PySpark tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
+  "trino: Trino tests",
 ]
 
 [tool.black]

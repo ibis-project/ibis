@@ -101,6 +101,7 @@ services:
       POSTGRES_DB: ibis_testing
       POSTGRES_USER: postgres
     build: ./docker/postgres
+    image: ibis-postgres
     healthcheck:
       interval: 10s
       retries: 3
@@ -130,6 +131,41 @@ services:
       - mssql
     volumes:
       - $PWD/ci/ibis-testing-data:/data:ro
+  trino-postgres:
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test:
+        - CMD
+        - pg_isready
+      timeout: 5s
+    build: ./docker/postgres
+    image: ibis-postgres
+    ports:
+      - 5433:5432
+    networks:
+      - trino
+  trino:
+    depends_on:
+      - trino-postgres
+    healthcheck:
+      interval: 5s
+      retries: 6
+      test:
+        - CMD-SHELL
+        - trino --execute 'SELECT 1 AS one'
+      timeout: 30s
+    image: trinodb/trino:403
+    ports:
+      - 8080:8080
+    networks:
+      - trino
+    volumes:
+      - $PWD/docker/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties:ro
+      - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
 networks:
   impala:
@@ -137,3 +173,4 @@ networks:
   mssql:
   clickhouse:
   postgres:
+  trino:

@@ -35,7 +35,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ('start_string', 'end_string'),
     [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
 )
-@pytest.mark.notimpl(["datafusion", "pyspark", "mssql"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "mssql", "trino"])
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -69,7 +69,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     ]
 )
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"],
+    ["mysql", "sqlite", "mssql", "trino"],
     reason="mysql and sqlite will never implement array types",
 )
 def test_scalar_param_array(con):
@@ -87,6 +87,7 @@ def test_scalar_param_array(con):
         "postgres",
         "pyspark",
         "snowflake",
+        "trino",
     ]
 )
 @pytest.mark.never(
@@ -110,6 +111,7 @@ def test_scalar_param_struct(con):
         "pyspark",
         "snowflake",
         "polars",
+        "trino",
     ]
 )
 @pytest.mark.never(
@@ -132,7 +134,11 @@ def test_scalar_param_map(con):
         param(0.0, "float64", "double_col", id="double"),
         param(True, "bool", "bool_col", id="bool"),
         param(
-            "2009-01-20 01:02:03", "timestamp", "timestamp_col", id="string_timestamp"
+            "2009-01-20 01:02:03",
+            "timestamp",
+            "timestamp_col",
+            id="string_timestamp",
+            marks=[pytest.mark.notimpl(["trino"])],
         ),
         param(
             datetime.date(2009, 1, 20),
@@ -185,6 +191,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
         "impala",
         "pyspark",
         "mssql",
+        "trino",
     ]
 )
 def test_scalar_param_date(backend, alltypes, value, dtype):
@@ -226,6 +233,7 @@ def test_scalar_param_date(backend, alltypes, value, dtype):
         "impala",
         "pyspark",
         "mssql",
+        "trino",
     ]
 )
 def test_scalar_param_nested(con):

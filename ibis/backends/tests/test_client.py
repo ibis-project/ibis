@@ -127,6 +127,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         "snowflake",
         "polars",
         "mssql",
+        "trino",
     ]
 )
 def test_rename_table(con, temp_table, new_schema):
@@ -175,6 +176,7 @@ def test_nullable_input_output(con, temp_table):
         "snowflake",
         "polars",
         "mssql",
+        "trino",
     ]
 )
 @mark.notyet(["pyspark"])
@@ -857,6 +859,7 @@ def test_has_operation_no_geo(con):
         "pyspark",
         "snowflake",
         "sqlite",
+        "trino",
     ]
 )
 def test_register(con, data_directory):
@@ -878,6 +881,7 @@ def test_register(con, data_directory):
         "pyspark",
         "snowflake",
         "sqlite",
+        "trino",
     ]
 )
 def test_register_parquet(con, data_directory):
@@ -899,6 +903,7 @@ def test_register_parquet(con, data_directory):
         "pyspark",
         "snowflake",
         "sqlite",
+        "trino",
     ]
 )
 def test_register_garbage(con):

@@ -20,6 +20,7 @@ pytestmark = pytest.mark.notimpl(
         "snowflake",
         "polars",
         "mssql",
+        "trino",
     ]
 )
 
