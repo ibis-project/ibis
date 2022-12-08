@@ -51,7 +51,7 @@ except ImportError:
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql"])
+@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql", "trino"])
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -141,7 +141,7 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
         ),
         param(
             L(5.556).ln(),
@@ -153,13 +153,13 @@ def test_isnan_isinf(
             L(5.556).log2(),
             math.log(5.556, 2),
             id='log2',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
         param(
             L(5.556).radians(),
@@ -195,7 +195,12 @@ def test_math_functions_literals(con, expr, expected):
         param(L(0.0).atan(), math.atan(0.0), id="atan"),
         param(L(0.0).atan2(1.0), math.atan2(0.0, 1.0), id="atan2"),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
-        param(L(1.0).cot(), math.cos(1.0) / math.sin(1.0), id="cot"),
+        param(
+            L(1.0).cot(),
+            math.cos(1.0) / math.sin(1.0),
+            id="cot",
+            marks=pytest.mark.notimpl(["trino"]),
+        ),
         param(L(0.0).sin(), math.sin(0.0), id="sin"),
         param(L(0.0).tan(), math.tan(0.0), id="tan"),
     ],
@@ -213,7 +218,12 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.atan(), np.arctan, id="atan"),
         param(_.dc.atan2(_.dc), lambda c: np.arctan2(c, c), id="atan2"),
         param(_.dc.cos(), np.cos, id="cos"),
-        param(_.dc.cot(), lambda c: 1.0 / np.tan(c), id="cot"),
+        param(
+            _.dc.cot(),
+            lambda c: 1.0 / np.tan(c),
+            id="cot",
+            marks=pytest.mark.notimpl(["trino"]),
+        ),
         param(_.dc.sin(), np.sin, id="sin"),
         param(_.dc.tan(), np.tan, id="tan"),
     ],
@@ -302,7 +312,7 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -314,7 +324,7 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -327,7 +337,9 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "mssql"]),
+            marks=pytest.mark.notimpl(
+                ["clickhouse", "datafusion", "polars", "mssql", "trino"]
+            ),
         ),
     ],
 )
@@ -347,7 +359,7 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.round(),
             lambda be, t: be.round(t.double_col),
             id='round',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
         param(
             lambda be, t: t.double_col.add(0.05).round(3),
@@ -401,10 +413,7 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        param(
-            operator.pow,
-            marks=pytest.mark.notimpl(["datafusion"]),
-        ),
+        param(operator.pow, marks=pytest.mark.notimpl(["datafusion"])),
     ],
     ids=lambda op: op.__name__,
 )
@@ -421,7 +430,7 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
         # -> returns int64 whereas pandas float64
         result = result.astype('float64')
 
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected.astype("float64"))
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
@@ -456,11 +465,14 @@ def test_floating_mod(backend, alltypes, df):
         'bigint_col',
         pytest.param(
             'float_col',
-            marks=pytest.mark.broken(
-                "polars",
-                strict=False,
-                reason="output types is float64 instead of the expected float32",
-            ),
+            marks=[
+                pytest.mark.broken(
+                    "polars",
+                    strict=False,
+                    reason="output types is float64 instead of the expected float32",
+                ),
+                pytest.mark.notimpl(["trino"]),
+            ],
         ),
         'double_col',
     ],
@@ -497,7 +509,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
+@pytest.mark.notimpl(["sqlite", "duckdb", "mssql", "trino"])
 @pytest.mark.never(
     [
         "bigquery",
@@ -596,7 +608,7 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars", "trino"])
 def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n).name("tmp"))

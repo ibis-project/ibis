@@ -12,12 +12,19 @@ from ibis.backends.base.sql.alchemy import (
     to_sqla_type,
     unary,
 )
-from ibis.backends.base.sql.alchemy.registry import _gen_string_find
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.backends.base.sql.alchemy.registry import (
+    _gen_string_find,
+    geospatial_functions,
+)
 
 operation_registry = sqlalchemy_operation_registry.copy()
 
 # NOTE: window functions are available from MySQL 8 and MariaDB 10.2
 operation_registry.update(sqlalchemy_window_functions_registry)
+
+if geospatial_supported:
+    operation_registry.update(geospatial_functions)
 
 
 def _capitalize(t, op):

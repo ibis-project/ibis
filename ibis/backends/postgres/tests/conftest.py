@@ -69,7 +69,7 @@ class TestConf(BackendTest, RoundHalfToEven):
         with open(script_dir / 'schema' / 'postgresql.sql') as schema:
             engine = init_database(
                 url=sa.engine.make_url(
-                    f"postgresql://{user}:{password}@{host}:{port:d}"
+                    f"postgresql://{user}:{password}@{host}:{port:d}/{database}"
                 ),
                 database=database,
                 schema=schema,

@@ -72,6 +72,7 @@ def test_con_dot_sql(backend, con, schema):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
+@pytest.mark.notimpl(["trino"])
 def test_table_dot_sql(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -108,6 +109,7 @@ def test_table_dot_sql(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
+@pytest.mark.notimpl(["trino"])
 def test_table_dot_sql_with_join(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -155,6 +157,7 @@ def test_table_dot_sql_with_join(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
+@pytest.mark.notimpl(["trino"])
 def test_table_dot_sql_repr(con):
     alltypes = con.table("functional_alltypes")
     t = (

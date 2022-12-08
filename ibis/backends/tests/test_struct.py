@@ -14,6 +14,7 @@ pytestmark = [
         [
             "datafusion",
             "pyspark",
+            "trino",
         ]
     ),
 ]

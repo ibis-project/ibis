@@ -24,10 +24,18 @@ from ibis.backends.base.sql.alchemy import (
     unary,
 )
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
-from ibis.backends.base.sql.alchemy.registry import _bitwise_op, get_col_or_deferred_col
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.backends.base.sql.alchemy.registry import (
+    _bitwise_op,
+    geospatial_functions,
+    get_col_or_deferred_col,
+)
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
+
+if geospatial_supported:
+    operation_registry.update(geospatial_functions)
 
 
 def _extract(fmt, output_type=sa.SMALLINT):

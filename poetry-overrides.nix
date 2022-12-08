@@ -160,4 +160,8 @@ in
   mkdocs = super.mkdocs.overridePythonAttrs (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.babel ];
   });
+
+  trino = super.trino.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+  });
 }

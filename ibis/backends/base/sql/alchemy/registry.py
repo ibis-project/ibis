@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.window as W
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 
 def variance_reduction(func_name):
@@ -636,67 +635,64 @@ sqlalchemy_window_functions_registry = {
     ops.CumulativeMean: unary(sa.func.avg),
 }
 
-if geospatial_supported:
-    _geospatial_functions = {
-        ops.GeoArea: unary(sa.func.ST_Area),
-        ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
-        ops.GeoAsEWKB: unary(sa.func.ST_AsEWKB),
-        ops.GeoAsEWKT: unary(sa.func.ST_AsEWKT),
-        ops.GeoAsText: unary(sa.func.ST_AsText),
-        ops.GeoAzimuth: fixed_arity(sa.func.ST_Azimuth, 2),
-        ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
-        ops.GeoCentroid: unary(sa.func.ST_Centroid),
-        ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
-        ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2),
-        ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
-        ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
-        ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
-        ops.GeoDFullyWithin: fixed_arity(sa.func.ST_DFullyWithin, 3),
-        ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
-        ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
-        ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
-        ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
-        ops.GeoEndPoint: unary(sa.func.ST_EndPoint),
-        ops.GeoEnvelope: unary(sa.func.ST_Envelope),
-        ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
-        ops.GeoGeometryN: fixed_arity(sa.func.ST_GeometryN, 2),
-        ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
-        ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
-        ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
-        ops.GeoIsValid: unary(sa.func.ST_IsValid),
-        ops.GeoLineLocatePoint: fixed_arity(sa.func.ST_LineLocatePoint, 2),
-        ops.GeoLineMerge: unary(sa.func.ST_LineMerge),
-        ops.GeoLineSubstring: fixed_arity(sa.func.ST_LineSubstring, 3),
-        ops.GeoLength: unary(sa.func.ST_Length),
-        ops.GeoNPoints: unary(sa.func.ST_NPoints),
-        ops.GeoOrderingEquals: fixed_arity(sa.func.ST_OrderingEquals, 2),
-        ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
-        ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
-        ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
-        ops.GeoSRID: unary(sa.func.ST_SRID),
-        ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
-        ops.GeoStartPoint: unary(sa.func.ST_StartPoint),
-        ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
-        ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
-        ops.GeoUnaryUnion: unary(sa.func.ST_Union),
-        ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
-        ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
-        ops.GeoX: unary(sa.func.ST_X),
-        ops.GeoY: unary(sa.func.ST_Y),
-        # Missing Geospatial ops:
-        #   ST_AsGML
-        #   ST_AsGeoJSON
-        #   ST_AsKML
-        #   ST_AsRaster
-        #   ST_AsSVG
-        #   ST_AsTWKB
-        #   ST_Distance_Sphere
-        #   ST_Dump
-        #   ST_DumpPoints
-        #   ST_GeogFromText
-        #   ST_GeomFromEWKB
-        #   ST_GeomFromEWKT
-        #   ST_GeomFromText
-    }
-else:
-    _geospatial_functions = {}
+geospatial_functions = {
+    ops.GeoArea: unary(sa.func.ST_Area),
+    ops.GeoAsBinary: unary(sa.func.ST_AsBinary),
+    ops.GeoAsEWKB: unary(sa.func.ST_AsEWKB),
+    ops.GeoAsEWKT: unary(sa.func.ST_AsEWKT),
+    ops.GeoAsText: unary(sa.func.ST_AsText),
+    ops.GeoAzimuth: fixed_arity(sa.func.ST_Azimuth, 2),
+    ops.GeoBuffer: fixed_arity(sa.func.ST_Buffer, 2),
+    ops.GeoCentroid: unary(sa.func.ST_Centroid),
+    ops.GeoContains: fixed_arity(sa.func.ST_Contains, 2),
+    ops.GeoContainsProperly: fixed_arity(sa.func.ST_Contains, 2),
+    ops.GeoCovers: fixed_arity(sa.func.ST_Covers, 2),
+    ops.GeoCoveredBy: fixed_arity(sa.func.ST_CoveredBy, 2),
+    ops.GeoCrosses: fixed_arity(sa.func.ST_Crosses, 2),
+    ops.GeoDFullyWithin: fixed_arity(sa.func.ST_DFullyWithin, 3),
+    ops.GeoDifference: fixed_arity(sa.func.ST_Difference, 2),
+    ops.GeoDisjoint: fixed_arity(sa.func.ST_Disjoint, 2),
+    ops.GeoDistance: fixed_arity(sa.func.ST_Distance, 2),
+    ops.GeoDWithin: fixed_arity(sa.func.ST_DWithin, 3),
+    ops.GeoEndPoint: unary(sa.func.ST_EndPoint),
+    ops.GeoEnvelope: unary(sa.func.ST_Envelope),
+    ops.GeoEquals: fixed_arity(sa.func.ST_Equals, 2),
+    ops.GeoGeometryN: fixed_arity(sa.func.ST_GeometryN, 2),
+    ops.GeoGeometryType: unary(sa.func.ST_GeometryType),
+    ops.GeoIntersection: fixed_arity(sa.func.ST_Intersection, 2),
+    ops.GeoIntersects: fixed_arity(sa.func.ST_Intersects, 2),
+    ops.GeoIsValid: unary(sa.func.ST_IsValid),
+    ops.GeoLineLocatePoint: fixed_arity(sa.func.ST_LineLocatePoint, 2),
+    ops.GeoLineMerge: unary(sa.func.ST_LineMerge),
+    ops.GeoLineSubstring: fixed_arity(sa.func.ST_LineSubstring, 3),
+    ops.GeoLength: unary(sa.func.ST_Length),
+    ops.GeoNPoints: unary(sa.func.ST_NPoints),
+    ops.GeoOrderingEquals: fixed_arity(sa.func.ST_OrderingEquals, 2),
+    ops.GeoOverlaps: fixed_arity(sa.func.ST_Overlaps, 2),
+    ops.GeoPerimeter: unary(sa.func.ST_Perimeter),
+    ops.GeoSimplify: fixed_arity(sa.func.ST_Simplify, 3),
+    ops.GeoSRID: unary(sa.func.ST_SRID),
+    ops.GeoSetSRID: fixed_arity(sa.func.ST_SetSRID, 2),
+    ops.GeoStartPoint: unary(sa.func.ST_StartPoint),
+    ops.GeoTouches: fixed_arity(sa.func.ST_Touches, 2),
+    ops.GeoTransform: fixed_arity(sa.func.ST_Transform, 2),
+    ops.GeoUnaryUnion: unary(sa.func.ST_Union),
+    ops.GeoUnion: fixed_arity(sa.func.ST_Union, 2),
+    ops.GeoWithin: fixed_arity(sa.func.ST_Within, 2),
+    ops.GeoX: unary(sa.func.ST_X),
+    ops.GeoY: unary(sa.func.ST_Y),
+    # Missing Geospatial ops:
+    #   ST_AsGML
+    #   ST_AsGeoJSON
+    #   ST_AsKML
+    #   ST_AsRaster
+    #   ST_AsSVG
+    #   ST_AsTWKB
+    #   ST_Distance_Sphere
+    #   ST_Dump
+    #   ST_DumpPoints
+    #   ST_GeogFromText
+    #   ST_GeomFromEWKB
+    #   ST_GeomFromEWKT
+    #   ST_GeomFromText
+}

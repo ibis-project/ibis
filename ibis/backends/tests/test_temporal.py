@@ -27,7 +27,7 @@ from ibis.backends.pandas.execution.temporal import day_name
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "trino"])
 def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -52,7 +52,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'second',
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "trino"])
 def test_timestamp_extract(backend, alltypes, df, attr):
     method = getattr(alltypes.timestamp_col, attr)
     expr = method().name(attr)
@@ -98,13 +98,13 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "trino"])
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake", "trino"])
 @pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond()
@@ -115,7 +115,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name('tmp')
     result = expr.execute()
@@ -126,7 +126,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "mssql"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "mssql", "trino"])
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name('tmp')
     result = expr.execute()
@@ -193,7 +193,7 @@ PANDAS_UNITS = {
     ],
 )
 @pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name('tmp')
 
@@ -229,7 +229,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name('tmp')
 
@@ -284,7 +284,7 @@ def test_date_truncate(backend, alltypes, df, unit):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "pyspark", "sqlite", "snowflake", "mssql"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "sqlite", "snowflake", "mssql", "trino"])
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -322,6 +322,7 @@ def test_integer_to_interval_timestamp(
         "snowflake",
         "polars",
         "mssql",
+        "trino",
     ]
 )
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
@@ -414,7 +415,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "sqlite", "mssql"])
+@pytest.mark.notimpl(["datafusion", "sqlite", "mssql", "trino"])
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name('tmp')
     expected = expected_fn(df, backend)
@@ -458,6 +459,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
         "snowflake",
         "polars",
         "mssql",
+        "trino",
     ]
 )
 def test_temporal_binop_pandas_timedelta(
@@ -472,19 +474,10 @@ def test_temporal_binop_pandas_timedelta(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'comparison_fn',
-    [
-        operator.gt,
-        operator.ge,
-        operator.lt,
-        operator.le,
-        operator.eq,
-        operator.ne,
-    ],
-)
+@pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(["bigquery", "mssql"])
-def test_timestamp_comparison_filter(backend, con, alltypes, df, comparison_fn):
+def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
+    comparison_fn = getattr(operator, func_name)
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
     expr = alltypes.filter(
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
@@ -497,7 +490,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, comparison_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql"])
+@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql", "trino"])
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -510,7 +503,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 @pytest.mark.never(
     ['pyspark'], reason="PySpark does not support casting columns to intervals"
 )
-@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql"])
+@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql", "trino"])
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -564,7 +557,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
@@ -595,7 +588,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql"]
+    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql", "trino"]
 )
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
@@ -648,6 +641,7 @@ def test_integer_to_timestamp(backend, con, unit):
         'datafusion',
         'snowflake',
         'mssql',
+        'trino',
     ]
 )
 def test_string_to_timestamp(alltypes, fmt, timezone):
@@ -676,6 +670,7 @@ def test_string_to_timestamp(alltypes, fmt, timezone):
         'snowflake',
         'polars',
         'mssql',
+        'trino',
     ]
 )
 def test_string_to_timestamp_tz_error(alltypes):
@@ -699,7 +694,7 @@ def test_string_to_timestamp_tz_error(alltypes):
         param('2017-01-07', 5, 'Saturday', id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala", "mssql"])
+@pytest.mark.notimpl(["datafusion", "impala", "mssql", "trino"])
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -709,7 +704,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -739,7 +734,7 @@ def test_day_of_week_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -761,7 +756,7 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake", "mssql"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "mssql", "trino"])
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
@@ -774,7 +769,7 @@ def test_now(con):
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion", "snowflake", "polars"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "polars", "trino"])
 def test_now_from_projection(alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
@@ -801,6 +796,7 @@ def test_now_from_projection(alltypes):
         "pyspark",
         "snowflake",
         "mssql",
+        "trino",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
@@ -820,6 +816,7 @@ def test_date_literal(con):
         "pyspark",
         "snowflake",
         "mssql",
+        "trino",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
@@ -832,7 +829,17 @@ def test_timestamp_literal(con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "pandas", "datafusion", "mysql", "dask", "pyspark", "polars", "mssql"]
+    [
+        "bigquery",
+        "pandas",
+        "datafusion",
+        "mysql",
+        "dask",
+        "pyspark",
+        "polars",
+        "mssql",
+        "trino",
+    ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_time_literal(con):
@@ -857,7 +864,7 @@ def test_time_literal(con):
         "mssql",
     ]
 )
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["clickhouse", "impala", "trino"])
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -895,7 +902,7 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake", "trino"])
 @pytest.mark.notyet(["clickhouse", "pyspark"])
 @pytest.mark.broken(["mysql"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
@@ -905,7 +912,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "mssql"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "mssql", "trino"])
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -913,7 +920,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "pyspark", "mssql"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "pyspark", "mssql", "trino"])
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -936,7 +943,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
 )
-@pytest.mark.notimpl(["snowflake", "mssql"])
+@pytest.mark.notimpl(["snowflake", "mssql", "trino"])
 @pytest.mark.notimpl(["bigquery"], reason="bigquery returns a datetime with a timezone")
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -997,7 +1004,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason="ibis returns a string for the timestamp, only for snowflake",
     raises=TypeError,
 )
-@pytest.mark.notimpl(["polars", "datafusion", "impala", "pyspark", "mssql"])
+@pytest.mark.notimpl(["polars", "datafusion", "impala", "pyspark", "mssql", "trino"])
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")

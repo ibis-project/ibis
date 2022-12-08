@@ -53,9 +53,9 @@ array_literal = param(
             raises=NotImplementedError,
         ),
         mark.notimpl(
-            ["snowflake"],
+            ["snowflake", "trino"],
             reason="Cannot render array literals",
-            raises=NotImplementedError,
+            raises=(NotImplementedError, sa.exc.CompileError),
         ),
     ],
     id="array_literal",
@@ -66,7 +66,7 @@ no_structs = mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["bigquery", "postgres", "snowflake", "mssql"],
+    ["bigquery", "postgres", "snowflake", "mssql", "trino"],
     reason="struct literals are not yet implemented",
 )
 not_sql = mark.never(

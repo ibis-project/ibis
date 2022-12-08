@@ -8,17 +8,15 @@ import sqlalchemy as sa
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import to_sqla_type, unary
 from ibis.backends.base.sql.alchemy.registry import (
-    _geospatial_functions,
     _table_column,
+    geospatial_functions,
     reduction,
 )
 from ibis.backends.postgres.registry import fixed_arity, operation_registry
 
 operation_registry = {
     op: operation_registry[op]
-    # duckdb does not support geospatial operations, but shares most of the
-    # remaining postgres rules
-    for op in operation_registry.keys() - _geospatial_functions.keys()
+    for op in operation_registry.keys() - geospatial_functions.keys()
 }
 
 

@@ -20,7 +20,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake", "trino"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -47,7 +47,7 @@ def test_array_scalar(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -60,7 +60,7 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
@@ -89,7 +89,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
+@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion", "trino"])
 @pytest.mark.notyet(["postgres"], reason="generated code is invalid")
 def test_array_index(con, idx):
     arr = [1, 2, 3]
@@ -124,7 +124,7 @@ builtin_array = toolz.compose(
         reason="snowflake has an extremely specialized way of implementing arrays",  # noqa: E501
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["datafusion", "dask"]),
+    pytest.mark.notimpl(["datafusion", "dask", "trino"]),
     # unclear if thi will ever be supported
     pytest.mark.notyet(
         ["impala"],
@@ -222,6 +222,7 @@ def test_array_discovery_desired(con):
         "postgres",
         "pyspark",
         "sqlite",
+        "trino",
     ],
     reason="backend does not implement arrays like snowflake",
 )
