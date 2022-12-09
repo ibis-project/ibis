@@ -77,13 +77,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             methodcaller('millisecond'),
             359,
             id='millisecond',
-            marks=[
-                pytest.mark.notimpl(["clickhouse", "pyspark", "trino"]),
-                pytest.mark.broken(
-                    ["mysql"],
-                    reason="MySQL implementation of milliseconds is broken",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["clickhouse", "pyspark"])],
         ),
         param(
             lambda x: x.day_of_week.index(),
@@ -905,9 +899,8 @@ def test_date_column_from_iso(con, alltypes, df):
 
 @pytest.mark.notimpl(["datafusion", "snowflake", "trino"])
 @pytest.mark.notyet(["clickhouse", "pyspark"])
-@pytest.mark.broken(["mysql"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
-    timestamp = ibis.timestamp("2021-01-01 01:30:59.333")
+    timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
     result = con.execute(millis.name("tmp"))
     assert result == 333
@@ -944,7 +937,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
 )
-@pytest.mark.notimpl(["snowflake", "mssql", "trino"])
+@pytest.mark.notimpl(["snowflake"])
 @pytest.mark.notimpl(["bigquery"], reason="bigquery returns a datetime with a timezone")
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -1005,7 +998,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason="ibis returns a string for the timestamp, only for snowflake",
     raises=TypeError,
 )
-@pytest.mark.notimpl(["polars", "datafusion", "impala", "pyspark", "mssql", "trino"])
+@pytest.mark.notimpl(["polars", "datafusion", "impala", "pyspark"])
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")

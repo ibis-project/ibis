@@ -9,7 +9,6 @@ from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
-    to_sqla_type,
     unary,
 )
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
@@ -48,7 +47,7 @@ def _endswith(t, op):
 
 
 def _extract_millisecond(t, op):
-    return sa.extract('microsecond', t.translate(op.arg)) % 1000
+    return sa.func.floor(sa.extract('microsecond', t.translate(op.arg)) / 1000)
 
 
 _truncate_formats = {
@@ -141,10 +140,7 @@ def _literal(_, op):
         except AttributeError:
             pass
 
-        lit = sa.literal(value)
-        if op.output_dtype.is_timestamp():
-            return sa.cast(lit, to_sqla_type(op.output_dtype))
-        return lit
+        return sa.literal(value)
 
 
 def _group_concat(t, op):
