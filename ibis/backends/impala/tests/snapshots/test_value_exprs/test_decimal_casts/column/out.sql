@@ -1,1 +1,0 @@
-CAST(`f` AS decimal(12, 2))

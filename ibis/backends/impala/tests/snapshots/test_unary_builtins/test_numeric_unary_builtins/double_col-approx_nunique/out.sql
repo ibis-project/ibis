@@ -1,1 +1,0 @@
-ndv(`double_col`)

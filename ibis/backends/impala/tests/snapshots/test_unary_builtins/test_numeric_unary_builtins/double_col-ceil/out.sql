@@ -1,1 +1,0 @@
-ceil(`double_col`)

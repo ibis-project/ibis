@@ -1,1 +1,0 @@
-`tinyint_col`

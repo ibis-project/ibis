@@ -1,1 +1,0 @@
-sqrt(`int_col`)

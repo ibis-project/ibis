@@ -1,2 +1,0 @@
-SELECT ST_SIMPLIFY(`geog`, 5.2) AS `tmp`
-FROM t

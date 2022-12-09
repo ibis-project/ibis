@@ -1,2 +1,0 @@
-SELECT DATE_TRUNC(`a`, WEEK) AS `tmp`
-FROM t

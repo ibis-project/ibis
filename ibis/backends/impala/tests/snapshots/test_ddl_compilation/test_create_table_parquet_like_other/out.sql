@@ -1,4 +1,0 @@
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE db.other
-STORED AS PARQUET
-LOCATION '/path/to/'

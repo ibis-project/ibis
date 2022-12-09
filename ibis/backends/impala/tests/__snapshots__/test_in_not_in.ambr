@@ -1,0 +1,26 @@
+# name: test_field_in_literals[isin]
+  "`g` IN ('foo', 'bar', 'baz')"
+# ---
+# name: test_field_in_literals[notin]
+  "`g` NOT IN ('foo', 'bar', 'baz')"
+# ---
+# name: test_isin_notin_in_select[isin]
+  '''
+  SELECT *
+  FROM alltypes
+  WHERE `g` IN ('foo', 'bar')
+  '''
+# ---
+# name: test_isin_notin_in_select[notin]
+  '''
+  SELECT *
+  FROM alltypes
+  WHERE `g` NOT IN ('foo', 'bar')
+  '''
+# ---
+# name: test_literal_in_fields[isin]
+  '2 IN (`a`, `b`, `c`)'
+# ---
+# name: test_literal_in_fields[notin]
+  '2 NOT IN (`a`, `b`, `c`)'
+# ---

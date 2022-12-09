@@ -1,1 +1,0 @@
-ALTER TABLE bar.`foo` SET CACHED IN 'default'

@@ -41,7 +41,7 @@ from ibis.tests.util import assert_decompile_roundtrip
 )
 def test_select_sql(alltypes, star1, expr_fn, snapshot):
     expr = expr_fn(t=alltypes, star1=star1)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -51,7 +51,7 @@ def test_nameless_table(snapshot):
     assert to_sql(nameless) == f'SELECT *\nFROM {nameless.op().name}'
 
     expr = ibis.table([('key', 'string')], name='baz')
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -63,16 +63,16 @@ def test_simple_joins(star1, star2, snapshot):
     pred2 = t1['bar_id'] == t2['foo_id']
 
     expr = t1.inner_join(t2, [pred])[[t1]]
-    snapshot.assert_match(to_sql(expr), "inner.sql")
+    assert to_sql(expr) == snapshot
 
     expr = t1.left_join(t2, [pred])[[t1]]
-    snapshot.assert_match(to_sql(expr), "left.sql")
+    assert to_sql(expr) == snapshot
 
     expr = t1.outer_join(t2, [pred])[[t1]]
-    snapshot.assert_match(to_sql(expr), "outer.sql")
+    assert to_sql(expr) == snapshot
 
     expr = t1.inner_join(t2, [pred, pred2])[[t1]]
-    snapshot.assert_match(to_sql(expr), "inner_two_preds.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -89,7 +89,7 @@ def test_multiple_joins(star1, star2, star3, snapshot):
         .inner_join(t3, [predB])
         .projection([t1, t2['value1'], t3['value2']])
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -114,7 +114,7 @@ def test_join_between_joins(snapshot):
     # here (right.value3 referencing the table inside the right join)
     exprs = [left, right.value3, right.value4]
     expr = joined.projection(exprs)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
@@ -127,19 +127,19 @@ def test_join_just_materialized(nation, region, customer, snapshot):
     expr = t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey).inner_join(
         t3, t1.n_nationkey == t3.c_nationkey
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_semi_join(star1, star2, snapshot):
     expr = star1.semi_join(star2, [star1.foo_id == star2.foo_id])[[star1]]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_anti_join(star1, star2, snapshot):
     expr = star1.anti_join(star2, [star1.foo_id == star2.foo_id])[[star1]]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -152,7 +152,7 @@ def test_where_no_pushdown_possible(star1, star2, snapshot):
     ]
 
     expr = joined[joined.diff > 1]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -160,7 +160,7 @@ def test_where_with_between(alltypes, snapshot):
     t = alltypes
 
     expr = t.filter([t.a > 0, t.f.between(0, 1)])
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -175,7 +175,7 @@ def test_where_analyze_scalar_op(functional_alltypes, snapshot):
             table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
         ]
     ).count()
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
@@ -191,7 +191,7 @@ def test_bug_duplicated_where(airlines, snapshot):
     tmp1 = expr[expr.dev.notnull()]
     tmp2 = tmp1.order_by(ibis.desc('dev'))
     expr = tmp2.limit(10)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_aggregate_having(star1, snapshot):
@@ -202,10 +202,10 @@ def test_aggregate_having(star1, snapshot):
     metrics = [total]
 
     e1 = t1.aggregate(metrics, by=['foo_id'], having=[total > 10])
-    snapshot.assert_match(to_sql(e1), "explicit.sql")
+    assert to_sql(e1) == snapshot
 
     e2 = t1.aggregate(metrics, by=['foo_id'], having=[t1.count() > 100])
-    snapshot.assert_match(to_sql(e2), "inline.sql")
+    assert to_sql(e2) == snapshot
 
 
 def test_aggregate_count_joined(con, snapshot):
@@ -217,7 +217,7 @@ def test_aggregate_count_joined(con, snapshot):
         .select([nation, region.r_name.name('region')])
         .count()
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -247,11 +247,11 @@ def test_fuse_projections(snapshot):
     f2 = (table2['foo'] * 2).name('qux')
 
     table3 = table2.projection([table2, f2])
-    snapshot.assert_match(to_sql(table3), "project.sql")
+    assert to_sql(table3) == snapshot
 
     # fusion works even if there's a filter
     table3_filtered = table2_filtered.projection([table2, f2])
-    snapshot.assert_match(to_sql(table3_filtered), "project_filter.sql")
+    assert to_sql(table3_filtered) == snapshot
     assert_decompile_roundtrip(table3_filtered, snapshot, check_equality=False)
 
 
@@ -271,7 +271,7 @@ def test_projection_filter_fuse(projection_fuse_filter, snapshot):
     # so we're conservative in fusing projections and filters
     #
     # even though it may seem obvious what to do, it's not
-    snapshot.assert_match(to_sql(expr3), "out.sql")
+    assert to_sql(expr3) == snapshot
 
 
 def test_bug_project_multiple_times(customer, nation, region, snapshot):
@@ -288,7 +288,7 @@ def test_bug_project_multiple_times(customer, nation, region, snapshot):
     step2 = step1.semi_join(step1.n_name.topk(10, by=topk_by), "n_name")
 
     expr = step2.projection(proj_exprs)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_aggregate_projection_subquery(alltypes, snapshot):
@@ -303,10 +303,10 @@ def test_aggregate_projection_subquery(alltypes, snapshot):
     filtered = proj[proj.g == 'bar']
 
     # Pushdown is not possible (in Impala, Postgres, others)
-    snapshot.assert_match(to_sql(proj), "proj.sql")
-    snapshot.assert_match(to_sql(filtered), "filtered.sql")
-    snapshot.assert_match(to_sql(agg(filtered)), "agg_filtered.sql")
-    snapshot.assert_match(to_sql(agg(proj[proj.foo < 10])), "agg_filtered2.sql")
+    assert to_sql(proj) == snapshot
+    assert to_sql(filtered) == snapshot
+    assert to_sql(agg(filtered)) == snapshot
+    assert to_sql(agg(proj[proj.foo < 10])) == snapshot
 
 
 def test_double_nested_subquery_no_aliases(snapshot):
@@ -324,7 +324,7 @@ def test_double_nested_subquery_no_aliases(snapshot):
     agg1 = t.aggregate([t.value.sum().name('total')], by=['key1', 'key2', 'key3'])
     agg2 = agg1.aggregate([agg1.total.sum().name('total')], by=['key1', 'key2'])
     expr = agg2.aggregate([agg2.total.sum().name('total')], by=['key1'])
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_aggregate_projection_alias_bug(star1, star2, snapshot):
@@ -336,7 +336,7 @@ def test_aggregate_projection_alias_bug(star1, star2, snapshot):
 
     # TODO: Not fusing the aggregation with the projection yet
     expr = what.aggregate([what.value1.sum().name('total')], by=[what.foo_id])
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_subquery_in_union(alltypes, snapshot):
@@ -349,7 +349,7 @@ def test_subquery_in_union(alltypes, snapshot):
     join2 = join1.view()
 
     expr = join1.union(join2)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -358,7 +358,7 @@ def test_limit_with_self_join(functional_alltypes, snapshot):
     t2 = t.view()
 
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -373,7 +373,7 @@ def test_topk_predicate_pushdown_bug(nation, customer, region, snapshot):
     expr = cplusgeo.semi_join(
         cplusgeo.n_name.topk(10, by=cplusgeo.c_acctbal.sum()), "n_name"
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_topk_analysis_bug(snapshot):
@@ -390,7 +390,7 @@ def test_topk_analysis_bug(snapshot):
         .group_by('origin')
         .count()
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_topk_to_aggregate(snapshot):
@@ -400,7 +400,7 @@ def test_topk_to_aggregate(snapshot):
     )
 
     expr = t.dest.topk(10, by=t.arrdelay.mean())
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_bool_bool(snapshot):
@@ -411,7 +411,7 @@ def test_bool_bool(snapshot):
 
     x = ibis.literal(True)
     expr = t[(t.dest.cast('int64') == 0) == x]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -421,7 +421,7 @@ def test_case_in_projection(alltypes, snapshot):
     expr2 = ibis.case().when(t.g == 'foo', 'bar').when(t.g == 'baz', t.g).end()
     expr = t[expr.name('col1'), expr2.name('col2'), t]
 
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -429,12 +429,12 @@ def test_identifier_quoting(snapshot):
     data = ibis.table([('date', 'int32'), ('explain', 'string')], 'table')
 
     expr = data[data.date.name('else'), data.explain.name('join')]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_scalar_subquery_different_table(foo, bar, snapshot):
     expr = foo[foo.y > bar.x.max()]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_exists_subquery_repr(t1, t2):
@@ -470,7 +470,7 @@ def test_filter_inside_exists(snapshot):
     filt = purchases.ts > '2015-08-15'
     cond = (events.user_id == purchases[filt].user_id).any()
     expr = events[cond]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_order_by_on_limit_yield_subquery(functional_alltypes, snapshot):
@@ -485,14 +485,14 @@ def test_order_by_on_limit_yield_subquery(functional_alltypes, snapshot):
         .limit(5)
         .order_by('string_col')
     )
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_join_with_limited_table(star1, star2, snapshot):
     limited = star1.limit(100)
     expr = limited.inner_join(star2, [limited.foo_id == star2.foo_id])[[limited]]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_multiple_limits(functional_alltypes, snapshot):
@@ -502,7 +502,7 @@ def test_multiple_limits(functional_alltypes, snapshot):
     stmt = get_query(expr)
 
     assert stmt.limit.n == 10
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -539,7 +539,7 @@ def test_join_filtered_tables_no_pushdown(snapshot):
     assert join_op.left == tbl_a_filter.op()
     assert join_op.right == tbl_b_filter.op()
 
-    snapshot.assert_match(to_sql(result), "out.sql")
+    assert to_sql(result) == snapshot
 
 
 def test_loj_subquery_filter_handling(snapshot):
@@ -554,18 +554,18 @@ def test_loj_subquery_filter_handling(snapshot):
         [left[name].name('left_' + name) for name in left.columns]
         + [right[name].name('right_' + name) for name in right.columns]
     ]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_startswith(startswith, snapshot):
     expr = startswith.name('tmp')
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_endswith(endswith, snapshot):
     expr = endswith.name('tmp')
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -583,7 +583,7 @@ def test_filter_predicates(snapshot):
         projected = filtered.projection([expr])
         expr = projected
 
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_join_projection_subquery_bug(nation, region, customer, snapshot):
@@ -598,7 +598,7 @@ def test_join_projection_subquery_bug(nation, region, customer, snapshot):
         customer,
         geo,
     ]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_where_with_join(star1, star2, snapshot):
@@ -618,7 +618,7 @@ def test_where_with_join(star1, star2, snapshot):
 
     # return e1, e2
 
-    snapshot.assert_match(to_sql(e1), "out.sql")
+    assert to_sql(e1) == snapshot
     assert_decompile_roundtrip(e1, snapshot)
 
 
@@ -641,7 +641,7 @@ def test_subquery_used_for_self_join(con, snapshot):
     metrics = [(agged.total - view.total).max().name('metric')]
     expr = agged.inner_join(view, [agged.a == view.b]).aggregate(metrics, by=[agged.g])
 
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_subquery_factor_correlated_subquery(con, snapshot):
@@ -670,7 +670,7 @@ def test_subquery_factor_correlated_subquery(con, snapshot):
     amount_filter = tpch.amount > conditional_avg
 
     expr = tpch[amount_filter].limit(10)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_self_join_subquery_distinct_equal(con, snapshot):
@@ -684,7 +684,7 @@ def test_self_join_subquery_distinct_equal(con, snapshot):
     ].view()
 
     expr = j1.join(j2, j1.r_regionkey == j2.r_regionkey)[j1.r_name, j2.n_name]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_tpch_self_join_failure(con, snapshot):
@@ -719,7 +719,7 @@ def test_tpch_self_join_failure(con, snapshot):
     yoy = current.join(prior, current.year == (prior.year - 1))[
         current.region, current.year, yoy_change
     ]
-    snapshot.assert_match(to_sql(yoy), "out.sql")
+    assert to_sql(yoy) == snapshot
     #  Compiler.to_sql(yoy)  # fail
 
 
@@ -729,13 +729,13 @@ def test_subquery_in_filter_predicate(star1, snapshot):
 
     pred = t1.f > t1.f.mean()
     expr = t1[pred]
-    snapshot.assert_match(to_sql(expr), "expr.sql")
+    assert to_sql(expr) == snapshot
 
     # This brought out another expression rewriting bug, since the filtered
     # table isn't found elsewhere in the expression.
     pred2 = t1.f > t1[t1.foo_id == 'foo'].f.mean()
     expr2 = t1[pred2]
-    snapshot.assert_match(to_sql(expr2), "expr2.sql")
+    assert to_sql(expr2) == snapshot
 
 
 def test_filter_subquery_derived_reduction(star1, snapshot):
@@ -748,8 +748,8 @@ def test_filter_subquery_derived_reduction(star1, snapshot):
     expr3 = t1[pred3]
     expr4 = t1[pred4]
 
-    snapshot.assert_match(to_sql(expr3), "expr3.sql")
-    snapshot.assert_match(to_sql(expr4), "expr4.sql")
+    assert to_sql(expr3) == snapshot
+    assert to_sql(expr4) == snapshot
 
 
 def test_topk_operation(snapshot):
@@ -767,11 +767,11 @@ def test_topk_operation(snapshot):
     )
 
     e1 = table.semi_join(table.city.topk(10, by=table.v2.mean()), "city")
-    snapshot.assert_match(to_sql(e1), "e1.sql")
+    assert to_sql(e1) == snapshot
 
     # Test the default metric (count)
     e2 = table.semi_join(table.city.topk(10), "city")
-    snapshot.assert_match(to_sql(e2), "e2.sql")
+    assert to_sql(e2) == snapshot
 
 
 def self_reference_limit_exists(con, snapshot):
@@ -779,7 +779,7 @@ def self_reference_limit_exists(con, snapshot):
     t = alltypes.limit(100)
     t2 = t.view()
     expr = t[-((t.string_col == t2.string_col).any())]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_limit_cte_extract(con, snapshot):
@@ -787,7 +787,7 @@ def test_limit_cte_extract(con, snapshot):
     t = alltypes.limit(100)
     t2 = t.view()
     expr = t.join(t2).projection(t)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_filter_self_join_analysis_bug(snapshot):
@@ -810,16 +810,12 @@ def test_filter_self_join_analysis_bug(snapshot):
     joined = left.join(right, left.region == right.region)
     result = joined[left.region, (left.total - right.total).name('diff')]
 
-    snapshot.assert_match(to_sql(result), "result.sql")
+    assert to_sql(result) == snapshot
 
 
-def test_sort_then_group_by_propagates_keys(snapshot):
-    t = ibis.table(schema={"a": "string", "b": "int64"}, name="t")
+@pytest.mark.parametrize("key", ["a", "b"])
+def test_sort_then_group_by_propagates_keys(key, snapshot):
+    t = ibis.table(schema=dict(a="string", b="int64"), name="t")
 
-    # a IS NOT in the output's order by clause
-    result = t.order_by("a").b.value_counts()
-    snapshot.assert_match(to_sql(result), "result1.sql")
-
-    # b IS in the output's order by clause
-    result = t.order_by("b").b.value_counts()
-    snapshot.assert_match(to_sql(result), "result2.sql")
+    result = t.order_by(key).b.value_counts()
+    assert to_sql(result) == snapshot

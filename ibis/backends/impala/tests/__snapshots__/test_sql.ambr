@@ -1,0 +1,304 @@
+# name: test_group_by_with_window_preserves_range
+  '''
+  SELECT *,
+         sum(`two`) OVER (PARTITION BY `three` ORDER BY `one` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `four`
+  FROM my_data
+  '''
+# ---
+# name: test_is_parens[isnull]
+  '''
+  SELECT *
+  FROM `table`
+  WHERE (`a` IS NULL) = (`b` IS NULL)
+  '''
+# ---
+# name: test_is_parens[notnull]
+  '''
+  SELECT *
+  FROM `table`
+  WHERE (`a` IS NOT NULL) = (`b` IS NOT NULL)
+  '''
+# ---
+# name: test_is_parens_identical_to
+  '''
+  SELECT *
+  FROM `table`
+  WHERE (`a` IS NOT DISTINCT FROM NULL) = (`b` IS NOT DISTINCT FROM NULL)
+  '''
+# ---
+# name: test_join_aliasing
+  '''
+  WITH t0 AS (
+    SELECT `d`, `c`
+    FROM t2
+  ),
+  t1 AS (
+    SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(1) AS `row_count`
+    FROM t0
+    GROUP BY 1, 2, 3
+  ),
+  t2 AS (
+    SELECT *, `a` + 20 AS `d`
+    FROM test_table
+  )
+  SELECT t3.*, t4.`total`
+  FROM (
+    SELECT `d`, `b`, count(1) AS `count`, count(DISTINCT `c`) AS `unique`
+    FROM t2
+    GROUP BY 1, 2
+  ) t3
+    INNER JOIN (
+      SELECT t5.*
+      FROM (
+        SELECT t1.*, t8.`total`
+        FROM t1
+          INNER JOIN (
+            SELECT `d`, sum(`row_count`) AS `total`
+            FROM t1
+            GROUP BY 1
+          ) t8
+            ON t1.`d` = t8.`d`
+      ) t5
+      WHERE t5.`row_count` < (t5.`total` / 2)
+    ) t4
+      ON t3.`d` = t4.`d`
+  '''
+# ---
+# name: test_join_key_name
+  '''
+  WITH t0 AS (
+    SELECT t5.*, t3.`r_name` AS `region`, t6.`o_totalprice`,
+           CAST(t6.`o_orderdate` AS timestamp) AS `odate`
+    FROM tpch_region t3
+      INNER JOIN tpch_nation t4
+        ON t3.`r_regionkey` = t4.`n_regionkey`
+      INNER JOIN tpch_customer t5
+        ON t5.`c_nationkey` = t4.`n_nationkey`
+      INNER JOIN tpch_orders t6
+        ON t6.`o_custkey` = t5.`c_custkey`
+  )
+  SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`,
+         t2.`count` / CAST(t1.`count` AS double) AS `fraction`
+  FROM (
+    SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
+    FROM t0
+    GROUP BY 1
+  ) t1
+    INNER JOIN (
+      SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
+      FROM t0
+      WHERE t0.`o_totalprice` > (
+        SELECT avg(t7.`o_totalprice`) AS `mean`
+        FROM t0 t7
+        WHERE t7.`region` = t0.`region`
+      )
+      GROUP BY 1
+    ) t2
+      ON t1.`year` = t2.`year`
+  '''
+# ---
+# name: test_join_key_name2
+  '''
+  WITH t0 AS (
+    SELECT t5.*, t3.`r_name` AS `region`, t6.`o_totalprice`,
+           CAST(t6.`o_orderdate` AS timestamp) AS `odate`
+    FROM tpch_region t3
+      INNER JOIN tpch_nation t4
+        ON t3.`r_regionkey` = t4.`n_regionkey`
+      INNER JOIN tpch_customer t5
+        ON t5.`c_nationkey` = t4.`n_nationkey`
+      INNER JOIN tpch_orders t6
+        ON t6.`o_custkey` = t5.`c_custkey`
+  ),
+  t1 AS (
+    SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
+    FROM t0
+    GROUP BY 1
+  )
+  SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`
+  FROM t1
+    INNER JOIN t1 t2
+      ON t1.`year` = t2.`year`
+  '''
+# ---
+# name: test_join_no_predicates_for_impala[cross_join]
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    CROSS JOIN star2 t1
+  '''
+# ---
+# name: test_join_no_predicates_for_impala[inner_join]
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    CROSS JOIN star2 t1
+  '''
+# ---
+# name: test_join_no_predicates_for_impala[left_join]
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    CROSS JOIN star2 t1
+  '''
+# ---
+# name: test_join_no_predicates_for_impala[outer_join]
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    CROSS JOIN star2 t1
+  '''
+# ---
+# name: test_join_with_nested_or_condition
+  '''
+  SELECT t0.*
+  FROM t t0
+    INNER JOIN t t1
+      ON (t0.`a` = t1.`a`) AND
+         ((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`))
+  '''
+# ---
+# name: test_join_with_nested_xor_condition
+  '''
+  SELECT t0.*
+  FROM t t0
+    INNER JOIN t t1
+      ON (t0.`a` = t1.`a`) AND
+         (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))
+  '''
+# ---
+# name: test_limit_cte_extract
+  '''
+  WITH t0 AS (
+    SELECT *
+    FROM functional_alltypes
+    LIMIT 100
+  )
+  SELECT t0.*
+  FROM t0
+    CROSS JOIN t0 t1
+  '''
+# ---
+# name: test_logically_negate_complex_boolean_expr
+  '''
+  SELECT NOT (`a` IN ('foo') AND (`c` IS NOT NULL)) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_multiple_filters
+  '''
+  SELECT *
+  FROM (
+    SELECT *
+    FROM t0
+    WHERE `a` < 100
+  ) t0
+  WHERE `a` = (
+    SELECT max(`a`) AS `max`
+    FROM t0
+    WHERE `a` < 100
+  )
+  '''
+# ---
+# name: test_multiple_filters2
+  '''
+  SELECT *
+  FROM (
+    SELECT *
+    FROM t0
+    WHERE `a` < 100
+  ) t0
+  WHERE (`a` = (
+    SELECT max(`a`) AS `max`
+    FROM t0
+    WHERE `a` < 100
+  )) AND
+        (`b` = 'a')
+  '''
+# ---
+# name: test_nested_join_base
+  '''
+  WITH t0 AS (
+    SELECT `uuid`, count(1) AS `count`
+    FROM t
+    GROUP BY 1
+  )
+  SELECT t0.*
+  FROM (
+    SELECT `uuid`, max(`count`) AS `max_count`
+    FROM t0
+    GROUP BY 1
+  ) t1
+    LEFT OUTER JOIN t0
+      ON t1.`uuid` = t0.`uuid`
+  '''
+# ---
+# name: test_nested_join_multiple_ctes
+  '''
+  WITH t0 AS (
+    SELECT `userid`, `movieid`, `rating`,
+           CAST(`timestamp` AS timestamp) AS `datetime`
+    FROM ratings
+  ),
+  t1 AS (
+    SELECT t0.*, t5.`title`
+    FROM t0
+      INNER JOIN movies t5
+        ON t0.`movieid` = t5.`movieid`
+  )
+  SELECT t2.*
+  FROM (
+    SELECT t1.*
+    FROM t1
+    WHERE (t1.`userid` = 118205) AND
+          (extract(t1.`datetime`, 'year') > 2001)
+  ) t2
+  WHERE t2.`movieid` IN (
+    SELECT `movieid`
+    FROM (
+      SELECT `movieid`
+      FROM (
+        SELECT t1.*
+        FROM t1
+        WHERE (t1.`userid` = 118205) AND
+              (extract(t1.`datetime`, 'year') > 2001) AND
+              (t1.`userid` = 118205) AND
+              (extract(t1.`datetime`, 'year') < 2009)
+      ) t5
+    ) t4
+  )
+  '''
+# ---
+# name: test_nested_joins_single_cte
+  '''
+  WITH t0 AS (
+    SELECT `uuid`, count(1) AS `count`
+    FROM t
+    GROUP BY 1
+  )
+  SELECT t1.*, t2.`last_visit`
+  FROM (
+    SELECT t0.*
+    FROM (
+      SELECT `uuid`, max(`count`) AS `max_count`
+      FROM t0
+      GROUP BY 1
+    ) t3
+      LEFT OUTER JOIN t0
+        ON (t3.`uuid` = t0.`uuid`) AND
+           (t3.`max_count` = t0.`count`)
+  ) t1
+    LEFT OUTER JOIN (
+      SELECT `uuid`, max(`ts`) AS `last_visit`
+      FROM t
+      GROUP BY 1
+    ) t2
+      ON t1.`uuid` = t2.`uuid`
+  '''
+# ---
+# name: test_relabel_projection
+  '''
+  SELECT `foo` AS `one`, `bar`, `baz` AS `three`
+  FROM `table`
+  '''
+# ---

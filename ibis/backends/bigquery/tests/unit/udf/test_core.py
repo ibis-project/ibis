@@ -22,7 +22,7 @@ def test_function_def(snapshot):
         return a + b
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_variable_declaration(snapshot):
@@ -31,7 +31,7 @@ def test_variable_declaration(snapshot):
         return c + 2
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_yield(snapshot):
@@ -39,7 +39,7 @@ def test_yield(snapshot):
         yield from [1, 2, 3]
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Skip on Windows")
@@ -57,7 +57,7 @@ def f(a):
         exec(code, d)
         f = d["f"]
         js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_assign(snapshot):
@@ -68,7 +68,7 @@ def test_assign(snapshot):
         return 1
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def add(x, y):
@@ -90,7 +90,7 @@ def div(x, y):
 @pytest.mark.parametrize("op", [add, sub, mul, div])
 def test_binary_operators(op, snapshot):
     js = compile(op)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_pow(snapshot):
@@ -99,7 +99,7 @@ def test_pow(snapshot):
         return a**2
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_floordiv(snapshot):
@@ -108,7 +108,7 @@ def test_floordiv(snapshot):
         return a // 2
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_unary_minus(snapshot):
@@ -117,7 +117,7 @@ def test_unary_minus(snapshot):
         return -a
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_unary_plus(snapshot):
@@ -126,7 +126,7 @@ def test_unary_plus(snapshot):
         return +a
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_true_false_none(snapshot):
@@ -137,7 +137,7 @@ def test_true_false_none(snapshot):
         return a if c != None else b  # noqa: E711
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_str(snapshot):
@@ -146,7 +146,7 @@ def test_str(snapshot):
         return a
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_tuple(snapshot):
@@ -155,7 +155,7 @@ def test_tuple(snapshot):
         return a
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_dict(snapshot):
@@ -164,7 +164,7 @@ def test_dict(snapshot):
         return a
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_continue(snapshot):
@@ -176,7 +176,7 @@ def test_continue(snapshot):
         return i
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_lambda_with_splat(snapshot):
@@ -191,7 +191,7 @@ def test_lambda_with_splat(snapshot):
         return splat_sum(1, 2, 3)
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_logical_not(snapshot):
@@ -201,7 +201,7 @@ def test_logical_not(snapshot):
         return not a and not b
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 class Rectangle:
@@ -221,12 +221,12 @@ class FancyRectangle(Rectangle):
 
 def test_class(snapshot):
     js = compile(Rectangle)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_class_with_properties(snapshot):
     js = compile(FancyRectangle)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_set_to_object(snapshot):
@@ -237,7 +237,7 @@ def test_set_to_object(snapshot):
         return y
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_setitem(snapshot):
@@ -248,7 +248,7 @@ def test_setitem(snapshot):
         return x
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_delete(snapshot):
@@ -261,7 +261,7 @@ def test_delete(snapshot):
         return 1
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_scope_with_while(snapshot):
@@ -281,7 +281,7 @@ def test_scope_with_while(snapshot):
                 return 1
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_list_comp(snapshot):
@@ -290,7 +290,7 @@ def test_list_comp(snapshot):
         return x
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 @pytest.mark.xfail(raises=NotImplementedError, reason="Not yet implemented")
@@ -311,7 +311,7 @@ def test_nested_list_comp(snapshot):
         return x
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_splat(snapshot):
@@ -323,7 +323,7 @@ def test_splat(snapshot):
         return g(*args)
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_varargs(snapshot):
@@ -331,7 +331,7 @@ def test_varargs(snapshot):
         return sum(*args)
 
     js = compile(f)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_missing_vararg(snapshot):
@@ -339,7 +339,7 @@ def test_missing_vararg(snapshot):
         return [1 for x in [n]]
 
     js = compile(my_range)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot
 
 
 def test_len_rewrite(snapshot):
@@ -347,4 +347,4 @@ def test_len_rewrite(snapshot):
         return len(a)
 
     js = compile(my_func)
-    snapshot.assert_match(js, "out.js")
+    assert js == snapshot

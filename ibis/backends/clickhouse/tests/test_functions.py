@@ -19,7 +19,7 @@ pytest.importorskip("clickhouse_driver")
 def test_cast_double_col(alltypes, translate, to_type, snapshot):
     expr = alltypes.double_col.cast(to_type)
     result = translate(expr.op())
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,7 @@ def test_cast_double_col(alltypes, translate, to_type, snapshot):
 )
 def test_cast_string_col(alltypes, translate, to_type, snapshot):
     expr = alltypes.string_col.cast(to_type)
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -63,7 +63,7 @@ def test_noop_cast(alltypes, translate, column, snapshot):
     col = alltypes[column]
     result = col.cast(col.type())
     assert result.equals(col)
-    snapshot.assert_match(translate(result.op()), "out.sql")
+    assert translate(result.op()) == snapshot
 
 
 def test_timestamp_cast(alltypes, translate, snapshot):
@@ -74,8 +74,8 @@ def test_timestamp_cast(alltypes, translate, snapshot):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    snapshot.assert_match(translate(result1.op()), "out1.sql")
-    snapshot.assert_match(translate(result2.op()), "out2.sql")
+    assert translate(result1.op()) == snapshot
+    assert translate(result2.op()) == snapshot
 
 
 def test_timestamp_now(translate):
@@ -87,7 +87,7 @@ def test_timestamp_now(translate):
 def test_timestamp_truncate(con, unit, snapshot):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
-    snapshot.assert_match(con.compile(expr), "out.sql")
+    assert con.compile(expr) == snapshot
 
 
 @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
@@ -186,11 +186,11 @@ def test_string_substring(con, op, expected):
 
 def test_string_column_substring(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.substr(2)
-    snapshot.assert_match(translate(expr.op()), "out1.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.substr(0, 3)
-    snapshot.assert_match(translate(expr.op()), "out2.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -248,7 +248,7 @@ def test_string_column_find_in_set(con, alltypes, translate, snapshot):
     vals = list('abc')
 
     expr = s.find_in_set(vals)
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -304,11 +304,11 @@ def test_string_find_like(con, expr, expected):
 
 def test_string_column_like(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.like('foo%')
-    snapshot.assert_match(translate(expr.op()), "out1.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.like(['foo%', '%bar'])
-    snapshot.assert_match(translate(expr.op()), "out2.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -316,11 +316,11 @@ def test_string_column_find(con, alltypes, translate, snapshot):
     s = alltypes.string_col
 
     expr = s.find('a')
-    snapshot.assert_match(translate(expr.op()), "out1.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = s.find(s)
-    snapshot.assert_match(translate(expr.op()), "out2.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -342,7 +342,7 @@ def test_string_column_find(con, alltypes, translate, snapshot):
 )
 def test_translate_math_functions(con, alltypes, translate, call, snapshot):
     expr = call(alltypes.double_col)
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -385,19 +385,19 @@ def test_math_functions(con, expr, expected):
 
 def test_greatest_least(con, alltypes, translate, snapshot):
     expr = ibis.greatest(alltypes.int_col, 10)
-    snapshot.assert_match(translate(expr.op()), "out1.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = ibis.greatest(alltypes.int_col, alltypes.bigint_col)
-    snapshot.assert_match(translate(expr.op()), "out2.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, 10)
-    snapshot.assert_match(translate(expr.op()), "out3.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
     expr = ibis.least(alltypes.int_col, alltypes.bigint_col)
-    snapshot.assert_match(translate(expr.op()), "out4.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -431,13 +431,13 @@ def test_regexp_extract(con, expr, expected):
 
 def test_column_regexp_extract(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.re_extract(r'[\d]+', 3)
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
 def test_column_regexp_replace(con, alltypes, translate, snapshot):
     expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -472,7 +472,7 @@ def test_literal_none_to_nullable_colum(alltypes):
 def test_timestamp_from_integer(con, alltypes, translate, snapshot):
     # timestamp_col has datetime type
     expr = alltypes.int_col.to_timestamp()
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot
     assert len(con.execute(expr))
 
 
@@ -495,4 +495,4 @@ def test_count_distinct_with_filter(alltypes):
 def test_group_concat(alltypes, sep, where_case, translate, snapshot):
     where = None if where_case is None else alltypes.bool_col == where_case
     expr = alltypes.string_col.group_concat(sep, where)
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert translate(expr.op()) == snapshot

@@ -28,7 +28,7 @@ def table(mockcon):
 def test_literals(value, snapshot):
     expr = L(value)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("method_name", ["precision", "scale"])
@@ -38,7 +38,7 @@ def test_decimal_builtins(mockcon, method_name, snapshot):
     method = getattr(col, method_name)
     expr = method()
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_column_ref_table_aliases(snapshot):
@@ -54,7 +54,7 @@ def test_column_ref_table_aliases(snapshot):
     expr = table1['value1'] - table2['value and2']
 
     result = translate(expr, context=context)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_column_ref_quoting():
@@ -82,7 +82,7 @@ def test_identifier_quoting():
 def test_named_expressions(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr, named=True)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -107,7 +107,7 @@ def test_named_expressions(table, expr_fn, snapshot):
 def test_binary_infix_operators(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -122,13 +122,13 @@ def test_binary_infix_operators(table, expr_fn, snapshot):
 def test_binary_infix_parenthesization(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_between(table, snapshot):
     expr = table.f.between(0, 1)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -143,7 +143,7 @@ def test_between(table, snapshot):
 def test_isnull_notnull(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -161,13 +161,13 @@ def test_isnull_notnull(table, expr_fn, snapshot):
 def test_casts(table, column, to_type, snapshot):
     expr = table[column].cast(to_type)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_misc_conditionals(table, snapshot):
     expr = table.a.nullif(0)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -181,13 +181,13 @@ def test_misc_conditionals(table, snapshot):
 def test_decimal_casts(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("colname", ["a", "f", "h"])
 def test_negate(table, colname, snapshot):
     result = translate(-table[colname])
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -197,7 +197,7 @@ def test_negate(table, colname, snapshot):
 def test_timestamp_extract_field(table, field, snapshot):
     expr = getattr(table.i, field)()
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_sql_extract(table, snapshot):
@@ -209,13 +209,13 @@ def test_sql_extract(table, snapshot):
     ]
 
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_timestamp_now(snapshot):
     expr = ibis.now()
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -229,11 +229,11 @@ def test_timestamp_deltas(table, unit, snapshot):
 
     add_expr = table.i + offset
     result = translate(add_expr)
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     sub_expr = table.i - offset
     result = translate(sub_expr)
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -248,7 +248,7 @@ def test_timestamp_deltas(table, unit, snapshot):
 def test_timestamp_literals(expr_fn, snapshot):
     expr = expr_fn('2015-01-01 12:34:56')
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("method_name", ["index", "full_name"])
@@ -256,7 +256,7 @@ def test_timestamp_day_of_week(method_name, snapshot):
     ts = ibis.timestamp('2015-09-01T01:00:23')
     expr = getattr(ts.day_of_week, method_name)()
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -271,7 +271,7 @@ def test_timestamp_day_of_week(method_name, snapshot):
 def test_timestamp_from_integer(table, expr_fn, snapshot):
     expr = expr_fn(table.c)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_correlated_predicate_subquery(table, snapshot):
@@ -289,7 +289,7 @@ def test_correlated_predicate_subquery(table, snapshot):
     subctx.make_alias(t0.op())
 
     result = translate(expr, context=subctx)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -304,4 +304,4 @@ def test_correlated_predicate_subquery(table, snapshot):
 def test_any_all(table, expr_fn, snapshot):
     expr = expr_fn(table.f == 0)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

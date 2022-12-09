@@ -362,7 +362,7 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
     st = sa_star1.alias("t0")
     expected = sa.select([st]).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
     _check(expr, expected)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
     assert_decompile_roundtrip(expr, snapshot)
 
 
@@ -495,7 +495,7 @@ def test_cte_factor_distinct_but_equal(con, sa_alltypes, snapshot):
     stmt = sa.select([t0]).select_from(table_set)
 
     _check(expr, stmt)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_self_reference_join(star1, sa_star1, snapshot):
@@ -509,7 +509,7 @@ def test_self_reference_join(star1, sa_star1, snapshot):
     table_set = t0.join(t1, t0.c.foo_id == t1.c.bar_id)
     expected = sa.select([t0]).select_from(table_set)
     _check(expr, expected)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_self_reference_in_not_exists(con, sa_functional_alltypes, snapshot):
@@ -529,10 +529,10 @@ def test_self_reference_in_not_exists(con, sa_functional_alltypes, snapshot):
     ex_anti = sa.select([s1]).where(~cond)
 
     _check(semi, ex_semi)
-    snapshot.assert_match(to_sql(semi), "semi.sql")
+    assert to_sql(semi) == snapshot
 
     _check(anti, ex_anti)
-    snapshot.assert_match(to_sql(anti), "anti.sql")
+    assert to_sql(anti) == snapshot
 
 
 def test_where_uncorrelated_subquery(con, foo, bar, snapshot):
@@ -544,7 +544,7 @@ def test_where_uncorrelated_subquery(con, foo, bar, snapshot):
     subq = sa.select([bar.c.job])
     stmt = sa.select([foo]).where(foo.c.job.in_(subq))
     _check(expr, stmt)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_where_correlated_subquery(con, foo, snapshot):
@@ -564,7 +564,7 @@ def test_where_correlated_subquery(con, foo, snapshot):
         subq = subq.scalar_subquery()
     stmt = sa.select([t0]).where(t0.c.y > subq)
     _check(expr, stmt)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_subquery_aliased(con, star1, star2, snapshot):
@@ -587,7 +587,7 @@ def test_subquery_aliased(con, star1, star2, snapshot):
     expected = sa.select([agged, s2.c.value1]).select_from(joined)
 
     _check(expr, expected)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_lower_projection_sort_key(con, star1, star2, snapshot):
@@ -621,7 +621,7 @@ def test_lower_projection_sort_key(con, star1, star2, snapshot):
 
     expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
     _check(expr2, expected)
-    snapshot.assert_match(to_sql(expr2), "out.sql")
+    assert to_sql(expr2) == snapshot
     assert_decompile_roundtrip(expr2, snapshot)
 
 
@@ -646,10 +646,10 @@ def test_exists(con, foo_t, bar_t, snapshot):
     ex2 = sa.select([t1]).where(cond2)
 
     _check(e1, ex1)
-    snapshot.assert_match(to_sql(e1), "e1.sql")
+    assert to_sql(e1) == snapshot
 
     _check(e2, ex2)
-    snapshot.assert_match(to_sql(e2), "e2.sql")
+    assert to_sql(e2) == snapshot
 
 
 def test_not_exists(con, not_exists, snapshot):
@@ -666,7 +666,7 @@ def test_not_exists(con, not_exists, snapshot):
     )
 
     _check(expr, expected)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -1168,7 +1168,7 @@ def test_no_cart_join(con, snapshot):
     ob = agg.order_by(products.ancestor_node_sort_order)
 
     out = str(con.compile(ob).compile(compile_kwargs=dict(literal_binds=True)))
-    snapshot.assert_match(out, "out.sql")
+    assert out == snapshot
 
 
 def test_order_by_expr(con, snapshot):
@@ -1177,4 +1177,4 @@ def test_order_by_expr(con, snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t[_.a == 1].order_by(_.b + "a")
     out = str(con.compile(expr).compile(compile_kwargs=dict(literal_binds=True)))
-    snapshot.assert_match(out, "out.sql")
+    assert out == snapshot

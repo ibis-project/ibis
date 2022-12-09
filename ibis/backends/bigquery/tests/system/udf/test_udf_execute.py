@@ -57,7 +57,7 @@ def test_udf_with_struct(alltypes, df, snapshot):
         return Rectangle(a, b)
 
     result = my_struct_thing.js
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
     expr = my_struct_thing(alltypes.double_col, alltypes.double_col)
     result = expr.execute()

@@ -1,1 +1,0 @@
-extract(`i`, 'day')

@@ -1,1 +1,0 @@
-log2(`int_col`)

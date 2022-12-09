@@ -1,1 +1,0 @@
-min(if(`bigint_col` < 70, `double_col`, NULL))

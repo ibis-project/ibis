@@ -1,1 +1,0 @@
-upper(`string_col`)

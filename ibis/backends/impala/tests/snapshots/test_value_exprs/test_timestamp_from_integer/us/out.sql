@@ -1,1 +1,0 @@
-CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), "yyyy-MM-dd HH:mm:ss") AS timestamp)

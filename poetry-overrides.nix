@@ -160,4 +160,8 @@ in
   mkdocs = super.mkdocs.overridePythonAttrs (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.babel ];
   });
+
+  syrupy = super.syrupy.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.poetry-core ];
+  });
 }

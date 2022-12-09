@@ -693,7 +693,7 @@ def test_where_with_timestamp(snapshot):
         name='t',
     )
     expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
-    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
+    assert ibis.impala.compile(expr) == snapshot
 
 
 def test_filter_with_analytic(snapshot):
@@ -705,7 +705,7 @@ def test_filter_with_analytic(snapshot):
     with_analytic = subquery[['col', subquery.count().name('analytic')]]
     expr = with_analytic[with_analytic.columns]
 
-    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
+    assert ibis.impala.compile(expr) == snapshot
 
 
 def test_named_from_filter_group_by(snapshot):
@@ -713,13 +713,13 @@ def test_named_from_filter_group_by(snapshot):
     gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
     expr = gb.aggregate(abc=sum_expr)
-    snapshot.assert_match(ibis.impala.compile(expr), "abc.sql")
+    assert ibis.impala.compile(expr) == snapshot
 
     expr = gb.aggregate(foo=sum_expr)
-    snapshot.assert_match(ibis.impala.compile(expr), "foo.sql")
+    assert ibis.impala.compile(expr) == snapshot
 
 
 def test_nunique_where(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     expr = t.key.nunique(where=t.value >= 1.0)
-    snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
+    assert ibis.impala.compile(expr) == snapshot

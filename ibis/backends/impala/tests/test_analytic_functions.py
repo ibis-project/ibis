@@ -34,4 +34,4 @@ def table(mockcon):
 def test_analytic_exprs(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

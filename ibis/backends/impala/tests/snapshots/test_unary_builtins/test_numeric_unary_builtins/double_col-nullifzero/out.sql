@@ -1,1 +1,0 @@
-nullifzero(`double_col`)

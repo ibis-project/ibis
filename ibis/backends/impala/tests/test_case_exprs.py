@@ -31,23 +31,23 @@ def test_isnull_1_0(table, snapshot):
     expr = table.g.isnull().ifelse(1, 0)
 
     result = translate(expr)
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     # inside some other function
     result = translate(expr.sum())
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
 
 def test_simple_case(simple_case, snapshot):
     expr = simple_case
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_search_case(search_case, snapshot):
     expr = search_case
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_where_use_if(table, snapshot):
@@ -55,7 +55,7 @@ def test_where_use_if(table, snapshot):
     assert isinstance(expr, ir.FloatingValue)
 
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -69,7 +69,7 @@ def test_where_use_if(table, snapshot):
 def test_nullif_ifnull(tpch_lineitem, expr_fn, snapshot):
     expr = expr_fn(tpch_lineitem.l_quantity)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -87,17 +87,17 @@ def test_nullif_ifnull(tpch_lineitem, expr_fn, snapshot):
 def test_decimal_fillna_cast_arg(tpch_lineitem, expr_fn, snapshot):
     expr = expr_fn(tpch_lineitem)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_identical_to(mockcon, snapshot):
     t = mockcon.table('functional_alltypes')
     expr = t.tinyint_col.identical_to(t.double_col).name('tmp')
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_identical_to_special_case(snapshot):
     expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64')).name('tmp')
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

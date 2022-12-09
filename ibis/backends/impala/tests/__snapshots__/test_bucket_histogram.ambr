@@ -1,0 +1,146 @@
+# name: test_bucket_assign_labels
+  '''
+  SELECT
+    CASE `tier`
+      WHEN 0 THEN 'Under 0'
+      WHEN 1 THEN '0 to 10'
+      WHEN 2 THEN '10 to 25'
+      WHEN 3 THEN '25 to 50'
+      ELSE 'error'
+    END AS `tier2`, `count`
+  FROM (
+    SELECT
+      CASE
+        WHEN `f` < 0 THEN 0
+        WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+        WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+        WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
+        ELSE CAST(NULL AS tinyint)
+      END AS `tier`, count(1) AS `count`
+    FROM alltypes
+    GROUP BY 1
+  ) t0
+  '''
+# ---
+# name: test_bucket_to_case[close_extreme_false]
+  '''
+  CASE
+    WHEN (0 <= `f`) AND (`f` < 10) THEN 0
+    WHEN (10 <= `f`) AND (`f` < 25) THEN 1
+    WHEN (25 <= `f`) AND (`f` < 50) THEN 2
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[close_extreme_false_closed_right]
+  '''
+  CASE
+    WHEN (0 < `f`) AND (`f` <= 10) THEN 0
+    WHEN (10 < `f`) AND (`f` <= 25) THEN 1
+    WHEN (25 < `f`) AND (`f` <= 50) THEN 2
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[close_extreme_false_include_under_include_over]
+  '''
+  CASE
+    WHEN `f` < 0 THEN 0
+    WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+    WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+    WHEN (25 <= `f`) AND (`f` < 50) THEN 3
+    WHEN 50 <= `f` THEN 4
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[closed_right]
+  '''
+  CASE
+    WHEN (0 <= `f`) AND (`f` <= 10) THEN 0
+    WHEN (10 < `f`) AND (`f` <= 25) THEN 1
+    WHEN (25 < `f`) AND (`f` <= 50) THEN 2
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[closed_right_close_extreme_false_include_under]
+  '''
+  CASE
+    WHEN `f` <= 0 THEN 0
+    WHEN (0 < `f`) AND (`f` <= 10) THEN 1
+    WHEN (10 < `f`) AND (`f` <= 25) THEN 2
+    WHEN (25 < `f`) AND (`f` <= 50) THEN 3
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[closed_right_include_over_include_under]
+  '''
+  CASE
+    WHEN `f` <= 10 THEN 0
+    WHEN 10 < `f` THEN 1
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[default]
+  '''
+  CASE
+    WHEN (0 <= `f`) AND (`f` < 10) THEN 0
+    WHEN (10 <= `f`) AND (`f` < 25) THEN 1
+    WHEN (25 <= `f`) AND (`f` <= 50) THEN 2
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[include_over_include_under0]
+  '''
+  CASE
+    WHEN `f` < 10 THEN 0
+    WHEN 10 <= `f` THEN 1
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[include_over_include_under1]
+  '''
+  CASE
+    WHEN `f` < 10 THEN 0
+    WHEN 10 <= `f` THEN 1
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[include_over_include_under2]
+  '''
+  CAST(CASE
+    WHEN `f` < 10 THEN 0
+    WHEN 10 <= `f` THEN 1
+    ELSE CAST(NULL AS tinyint)
+  END AS double)
+  '''
+# ---
+# name: test_bucket_to_case[include_under]
+  '''
+  CASE
+    WHEN `f` < 0 THEN 0
+    WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+    WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+    WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---
+# name: test_bucket_to_case[include_under_include_over]
+  '''
+  CASE
+    WHEN `f` < 0 THEN 0
+    WHEN (0 <= `f`) AND (`f` < 10) THEN 1
+    WHEN (10 <= `f`) AND (`f` < 25) THEN 2
+    WHEN (25 <= `f`) AND (`f` <= 50) THEN 3
+    WHEN 50 < `f` THEN 4
+    ELSE CAST(NULL AS tinyint)
+  END
+  '''
+# ---

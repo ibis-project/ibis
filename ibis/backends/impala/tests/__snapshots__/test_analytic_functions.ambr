@@ -1,0 +1,33 @@
+# name: test_analytic_exprs[first]
+  'first_value(`double_col`)'
+# ---
+# name: test_analytic_exprs[lag_arg]
+  'lag(`string_col`, 2)'
+# ---
+# name: test_analytic_exprs[lag_default]
+  'lag(`string_col`)'
+# ---
+# name: test_analytic_exprs[lag_explicit_default]
+  'lag(`string_col`, 1, 0)'
+# ---
+# name: test_analytic_exprs[last]
+  'last_value(`double_col`)'
+# ---
+# name: test_analytic_exprs[lead_arg]
+  'lead(`string_col`, 2)'
+# ---
+# name: test_analytic_exprs[lead_default]
+  'lead(`string_col`)'
+# ---
+# name: test_analytic_exprs[lead_explicit_default]
+  'lead(`string_col`, 1, 0)'
+# ---
+# name: test_analytic_exprs[ntile]
+  'ntile(3)'
+# ---
+# name: test_analytic_exprs[percent_rank]
+  'percent_rank()'
+# ---
+# name: test_analytic_exprs[row_number]
+  '(row_number() OVER (ORDER BY `float_col`) - 1)'
+# ---

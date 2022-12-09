@@ -1,1 +1,0 @@
-scale(`l_extendedprice`)

@@ -1,2 +1,0 @@
-SELECT TIME_TRUNC(`a`, SECOND) AS `tmp`
-FROM t

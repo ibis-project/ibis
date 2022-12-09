@@ -1,1 +1,0 @@
-SELECT TRUE AS `tmp`

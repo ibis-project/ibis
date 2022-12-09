@@ -1,1 +1,0 @@
-abs(`int_col`)

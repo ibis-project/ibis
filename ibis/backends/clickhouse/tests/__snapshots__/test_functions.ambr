@@ -1,0 +1,42 @@
+# name: test_cast_double_col[float]
+  '`double_col`'
+# ---
+# name: test_cast_double_col[int16]
+  'CAST(`double_col` AS Nullable(Int16))'
+# ---
+# name: test_cast_string_col[!string]
+  'CAST(`string_col` AS String)'
+# ---
+# name: test_column_regexp_extract
+  "if(match(CAST(`string_col` AS String), '[\\d]+'), if(CAST(nullIf(3, 0) AS Nullable(Int64)) IS NULL, CAST(`string_col` AS String), CAST(extractAll(CAST(`string_col` AS String), '[\\d]+') AS Array(Nullable(String)))[CAST(nullIf(3, 0) AS Nullable(Int64))]), NULL)"
+# ---
+# name: test_greatest_least
+  'greatest(`int_col`, 10)'
+# ---
+# name: test_group_concat[minus_none]
+  "CASE WHEN empty(groupArray(`string_col`)) THEN NULL ELSE arrayStringConcat(groupArray(`string_col`), '-') END"
+# ---
+# name: test_noop_cast[double_col]
+  '`double_col`'
+# ---
+# name: test_noop_cast[smallint_col]
+  '`smallint_col`'
+# ---
+# name: test_noop_cast[year]
+  '`year`'
+# ---
+# name: test_timestamp_truncate[y]
+  "SELECT toStartOfYear(toDateTime('2009-05-17T12:34:56')) AS `TimestampTruncate(Timestamp('2009-05-17 12:34:56'))`"
+# ---
+# name: test_translate_math_functions[log2]
+  'log2(`double_col`)'
+# ---
+# name: test_translate_math_functions[log]
+  'log(`double_col`)'
+# ---
+# name: test_translate_math_functions[round]
+  'round(`double_col`)'
+# ---
+# name: test_translate_math_functions[round_2]
+  'round(`double_col`, 2)'
+# ---

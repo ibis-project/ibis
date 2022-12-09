@@ -32,4 +32,4 @@ def test_varargs_functions(table, expr_fn, snapshot):
     t = table
     expr = expr_fn(t)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

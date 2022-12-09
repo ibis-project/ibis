@@ -1,1 +1,0 @@
-rpad(`string_col`, 25, ' ')

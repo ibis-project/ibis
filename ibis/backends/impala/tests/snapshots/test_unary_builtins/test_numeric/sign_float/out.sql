@@ -1,1 +1,0 @@
-sign(`float_col`)

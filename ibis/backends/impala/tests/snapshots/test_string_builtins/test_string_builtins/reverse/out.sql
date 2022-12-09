@@ -1,1 +1,0 @@
-reverse(`string_col`)

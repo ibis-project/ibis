@@ -1,0 +1,150 @@
+# name: test_cte_factor_distinct_but_equal
+  '''
+  WITH t0 AS 
+  (SELECT t2.g AS g, sum(t2.f) AS metric 
+  FROM alltypes AS t2 GROUP BY t2.g)
+   SELECT t0.g, t0.metric 
+  FROM t0 JOIN t0 AS t1 ON t0.g = t1.g
+  '''
+# ---
+# name: test_exists
+  '''
+  SELECT t0.key1, t0.key2, t0.value1 
+  FROM foo_t AS t0 
+  WHERE EXISTS (SELECT 1 AS anon_1 
+  FROM bar_t AS t1 
+  WHERE t0.key1 = t1.key1)
+  '''
+# ---
+# name: test_exists.1
+  '''
+  SELECT t0.key1, t0.key2, t0.value1 
+  FROM foo_t AS t0 
+  WHERE EXISTS (SELECT 1 AS anon_1 
+  FROM bar_t AS t1 
+  WHERE t0.key1 = t1.key1 AND t1.key2 = 'foo')
+  '''
+# ---
+# name: test_lower_projection_sort_key
+  '''
+  SELECT t0.foo_id, t0.total, t0.value1 
+  FROM (SELECT t1.foo_id AS foo_id, t1.total AS total, t1.value1 AS value1 
+  FROM (SELECT t4.foo_id AS foo_id, t4.total AS total, t2.value1 AS value1 
+  FROM (SELECT t3.foo_id AS foo_id, sum(t3.f) AS total 
+  FROM star1 AS t3 GROUP BY t3.foo_id) AS t4 JOIN star2 AS t2 ON t4.foo_id = t2.foo_id) AS t1 
+  WHERE t1.total > 100) AS t0 ORDER BY t0.total DESC
+  '''
+# ---
+# name: test_lower_projection_sort_key.1
+  '''
+  import ibis
+  
+  
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  agg = star1.group_by(star1.foo_id).aggregate(star1.f.sum().name("total"))
+  proj = agg.inner_join(star2, agg.foo_id == star2.foo_id).select([agg, star2.value1])
+  proj1 = proj.filter(proj.total > 100)
+  
+  result = proj1.order_by(proj1.total.desc())
+  
+  '''
+# ---
+# name: test_no_cart_join
+  '''
+  SELECT ancestor_node_sort_order, 1 AS n 
+  FROM facts AS t0 JOIN (SELECT t2.ancestor_level_name AS ancestor_level_name, t2.ancestor_level_number AS ancestor_level_number, t2.ancestor_node_sort_order AS ancestor_node_sort_order, t2.descendant_node_natural_key AS descendant_node_natural_key, concat(lpad('-', (t2.ancestor_level_number - 1) * 7, '-'), t2.ancestor_level_name) AS product_level_name 
+  FROM products AS t2) AS t1 ON t0.product_id = t1.descendant_node_natural_key GROUP BY ancestor_node_sort_order ORDER BY ancestor_node_sort_order ASC
+  '''
+# ---
+# name: test_not_exists
+  '''
+  SELECT t0.key1, t0.key2, t0.value1 
+  FROM foo_t AS t0 
+  WHERE NOT (EXISTS (SELECT 1 AS anon_1 
+  FROM bar_t AS t1 
+  WHERE t0.key1 = t1.key1))
+  '''
+# ---
+# name: test_order_by_expr
+  '''
+  SELECT t0.a, t0.b 
+  FROM (SELECT t1.a AS a, t1.b AS b 
+  FROM t AS t1 
+  WHERE t1.a = 1) AS t0 ORDER BY concat(t0.b, 'a') ASC
+  '''
+# ---
+# name: test_self_reference_in_not_exists
+  '''
+  SELECT t0.id, t0.bool_col, t0.tinyint_col, t0.smallint_col, t0.int_col, t0.bigint_col, t0.float_col, t0.double_col, t0.date_string_col, t0.string_col, t0.timestamp_col, t0.year, t0.month 
+  FROM functional_alltypes AS t0 
+  WHERE EXISTS (SELECT 1 AS anon_1 
+  FROM functional_alltypes AS t1 
+  WHERE t0.string_col = t1.string_col)
+  '''
+# ---
+# name: test_self_reference_in_not_exists.1
+  '''
+  SELECT t0.id, t0.bool_col, t0.tinyint_col, t0.smallint_col, t0.int_col, t0.bigint_col, t0.float_col, t0.double_col, t0.date_string_col, t0.string_col, t0.timestamp_col, t0.year, t0.month 
+  FROM functional_alltypes AS t0 
+  WHERE NOT (EXISTS (SELECT 1 AS anon_1 
+  FROM functional_alltypes AS t1 
+  WHERE t0.string_col = t1.string_col))
+  '''
+# ---
+# name: test_self_reference_join
+  '''
+  SELECT t0.c, t0.f, t0.foo_id, t0.bar_id 
+  FROM star1 AS t0 JOIN star1 AS t1 ON t0.foo_id = t1.bar_id
+  '''
+# ---
+# name: test_subquery_aliased
+  '''
+  SELECT t0.foo_id, t0.total, t1.value1 
+  FROM (SELECT t2.foo_id AS foo_id, sum(t2.f) AS total 
+  FROM star1 AS t2 GROUP BY t2.foo_id) AS t0 JOIN star2 AS t1 ON t0.foo_id = t1.foo_id
+  '''
+# ---
+# name: test_where_correlated_subquery
+  '''
+  SELECT t0.job, t0.dept_id, t0.year, t0.y 
+  FROM foo AS t0 
+  WHERE t0.y > (SELECT avg(t1.y) AS mean 
+  FROM foo AS t1 
+  WHERE t0.dept_id = t1.dept_id)
+  '''
+# ---
+# name: test_where_simple_comparisons
+  '''
+  SELECT t0.c, t0.f, t0.foo_id, t0.bar_id 
+  FROM star1 AS t0 
+  WHERE t0.f > 0 AND t0.c < t0.f * 2
+  '''
+# ---
+# name: test_where_simple_comparisons.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  
+  result = star1.filter([star1.f > 0, star1.c < (star1.f * 2)])
+  
+  '''
+# ---
+# name: test_where_uncorrelated_subquery
+  '''
+  SELECT t0.job, t0.dept_id, t0.year, t0.y 
+  FROM foo AS t0 
+  WHERE t0.job IN (SELECT bar.job 
+  FROM bar)
+  '''
+# ---

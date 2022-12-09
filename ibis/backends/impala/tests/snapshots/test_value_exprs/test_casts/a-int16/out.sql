@@ -1,1 +1,0 @@
-CAST(`a` AS smallint)

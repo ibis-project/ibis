@@ -1,1 +1,0 @@
-floor(`int_col`)

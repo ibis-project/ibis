@@ -1,2 +1,0 @@
-SELECT TIMESTAMP_TRUNC(`a`, YEAR) AS `tmp`
-FROM t

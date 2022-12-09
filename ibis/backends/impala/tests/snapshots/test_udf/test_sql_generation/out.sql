@@ -1,1 +1,0 @@
-SELECT udf_testing.identity('hello world') AS `UDF_Tester('hello world')`

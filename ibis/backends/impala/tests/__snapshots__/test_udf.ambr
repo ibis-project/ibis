@@ -1,0 +1,55 @@
+# name: test_create_uda[False]
+  '''
+  CREATE AGGREGATE FUNCTION bar.`test_name`(string, string) returns bigint location '/foo/bar.so'
+  init_fn='Init'
+  update_fn='Update'
+  merge_fn='Merge'
+  finalize_fn='Finalize'
+  '''
+# ---
+# name: test_create_uda[True]
+  '''
+  CREATE AGGREGATE FUNCTION bar.`test_name`(string, string) returns bigint location '/foo/bar.so'
+  init_fn='Init'
+  update_fn='Update'
+  merge_fn='Merge'
+  serialize_fn='Serialize'
+  finalize_fn='Finalize'
+  '''
+# ---
+# name: test_create_udf
+  "CREATE FUNCTION `test_name`(string, string) returns bigint location '/foo/bar.so' symbol='testFunc'"
+# ---
+# name: test_create_udf_type_conversions
+  "CREATE FUNCTION `test_name`(string, tinyint, smallint, int) returns bigint location '/foo/bar.so' symbol='testFunc'"
+# ---
+# name: test_delete_udf_aggregate
+  'DROP AGGREGATE FUNCTION `test_name`(string, string)'
+# ---
+# name: test_delete_udf_db
+  'DROP FUNCTION test.`test_name`(string, string)'
+# ---
+# name: test_delete_udf_if_exists
+  'DROP FUNCTION IF EXISTS `test_name`(string, string)'
+# ---
+# name: test_delete_udf_simple
+  'DROP FUNCTION `test_name`(string, string)'
+# ---
+# name: test_list_udafs
+  'SHOW AGGREGATE FUNCTIONS IN test'
+# ---
+# name: test_list_udafs_like
+  "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
+# ---
+# name: test_list_udf
+  'SHOW FUNCTIONS IN test'
+# ---
+# name: test_list_udfs_like
+  "SHOW FUNCTIONS IN test LIKE 'identity'"
+# ---
+# name: test_sql_generation
+  "SELECT udf_testing.identity('hello world') AS `UDF_Tester('hello world')`"
+# ---
+# name: test_sql_generation_from_infoclass
+  "SELECT udf_testing.info_test('hello world') AS `tmp`"
+# ---

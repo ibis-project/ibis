@@ -1,1 +1,0 @@
-CAST(sign(`tinyint_col`) AS tinyint)

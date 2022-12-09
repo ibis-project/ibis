@@ -1,1 +1,0 @@
-replaceRegexpAll(`string_col`, '[\d]+', 'aaa')

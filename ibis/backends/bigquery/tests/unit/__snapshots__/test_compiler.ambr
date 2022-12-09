@@ -1,0 +1,497 @@
+# name: test_approx[filter-approx_median]
+  '''
+  SELECT APPROX_QUANTILES(if(`month` > 0, `double_col`, NULL), 2)[OFFSET(1)] AS `approx_median`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_approx[filter-approx_nunique]
+  '''
+  SELECT APPROX_COUNT_DISTINCT(if(`month` > 0, `double_col`, NULL)) AS `approx_nunique`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_approx[no_filter-approx_median]
+  '''
+  SELECT APPROX_QUANTILES(`double_col`, 2)[OFFSET(1)] AS `approx_median`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_approx[no_filter-approx_nunique]
+  '''
+  SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `approx_nunique`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_binary
+  '''
+  SELECT CAST(`value` AS BYTES) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_bit[filter-bit_or]
+  '''
+  SELECT BIT_OR(if(`bigint_col` > 0, `int_col`, NULL)) AS `bit_or`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bit[no_filter-bit_or]
+  '''
+  SELECT BIT_OR(`int_col`) AS `bit_or`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bit[no_filter-bit_xor]
+  '''
+  SELECT BIT_XOR(`int_col`) AS `bit_xor`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bool_reducers[mean]
+  '''
+  SELECT avg(CAST(`bool_col` AS INT64)) AS `mean`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bool_reducers[sum]
+  '''
+  SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bool_reducers_where_conj
+  '''
+  SELECT sum(if((`month` > 6) AND (`month` < 10), CAST(`bool_col` AS INT64), NULL)) AS `sum`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bool_reducers_where_simple
+  '''
+  SELECT avg(if(`month` > 6, CAST(`bool_col` AS INT64), NULL)) AS `mean`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_bucket
+  '''
+  SELECT
+    CASE
+      WHEN (0 <= `value`) AND (`value` < 1) THEN 0
+      WHEN (1 <= `value`) AND (`value` <= 3) THEN 1
+      ELSE CAST(NULL AS INT64)
+    END AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_cov[pop]
+  '''
+  SELECT COVAR_POP(`double_col`, `double_col`) AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_day_of_week[date]
+  "SELECT MOD(EXTRACT(DAYOFWEEK FROM DATE '2017-01-01') + 5, 7) AS `tmp`"
+# ---
+# name: test_day_of_week[date].1
+  "SELECT INITCAP(CAST(DATE '2017-01-01' AS STRING FORMAT 'DAY')) AS `tmp`"
+# ---
+# name: test_divide_by_zero[floordiv]
+  '''
+  SELECT CAST(FLOOR(IEEE_DIVIDE(`double_col`, 0)) AS INT64) AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_divide_by_zero[truediv]
+  '''
+  SELECT IEEE_DIVIDE(`double_col`, 0) AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_extract_temporal_from_timestamp[date]
+  '''
+  SELECT DATE(`ts`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_extract_temporal_from_timestamp[time]
+  '''
+  SELECT TIME(`ts`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_azimuth
+  '''
+  SELECT ST_AZIMUTH(`p0`, `p1`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_binary[d_within]
+  '''
+  SELECT ST_DWITHIN(`geog0`, `geog1`, 5.2) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_binary[disjoint]
+  '''
+  SELECT ST_DISJOINT(`geog0`, `geog1`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_binary[distance]
+  '''
+  SELECT ST_DISTANCE(`geog0`, `geog1`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_binary[intersection]
+  '''
+  SELECT ST_INTERSECTION(`geog0`, `geog1`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_binary[max_distance]
+  '''
+  SELECT ST_MAXDISTANCE(`geog0`, `geog1`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_minmax[y_min]
+  '''
+  SELECT ST_BOUNDINGBOX(`geog`).ymin AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_point
+  '''
+  SELECT ST_GEOGPOINT(`lon`, `lat`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_simplify
+  '''
+  SELECT ST_SIMPLIFY(`geog`, 5.2) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_unary[geometry_type]
+  '''
+  SELECT ST_GEOMETRYTYPE(`geog`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_unary_union
+  '''
+  SELECT ST_UNION_AGG(`geog`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_geospatial_xy[x]
+  '''
+  SELECT ST_X(`pt`) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_hash[binary]
+  "SELECT farm_fingerprint(FROM_BASE64('dGVzdCBvZiBoYXNo')) AS `tmp`"
+# ---
+# name: test_hash[string]
+  "SELECT farm_fingerprint('test of hash') AS `tmp`"
+# ---
+# name: test_hashbytes[md5-test-binary]
+  "SELECT md5(FROM_BASE64('dGVzdA==')) AS `tmp`"
+# ---
+# name: test_hashbytes[md5-test-string]
+  "SELECT md5('test') AS `tmp`"
+# ---
+# name: test_hashbytes[sha1-test-binary]
+  "SELECT sha1(FROM_BASE64('dGVzdA==')) AS `tmp`"
+# ---
+# name: test_hashbytes[sha256-test-binary]
+  "SELECT sha256(FROM_BASE64('dGVzdA==')) AS `tmp`"
+# ---
+# name: test_hashbytes[sha256-test-string]
+  "SELECT sha256('test') AS `tmp`"
+# ---
+# name: test_hashbytes[sha512-test-binary]
+  "SELECT sha512(FROM_BASE64('dGVzdA==')) AS `tmp`"
+# ---
+# name: test_hashbytes[sha512-test-string]
+  "SELECT sha512('test') AS `tmp`"
+# ---
+# name: test_identical_to
+  '''
+  SELECT *
+  FROM functional_alltypes
+  WHERE (`string_col` IS NOT DISTINCT FROM 'a') AND
+        (`date_string_col` IS NOT DISTINCT FROM 'b')
+  '''
+# ---
+# name: test_integer_to_timestamp[ms]
+  'SELECT TIMESTAMP_MILLIS(-123456789) AS `tmp`'
+# ---
+# name: test_integer_to_timestamp[ns]
+  'SELECT TIMESTAMP_MICROS(CAST(ROUND(1234567891011 / 1000) AS INT64)) AS `tmp`'
+# ---
+# name: test_integer_to_timestamp[s]
+  'SELECT TIMESTAMP_SECONDS(123456789) AS `tmp`'
+# ---
+# name: test_integer_to_timestamp[us]
+  'SELECT TIMESTAMP_MICROS(123456789) AS `tmp`'
+# ---
+# name: test_literal_timestamp_or_time[datetime]
+  "SELECT EXTRACT(hour from TIMESTAMP '2017-01-01 04:55:59') AS `tmp`"
+# ---
+# name: test_literal_timestamp_or_time[string_time]
+  "SELECT EXTRACT(hour from TIME '04:55:59') AS `tmp`"
+# ---
+# name: test_literal_timestamp_or_time[string_timestamp]
+  "SELECT EXTRACT(hour from TIMESTAMP '2017-01-01 04:55:59') AS `tmp`"
+# ---
+# name: test_literal_timestamp_or_time[time]
+  "SELECT EXTRACT(hour from TIME '04:55:59') AS `tmp`"
+# ---
+# name: test_literal_timestamp_or_time[timestamp]
+  "SELECT EXTRACT(hour from TIMESTAMP '2017-01-01 04:55:59') AS `tmp`"
+# ---
+# name: test_literal_year[string_date]
+  "SELECT EXTRACT(year from DATE '2017-01-01') AS `year`"
+# ---
+# name: test_literal_year[string_timestamp]
+  "SELECT EXTRACT(year from TIMESTAMP '2017-01-01 04:55:59') AS `year`"
+# ---
+# name: test_now
+  'SELECT CURRENT_TIMESTAMP() AS `tmp`'
+# ---
+# name: test_projection_fusion_only_peeks_at_immediate_parent
+  '''
+  WITH t0 AS (
+    SELECT *
+    FROM unbound_table
+    WHERE `PARTITIONTIME` < DATE '2017-01-01'
+  ),
+  t1 AS (
+    SELECT CAST(`file_date` AS DATE) AS `file_date`, `PARTITIONTIME`, `val`
+    FROM t0
+    WHERE `file_date` < DATE '2017-01-01'
+  ),
+  t2 AS (
+    SELECT *, `val` * 2 AS `XYZ`
+    FROM t1
+  )
+  SELECT t2.*
+  FROM t2
+    INNER JOIN t2 t3
+  '''
+# ---
+# name: test_range_window_function[prec_foll]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `month` ASC RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) AS `two_month_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_range_window_function[prec_prec]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (PARTITION BY `year` ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `two_month_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_set_operation[difference]
+  '''
+  SELECT *
+  FROM t0
+  EXCEPT DISTINCT
+  SELECT *
+  FROM t1
+  '''
+# ---
+# name: test_set_operation[intersect]
+  '''
+  SELECT *
+  FROM t0
+  INTERSECT DISTINCT
+  SELECT *
+  FROM t1
+  '''
+# ---
+# name: test_set_operation[union_all]
+  '''
+  SELECT *
+  FROM t0
+  UNION ALL
+  SELECT *
+  FROM t1
+  '''
+# ---
+# name: test_set_operation[union_distinct]
+  '''
+  SELECT *
+  FROM t0
+  UNION DISTINCT
+  SELECT *
+  FROM t1
+  '''
+# ---
+# name: test_substring
+  '''
+  SELECT substr(`value`, 3 + 1, 1) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_temporal_truncate[Y-DATE]
+  '''
+  SELECT DATE_TRUNC(`a`, YEAR) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_temporal_truncate[h-TIMESTAMP]
+  '''
+  SELECT TIMESTAMP_TRUNC(`a`, HOUR) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_temporal_truncate[us-TIME]
+  '''
+  SELECT TIME_TRUNC(`a`, MICROSECOND) AS `tmp`
+  FROM t
+  '''
+# ---
+# name: test_to_timestamp[America/New_York]
+  '''
+  SELECT PARSE_TIMESTAMP('%F', `date_string_col`, 'America/New_York') AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_to_timestamp[None]
+  '''
+  SELECT PARSE_TIMESTAMP('%F', `date_string_col`) AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_trailing_range_window[seconds]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 1000000 PRECEDING AND CURRENT ROW) AS `win_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_union[False]
+  '''
+  SELECT *
+  FROM functional_alltypes
+  UNION ALL
+  SELECT *
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_union[True]
+  '''
+  SELECT *
+  FROM functional_alltypes
+  UNION DISTINCT
+  SELECT *
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_union_cte[False-False]
+  '''
+  WITH t0 AS (
+    SELECT `string_col`, sum(`double_col`) AS `metric`
+    FROM functional_alltypes
+    GROUP BY 1
+  )
+  SELECT *
+  FROM t0
+  UNION ALL
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  UNION ALL
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  '''
+# ---
+# name: test_union_cte[False-True]
+  '''
+  WITH t0 AS (
+    SELECT `string_col`, sum(`double_col`) AS `metric`
+    FROM functional_alltypes
+    GROUP BY 1
+  )
+  SELECT *
+  FROM t0
+  UNION DISTINCT
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  UNION ALL
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  '''
+# ---
+# name: test_union_cte[True-False]
+  '''
+  WITH t0 AS (
+    SELECT `string_col`, sum(`double_col`) AS `metric`
+    FROM functional_alltypes
+    GROUP BY 1
+  )
+  SELECT *
+  FROM t0
+  UNION ALL
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  UNION DISTINCT
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  '''
+# ---
+# name: test_union_cte[True-True]
+  '''
+  WITH t0 AS (
+    SELECT `string_col`, sum(`double_col`) AS `metric`
+    FROM functional_alltypes
+    GROUP BY 1
+  )
+  SELECT *
+  FROM t0
+  UNION DISTINCT
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  UNION DISTINCT
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM functional_alltypes
+  GROUP BY 1
+  '''
+# ---
+# name: test_window_function[current_foll]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ASC ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS `win_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_window_function[prec_current]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ASC ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS `win_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_window_function[prec_prec]
+  '''
+  SELECT *,
+         avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ASC ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_window_unbounded[preceding]
+  '''
+  SELECT sum(`a`) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS `tmp`
+  FROM t
+  '''
+# ---

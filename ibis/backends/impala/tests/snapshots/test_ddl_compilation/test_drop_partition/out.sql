@@ -1,1 +1,0 @@
-ALTER TABLE tbl DROP PARTITION (year=2007, month=4)

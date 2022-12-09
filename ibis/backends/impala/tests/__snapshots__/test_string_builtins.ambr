@@ -1,0 +1,93 @@
+# name: test_find
+  "locate('a', `string_col`, `tinyint_col` + 1) - 1"
+# ---
+# name: test_string_builtins[ascii_str]
+  'ascii(`string_col`)'
+# ---
+# name: test_string_builtins[capitalize]
+  'initcap(`string_col`)'
+# ---
+# name: test_string_builtins[find]
+  "locate('a', `string_col`) - 1"
+# ---
+# name: test_string_builtins[find_in_set_multiple]
+  "find_in_set(`string_col`, 'a,b') - 1"
+# ---
+# name: test_string_builtins[find_in_set_single]
+  "find_in_set(`string_col`, 'a') - 1"
+# ---
+# name: test_string_builtins[find_with_offset]
+  "locate('a', `string_col`, 3) - 1"
+# ---
+# name: test_string_builtins[length]
+  'length(`string_col`)'
+# ---
+# name: test_string_builtins[like]
+  "`string_col` LIKE 'foo%'"
+# ---
+# name: test_string_builtins[like_multiple]
+  "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'"
+# ---
+# name: test_string_builtins[lower]
+  'lower(`string_col`)'
+# ---
+# name: test_string_builtins[lpad_char]
+  "lpad(`string_col`, 1, 'a')"
+# ---
+# name: test_string_builtins[lpad_default]
+  "lpad(`string_col`, 25, ' ')"
+# ---
+# name: test_string_builtins[lstrip]
+  'ltrim(`string_col`)'
+# ---
+# name: test_string_builtins[parse_url]
+  "parse_url(`string_col`, 'HOST')"
+# ---
+# name: test_string_builtins[re_extract]
+  "regexp_extract(`string_col`, '[\\d]+', 0)"
+# ---
+# name: test_string_builtins[re_replace]
+  "regexp_replace(`string_col`, '[\\d]+', 'aaa')"
+# ---
+# name: test_string_builtins[re_search]
+  "regexp_like(`string_col`, '[\\d]+')"
+# ---
+# name: test_string_builtins[repeat]
+  'repeat(`string_col`, 2)'
+# ---
+# name: test_string_builtins[reverse]
+  'reverse(`string_col`)'
+# ---
+# name: test_string_builtins[rlike]
+  "regexp_like(`string_col`, '[\\d]+')"
+# ---
+# name: test_string_builtins[rpad_char]
+  "rpad(`string_col`, 1, 'a')"
+# ---
+# name: test_string_builtins[rpad_default]
+  "rpad(`string_col`, 25, ' ')"
+# ---
+# name: test_string_builtins[rstrip]
+  'rtrim(`string_col`)'
+# ---
+# name: test_string_builtins[strip]
+  'trim(`string_col`)'
+# ---
+# name: test_string_builtins[strright]
+  'strright(`string_col`, 4)'
+# ---
+# name: test_string_builtins[substr_0_3]
+  'substr(`string_col`, 0 + 1, 3)'
+# ---
+# name: test_string_builtins[substr_2]
+  'substr(`string_col`, 2 + 1)'
+# ---
+# name: test_string_builtins[translate]
+  "translate(`string_col`, 'a', 'b')"
+# ---
+# name: test_string_builtins[upper]
+  'upper(`string_col`)'
+# ---
+# name: test_string_join
+  "concat_ws(',', 'a', 'b')"
+# ---

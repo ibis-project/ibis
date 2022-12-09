@@ -99,7 +99,7 @@ def test_sql_generation(snapshot):
     func.register('identity', 'udf_testing')
 
     result = func('hello world')
-    snapshot.assert_match(ibis.impala.compile(result), "out.sql")
+    assert ibis.impala.compile(result) == snapshot
 
 
 def test_sql_generation_from_infoclass(snapshot):
@@ -108,7 +108,7 @@ def test_sql_generation_from_infoclass(snapshot):
 
     func.register('info_test', 'udf_testing')
     result = func('hello world').name('tmp')
-    snapshot.assert_match(ibis.impala.compile(result), "out.sql")
+    assert ibis.impala.compile(result) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -608,7 +608,7 @@ def test_create_udf(inputs, output, name, snapshot):
     )
     stmt = ddl.CreateUDF(func)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_udf_type_conversions(output, name, snapshot):
@@ -622,31 +622,31 @@ def test_create_udf_type_conversions(output, name, snapshot):
     )
     stmt = ddl.CreateUDF(func)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_delete_udf_simple(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_delete_udf_if_exists(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, must_exist=False)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_delete_udf_aggregate(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, aggregate=True)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_delete_udf_db(name, inputs, snapshot):
     stmt = ddl.DropFunction(name, inputs, database='test')
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("ser", [True, False])
@@ -663,28 +663,28 @@ def test_create_uda(name, inputs, output, ser, snapshot):
     )
     stmt = ddl.CreateUDA(func, name=name, database='bar')
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_list_udf(snapshot):
     stmt = ddl.ListFunction('test')
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_list_udfs_like(snapshot):
     stmt = ddl.ListFunction('test', like='identity')
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_list_udafs(snapshot):
     stmt = ddl.ListFunction('test', aggregate=True)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_list_udafs_like(snapshot):
     stmt = ddl.ListFunction('test', like='identity', aggregate=True)
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

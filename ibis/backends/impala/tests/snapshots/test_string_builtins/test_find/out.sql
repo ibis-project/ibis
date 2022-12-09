@@ -1,1 +1,0 @@
-locate('a', `string_col`, `tinyint_col` + 1) - 1

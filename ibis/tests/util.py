@@ -33,7 +33,7 @@ def assert_decompile_roundtrip(expr, snapshot=None, check_equality=True):
     """Assert that an ibis expression remains the same after decompilation."""
     rendered = ibis.decompile(expr, format=True)
     if snapshot is not None:
-        snapshot.assert_match(rendered, "decompiled.py")
+        assert rendered == snapshot
 
     # execute the rendered python code
     locals_ = {}

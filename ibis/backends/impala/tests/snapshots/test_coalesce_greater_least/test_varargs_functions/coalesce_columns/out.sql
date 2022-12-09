@@ -1,1 +1,0 @@
-coalesce(`int_col`, `bigint_col`)

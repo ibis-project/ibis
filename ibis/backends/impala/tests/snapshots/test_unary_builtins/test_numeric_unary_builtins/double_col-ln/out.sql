@@ -1,1 +1,0 @@
-ln(`double_col`)

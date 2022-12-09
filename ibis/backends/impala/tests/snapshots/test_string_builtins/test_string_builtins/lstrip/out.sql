@@ -1,1 +1,0 @@
-ltrim(`string_col`)

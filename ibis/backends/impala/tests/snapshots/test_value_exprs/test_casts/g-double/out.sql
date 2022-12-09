@@ -1,1 +1,0 @@
-CAST(`g` AS double)

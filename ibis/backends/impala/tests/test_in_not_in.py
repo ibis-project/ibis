@@ -16,7 +16,7 @@ def test_field_in_literals(table, method_name, snapshot):
     method = getattr(table.g, method_name)
     expr = method(values)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("method_name", ["isin", "notin"])
@@ -25,7 +25,7 @@ def test_literal_in_fields(table, method_name, snapshot):
     method = getattr(L(2), method_name)
     expr = method(values)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("method_name", ["isin", "notin"])
@@ -34,4 +34,4 @@ def test_isin_notin_in_select(table, method_name, snapshot):
     method = getattr(table.g, method_name)
     filtered = table[method(values)]
     result = ImpalaCompiler.to_sql(filtered)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

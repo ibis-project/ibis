@@ -1,1 +1,0 @@
-SELECT md5('test') AS `tmp`

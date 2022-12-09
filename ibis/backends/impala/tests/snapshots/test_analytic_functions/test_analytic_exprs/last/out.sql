@@ -1,1 +1,0 @@
-last_value(`double_col`)

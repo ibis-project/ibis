@@ -1,1 +1,0 @@
-SELECT udf_testing.info_test('hello world') AS `tmp`

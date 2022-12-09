@@ -53,7 +53,7 @@ def alltypes():
 )
 def test_literal_year(case, dtype, snapshot):
     expr = ibis.literal(case, type=dtype).year()
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -71,10 +71,10 @@ def test_day_of_week(case, dtype, snapshot):
     date_var = ibis.literal(case, type=dtype)
 
     expr = date_var.day_of_week.index()
-    snapshot.assert_match(to_sql(expr), "index.sql")
+    assert to_sql(expr) == snapshot
 
     expr = date_var.day_of_week.full_name()
-    snapshot.assert_match(to_sql(expr), "name.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,7 @@ def test_day_of_week(case, dtype, snapshot):
 def test_hash(case, dtype, snapshot):
     var = ibis.literal(case, type=dtype)
     expr = var.hash(how="farm_fingerprint")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(("case", "dtype"), [("test", "string"), (b"test", "binary")])
@@ -95,7 +95,7 @@ def test_hash(case, dtype, snapshot):
 def test_hashbytes(case, how, dtype, snapshot):
     var = ibis.literal(case, type=dtype)
     expr = var.hashbytes(how=how).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def test_hashbytes(case, how, dtype, snapshot):
 )
 def test_integer_to_timestamp(case, unit, snapshot):
     expr = ibis.literal(case, type=dt.int64).to_timestamp(unit=unit).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -124,7 +124,7 @@ def test_integer_to_timestamp(case, unit, snapshot):
 )
 def test_literal_timestamp_or_time(case, dtype, snapshot):
     expr = ibis.literal(case, type=dtype).hour().name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
@@ -139,7 +139,7 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
     table = table[table.file_date < ibis.date("2017-01-01")]
     table = table.mutate(XYZ=table.val * 2)
     expr = table.join(table.view())[table]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -170,31 +170,31 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
 def test_temporal_truncate(unit, expected_func, snapshot):
     t = ibis.table([("a", getattr(dt, expected_func.lower()))], name="t")
     expr = t.a.truncate(unit).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("kind", ["date", "time"])
 def test_extract_temporal_from_timestamp(kind, snapshot):
     t = ibis.table([("ts", dt.timestamp)], name="t")
     expr = getattr(t.ts, kind)().name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_now(snapshot):
     expr = ibis.now()
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_binary(snapshot):
     t = ibis.table([("value", "double")], name="t")
     expr = t["value"].cast(dt.binary)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_substring(snapshot):
     t = ibis.table([("value", "string")], name="t")
     expr = t["value"].substr(3, 1).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_substring_neg_length():
@@ -210,7 +210,7 @@ def test_bucket(snapshot):
     t = ibis.table([("value", "double")], name="t")
     buckets = [0, 1, 3]
     expr = t.value.bucket(buckets).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -224,7 +224,7 @@ def test_window_unbounded(kind, begin, end, snapshot):
     t = ibis.table([("a", "int64")], name="t")
     kwargs = {kind: (begin, end)}
     expr = t.a.sum().over(ibis.window(**kwargs)).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_large_compile():
@@ -263,25 +263,25 @@ def test_set_operation(operation, keywords, snapshot):
     t0 = ibis.table([("a", "int64")], name="t0")
     t1 = ibis.table([("a", "int64")], name="t1")
     expr = getattr(t0, operation)(t1, **keywords)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_geospatial_point(snapshot):
     t = ibis.table([("lon", "float64"), ("lat", "float64")], name="t")
     expr = ibis.geo_point(t.lon, t.lat).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_geospatial_azimuth(snapshot):
     t = ibis.table([("p0", "point"), ("p1", "point")], name="t")
     expr = t.p0.azimuth(t.p1).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_geospatial_unary_union(snapshot):
     t = ibis.table([("geog", "geography")], name="t")
     expr = t.geog.unary_union().name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -304,7 +304,7 @@ def test_geospatial_unary_union(snapshot):
 def test_geospatial_unary(operation, keywords, snapshot):
     t = ibis.table([("geog", "geography")], name="t")
     expr = getattr(t.geog, operation)(**keywords).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -329,27 +329,27 @@ def test_geospatial_unary(operation, keywords, snapshot):
 def test_geospatial_binary(operation, keywords, snapshot):
     t = ibis.table([("geog0", "geography"), ("geog1", "geography")], name="t")
     expr = getattr(t.geog0, operation)(t.geog1, **keywords).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("operation", ["x_max", "x_min", "y_max", "y_min"])
 def test_geospatial_minmax(operation, snapshot):
     t = ibis.table([("geog", "geography")], name="t")
     expr = getattr(t.geog, operation)().name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("dimension_name", ["x", "y"])
 def test_geospatial_xy(dimension_name, snapshot):
     t = ibis.table([("pt", "point")], name="t")
     expr = getattr(t.pt, dimension_name)().name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_geospatial_simplify(snapshot):
     t = ibis.table([("geog", "geography")], name="t")
     expr = t.geog.simplify(5.2, preserve_collapsed=False).name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_geospatial_simplify_error():
@@ -376,26 +376,26 @@ FROM functional_alltypes"""
 @pytest.mark.parametrize("distinct", [True, False])
 def test_union(alltypes, distinct, snapshot):
     expr = alltypes.union(alltypes, distinct=distinct)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("op", [truediv, floordiv])
 def test_divide_by_zero(alltypes, op, snapshot):
     expr = op(alltypes.double_col, 0)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_identical_to(alltypes, snapshot):
     expr = alltypes[
         _.string_col.identical_to("a") & _.date_string_col.identical_to("b")
     ]
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("timezone", [None, "America/New_York"])
 def test_to_timestamp(alltypes, timezone, snapshot):
     expr = alltypes.date_string_col.to_timestamp("%F", timezone)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -421,7 +421,7 @@ def test_to_timestamp(alltypes, timezone, snapshot):
 )
 def test_window_function(alltypes, window, snapshot):
     expr = alltypes.mutate(win_avg=_.float_col.mean().over(window))
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -443,7 +443,7 @@ def test_window_function(alltypes, window, snapshot):
 )
 def test_range_window_function(alltypes, window, snapshot):
     expr = alltypes.mutate(two_month_avg=_.float_col.mean().over(window))
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize(
@@ -463,7 +463,7 @@ def test_range_window_function(alltypes, window, snapshot):
 def test_trailing_range_window(alltypes, preceding, snapshot):
     w = ibis.trailing_range_window(preceding=preceding, order_by="timestamp_col")
     expr = alltypes.mutate(win_avg=_.float_col.mean().over(w))
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_trailing_range_window_unsupported(alltypes):
@@ -483,28 +483,28 @@ def test_union_cte(alltypes, distinct1, distinct2, snapshot):
     expr2 = expr1.view()
     expr3 = expr1.view()
     expr = expr1.union(expr2, distinct=distinct1).union(expr3, distinct=distinct2)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("funcname", ["sum", "mean"])
 def test_bool_reducers(alltypes, funcname, snapshot):
     method = methodcaller(funcname)
     expr = method(alltypes.bool_col)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_bool_reducers_where_simple(alltypes, snapshot):
     b = alltypes.bool_col
     m = alltypes.month
     expr = b.mean(where=m > 6)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_bool_reducers_where_conj(alltypes, snapshot):
     b = alltypes.bool_col
     m = alltypes.month
     expr2 = b.sum(where=((m > 6) & (m < 10)))
-    snapshot.assert_match(to_sql(expr2), "out.sql")
+    assert to_sql(expr2) == snapshot
 
 
 @pytest.mark.parametrize("agg", ["approx_median", "approx_nunique"])
@@ -516,7 +516,7 @@ def test_approx(alltypes, agg, where, snapshot):
     d = alltypes.double_col
     method = methodcaller(agg, where=where(alltypes))
     expr = method(d)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("funcname", ["bit_and", "bit_or", "bit_xor"])
@@ -530,14 +530,14 @@ def test_approx(alltypes, agg, where, snapshot):
 def test_bit(alltypes, funcname, where, snapshot):
     method = methodcaller(funcname, where=where(alltypes))
     expr = method(alltypes.int_col)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 @pytest.mark.parametrize("how", ["pop", "sample"])
 def test_cov(alltypes, how, snapshot):
     d = alltypes.double_col
     expr = d.cov(d, how=how)
-    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert to_sql(expr) == snapshot
 
 
 def test_cov_invalid_how(alltypes):

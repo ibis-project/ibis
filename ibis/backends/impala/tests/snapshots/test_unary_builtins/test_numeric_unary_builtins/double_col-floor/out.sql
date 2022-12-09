@@ -1,1 +1,0 @@
-floor(`double_col`)

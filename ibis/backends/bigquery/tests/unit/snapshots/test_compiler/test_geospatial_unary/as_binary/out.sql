@@ -1,2 +1,0 @@
-SELECT ST_ASBINARY(`geog`) AS `tmp`
-FROM t

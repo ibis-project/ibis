@@ -1,0 +1,132 @@
+# name: test_hash
+  'fnv_hash(`int_col`)'
+# ---
+# name: test_numeric[log_with_base]
+  'log(5, `double_col`)'
+# ---
+# name: test_numeric[round_expr]
+  'round(`double_col`, `tinyint_col`)'
+# ---
+# name: test_numeric[round_no_args]
+  'round(`double_col`)'
+# ---
+# name: test_numeric[round_two]
+  'round(`double_col`, 2)'
+# ---
+# name: test_numeric[round_zero]
+  'round(`double_col`, 0)'
+# ---
+# name: test_numeric[sign_double]
+  'CAST(sign(`double_col`) AS double)'
+# ---
+# name: test_numeric[sign_float]
+  'sign(`float_col`)'
+# ---
+# name: test_numeric[sign_tinyint]
+  'CAST(sign(`tinyint_col`) AS tinyint)'
+# ---
+# name: test_numeric_unary_builtins[double_col-abs]
+  'abs(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-approx_median]
+  'appx_median(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-approx_nunique]
+  'ndv(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-ceil]
+  'ceil(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-exp]
+  'exp(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-floor]
+  'floor(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-ln]
+  'ln(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-log10]
+  'log10(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-log2]
+  'log2(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-log]
+  'ln(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-nullifzero]
+  'nullifzero(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-sqrt]
+  'sqrt(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[double_col-zeroifnull]
+  'zeroifnull(`double_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-abs]
+  'abs(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-approx_median]
+  'appx_median(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-approx_nunique]
+  'ndv(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-ceil]
+  'ceil(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-exp]
+  'exp(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-floor]
+  'floor(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-ln]
+  'ln(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-log10]
+  'log10(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-log2]
+  'log2(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-log]
+  'ln(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-nullifzero]
+  'nullifzero(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-sqrt]
+  'sqrt(`int_col`)'
+# ---
+# name: test_numeric_unary_builtins[int_col-zeroifnull]
+  'zeroifnull(`int_col`)'
+# ---
+# name: test_reduction_where[avg]
+  'avg(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[count]
+  'count(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[max]
+  'max(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[min]
+  'min(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[stddev_pop]
+  'stddev_pop(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[stddev_samp]
+  'stddev_samp(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[sum]
+  'sum(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[var_pop]
+  'var_pop(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---
+# name: test_reduction_where[var_samp]
+  'var_samp(if(`bigint_col` < 70, `double_col`, NULL))'
+# ---

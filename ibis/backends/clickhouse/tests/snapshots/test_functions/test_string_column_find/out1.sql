@@ -1,1 +1,0 @@
-position(`string_col`, 'a') - 1

@@ -72,7 +72,7 @@ BUCKETS = [0, 10, 25, 50]
 def test_bucket_to_case(table, expr_fn, snapshot):
     expr = expr_fn(table.f)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_bucket_assign_labels(table, snapshot):
@@ -85,4 +85,4 @@ def test_bucket_assign_labels(table, snapshot):
     ).name('tier2')
     expr = size[labelled, size['count']]
 
-    snapshot.assert_match(ImpalaCompiler.to_sql(expr), "out.sql")
+    assert ImpalaCompiler.to_sql(expr) == snapshot

@@ -1,0 +1,54 @@
+# name: test_decimal_fillna_cast_arg[fillna_l_extendedprice]
+  'isnull(`l_extendedprice`, 0)'
+# ---
+# name: test_decimal_fillna_cast_arg[fillna_l_extendedprice_double]
+  'isnull(`l_extendedprice`, 0.0)'
+# ---
+# name: test_decimal_fillna_cast_arg[fillna_l_quantity]
+  'isnull(`l_quantity`, 0)'
+# ---
+# name: test_identical_to
+  '''
+  SELECT `tinyint_col` IS NOT DISTINCT FROM `double_col` AS `tmp`
+  FROM functional_alltypes
+  '''
+# ---
+# name: test_identical_to_special_case
+  'SELECT TRUE AS `tmp`'
+# ---
+# name: test_isnull_1_0
+  'if(`g` IS NULL, 1, 0)'
+# ---
+# name: test_isnull_1_0.1
+  'sum(if(`g` IS NULL, 1, 0))'
+# ---
+# name: test_nullif_ifnull[nullif_boolean]
+  'nullif(`l_quantity` = 0, `l_quantity` = 0)'
+# ---
+# name: test_nullif_ifnull[nullif_input]
+  'nullif(`l_quantity`, `l_quantity`)'
+# ---
+# name: test_nullif_ifnull[nullif_negate_boolean]
+  'nullif(`l_quantity` != 0, `l_quantity` = 0)'
+# ---
+# name: test_search_case
+  '''
+  CASE
+    WHEN `f` > 0 THEN `d` * 2
+    WHEN `c` < 0 THEN `a` * 2
+    ELSE CAST(NULL AS bigint)
+  END
+  '''
+# ---
+# name: test_simple_case
+  '''
+  CASE `g`
+    WHEN 'foo' THEN 'bar'
+    WHEN 'baz' THEN 'qux'
+    ELSE 'default'
+  END
+  '''
+# ---
+# name: test_where_use_if
+  'if(`f` > 0, `e`, `a`)'
+# ---

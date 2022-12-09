@@ -1,0 +1,1384 @@
+# name: test_aggregate_count_joined
+  '''
+  SELECT count(1) AS `count`
+  FROM (
+    SELECT t2.*, t1.`r_name` AS `region`
+    FROM tpch_region t1
+      INNER JOIN tpch_nation t2
+        ON t1.`r_regionkey` = t2.`n_regionkey`
+  ) t0
+  '''
+# ---
+# name: test_aggregate_count_joined.1
+  '''
+  import ibis
+  
+  
+  tpch_nation = ibis.table(
+      name="tpch_nation",
+      schema={
+          "n_nationkey": "int16",
+          "n_name": "string",
+          "n_regionkey": "int16",
+          "n_comment": "string",
+      },
+  )
+  tpch_region = ibis.table(
+      name="tpch_region",
+      schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
+  )
+  
+  result = (
+      tpch_region.inner_join(
+          tpch_nation, tpch_region.r_regionkey == tpch_nation.n_regionkey
+      )
+      .select([tpch_nation, tpch_region.r_name.name("region")])
+      .count()
+      .name("count")
+  )
+  
+  '''
+# ---
+# name: test_aggregate_having
+  '''
+  SELECT `foo_id`, sum(`f`) AS `total`
+  FROM star1
+  GROUP BY 1
+  HAVING sum(`f`) > 10
+  '''
+# ---
+# name: test_aggregate_having.1
+  '''
+  SELECT `foo_id`, sum(`f`) AS `total`
+  FROM star1
+  GROUP BY 1
+  HAVING count(1) > 100
+  '''
+# ---
+# name: test_aggregate_projection_alias_bug
+  '''
+  SELECT `foo_id`, sum(`value1`) AS `total`
+  FROM (
+    SELECT t1.*, t2.`value1`
+    FROM star1 t1
+      INNER JOIN star2 t2
+        ON t1.`foo_id` = t2.`foo_id`
+  ) t0
+  GROUP BY 1
+  '''
+# ---
+# name: test_aggregate_projection_subquery
+  '''
+  SELECT *, `a` + `b` AS `foo`
+  FROM alltypes
+  WHERE `f` > 0
+  '''
+# ---
+# name: test_aggregate_projection_subquery.1
+  '''
+  SELECT *, `a` + `b` AS `foo`
+  FROM alltypes
+  WHERE (`f` > 0) AND
+        (`g` = 'bar')
+  '''
+# ---
+# name: test_aggregate_projection_subquery.2
+  '''
+  SELECT `g`, sum(`foo`) AS `foo total`
+  FROM (
+    SELECT *, `a` + `b` AS `foo`
+    FROM alltypes
+    WHERE (`f` > 0) AND
+          (`g` = 'bar')
+  ) t0
+  GROUP BY 1
+  '''
+# ---
+# name: test_aggregate_projection_subquery.3
+  '''
+  SELECT `g`, sum(`foo`) AS `foo total`
+  FROM (
+    SELECT *, `a` + `b` AS `foo`
+    FROM alltypes
+    WHERE `f` > 0
+  ) t0
+  WHERE `foo` < 10
+  GROUP BY 1
+  '''
+# ---
+# name: test_anti_join
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    LEFT ANTI JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_anti_join.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  
+  result = star1.anti_join(star2, star1.foo_id == star2.foo_id).select(star1)
+  
+  '''
+# ---
+# name: test_bool_bool
+  '''
+  SELECT *
+  FROM airlines
+  WHERE (CAST(`dest` AS bigint) = 0) = TRUE
+  '''
+# ---
+# name: test_bool_bool.1
+  '''
+  import ibis
+  
+  
+  airlines = ibis.table(
+      name="airlines", schema={"dest": "string", "origin": "string", "arrdelay": "int32"}
+  )
+  
+  result = airlines.filter((airlines.dest.cast("int64") == 0) == True)
+  
+  '''
+# ---
+# name: test_bug_duplicated_where
+  '''
+  SELECT *
+  FROM (
+    SELECT t1.*
+    FROM (
+      SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
+             `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
+      FROM (
+        SELECT `arrdelay`, `dest`
+        FROM airlines
+      ) t3
+    ) t1
+    WHERE t1.`dev` IS NOT NULL
+  ) t0
+  ORDER BY `dev` DESC
+  LIMIT 10
+  '''
+# ---
+# name: test_bug_project_multiple_times
+  '''
+  WITH t0 AS (
+    SELECT t2.*, t3.`n_name`, t4.`r_name`
+    FROM tpch_customer t2
+      INNER JOIN tpch_nation t3
+        ON t2.`c_nationkey` = t3.`n_nationkey`
+      INNER JOIN tpch_region t4
+        ON t3.`n_regionkey` = t4.`r_regionkey`
+  )
+  SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
+  FROM t0
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `n_name`, sum(CAST(`c_acctbal` AS double)) AS `sum`
+        FROM t0
+        GROUP BY 1
+      ) t2
+      ORDER BY `sum` DESC
+      LIMIT 10
+    ) t1
+      ON t0.`n_name` = t1.`n_name`
+  '''
+# ---
+# name: test_case_in_projection
+  '''
+  SELECT
+    CASE `g`
+      WHEN 'foo' THEN 'bar'
+      WHEN 'baz' THEN 'qux'
+      ELSE 'default'
+    END AS `col1`,
+    CASE
+      WHEN `g` = 'foo' THEN 'bar'
+      WHEN `g` = 'baz' THEN `g`
+      ELSE CAST(NULL AS string)
+    END AS `col2`, *
+  FROM alltypes
+  '''
+# ---
+# name: test_case_in_projection.1
+  '''
+  import ibis
+  
+  
+  lit = ibis.literal("foo")
+  lit1 = ibis.literal("baz")
+  lit2 = ibis.literal("bar")
+  alltypes = ibis.table(
+      name="alltypes",
+      schema={
+          "a": "int8",
+          "b": "int16",
+          "c": "int32",
+          "d": "int64",
+          "e": "float32",
+          "f": "float64",
+          "g": "string",
+          "h": "boolean",
+          "i": "timestamp",
+          "j": "date",
+          "k": "time",
+      },
+  )
+  
+  result = alltypes.select(
+      [
+          alltypes.g.case()
+          .when(lit, lit2)
+          .when(lit1, ibis.literal("qux"))
+          .else_(ibis.literal("default"))
+          .end()
+          .name("col1"),
+          ibis.case()
+          .when(alltypes.g == lit, lit2)
+          .when(alltypes.g == lit1, alltypes.g)
+          .else_(ibis.literal(None).cast("string"))
+          .end()
+          .name("col2"),
+          alltypes,
+      ]
+  )
+  
+  '''
+# ---
+# name: test_double_nested_subquery_no_aliases
+  '''
+  SELECT `key1`, sum(`total`) AS `total`
+  FROM (
+    SELECT `key1`, `key2`, sum(`total`) AS `total`
+    FROM (
+      SELECT `key1`, `key2`, `key3`, sum(`value`) AS `total`
+      FROM foo_table
+      GROUP BY 1, 2, 3
+    ) t1
+    GROUP BY 1, 2
+  ) t0
+  GROUP BY 1
+  '''
+# ---
+# name: test_endswith
+  '''
+  SELECT `foo_id` like concat('%', 'foo') AS `tmp`
+  FROM star1
+  '''
+# ---
+# name: test_endswith.1
+  '''
+  import ibis
+  
+  
+  result = (
+      ibis.table(
+          name="star1",
+          schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+      )
+      .foo_id.endswith(ibis.literal("foo"))
+      .name("tmp")
+  )
+  
+  '''
+# ---
+# name: test_filter_inside_exists
+  '''
+  SELECT t0.*
+  FROM events t0
+  WHERE EXISTS (
+    SELECT 1
+    FROM (
+      SELECT *
+      FROM purchases
+      WHERE `ts` > '2015-08-15'
+    ) t1
+    WHERE t0.`user_id` = t1.`user_id`
+  )
+  '''
+# ---
+# name: test_filter_predicates
+  '''
+  SELECT *
+  FROM (
+    SELECT *
+    FROM (
+      SELECT *
+      FROM t
+      WHERE (lower(`color`) LIKE '%de%') AND
+            (locate('de', lower(`color`)) - 1 >= 0)
+    ) t1
+    WHERE regexp_like(lower(`color`), '.*ge.*')
+  ) t0
+  '''
+# ---
+# name: test_filter_self_join_analysis_bug
+  '''
+  WITH t0 AS (
+    SELECT `region`, `kind`, sum(`amount`) AS `total`
+    FROM purchases
+    GROUP BY 1, 2
+  )
+  SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+  FROM (
+    SELECT *
+    FROM t0
+    WHERE `kind` = 'foo'
+  ) t1
+    INNER JOIN (
+      SELECT *
+      FROM t0
+      WHERE `kind` = 'bar'
+    ) t2
+      ON t1.`region` = t2.`region`
+  '''
+# ---
+# name: test_filter_subquery_derived_reduction
+  '''
+  SELECT *
+  FROM star1
+  WHERE `f` > ln((
+    SELECT avg(`f`) AS `mean`
+    FROM star1
+    WHERE `foo_id` = 'foo'
+  ))
+  '''
+# ---
+# name: test_filter_subquery_derived_reduction.1
+  '''
+  SELECT *
+  FROM star1
+  WHERE `f` > (ln((
+    SELECT avg(`f`) AS `mean`
+    FROM star1
+    WHERE `foo_id` = 'foo'
+  )) + 1)
+  '''
+# ---
+# name: test_fuse_projections
+  '''
+  SELECT *, `foo` * 2 AS `qux`
+  FROM (
+    SELECT *, `foo` + `bar` AS `baz`
+    FROM tbl
+  ) t0
+  '''
+# ---
+# name: test_fuse_projections.1
+  '''
+  SELECT *, `foo` * 2 AS `qux`
+  FROM (
+    SELECT *, `foo` + `bar` AS `baz`
+    FROM tbl
+    WHERE `value` > 0
+  ) t0
+  '''
+# ---
+# name: test_fuse_projections.2
+  '''
+  import ibis
+  
+  
+  tbl = ibis.table(
+      name="tbl", schema={"foo": "int32", "bar": "int64", "value": "float64"}
+  )
+  alias = (tbl.foo + tbl.bar).name("baz")
+  proj = tbl.select([tbl, alias])
+  
+  result = (
+      tbl.select([tbl, alias])
+      .filter(tbl.value > 0)
+      .select([proj, (proj.foo * 2).name("qux")])
+  )
+  
+  '''
+# ---
+# name: test_identifier_quoting
+  '''
+  SELECT `date` AS `else`, `explain` AS `join`
+  FROM `table`
+  '''
+# ---
+# name: test_join_between_joins
+  '''
+  SELECT t0.*, t1.`value3`, t1.`value4`
+  FROM (
+    SELECT t2.*, t3.`value2`
+    FROM `first` t2
+      INNER JOIN second t3
+        ON t2.`key1` = t3.`key1`
+  ) t0
+    INNER JOIN (
+      SELECT t2.*, t3.`value4`
+      FROM third t2
+        INNER JOIN fourth t3
+          ON t2.`key3` = t3.`key3`
+    ) t1
+      ON t0.`key2` = t1.`key2`
+  '''
+# ---
+# name: test_join_between_joins.1
+  '''
+  import ibis
+  
+  
+  first = ibis.table(
+      name="first", schema={"key1": "string", "key2": "string", "value1": "float64"}
+  )
+  third = ibis.table(
+      name="third", schema={"key2": "string", "key3": "string", "value3": "float64"}
+  )
+  second = ibis.table(name="second", schema={"key1": "string", "value2": "float64"})
+  fourth = ibis.table(name="fourth", schema={"key3": "string", "value4": "float64"})
+  proj = first.inner_join(second, first.key1 == second.key1).select(
+      [first, second.value2]
+  )
+  proj1 = third.inner_join(fourth, third.key3 == fourth.key3).select(
+      [third, fourth.value4]
+  )
+  
+  result = proj.inner_join(proj1, proj.key2 == proj1.key2).select(
+      [proj, proj1.value3, proj1.value4]
+  )
+  
+  '''
+# ---
+# name: test_join_filtered_tables_no_pushdown
+  '''
+  SELECT t0.`value_a`, t1.`value_b`
+  FROM (
+    SELECT *
+    FROM a
+    WHERE (`year` = 2016) AND
+          (`month` = 2) AND
+          (`day` = 29)
+  ) t0
+    LEFT OUTER JOIN (
+      SELECT *
+      FROM b
+      WHERE (`year` = 2016) AND
+            (`month` = 2) AND
+            (`day` = 29)
+    ) t1
+      ON (t0.`year` = t1.`year`) AND
+         (t0.`month` = t1.`month`) AND
+         (t0.`day` = t1.`day`)
+  '''
+# ---
+# name: test_join_just_materialized
+  '''
+  SELECT *
+  FROM tpch_nation t0
+    INNER JOIN tpch_region t1
+      ON t0.`n_regionkey` = t1.`r_regionkey`
+    INNER JOIN tpch_customer t2
+      ON t0.`n_nationkey` = t2.`c_nationkey`
+  '''
+# ---
+# name: test_join_just_materialized.1
+  '''
+  import ibis
+  
+  
+  tpch_nation = ibis.table(
+      name="tpch_nation",
+      schema={
+          "n_nationkey": "int16",
+          "n_name": "string",
+          "n_regionkey": "int16",
+          "n_comment": "string",
+      },
+  )
+  tpch_region = ibis.table(
+      name="tpch_region",
+      schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
+  )
+  tpch_customer = ibis.table(
+      name="tpch_customer",
+      schema={
+          "c_custkey": "int64",
+          "c_name": "string",
+          "c_address": "string",
+          "c_nationkey": "int16",
+          "c_phone": "string",
+          "c_acctbal": "decimal",
+          "c_mktsegment": "string",
+          "c_comment": "string",
+      },
+  )
+  
+  result = tpch_nation.inner_join(
+      tpch_region, tpch_nation.n_regionkey == tpch_region.r_regionkey
+  ).inner_join(tpch_customer, tpch_nation.n_nationkey == tpch_customer.c_nationkey)
+  
+  '''
+# ---
+# name: test_join_projection_subquery_bug
+  '''
+  SELECT t1.*, t0.*
+  FROM (
+    SELECT t2.`n_nationkey`, t2.`n_name` AS `nation`, t3.`r_name` AS `region`
+    FROM tpch_nation t2
+      INNER JOIN tpch_region t3
+        ON t2.`n_regionkey` = t3.`r_regionkey`
+  ) t0
+    INNER JOIN tpch_customer t1
+      ON t0.`n_nationkey` = t1.`c_nationkey`
+  '''
+# ---
+# name: test_join_with_limited_table
+  '''
+  SELECT t0.*
+  FROM (
+    SELECT *
+    FROM star1
+    LIMIT 100
+  ) t0
+    INNER JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_limit_cte_extract
+  '''
+  WITH t0 AS (
+    SELECT *
+    FROM functional_alltypes
+    LIMIT 100
+  )
+  SELECT t0.*
+  FROM t0
+    INNER JOIN t0 t1
+  '''
+# ---
+# name: test_limit_with_self_join
+  '''
+  SELECT count(1) AS `count`
+  FROM (
+    SELECT t1.`id` AS `id_x`, t1.`bool_col` AS `bool_col_x`,
+           t1.`tinyint_col` AS `tinyint_col_x`,
+           t1.`smallint_col` AS `smallint_col_x`,
+           t1.`int_col` AS `int_col_x`, t1.`bigint_col` AS `bigint_col_x`,
+           t1.`float_col` AS `float_col_x`,
+           t1.`double_col` AS `double_col_x`,
+           t1.`date_string_col` AS `date_string_col_x`,
+           t1.`string_col` AS `string_col_x`,
+           t1.`timestamp_col` AS `timestamp_col_x`, t1.`year` AS `year_x`,
+           t1.`month` AS `month_x`, t2.`id` AS `id_y`,
+           t2.`bool_col` AS `bool_col_y`,
+           t2.`tinyint_col` AS `tinyint_col_y`,
+           t2.`smallint_col` AS `smallint_col_y`,
+           t2.`int_col` AS `int_col_y`, t2.`bigint_col` AS `bigint_col_y`,
+           t2.`float_col` AS `float_col_y`,
+           t2.`double_col` AS `double_col_y`,
+           t2.`date_string_col` AS `date_string_col_y`,
+           t2.`string_col` AS `string_col_y`,
+           t2.`timestamp_col` AS `timestamp_col_y`, t2.`year` AS `year_y`,
+           t2.`month` AS `month_y`
+    FROM functional_alltypes t1
+      INNER JOIN functional_alltypes t2
+        ON t1.`tinyint_col` < extract(t2.`timestamp_col`, 'minute')
+  ) t0
+  '''
+# ---
+# name: test_limit_with_self_join.1
+  '''
+  import ibis
+  
+  
+  functional_alltypes = ibis.table(
+      name="functional_alltypes",
+      schema={
+          "id": "int32",
+          "bool_col": "boolean",
+          "tinyint_col": "int8",
+          "smallint_col": "int16",
+          "int_col": "int32",
+          "bigint_col": "int64",
+          "float_col": "float32",
+          "double_col": "float64",
+          "date_string_col": "string",
+          "string_col": "string",
+          "timestamp_col": "timestamp",
+          "year": "int32",
+          "month": "int32",
+      },
+  )
+  selfreference = functional_alltypes.view()
+  
+  result = (
+      functional_alltypes.inner_join(
+          selfreference,
+          functional_alltypes.tinyint_col
+          < selfreference.timestamp_col.minute().name("minute"),
+      )
+      .select(
+          [
+              functional_alltypes.id.name("id_x"),
+              functional_alltypes.bool_col.name("bool_col_x"),
+              functional_alltypes.tinyint_col.name("tinyint_col_x"),
+              functional_alltypes.smallint_col.name("smallint_col_x"),
+              functional_alltypes.int_col.name("int_col_x"),
+              functional_alltypes.bigint_col.name("bigint_col_x"),
+              functional_alltypes.float_col.name("float_col_x"),
+              functional_alltypes.double_col.name("double_col_x"),
+              functional_alltypes.date_string_col.name("date_string_col_x"),
+              functional_alltypes.string_col.name("string_col_x"),
+              functional_alltypes.timestamp_col.name("timestamp_col_x"),
+              functional_alltypes.year.name("year_x"),
+              functional_alltypes.month.name("month_x"),
+              selfreference.id.name("id_y"),
+              selfreference.bool_col.name("bool_col_y"),
+              selfreference.tinyint_col.name("tinyint_col_y"),
+              selfreference.smallint_col.name("smallint_col_y"),
+              selfreference.int_col.name("int_col_y"),
+              selfreference.bigint_col.name("bigint_col_y"),
+              selfreference.float_col.name("float_col_y"),
+              selfreference.double_col.name("double_col_y"),
+              selfreference.date_string_col.name("date_string_col_y"),
+              selfreference.string_col.name("string_col_y"),
+              selfreference.timestamp_col.name("timestamp_col_y"),
+              selfreference.year.name("year_y"),
+              selfreference.month.name("month_y"),
+          ]
+      )
+      .count()
+      .name("count")
+  )
+  
+  '''
+# ---
+# name: test_loj_subquery_filter_handling
+  '''
+  SELECT t0.`id` AS `left_id`, t0.`desc` AS `left_desc`, t1.`id` AS `right_id`,
+         t1.`desc` AS `right_desc`
+  FROM (
+    SELECT *
+    FROM foo
+    WHERE `id` < 2
+  ) t0
+    LEFT OUTER JOIN (
+      SELECT *
+      FROM bar
+      WHERE `id` < 3
+    ) t1
+      ON (t0.`id` = t1.`id`) AND
+         (t0.`desc` = t1.`desc`)
+  '''
+# ---
+# name: test_multiple_joins
+  '''
+  SELECT *, `value1`, t1.`value2`
+  FROM (
+    SELECT t2.`c`, t2.`f`, t2.`foo_id` AS `foo_id_x`, t2.`bar_id`,
+           t3.`foo_id` AS `foo_id_y`, t3.`value1`, t3.`value3`
+    FROM star1 t2
+      LEFT OUTER JOIN star2 t3
+        ON t2.`foo_id` = t3.`foo_id`
+  ) t0
+    INNER JOIN star3 t1
+      ON `bar_id` = t1.`bar_id`
+  '''
+# ---
+# name: test_multiple_joins.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star3 = ibis.table(name="star3", schema={"bar_id": "string", "value2": "float64"})
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  
+  result = (
+      star1.left_join(star2, star1.foo_id == star2.foo_id)
+      .select(
+          [
+              star1.c,
+              star1.f,
+              star1.foo_id.name("foo_id_x"),
+              star1.bar_id,
+              star2.foo_id.name("foo_id_y"),
+              star2.value1,
+              star2.value3,
+          ]
+      )
+      .inner_join(star3, star1.bar_id == star3.bar_id)
+      .select([star1, star2.value1, star3.value2])
+  )
+  
+  '''
+# ---
+# name: test_multiple_limits
+  '''
+  SELECT *
+  FROM functional_alltypes
+  LIMIT 10
+  '''
+# ---
+# name: test_multiple_limits.1
+  '''
+  import ibis
+  
+  
+  result = (
+      ibis.table(
+          name="functional_alltypes",
+          schema={
+              "id": "int32",
+              "bool_col": "boolean",
+              "tinyint_col": "int8",
+              "smallint_col": "int16",
+              "int_col": "int32",
+              "bigint_col": "int64",
+              "float_col": "float32",
+              "double_col": "float64",
+              "date_string_col": "string",
+              "string_col": "string",
+              "timestamp_col": "timestamp",
+              "year": "int32",
+              "month": "int32",
+          },
+      )
+      .limit(20)
+      .limit(10)
+  )
+  
+  '''
+# ---
+# name: test_nameless_table
+  '''
+  SELECT *
+  FROM baz
+  '''
+# ---
+# name: test_nameless_table.1
+  '''
+  import ibis
+  
+  
+  result = ibis.table(name="baz", schema={"key": "string"})
+  
+  '''
+# ---
+# name: test_order_by_on_limit_yield_subquery
+  '''
+  SELECT *
+  FROM (
+    SELECT `string_col`, count(1) AS `nrows`
+    FROM functional_alltypes
+    GROUP BY 1
+    LIMIT 5
+  ) t0
+  ORDER BY `string_col` ASC
+  '''
+# ---
+# name: test_order_by_on_limit_yield_subquery.1
+  '''
+  import ibis
+  
+  
+  functional_alltypes = ibis.table(
+      name="functional_alltypes",
+      schema={
+          "id": "int32",
+          "bool_col": "boolean",
+          "tinyint_col": "int8",
+          "smallint_col": "int16",
+          "int_col": "int32",
+          "bigint_col": "int64",
+          "float_col": "float32",
+          "double_col": "float64",
+          "date_string_col": "string",
+          "string_col": "string",
+          "timestamp_col": "timestamp",
+          "year": "int32",
+          "month": "int32",
+      },
+  )
+  limit = (
+      functional_alltypes.group_by(functional_alltypes.string_col)
+      .aggregate(functional_alltypes.count().name("nrows"))
+      .limit(5)
+  )
+  
+  result = limit.order_by(limit.string_col.asc())
+  
+  '''
+# ---
+# name: test_projection_filter_fuse
+  '''
+  SELECT `a`, `b`, `c`
+  FROM (
+    SELECT *
+    FROM foo
+    WHERE `a` > 0
+  ) t0
+  '''
+# ---
+# name: test_scalar_subquery_different_table
+  '''
+  SELECT *
+  FROM foo
+  WHERE `y` > (
+    SELECT max(`x`) AS `max`
+    FROM bar
+  )
+  '''
+# ---
+# name: test_select_sql[agg_explicit_column]
+  '''
+  SELECT `foo_id`, sum(`f`) AS `total`
+  FROM star1
+  GROUP BY 1
+  '''
+# ---
+# name: test_select_sql[agg_explicit_column].1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  
+  result = star1.group_by(star1.foo_id).aggregate(star1.f.sum().name("total"))
+  
+  '''
+# ---
+# name: test_self_join_subquery_distinct_equal
+  '''
+  WITH t0 AS (
+    SELECT t2.*, t3.*
+    FROM tpch_region t2
+      INNER JOIN tpch_nation t3
+        ON t2.`r_regionkey` = t3.`n_regionkey`
+  )
+  SELECT t0.`r_name`, t1.`n_name`
+  FROM t0
+    INNER JOIN t0 t1
+      ON t0.`r_regionkey` = t1.`r_regionkey`
+  '''
+# ---
+# name: test_semi_join
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    LEFT SEMI JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_semi_join.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  
+  result = star1.semi_join(star2, star1.foo_id == star2.foo_id).select(star1)
+  
+  '''
+# ---
+# name: test_simple_joins
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    INNER JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_simple_joins.1
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    LEFT OUTER JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_simple_joins.2
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    FULL OUTER JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  '''
+# ---
+# name: test_simple_joins.3
+  '''
+  SELECT t0.*
+  FROM star1 t0
+    INNER JOIN star2 t1
+      ON (t0.`foo_id` = t1.`foo_id`) AND
+         (t0.`bar_id` = t1.`foo_id`)
+  '''
+# ---
+# name: test_simple_joins.4
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  
+  result = star1.inner_join(
+      star2, [star1.foo_id == star2.foo_id, star1.bar_id == star2.foo_id]
+  ).select(star1)
+  
+  '''
+# ---
+# name: test_sort_then_group_by_propagates_keys[a]
+  '''
+  SELECT `b`, count(1) AS `count`
+  FROM (
+    SELECT `b`
+    FROM (
+      SELECT *
+      FROM t
+      ORDER BY `a` ASC
+    ) t1
+  ) t0
+  GROUP BY 1
+  '''
+# ---
+# name: test_sort_then_group_by_propagates_keys[b]
+  '''
+  SELECT `b`, count(1) AS `count`
+  FROM (
+    SELECT `b`
+    FROM (
+      SELECT *
+      FROM t
+      ORDER BY `b` ASC
+    ) t1
+  ) t0
+  GROUP BY 1
+  '''
+# ---
+# name: test_startswith
+  '''
+  SELECT `foo_id` like concat('foo', '%') AS `tmp`
+  FROM star1
+  '''
+# ---
+# name: test_startswith.1
+  '''
+  import ibis
+  
+  
+  result = (
+      ibis.table(
+          name="star1",
+          schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+      )
+      .foo_id.startswith(ibis.literal("foo"))
+      .name("tmp")
+  )
+  
+  '''
+# ---
+# name: test_subquery_factor_correlated_subquery
+  '''
+  WITH t0 AS (
+    SELECT t6.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
+           CAST(t3.`o_orderdate` AS timestamp) AS `odate`
+    FROM tpch_region t1
+      INNER JOIN tpch_nation t2
+        ON t1.`r_regionkey` = t2.`n_regionkey`
+      INNER JOIN tpch_customer t6
+        ON t6.`c_nationkey` = t2.`n_nationkey`
+      INNER JOIN tpch_orders t3
+        ON t3.`o_custkey` = t6.`c_custkey`
+  )
+  SELECT t0.*
+  FROM t0
+  WHERE t0.`amount` > (
+    SELECT avg(t4.`amount`) AS `mean`
+    FROM t0 t4
+    WHERE t4.`region` = t0.`region`
+  )
+  LIMIT 10
+  '''
+# ---
+# name: test_subquery_in_filter_predicate
+  '''
+  SELECT *
+  FROM star1
+  WHERE `f` > (
+    SELECT avg(`f`) AS `mean`
+    FROM star1
+  )
+  '''
+# ---
+# name: test_subquery_in_filter_predicate.1
+  '''
+  SELECT *
+  FROM star1
+  WHERE `f` > (
+    SELECT avg(`f`) AS `mean`
+    FROM star1
+    WHERE `foo_id` = 'foo'
+  )
+  '''
+# ---
+# name: test_subquery_in_union
+  '''
+  WITH t0 AS (
+    SELECT `a`, `g`, sum(`f`) AS `metric`
+    FROM alltypes
+    GROUP BY 1, 2
+  ),
+  t1 AS (
+    SELECT t0.*
+    FROM t0
+      INNER JOIN t0 t3
+        ON t0.`g` = t3.`g`
+  )
+  SELECT *
+  FROM t1
+  UNION ALL
+  SELECT t0.*
+  FROM t0
+    INNER JOIN t0 t3
+      ON t0.`g` = t3.`g`
+  '''
+# ---
+# name: test_subquery_in_union.1
+  '''
+  import ibis
+  
+  
+  alltypes = ibis.table(
+      name="alltypes",
+      schema={
+          "a": "int8",
+          "b": "int16",
+          "c": "int32",
+          "d": "int64",
+          "e": "float32",
+          "f": "float64",
+          "g": "string",
+          "h": "boolean",
+          "i": "timestamp",
+          "j": "date",
+          "k": "time",
+      },
+  )
+  agg = alltypes.group_by([alltypes.a, alltypes.g]).aggregate(
+      alltypes.f.sum().name("metric")
+  )
+  selfreference = agg.view()
+  proj = agg.inner_join(selfreference, agg.g == selfreference.g).select(agg)
+  
+  result = proj.union(proj.view())
+  
+  '''
+# ---
+# name: test_subquery_used_for_self_join
+  '''
+  WITH t0 AS (
+    SELECT `g`, `a`, `b`, sum(`f`) AS `total`
+    FROM alltypes
+    GROUP BY 1, 2, 3
+  )
+  SELECT t0.`g`, max(t0.`total` - `total`) AS `metric`
+  FROM (
+    SELECT t0.`g` AS `g_x`, t0.`a` AS `a_x`, t0.`b` AS `b_x`,
+           t0.`total` AS `total_x`, t3.`g` AS `g_y`, t3.`a` AS `a_y`,
+           t3.`b` AS `b_y`, t3.`total` AS `total_y`
+    FROM t0
+      INNER JOIN t0 t3
+        ON t0.`a` = t3.`b`
+  ) t1
+  GROUP BY 1
+  '''
+# ---
+# name: test_topk_analysis_bug
+  '''
+  SELECT `origin`, count(1) AS `count`
+  FROM (
+    SELECT *
+    FROM airlines
+    WHERE `dest` IN ('ORD', 'JFK', 'SFO')
+  ) t0
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `dest`, avg(`arrdelay`) AS `mean`
+        FROM airlines
+        WHERE `dest` IN ('ORD', 'JFK', 'SFO')
+        GROUP BY 1
+      ) t2
+      ORDER BY `mean` DESC
+      LIMIT 10
+    ) t1
+      ON t0.`dest` = t1.`dest`
+  GROUP BY 1
+  '''
+# ---
+# name: test_topk_operation
+  '''
+  SELECT *
+  FROM tbl t0
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `city`, avg(`v2`) AS `mean`
+        FROM tbl
+        GROUP BY 1
+      ) t2
+      ORDER BY `mean` DESC
+      LIMIT 10
+    ) t1
+      ON t0.`city` = t1.`city`
+  '''
+# ---
+# name: test_topk_operation.1
+  '''
+  SELECT *
+  FROM tbl t0
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `city`, count(`city`) AS `count`
+        FROM tbl
+        GROUP BY 1
+      ) t2
+      ORDER BY `count` DESC
+      LIMIT 10
+    ) t1
+      ON t0.`city` = t1.`city`
+  '''
+# ---
+# name: test_topk_predicate_pushdown_bug
+  '''
+  WITH t0 AS (
+    SELECT t2.*, t3.`n_name`, t4.`r_name`
+    FROM tpch_customer t2
+      INNER JOIN tpch_nation t3
+        ON t2.`c_nationkey` = t3.`n_nationkey`
+      INNER JOIN tpch_region t4
+        ON t3.`n_regionkey` = t4.`r_regionkey`
+  )
+  SELECT *
+  FROM t0
+    LEFT SEMI JOIN (
+      SELECT *
+      FROM (
+        SELECT `n_name`, sum(`c_acctbal`) AS `sum`
+        FROM t0
+        GROUP BY 1
+      ) t2
+      ORDER BY `sum` DESC
+      LIMIT 10
+    ) t1
+      ON t0.`n_name` = t1.`n_name`
+  '''
+# ---
+# name: test_topk_to_aggregate
+  '''
+  SELECT *
+  FROM (
+    SELECT `dest`, avg(`arrdelay`) AS `mean`
+    FROM airlines
+    GROUP BY 1
+  ) t0
+  ORDER BY `mean` DESC
+  LIMIT 10
+  '''
+# ---
+# name: test_tpch_self_join_failure
+  '''
+  WITH t0 AS (
+    SELECT t3.`r_name` AS `region`, t4.`n_name` AS `nation`,
+           t6.`o_totalprice` AS `amount`,
+           CAST(t6.`o_orderdate` AS timestamp) AS `odate`
+    FROM tpch_region t3
+      INNER JOIN tpch_nation t4
+        ON t3.`r_regionkey` = t4.`n_regionkey`
+      INNER JOIN tpch_customer t5
+        ON t5.`c_nationkey` = t4.`n_nationkey`
+      INNER JOIN tpch_orders t6
+        ON t6.`o_custkey` = t5.`c_custkey`
+  ),
+  t1 AS (
+    SELECT `region`, extract(`odate`, 'year') AS `year`,
+           CAST(sum(`amount`) AS double) AS `total`
+    FROM t0
+    GROUP BY 1, 2
+  )
+  SELECT t1.`region`, t1.`year`, t1.`total` - t2.`total` AS `yoy_change`
+  FROM t1
+    INNER JOIN t1 t2
+      ON t1.`year` = (t2.`year` - 1)
+  '''
+# ---
+# name: test_where_analyze_scalar_op
+  '''
+  SELECT count(1) AS `count`
+  FROM functional_alltypes
+  WHERE (`timestamp_col` < date_add(cast('2010-01-01T00:00:00' as timestamp), INTERVAL 3 MONTH)) AND
+        (`timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY))
+  '''
+# ---
+# name: test_where_analyze_scalar_op.1
+  '''
+  import ibis
+  
+  
+  functional_alltypes = ibis.table(
+      name="functional_alltypes",
+      schema={
+          "id": "int32",
+          "bool_col": "boolean",
+          "tinyint_col": "int8",
+          "smallint_col": "int16",
+          "int_col": "int32",
+          "bigint_col": "int64",
+          "float_col": "float32",
+          "double_col": "float64",
+          "date_string_col": "string",
+          "string_col": "string",
+          "timestamp_col": "timestamp",
+          "year": "int32",
+          "month": "int32",
+      },
+  )
+  
+  result = (
+      functional_alltypes.filter(
+          [
+              functional_alltypes.timestamp_col
+              < (ibis.timestamp("2010-01-01 00:00:00") + ibis.interval(3)),
+              functional_alltypes.timestamp_col < (ibis.now() + ibis.interval(10)),
+          ]
+      )
+      .count()
+      .name("count")
+  )
+  
+  '''
+# ---
+# name: test_where_no_pushdown_possible
+  '''
+  SELECT t0.*
+  FROM (
+    SELECT t1.*, t1.`f` - t2.`value1` AS `diff`
+    FROM star1 t1
+      INNER JOIN star2 t2
+        ON t1.`foo_id` = t2.`foo_id`
+  ) t0
+  WHERE t0.`diff` > 1
+  '''
+# ---
+# name: test_where_no_pushdown_possible.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  proj = star1.inner_join(star2, star1.foo_id == star2.foo_id).select(
+      [star1, (star1.f - star2.value1).name("diff")]
+  )
+  
+  result = proj.filter(proj.diff > 1)
+  
+  '''
+# ---
+# name: test_where_with_between
+  '''
+  SELECT *
+  FROM alltypes
+  WHERE (`a` > 0) AND
+        (`f` BETWEEN 0 AND 1)
+  '''
+# ---
+# name: test_where_with_between.1
+  '''
+  import ibis
+  
+  
+  lit = ibis.literal(0)
+  alltypes = ibis.table(
+      name="alltypes",
+      schema={
+          "a": "int8",
+          "b": "int16",
+          "c": "int32",
+          "d": "int64",
+          "e": "float32",
+          "f": "float64",
+          "g": "string",
+          "h": "boolean",
+          "i": "timestamp",
+          "j": "date",
+          "k": "time",
+      },
+  )
+  
+  result = alltypes.filter([alltypes.a > lit, alltypes.f.between(lit, ibis.literal(1))])
+  
+  '''
+# ---
+# name: test_where_with_join
+  '''
+  SELECT t0.*, t1.`value1`, t1.`value3`
+  FROM star1 t0
+    INNER JOIN star2 t1
+      ON t0.`foo_id` = t1.`foo_id`
+  WHERE (t0.`f` > 0) AND
+        (t1.`value3` < 1000)
+  '''
+# ---
+# name: test_where_with_join.1
+  '''
+  import ibis
+  
+  
+  star1 = ibis.table(
+      name="star1",
+      schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
+  )
+  star2 = ibis.table(
+      name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
+  )
+  
+  result = (
+      star1.inner_join(star2, star1.foo_id == star2.foo_id)
+      .select([star1, star2.value1, star2.value3])
+      .filter([star1.f > 0, star2.value3 < 1000])
+  )
+  
+  '''
+# ---

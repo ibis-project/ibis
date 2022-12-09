@@ -19,11 +19,11 @@ def t(mockcon):
 def test_drop_table_compile(snapshot):
     statement = DropTable('foo', database='bar', must_exist=True)
     query = statement.compile()
-    snapshot.assert_match(query, "out1.sql")
+    assert query == snapshot
 
     statement = DropTable('foo', database='bar', must_exist=False)
     query = statement.compile()
-    snapshot.assert_match(query, "out2.sql")
+    assert query == snapshot
 
 
 def test_select_basics(t, snapshot):
@@ -34,11 +34,11 @@ def test_select_basics(t, snapshot):
 
     stmt = InsertSelect(name, select, database='foo')
     result = stmt.compile()
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     stmt = InsertSelect(name, select, database='foo', overwrite=True)
     result = stmt.compile()
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
 
 def test_load_data_unpartitioned(snapshot):
@@ -46,11 +46,11 @@ def test_load_data_unpartitioned(snapshot):
     stmt = ddl.LoadData('functional_alltypes', path, database='foo')
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     stmt.overwrite = True
     result = stmt.compile()
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
 
 def test_load_data_partitioned(snapshot):
@@ -66,21 +66,21 @@ def test_load_data_partitioned(snapshot):
     )
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     stmt.overwrite = True
     result = stmt.compile()
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
 
 def test_cache_table_pool_name(snapshot):
     statement = ddl.CacheTable('foo', database='bar')
     query = statement.compile()
-    snapshot.assert_match(query, "out1.sql")
+    assert query == snapshot
 
     statement = ddl.CacheTable('foo', database='bar', pool='my_pool')
     query = statement.compile()
-    snapshot.assert_match(query, "out2.sql")
+    assert query == snapshot
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_add_partition(part_schema, table_name, snapshot):
     stmt = ddl.AddPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_add_partition_string_key(snapshot):
@@ -105,14 +105,14 @@ def test_add_partition_string_key(snapshot):
     stmt = ddl.AddPartition('tbl', {'foo': 5, 'bar': 'qux'}, part_schema)
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_drop_partition(part_schema, table_name, snapshot):
     stmt = ddl.DropPartition(table_name, {'year': 2007, 'month': 4}, part_schema)
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_add_partition_with_props(part_schema, table_name, snapshot):
@@ -122,7 +122,7 @@ def test_add_partition_with_props(part_schema, table_name, snapshot):
     )
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_alter_partition_properties(part_schema, table_name, snapshot):
@@ -133,16 +133,16 @@ def test_alter_partition_properties(part_schema, table_name, snapshot):
         return stmt.compile()
 
     result = _get_ddl_string({'location': '/users/foo/my-data'})
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'format': 'avro'})
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    snapshot.assert_match(result, "out3.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    snapshot.assert_match(result, "out4.sql")
+    assert result == snapshot
 
 
 def test_alter_table_properties(part_schema, table_name, snapshot):
@@ -153,16 +153,16 @@ def test_alter_table_properties(part_schema, table_name, snapshot):
         return stmt.compile()
 
     result = _get_ddl_string({'location': '/users/foo/my-data'})
-    snapshot.assert_match(result, "out1.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'format': 'avro'})
-    snapshot.assert_match(result, "out2.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'tbl_properties': {'bar': 2, 'foo': '1'}})
-    snapshot.assert_match(result, "out3.sql")
+    assert result == snapshot
 
     result = _get_ddl_string({'serde_properties': {'baz': 3}})
-    snapshot.assert_match(result, "out4.sql")
+    assert result == snapshot
 
 
 @pytest.fixture
@@ -182,7 +182,7 @@ def test_create_external_table_as(mockcon, snapshot):
         database='foo',
     )
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_with_location_compile(snapshot):
@@ -197,7 +197,7 @@ def test_create_table_with_location_compile(snapshot):
         database='foo',
     )
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_like_parquet(snapshot):
@@ -212,7 +212,7 @@ def test_create_table_like_parquet(snapshot):
     )
 
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_parquet_like_other(snapshot):
@@ -229,7 +229,7 @@ def test_create_table_parquet_like_other(snapshot):
     )
 
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_parquet_with_schema(snapshot):
@@ -247,7 +247,7 @@ def test_create_table_parquet_with_schema(snapshot):
     )
 
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_delimited(snapshot):
@@ -273,7 +273,7 @@ def test_create_table_delimited(snapshot):
     )
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_external_table_avro(snapshot):
@@ -301,25 +301,25 @@ def test_create_external_table_avro(snapshot):
     )
 
     result = stmt.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_create_table_parquet(expr, snapshot):
     statement = _create_table('some_table', expr, database='bar', can_exist=False)
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_no_overwrite(expr, snapshot):
     statement = _create_table('tname', expr, can_exist=True)
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_avro_other_formats(t, snapshot):
     statement = _create_table('tname', t, format='avro', can_exist=True)
     result = statement.compile()
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
     with pytest.raises(ValueError):
         _create_table('tname', t, format='foo')

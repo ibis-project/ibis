@@ -1,1 +1,0 @@
-`timestamp_col`

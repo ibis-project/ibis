@@ -14,7 +14,7 @@ def test_relabel_projection(snapshot):
     relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
     result = ImpalaCompiler.to_sql(relabeled)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.fixture(scope="module")
@@ -39,13 +39,13 @@ def test_join_no_predicates_for_impala(con, join_type, snapshot):
 
     joined = getattr(t1, join_type)(t2)[[t1]]
     result = ImpalaCompiler.to_sql(joined)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_limit_cte_extract(limit_cte_extract, snapshot):
     case = limit_cte_extract
     result = ImpalaCompiler.to_sql(case)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_nested_join_base(snapshot):
@@ -54,7 +54,7 @@ def test_nested_join_base(snapshot):
     max_counts = counts.group_by('uuid').aggregate(max_count=lambda x: x['count'].max())
     result = max_counts.left_join(counts, 'uuid').projection([counts])
     compiled_result = ImpalaCompiler.to_sql(result)
-    snapshot.assert_match(compiled_result, "out.sql")
+    assert compiled_result == snapshot
 
 
 def test_nested_joins_single_cte(snapshot):
@@ -74,7 +74,7 @@ def test_nested_joins_single_cte(snapshot):
         [main_kw, last_visit.last_visit]
     )
     compiled_result = ImpalaCompiler.to_sql(result)
-    snapshot.assert_match(compiled_result, "out.sql")
+    assert compiled_result == snapshot
 
 
 def test_nested_join_multiple_ctes(snapshot):
@@ -96,7 +96,7 @@ def test_nested_join_multiple_ctes(snapshot):
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
     result = joined3[cond]
     compiled_result = ImpalaCompiler.to_sql(result)
-    snapshot.assert_match(compiled_result, "out.sql")
+    assert compiled_result == snapshot
 
 
 def test_logically_negate_complex_boolean_expr(snapshot):
@@ -110,7 +110,7 @@ def test_logically_negate_complex_boolean_expr(snapshot):
 
     expr = (~f(t)).name('tmp')
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_join_with_nested_or_condition(snapshot):
@@ -120,7 +120,7 @@ def test_join_with_nested_or_condition(snapshot):
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
     expr = joined[t1]
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_join_with_nested_xor_condition(snapshot):
@@ -130,7 +130,7 @@ def test_join_with_nested_xor_condition(snapshot):
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
     expr = joined[t1]
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize('method', ['isnull', 'notnull'])
@@ -140,7 +140,7 @@ def test_is_parens(method, snapshot):
     expr = t[func(t.a) == func(t.b)]
 
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_is_parens_identical_to(snapshot):
@@ -148,7 +148,7 @@ def test_is_parens_identical_to(snapshot):
     expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
 
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_join_aliasing(snapshot):
@@ -171,7 +171,7 @@ def test_join_aliasing(snapshot):
     )
     result = agg.join(test5, agg.d == test5.d)[agg, test5.total]
     result = ImpalaCompiler.to_sql(result)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_multiple_filters(snapshot):
@@ -179,7 +179,7 @@ def test_multiple_filters(snapshot):
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_multiple_filters2(snapshot):
@@ -188,7 +188,7 @@ def test_multiple_filters2(snapshot):
     expr = filt[filt.a == filt.a.max()]
     expr = expr[expr.b == 'a']
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.fixture
@@ -281,7 +281,7 @@ def test_join_key_name(tpch, snapshot):
         percent,
     ]
     result = ibis.impala.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_join_key_name2(tpch, snapshot):
@@ -296,7 +296,7 @@ def test_join_key_name2(tpch, snapshot):
         post_sizes['count'].name('post_count'),
     ]
     result = ibis.impala.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_group_by_with_window_preserves_range(snapshot):
@@ -304,4 +304,4 @@ def test_group_by_with_window_preserves_range(snapshot):
     w = ibis.cumulative_window(order_by=t.one)
     expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
     result = ibis.impala.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot

@@ -1,1 +1,0 @@
-ceil(`int_col`)

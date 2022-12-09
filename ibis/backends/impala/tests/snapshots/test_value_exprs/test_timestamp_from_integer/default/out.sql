@@ -1,1 +1,0 @@
-CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") AS timestamp)

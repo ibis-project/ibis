@@ -1,0 +1,18 @@
+# name: test_varargs_functions[coalesce_columns]
+  'coalesce(`int_col`, `bigint_col`)'
+# ---
+# name: test_varargs_functions[coalesce_scalar]
+  "coalesce(`string_col`, 'foo')"
+# ---
+# name: test_varargs_functions[greatest_columns]
+  'greatest(`int_col`, `bigint_col`)'
+# ---
+# name: test_varargs_functions[greatest_scalar]
+  "greatest(`string_col`, 'foo')"
+# ---
+# name: test_varargs_functions[least_columns]
+  'least(`int_col`, `bigint_col`)'
+# ---
+# name: test_varargs_functions[least_scalar]
+  "least(`string_col`, 'foo')"
+# ---

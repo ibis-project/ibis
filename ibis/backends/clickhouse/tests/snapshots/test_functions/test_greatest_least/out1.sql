@@ -1,1 +1,0 @@
-greatest(`int_col`, 10)

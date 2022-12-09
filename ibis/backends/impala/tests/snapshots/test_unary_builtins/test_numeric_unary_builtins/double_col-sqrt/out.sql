@@ -1,1 +1,0 @@
-sqrt(`double_col`)

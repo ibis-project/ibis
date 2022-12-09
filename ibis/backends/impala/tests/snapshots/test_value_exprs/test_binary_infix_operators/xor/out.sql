@@ -1,1 +1,0 @@
-(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))

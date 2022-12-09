@@ -1,1 +1,0 @@
-least(`string_col`, 'foo')

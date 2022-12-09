@@ -1,0 +1,186 @@
+# name: test_add_default_order_by
+  '''
+  SELECT *, lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `lag`,
+         lead(`f`) OVER (PARTITION BY `g` ORDER BY `f`) - `f` AS `fwd_diff`,
+         first_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `first`,
+         last_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `last`,
+         lag(`f`) OVER (PARTITION BY `g` ORDER BY `d` ASC) AS `lag2`
+  FROM alltypes
+  '''
+# ---
+# name: test_aggregate_in_projection
+  '''
+  SELECT *, `f` / sum(`f`) OVER () AS `normed_f`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[max]
+  '''
+  SELECT max(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[max].1
+  '''
+  SELECT max(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[mean]
+  '''
+  SELECT avg(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[mean].1
+  '''
+  SELECT avg(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[min]
+  '''
+  SELECT min(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[min].1
+  '''
+  SELECT min(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[sum]
+  '''
+  SELECT sum(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_cumulative_functions[sum].1
+  '''
+  SELECT sum(`f`) OVER (ORDER BY `d` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_multiple_windows
+  '''
+  SELECT `g`, sum(`f`) OVER (PARTITION BY `g`) - sum(`f`) OVER () AS `result`
+  FROM alltypes
+  '''
+# ---
+# name: test_nested_analytic_function
+  '''
+  SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f` ASC)) OVER (ORDER BY `f` ASC) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_order_by_desc
+  '''
+  SELECT `f`, (row_number() OVER (ORDER BY `f` DESC) - 1) AS `revrank`
+  FROM alltypes
+  '''
+# ---
+# name: test_order_by_desc.1
+  '''
+  SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
+         max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`
+  FROM alltypes
+  '''
+# ---
+# name: test_propagate_nested_windows
+  '''
+  SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f` ASC)) OVER (PARTITION BY `g` ORDER BY `f` ASC) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_rank_functions
+  '''
+  SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
+         (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
+  FROM alltypes
+  '''
+# ---
+# name: test_row_number_does_not_require_order_by
+  '''
+  SELECT *, (row_number() OVER (PARTITION BY `g`) - 1) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_row_number_does_not_require_order_by.1
+  '''
+  SELECT *, (row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_row_number_properly_composes_with_arithmetic
+  '''
+  SELECT *, (row_number() OVER (ORDER BY `f`) - 1) / 2 AS `new`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[cumulative]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[foll_0]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[foll_10_5]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 10 PRECEDING AND 5 PRECEDING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[foll_2]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND 2 FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[foll_2_prec_0]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[foll_5_10]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 5 FOLLOWING AND 10 FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[prec_0]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[prec_5]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 5 PRECEDING AND UNBOUNDED FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[prec_5_foll_0]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 5 PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[prec_5_foll_2]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 5 PRECEDING AND 2 FOLLOWING) AS `foo`
+  FROM alltypes
+  '''
+# ---
+# name: test_window_frame_specs[trailing_10]
+  '''
+  SELECT sum(`d`) OVER (ORDER BY `f` ASC ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) AS `foo`
+  FROM alltypes
+  '''
+# ---

@@ -1,1 +1,0 @@
-CAST(`d` AS tinyint)

@@ -1,1 +1,0 @@
-sum(if(`g` IS NULL, 1, 0))

@@ -1,2 +1,0 @@
-SELECT CAST(`value` AS BYTES) AS `tmp`
-FROM t

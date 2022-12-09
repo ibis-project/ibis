@@ -1,1 +1,0 @@
-lag(`string_col`, 2)

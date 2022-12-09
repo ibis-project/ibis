@@ -1,1 +1,0 @@
-repeat(`string_col`, 2)

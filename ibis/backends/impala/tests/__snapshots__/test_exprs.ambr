@@ -1,0 +1,48 @@
+# name: test_filter_with_analytic
+  '''
+  SELECT `col`, `analytic`
+  FROM (
+    SELECT `col`, count(1) OVER () AS `analytic`
+    FROM (
+      SELECT `col`, `filter`
+      FROM (
+        SELECT *
+        FROM (
+          SELECT `col`, NULL AS `filter`
+          FROM x
+        ) t3
+        WHERE `filter` IS NULL
+      ) t2
+    ) t1
+  ) t0
+  '''
+# ---
+# name: test_named_from_filter_group_by
+  '''
+  SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `abc`
+  FROM t0
+  WHERE `value` = 42
+  GROUP BY 1
+  '''
+# ---
+# name: test_named_from_filter_group_by.1
+  '''
+  SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `foo`
+  FROM t0
+  WHERE `value` = 42
+  GROUP BY 1
+  '''
+# ---
+# name: test_nunique_where
+  '''
+  SELECT count(DISTINCT if(`value` >= 1.0, `key`, NULL)) AS `nunique`
+  FROM t0
+  '''
+# ---
+# name: test_where_with_timestamp
+  '''
+  SELECT `uuid`, min(if(`search_level` = 1, `ts`, NULL)) AS `min_date`
+  FROM t
+  GROUP BY 1
+  '''
+# ---

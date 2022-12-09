@@ -1,1 +1,0 @@
-`a` IS NOT NULL

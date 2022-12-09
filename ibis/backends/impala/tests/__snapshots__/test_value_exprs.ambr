@@ -1,0 +1,253 @@
+# name: test_any_all[all]
+  'min(`f` = 0)'
+# ---
+# name: test_any_all[any]
+  'max(`f` = 0)'
+# ---
+# name: test_any_all[not_all]
+  'min(`f` = 0) = FALSE'
+# ---
+# name: test_any_all[not_any]
+  'max(`f` = 0) = FALSE'
+# ---
+# name: test_between
+  '`f` BETWEEN 0 AND 1'
+# ---
+# name: test_binary_infix_operators[add]
+  '`a` + `b`'
+# ---
+# name: test_binary_infix_operators[and]
+  '`h` AND (`a` > 0)'
+# ---
+# name: test_binary_infix_operators[div]
+  '`a` / `b`'
+# ---
+# name: test_binary_infix_operators[eq]
+  '`a` = `b`'
+# ---
+# name: test_binary_infix_operators[ge]
+  '`a` >= `b`'
+# ---
+# name: test_binary_infix_operators[gt]
+  '`a` > `b`'
+# ---
+# name: test_binary_infix_operators[le]
+  '`a` <= `b`'
+# ---
+# name: test_binary_infix_operators[lt]
+  '`a` < `b`'
+# ---
+# name: test_binary_infix_operators[mul]
+  '`a` * `b`'
+# ---
+# name: test_binary_infix_operators[ne]
+  '`a` != `b`'
+# ---
+# name: test_binary_infix_operators[or]
+  '`h` OR (`a` > 0)'
+# ---
+# name: test_binary_infix_operators[pow]
+  'pow(`a`, `b`)'
+# ---
+# name: test_binary_infix_operators[sub]
+  '`a` - `b`'
+# ---
+# name: test_binary_infix_operators[xor]
+  '(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))'
+# ---
+# name: test_binary_infix_parenthesization[function_call]
+  'ln(`a`) + `c`'
+# ---
+# name: test_binary_infix_parenthesization[negation]
+  '`b` + (-(`a` + `c`))'
+# ---
+# name: test_binary_infix_parenthesization[parens_left]
+  '(`a` + `b`) + `c`'
+# ---
+# name: test_casts[a-int16]
+  'CAST(`a` AS smallint)'
+# ---
+# name: test_casts[a-int32]
+  'CAST(`a` AS int)'
+# ---
+# name: test_casts[a-int64]
+  'CAST(`a` AS bigint)'
+# ---
+# name: test_casts[a-string]
+  'CAST(`a` AS string)'
+# ---
+# name: test_casts[d-int8]
+  'CAST(`d` AS tinyint)'
+# ---
+# name: test_casts[g-double]
+  'CAST(`g` AS double)'
+# ---
+# name: test_casts[g-timestamp]
+  'CAST(`g` AS timestamp)'
+# ---
+# name: test_column_ref_table_aliases
+  't0.`value1` - t1.`value and2`'
+# ---
+# name: test_correlated_predicate_subquery
+  't0.`g` = t1.`g`'
+# ---
+# name: test_decimal_builtins[precision]
+  'precision(`l_extendedprice`)'
+# ---
+# name: test_decimal_builtins[scale]
+  'scale(`l_extendedprice`)'
+# ---
+# name: test_decimal_casts[column]
+  'CAST(`f` AS decimal(12, 2))'
+# ---
+# name: test_decimal_casts[literal]
+  "CAST('9.9999999' AS decimal(38, 5))"
+# ---
+# name: test_isnull_notnull[compound_isnull]
+  '`a` + `b` IS NULL'
+# ---
+# name: test_isnull_notnull[isnull]
+  '`g` IS NULL'
+# ---
+# name: test_isnull_notnull[notnull]
+  '`a` IS NOT NULL'
+# ---
+# name: test_literals[embedded_double_quote]
+  '\'An "escape"\''
+# ---
+# name: test_literals[embedded_single_quote]
+  "'I can\\'t'"
+# ---
+# name: test_literals[false]
+  'FALSE'
+# ---
+# name: test_literals[float]
+  '1.5'
+# ---
+# name: test_literals[int]
+  '5'
+# ---
+# name: test_literals[simple]
+  "'simple'"
+# ---
+# name: test_literals[true]
+  'TRUE'
+# ---
+# name: test_misc_conditionals
+  'nullif(`a`, 0)'
+# ---
+# name: test_named_expressions[cast]
+  'CAST(`g` AS double) AS `g_dub`'
+# ---
+# name: test_named_expressions[compound_expr]
+  '(`a` - `b`) * `a` AS `expr`'
+# ---
+# name: test_named_expressions[spaces]
+  '`g` AS `has a space`'
+# ---
+# name: test_negate[a]
+  '-`a`'
+# ---
+# name: test_negate[f]
+  '-`f`'
+# ---
+# name: test_negate[h]
+  'NOT `h`'
+# ---
+# name: test_sql_extract
+  '''
+  SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
+         extract(`i`, 'day') AS `day`
+  FROM alltypes
+  '''
+# ---
+# name: test_timestamp_day_of_week[full_name]
+  "dayname('2015-09-01T01:00:23')"
+# ---
+# name: test_timestamp_day_of_week[index]
+  "pmod(dayofweek('2015-09-01T01:00:23') - 2, 7)"
+# ---
+# name: test_timestamp_deltas[days]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 DAY)'
+# ---
+# name: test_timestamp_deltas[days].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 DAY)'
+# ---
+# name: test_timestamp_deltas[hours]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 HOUR)'
+# ---
+# name: test_timestamp_deltas[hours].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 HOUR)'
+# ---
+# name: test_timestamp_deltas[minutes]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 MINUTE)'
+# ---
+# name: test_timestamp_deltas[minutes].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 MINUTE)'
+# ---
+# name: test_timestamp_deltas[months]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 MONTH)'
+# ---
+# name: test_timestamp_deltas[months].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 MONTH)'
+# ---
+# name: test_timestamp_deltas[seconds]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 SECOND)'
+# ---
+# name: test_timestamp_deltas[seconds].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 SECOND)'
+# ---
+# name: test_timestamp_deltas[weeks]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 WEEK)'
+# ---
+# name: test_timestamp_deltas[weeks].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 WEEK)'
+# ---
+# name: test_timestamp_deltas[years]
+  'date_add(cast(`i` as timestamp), INTERVAL 5 YEAR)'
+# ---
+# name: test_timestamp_deltas[years].1
+  'date_sub(cast(`i` as timestamp), INTERVAL 5 YEAR)'
+# ---
+# name: test_timestamp_extract_field[day]
+  "extract(`i`, 'day')"
+# ---
+# name: test_timestamp_extract_field[hour]
+  "extract(`i`, 'hour')"
+# ---
+# name: test_timestamp_extract_field[millisecond]
+  "extract(`i`, 'millisecond')"
+# ---
+# name: test_timestamp_extract_field[minute]
+  "extract(`i`, 'minute')"
+# ---
+# name: test_timestamp_extract_field[month]
+  "extract(`i`, 'month')"
+# ---
+# name: test_timestamp_extract_field[second]
+  "extract(`i`, 'second')"
+# ---
+# name: test_timestamp_extract_field[year]
+  "extract(`i`, 'year')"
+# ---
+# name: test_timestamp_from_integer[default]
+  'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") AS timestamp)'
+# ---
+# name: test_timestamp_from_integer[ms]
+  'CAST(from_unixtime(CAST(floor(`c` / 1000) AS int), "yyyy-MM-dd HH:mm:ss") AS timestamp)'
+# ---
+# name: test_timestamp_from_integer[us]
+  'CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), "yyyy-MM-dd HH:mm:ss") AS timestamp)'
+# ---
+# name: test_timestamp_literals[pd_timestamp]
+  "'2015-01-01T12:34:56'"
+# ---
+# name: test_timestamp_literals[pydatetime]
+  "'2015-01-01T12:34:56'"
+# ---
+# name: test_timestamp_literals[timestamp_function]
+  "'2015-01-01T12:34:56'"
+# ---
+# name: test_timestamp_now
+  'now()'
+# ---

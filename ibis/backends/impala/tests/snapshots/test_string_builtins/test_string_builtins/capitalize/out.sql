@@ -1,1 +1,0 @@
-initcap(`string_col`)

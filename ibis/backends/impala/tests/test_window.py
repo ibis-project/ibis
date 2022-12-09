@@ -18,7 +18,7 @@ def alltypes(mockcon):
 
 def assert_sql_equal(expr, snapshot, out="out.sql"):
     result = ImpalaCompiler.to_sql(expr)
-    snapshot.assert_match(result, out)
+    assert result == snapshot
 
 
 def test_aggregate_in_projection(alltypes, snapshot):

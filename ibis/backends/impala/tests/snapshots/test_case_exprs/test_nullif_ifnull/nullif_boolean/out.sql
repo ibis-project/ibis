@@ -1,1 +1,0 @@
-nullif(`l_quantity` = 0, `l_quantity` = 0)

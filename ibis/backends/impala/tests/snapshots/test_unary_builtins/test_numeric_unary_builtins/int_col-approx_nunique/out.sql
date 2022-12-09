@@ -1,1 +1,0 @@
-ndv(`int_col`)

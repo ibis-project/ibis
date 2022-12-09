@@ -1,1 +1,0 @@
-abs(`double_col`)

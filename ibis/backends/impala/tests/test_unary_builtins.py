@@ -34,7 +34,7 @@ def test_numeric_unary_builtins(ibis_name, cname, table, snapshot):
     expr = method()
 
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_numeric_unary_builtins(ibis_name, cname, table, snapshot):
 def test_numeric(expr_fn, table, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 def test_hash(table, snapshot):
@@ -63,7 +63,7 @@ def test_hash(table, snapshot):
 
     expr = table.int_col.hash()
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize(
@@ -92,7 +92,7 @@ def test_hash(table, snapshot):
 def test_reduction_where(table, expr_fn, snapshot):
     expr = expr_fn(table)
     result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
+    assert result == snapshot
 
 
 @pytest.mark.parametrize("method_name", ["sum", "count", "mean", "max", "min"])

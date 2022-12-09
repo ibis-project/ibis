@@ -1,1 +1,0 @@
-DROP FUNCTION test.`test_name`(string, string)

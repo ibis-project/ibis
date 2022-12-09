@@ -45,14 +45,14 @@ def table(mockcon):
 )
 def test_string_builtins(table, expr_fn, snapshot):
     expr = expr_fn(table.string_col)
-    snapshot.assert_match(translate(expr), "out.sql")
+    assert translate(expr) == snapshot
 
 
 def test_find(table, snapshot):
     expr = table.string_col.find('a', start=table.tinyint_col)
-    snapshot.assert_match(translate(expr), "out.sql")
+    assert translate(expr) == snapshot
 
 
 def test_string_join(snapshot):
     expr = L(',').join(['a', 'b'])
-    snapshot.assert_match(translate(expr), "out.sql")
+    assert translate(expr) == snapshot

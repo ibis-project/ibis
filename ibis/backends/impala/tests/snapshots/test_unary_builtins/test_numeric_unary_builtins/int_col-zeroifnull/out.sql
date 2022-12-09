@@ -1,1 +1,0 @@
-zeroifnull(`int_col`)

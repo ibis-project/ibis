@@ -1,1 +1,0 @@
-exp(`int_col`)
