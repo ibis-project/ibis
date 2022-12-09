@@ -14,4 +14,10 @@ Backends are shown in descending order of the number of supported operations.
 
     The Snowflake backend is a good place to start contributing!
 
-{{ read_csv("docs/backends/support_matrix.csv") }}
+## Core Operations
+
+{{ read_csv("docs/backends/core_support_matrix.csv") }}
+
+## Geospatial Operations
+
+{{ read_csv("docs/backends/geospatial_support_matrix.csv") }}
