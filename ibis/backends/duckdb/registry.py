@@ -232,6 +232,7 @@ operation_registry.update(
         ops.ArgMax: reduction(sa.func.max_by),
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
         ops.JSONGetItem: _json_get_item,
+        ops.RowID: lambda *_: sa.literal_column('rowid'),
     }
 )
 

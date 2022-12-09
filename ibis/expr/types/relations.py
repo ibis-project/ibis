@@ -297,31 +297,25 @@ class Table(Expr, JupyterMixin):
         return GroupedTable(self, by, **additional_grouping_expressions)
 
     def rowid(self) -> ir.IntegerValue:
-        """A numbering expression representing the row number of the results.
+        """A unique integer per row, only valid on physical tables.
 
-        It can be 0 or 1 indexed depending on the backend. Check the backend
-        documentation for specifics.
+        Any further meaning behind this expression is backend dependent.
+        Generally this corresponds to some index into the database storage
+        (for example, sqlite or duckdb's `rowid`).
 
-        Notes
-        -----
-        This function is different from the window function `row_number`
-        (even if they are conceptually the same), and different from `rowid` in
-        backends where it represents the physical location
-        (e.g. Oracle or PostgreSQL's ctid).
+        For a monotonically increasing row number, see `ibis.row_number`.
 
         Returns
         -------
         IntegerColumn
             An integer column
-
-        Examples
-        --------
-        >>> my_table[my_table.rowid(), my_table.name].execute()  # doctest: +SKIP
-        1|Ibis
-        2|pandas
-        3|Dask
-        """  # noqa: E501
-        return ops.RowID().to_expr()
+        """
+        if not isinstance(self.op(), ops.PhysicalTable):
+            raise com.IbisTypeError(
+                "rowid() is only valid for physical tables, not for generic "
+                "table expressions"
+            )
+        return ops.RowID(self).to_expr()
 
     def view(self) -> Table:
         """Create a new table expression distinct from the current one.

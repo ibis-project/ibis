@@ -49,7 +49,7 @@ class RowID(Value, Named):
     """The row number (an autonumeric) of the returned result."""
 
     name = "rowid"
-
+    table = rlz.table
     output_shape = rlz.Shape.COLUMNAR
     output_dtype = dt.int64
 
