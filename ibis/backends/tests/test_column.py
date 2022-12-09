@@ -1,7 +1,5 @@
 import operator
 
-import numpy as np
-import pandas as pd
 import pytest
 
 
@@ -11,7 +9,6 @@ import pytest
         "clickhouse",
         "dask",
         "datafusion",
-        "duckdb",
         "impala",
         "mysql",
         "pandas",
@@ -24,43 +21,14 @@ import pytest
 )
 def test_rowid(con):
     t = con.table('functional_alltypes')
-    result = t[t.rowid()].execute()
-    first_value = 1
-    expected = pd.Series(
-        range(first_value, first_value + len(result)),
-        dtype=np.int64,
-        name='rowid',
-    )
-    pd.testing.assert_series_equal(result.iloc[:, 0], expected)
+    result = t.rowid().execute()
+    # Only guarantee is that the values are unique integers
+    assert result.is_unique
 
-
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "dask",
-        "datafusion",
-        "duckdb",
-        "impala",
-        "mysql",
-        "pandas",
-        "postgres",
-        "pyspark",
-        "polars",
-        "mssql",
-        "trino",
-    ]
-)
-def test_named_rowid(con):
-    t = con.table('functional_alltypes')
-    result = t[t.rowid().name('number')].execute()
-    first_value = 1
-    expected = pd.Series(
-        range(first_value, first_value + len(result)),
-        dtype=np.int64,
-        name='number',
-    )
-    pd.testing.assert_series_equal(result.iloc[:, 0], expected)
+    # Can be named
+    result = t.rowid().name("myrowid").execute()
+    assert result.is_unique
+    assert result.name == "myrowid"
 
 
 @pytest.mark.parametrize(

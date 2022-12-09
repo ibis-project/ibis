@@ -1646,3 +1646,12 @@ def test_group_by_order_by_deferred(func):
     table = ibis.table(dict(x="string", y="int"), name="t")
     expr = table.group_by(_.x).aggregate(mean_y=_.y.mean()).order_by(func(_.mean_y))
     assert isinstance(expr, ir.Table)
+
+
+def test_rowid_only_physical_tables():
+    table = ibis.table({"x": "int", "y": "string"}, name="t")
+
+    table.rowid()  # works
+    table[table.rowid(), table.x].filter(_.x > 10)  # works
+    with pytest.raises(com.IbisTypeError, match="only valid for physical tables"):
+        table.filter(table.x > 0).rowid()
