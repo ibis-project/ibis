@@ -29,6 +29,8 @@ from uuid import uuid4
 import toolz
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
 
     import ibis.expr.operations as ops
@@ -521,3 +523,33 @@ def import_object(qualname: str) -> Any:
         return getattr(mod, name)
     except AttributeError:
         raise ImportError(f"cannot import name {name!r} from {mod_name!r}") from None
+
+
+def normalize_filename(source: str | Path) -> str:
+    def _removeprefix(text, prefix):
+        # TODO: remove when we drop Python 3.8
+        try:
+            return text.removeprefix(prefix)
+        except AttributeError:
+            return text[text.startswith(prefix) and len(prefix) :]
+
+    source = str(source)
+    for prefix in (
+        "parquet",
+        "csv",
+        "csv.gz",
+        "txt",
+        "txt.gz",
+        "tsv",
+        "tsv.gz",
+        "file",
+    ):
+        source = _removeprefix(source, f"{prefix}://")
+
+    def _absolufy_paths(name):
+        if not name.startswith(("http", "s3")):
+            return os.path.abspath(name)
+        return name
+
+    source = _absolufy_paths(source)
+    return source

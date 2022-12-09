@@ -31,7 +31,8 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.to_sql
 ::: ibis.random
 ::: ibis.range_window
-::: ibis.read
+::: ibis.read_csv
+::: ibis.read_parquet
 ::: ibis.row_number
 ::: ibis.schema
 ::: ibis.struct
