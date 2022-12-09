@@ -482,6 +482,13 @@ def _count_star(t, op):
     return sa.func.count(t.translate(ops.Where(where, 1, None)))
 
 
+def _extract(fmt: str):
+    def translator(t, op: ops.Node):
+        return sa.cast(sa.extract(fmt, t.translate(op.arg)), sa.SMALLINT)
+
+    return translator
+
+
 sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
@@ -612,6 +619,13 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.BitwiseRightShift: _bitwise_op(">>"),
     ops.BitwiseNot: _bitwise_not,
     ops.JSONGetItem: fixed_arity(lambda x, y: x.op("->")(y), 2),
+    ops.ExtractYear: _extract('year'),
+    ops.ExtractQuarter: _extract('quarter'),
+    ops.ExtractMonth: _extract('month'),
+    ops.ExtractDay: _extract('day'),
+    ops.ExtractHour: _extract('hour'),
+    ops.ExtractMinute: _extract('minute'),
+    ops.ExtractSecond: _extract('second'),
 }
 
 

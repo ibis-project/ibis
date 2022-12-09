@@ -27,6 +27,7 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.registry import (
     _bitwise_op,
+    _extract,
     geospatial_functions,
     get_col_or_deferred_col,
 )
@@ -38,19 +39,16 @@ if geospatial_supported:
     operation_registry.update(geospatial_functions)
 
 
-def _extract(fmt, output_type=sa.SMALLINT):
-    def translator(t, op, output_type=output_type):
-        sa_arg = t.translate(op.arg)
-        return sa.cast(sa.extract(fmt, sa_arg), output_type)
-
-    return translator
+def _epoch(t, op):
+    sa_arg = t.translate(op.arg)
+    return sa.cast(sa.extract('epoch', sa_arg), sa.INTEGER)
 
 
 def _second(t, op):
     # extracting the second gives us the fractional part as well, so smash that
     # with a cast to SMALLINT
     sa_arg = t.translate(op.arg)
-    return sa.cast(sa.func.FLOOR(sa.extract('second', sa_arg)), sa.SMALLINT)
+    return sa.cast(sa.func.floor(sa.extract('second', sa_arg)), sa.SMALLINT)
 
 
 def _millisecond(t, op):
@@ -570,15 +568,9 @@ operation_registry.update(
         ops.TimestampSub: fixed_arity(operator.sub, 2),
         ops.TimestampDiff: fixed_arity(operator.sub, 2),
         ops.Strftime: _strftime,
-        ops.ExtractYear: _extract('year'),
-        ops.ExtractMonth: _extract('month'),
-        ops.ExtractDay: _extract('day'),
+        ops.ExtractEpochSeconds: _epoch,
         ops.ExtractDayOfYear: _extract('doy'),
-        ops.ExtractQuarter: _extract('quarter'),
-        ops.ExtractEpochSeconds: _extract('epoch', sa.Integer),
         ops.ExtractWeekOfYear: _extract('week'),
-        ops.ExtractHour: _extract('hour'),
-        ops.ExtractMinute: _extract('minute'),
         ops.ExtractSecond: _second,
         ops.ExtractMillisecond: _millisecond,
         ops.DayOfWeekIndex: _day_of_week_index,
