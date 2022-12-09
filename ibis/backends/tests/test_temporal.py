@@ -99,7 +99,7 @@ def test_timestamp_extract_literal(con, func, expected):
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake", "trino"])
+@pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake"])
 @pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond()
@@ -897,7 +897,7 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "pyspark"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
@@ -923,7 +923,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 
 
 @pytest.mark.broken(
-    ["clickhouse", "impala"],
+    ["clickhouse"],
     reason=(
         "Impala returns a string; "
         "the clickhouse driver returns invalid results for big timestamps"
@@ -998,7 +998,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason="ibis returns a string for the timestamp, only for snowflake",
     raises=TypeError,
 )
-@pytest.mark.notimpl(["polars", "datafusion", "impala", "pyspark"])
+@pytest.mark.notimpl(["polars", "datafusion", "pyspark"])
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")
