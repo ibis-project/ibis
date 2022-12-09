@@ -5,6 +5,7 @@ import json
 import numpy as np
 import pandas as pd
 import toolz
+from dateutil.parser import parse as date_parse
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
@@ -136,7 +137,15 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
 
 @sch.convert.register(object, dt.DataType, pd.Series)
 def convert_any_to_any(_, out_dtype, column):
-    return column.astype(out_dtype.to_pandas(), errors='ignore')
+    try:
+        return column.astype(out_dtype.to_pandas())
+    except pd.errors.OutOfBoundsDatetime:
+        try:
+            return column.map(date_parse)
+        except TypeError:
+            return column
+    except Exception:
+        return column
 
 
 @sch.convert.register(object, dt.Struct, pd.Series)
