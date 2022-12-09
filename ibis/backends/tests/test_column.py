@@ -83,7 +83,7 @@ def test_distinct_column(alltypes, df, column):
         ("day", set(range(1, 32))),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "trino"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["impala"])
 def test_date_extract_field(con, opname, expected):
     op = operator.methodcaller(opname)

@@ -27,7 +27,7 @@ from ibis.backends.pandas.execution.temporal import day_name
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "trino"])
+@pytest.mark.notimpl(["datafusion"])
 def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -44,7 +44,8 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'month',
         'day',
         param(
-            'day_of_year', marks=pytest.mark.notimpl(["bigquery", "impala", "mssql"])
+            'day_of_year',
+            marks=pytest.mark.notimpl(["bigquery", "impala", "mssql", "trino"]),
         ),
         param('quarter', marks=pytest.mark.notimpl(["mssql"])),
         'hour',
@@ -52,7 +53,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'second',
     ],
 )
-@pytest.mark.notimpl(["datafusion", "trino"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract(backend, alltypes, df, attr):
     method = getattr(alltypes.timestamp_col, attr)
     expr = method().name(attr)
@@ -77,7 +78,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             359,
             id='millisecond',
             marks=[
-                pytest.mark.notimpl(["clickhouse", "pyspark"]),
+                pytest.mark.notimpl(["clickhouse", "pyspark", "trino"]),
                 pytest.mark.broken(
                     ["mysql"],
                     reason="MySQL implementation of milliseconds is broken",
@@ -88,17 +89,17 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             lambda x: x.day_of_week.index(),
             1,
             id='day_of_week_index',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
         param(
             lambda x: x.day_of_week.full_name(),
             'Tuesday',
             id='day_of_week_full_name',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "trino"]),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     assert con.execute(func(value).name("tmp")) == expected
