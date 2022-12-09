@@ -287,7 +287,7 @@
               # remove patch dependencies and use thin lto to dramatically speed up builds
               sed -i \
                 -e '/\[patch\.crates-io\]/d' \
-                -e '/cmake = .*/,+2d' \
+                -e '/cmake = .*/,+1d' \
                 -e '/codegen-units = 1/d' \
                 -e 's/lto = "fat"/lto = "thin"/g' \
                 "''${clone}/py-polars/Cargo.toml"

@@ -10,13 +10,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(
-        [
-            "datafusion",
-            "pyspark",
-            "trino",
-        ]
-    ),
+    pytest.mark.notimpl(["datafusion", "pyspark", "trino"]),
 ]
 
 
@@ -46,34 +40,41 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
+@pytest.mark.notimpl(["postgres", "snowflake", "bigquery"])
+@pytest.mark.notyet(
+    ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
+)
+@pytest.mark.parametrize("field", ["a", "b", "c"])
+def test_literal(con, field):
+    query = _STRUCT_LITERAL[field]
+    result = pd.Series([con.execute(query)])
+    result = result.replace({np.nan: None})
+    expected = pd.Series([_SIMPLE_DICT[field]])
+    tm.assert_series_equal(result, expected)
+
+
 @pytest.mark.notimpl(["postgres", "snowflake"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't support nullable nested types",
 )
 @pytest.mark.parametrize(
-    ("expr_fn", "expected_fn"),
+    "field",
     [
+        "a",
         param(
-            _STRUCT_LITERAL.__getitem__,
-            _SIMPLE_DICT.__getitem__,
-            id="dict",
-            marks=pytest.mark.notimpl(["bigquery"]),
+            "b", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
         ),
         param(
-            _NULL_STRUCT_LITERAL.__getitem__,
-            lambda _: None,
-            id="null",
-            marks=pytest.mark.notimpl(["polars"]),
+            "c", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
         ),
     ],
 )
-@pytest.mark.parametrize("field", ["a", "b", "c"])
-def test_literal(con, field, expr_fn, expected_fn):
-    query = expr_fn(field)
+def test_null_literal(con, field):
+    query = _NULL_STRUCT_LITERAL[field]
     result = pd.Series([con.execute(query)])
     result = result.replace({np.nan: None})
-    expected = pd.Series([expected_fn(field)])
+    expected = pd.Series([None], dtype="object")
     tm.assert_series_equal(result, expected)
 
 
