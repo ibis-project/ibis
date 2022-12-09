@@ -47,14 +47,8 @@ def _endswith(t, op):
     return arg.op("LIKE BINARY")(sa.func.concat("%", end))
 
 
-def _extract(fmt):
-    def translator(t, op):
-        sa_arg = t.translate(op.arg)
-        if fmt == 'millisecond':
-            return sa.extract('microsecond', sa_arg) % 1000
-        return sa.extract(fmt, sa_arg)
-
-    return translator
+def _extract_millisecond(t, op):
+    return sa.extract('microsecond', t.translate(op.arg)) % 1000
 
 
 _truncate_formats = {
@@ -222,17 +216,10 @@ operation_registry.update(
         ops.TimestampTruncate: _truncate,
         ops.IntervalFromInteger: _interval_from_integer,
         ops.Strftime: fixed_arity(sa.func.date_format, 2),
-        ops.ExtractYear: _extract('year'),
-        ops.ExtractMonth: _extract('month'),
-        ops.ExtractDay: _extract('day'),
         ops.ExtractDayOfYear: unary(sa.func.dayofyear),
-        ops.ExtractQuarter: _extract('quarter'),
         ops.ExtractEpochSeconds: unary(sa.func.UNIX_TIMESTAMP),
         ops.ExtractWeekOfYear: unary(sa.func.weekofyear),
-        ops.ExtractHour: _extract('hour'),
-        ops.ExtractMinute: _extract('minute'),
-        ops.ExtractSecond: _extract('second'),
-        ops.ExtractMillisecond: _extract('millisecond'),
+        ops.ExtractMillisecond: _extract_millisecond,
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         # others
         ops.GroupConcat: _group_concat,
