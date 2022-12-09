@@ -937,7 +937,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
 )
-@pytest.mark.notimpl(["snowflake"])
 @pytest.mark.notimpl(["bigquery"], reason="bigquery returns a datetime with a timezone")
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -993,11 +992,6 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 
 
 @pytest.mark.broken(["clickhouse"], reason="returns incorrect results")
-@pytest.mark.broken(
-    ["snowflake"],
-    reason="ibis returns a string for the timestamp, only for snowflake",
-    raises=TypeError,
-)
 @pytest.mark.notimpl(["polars", "datafusion", "pyspark"])
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
