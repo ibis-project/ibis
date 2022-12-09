@@ -25,5 +25,6 @@ operation_registry.update(
         # array ops
         ops.Correlation: _corr,
         ops.Covariance: _covar,
+        ops.ExtractMillisecond: unary(sa.func.millisecond),
     }
 )
