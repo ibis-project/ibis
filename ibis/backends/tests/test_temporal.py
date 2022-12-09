@@ -47,7 +47,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
             'day_of_year',
             marks=pytest.mark.notimpl(["bigquery", "impala", "mssql", "trino"]),
         ),
-        param('quarter', marks=pytest.mark.notimpl(["mssql"])),
+        'quarter',
         'hour',
         'minute',
         'second',
