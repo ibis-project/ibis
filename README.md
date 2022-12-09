@@ -55,16 +55,17 @@ Ibis acts as a universal frontend to the following systems:
 - [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
 - [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
 - [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)
-- [Google BigQuery](https://github.com/ibis-project/ibis-bigquery)
+- [Google BigQuery](https://ibis-project.org/docs/dev/backends/BigQuery/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
-- [Microsoft SQL Server](https://ibis-project.org/docs/latest/backends/MSSQL/)
+- [Microsoft SQL Server](https://ibis-project.org/dev/latest/backends/MSSQL/)
 - [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
-- [Polars](https://ibis-project.org/docs/latest/backends/Polars/)
+- [Polars](https://ibis-project.org/docs/dev/backends/Polars/)
 - [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
 - [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
 - [Snowflake](https://ibis-project.org/docs/dev/backends/Snowflake) (experimental)
 - [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
+- [Trino](https://ibis-project.org/docs/dev/backends/Trino/) (experimental)
 
 The list of supported backends is continuously growing. Anyone can get involved
 in adding new ones! Learn more about contributing to ibis in our contributing
