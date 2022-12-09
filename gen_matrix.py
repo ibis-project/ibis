@@ -27,6 +27,10 @@ EXCLUDED_OPS = {
     ops.UnresolvedExistsSubquery,
     ops.UnresolvedNotExistsSubquery,
     ops.ScalarParameter,
+} | {
+    op
+    for op in frozenset(get_leaf_classes(ops.Value))
+    if issubclass(op, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp))
 }
 
 INCLUDED_OPS = {
@@ -41,10 +45,11 @@ ICONS = {
 }
 
 
-def main():
-    possible_ops = (
-        frozenset(get_leaf_classes(ops.Value)) | INCLUDED_OPS
-    ) - EXCLUDED_OPS
+def gen_matrix(basename, possible_ops=None):
+    if possible_ops is None:
+        possible_ops = (
+            frozenset(get_leaf_classes(ops.Value)) | INCLUDED_OPS
+        ) - EXCLUDED_OPS
 
     support = {"operation": [f"`{op.__name__}`" for op in possible_ops]}
     support.update(
@@ -55,6 +60,7 @@ def main():
     df = pd.DataFrame(support).set_index("operation").sort_index()
 
     counts = df.sum().sort_values(ascending=False)
+    counts = counts[counts > 0]
     num_ops = len(possible_ops)
     coverage = (
         counts.map(lambda n: f"_{n} ({round(100 * n / num_ops)}%)_")
@@ -67,7 +73,7 @@ def main():
     dst = Path(__file__).parent.joinpath(
         "docs",
         "backends",
-        "support_matrix.csv",
+        f"{basename}_support_matrix.csv",
     )
 
     if dst.exists():
@@ -78,6 +84,17 @@ def main():
 
     if should_write:
         table.to_csv(dst, index_label="Backends")
+
+
+def main():
+    gen_matrix(basename="core")
+    gen_matrix(
+        basename="geospatial",
+        possible_ops=(
+            frozenset(get_leaf_classes(ops.GeoSpatialUnOp))
+            | frozenset(get_leaf_classes(ops.GeoSpatialBinOp))
+        ),
+    )
 
 
 main()

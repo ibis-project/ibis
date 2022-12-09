@@ -91,7 +91,7 @@ ci/udf/.ninja_log
 ci/udf/build.ninja
 junit.xml
 spark-warehouse
-docs/backends/support_matrix.csv
+docs/backends/*support_matrix.csv
 __pycache__
 tags
 .DS_Store
