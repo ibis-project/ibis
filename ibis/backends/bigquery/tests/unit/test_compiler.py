@@ -142,33 +142,49 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
+unit_full_names = {
+    "Y": "year",
+    "Q": "quarter",
+    "M": "month",
+    "W": "week",
+    "D": "day",
+    "h": "hour",
+    "m": "minute",
+    "s": "second",
+    "ms": "millis",
+    "us": "micros",
+}
+
+
 @pytest.mark.parametrize(
-    ("unit", "expected_func"),
+    ("unit", "func"),
     [
-        ("Y", "TIMESTAMP"),
-        ("Q", "TIMESTAMP"),
-        ("M", "TIMESTAMP"),
-        ("W", "TIMESTAMP"),
-        ("D", "TIMESTAMP"),
-        ("h", "TIMESTAMP"),
-        ("m", "TIMESTAMP"),
-        ("s", "TIMESTAMP"),
-        ("ms", "TIMESTAMP"),
-        ("us", "TIMESTAMP"),
-        ("Y", "DATE"),
-        ("Q", "DATE"),
-        ("M", "DATE"),
-        ("W", "DATE"),
-        ("D", "DATE"),
-        ("h", "TIME"),
-        ("m", "TIME"),
-        ("s", "TIME"),
-        ("ms", "TIME"),
-        ("us", "TIME"),
+        ("Y", "timestamp"),
+        ("Q", "timestamp"),
+        ("M", "timestamp"),
+        ("W", "timestamp"),
+        ("D", "timestamp"),
+        ("h", "timestamp"),
+        ("m", "timestamp"),
+        ("s", "timestamp"),
+        ("ms", "timestamp"),
+        ("us", "timestamp"),
+        ("Y", "date"),
+        ("Q", "date"),
+        ("M", "date"),
+        ("W", "date"),
+        ("D", "date"),
+        ("h", "time"),
+        ("m", "time"),
+        ("s", "time"),
+        ("ms", "time"),
+        ("us", "time"),
     ],
+    ids=lambda p: unit_full_names.get(p, p),
 )
-def test_temporal_truncate(unit, expected_func, snapshot):
-    t = ibis.table([("a", getattr(dt, expected_func.lower()))], name="t")
+def test_temporal_truncate(unit, func, snapshot):
+    dtype = getattr(dt, func)
+    t = ibis.table([("a", dtype)], name="t")
     expr = t.a.truncate(unit).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
