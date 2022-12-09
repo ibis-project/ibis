@@ -7,7 +7,7 @@ import itertools
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
 import pyarrow as pa
 import pyarrow.types as pat
@@ -15,130 +15,42 @@ import sqlalchemy as sa
 import toolz
 
 import ibis.expr.datatypes as dt
+from ibis import util
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
+    import pandas as pd
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
-from ibis.common.dispatch import RegexDispatcher
 
-_generate_view_code = RegexDispatcher("_register")
 _dialect = sa.dialects.postgresql.dialect()
 
-_gen_table_names = (f"registered_table{i:d}" for i in itertools.count())
+# counters for in-memory, parquet, and csv reads
+# used if no table name is specified
+pd_n = itertools.count(0)
+pa_n = itertools.count(0)
+csv_n = itertools.count(0)
 
 
-def _name_from_path(path: str | Path) -> str:
-    # https://github.com/duckdb/duckdb/issues/5203
-    return str(path).replace(".", "_")
+def normalize_filenames(source_list):
+    # Promote to list
+    source_list = util.promote_list(source_list)
 
-
-def _name_from_dataset(dataset: pa.dataset.FileSystemDataset) -> str:
-    return _name_from_path(Path(os.path.commonprefix(dataset.files)))
+    return list(map(util.normalize_filename, source_list))
 
 
 def _quote(name: str):
     return _dialect.identifier_preparer.quote(name)
 
 
-def _get_scheme(scheme):
-    if scheme is None or scheme == "file://":
-        return ""
-    return scheme
-
-
 def _format_kwargs(kwargs):
     return (
         f"{k}='{v}'" if isinstance(v, str) else f"{k}={v!r}" for k, v in kwargs.items()
-    )
-
-
-@_generate_view_code.register(r"parquet://(?P<path>.+)", priority=13)
-def _parquet(_, path, table_name=None, scheme=None, **kwargs):
-    scheme = _get_scheme(scheme)
-    if not scheme:
-        path = os.path.abspath(path)
-    if not table_name:
-        table_name = _name_from_path(path)
-    quoted_table_name = _quote(table_name)
-    args = [f"'{scheme}{path}'", *_format_kwargs(kwargs)]
-    code = f"""\
-CREATE OR REPLACE VIEW {quoted_table_name} AS
-SELECT * FROM read_parquet({', '.join(args)})"""
-    return code, table_name, ["parquet"] + ["httpfs"] if scheme else []
-
-
-@_generate_view_code.register(r"(c|t)sv://(?P<path>.+)", priority=13)
-def _csv(_, path, table_name=None, scheme=None, **kwargs):
-    scheme = _get_scheme(scheme)
-    if not scheme:
-        path = os.path.abspath(path)
-    if not table_name:
-        table_name = _name_from_path(path)
-    quoted_table_name = _quote(table_name)
-    # auto_detect and columns collide, so we set auto_detect=True
-    # unless COLUMNS has been specified
-    args = [
-        f"'{scheme}{path}'",
-        f"auto_detect={kwargs.pop('auto_detect', 'columns' not in kwargs)}",
-        *_format_kwargs(kwargs),
-    ]
-    code = f"""\
-CREATE OR REPLACE VIEW {quoted_table_name} AS
-SELECT * FROM read_csv({', '.join(args)})"""
-    return code, table_name, ["httpfs"] if scheme else []
-
-
-@_generate_view_code.register(
-    r"(?P<scheme>(?:file|https?)://)?(?P<path>.+?\.((?:c|t)sv|txt)(?:\.gz)?)",
-    priority=12,
-)
-def _csv_file_or_url(_, path, table_name=None, **kwargs):
-    return _csv(f"csv://{path}", path=path, table_name=table_name, **kwargs)
-
-
-@_generate_view_code.register(
-    r"(?P<scheme>(?:file|https?)://)?(?P<path>.+?\.parquet)", priority=12
-)
-def _parquet_file_or_url(_, path, table_name=None, **kwargs):
-    return _parquet(f"parquet://{path}", path=path, table_name=table_name, **kwargs)
-
-
-@_generate_view_code.register(r"s3://.+", priority=13)
-def _s3(full_path, table_name=None):
-    # TODO: gate this import once the ResultHandler mixin is merged #4454
-    import pyarrow.dataset as ds
-
-    dataset = ds.dataset(full_path)
-    table_name = table_name or _name_from_dataset(dataset)
-    return table_name, dataset, []
-
-
-@_generate_view_code.register(r"postgres(ql)?://.+", priority=10)
-def _postgres(uri, table_name=None):
-    if table_name is None:
-        raise ValueError("`table_name` is required when registering a postgres table")
-    quoted_table_name = _quote(table_name)
-    sql = (
-        f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
-        f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
-    )
-    return sql, table_name, ["postgres_scanner"]
-
-
-@_generate_view_code.register(r".+", priority=1)
-def _default(path, **kwargs):
-    raise ValueError(
-        f"""Unrecognized file type or extension: {path}.
-
-Valid prefixes are parquet://, csv://, tsv://, s3://, or file://
-Supported file extensions are parquet, csv, tsv, txt, csv.gz, tsv.gz, and txt.gz
-    """
     )
 
 
@@ -244,9 +156,9 @@ class Backend(BaseAlchemyBackend):
         Parameters
         ----------
         source
-            The data source. May be a path to a file or directory of
-            parquet/csv files, a pandas dataframe, or a pyarrow table or
-            dataset.
+            The data source(s). May be a path to a file or directory of
+            parquet/csv files, an iterable of parquet or CSV files, a pandas
+            dataframe, a pyarrow table or dataset, or a postgres URI.
         table_name
             An optional name to use for the created table. This defaults to the
             filename if a path (with hyphens replaced with underscores), or
@@ -261,30 +173,201 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        if isinstance(source, str) and source.startswith("s3://"):
-            table_name, dataset, extensions_required = _generate_view_code(
-                source, table_name=table_name
-            )
-            self._load_extensions(extensions_required)
+
+        if isinstance(source, (str, Path)):
+            first = str(source)
+        elif isinstance(source, (list, tuple)):
+            first = source[0]
+        else:
+            try:
+                return self.read_in_memory(source, table_name=table_name, **kwargs)
+            except sa.exc.ProgrammingError:
+                self._register_failure()
+
+        if first.startswith(("parquet://", "parq://")) or first.endswith(
+            ("parq", "parquet")
+        ):
+            return self.read_parquet(source, table_name=table_name, **kwargs)
+        elif first.startswith(
+            ("csv://", "csv.gz://", "txt://", "txt.gz://")
+        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
+            return self.read_csv(source, table_name=table_name, **kwargs)
+        elif first.startswith(("postgres://", "postgresql://")):
+            return self.read_postgres(source, table_name=table_name, **kwargs)
+        else:
+            self._register_failure()
+            return None
+
+    def _register_failure(self):
+        import inspect
+
+        msg = ", ".join(
+            m[0] for m in inspect.getmembers(self) if m[0].startswith("read_")
+        )
+        raise ValueError(
+            f"Cannot infer appropriate read function for input, "
+            f"please call one of {msg} directly"
+        )
+
+    def read_csv(
+        self,
+        source_list: str | list[str] | tuple[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file or directory of CSV files, or an
+            iterable of CSV files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/data/csv for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+
+        if not table_name:
+            table_name = f"ibis_read_csv_{next(csv_n)}"
+
+        quoted_table_name = _quote(table_name)
+
+        # auto_detect and columns collide, so we set auto_detect=True
+        # unless COLUMNS has been specified
+        args = [
+            str(source_list),
+            f"auto_detect={kwargs.pop('auto_detect', 'columns' not in kwargs)}",
+            *_format_kwargs(kwargs),
+        ]
+        sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
+SELECT * FROM read_csv({', '.join(args)})"""
+
+        self.con.execute(sql)
+        return self._read(table_name)
+
+    def read_parquet(
+        self,
+        source_list: str | Iterable[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/data/parquet for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+
+        if any(source.startswith("s3://") for source in source_list):
+            if len(source_list) > 1:
+                raise ValueError("only single s3 paths are supported")
+
+            import pyarrow.dataset as ds
+
+            dataset = ds.dataset(source_list[0])
+            table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+            self._load_extensions(["httpfs"])
             # We don't create a view since DuckDB special cases Arrow Datasets
             # so if we also create a view we end up with both a "lazy table"
             # and a view with the same name
-            with self._safe_raw_sql("SELECT 1") as cursor:
+            with self.con.begin() as con:
                 # DuckDB normally auto-detects Arrow Datasets that are defined
                 # in local variables but the `dataset` variable won't be local
                 # by the time we execute against this so we register it
                 # explicitly.
-                cursor.cursor.c.register(table_name, dataset)
-        elif isinstance(source, (str, Path)):
-            sql, table_name, extensions_required = _generate_view_code(
-                str(source), table_name=table_name, **kwargs
-            )
-            self._load_extensions(extensions_required)
-            self.con.execute(sql)
+                con.connection.register(table_name, dataset)
         else:
-            if table_name is None:
-                table_name = next(_gen_table_names)
-            self.con.execute("register", (table_name, source))
+            if any(
+                source.startswith(("http://", "https://")) for source in source_list
+            ):
+                self._load_extensions(["httpfs"])
+            dataset = str(source_list)
+            table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+
+            quoted_table_name = _quote(table_name)
+            sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
+            SELECT * FROM read_parquet({dataset})"""
+
+            self.con.execute(sql)
+
+        return self._read(table_name)
+
+    def read_in_memory(
+        self, dataframe: pd.DataFrame | pa.Table, table_name: str | None = None
+    ) -> ir.Table:
+        """Register a Pandas DataFrame or pyarrow Table as a table in the current database.
+
+        Parameters
+        ----------
+        dataframe
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        self.con.execute("register", (table_name, dataframe))
+
+        return self._read(table_name)
+
+    def read_postgres(self, uri, table_name=None):
+        """Register a table from a postgres instance into a DuckDB table.
+
+        Parameters
+        ----------
+        uri
+            The postgres URI in form 'postgres://user:password@host:port'
+        table_name
+            The table to read
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+        if table_name is None:
+            raise ValueError(
+                "`table_name` is required when registering a postgres table"
+            )
+        self._load_extensions(["postgres_scanner"])
+        quoted_table_name = _quote(table_name)
+        sql = (
+            f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
+            f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
+        )
+        self.con.execute(sql)
+
+        return self._read(table_name)
+
+    def _read(self, table_name):
 
         _table = self.table(table_name)
         with warnings.catch_warnings():

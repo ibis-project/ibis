@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
+import itertools
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
 
 import polars as pl
 
@@ -14,42 +14,16 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
-from ibis.common.dispatch import RegexDispatcher
+from ibis.util import normalize_filename
 
-_register_file = RegexDispatcher("_register_file")
+if TYPE_CHECKING:
+    import pandas as pd
 
-
-def _name_from_path(path: Path) -> str:
-    base, *_ = path.name.partition(os.extsep)
-    return base.replace("-", "_")
-
-
-@_register_file.register(r"parquet://(?P<path>.+)", priority=10)
-def _parquet(_, path, table_name=None, **kwargs):
-    path = Path(path).absolute()
-    table_name = table_name or _name_from_path(path)
-    return ("scan_parquet", path, table_name)
-
-
-@_register_file.register(r"csv://(?P<path>.+)", priority=10)
-def _csv(_, path, table_name=None, **kwargs):
-    path = Path(path).absolute()
-    table_name = table_name or _name_from_path(path)
-    return ("scan_csv", path, table_name)
-
-
-@_register_file.register(r"(?:file://)?(?P<path>.+)", priority=9)
-def _file(raw, path, table_name=None, **kwargs):
-    num_sep_chars = len(os.extsep)
-    extension = "".join(Path(path).suffixes)[num_sep_chars:]
-    if not extension:
-        raise ValueError(
-            f"""Unrecognized file type or extension: {raw}
-
-        Valid prefixes are parquet://, csv://, or file://
-        Supported file extensions are parquet and csv"""
-        )
-    return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
+# counters for in-memory, parquet, and csv reads
+# used if no table name is specified
+pd_n = itertools.count(0)
+pa_n = itertools.count(0)
+csv_n = itertools.count(0)
 
 
 class Backend(BaseBackend):
@@ -93,19 +67,148 @@ class Backend(BaseBackend):
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
+        """Register a data source as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source(s). May be a path to a file, a parquet directory, or a pandas
+            dataframe.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading functions for
+            CSV or parquet.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_csv.html
+            and https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
+            for more information
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+
         if isinstance(source, (str, Path)):
-            method, path, name = _register_file(
-                str(source), table_name=table_name, **kwargs
+            first = str(source)
+        elif isinstance(source, (list, tuple)):
+            raise TypeError(
+                """Polars backend cannot register iterables of files.
+           For partitioned-parquet ingestion, use read_parquet"""
             )
-            self._tables[name] = getattr(pl, method)(path, **kwargs)
         else:
-            if table_name is None:
-                raise ValueError(
-                    "Must specify table_name for pandas DataFrame registration"
-                )
-            name = table_name
-            self._tables[name] = pl.from_pandas(source, **kwargs).lazy()
-        return self.table(name)
+            try:
+                return self.read_pandas(source, table_name=table_name, **kwargs)
+            except ValueError:
+                self._register_failure()
+
+        if first.startswith(("parquet://", "parq://")) or first.endswith(
+            ("parq", "parquet")
+        ):
+            return self.read_parquet(source, table_name=table_name, **kwargs)
+        elif first.startswith(
+            ("csv://", "csv.gz://", "txt://", "txt.gz://")
+        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
+            return self.read_csv(source, table_name=table_name, **kwargs)
+        else:
+            self._register_failure()
+        return None
+
+    def _register_failure(self):
+        import inspect
+
+        msg = ", ".join(
+            m[0] for m in inspect.getmembers(self) if m[0].startswith("read_")
+        )
+        raise ValueError(
+            f"Cannot infer appropriate read function for input, "
+            f"please call one of {msg} directly"
+        )
+
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_csv.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        path = normalize_filename(path)
+        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+        try:
+            self._tables[table_name] = pl.scan_csv(path, **kwargs)
+        except pl.exceptions.ComputeError:
+            # handles compressed csvs
+            self._tables[table_name] = pl.read_csv(path, **kwargs).lazy()
+        return self.table(table_name)
+
+    def read_pandas(
+        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a Pandas DataFrame or pyarrow Table a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.from_pandas.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        self._tables[table_name] = pl.from_pandas(source, **kwargs).lazy()
+        return self.table(table_name)
+
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source(s). May be a path to a file or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
+        for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        path = normalize_filename(path)
+        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        self._tables[table_name] = pl.scan_parquet(path, **kwargs)
+        return self.table(table_name)
 
     def database(self, name=None):
         return self.database_class(name, self)

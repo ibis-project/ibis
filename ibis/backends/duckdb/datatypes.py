@@ -62,6 +62,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("real", "float4", "float").result(float32)
         | spaceless_string("smallint", "int2", "short").result(int16)
         | spaceless_string(
+            "timestamp with time zone",
             "timestamp_tz",
             "timestamp_sec",
             "timestamp_ms",

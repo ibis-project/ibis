@@ -139,7 +139,8 @@ __all__ = (
     'pi',
     'random',
     'range_window',
-    'read',
+    'read_csv',
+    'read_parquet',
     'row_number',
     'rows_with_max_lookback',
     'schema',
@@ -818,17 +819,43 @@ def row_number() -> ir.IntegerColumn:
     return ops.RowNumber().to_expr()
 
 
-def read(path: str | Path, **kwargs: Any) -> ir.Table:
-    """Lazily load a data source located at `path`.
+def read_csv(sources: str | Path, **kwargs: Any) -> ir.Table:
+    """Lazily load a CSV or set of CSVs.
 
     Parameters
     ----------
-    path
-        A filesystem path or URL. Supports CSV, TSV, and Parquet files.
+    sources
+        A filesystem path or URL or list of same.  Supports CSV and TSV files.
     kwargs
         DuckDB-specific keyword arguments for the file type.
 
         * CSV/TSV: https://duckdb.org/docs/data/csv#parameters.
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> batting = ibis.read_csv("ci/ibis-testing-data/batting.csv")
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.read_csv(sources, **kwargs)
+
+
+def read_parquet(sources: str | Path, **kwargs: Any) -> ir.Table:
+    """Lazily load a parquet file or set of parquet files.
+
+    Parameters
+    ----------
+    sources
+        A filesystem path or URL or list of same.
+    kwargs
+        DuckDB-specific keyword arguments for the file type.
+
         * Parquet: https://duckdb.org/docs/data/parquet
 
     Returns
@@ -838,14 +865,12 @@ def read(path: str | Path, **kwargs: Any) -> ir.Table:
 
     Examples
     --------
-    >>> batting = ibis.read("ci/ibis-testing-data/batting.csv")
-    >>> diamonds = ibis.read("ci/ibis-testing-data/parquet/diamonds/diamonds.parquet")
-    >>> ft = ibis.read("parquet://ci/ibis-testing-data/parquet/functional_alltypes/*")
+    >>> batting = ibis.read_parquet("ci/ibis-testing-data/parquet/batting/batting.parquet")
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.register(str(path), **kwargs)
+    return con.read_parquet(sources, **kwargs)
 
 
 e = ops.E().to_expr()
