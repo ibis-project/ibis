@@ -1,3 +1,4 @@
+import calendar
 import functools
 import math
 import operator
@@ -6,6 +7,7 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 import polars as pl
+from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -783,6 +785,9 @@ def extract_epoch_seconds(op):
     return arg.dt.epoch('s').cast(pl.Int32)
 
 
+_day_of_week_offset = vparse(pl.__version__) >= vparse("0.15.1")
+
+
 _unary = {
     # TODO(kszucs): factor out the lambdas
     ops.Abs: operator.methodcaller('abs'),
@@ -792,7 +797,9 @@ _unary = {
     ops.Ceil: lambda arg: arg.ceil().cast(pl.Int64),
     ops.Cos: operator.methodcaller('cos'),
     ops.Cot: lambda arg: arg.cos() / arg.sin(),
-    ops.DayOfWeekIndex: lambda arg: arg.dt.weekday().cast(pl.Int16),
+    ops.DayOfWeekIndex: (
+        lambda arg: arg.dt.weekday().cast(pl.Int16) - _day_of_week_offset
+    ),
     ops.Exp: operator.methodcaller('exp'),
     ops.Floor: lambda arg: arg.floor().cast(pl.Int64),
     ops.IsInf: operator.methodcaller('is_infinite'),
@@ -809,24 +816,12 @@ _unary = {
     ops.Tan: operator.methodcaller('tan'),
 }
 
-# ops.DayOfWeekName: lambda arg: arg.dt.weekday().apply(lambda x: _WEEKDAY.get(x)),
-
-_WEEKDAY = {
-    0: "Monday",
-    1: "Tuesday",
-    2: "Wednesday",
-    3: "Thursday",
-    4: "Friday",
-    5: "Saturday",
-    6: "Sunday",
-}
-
 
 @translate.register(ops.DayOfWeekName)
 def day_of_week_name(op):
-    index = translate(op.arg).dt.weekday()
+    index = translate(op.arg).dt.weekday() - _day_of_week_offset
     arg = None
-    for i, name in reversed(_WEEKDAY.items()):
+    for i, name in enumerate(calendar.day_name):
         arg = pl.when(index == i).then(name).otherwise(arg)
     return arg
 

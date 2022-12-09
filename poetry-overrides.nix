@@ -93,7 +93,7 @@ in
         owner = "pola-rs";
         repo = "polars";
         rev = "py-${version}";
-        sha256 = "sha256-cWhJRRXKbOipXXEpztEOrrJXG5WQcJc7cRjgiIx0XFQ=";
+        sha256 = "sha256-cyxd2v0liyopxOP6BXqCsMDJv6JBKpOeUv4l0g5aiuY=";
       };
       sourceRoot = "source/py-polars";
       nightlyRustPlatform = pkgs.makeRustPlatform {
@@ -114,7 +114,7 @@ in
       cargoDeps = nightlyRustPlatform.fetchCargoTarball {
         inherit src sourceRoot patches;
         name = "${attrs.pname}-${version}";
-        sha256 = "sha256-fMeeYrSnCudU8PTMmoU2drlWluj+QiIQ+1DmiUb3AOo=";
+        sha256 = "sha256-PSnMwM8R2ZSqS1wGjSLMDQSOct7M3nest5USk2bEcuI=";
       };
     });
 
@@ -163,5 +163,9 @@ in
 
   trino = super.trino.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+  });
+
+  comm = super.comm.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
   });
 }
