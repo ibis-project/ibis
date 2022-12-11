@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-nix develop -c npx --yes \
+nix develop '.#release' -c npx --yes \
   -p semantic-release \
   -p "@semantic-release/commit-analyzer" \
   -p "@semantic-release/release-notes-generator" \

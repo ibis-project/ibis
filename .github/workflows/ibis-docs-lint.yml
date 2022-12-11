@@ -60,7 +60,7 @@ jobs:
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks
-        run: nix develop --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -139,10 +139,10 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix develop -c mkdocs build --strict
+        run: nix develop '.#docs' -c mkdocs build --strict
 
       - name: verify internal links
-        run: nix develop -c just checklinks --offline --no-progress
+        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
 
   docs_push:
     runs-on: ubuntu-latest
@@ -188,7 +188,8 @@ jobs:
 
       - name: build and push dev docs
         run: |
-          nix develop -c mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
+          nix develop '.#docs' -c \
+            mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
 
   simulate_release:
     runs-on: ubuntu-latest
