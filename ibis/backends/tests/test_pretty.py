@@ -48,9 +48,7 @@ array_literal = param(
             reason="Impala hasn't implemented array literals",
         ),
         mark.notimpl(
-            ["snowflake", "trino"],
-            reason="Cannot render array literals",
-            raises=(NotImplementedError, sa.exc.CompileError),
+            ["trino"], reason="Cannot render array literals", raises=sa.exc.CompileError
         ),
     ],
     id="array_literal",
