@@ -122,6 +122,14 @@ def _fmt_root_value_op(op: ops.Value, *, name: str, aliases: Aliases, **_: Any) 
     return f"{prefix}{value}{type_info(op.to_expr().type())}"
 
 
+@fmt_root.register
+def _fmt_root_literal_op(
+    op: ops.Literal, *, name: str, aliases: Aliases, **_: Any
+) -> str:
+    value = fmt_value(op, aliases=aliases)
+    return f"{value}{type_info(op.to_expr().type())}"
+
+
 @fmt_root.register(ops.SortKey)
 def _fmt_root_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
     return fmt_value(op, aliases=aliases)
