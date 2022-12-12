@@ -10,12 +10,13 @@ import pytest
         "dask",
         "datafusion",
         "impala",
+        "mssql",
         "mysql",
         "pandas",
+        "polars",
         "postgres",
         "pyspark",
-        "polars",
-        "mssql",
+        "snowflake",
         "trino",
     ]
 )
