@@ -85,7 +85,6 @@ operation_registry.update(
         # time and dates
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
-        ops.RowID: (lambda *_: sa.func.seq8() + 1),
         ops.DayOfWeekName: _day_of_week_name,
     }
 )
