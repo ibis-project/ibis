@@ -48,11 +48,6 @@ array_literal = param(
             reason="Impala hasn't implemented array literals",
         ),
         mark.notimpl(
-            ["postgres"],
-            reason="array literals are not yet implemented",
-            raises=NotImplementedError,
-        ),
-        mark.notimpl(
             ["snowflake", "trino"],
             reason="Cannot render array literals",
             raises=(NotImplementedError, sa.exc.CompileError),
