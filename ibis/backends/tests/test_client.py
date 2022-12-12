@@ -13,7 +13,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis.util import guid
 
 
@@ -586,8 +585,8 @@ def test_connect_sqlite(url, ext, tmp_path):
 )
 def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
     getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
-    t = ibis.connect(tmp_path / f"out.{extension}")
-    assert isinstance(t, ir.Table)
+    con = ibis.connect(tmp_path / f"out.{extension}")
+    t = list(con.tables.values())[0]
     assert not t.head().execute().empty
 
 
