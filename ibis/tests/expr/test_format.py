@@ -361,3 +361,11 @@ def test_destruct_selection():
 
     assert "sum:  StructField(ReductionVectorizedUDF" in result
     assert "mean: StructField(ReductionVectorizedUDF" in result
+
+
+@pytest.mark.parametrize(
+    "literal, typ, output",
+    [(42, None, '42'), ('42', None, "'42'"), (42, "double", '42.0')],
+)
+def test_format_literal(literal, typ, output):
+    assert repr(ibis.literal(literal, type=typ)) == output
