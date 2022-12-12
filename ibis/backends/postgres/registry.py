@@ -8,7 +8,7 @@ import string
 import warnings
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects import postgresql as pg
 
 import ibis.common.exceptions as com
 import ibis.common.geospatial as geo
@@ -274,7 +274,7 @@ def _find_in_set(t, op):
     return (
         sa.func.coalesce(
             sa.func.array_position(
-                postgresql.array(list(map(t.translate, op.values))),
+                pg.array(list(map(t.translate, op.values))),
                 t.translate(op.needle),
             ),
             0,
@@ -309,7 +309,7 @@ def _regex_extract(t, op):
     # arrays are 1-based in postgres
     index = t.translate(op.index) + 1
     does_match = sa.func.textregexeq(arg, pattern)
-    matches = sa.func.regexp_match(arg, pattern, type_=postgresql.ARRAY(sa.TEXT))
+    matches = sa.func.regexp_match(arg, pattern, type_=pg.ARRAY(sa.TEXT))
     return sa.case([(does_match, matches[index])], else_=None)
 
 
@@ -385,7 +385,7 @@ def _round(t, op):
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
     if digits is not None and arg.output_dtype.is_decimal():
         return result
-    result = sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    result = sa.cast(result, pg.DOUBLE_PRECISION())
     return result
 
 
@@ -400,7 +400,7 @@ def _mod(t, op):
 
     result = left % right
     if op.output_dtype.is_float64():
-        return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+        return sa.cast(result, pg.DOUBLE_PRECISION())
     else:
         return result
 
@@ -443,7 +443,10 @@ def _literal(_, op):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
     elif isinstance(value, tuple):
-        return sa.literal(value, type_=to_sqla_type(dtype))
+        return sa.literal_column(
+            str(pg.array(value).compile(compile_kwargs=dict(literal_binds=True))),
+            type_=to_sqla_type(dtype),
+        )
     else:
         return sa.literal(value)
 
@@ -459,7 +462,7 @@ def _day_of_week_name(t, op):
 
 
 def _array_column(t, op):
-    return postgresql.array(list(map(t.translate, op.cols)))
+    return pg.array(list(map(t.translate, op.cols)))
 
 
 def _string_agg(t, op):
