@@ -763,10 +763,6 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
 
     Examples
     --------
-    Connect to an on-disk parquet or csv file (uses duckdb by default):
-    >>> con = ibis.connect("/path/to/data.parquet")
-    >>> con = ibis.connect("/path/to/data.csv")
-
     Connect to an in-memory duckdb database:
     >>> con = ibis.connect("duckdb://")
 
@@ -799,7 +795,8 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         elif path.endswith((".parquet", ".csv", ".csv.gz")):
             # Load parquet/csv/csv.gz files with duckdb by default
             con = ibis.duckdb.connect(**kwargs)
-            return con.register(path)
+            con.register(path)
+            return con
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")
 
