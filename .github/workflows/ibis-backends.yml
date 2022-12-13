@@ -47,6 +47,8 @@ jobs:
           - "3.8"
           - "3.10"
         backend:
+          - name: adbc
+            title: ADBC
           - name: dask
             title: Dask
             extras:
