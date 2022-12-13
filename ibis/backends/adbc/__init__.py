@@ -14,14 +14,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, TYPE_CHECKING
 
 import pyarrow
 import sqlalchemy as sa
 
 from ibis import Expr
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.expr.typing import TimeContext
 
 
 class Backend(BaseAlchemyBackend):

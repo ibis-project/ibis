@@ -169,6 +169,7 @@ snowflake = "ibis.backends.snowflake"
 spark = "ibis.backends.pyspark"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
+adbc = "ibis.backends.adbc"
 
 [tool.pytest.ini_options]
 doctest_optionflags = [
