@@ -48,17 +48,13 @@ class Backend(BaseAlchemyBackend):
 
         Parameters
         ----------
-        driver
-            The driver name. Example: adbc_driver_sqlite will load
-            libadbc_driver_sqlite.so (Unixes) or
-            adbc_driver_sqlite.dll (Windows).
-        entrypoint
-            The driver-specific entrypoint.
+        uri
+            The uri of the server to connect to
+            Example: grpc+tls://localhost:31337
         dialect
             The SQLAlchemy dialect name (the scheme of a connection URI).
-        db_args
+        db_kwargs
             Driver-specific arguments.
-
         """
         self._dialect = dialect
         engine = sa.create_engine(
