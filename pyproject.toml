@@ -293,6 +293,7 @@ markers = [
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
+  "adbc: ADBC tests",
 ]
 
 [tool.black]
