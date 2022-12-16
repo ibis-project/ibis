@@ -118,54 +118,18 @@ in
       };
     });
 
-  mkdocs-table-reader-plugin = super.mkdocs-table-reader-plugin.overridePythonAttrs (_: {
-    postPatch = ''
-      substituteInPlace setup.py --replace "tabulate>=0.8.7" "tabulate"
-    '';
-  });
-
   # hatch-requirements-txt has a huge set of (circular!) dependencies, only
   # used at build time none of which are required to build documentation so we
   # remove the part of pyproject.toml that requires it
-  mkdocs-material = super.mkdocs-material.overridePythonAttrs (attrs: {
+  mkdocs-material = super.mkdocs-material.overridePythonAttrs (_: {
     postPatch = ''
       substituteInPlace pyproject.toml \
         --replace ', "hatch-requirements-txt"' "" \
+        --replace '"hatch-requirements-txt",' "" \
         --replace '[tool.hatch.metadata.hooks.requirements_txt]' "" \
         --replace 'filename = "requirements.txt"' ""
-    '';
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
-      self.hatchling
-      self.hatch-nodejs-version
-    ];
-  });
-
-  duckdb = super.duckdb.overridePythonAttrs (_: {
-    postPatch = ''
-      set -eo pipefail
-
-      # fail if $NIX_BUILD_CORES is undefined
-      set -u
-
-      substituteInPlace setup.py \
-        --replace 'multiprocessing.cpu_count()' $NIX_BUILD_CORES \
-        --replace 'setuptools_scm<7.0.0' 'setuptools_scm'
-
-      set +u
     '';
   });
 
   ipython-genutils = self.ipython_genutils;
-
-  mkdocs = super.mkdocs.overridePythonAttrs (attrs: {
-    propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ self.babel ];
-  });
-
-  trino = super.trino.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-  });
-
-  comm = super.comm.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.hatchling ];
-  });
 }
