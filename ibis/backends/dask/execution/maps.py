@@ -29,7 +29,8 @@ from ibis.backends.pandas.execution.maps import (
 
 # NOTE - to avoid dispatch ambiguities we must unregister pandas, only to
 # re-register below. The ordering in which dispatches are registered is
-# meaningful. See https://multiple-dispatch.readthedocs.io/en/latest/resolution.html#ambiguities # noqa E501
+# meaningful. See
+# https://multiple-dispatch.readthedocs.io/en/latest/resolution.html#ambiguities
 # for more detail.
 PANDAS_REGISTERED_TYPES = [
     (ops.MapGet, Mapping, object, pandas.Series),

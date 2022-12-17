@@ -568,7 +568,7 @@ if __name__ == "__main__":
         y = 2
         x = 3
         values = []
-        for i in range(10):  # noqa: F821
+        for i in range(10):
             values.append(i)
 
         i = 0
@@ -591,7 +591,7 @@ if __name__ == "__main__":
         w = 3
         w = not False
         yyz = None
-        print(yyz)  # noqa: F821
+        print(yyz)
         foobar = x < y < z < w  # x < y and y < z
         foobar = 1
         baz = foobar // 3

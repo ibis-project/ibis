@@ -10,7 +10,7 @@ import pandas._testing as tm
 import pytest
 
 import ibis
-import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.udf import udf
 

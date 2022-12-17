@@ -72,7 +72,7 @@ class BooleanValue(NumericValue):
 
 @public
 class BooleanScalar(NumericScalar, BooleanValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public

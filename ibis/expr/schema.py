@@ -50,7 +50,7 @@ class Schema(Concrete):
     """A sequence of [`str`][str] indicating the name of each column."""
     types = tuple_of(datatype)
     """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
-    representing type of each column."""  # noqa: E501
+    representing type of each column."""
 
     @attribute.default
     def _name_locs(self) -> dict[str, int]:

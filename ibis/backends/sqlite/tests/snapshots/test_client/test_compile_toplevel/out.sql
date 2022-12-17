@@ -1,2 +1,2 @@
-SELECT sum(t0.foo) AS "Sum(foo)" 
-FROM t0 AS t0
+SELECT sum(t0.a) AS "Sum(a)" 
+FROM t AS t0

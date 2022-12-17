@@ -27,7 +27,7 @@ from ibis.backends.bigquery.client import (
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 
 try:
-    from ibis.backends.bigquery.udf import udf  # noqa F401
+    from ibis.backends.bigquery.udf import udf  # noqa: F401
 except ImportError:
     pass
 

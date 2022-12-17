@@ -75,7 +75,7 @@ def _regular_join_method(
         -------
         Table
             Joined table
-        """  # noqa: E501
+        """
         return self.join(right, predicates, how=how, suffixes=suffixes)
 
     f.__name__ = name
@@ -294,7 +294,7 @@ class Table(Expr, JupyterMixin):
         -------
         GroupedTable
             A grouped table expression
-        """  # noqa: E501
+        """
         from ibis.expr.types.groupby import GroupedTable
 
         return GroupedTable(self, by, **additional_grouping_expressions)

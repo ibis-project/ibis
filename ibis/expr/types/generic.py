@@ -269,7 +269,7 @@ class Value(Expr):
         r1 := UnboundTable: unbound_table_1
           string_col string
         Contains(value=r1.string_col, options=r0.other_string_col)
-        """  # noqa: E501
+        """
         return ops.Contains(self, values).to_expr()
 
     def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
@@ -378,7 +378,7 @@ class Value(Expr):
         r0 := UnboundTable[t]
           string_col string
         SimpleCase(base=r0.string_col, cases=[List(values=['a', 'b'])], results=[List(values=['an a', 'a b'])], default='null or (not a and not b)')
-        """  # noqa: E501
+        """
         import ibis.expr.builders as bl
 
         return bl.SimpleCaseBuilder(self.op())
@@ -827,17 +827,17 @@ class Column(Value, JupyterMixin):
 
 @public
 class NullValue(Value):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class NullScalar(Scalar, NullValue, Singleton):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class NullColumn(Column, NullValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public

@@ -7,7 +7,7 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
 
 TIMESTAMP = "2022-03-13 06:59:10.467417"

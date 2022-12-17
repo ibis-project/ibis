@@ -316,7 +316,7 @@ def _regex_extract(t, op):
 
 def _cardinality(array):
     return sa.case(
-        [(array.is_(None), None)],  # noqa: E711
+        [(array.is_(None), None)],
         else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
     )
 

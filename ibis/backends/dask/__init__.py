@@ -9,7 +9,7 @@ from dask.base import DaskMethodsMixin
 
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
-import ibis.backends.pandas.execution  # noqa: F401
+import ibis.backends.pandas.execution
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
