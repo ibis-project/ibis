@@ -77,11 +77,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1671194708,
-        "narHash": "sha256-2Qo8ovccYw3MfxH+CWtyWfP4IdahULd1nXfTM3oTxMA=",
+        "lastModified": 1671458542,
+        "narHash": "sha256-jTGRZ4+0j7UJiUU8MozRLw+2avjHijnpBaQGcdAS3hA=",
         "owner": "nix-community",
         "repo": "poetry2nix",
-        "rev": "1536cc0ab560b3d02f63b6cf662642a48887278a",
+        "rev": "4ba5abf9dc97220e2496269bed4a7f6860357dc4",
         "type": "github"
       },
       "original": {
@@ -96,31 +96,7 @@
         "flake-utils": "flake-utils",
         "gitignore": "gitignore",
         "nixpkgs": "nixpkgs",
-        "poetry2nix": "poetry2nix",
-        "rust-overlay": "rust-overlay"
-      }
-    },
-    "rust-overlay": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1671157233,
-        "narHash": "sha256-gvQaOKaV1UK6IzsFzkVLsEavGxnAsQFT3zUqcg0RXLU=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "7da2f6b3a0c32f661cb2864d7fbd1d7e6f0c7543",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "type": "github"
+        "poetry2nix": "poetry2nix"
       }
     }
   },

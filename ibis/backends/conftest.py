@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
 import _pytest
 import pandas as pd
 import sqlalchemy as sa
+from packaging.requirements import Requirement
 from packaging.version import parse as vparse
 
 if TYPE_CHECKING:
@@ -449,14 +450,16 @@ def pytest_runtest_call(item):
             continue
 
         provided_reason = kwargs.pop("reason", None)
-        broken_version = kwargs.pop(backend)
+        spec = kwargs.pop(backend)
         module = importlib.import_module(backend)
         version = getattr(module, "__version__", None)
-        condition = vparse(version) == vparse(broken_version)
-        reason = f"{backend} backend test requires {backend} != {version}"
+        assert version is not None, f"{backend} module has no __version__ attribute"
+        condition = Requirement(f"{backend}{spec}").specifier.contains(version)
+        reason = f"{backend} backend test fails with {backend}{spec}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
-        item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
+        if condition:
+            item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
