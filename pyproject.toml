@@ -72,7 +72,6 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 [tool.poetry.group.dev.dependencies]
 absolufy-imports = ">=0.3.1,<1"
 black = ">=22.1.0,<23"
-click = ">=8.0.1,<9"
 docformatter = ">=1.5.0,<2"
 flake8 = [
   { version = ">=5,<7", python = ">=3.8.1" },
