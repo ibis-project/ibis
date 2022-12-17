@@ -111,7 +111,7 @@ def execute_cast_series_to_decimal(op, data, type, **kwargs):
         '{}.{}'.format('0' * (precision - scale), '0' * scale)
     )
     return data.apply(
-        lambda x, context=context, places=places: (  # noqa: E501
+        lambda x, context=context, places=places: (
             context.create_decimal(x).quantize(places)
         )
     )

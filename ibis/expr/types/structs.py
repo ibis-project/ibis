@@ -81,7 +81,7 @@ class StructValue(Value):
         >>> s = ibis.struct(dict(fruit="pear", weight=0))
         >>> s['fruit']
         fruit: StructField(frozendict({'fruit': 'pear', 'weight': 0}), field='fruit')
-        """  # noqa: E501
+        """
         return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):

@@ -336,7 +336,7 @@ def schema(
     -------
     Schema
         An ibis schema
-    """  # noqa: E501
+    """
     if pairs is not None:
         return sch.schema(pairs)
     else:

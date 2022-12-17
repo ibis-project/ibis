@@ -14,6 +14,11 @@ concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  # increase the rate limit for nix operations hitting github, but limit the
+  # permissions to reading things
+  contents: read
+
 jobs:
   commitlint:
     runs-on: ubuntu-latest
@@ -28,6 +33,8 @@ jobs:
         uses: cachix/install-nix-action@v18
         with:
           nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: lint commits
         run: nix run 'nixpkgs#commitlint' -- --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
@@ -40,6 +47,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -112,6 +122,9 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -142,6 +155,9 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -182,6 +198,9 @@ jobs:
           fetch-depth: 0
 
       - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - uses: cachix/cachix-action@v12
         with:

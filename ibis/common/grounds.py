@@ -195,7 +195,7 @@ class Comparable(Base):
         try:
             return self.__cached_equals__(other)
         except TypeError:
-            return NotImplemented  # noqa: F901
+            return NotImplemented
 
     @abstractmethod
     def __equals__(self, other) -> bool:

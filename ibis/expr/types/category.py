@@ -30,9 +30,9 @@ class CategoryValue(Value):
 
 @public
 class CategoryScalar(Scalar, CategoryValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class CategoryColumn(Column, CategoryValue):
-    pass  # noqa: E701,E302
+    pass

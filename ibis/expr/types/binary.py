@@ -34,9 +34,9 @@ class BinaryValue(Value):
 
 @public
 class BinaryScalar(Scalar, BinaryValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class BinaryColumn(Column, BinaryValue):
-    pass  # noqa: E701,E302
+    pass

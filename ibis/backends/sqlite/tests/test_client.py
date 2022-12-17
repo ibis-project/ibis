@@ -54,10 +54,9 @@ def test_attach_file(dbpath):
 
 
 def test_compile_toplevel(snapshot):
-    t = ibis.table([('foo', 'double')], name='t0')
+    t = ibis.table([("a", "double")], name="t")
 
-    # it works!
-    expr = t.foo.sum()
+    expr = t.a.sum()
     result = ibis.sqlite.compile(expr)
     snapshot.assert_match(str(result), "out.sql")
 

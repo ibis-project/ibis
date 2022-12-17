@@ -39,7 +39,7 @@ from ibis.backends.impala.client import ImpalaConnection, ImpalaDatabase, Impala
 from ibis.backends.impala.compat import HS2Error, ImpylaError
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.pandas_interop import DataFrameWriter
-from ibis.backends.impala.udf import (  # noqa F408
+from ibis.backends.impala.udf import (  # noqa: F401
     aggregate_function,
     scalar_function,
     wrap_uda,
@@ -982,7 +982,7 @@ class Backend(BaseSQLBackend):
         >>> db = 'operations'
         >>> pool = 'op_4GB_pool'
         >>> con.cache_table('my_table', database=db, pool=pool)  # doctest: +SKIP
-        """  # noqa: E501
+        """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self.raw_sql(statement)
 

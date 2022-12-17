@@ -37,12 +37,12 @@ class TemporalValue(Value):
 
 @public
 class TemporalScalar(Scalar, TemporalValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class TemporalColumn(Column, TemporalValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class _DateComponentMixin:
@@ -246,12 +246,12 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
 @public
 class TimeScalar(TemporalScalar, TimeValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class TimeColumn(TemporalColumn, TimeValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -327,12 +327,12 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
 @public
 class DateScalar(TemporalScalar, DateValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class DateColumn(TemporalColumn, DateValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -423,12 +423,12 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
 @public
 class TimestampScalar(TemporalScalar, TimestampValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class TimestampColumn(TemporalColumn, TimestampValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -565,12 +565,12 @@ class IntervalValue(Value):
 
 @public
 class IntervalScalar(Scalar, IntervalValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class IntervalColumn(Column, IntervalValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -589,7 +589,7 @@ class DayOfWeek:
             The index of the day of the week.
 
             !!! note "Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6."
-        """  # noqa: E501
+        """
         return ops.DayOfWeekIndex(self._expr).to_expr()
 
     def full_name(self):

@@ -134,8 +134,8 @@ def test_over_auto_bind(alltypes):
     # TODO(kszucs): the window object doesn't apply the rules for the sorting
     # keys, so need to wrap the expected order key with a SortKey for now
     # on long term we should refactor the window object to a WindowFrame op
-    actual_window = expr.op().args[1]  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+    actual_window = expr.op().args[1]
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))
 
     assert_equal(actual_window, expected)
 
@@ -148,8 +148,8 @@ def test_window_function_bind(alltypes):
 
     expr = t.f.lag().over(w)
 
-    actual_window = expr.op().args[1]  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+    actual_window = expr.op().args[1]
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))
 
     assert_equal(actual_window, expected)
 
@@ -181,8 +181,8 @@ def test_window_bind_to_table(alltypes):
     t = alltypes
     w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
-    w2 = w.bind(alltypes)  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))  # noqa
+    w2 = w.bind(alltypes)
+    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))
 
     assert_equal(w2, expected)
 

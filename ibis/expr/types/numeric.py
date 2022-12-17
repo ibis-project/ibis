@@ -305,7 +305,7 @@ class NumericValue(Value):
 
 @public
 class NumericScalar(Scalar, NumericValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -772,12 +772,12 @@ class FloatingValue(NumericValue):
 
 @public
 class FloatingScalar(NumericScalar, FloatingValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class FloatingColumn(NumericColumn, FloatingValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
@@ -805,9 +805,9 @@ class DecimalValue(NumericValue):
 
 @public
 class DecimalScalar(NumericScalar, DecimalValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class DecimalColumn(NumericColumn, DecimalValue):
-    pass  # noqa: E701,E302
+    pass

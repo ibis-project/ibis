@@ -132,4 +132,8 @@ in
   });
 
   ipython-genutils = self.ipython_genutils;
+
+  flake8-noqa = super.flake8-noqa.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+  });
 }
