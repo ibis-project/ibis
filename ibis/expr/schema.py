@@ -49,7 +49,8 @@ class Schema(Concrete):
     names = tuple_of(instance_of((str, UnnamedMarker)))
     """A sequence of [`str`][str] indicating the name of each column."""
     types = tuple_of(datatype)
-    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects representing type of each column."""  # noqa: E501
+    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
+    representing type of each column."""  # noqa: E501
 
     @attribute.default
     def _name_locs(self) -> dict[str, int]:

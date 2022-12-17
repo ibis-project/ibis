@@ -37,7 +37,6 @@ class Node(Concrete):
 
 @public
 class Named(ABC):
-
     __slots__ = tuple()
 
     @property
@@ -53,7 +52,6 @@ class Named(ABC):
 
 @public
 class Value(Node, Named):
-
     # TODO(kszucs): cover it with tests
     # TODO(kszucs): figure out how to represent not named arguments
     @property

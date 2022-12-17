@@ -158,7 +158,6 @@ class NotContains(Contains):
 
 @public
 class Where(Value):
-
     """Ternary case expression, equivalent to.
 
     bool_expr.case()          .when(True, true_expr)

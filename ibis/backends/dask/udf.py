@@ -104,7 +104,6 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     # This is generally not recommened.
     @execute_node.register(type(op), *(itertools.repeat(dd.Series, nargs)))
     def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
-
         # This function is in essence fully materializing the dd.Series and
         # passing that (now) pd.Series to aggctx. This materialization
         # happens at `.compute()` time, making this "lazy"

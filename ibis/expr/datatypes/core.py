@@ -793,7 +793,7 @@ class GeoSpatial(DataType):
     """Geospatial values."""
 
     geotype = optional(isin({"geography", "geometry"}))
-    """The specific geospatial type"""
+    """The specific geospatial type."""
 
     srid = optional(instance_of(int))
     """The spatial reference identifier."""

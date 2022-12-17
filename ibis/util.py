@@ -46,7 +46,6 @@ HORIZONTAL_ELLIPSIS = "\u2026"
 
 
 class frozendict(Mapping, Hashable):
-
     __slots__ = ("_dict", "_hash")
 
     def __init__(self, *args, **kwargs):

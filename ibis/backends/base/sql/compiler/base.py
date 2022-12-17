@@ -21,7 +21,6 @@ class DDL(abc.ABC):
 
 
 class QueryAST:
-
     __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
 
     def __init__(self, context, dml, setup_queries=None, teardown_queries=None):

@@ -502,7 +502,6 @@ def test_initialized_attribute_mixed_with_classvar():
 
 
 class Node(Comparable):
-
     # override the default cache object
     __cache__ = WeakCache()
     __slots__ = ('name',)

@@ -765,7 +765,6 @@ class StringValue(Value):
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
     def __mul__(self, n: int | ir.IntegerValue) -> StringValue | NotImplemented:
-
         return _binop(ops.Repeat, self, n)
 
     __rmul__ = __mul__

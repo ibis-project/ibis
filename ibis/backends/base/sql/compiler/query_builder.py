@@ -17,7 +17,6 @@ from ibis.config import options
 
 
 class TableSetFormatter:
-
     _join_names = {
         ops.InnerJoin: 'INNER JOIN',
         ops.LeftJoin: 'LEFT OUTER JOIN',
@@ -164,7 +163,6 @@ class TableSetFormatter:
 
 
 class Select(DML, Comparable):
-
     """A SELECT statement which, after execution, might yield back to the user
     a table, array/list, or scalar value, depending on the expression that
     generated it."""
