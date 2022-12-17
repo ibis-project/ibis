@@ -21,12 +21,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
   };
 
   outputs =
@@ -35,7 +29,6 @@
     , gitignore
     , nixpkgs
     , poetry2nix
-    , rust-overlay
     , ...
     }:
     let
@@ -58,20 +51,22 @@
         , sqlite
         , rsync
         , ibisTestingData
-        , ...
         }: poetry2nix.mkPoetryApplication rec {
           inherit python;
 
           groups = [ ];
           checkGroups = [ "test" ];
           projectDir = gitignoreSource ./.;
+          preferWheels = true;
           src = gitignoreSource ./.;
 
-          overrides = poetry2nix.overrides.withDefaults (
-            import ./poetry-overrides.nix
-          );
+          overrides = [
+            (import ./poetry-overrides.nix)
+            poetry2nix.defaultPoetryOverrides
+          ];
 
           buildInputs = [ gdal graphviz-nox proj sqlite ];
+
           checkInputs = buildInputs;
 
           preCheck = ''
@@ -90,22 +85,24 @@
 
             runHook preCheck
 
-            pytest --numprocesses auto --dist loadgroup -m '${lib.concatStringsSep " or " backends} or core'
+            pytest \
+              --numprocesses "$NIX_BUILD_CORES" \
+              --dist loadgroup \
+              -m '${lib.concatStringsSep " or " backends} or core'
 
             runHook postCheck
           '';
 
           doCheck = true;
 
-          pythonImportsCheck = [ "ibis" ] ++ (map (backend: "ibis.backends.${backend}") backends);
+          pythonImportsCheck = [ "ibis" ] ++ map (backend: "ibis.backends.${backend}") backends;
         };
     in
     {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
         poetry2nix.overlay
-        rust-overlay.overlays.default
-        (pkgs: super: {
+        (pkgs: _: {
           ibisTestingData = pkgs.fetchFromGitHub {
             owner = "ibis-project";
             repo = "testing-data";
@@ -113,13 +110,15 @@
             sha256 = "sha256-BZWi4kEumZemQeYoAtlUSw922p+R6opSWp/bmX0DjAo=";
           };
 
-          rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
-
           mkPoetryEnv = groups: python: pkgs.poetry2nix.mkPoetryEnv {
             inherit python groups;
+            preferWheels = true;
             projectDir = pkgs.gitignoreSource ./.;
             editablePackageSources = { ibis = pkgs.gitignoreSource ./ibis; };
-            overrides = pkgs.poetry2nix.overrides.withDefaults (import ./poetry-overrides.nix);
+            overrides = [
+              (import ./poetry-overrides.nix)
+              pkgs.poetry2nix.defaultPoetryOverrides
+            ];
           };
 
           mkPoetryDocsEnv = pkgs.mkPoetryEnv [ "docs" ];
@@ -158,18 +157,6 @@
             runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
             text = "conventional-changelog --config ./.conventionalcommits.js";
           };
-
-          arrow-cpp = (super.arrow-cpp.override {
-            enableS3 = !super.stdenv.isDarwin;
-          }).overrideAttrs
-            (attrs: {
-              # tests hang for some reason on macos with python 3.9 and 3.10
-              doInstallCheck = !super.stdenv.isDarwin;
-              buildInputs = attrs.buildInputs or [ ] ++ pkgs.lib.optionals super.stdenv.isDarwin [
-                pkgs.libxcrypt
-                pkgs.sqlite
-              ];
-            });
         })
       ];
     } // flake-utils.lib.eachDefaultSystem (
@@ -264,77 +251,6 @@
           ibis39 = pkgs.ibis39;
           ibis310 = pkgs.ibis310;
           default = ibis310;
-
-          update-polars = pkgs.writeShellApplication {
-            name = "update-polars";
-            runtimeInputs = with pkgs; [
-              git
-              gnused
-              jq
-              rustNightly
-              sd
-              yj
-            ];
-            text = ''
-              top="$PWD"
-              clone="''${1}"
-              tag="py-$(yj -tj < "''${top}/poetry.lock" | jq '.package[] | select(.name == "polars") | .version' -rcM)"
-
-              git -C "''${clone}" fetch
-              git -C "''${clone}" checkout .
-              git -C "''${clone}" checkout "''${tag}"
-
-              # remove patch dependencies and use thin lto to dramatically speed up builds
-              sed -i \
-                -e '/\[patch\.crates-io\]/d' \
-                -e '/cmake = .*/,+1d' \
-                -e '/codegen-units = 1/d' \
-                -e 's/lto = "fat"/lto = "thin"/g' \
-                "''${clone}/py-polars/Cargo.toml"
-
-              pushd "''${clone}/py-polars"
-              cargo generate-lockfile
-              popd
-
-              mkdir -p "''${top}/nix/patches"
-
-              git -C "''${clone}" diff | sd "py-polars/" "" > "''${top}/nix/patches/py-polars.patch"
-            '';
-          };
-          update-datafusion = pkgs.writeShellApplication {
-            name = "update-datafusion";
-            runtimeInputs = with pkgs; [
-              git
-              gnused
-              jq
-              rustNightly
-              yj
-            ];
-
-            text = ''
-              top="''${PWD}"
-              clone="''${1}"
-              tag="$(yj -tj < "''${top}/poetry.lock" | jq -rcM '.package[] | select(.name == "datafusion") | .version')"
-
-              git -C "''${clone}" fetch
-              git -C "''${clone}" checkout .
-              git -C "''${clone}" checkout "''${tag}"
-
-              # use thin lto to dramatically speed up builds
-              sed -i \
-                -e '/codegen-units = 1/d' \
-                -e 's/lto = true/lto = "thin"/g' \
-                "''${clone}/Cargo.toml"
-
-              pushd "''${clone}"
-              cargo generate-lockfile
-              popd
-
-              mkdir -p "''${top}/nix/patches"
-
-              git -C "''${clone}" diff > "''${top}/nix/patches/datafusion.patch"
-            '';
-          };
 
           update-lock-files = pkgs.writeShellApplication {
             name = "update-lock-files";

@@ -99,7 +99,7 @@ ptyprocess==0.7.0 ; python_version >= "3.8" and python_version < "4.0" and sys_p
 pure-eval==0.2.2 ; python_version >= "3.8" and python_version < "4.0"
 py-cpuinfo==9.0.0 ; python_version >= "3.8" and python_version < "4.0"
 py==1.11.0 ; python_version >= "3.8" and python_version < "4.0" and implementation_name == "pypy"
-pyarrow==9.0.0 ; python_version >= "3.8" and python_version < "4.0"
+pyarrow==10.0.1 ; python_version >= "3.8" and python_version < "4.0"
 pycodestyle==2.10.0 ; python_full_version >= "3.8.1" and python_version < "4.0"
 pycodestyle==2.9.1 ; python_version >= "3.8" and python_full_version < "3.8.1"
 pycparser==2.21 ; python_version >= "3.8" and python_version < "4.0" and implementation_name == "pypy"
