@@ -38,7 +38,6 @@ def _flatten_collections(node, filter):
 
 
 class Traversable(Hashable):
-
     __slots__ = ()
 
     @property

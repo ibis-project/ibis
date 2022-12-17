@@ -33,7 +33,7 @@ repos:
       - id: flake8
         exclude: (^ibis/tests/sql/snapshots/|_py310\.py$)
   - repo: https://github.com/pycqa/docformatter
-    rev: v1.5.0
+    rev: v1.5.1
     hooks:
       - id: docformatter
   - repo: https://github.com/MarcoGorelli/absolufy-imports

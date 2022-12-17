@@ -120,7 +120,6 @@ class _CreateDDL(BaseDDL):
 
 
 class CreateTable(_CreateDDL):
-
     """
 
     Parameters
@@ -177,7 +176,6 @@ class CreateTable(_CreateDDL):
 
 
 class CTAS(CreateTable):
-
     """Create Table As Select."""
 
     def __init__(
@@ -219,7 +217,6 @@ class CTAS(CreateTable):
 
 
 class CreateView(CTAS):
-
     """Create a view."""
 
     def __init__(self, table_name, select, database=None, can_exist=False):
@@ -300,7 +297,6 @@ class DropObject(BaseDDL):
 
 
 class DropDatabase(DropObject):
-
     _object_type = 'DATABASE'
 
     def __init__(self, name, must_exist=True):
@@ -312,7 +308,6 @@ class DropDatabase(DropObject):
 
 
 class DropTable(DropObject):
-
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None, must_exist=True):
@@ -325,12 +320,10 @@ class DropTable(DropObject):
 
 
 class DropView(DropTable):
-
     _object_type = 'VIEW'
 
 
 class TruncateTable(BaseDDL):
-
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None):

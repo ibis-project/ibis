@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 @public
 class Value(Expr):
-
     """Base class for a data generating expression having a fixed and known
     type, either a single value (scalar)"""
 

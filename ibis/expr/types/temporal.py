@@ -560,7 +560,6 @@ class IntervalValue(Value):
 
     @staticmethod
     def __negate_op__():
-
         return ops.Negate
 
 

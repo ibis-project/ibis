@@ -158,7 +158,6 @@ class CreateTableAvro(CreateTable):
 
 
 class LoadData(BaseDDL):
-
     """Generate DDL for LOAD DATA command.
 
     Cannot be cancelled
@@ -260,7 +259,6 @@ class CacheTable(BaseDDL):
 
 
 class CreateFunction(BaseDDL):
-
     _object_type = 'FUNCTION'
 
     def __init__(self, func, name=None, database=None):

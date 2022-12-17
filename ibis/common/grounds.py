@@ -13,7 +13,6 @@ from ibis.util import frozendict, recursive_get
 
 
 class BaseMeta(ABCMeta):
-
     __slots__ = ()
 
     def __new__(metacls, clsname, bases, dct, **kwargs):
@@ -26,7 +25,6 @@ class BaseMeta(ABCMeta):
 
 
 class Base(metaclass=BaseMeta):
-
     __slots__ = ('__weakref__',)
 
     @classmethod
@@ -177,7 +175,6 @@ class Immutable(Base):
 
 
 class Singleton(Base):
-
     __instances__ = WeakValueDictionary()
 
     @classmethod
@@ -192,7 +189,6 @@ class Singleton(Base):
 
 
 class Comparable(Base):
-
     __cache__ = WeakCache()
 
     def __eq__(self, other) -> bool:

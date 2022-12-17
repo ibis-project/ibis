@@ -504,7 +504,6 @@ def simplify_aggregation(agg):
 
 
 class Projector:
-
     """Analysis and validation of projection operation, taking advantage of
     "projection fusion" opportunities where they exist, i.e. combining
     compatible projections together rather than nesting them.

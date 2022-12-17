@@ -386,7 +386,6 @@ class Selection(Projection):
 
 @public
 class Aggregation(TableNode):
-
     """
     metrics : per-group scalar aggregates
     by : group expressions

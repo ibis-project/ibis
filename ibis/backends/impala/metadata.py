@@ -86,7 +86,6 @@ def _try_int(x):
 
 
 class MetadataParser:
-
     """A simple state-ish machine to parse the results of DESCRIBE
     FORMATTED."""
 
@@ -282,7 +281,6 @@ def _get_meta(attr, key):
 
 
 class TableMetadata:
-
     """Container for the parsed and wrangled results of DESCRIBE FORMATTED for
     easier Ibis use (and testing)."""
 

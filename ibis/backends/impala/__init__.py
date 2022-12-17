@@ -79,7 +79,6 @@ _arg_type = re.compile(r'(.*)\.\.\.|([^\.]*)')
 
 
 class _type_parser:
-
     NORMAL, IN_PAREN = 0, 1
 
     def __init__(self, value):
@@ -544,7 +543,6 @@ class Backend(BaseSQLBackend):
 
     @contextlib.contextmanager
     def _setup_insert(self, obj):
-
         import pandas as pd
 
         if isinstance(obj, pd.DataFrame):

@@ -48,7 +48,6 @@ def _format_properties(props):
 
 
 class CreateTable(CreateTable):
-
     """Create a table."""
 
     def __init__(
@@ -79,7 +78,6 @@ class CreateTableWithSchema(CreateTableWithSchema):
 
 
 class CTAS(CTAS):
-
     """Create Table As Select."""
 
     def __init__(
@@ -104,7 +102,6 @@ class CTAS(CTAS):
 
 
 class CreateView(CTAS):
-
     """Create a view."""
 
     def __init__(
@@ -154,7 +151,6 @@ def _format_schema_element(name, t):
 
 
 class DropDatabase(DropObject):
-
     _object_type = 'DATABASE'
 
     def __init__(self, name, must_exist=True, cascade=False):
@@ -174,7 +170,6 @@ class DropDatabase(DropObject):
 
 
 class DropFunction(DropObject):
-
     _object_type = 'TEMPORARY FUNCTION'
 
     def __init__(self, name, must_exist=True):
