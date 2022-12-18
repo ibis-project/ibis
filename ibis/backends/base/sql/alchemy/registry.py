@@ -4,7 +4,6 @@ from typing import Any, Dict
 
 import sqlalchemy as sa
 
-import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
@@ -193,16 +192,6 @@ def _contains(func):
         return func(left, right)
 
     return translate
-
-
-def _group_concat(t, op):
-    sep = t.translate(op.sep)
-    if op.where is not None:
-        # TODO(kszucs): avoid expression roundtrip
-        arg = t.translate(op.where.to_expr().ifelse(op.arg, ibis.NA).op())
-    else:
-        arg = t.translate(op.arg)
-    return sa.func.group_concat(arg, sep)
 
 
 def _alias(t, op):
@@ -514,7 +503,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.HLLCardinality: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.ApproxCountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
-    ops.GroupConcat: _group_concat,
+    ops.GroupConcat: reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
