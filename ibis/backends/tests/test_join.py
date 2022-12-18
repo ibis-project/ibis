@@ -189,9 +189,9 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
     left = left["year", "RBI"]
-    right = awards_players.filter(lambda t: t.yearID == 2015)
+    right = awards_players
     expr = left.join(right, left.year == right.yearID)
-    assert not expr.execute().empty
+    assert not expr.limit(5).execute().empty
 
 
 @pytest.mark.notimpl(["datafusion", "bigquery"])
