@@ -26,8 +26,7 @@ def variance_reduction(func_name):
         func = getattr(sa.func, f'{func_name}_{suffix[op.how]}')
 
         if op.where is not None:
-            # TODO(kszucs): avoid roundtripping to expression
-            arg = op.where.to_expr().ifelse(arg, None).op()
+            arg = ops.Where(op.where, arg, None)
 
         return func(t.translate(arg))
 

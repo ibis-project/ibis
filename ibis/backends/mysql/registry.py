@@ -145,9 +145,7 @@ def _literal(_, op):
 
 def _group_concat(t, op):
     if op.where is not None:
-        # TODO(kszucs): avoid the expression roundtrip
-        case = op.where.to_expr().ifelse(op.arg, ibis.NA).op()
-        arg = t.translate(case)
+        arg = t.translate(ops.Where(op.where, op.arg, ibis.NA))
     else:
         arg = t.translate(op.arg)
     sep = t.translate(op.sep)
