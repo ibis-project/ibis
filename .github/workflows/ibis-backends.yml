@@ -210,8 +210,8 @@ jobs:
       - uses: actions/setup-java@v3
         if: matrix.backend.name == 'pyspark'
         with:
-          distribution: temurin
-          java-version: 11
+          distribution: microsoft
+          java-version: 17
 
       - name: checkout
         uses: actions/checkout@v3
