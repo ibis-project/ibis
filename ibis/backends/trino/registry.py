@@ -2,6 +2,7 @@ import sqlalchemy as sa
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import (
+    fixed_arity,
     reduction,
     sqlalchemy_operation_registry,
     unary,
@@ -15,6 +16,9 @@ operation_registry = sqlalchemy_operation_registry.copy()
 
 operation_registry.update(
     {
+        # conditional expressions
+        # static checks are not happy with using "if" as a property
+        ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # boolean reductions
         ops.Any: unary(sa.func.bool_or),
         ops.All: unary(sa.func.bool_and),

@@ -160,8 +160,9 @@ class NotContains(Contains):
 class Where(Value):
     """Ternary case expression, equivalent to.
 
-    bool_expr.case()          .when(True, true_expr)
-    .else_(false_or_null_expr)
+    bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
+
+    Many backends implement this as a built-in function called IF, IIF or IIF.
     """
 
     bool_expr = rlz.boolean
