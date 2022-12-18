@@ -19,6 +19,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     get_sqla_table,
+    reduction,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
@@ -515,13 +516,6 @@ def _binary_variance_reduction(func):
     return variance_compiler
 
 
-def _array_collect(t, op):
-    result = sa.func.array_agg(t.translate(op.arg))
-    if (where := op.where) is not None:
-        return result.filter(t.translate(where))
-    return result
-
-
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -585,7 +579,7 @@ operation_registry.update(
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
         ops.ArrayLength: unary(_cardinality),
-        ops.ArrayCollect: _array_collect,
+        ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.ArrayColumn: _array_column,
         ops.ArraySlice: _array_slice,
         ops.ArrayIndex: fixed_arity(
