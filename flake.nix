@@ -197,7 +197,7 @@
           # mysql
           mariadb-client
           # pyspark
-          openjdk11_headless
+          openjdk17_headless
           # postgres
           postgresql
           # geospatial
