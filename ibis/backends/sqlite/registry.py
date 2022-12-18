@@ -342,5 +342,6 @@ operation_registry.update(
         # sqlite doesn't implement a native xor operator
         ops.BitwiseXor: fixed_arity(sa.func._ibis_sqlite_xor, 2),
         ops.BitwiseNot: unary(sa.func._ibis_sqlite_inv),
+        ops.Where: fixed_arity(sa.func.iif, 3),
     }
 )

@@ -186,6 +186,8 @@ operation_registry.update(
     {
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
+        # static checks are not happy with using "if" as a property
+        ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # strings
         ops.StringFind: _gen_string_find(sa.func.locate),
         ops.FindInSet: _find_in_set,
