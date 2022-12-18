@@ -4243,7 +4243,7 @@ name = "regex"
 version = "2022.10.31"
 description = "Alternative regular expression module, to replace re."
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 files = [
     {file = "regex-2022.10.31-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:a8ff454ef0bb061e37df03557afda9d785c905dab15584860f982e88be73015f"},
@@ -5078,7 +5078,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [extras]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth", "sqlglot"]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
-dask = ["dask", "pyarrow"]
+dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
 duckdb = ["duckdb", "duckdb-engine", "packaging", "pyarrow", "sqlalchemy", "sqlglot"]
@@ -5086,16 +5086,16 @@ geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlglot"]
 mysql = ["sqlalchemy", "pymysql", "sqlglot"]
-pandas = []
+pandas = ["regex"]
 polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
 pyspark = ["pyarrow", "pyspark"]
 snowflake = ["snowflake-sqlalchemy", "sqlglot"]
-sqlite = ["sqlalchemy", "sqlglot"]
+sqlite = ["regex", "sqlalchemy", "sqlglot"]
 trino = ["trino", "sqlalchemy", "sqlglot"]
 visualization = ["graphviz"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "37cf7ca2e76772917db7633d6bb3807d6ab543aef028030ae220ebf5eff1a68e"
+content-hash = "e74b18ef3e7c58e1260dc64ebfeee010d94942a094c19e9267d89a55d91e8292"
