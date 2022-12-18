@@ -235,20 +235,3 @@ operation_registry.update(
         ops.RowID: lambda *_: sa.literal_column('rowid'),
     }
 )
-
-try:
-    import duckdb
-except ImportError:  # pragma: no cover
-    pass
-else:
-    from packaging.version import parse as vparse
-
-    # 0.3.2 has zero-based array indexing, 0.3.3 has one-based array indexing
-    #
-    # 0.3.2: we pass in the user's arguments unchanged
-    # 0.3.3: use the postgres implementation which is also one-based
-    if vparse(duckdb.__version__) < vparse("0.3.3"):  # pragma: no cover
-        operation_registry[ops.ArrayIndex] = fixed_arity("list_element", 2)
-
-    # don't export these
-    del duckdb, vparse  # pragma: no cover
