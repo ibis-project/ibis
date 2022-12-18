@@ -5100,7 +5100,7 @@ clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
-duckdb = ["duckdb", "duckdb-engine", "packaging", "pyarrow", "sqlalchemy", "sqlglot"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlglot"]
 geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlglot"]
@@ -5117,4 +5117,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "36fb1d2c4a9f5302394a52a1b4153289d4ed1f285bc9b362b9cbee9b19db2c75"
+content-hash = "8e21172452a303c245bc9963a14dade196bb49db32cd0154d1f53ad7050c8155"
