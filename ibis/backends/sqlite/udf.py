@@ -6,7 +6,10 @@ import math
 import operator
 from typing import Callable
 
-import regex as re
+try:
+    import regex as re
+except ImportError:
+    import re
 
 _SQLITE_UDF_REGISTRY = set()
 _SQLITE_UDAF_REGISTRY = set()

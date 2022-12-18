@@ -5,9 +5,13 @@ from functools import partial, reduce
 
 import numpy as np
 import pandas as pd
-import regex as re
 import toolz
 from pandas.core.groupby import SeriesGroupBy
+
+try:
+    import regex as re
+except ImportError:
+    import re
 
 import ibis.expr.operations as ops
 import ibis.util
