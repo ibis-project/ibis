@@ -24,7 +24,6 @@ class MySQLExprTranslator(AlchemyExprTranslator):
             dt.String: mysql.VARCHAR,
         }
     )
-    _bool_aggs_need_cast_to_int32 = False
     integer_to_timestamp = sa.func.from_unixtime
     native_json_type = False
 
