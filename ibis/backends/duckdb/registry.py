@@ -233,5 +233,6 @@ operation_registry.update(
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
         ops.JSONGetItem: _json_get_item,
         ops.RowID: lambda *_: sa.literal_column('rowid'),
+        ops.StringToTimestamp: fixed_arity(sa.func.strptime, 2),
     }
 )
