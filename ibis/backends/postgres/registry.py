@@ -431,6 +431,14 @@ def _array_slice(t, op):
     return sa_arg[sa_start + 1 : sa_stop]
 
 
+def _array_index(t, op):
+    sa_array = t.translate(op.arg)
+    sa_index = t.translate(op.index)
+    if isinstance(op.arg, ops.Literal):
+        sa_array = sa.sql.elements.Grouping(sa_array)
+    return sa_array[_neg_idx_to_pos(sa_array, sa_index) + 1]
+
+
 def _literal(_, op):
     dtype = op.output_dtype
     value = op.value
@@ -582,9 +590,7 @@ operation_registry.update(
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.ArrayColumn: _array_column,
         ops.ArraySlice: _array_slice,
-        ops.ArrayIndex: fixed_arity(
-            lambda array, index: array[_neg_idx_to_pos(array, index) + 1], 2
-        ),
+        ops.ArrayIndex: _array_index,
         ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),
