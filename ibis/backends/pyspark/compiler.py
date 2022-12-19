@@ -1387,13 +1387,6 @@ def compile_timestamp_now(t, op, **kwargs):
 def compile_string_to_timestamp(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
     fmt = op.format_str.value
-
-    if op.timezone is not None and op.timezone.value != "UTC":
-        raise com.UnsupportedArgumentError(
-            'PySpark backend only supports timezone UTC for converting string '
-            'to timestamp.'
-        )
-
     return F.to_timestamp(src_column, fmt)
 
 
