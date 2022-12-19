@@ -21,6 +21,10 @@ self: super: {
 
   ipython-genutils = self.ipython_genutils;
 
+  # without this we won't pick up the necessary patches to nbconvert's paths to
+  # jupyter in the nix store
+  nbconvert = super.nbconvert.override { preferWheel = false; };
+
   # TODO: Build grpcio from src on darwin because macOS 12_0 wheels won't install
   # TODO: Remove when the nix version of `pip` is upgraded?
   grpcio = super.grpcio.override { preferWheel = !self.pkgs.stdenv.isDarwin; };
