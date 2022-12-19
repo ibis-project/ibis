@@ -29,11 +29,15 @@ jobs:
     needs:
       - get-flakes
     strategy:
+      fail-fast: false
       matrix: ${{ fromJSON(needs.get-flakes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
 
       - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.github_token }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
