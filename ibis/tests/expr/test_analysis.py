@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 import ibis
@@ -306,19 +304,3 @@ def test_agg_selection_does_not_share_roots():
 
     with pytest.raises(com.RelationError, match="Selection expressions"):
         gb.aggregate(n=n)
-
-
-@pytest.mark.parametrize("num_joins", [1, 10])
-def test_large_compile(num_joins):
-    num_columns = 20
-    table = ibis.table({f"col_{i:d}": "string" for i in range(num_columns)}, name="t")
-    for _ in range(num_joins):
-        start = time.time()
-        table = table.mutate(dummy=ibis.literal(""))
-        stop = time.time()
-        assert stop - start < 1.0
-
-        start = time.time()
-        table = table.left_join(table, ["dummy"])[[table]]
-        stop = time.time()
-        assert stop - start < 1.0
