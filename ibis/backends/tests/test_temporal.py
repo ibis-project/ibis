@@ -10,7 +10,6 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
 
@@ -594,12 +593,11 @@ def test_integer_to_timestamp(backend, con, unit):
 
 
 @pytest.mark.parametrize(
-    'fmt, timezone',
+    "fmt",
     [
         # "11/01/10" - "month/day/year"
         param(
             '%m/%d/%y',
-            "UTC",
             id="mysql_format",
             marks=pytest.mark.never(
                 ["pyspark"], reason="datetime formatting style not supported"
@@ -607,10 +605,9 @@ def test_integer_to_timestamp(backend, con, unit):
         ),
         param(
             'MM/dd/yy',
-            "UTC",
             id="pyspark_format",
             marks=pytest.mark.never(
-                ["bigquery", "mysql", "polars"],
+                ["bigquery", "mysql", "polars", "duckdb"],
                 reason="datetime formatting style not supported",
             ),
         ),
@@ -621,7 +618,6 @@ def test_integer_to_timestamp(backend, con, unit):
         'dask',
         'pandas',
         'postgres',
-        'duckdb',
         'clickhouse',
         'sqlite',
         'impala',
@@ -631,42 +627,14 @@ def test_integer_to_timestamp(backend, con, unit):
         'trino',
     ]
 )
-def test_string_to_timestamp(alltypes, fmt, timezone):
+def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
-    result = table.mutate(
-        date=table.date_string_col.to_timestamp(fmt, timezone)
-    ).execute()
+    result = table.mutate(date=table.date_string_col.to_timestamp(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime
     for i, val in enumerate(result["date"]):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
-
-
-@pytest.mark.notimpl(
-    [
-        'bigquery',
-        'dask',
-        'pandas',
-        'postgres',
-        'duckdb',
-        'clickhouse',
-        'sqlite',
-        'impala',
-        'datafusion',
-        'snowflake',
-        'polars',
-        'mssql',
-        'trino',
-    ]
-)
-def test_string_to_timestamp_tz_error(alltypes):
-    table = alltypes
-
-    with pytest.raises(com.UnsupportedArgumentError):
-        table.mutate(
-            date=table.date_string_col.to_timestamp("%m/%d/%y", 'non-utc-timezone')
-        ).compile()
 
 
 @pytest.mark.parametrize(

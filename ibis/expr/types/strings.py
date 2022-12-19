@@ -614,17 +614,13 @@ class StringValue(Value):
         """
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
-    def to_timestamp(
-        self, format_str: str, timezone: str | None = None
-    ) -> ir.TimestampValue:
+    def to_timestamp(self, format_str: str) -> ir.TimestampValue:
         """Parse a string and return a timestamp.
 
         Parameters
         ----------
         format_str
             Format string in `strptime` format
-        timezone
-            A string indicating the timezone. For example `'America/New_York'`
 
         Examples
         --------
@@ -637,7 +633,7 @@ class StringValue(Value):
         TimestampValue
             Parsed timestamp value
         """
-        return ops.StringToTimestamp(self, format_str, timezone).to_expr()
+        return ops.StringToTimestamp(self, format_str).to_expr()
 
     def parse_url(
         self,

@@ -113,11 +113,6 @@ def _timestamp_diff(t, op):
 def _string_to_timestamp(t, op):
     sa_arg = t.translate(op.arg)
     sa_format_str = t.translate(op.format_str)
-    if (op.timezone is not None) and op.timezone.value != "UTC":
-        raise com.UnsupportedArgumentError(
-            'MySQL backend only supports timezone UTC for converting'
-            'string to timestamp.'
-        )
     return sa.func.str_to_date(sa_arg, sa_format_str)
 
 

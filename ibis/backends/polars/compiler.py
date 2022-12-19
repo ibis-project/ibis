@@ -704,7 +704,6 @@ def interval_from_integer(op):
 def string_to_timestamp(op):
     arg = translate(op.arg)
     _assert_literal(op.format_str)
-    # TODO(kszucs): raise if op.timezone is not None
     return arg.str.strptime(pl.Datetime, op.format_str.value)
 
 

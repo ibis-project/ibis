@@ -359,14 +359,8 @@ def compiles_strftime(translator, op):
 
 def compiles_string_to_timestamp(translator, op):
     """Timestamp parsing."""
-    arg, format_string, timezone_arg = op.args
-    fmt_string = translator.translate(format_string)
-    arg_formatted = translator.translate(arg)
-    if timezone_arg is not None:
-        timezone_str = translator.translate(timezone_arg)
-        return "PARSE_TIMESTAMP({}, {}, {})".format(
-            fmt_string, arg_formatted, timezone_str
-        )
+    fmt_string = translator.translate(op.format_str)
+    arg_formatted = translator.translate(op.arg)
     return f"PARSE_TIMESTAMP({fmt_string}, {arg_formatted})"
 
 
