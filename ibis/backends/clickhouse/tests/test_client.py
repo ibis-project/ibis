@@ -6,7 +6,13 @@ import ibis
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis import util
+from ibis.backends.clickhouse.tests.conftest import (
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PASS,
+    CLICKHOUSE_PORT,
+    CLICKHOUSE_USER,
+    IBIS_TEST_CLICKHOUSE_DB,
+)
 
 pytest.importorskip("clickhouse_driver")
 
@@ -112,14 +118,26 @@ def test_embedded_identifier_quoting(alltypes):
     expr.execute()
 
 
+@pytest.fixture(scope="session")
+def tmpcon():
+    return ibis.clickhouse.connect(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        password=CLICKHOUSE_PASS,
+        database="tmptables",
+        user=CLICKHOUSE_USER,
+    )
+
+
 @pytest.fixture
-def temporary_alltypes(con):
-    id = util.guid()
-    con.raw_sql(f"CREATE TABLE temporary_alltypes_{id} AS functional_alltypes")
-    try:
-        yield con.table(f"temporary_alltypes_{id}")
-    finally:
-        con.raw_sql(f"DROP TABLE temporary_alltypes_{id}")
+def temporary_alltypes(tmpcon):
+    id = ibis.util.guid()
+    table = f"temporary_alltypes_{id}"
+    tmpcon.raw_sql(
+        f"CREATE TABLE {table} AS {IBIS_TEST_CLICKHOUSE_DB}.functional_alltypes"
+    )
+    yield tmpcon.table(table)
+    tmpcon.raw_sql(f"DROP TABLE {table}")
 
 
 def test_insert(temporary_alltypes, df):
