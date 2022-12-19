@@ -687,6 +687,12 @@ class Table(Expr, JupyterMixin):
                 ),
             )
         )
+
+        if not exprs:
+            raise com.IbisTypeError(
+                "You must select at least one column for a valid projection"
+            )
+
         op = an.Projector(self, exprs).get_result()
 
         return op.to_expr()

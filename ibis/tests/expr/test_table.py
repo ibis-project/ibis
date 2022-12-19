@@ -237,6 +237,12 @@ def test_projection_array_expr(table):
     assert_equal(result, expected)
 
 
+@pytest.mark.parametrize("empty", [list(), dict()])
+def test_projection_no_expr(table, empty):
+    with pytest.raises(com.IbisTypeError, match="must select at least one"):
+        table.select(empty)
+
+
 def test_mutate(table):
     expr = table.mutate(
         [
