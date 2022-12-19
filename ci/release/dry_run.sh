@@ -28,6 +28,8 @@ nix develop -c git add .releaserc.json
 
 nix develop -c git commit -m 'test: semantic-release dry run' --no-verify --no-gpg-sign
 
+unset GITHUB_ACTIONS
+
 nix develop -c npx --yes \
   -p semantic-release \
   -p "@semantic-release/commit-analyzer" \
