@@ -45,9 +45,7 @@
         , python
         , lib
         , gitignoreSource
-        , gdal
         , graphviz-nox
-        , proj
         , sqlite
         , rsync
         , ibisTestingData
@@ -65,7 +63,7 @@
             poetry2nix.defaultPoetryOverrides
           ];
 
-          buildInputs = [ gdal graphviz-nox proj sqlite ];
+          buildInputs = [ graphviz-nox sqlite ];
 
           checkInputs = buildInputs;
 
@@ -187,9 +185,6 @@
           openjdk17_headless
           # postgres
           postgresql
-          # geospatial
-          gdal
-          proj
           # sqlite
           sqlite-interactive
         ];
@@ -210,7 +205,6 @@
             nodejs
             # poetry executable
             env.pkgs.poetry
-            env.pkgs.poetry-core
             # pre-commit deps
             actionlint
             git
