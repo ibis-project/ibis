@@ -53,6 +53,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
 
         client.execute(f"DROP DATABASE IF EXISTS {database}")
         client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
+
+        client.execute("DROP DATABASE IF EXISTS tmptables")
+        client.execute("CREATE DATABASE tmptables ENGINE = Atomic")
+
         client.execute(f"USE {database}")
         client.execute("SET allow_experimental_object_type = 1")
         client.execute("SET output_format_json_named_tuples_as_objects = 1")
