@@ -497,6 +497,7 @@ OPERATION_REGISTRY = {
     ops.ExtractQuarter: _extract_field("quarter"),
     ops.ExtractMonth: _extract_field("month"),
     ops.ExtractDay: _extract_field("day"),
+    ops.ExtractDayOfYear: _extract_field("dayofyear"),
     ops.ExtractHour: _extract_field("hour"),
     ops.ExtractMinute: _extract_field("minute"),
     ops.ExtractSecond: _extract_field("second"),
