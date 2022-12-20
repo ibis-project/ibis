@@ -46,6 +46,10 @@ class TestConf(PandasTest):
                     pd.read_csv(str(data_directory / 'awards_players.csv')),
                     npartitions=NPARTITIONS,
                 ),
+                'diamonds': dd.from_pandas(
+                    pd.read_csv(str(data_directory / 'diamonds.csv')),
+                    npartitions=NPARTITIONS,
+                ),
                 'json_t': pd.DataFrame(
                     {
                         "js": [

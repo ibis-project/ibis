@@ -31,6 +31,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 'awards_players': pd.read_csv(
                     str(data_directory / 'awards_players.csv')
                 ),
+                'diamonds': pd.read_csv(str(data_directory / 'diamonds.csv')),
                 'struct': struct_types,
                 'json_t': json_types,
                 'array_types': array_types,

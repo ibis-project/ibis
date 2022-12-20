@@ -52,6 +52,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         client.register(
             data_directory / 'awards_players.csv', table_name='awards_players'
         )
+        client.register(data_directory / 'diamonds.csv', table_name='diamonds')
         return client
 
     @property
