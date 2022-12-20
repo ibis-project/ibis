@@ -15,7 +15,7 @@ _format_aliases = {'TEXTFILE': 'TEXT'}
 
 def _sanitize_format(format):
     if format is None:
-        return
+        return None
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in (

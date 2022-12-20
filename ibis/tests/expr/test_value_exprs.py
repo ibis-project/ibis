@@ -1635,7 +1635,7 @@ def test_logical_comparison_rlz_incompatible_error(table, operation):
 
 def test_case_rlz_incompatible_error(table):
     with pytest.raises(TypeError, match=r"a:int8 and Literal\(foo\):string"):
-        "foo" == table.a
+        table.a == 'foo'
 
 
 @pytest.mark.parametrize("func", [ibis.asc, ibis.desc])

@@ -44,7 +44,7 @@ class Catalog(Dict[str, sch.Schema]):
         dt.Geometry: "geometry",
     }
 
-    def to_sqlglot_schema(self, schema: sch.Schema) -> Dict[str, str]:
+    def to_sqlglot_schema(self, schema: sch.Schema) -> dict[str, str]:
         return {
             name: self.typemap.get(type(dtype), str(dtype))
             for name, dtype in schema.items()

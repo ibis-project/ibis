@@ -186,7 +186,7 @@ def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
     path is aggregations where aggregations return different numbers of rows
     (see `test_aggregation_group_by` for a specific example).
     TODO - performance.
-    """  # noqa: E501
+    """
     if len(dfs) == 1:
         maybe_df = dfs[0]
         if isinstance(maybe_df, dd.Series):

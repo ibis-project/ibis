@@ -70,18 +70,12 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 
 [tool.poetry.group.dev.dependencies]
-absolufy-imports = ">=0.3.1,<1"
 black = ">=22.1.0,<23"
 docformatter = ">=1.5.0,<2"
-flake8 = [
-  { version = ">=5,<7", python = ">=3.8.1" },
-  { version = ">=5,<6", python = "<3.8.1" }
-]
-flake8-noqa = ">=1.3.0,<2"
 ipython = ">=7.27.0,<9"
 isort = ">=5.9.3,<6"
 poetry-dynamic-versioning = ">=0.18.0,<1"
-pyupgrade = ">=2.26.0,<4"
+ruff = ">=0.0.189,<1"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<23"
@@ -288,6 +282,32 @@ markers = [
   "sqlite: SQLite tests",
   "trino: Trino tests",
 ]
+
+[tool.ruff]
+line-length = 88
+select = [
+  "E", # pycodestyle
+  "W", # pycodestyle
+  "F", # pyflakes
+  "UP", # pyupgrade
+  "RUF", # ruff-specific rules
+  "TID", # flake8-tidy-imports
+  "T10", # flake8-debugger
+  "PGH", # pygrep-hooks
+  "PLC", # pylint
+  "PLE", # pylint
+  "PLW", # pylint
+  "SIM", # flake8-simplify
+  "T20", # flake8-print
+  "ICN", # flake8-import-conventions
+  "RET", # flake8-return
+  "BLE", # flake8-blind-except
+
+]
+respect-gitignore = true
+ignore = ["E501", "PGH003", "RET504", "RET505", "RET506", "RET507", "RET508"]
+exclude = ["**/*_py310.py", "ibis/tests/*/snapshots/*"]
+target-version = "py38"
 
 [tool.black]
 line_length = 88

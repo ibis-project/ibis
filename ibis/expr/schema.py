@@ -58,7 +58,7 @@ class Schema(Concrete):
         name_locs = {v: i for i, v in enumerate(self.names)}
         if len(name_locs) < len(self.names):
             duplicate_names = list(self.names)
-            for v in name_locs.keys():
+            for v in name_locs:
                 duplicate_names.remove(v)
             raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
         return name_locs

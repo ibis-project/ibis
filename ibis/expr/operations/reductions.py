@@ -50,7 +50,7 @@ class BitAnd(Filterable, Reduction):
 
     * BigQuery [`BIT_AND`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and)
     * MySQL [`BIT_AND`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')
@@ -67,7 +67,7 @@ class BitOr(Filterable, Reduction):
 
     * BigQuery [`BIT_OR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or)
     * MySQL [`BIT_OR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')
@@ -84,7 +84,7 @@ class BitXor(Filterable, Reduction):
 
     * BigQuery [`BIT_XOR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor)
     * MySQL [`BIT_XOR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')

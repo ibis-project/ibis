@@ -100,7 +100,7 @@ class GeoGeometryType(GeoSpatialUnOp):
 class GeoIntersects(GeoSpatialBinOp):
     """Returns True if the Geometries/Geography “spatially intersect in 2D”
 
-    - (share any portion of space) and False if they don’t (they are Disjoint).
+    - (share any portion of space) and False if they don`t (they are Disjoint).
     """
 
     output_dtype = dt.boolean

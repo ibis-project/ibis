@@ -66,7 +66,7 @@ CREATE OR REPLACE STAGE ibis_testing_stage
                 src = data_dir / f"{table}.csv"
                 con.execute(f"PUT file://{str(src.absolute())} @{stage}/{table}.csv")
                 con.execute(
-                    f"COPY INTO {table} FROM @{stage}/{table}.csv FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"  # noqa: E501
+                    f"COPY INTO {table} FROM @{stage}/{table}.csv FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"
                 )
 
     @staticmethod
@@ -75,3 +75,4 @@ CREATE OR REPLACE STAGE ibis_testing_stage
         if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
             return ibis.connect(snowflake_url)  # type: ignore
         pytest.skip("SNOWFLAKE_URL environment variable is not defined")
+        return None

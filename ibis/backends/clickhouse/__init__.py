@@ -181,7 +181,7 @@ class Backend(BaseBackend):
         >>> client = ibis.clickhouse.connect(host=clickhouse_host,  port=clickhouse_port)
         >>> client  # doctest: +ELLIPSIS
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-        """  # noqa: E501
+        """
         options = dict(
             host=host,
             port=port,

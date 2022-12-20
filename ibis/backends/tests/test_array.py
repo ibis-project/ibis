@@ -120,7 +120,7 @@ builtin_array = toolz.compose(
     ),
     pytest.mark.never(
         ["snowflake"],
-        reason="snowflake has an extremely specialized way of implementing arrays",  # noqa: E501
+        reason="snowflake has an extremely specialized way of implementing arrays",
     ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion", "dask"]),

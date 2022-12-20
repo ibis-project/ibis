@@ -301,6 +301,7 @@ def _parse_varchar(t):
     m = _VARCHAR_RE.match(t)
     if m:
         return 'string'
+    return None
 
 
 def _impala_type_to_ibis(tval):
@@ -313,8 +314,7 @@ def _ibis_string_to_impala(tval):
     if tval in sql_type_names:
         return sql_type_names[tval]
     result = dt.validate_type(tval)
-    if result:
-        return repr(result)
+    return repr(result) if result else None
 
 
 _impala_to_ibis_type = {

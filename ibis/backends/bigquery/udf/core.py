@@ -560,9 +560,9 @@ if __name__ == "__main__":
         some_stuff = [x + y for x, y in [[1, 4], [2, 5], [3, 6]] if 2 < x < 3]
         some_stuff1 = [range(x) for x in [1, 2, 3]]
         some_stuff2 = [x + y for x, y in [(1, 4), (2, 5), (3, 6)]]
-        print(some_stuff)
-        print(some_stuff1)
-        print(some_stuff2)
+        print(some_stuff)  # noqa: T201
+        print(some_stuff1)  # noqa: T201
+        print(some_stuff2)  # noqa: T201
 
         x = 1
         y = 2
@@ -591,7 +591,7 @@ if __name__ == "__main__":
         w = 3
         w = not False
         yyz = None
-        print(yyz)
+        print(yyz)  # noqa: T201
         foobar = x < y < z < w  # x < y and y < z
         foobar = 1
         baz = foobar // 3
@@ -604,4 +604,4 @@ if __name__ == "__main__":
         nnn = len(values)
         return [sum(values) - a + b * y**-x, z, foo.width, nnn]
 
-    print(my_func.js)
+    print(my_func.js)  # noqa: T201

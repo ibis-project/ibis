@@ -9,18 +9,13 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.util as util
 from ibis.common.annotations import attribute, optional  # noqa: F401
-from ibis.common.validators import (  # noqa: F401
-    bool_,
-    instance_of,
-    isin,
-    lazy_instance_of,
-    map_to,
-    one_of,
-    ref,
-    str_,
-    tuple_of,
-    validator,
-)
+from ibis.common.validators import bool_  # noqa: F401
+from ibis.common.validators import isin  # noqa: F401
+from ibis.common.validators import lazy_instance_of  # noqa: F401
+from ibis.common.validators import ref  # noqa: F401
+from ibis.common.validators import str_  # noqa: F401
+from ibis.common.validators import tuple_of  # noqa: F401
+from ibis.common.validators import instance_of, map_to, one_of, validator
 from ibis.expr.deferred import Deferred
 
 

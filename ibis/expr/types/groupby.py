@@ -183,7 +183,7 @@ class GroupedTable:
         -------
         Table
             A table expression with window functions applied
-        """  # noqa: E501
+        """
         if exprs is None:
             exprs = []
         else:

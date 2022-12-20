@@ -9,7 +9,6 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.config as config
 import ibis.expr.analysis as an
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
@@ -172,18 +171,6 @@ def test_projection_invalid_root(table):
     exprs = [right['foo'], right['bar']]
     with pytest.raises(RelationError):
         left.projection(exprs)
-
-
-def test_projection_unnamed_literal_interactive_blowup(con):
-    # #147 and #153 alike
-    table = con.table('functional_alltypes')
-    exprs = [table.bigint_col, ibis.literal(5)]
-
-    with config.option_context('interactive', True):
-        try:
-            table.select(exprs)
-        except Exception as e:
-            assert 'named' in e.args[0]
 
 
 def test_projection_with_star_expr(table):

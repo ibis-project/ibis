@@ -428,7 +428,7 @@ def test_multiple_inheritance_argument_order():
 
     assert (
         str(Sum.__signature__)
-        == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
+        == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"
     )
 
 
@@ -446,7 +446,7 @@ def test_multiple_inheritance_optional_argument_order():
 
     assert (
         str(Between.__signature__)
-        == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
+        == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"
     )
 
 

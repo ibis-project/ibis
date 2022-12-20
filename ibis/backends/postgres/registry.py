@@ -253,11 +253,10 @@ def _reduce_tokens(tokens, arg):
         # uninteresting text
         else:
             curtokens.append(token)
-    else:
-        # append result to r if we had more tokens or if we have no
-        # blacklisted tokens
-        if curtokens:
-            reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
+    # append result to r if we had more tokens or if we have no
+    # blacklisted tokens
+    if curtokens:
+        reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
     return reduced
 
 

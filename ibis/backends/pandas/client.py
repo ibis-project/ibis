@@ -64,11 +64,11 @@ def schema_from_series(s):
 
 
 @sch.infer.register(pd.DataFrame)
-def infer_pandas_schema(df, schema=None):
+def infer_pandas_schema(df: pd.DataFrame, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name in df.dtypes.keys():
+    for column_name in df.dtypes.keys():  # noqa: SIM118
         if not isinstance(column_name, str):
             raise TypeError('Column names must be strings to use the pandas backend')
 
@@ -144,7 +144,7 @@ def convert_any_to_any(_, out_dtype, column):
             return column.map(date_parse)
         except TypeError:
             return column
-    except Exception:
+    except Exception:  # noqa: BLE001
         return column
 
 

@@ -64,7 +64,7 @@ def test_assign(snapshot):
     def f():
         a = 1
         a = 2
-        print(a)
+        print(a)  # noqa: T201
         return 1
 
     js = compile(f)

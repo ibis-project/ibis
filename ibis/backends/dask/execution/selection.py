@@ -7,7 +7,7 @@ import operator
 from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
-import pandas
+import pandas as pd
 from toolz import concatv
 
 import ibis.expr.analysis as an
@@ -223,7 +223,7 @@ def execute_selection_dataframe(
         return result
 
     # create a sequence of columns that we need to drop
-    temporary_columns = pandas.Index(concatv(grouping_keys, ordering_keys)).difference(
+    temporary_columns = pd.Index(concatv(grouping_keys, ordering_keys)).difference(
         data.columns
     )
 

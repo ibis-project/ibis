@@ -484,6 +484,7 @@ def _setup_backend(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"
         )
+        return None
     else:
         cls = _get_backend_conf(backend)
         return cls.load_data(

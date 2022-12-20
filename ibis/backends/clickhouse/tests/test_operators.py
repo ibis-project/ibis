@@ -220,7 +220,7 @@ def test_simple_case(con, alltypes, translate):
         t.string_col.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
     )
 
-    expected = """CASE string_col WHEN 'foo' THEN 'bar' WHEN 'baz' THEN 'qux' ELSE 'default' END"""  # noqa: E501
+    expected = """CASE string_col WHEN 'foo' THEN 'bar' WHEN 'baz' THEN 'qux' ELSE 'default' END"""
     assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
@@ -235,7 +235,7 @@ def test_search_case(con, alltypes, translate):
         .end()
     )
 
-    expected = """CASE WHEN float_col > 0 THEN int_col * 2 WHEN float_col < 0 THEN int_col ELSE 0 END"""  # noqa: E501
+    expected = """CASE WHEN float_col > 0 THEN int_col * 2 WHEN float_col < 0 THEN int_col ELSE 0 END"""
     assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 

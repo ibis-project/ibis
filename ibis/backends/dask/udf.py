@@ -5,7 +5,7 @@ import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import dask.delayed
 import numpy as np
-import pandas
+import pandas as pd
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -78,7 +78,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
             df = dd.map_partitions(op.func, *args, meta=meta)
         else:
             name = args[0].name if len(args) == 1 else None
-            meta = pandas.Series([], name=name, dtype=op.return_type.to_dask())
+            meta = pd.Series([], name=name, dtype=op.return_type.to_dask())
             df = dd.map_partitions(op.func, *args, meta=meta)
 
         cache[(op, timecontext)] = df
@@ -108,7 +108,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         # passing that (now) pd.Series to aggctx. This materialization
         # happens at `.compute()` time, making this "lazy"
         @dask.delayed
-        def lazy_agg(*series: pandas.Series):
+        def lazy_agg(*series: pd.Series):
             return aggcontext.agg(series[0], op.func, *series[1:])
 
         lazy_result = lazy_agg(*args)
@@ -193,19 +193,19 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             return apply_func(*cols)
 
         if len(groupings) > 1:
-            meta_index = pandas.MultiIndex.from_arrays(
+            meta_index = pd.MultiIndex.from_arrays(
                 [[0]] * len(groupings), names=groupings
             )
             meta_value = [dd.utils.make_meta(out_type)]
         else:
-            meta_index = pandas.Index([], name=groupings[0])
+            meta_index = pd.Index([], name=groupings[0])
             meta_value = []
 
         return grouped_df.apply(
             apply_wrapper,
             func,
             col_names,
-            meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
+            meta=pd.Series(meta_value, index=meta_index, dtype=out_type),
         )
 
     @execute_node.register(
@@ -254,7 +254,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         else:
             # after application we will get a series with a multi-index of
             # groupings + index
-            meta_index = pandas.MultiIndex.from_arrays(
+            meta_index = pd.MultiIndex.from_arrays(
                 [[0]] * (len(groupings) + 1),
                 names=groupings + [parent_df.index.name],
             )
@@ -264,7 +264,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 apply_wrapper,
                 func,
                 col_names,
-                meta=pandas.Series(meta_value, index=meta_index, dtype=out_type),
+                meta=pd.Series(meta_value, index=meta_index, dtype=out_type),
             )
 
         return result
