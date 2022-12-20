@@ -232,6 +232,7 @@ filterwarnings = [
   "ignore: PY_SSIZE_T_CLEAN will be required for '#' formats:DeprecationWarning",
   # spark
   "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
+  "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
   # findspec
