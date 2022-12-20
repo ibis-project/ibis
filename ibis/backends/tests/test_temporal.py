@@ -775,7 +775,6 @@ def test_now_from_projection(alltypes):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "pandas",
         "datafusion",
         "mysql",
@@ -795,7 +794,6 @@ def test_date_literal(con):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "pandas",
         "datafusion",
         "mysql",
@@ -817,7 +815,6 @@ def test_timestamp_literal(con):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "pandas",
         "datafusion",
         "mysql",
@@ -841,7 +838,6 @@ def test_time_literal(con):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "pandas",
         "datafusion",
         "mysql",
