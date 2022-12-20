@@ -146,10 +146,6 @@ PANDAS_UNITS = {
         param(
             'W',
             marks=[
-                pytest.mark.broken(
-                    ["bigquery"],
-                    reason="BigQuery returns different results from pandas",
-                ),
                 pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
             ],
         ),
@@ -214,10 +210,6 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             'W',
             marks=[
-                pytest.mark.broken(
-                    ["bigquery"],
-                    reason="BigQuery returns different results from pandas",
-                ),
                 pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
             ],
         ),

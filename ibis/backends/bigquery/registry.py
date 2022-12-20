@@ -244,7 +244,7 @@ def _arbitrary(translator, op):
 _date_units = {
     "Y": "YEAR",
     "Q": "QUARTER",
-    "W": "WEEK",
+    "W": "WEEK(MONDAY)",
     "M": "MONTH",
     "D": "DAY",
 }
