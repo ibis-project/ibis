@@ -1,7 +1,6 @@
 import ibis
 
 
-param = ibis.param("timestamp")
 alltypes = ibis.table(
     name="alltypes",
     schema={
@@ -11,6 +10,7 @@ alltypes = ibis.table(
         "string_col": "string",
     },
 )
+param = ibis.param("timestamp")
 proj = alltypes.select(
     [alltypes.float_col, alltypes.timestamp_col, alltypes.int_col, alltypes.string_col]
 ).filter(alltypes.timestamp_col < param)

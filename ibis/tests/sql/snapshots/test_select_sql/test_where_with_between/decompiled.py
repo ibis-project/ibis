@@ -1,7 +1,6 @@
 import ibis
 
 
-lit = ibis.literal(0)
 alltypes = ibis.table(
     name="alltypes",
     schema={
@@ -18,5 +17,6 @@ alltypes = ibis.table(
         "k": "time",
     },
 )
+lit = ibis.literal(0)
 
 result = alltypes.filter([alltypes.a > lit, alltypes.f.between(lit, ibis.literal(1))])
