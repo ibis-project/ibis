@@ -49,11 +49,6 @@ in
     extras = [ ];
   };
 
-  ibisDocsEnv = mkPoetryEnv {
-    python = pkgs.python310;
-    groups = [ "docs" ];
-  };
-
   changelog = pkgs.writeShellApplication {
     name = "changelog";
     runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
