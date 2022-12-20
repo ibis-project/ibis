@@ -57,6 +57,12 @@ def string_like(translator, op):
     return f'{arg} LIKE {pattern}'
 
 
+def string_ilike(translator, op):
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    return f'upper({arg}) LIKE upper({pattern})'
+
+
 def parse_url(translator, op):
     arg, extract, key = op.args
     arg_formatted = translator.translate(arg)

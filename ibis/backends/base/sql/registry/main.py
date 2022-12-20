@@ -333,6 +333,7 @@ operation_registry = {
     ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: string.string_join,
     ops.StringSQLLike: string.string_like,
+    ops.StringSQLILike: string.string_ilike,
     ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
