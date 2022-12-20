@@ -164,7 +164,7 @@ class BaseSQLBackend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return results in an iterator of pyarrow
         record batches.
 
@@ -204,7 +204,7 @@ class BaseSQLBackend(BaseBackend):
                 )
                 yield pa.RecordBatch.from_struct_array(struct_array)
 
-        return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
 
     def execute(
         self,
