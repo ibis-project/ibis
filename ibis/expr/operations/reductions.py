@@ -34,7 +34,7 @@ class CountStar(Filterable, Reduction):
 @public
 class Arbitrary(Filterable, Reduction):
     arg = rlz.column(rlz.any)
-    how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}))
+    how = rlz.isin({'first', 'last', 'heavy'})
     output_dtype = rlz.dtype_like('arg')
 
 
