@@ -5,7 +5,7 @@ import operator
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
-import pandas
+import pandas as pd
 import toolz
 from pandas import isnull
 
@@ -254,7 +254,7 @@ def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **
 
 @execute_node.register(ops.StringAscii, dd.Series)
 def execute_string_ascii(op, data, **kwargs):
-    output_meta = pandas.Series([], dtype=np.dtype('int32'), name=data.name)
+    output_meta = pd.Series([], dtype=np.dtype('int32'), name=data.name)
     return data.map(ord, meta=output_meta)
 
 

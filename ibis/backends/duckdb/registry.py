@@ -59,13 +59,12 @@ def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
 
-    if unit in {"us", "ns"}:
-        raise ValueError(f"`{unit}` unit is not supported!")
-
     if unit == "ms":
         return sa.func.epoch_ms(arg)
     elif unit == "s":
         return sa.func.to_timestamp(arg)
+    else:
+        raise ValueError(f"`{unit}` unit is not supported!")
 
 
 def _literal(_, op):
@@ -218,7 +217,7 @@ operation_registry.update(
         ),
         ops.ApproxMedian: reduction(
             # without inline text, duckdb fails with
-            # RuntimeError: INTERNAL Error: Invalid PhysicalType for GetTypeIdSize # noqa: E501
+            # RuntimeError: INTERNAL Error: Invalid PhysicalType for GetTypeIdSize
             lambda arg: sa.func.approx_quantile(arg, sa.text(str(0.5)))
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),

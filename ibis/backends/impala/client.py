@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import time
 import traceback
 from typing import TYPE_CHECKING
@@ -130,10 +131,8 @@ class ImpalaCursor:
         self.options = options
 
     def __del__(self):
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
     def close(self):
         try:

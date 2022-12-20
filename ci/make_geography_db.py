@@ -110,7 +110,7 @@ def main() -> None:
     db_path = Path(args.output_directory).joinpath("geography.db")
     con = sa.create_engine(f"sqlite:///{db_path}")
     make_geography_db(input_data, con)
-    print(db_path)
+    print(db_path)  # noqa: T201
 
 
 if __name__ == "__main__":

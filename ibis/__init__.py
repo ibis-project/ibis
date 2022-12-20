@@ -7,7 +7,7 @@ from ibis.common.exceptions import IbisError
 from ibis.config import options
 from ibis.expr import api
 from ibis.expr import types as ir
-from ibis.expr.api import *  # noqa: F401,F403
+from ibis.expr.api import *  # noqa: F403
 
 __all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
 __all__ += api.__all__

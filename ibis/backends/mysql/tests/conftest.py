@@ -75,7 +75,7 @@ class TestConf(BackendTest, RoundHalfToEven):
         with open(script_dir / 'schema' / 'mysql.sql') as schema:
             engine = init_database(
                 url=sa.engine.make_url(
-                    f"mysql+pymysql://{user}:{password}@{host}:{port:d}?local_infile=1",  # noqa: E501
+                    f"mysql+pymysql://{user}:{password}@{host}:{port:d}?local_infile=1",
                 ),
                 database=database,
                 schema=schema,

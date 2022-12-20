@@ -180,6 +180,7 @@ class BackendTest(abc.ABC):
             return self.connection.table("struct")
         else:
             pytest.xfail(f"{self.name()} backend does not support struct types")
+            return None
 
     @property
     def json_t(self) -> Optional[ir.Table]:
@@ -189,6 +190,7 @@ class BackendTest(abc.ABC):
             return self.connection.table("json_t").mutate(js=_.js.cast("json"))
         else:
             pytest.xfail(f"{self.name()} backend does not support json types")
+            return None
 
     @property
     def api(self):

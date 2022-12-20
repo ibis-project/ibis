@@ -178,7 +178,7 @@ class TablesAccessor(collections.abc.Mapping):
     def __getitem__(self, name) -> ir.Table:
         try:
             return self._backend.table(name)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise KeyError(name) from exc
 
     def __getattr__(self, name) -> ir.Table:
@@ -186,7 +186,7 @@ class TablesAccessor(collections.abc.Mapping):
             raise AttributeError(name)
         try:
             return self._backend.table(name)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise AttributeError(name) from exc
 
     def __iter__(self) -> Iterator[str]:
@@ -217,7 +217,7 @@ class ResultHandler:
             import pyarrow
         except ImportError:
             raise ModuleNotFoundError(
-                "Exporting to arrow formats requires `pyarrow` but it is not installed"  # noqa: ignore
+                "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
             return pyarrow

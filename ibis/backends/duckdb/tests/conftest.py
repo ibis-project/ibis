@@ -45,7 +45,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         for table in TEST_TABLES:
             src = data_dir / f'{table}.csv'
             conn.execute(
-                f"COPY {table} FROM {str(src)!r} (DELIMITER ',', HEADER, SAMPLE_SIZE 1)"  # noqa: E501
+                f"COPY {table} FROM {str(src)!r} (DELIMITER ',', HEADER, SAMPLE_SIZE 1)"
             )
 
     @staticmethod

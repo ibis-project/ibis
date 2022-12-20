@@ -306,7 +306,7 @@ class TableMetadata:
         if self.partitions is not None:
             data['partition schema'] = self.partitions
 
-        pprint.pprint(data, stream=buf)
+        pprint.pprint(data, stream=buf)  # noqa: T203
 
         return buf.getvalue()
 

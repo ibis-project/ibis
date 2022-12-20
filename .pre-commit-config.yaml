@@ -25,26 +25,16 @@ repos:
     rev: 22.12.0
     hooks:
       - id: black
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.189
     hooks:
-      - id: flake8
-        exclude: (^ibis/tests/sql/snapshots/|_py310\.py$)
+      - id: ruff
+        # makes sure to exclude a file even if it's passed in explicitly
+        args: ["--force-exclude"]
   - repo: https://github.com/pycqa/docformatter
     rev: v1.5.1
     hooks:
       - id: docformatter
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-      - id: pyupgrade
-        entry: pyupgrade --py38-plus --keep-runtime-typing
-        types:
-          - python
   - repo: local
     hooks:
       - id: prettier
@@ -111,6 +101,5 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: debug-statements
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable

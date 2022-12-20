@@ -39,7 +39,6 @@ import numpy as np
 
 import ibis.common.exceptions as com
 import ibis.config as config
-import ibis.expr.api as ir
 import ibis.expr.operations as ops
 
 if TYPE_CHECKING:
@@ -310,6 +309,8 @@ def adjust_context_asof_join(
 def adjust_context_window(
     op: ops.Window, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
+    import ibis.expr.types as ir
+
     # adjust time context by preceding and following
     begin, end = timecontext
 

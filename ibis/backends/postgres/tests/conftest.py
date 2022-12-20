@@ -86,7 +86,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 # incurs an unnecessary round trip and requires more code: the
                 # `data_iter` argument would have to be turned back into a CSV
                 # before being passed to `copy_expert`.
-                sql = f"COPY {table} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"  # noqa: E501
+                sql = f"COPY {table} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
                 with data_dir.joinpath(f'{table}.csv').open('r') as file:
                     cur.copy_expert(sql=sql, file=file)
 

@@ -39,7 +39,7 @@ from ibis.backends.impala.client import ImpalaConnection, ImpalaDatabase, Impala
 from ibis.backends.impala.compat import HS2Error, ImpylaError
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.pandas_interop import DataFrameWriter
-from ibis.backends.impala.udf import (  # noqa: F401
+from ibis.backends.impala.udf import (
     aggregate_function,
     scalar_function,
     wrap_uda,
@@ -50,6 +50,14 @@ from ibis.config import options
 if TYPE_CHECKING:
     import pandas as pd
 
+
+__all__ = (
+    "Backend",
+    "aggregate_function",
+    "scalar_function",
+    "wrap_uda",
+    "wrap_udf",
+)
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
@@ -958,10 +966,10 @@ class Backend(BaseSQLBackend):
         """Drop view or table."""
         try:
             self.drop_table(name, database=database)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             try:
                 self.drop_view(name, database=database)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, Mapping
@@ -88,12 +89,10 @@ class Expr(Immutable):
         except ImportError:
             return None
         else:
-            try:
+            # Something may go wrong, and we can't error in the notebook
+            # so fallback to the default text representation.
+            with contextlib.suppress(Exception):
                 return viz.to_graph(self).pipe(format='png')
-            except Exception:
-                # Something may go wrong, and we can't error in the notebook
-                # so fallback to the default text representation.
-                return None
 
     def visualize(
         self,

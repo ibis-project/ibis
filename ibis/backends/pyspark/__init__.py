@@ -453,7 +453,7 @@ class Backend(BaseSQLBackend):
                 if force:
                     mode = 'overwrite'
                 spark_df.write.saveAsTable(table_name, format=format, mode=mode)
-                return
+                return None
             else:
                 self._register_in_memory_tables(obj)
 
@@ -628,4 +628,4 @@ class Backend(BaseSQLBackend):
         return self.raw_sql(stmt)
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        return operation in PySparkExprTranslator._registry.keys()
+        return operation in PySparkExprTranslator._registry

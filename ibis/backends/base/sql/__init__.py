@@ -135,6 +135,7 @@ class BaseSQLBackend(BaseBackend):
         if cursor:
             return cursor
         cursor.release()
+        return None
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):

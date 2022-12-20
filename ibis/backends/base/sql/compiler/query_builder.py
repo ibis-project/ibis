@@ -279,7 +279,7 @@ class Select(DML, Comparable):
 
     def format_subqueries(self):
         if not self.subqueries:
-            return
+            return None
 
         context = self.context
 

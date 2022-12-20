@@ -36,6 +36,8 @@ def string_find(translator, op):
             return 'locate({}, {}, {}) - 1'.format(
                 substr_formatted, arg_formatted, sval + 1
             )
+        else:
+            raise ValueError(f"invalid `start` value: {sval}")
     else:
         return f'locate({substr_formatted}, {arg_formatted}) - 1'
 

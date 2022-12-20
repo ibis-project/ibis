@@ -169,7 +169,7 @@ def format_column(dtype, values):
 
     try:
         max_width = max(map(len, out))
-    except Exception:
+    except Exception:  # noqa: BLE001
         max_width = None
         min_width = 20
     else:
