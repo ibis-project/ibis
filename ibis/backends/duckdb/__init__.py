@@ -9,8 +9,6 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, Mapping, MutableMapping
 
-import pyarrow as pa
-import pyarrow.types as pat
 import sqlalchemy as sa
 import toolz
 
@@ -19,6 +17,7 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
+    import pyarrow as pa
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -330,7 +329,7 @@ class Backend(BaseAlchemyBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
     ) -> pa.Table:
-        _ = self._import_pyarrow()
+        pa = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
@@ -356,6 +355,7 @@ class Backend(BaseAlchemyBackend):
         cursor: duckdb.DuckDBPyConnection,
         schema: sch.Schema,
     ):
+        pa = self._import_pyarrow()
         import pandas as pd
 
         table = cursor.cursor.fetch_arrow_table()
@@ -364,7 +364,7 @@ class Backend(BaseAlchemyBackend):
             {
                 name: (
                     col.to_pylist()
-                    if pat.is_nested(col.type)
+                    if pa.types.is_nested(col.type)
                     else col.to_pandas(timestamp_as_object=True)
                 )
                 for name, col in zip(table.column_names, table.columns)
