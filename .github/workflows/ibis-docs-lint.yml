@@ -139,7 +139,7 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix develop '.#docs' -c mkdocs build --strict
+        run: nix develop --ignore-environment -c mkdocs build --strict
 
       - name: verify internal links
         run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
@@ -188,7 +188,7 @@ jobs:
 
       - name: build and push dev docs
         run: |
-          nix develop '.#docs' -c \
+          nix develop --ignore-environment -c \
             mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
 
   simulate_release:

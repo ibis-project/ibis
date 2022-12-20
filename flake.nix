@@ -134,12 +134,6 @@
 
         default = ibis310;
 
-        docs = pkgs.mkShell {
-          name = "docs";
-          nativeBuildInputs = [ pkgs.ibisDocsEnv ];
-          inherit shellHook;
-        };
-
         preCommit = pkgs.mkShell {
           name = "preCommit";
           nativeBuildInputs = [ pkgs.ibisSmallDevEnv ] ++ preCommitDeps;
