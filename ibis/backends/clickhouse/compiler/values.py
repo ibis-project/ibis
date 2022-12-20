@@ -233,7 +233,6 @@ def _xor(op, **kw):
 @translate_val.register(ops.Arbitrary)
 def _arbitrary(op, **kw):
     functions = {
-        None: "any",
         "first": "any",
         "last": "anyLast",
         "heavy": "anyHeavy",

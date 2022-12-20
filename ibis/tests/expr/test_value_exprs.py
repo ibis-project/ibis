@@ -492,7 +492,7 @@ def test_negate_boolean_column(table, op):
 
 
 @pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
-@pytest.mark.parametrize('how', [None, 'first', 'last', 'heavy'])
+@pytest.mark.parametrize('how', ['first', 'last', 'heavy'])
 @pytest.mark.parametrize('condition_fn', [lambda t: None, lambda t: t.a > 8])
 def test_arbitrary(table, column, how, condition_fn):
     col = table[column]

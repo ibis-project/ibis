@@ -704,7 +704,7 @@ class Column(Value, JupyterMixin):
     def arbitrary(
         self,
         where: ir.BooleanValue | None = None,
-        how: Literal["first", "last", "heavy"] | None = None,
+        how: Literal["first", "last", "heavy"] = "first",
     ) -> Scalar:
         """Select an arbitrary value in a column.
 

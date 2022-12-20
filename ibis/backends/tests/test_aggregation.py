@@ -368,6 +368,24 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=pytest.mark.notimpl(['polars', "datafusion"]),
         ),
         param(
+            lambda t, where: t.double_col.arbitrary(where=where),
+            lambda t, where: t.double_col[where].iloc[0],
+            id='arbitrary_default',
+            marks=pytest.mark.notimpl(
+                [
+                    'impala',
+                    'postgres',
+                    'mysql',
+                    'sqlite',
+                    'snowflake',
+                    'polars',
+                    'datafusion',
+                    "mssql",
+                    "trino",
+                ]
+            ),
+        ),
+        param(
             lambda t, where: t.double_col.arbitrary(how='first', where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
