@@ -75,7 +75,7 @@ limit_no_limit = limit + no_limit
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_table_to_pyarrow_batches(limit, awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=limit)
-    assert isinstance(batch_reader, pa.RecordBatchReader)
+    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     if limit is not None:
@@ -88,7 +88,7 @@ def test_table_to_pyarrow_batches(limit, awards_players):
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_column_to_pyarrow_batches(limit, awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(limit=limit)
-    assert isinstance(batch_reader, pa.RecordBatchReader)
+    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     if limit is not None:
@@ -152,7 +152,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
 @pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
 def test_table_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
-    assert isinstance(batch_reader, pa.RecordBatchReader)
+    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 2048
@@ -163,7 +163,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(
         limit=2050, chunk_size=2048
     )
-    assert isinstance(batch_reader, pa.RecordBatchReader)
+    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 2048
@@ -179,7 +179,7 @@ def test_to_pyarrow_batches_borked_types(batting):
     """This is a temporary test to expose an(other) issue with sqlite typing
     shenanigans."""
     batch_reader = batting.to_pyarrow_batches(limit=42)
-    assert isinstance(batch_reader, pa.RecordBatchReader)
+    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 42

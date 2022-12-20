@@ -440,7 +440,7 @@ class Backend(BaseAlchemyBackend):
         return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
 
-class IbisRecordBatchReader(pa.RecordBatchReader):
+class IbisRecordBatchReader(pa.ipc.RecordBatchReader):
     def __init__(self, reader, cursor):
         self.reader = reader
         self.cursor = cursor

@@ -298,7 +298,7 @@ class ResultHandler:
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return a RecordBatchReader.
 
         This method is eager and will execute the associated expression

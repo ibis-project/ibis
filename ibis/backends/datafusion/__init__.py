@@ -213,10 +213,10 @@ class Backend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         pa = self._import_pyarrow()
         frame = self._get_frame(expr, params, limit, **kwargs)
-        return pa.RecordBatchReader.from_batches(frame.schema(), frame.collect())
+        return pa.ipc.RecordBatchReader.from_batches(frame.schema(), frame.collect())
 
     def execute(
         self,
