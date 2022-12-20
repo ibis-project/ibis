@@ -64,9 +64,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.contains('6.*'),
             id='ilike',
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "datafusion", "impala", "pyspark", "polars"]
-                ),
+                pytest.mark.notimpl(["datafusion", "pyspark", "polars"]),
                 pytest.mark.notyet(
                     ["mssql"], reason="mssql doesn't allow like outside of filters"
                 ),
