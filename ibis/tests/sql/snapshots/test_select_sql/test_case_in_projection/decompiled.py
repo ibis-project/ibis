@@ -1,9 +1,6 @@
 import ibis
 
 
-lit = ibis.literal("foo")
-lit1 = ibis.literal("baz")
-lit2 = ibis.literal("bar")
 alltypes = ibis.table(
     name="alltypes",
     schema={
@@ -20,6 +17,9 @@ alltypes = ibis.table(
         "k": "time",
     },
 )
+lit = ibis.literal("foo")
+lit1 = ibis.literal("baz")
+lit2 = ibis.literal("bar")
 
 result = alltypes.select(
     [

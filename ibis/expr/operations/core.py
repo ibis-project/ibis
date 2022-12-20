@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
 from ibis.util import UnnamedMarker, deprecated
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 @public
-class Node(Concrete):
+class Node(Concrete, Traversable):
     def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(

@@ -6,7 +6,6 @@ import itertools
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.common.graph import Graph
 from ibis.util import experimental
@@ -84,17 +83,6 @@ def translate(op, *args, **kwargs):
     raise NotImplementedError(op)
 
 
-@translate.register(dt.DataType)
-def datatype(dtype, **kwargs):
-    return f"\"{dtype}\""
-
-
-@translate.register(sch.Schema)
-def schema(schema, **kwargs):
-    fields = dict(zip(schema.names, map(str, schema.types)))
-    return CallStatement("ibis.schema", fields)
-
-
 # TODO(kszucs): we do rewrites on construction, so we need to handle specific
 # cases like when reduction_to_aggregation is called
 
@@ -124,15 +112,14 @@ def value(op, *args, **kwargs):
 
 @translate.register(ops.ScalarParameter)
 def scalar_parameter(op, dtype, counter):
-    return f"ibis.param({dtype})"
+    return f"ibis.param({str(dtype)!r})"
 
 
 @translate.register(ops.UnboundTable)
 @translate.register(ops.DatabaseTable)
 def table(op, schema, name, **kwargs):
-    if isinstance(schema, CallStatement):
-        schema = schema.args
-    return f"ibis.table(name={name!r}, schema={schema})"
+    fields = dict(zip(schema.names, map(str, schema.types)))
+    return f"ibis.table(name={name!r}, schema={fields})"
 
 
 def _try_unwrap(stmt):
@@ -244,7 +231,7 @@ def literal(op, value, dtype):
 
 @translate.register(ops.Cast)
 def cast(op, arg, to):
-    return f"{arg}.cast({to})"
+    return f"{arg}.cast({str(to)!r})"
 
 
 @translate.register(ops.Between)
@@ -372,6 +359,10 @@ def decompile(node, render_import=True, assign_result_to='result', format=False)
     """
     if isinstance(node, ir.Expr):
         node = node.op()
+    elif not isinstance(node, ops.Node):
+        raise TypeError(
+            f"Expected ibis expression or operation, got {type(node).__name__}"
+        )
 
     out = io.StringIO()
     ctx = CodeContext(assign_result_to=assign_result_to)

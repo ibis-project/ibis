@@ -1,7 +1,6 @@
 import pytest
 
 import ibis
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import _
 from ibis.expr.decompile import decompile
@@ -38,18 +37,10 @@ nine = three**2
 nine_ = (two + one) ** 2
 
 
-def test_datatype():
-    dtype = dt.Struct(['a', 'b'], ['int64', '!string'])
-    result = decompile(dtype, assign_result_to=None, render_import=False, format=False)
-    expected = '"struct<a: int64, b: !string>"'
-    assert str(result) == expected
-
-
-def test_schema():
+def test_decompile_invalid_type():
     schema = ibis.schema([('a', 'int64'), ('b', 'string')])
-    result = decompile(schema, assign_result_to=None, render_import=False, format=False)
-    expected = "ibis.schema({'a': 'int64', 'b': 'string'})"
-    assert str(result) == expected
+    with pytest.raises(TypeError):
+        decompile(schema, assign_result_to=None, render_import=False, format=False)
 
 
 @pytest.mark.parametrize(
