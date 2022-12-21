@@ -206,6 +206,8 @@ def _literal(_, op):
 
     if dtype.is_set():
         return list(map(sa.literal, value))
+    elif dtype.is_array():
+        value = list(value)
 
     return sa.literal(value)
 

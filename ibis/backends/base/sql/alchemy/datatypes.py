@@ -352,7 +352,9 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
 def sa_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
-        raise NotImplementedError('Nested array types not yet supported')
+        raise NotImplementedError(
+            f"Nested array types not yet supported for {dialect.name} dialect"
+        )
 
     value_dtype = dt.dtype(dialect, satype.item_type)
     return dt.Array(value_dtype, nullable=nullable)

@@ -123,8 +123,8 @@ builtin_array = toolz.compose(
         reason="snowflake has an extremely specialized way of implementing arrays",  # noqa: E501
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["datafusion", "dask", "trino"]),
-    # unclear if thi will ever be supported
+    pytest.mark.notimpl(["datafusion", "dask"]),
+    # unclear if this will ever be supported
     pytest.mark.notyet(
         ["impala"],
         reason="impala doesn't support array types",
@@ -136,7 +136,8 @@ unnest = toolz.compose(
     builtin_array,
     pytest.mark.notimpl(["pandas"]),
     pytest.mark.notyet(
-        ["bigquery", "snowflake"], reason="doesn't support unnest in SELECT position"
+        ["bigquery", "snowflake", "trino"],
+        reason="doesn't support unnest in SELECT position",
     ),
 )
 
@@ -164,7 +165,7 @@ def test_array_discovery_postgres_duckdb(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars"],
+    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
     reason="backend supports nullable nested types",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
@@ -190,6 +191,10 @@ def test_array_discovery_clickhouse(con):
 @pytest.mark.notyet(
     ["clickhouse", "duckdb", "postgres"],
     reason="backend does not support nullable nested types",
+)
+@pytest.mark.notimpl(
+    ["trino"],
+    reason="trino supports nested arrays, but not with the postgres connector",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_desired(con):
