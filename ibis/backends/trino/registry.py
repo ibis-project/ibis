@@ -43,6 +43,8 @@ operation_registry.update(
         ops.Covariance: _covar,
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
+        ops.BitAnd: reduction(sa.func.bitwise_and_agg),
+        ops.BitOr: reduction(sa.func.bitwise_or_agg),
         ops.JSONGetItem: _json_get_item,
     }
 )
