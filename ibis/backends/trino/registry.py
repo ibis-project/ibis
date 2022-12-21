@@ -38,6 +38,10 @@ def _group_concat(t, op):
     return sa.func.array_join(arg, t.translate(op.sep))
 
 
+def _array_index(t, op):
+    return sa.func.element_at(t.translate(op.arg), t.translate(op.index) + 1)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -68,6 +72,7 @@ operation_registry.update(
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.ArrayConcat: fixed_arity(sa.func.concat, 2),
         ops.ArrayLength: unary(sa.func.cardinality),
+        ops.ArrayIndex: _array_index,
         ops.JSONGetItem: _json_get_item,
     }
 )
