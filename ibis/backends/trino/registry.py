@@ -2,6 +2,7 @@ import sqlalchemy as sa
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     reduction,
@@ -42,6 +43,14 @@ def _array_index(t, op):
     return sa.func.element_at(t.translate(op.arg), t.translate(op.index) + 1)
 
 
+def _array_column(t, op):
+    args = ", ".join(
+        str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
+        for arg in op.cols
+    )
+    return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -73,6 +82,7 @@ operation_registry.update(
         ops.ArrayConcat: fixed_arity(sa.func.concat, 2),
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayIndex: _array_index,
+        ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
     }
 )
