@@ -713,7 +713,7 @@ def test_approx_median(alltypes):
             L(":") + ":",
             "::",
             id="expr",
-            marks=mark.notyet(["bigquery", "duckdb", "mysql", "pyspark"]),
+            marks=mark.notyet(["bigquery", "duckdb", "mysql", "pyspark", "trino"]),
         ),
     ],
 )
@@ -735,7 +735,7 @@ def test_approx_median(alltypes):
         ),
     ],
 )
-@mark.notimpl(["datafusion", "snowflake", "polars", "mssql", "trino"])
+@mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
 def test_group_concat(
     backend,
     alltypes,
