@@ -45,6 +45,7 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
+        ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.JSONGetItem: _json_get_item,
     }
 )
