@@ -66,6 +66,7 @@ operation_registry.update(
         ops.BitwiseRightShift: fixed_arity(sa.func.bitwise_right_shift, 2),
         ops.BitwiseNot: unary(sa.func.bitwise_not),
         ops.ArrayCollect: reduction(sa.func.array_agg),
+        ops.ArrayConcat: fixed_arity(sa.func.concat, 2),
         ops.JSONGetItem: _json_get_item,
     }
 )
