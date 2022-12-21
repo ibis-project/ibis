@@ -89,7 +89,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion", "trino"])
+@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
