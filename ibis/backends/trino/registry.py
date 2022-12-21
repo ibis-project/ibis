@@ -13,6 +13,11 @@ operation_registry = sqlalchemy_operation_registry.copy()
 
 # TODO: trino doesn't support `& |` for bitwise ops, it wants `bitwise_and` and `bitwise_or``
 
+def _arbitrary(t, op):
+    if op.how == "heavy":
+        raise ValueError('Trino does not support how="heavy"')
+    return reduction(sa.func.arbitrary)(t, op)
+
 
 operation_registry.update(
     {
@@ -30,5 +35,6 @@ operation_registry.update(
         ops.Correlation: _corr,
         ops.Covariance: _covar,
         ops.ExtractMillisecond: unary(sa.func.millisecond),
+        ops.Arbitrary: _arbitrary,
     }
 )
