@@ -381,7 +381,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'polars',
                     'datafusion',
                     "mssql",
-                    "trino",
                 ]
             ),
         ),
@@ -399,7 +398,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'polars',
                     'datafusion',
                     "mssql",
-                    "trino",
                 ]
             ),
         ),
