@@ -450,7 +450,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_and',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
+                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
                 ),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
@@ -461,7 +461,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_or',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
+                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
                 ),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
