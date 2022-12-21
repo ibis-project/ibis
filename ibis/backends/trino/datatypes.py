@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import parsy as p
+import sqlalchemy as sa
 import trino
 from trino.sqlalchemy.dialect import TrinoDialect
 
@@ -126,3 +127,9 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
 @dt.dtype.register(TrinoDialect, trino.sqlalchemy.datatype.DOUBLE)
 def sa_trino_double(_, satype, nullable=True):
     return dt.Float64(nullable=nullable)
+
+
+@dt.dtype.register(TrinoDialect, sa.ARRAY)
+def sa_trino_array(dialect, satype, nullable=True):
+    value_dtype = dt.dtype(dialect, satype.item_type)
+    return dt.Array(value_dtype, nullable=nullable)

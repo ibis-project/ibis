@@ -58,19 +58,9 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "impala",
-        "pandas",
-        "pyspark",
-        "snowflake",
-    ]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark", "snowflake"])
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql", "trino"],
-    reason="mysql and sqlite will never implement array types",
+    ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
 def test_scalar_param_array(con):
     value = [1, 2, 3]
