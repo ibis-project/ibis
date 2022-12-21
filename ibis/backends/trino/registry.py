@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
@@ -25,6 +26,16 @@ def _json_get_item(t, op):
     return sa.func.json_extract(arg, sa.func.format(f"$[{fmt}]", index))
 
 
+def _group_concat(t, op):
+    if not isinstance(op.sep, ops.Literal):
+        raise com.IbisTypeError("Trino group concat separator must be a literal value")
+
+    arg = sa.func.array_agg(t.translate(op.arg))
+    if (where := op.where) is not None:
+        arg = arg.filter(t.translate(where))
+    return sa.func.array_join(arg, t.translate(op.sep))
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -42,6 +53,7 @@ operation_registry.update(
         ops.Covariance: _covar,
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
+        ops.GroupConcat: _group_concat,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
         ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
