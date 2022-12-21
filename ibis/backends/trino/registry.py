@@ -53,6 +53,7 @@ operation_registry.update(
         ops.Covariance: _covar,
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
+        ops.ApproxCountDistinct: reduction(sa.func.approx_distinct),
         ops.GroupConcat: _group_concat,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
