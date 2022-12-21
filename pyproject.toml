@@ -86,7 +86,6 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 black = ">=22.1.0,<23"
 docformatter = ">=1.5.0,<2"
 ipython = ">=7.27.0,<9"
-isort = ">=5.9.3,<6"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 ruff = ">=0.0.189,<1"
 
@@ -302,6 +301,7 @@ select = [
   "E", # pycodestyle
   "W", # pycodestyle
   "F", # pyflakes
+  "I", # isort
   "UP", # pyupgrade
   "RUF", # ruff-specific rules
   "TID", # flake8-tidy-imports
@@ -319,23 +319,13 @@ select = [
 ]
 respect-gitignore = true
 ignore = ["E501", "PGH003", "RET504", "RET505", "RET506", "RET507", "RET508"]
-exclude = ["**/*_py310.py", "ibis/tests/*/snapshots/*"]
+exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
 
 [tool.black]
 line_length = 88
 skip_string_normalization = true
 extend_exclude = '\.ipynb|\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
-
-[tool.isort]
-ensure_newline_before_comments = true
-line_length = 88
-multi_line_output = 3
-include_trailing_comma = true
-profile = "black"
-extend_skip = [".direnv"]
-extend_skip_glob = ["result*", "ibis/tests/*/snapshots/*", "*_py310.py"]
-skip_gitignore = true
 
 [tool.conda-lock]
 channels = ["conda-forge"]

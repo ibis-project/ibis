@@ -49,8 +49,7 @@ class BasePandasBackend(BaseBackend):
         <ibis.backends.pandas.Backend at 0x...>
         """
         # register dispatchers
-        from ibis.backends.pandas import execution  # noqa: F401
-        from ibis.backends.pandas import udf  # noqa: F401
+        from ibis.backends.pandas import execution, udf  # noqa: F401
 
         self.dictionary = dictionary
         self.schemas: MutableMapping[str, sch.Schema] = {}
