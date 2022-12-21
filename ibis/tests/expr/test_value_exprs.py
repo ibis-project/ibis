@@ -1654,3 +1654,23 @@ def test_rowid_only_physical_tables():
     table[table.rowid(), table.x].filter(_.x > 10)  # works
     with pytest.raises(com.IbisTypeError, match="only valid for physical tables"):
         table.filter(table.x > 0).rowid()
+
+
+@pytest.mark.parametrize(
+    "err_cls, f",
+    [
+        (AttributeError, lambda t: t.count.min()),
+        (TypeError, lambda t: t.order_by(_.count)),
+        (TypeError, lambda t: t.group_by(_.count).agg(y=_.x.sum())),
+        (TypeError, lambda t: t.filter(t.count == 1)),
+        (TypeError, lambda t: t.filter(_.count != 1)),
+        (TypeError, lambda t: t.filter(_.count < 1)),
+        (TypeError, lambda t: t.filter(_.count <= 1)),
+        (TypeError, lambda t: t.filter(_.count > 1)),
+        (TypeError, lambda t: t.filter(_.count >= 1)),
+    ],
+)
+def test_table_method_shadows_column_name_errors(err_cls, f):
+    t = ibis.table({"x": "int", "count": "int"})
+    with pytest.raises(err_cls, match="If you meant to access a column named 'count'"):
+        f(t)

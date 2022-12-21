@@ -25,6 +25,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
+from ibis.expr.table_method import bound_table_method, table_method
 from ibis.expr.types.core import Expr
 
 if TYPE_CHECKING:
@@ -206,6 +207,8 @@ class Table(Expr, JupyterMixin):
         elif isinstance(expr, Deferred):
             # resolve deferred expressions
             return expr.resolve(self)
+        elif isinstance(expr, bound_table_method):
+            raise TypeError(expr._errmsg())
         elif callable(expr):
             return expr(self)
         else:
@@ -797,6 +800,7 @@ class Table(Expr, JupyterMixin):
         ]
         return an.apply_filter(self.op(), predicates).to_expr()
 
+    @table_method
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
 

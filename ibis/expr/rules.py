@@ -17,6 +17,7 @@ from ibis.common.validators import str_  # noqa: F401
 from ibis.common.validators import tuple_of  # noqa: F401
 from ibis.common.validators import instance_of, map_to, one_of, validator
 from ibis.expr.deferred import Deferred
+from ibis.expr.table_method import bound_table_method
 
 
 # TODO(kszucs): consider to rename to datashape
@@ -148,6 +149,9 @@ def literal(dtype, value, **kwargs):
 
     if isinstance(value, ops.Literal):
         return value
+
+    if isinstance(value, bound_table_method):
+        raise TypeError(value._errmsg())
 
     try:
         inferred_dtype = dt.infer(value)
