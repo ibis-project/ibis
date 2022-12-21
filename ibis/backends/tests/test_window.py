@@ -7,8 +7,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.udf.vectorized import analytic, reduction
 
-pytestmark = [pytest.mark.notimpl(["trino"])]
-
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
@@ -165,6 +163,7 @@ def calc_zscore(s):
                     'mysql',
                     'sqlite',
                     'snowflake',
+                    'trino',
                 ),
                 reason="notany() over window not supported",
             ),
@@ -198,6 +197,7 @@ def calc_zscore(s):
                     'mysql',
                     'sqlite',
                     'snowflake',
+                    'trino',
                 ),
                 reason="notall() over window not supported",
             ),
@@ -285,6 +285,7 @@ def test_grouped_bounded_expanding_window(
                         "postgres",
                         "sqlite",
                         "snowflake",
+                        "trino",
                     ]
                 )
             ],
@@ -432,6 +433,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -516,6 +518,7 @@ def test_grouped_unbounded_window(
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -535,6 +538,7 @@ def test_grouped_unbounded_window(
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -561,6 +565,13 @@ def test_grouped_unbounded_window(
                         "automatically inserts an order by"
                     ),
                 ),
+                pytest.mark.broken(
+                    ["trino"],
+                    reason=(
+                        "this isn't actually broken: the trino backend "
+                        "result is equal up to ordering"
+                    ),
+                ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
                 pytest.mark.notyet(
                     ["snowflake", "mssql"], reason="backend requires ordering"
@@ -580,6 +591,13 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-lead',
             marks=[
+                pytest.mark.broken(
+                    ["trino"],
+                    reason=(
+                        "this isn't actually broken: the trino backend "
+                        "result is equal up to ordering"
+                    ),
+                ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
                 pytest.mark.notyet(
                     ["snowflake", "mssql"], reason="backend requires ordering"
@@ -605,6 +623,7 @@ def test_grouped_unbounded_window(
                     "pyspark",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -625,6 +644,7 @@ def test_grouped_unbounded_window(
                     "pyspark",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
