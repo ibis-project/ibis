@@ -24,8 +24,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
 if TYPE_CHECKING:
-    import ibis.expr.types as ir
     import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 import ibis.expr.schema as sch
 from ibis.backends.base import Database

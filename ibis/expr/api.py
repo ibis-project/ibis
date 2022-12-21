@@ -7,9 +7,8 @@ import functools
 import itertools
 import operator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, TypeVar
 from typing import Tuple as _Tuple
-from typing import TypeVar
 from typing import Union as _Union
 
 import dateutil.parser

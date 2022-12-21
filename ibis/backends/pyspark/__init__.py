@@ -13,8 +13,8 @@ import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-import ibis.expr.types as types
 import ibis.expr.types as ir
+import ibis.expr.types as types
 import ibis.util as util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter

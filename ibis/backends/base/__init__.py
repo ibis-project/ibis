@@ -23,6 +23,7 @@ from typing import (
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+
     import ibis.expr.schema as sch
 
 import ibis

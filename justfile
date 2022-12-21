@@ -19,7 +19,6 @@ lock:
 fmt:
     ruff --fix .
     black .
-    isort .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:
@@ -32,7 +31,6 @@ ci-check *args:
 # lint code
 lint:
     black -q . --check
-    isort -q . --check
     ruff .
 
 # run the test suite for one or more backends
