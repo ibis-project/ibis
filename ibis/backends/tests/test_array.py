@@ -60,7 +60,7 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
