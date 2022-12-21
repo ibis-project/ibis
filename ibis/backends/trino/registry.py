@@ -19,6 +19,13 @@ def _arbitrary(t, op):
     return reduction(sa.func.arbitrary)(t, op)
 
 
+def _json_get_item(t, op):
+    arg = t.translate(op.arg)
+    index = t.translate(op.index)
+    fmt = "%d" if op.index.output_dtype.is_integer() else '"%s"'
+    return sa.func.json_extract(arg, sa.func.format(f"$[{fmt}]", index))
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -36,5 +43,6 @@ operation_registry.update(
         ops.Covariance: _covar,
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
+        ops.JSONGetItem: _json_get_item,
     }
 )
