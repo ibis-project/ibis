@@ -496,7 +496,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "sqlite",
                         "datafusion",
                         "mssql",
-                        "trino",
                     ]
                 )
             ],
