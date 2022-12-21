@@ -20,7 +20,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
