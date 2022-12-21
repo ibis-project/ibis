@@ -11,7 +11,6 @@ from ibis.backends.postgres.registry import _corr, _covar
 
 operation_registry = sqlalchemy_operation_registry.copy()
 
-# TODO: trino doesn't support `& |` for bitwise ops, it wants `bitwise_and` and `bitwise_or``
 
 def _arbitrary(t, op):
     if op.how == "heavy":
@@ -45,6 +44,12 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
+        ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
+        ops.BitwiseOr: fixed_arity(sa.func.bitwise_or, 2),
+        ops.BitwiseXor: fixed_arity(sa.func.bitwise_xor, 2),
+        ops.BitwiseLeftShift: fixed_arity(sa.func.bitwise_left_shift, 2),
+        ops.BitwiseRightShift: fixed_arity(sa.func.bitwise_right_shift, 2),
+        ops.BitwiseNot: unary(sa.func.bitwise_not),
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.JSONGetItem: _json_get_item,
     }
