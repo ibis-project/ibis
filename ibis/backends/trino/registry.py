@@ -6,11 +6,13 @@ from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     reduction,
     sqlalchemy_operation_registry,
+    sqlalchemy_window_functions_registry,
     unary,
 )
 from ibis.backends.postgres.registry import _corr, _covar
 
 operation_registry = sqlalchemy_operation_registry.copy()
+operation_registry.update(sqlalchemy_window_functions_registry)
 
 
 def _arbitrary(t, op):

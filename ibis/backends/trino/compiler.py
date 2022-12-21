@@ -14,6 +14,16 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = True
+    _forbids_frame_clause = (
+        *AlchemyExprTranslator._forbids_frame_clause,
+        ops.Lead,
+        ops.Lag,
+    )
+    _require_order_by = (
+        *AlchemyExprTranslator._require_order_by,
+        ops.Lag,
+        ops.Lead,
+    )
 
 
 rewrites = TrinoSQLExprTranslator.rewrites
