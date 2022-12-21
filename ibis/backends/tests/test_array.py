@@ -47,7 +47,7 @@ def test_array_scalar(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
