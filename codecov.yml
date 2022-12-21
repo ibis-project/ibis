@@ -4,14 +4,7 @@ codecov:
     # runs have finished. Should match with comment.after_n_builds below.
     after_n_builds: 32
 
-comment:
-  after_n_builds: 32
-  layout: "diff, files"
-  behavior: default
-  require_changes: true # if true: only post the comment if coverage changes
-  require_base: false # [yes :: must have a base report to post]
-  require_head: true # [yes :: must have a head report to post]
-  branches: null
+comment: false
 
 ignore:
   - "docs/**"
