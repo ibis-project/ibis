@@ -59,11 +59,21 @@ class PySparkExprTranslator:
         found within scope, it's returned. Otherwise, the it's translated and
         cached for future reference.
 
-        :param expr: ibis expression
-        :param scope: dictionary mapping from operation to translated result
-        :param timecontext: time context associated with expr
-        :param kwargs: parameters passed as keyword args (e.g. window)
-        :return: translated PySpark DataFrame or Column object
+        Parameters
+        ----------
+        op
+            An ibis operation.
+        scope
+            dictionary mapping from operation to translated result
+        timecontext
+            time context associated with expr
+        kwargs
+            parameters passed as keyword args
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            translated PySpark DataFrame or Column object
         """
         result = scope.get_value(op, timecontext)
         if result is not None:
@@ -97,9 +107,10 @@ def compile_sql_query_result(t, op, **kwargs):
 
 
 def _can_be_replaced_by_column_name(column, table):
-    """Return whether the given column_expr can be replaced by its literal
-    name, which is True when column_expr and table[column_expr.get_name()] is
-    semantically the same."""
+    """Return whether the given `column` can be replaced by its literal name.
+
+    `True` when `column` and `table[column.get_name()]` are semantically equivalent.
+    """
     # Each check below is necessary to distinguish a pure projection from
     # other valid selections, such as a mutation that assigns a new column
     # or changes the value of an existing column.
@@ -326,7 +337,7 @@ def compile_subtract(t, op, **kwargs):
 @compiles(ops.Literal)
 @compile_nan_as_null
 def compile_literal(t, op, *, raw=False, **kwargs):
-    """If raw is True, don't wrap the result with F.lit()"""
+    """If raw is True, don't wrap the result with F.lit()."""
     import pandas as pd
 
     value = op.value
@@ -701,13 +712,11 @@ def compile_clip(t, op, **kwargs):
     lower = t.translate(op.lower, **kwargs) if op.lower is not None else float('-inf')
 
     def column_min(value, limit):
-        """Given the minimum limit, return values that are greater than or
-        equal to this limit."""
+        """Return values greater than or equal to `limit`."""
         return F.when(value < limit, limit).otherwise(value)
 
     def column_max(value, limit):
-        """Given the maximum limit, return values that are less than or equal
-        to this limit."""
+        """Return values less than or equal to `limit`."""
         return F.when(value > limit, limit).otherwise(value)
 
     def clip(column, lower_value, upper_value):

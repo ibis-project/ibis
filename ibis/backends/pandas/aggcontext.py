@@ -413,7 +413,7 @@ def compute_window_spec(dtype, obj):
 
 @compute_window_spec.register(type(None))
 def compute_window_spec_none(_, obj):
-    """Helper method only used for row-based windows:
+    """Helper method only used for row-based windows.
 
     Window spec in ibis is an inclusive window bound. A bound of 0
     indicates the current row. Window spec in Pandas indicates window
@@ -489,7 +489,8 @@ def window_agg_udf(
 ) -> pd.Series:
     """Apply window aggregation with UDFs.
 
-    Notes:
+    Notes
+    -----
     Use custom logic to computing rolling window UDF instead of
     using pandas's rolling function.
     This is because pandas's rolling function doesn't support

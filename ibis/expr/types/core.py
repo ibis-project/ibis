@@ -370,8 +370,7 @@ class Expr(Immutable):
         )
 
     def unbind(self) -> ir.Table:
-        """Return equivalent expression built on `UnboundTable` instead of
-        backend-specific table objects."""
+        """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.analysis import substitute_unbound
 
         return substitute_unbound(self.op()).to_expr()

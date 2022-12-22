@@ -120,14 +120,6 @@ class _CreateDDL(BaseDDL):
 
 
 class CreateTable(_CreateDDL):
-    """
-
-    Parameters
-    ----------
-    partition :
-
-    """
-
     def __init__(
         self,
         table_name,

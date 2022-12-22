@@ -94,20 +94,20 @@ class Schema(Concrete):
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
+
         Parameters
         ----------
         other
             Schema to compare `self` to.
+
         Examples
         --------
         >>> import ibis
         >>> first = ibis.schema({"a": "int"})
         >>> second = ibis.schema({"a": "int"})
-        >>> first.equals(second)
-        True
+        >>> assert first.equals(second)
         >>> third = ibis.schema({"a": "array<int>"})
-        >>> first.equals(third)
-        False
+        >>> assert not first.equals(third)
         """
         if not isinstance(other, Schema):
             raise TypeError(

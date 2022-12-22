@@ -427,13 +427,15 @@ def execute_and_reset(
     aggcontext=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data
-    are bound, raise an Exception.
+    """Execute an expression against data that are bound to it. If no data are
+    bound, raise an Exception.
+
     Notes
     -----
     The difference between this function and :func:`~ibis.dask.core.execute`
     is that this function resets the index of the result, if the result has
     an index.
+
     Parameters
     ----------
     node : ibis.expr.operations.Node
@@ -458,10 +460,11 @@ def execute_and_reset(
         dask.dataframe.DataFrame,
         ibis.dask.core.simple_types
     ]
+
     Raises
     ------
     ValueError
-        * If no data are bound to the input expression
+        * If no data are bound to the input expression.
     """
     result = execute(
         node,

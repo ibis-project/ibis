@@ -84,7 +84,6 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
 black = ">=22.1.0,<23"
-docformatter = ">=1.5.0,<2"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 ruff = ">=0.0.189,<1"
@@ -298,6 +297,7 @@ markers = [
 [tool.ruff]
 line-length = 88
 select = [
+  "D", # pydocstyle
   "E", # pycodestyle
   "W", # pycodestyle
   "F", # pyflakes
@@ -318,9 +318,33 @@ select = [
 
 ]
 respect-gitignore = true
-ignore = ["E501", "PGH003", "RET504", "RET505", "RET506", "RET507", "RET508"]
+ignore = [
+  "E501",
+  "PGH003",
+  "RET504",
+  "RET505",
+  "RET506",
+  "RET507",
+  "RET508",
+  "D100", # public module
+  "D101", # public class
+  "D102", # public method
+  "D103", # public function
+  "D105", # magic methods
+  "D107", # init
+  "D202", # blank lines after function docstring
+  "D203", # blank line before class docstring
+  "D205", # blank line between summary line and description
+  "D213", # Multi-line docstring summary should start at the second line
+  "D402", # First line should not be the function's signature
+  "D417", # Missing argument descriptions
+
+]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
+
+[tool.ruff.per-file-ignores]
+"*test*.py" = ["D"] # ignore all docstring lints in tests
 
 [tool.black]
 line_length = 88

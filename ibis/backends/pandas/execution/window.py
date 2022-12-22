@@ -208,8 +208,8 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
     data: pd.Series or pd.DataFrame
     timecontext: Optional[TimeContext]
 
-    Returns:
-    ------
+    Returns
+    -------
     a trimmed pd.Series or or pd.DataFrame with the same Multiindex
     as data's
     """
@@ -475,8 +475,7 @@ def execute_series_lead_lag(op, data, offset, default, **kwargs):
 def execute_series_lead_lag_timedelta(
     op, data, offset, default, aggcontext=None, **kwargs
 ):
-    """An implementation of shifting a column relative to another one that is
-    in units of time rather than rows."""
+    """Shift a column relative to another one in units of time instead of rows."""
     # lagging adds time (delayed), leading subtracts time (moved up)
     func = operator.add if isinstance(op, ops.Lag) else operator.sub
     group_by = aggcontext.group_by

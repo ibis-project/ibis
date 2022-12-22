@@ -16,7 +16,7 @@ _SQLITE_UDAF_REGISTRY = set()
 
 
 def udf(f):
-    """Create a SQLite scalar UDF from `f`
+    """Create a SQLite scalar UDF from `f`.
 
     Parameters
     ----------

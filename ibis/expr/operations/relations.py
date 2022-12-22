@@ -395,15 +395,6 @@ class DummyTable(TableNode):
 
 @public
 class Aggregation(TableNode):
-    """
-    metrics : per-group scalar aggregates
-    by : group expressions
-    having : post-aggregation predicate
-
-    TODO: not putting this in the aggregate operation yet
-    where : pre-aggregation predicate
-    """
-
     table = rlz.table
     metrics = rlz.optional(
         rlz.tuple_of(

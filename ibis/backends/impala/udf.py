@@ -205,54 +205,47 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
 
     Parameters
     ----------
-    hdfs_file: .so file that contains relevant UDF
-    inputs: list of strings or sig.TypeSignature
-      Input types to UDF
-    output: string
-      Ibis data type
-    so_symbol: string, C++ function name for relevant UDF
-    name: string (optional). Used internally to track function
-
-    Returns
-    -------
-    container : UDF object
+    hdfs_file
+        .so file that contains relevant UDF
+    inputs
+        Input types to UDF
+    output
+        Ibis data type
+    so_symbol
+        C++ function name for relevant UDF
+    name
+        Used internally to track function
     """
     func = ImpalaUDF(inputs, output, so_symbol, name=name, lib_path=hdfs_file)
     return func
 
 
 def scalar_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation().
 
-    Parameters:
-    inputs: list of strings
-      Ibis data type names
-    output: string
-      Ibis data type
-    name: string, optional
-      Used internally to track function
-
-    Returns
-    -------
-    klass, user_api : class, function
+    Parameters
+    ----------
+    inputs
+        Ibis data type names
+    output
+        Ibis data type
+    name
+        Used internally to track function
     """
     return ScalarFunction(inputs, output, name=name)
 
 
 def aggregate_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation().
 
-    Parameters:
+    Parameters
+    ----------
     inputs: list of strings
       Ibis data type names
     output: string
       Ibis data type
     name: string, optional
         Used internally to track function
-
-    Returns
-    -------
-    klass, user_api : class, function
     """
     return AggregateFunction(inputs, output, name=name)
 
@@ -262,9 +255,12 @@ def add_operation(op, func_name, db):
 
     Parameters
     ----------
-    op: operator class
-    name: used in issuing statements to SQL engine
-    database: database the relevant operator is registered to
+    op
+        operator class
+    name
+        used in issuing statements to SQL engine
+    database
+        database the relevant operator is registered to
     """
     full_name = f'{db}.{func_name}'
     # TODO

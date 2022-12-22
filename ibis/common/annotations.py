@@ -55,8 +55,7 @@ class Attribute(Annotation):
 
     @classmethod
     def default(self, fn):
-        """Annotation to mark a field with a default value computed by a
-        callable."""
+        """Annotation to mark a field with a default value computed by a callable."""
         return Attribute(default=fn)
 
     def initialize(self, this):

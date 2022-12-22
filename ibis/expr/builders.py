@@ -22,27 +22,21 @@ class CaseBuilder(Builder):
 
     def when(self, case_expr, result_expr):
         """Add a new case-result pair.
+
         Parameters
         ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-        Returns
-        -------
-        builder : CaseBuilder
+        case_expr
+            Expression to equality-compare with base expression. Must be
+            comparable with the base.
+        result_expr
+            Value when the case predicate evaluates to true.
         """
         cases = self.cases + (case_expr,)
         results = self.results + (result_expr,)
         return self.copy(cases=cases, results=results)
 
     def else_(self, result_expr):
-        """Specify.
-        Returns
-        -------
-        builder : CaseBuilder
-        """
+        """Construct an `ELSE` expression."""
         return self.copy(default=result_expr)
 
     def end(self):
@@ -68,16 +62,14 @@ class SimpleCaseBuilder(CaseBuilder):
 
     def when(self, case_expr, result_expr):
         """Add a new case-result pair.
+
         Parameters
         ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-        Returns
-        -------
-        builder : CaseBuilder
+        case_expr
+            Expression to equality-compare with base expression. Must be
+            comparable with the base.
+        result_expr
+            Value when the case predicate evaluates to true.
         """
         case_expr = rlz.any(case_expr)
         if not rlz.comparable(self.base, case_expr):

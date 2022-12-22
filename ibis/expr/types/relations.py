@@ -250,7 +250,7 @@ class Table(Expr, JupyterMixin):
         return list(self._arg.schema.names)
 
     def schema(self) -> sch.Schema:
-        """Get the schema for this table (if one is known)
+        """Get the schema for this table (if one is known).
 
         Returns
         -------

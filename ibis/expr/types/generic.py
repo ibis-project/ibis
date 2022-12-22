@@ -19,8 +19,7 @@ if TYPE_CHECKING:
 
 @public
 class Value(Expr):
-    """Base class for a data generating expression having a fixed and known
-    type, either a single value (scalar)"""
+    """Base class for a data generating expression having a known type."""
 
     def name(self, name):
         """Rename an expression to `name`.
