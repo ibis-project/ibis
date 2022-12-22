@@ -27,6 +27,16 @@ for that node.
 And we propose to store these data as 'timecontext', calculate in execution
 pass it along to children nodes, in the ibis tree. See each backends for
 implementation details.
+
+Time context adjustment algorithm
+    In an Ibis tree, time context is local for each node, and they should be
+    adjusted accordingly for some specific nodes. Those operations may
+    require extra data outside of the global time context that user defines.
+    For example, in asof_join, we need to look back extra `tolerance` daays
+    for the right table to get the data for joining. Similarly for window
+    operation with preceeding and following.
+    Algorithm to calculate context adjustment are defined in this module
+    and could be used by multiple backends.
 """
 
 from __future__ import annotations
@@ -217,18 +227,6 @@ def construct_time_context_aware_series(
             names=series.index.names + [time_col],
         )
     return series
-
-
-""" Time context adjustment algorithm
-    In an Ibis tree, time context is local for each node, and they should be
-    adjusted accordingly for some specific nodes. Those operations may
-    require extra data outside of the global time context that user defines.
-    For example, in asof_join, we need to look back extra `tolerance` daays
-    for the right table to get the data for joining. Similarly for window
-    operation with preceeding and following.
-    Algorithm to calculate context adjustment are defined in this module
-    and could be used by multiple backends.
-"""
 
 
 @functools.singledispatch
