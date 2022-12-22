@@ -107,6 +107,8 @@
           nodejs
           # poetry executable
           env.pkgs.poetry
+          # used in notebooks to download data
+          curl
         ])
         ++ preCommitDeps
         ++ backendDevDeps;
