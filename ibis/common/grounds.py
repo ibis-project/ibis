@@ -32,8 +32,7 @@ class Base(metaclass=BaseMeta):
 
 
 class AnnotableMeta(BaseMeta):
-    """Metaclass to turn class annotations into a validatable function
-    signature."""
+    """Metaclass to turn class annotations into a validatable function signature."""
 
     __slots__ = ()
 

@@ -234,8 +234,7 @@ class Backend(BaseBackend):
         return self._filter_with_like(tables, like)
 
     def _normalize_external_tables(self, external_tables=None):
-        """Merge registered external tables with any new external tables, and
-        process them to be passed to clickhouse_driver."""
+        """Merge registered external tables with any new external tables."""
         import pandas as pd
 
         external_tables_list = []

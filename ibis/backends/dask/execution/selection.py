@@ -140,8 +140,7 @@ def build_df_from_projection(
     data: dd.DataFrame,
     **kwargs,
 ) -> dd.DataFrame:
-    """Build up a df from individual pieces by dispatching to
-    `compute_projection` for each expression."""
+    """Build up projection from individual pieces."""
     # Fast path for when we're assigning columns into the same table.
     if (selections[0] is op.table) and all(is_row_order_preserving(selections[1:])):
         for node in selections[1:]:

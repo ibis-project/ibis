@@ -197,10 +197,7 @@ def substitute(fn, node):
 
 
 def substitute_parents(node):
-    """Rewrite the input expression by replacing any table expressions part of
-    a "commutative table operation unit" (for lack of scientific term, a set of
-    operations that can be written down in any order and still yield the same
-    semantic result)"""
+    """Rewrite `node` by replacing table nodes that commute."""
     assert isinstance(node, ops.Node), type(node)
 
     def fn(node):
@@ -227,8 +224,7 @@ def substitute_parents(node):
 
 
 def substitute_unbound(node):
-    """Rewrite the input expression by replacing any table expressions with an
-    equivalent unbound table."""
+    """Rewrite `node` by replacing table expressions with an equivalent unbound table."""
     assert isinstance(node, ops.Node), type(node)
 
     def fn(node, _, *args, **kwargs):
@@ -241,8 +237,7 @@ def substitute_unbound(node):
 
 
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
-    """Given the list of exprs and the underlying table of a mutation op,
-    return the exprs to use to instantiate the mutation."""
+    """Return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
     # assignment exprs into two disjoint sets:
     # 1) overwriting_cols_to_expr, which maps a column name to its expr

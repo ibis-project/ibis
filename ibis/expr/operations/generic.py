@@ -56,8 +56,7 @@ class RowID(Value, Named):
 
 @public
 class TableArrayView(Value, Named):
-    """(Temporary?) Helper operation class for SQL translation (fully formed
-    table subqueries to be viewed as arrays)"""
+    """Helper operation class for creating scalar subqueries."""
 
     table = rlz.table
 

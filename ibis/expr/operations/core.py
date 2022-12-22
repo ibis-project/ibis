@@ -25,7 +25,7 @@ class Node(Concrete, Traversable):
 
     @deprecated(version='4.0', instead='remove intermediate .op() calls')
     def op(self):
-        'For a bit of backwards compatibility with code that uses Expr.op().'
+        """Make `Node` backwards compatible with code that uses `Expr.op()`."""
         return self
 
     @abstractmethod

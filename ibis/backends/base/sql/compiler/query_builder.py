@@ -163,9 +163,7 @@ class TableSetFormatter:
 
 
 class Select(DML, Comparable):
-    """A SELECT statement which, after execution, might yield back to the user
-    a table, array/list, or scalar value, depending on the expression that
-    generated it."""
+    """A SELECT statement."""
 
     def __init__(
         self,
@@ -233,8 +231,11 @@ class Select(DML, Comparable):
         )
 
     def compile(self):
-        """This method isn't yet idempotent; calling multiple times may yield
-        unexpected results."""
+        """Compile a query.
+
+        This method isn't yet idempotent; calling multiple times may yield
+        unexpected results.
+        """
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
 
@@ -443,12 +444,13 @@ class Difference(SetOp):
 
 def flatten_set_op(op):
     """Extract all union queries from `table`.
+
     Parameters
     ----------
     table : ops.TableNode
     Returns
     -------
-    Iterable[Union[Table, bool]]
+    Iterable[Union[Table, bool]].
     """
 
     if isinstance(op, ops.SetOp):
@@ -465,12 +467,13 @@ def flatten_set_op(op):
 
 def flatten(op: ops.TableNode):
     """Extract all intersection or difference queries from `table`.
+
     Parameters
     ----------
     table : Table
     Returns
     -------
-    Iterable[Union[Table]]
+    Iterable[Union[Table]].
     """
     return list(toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right)))
 

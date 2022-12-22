@@ -1,4 +1,4 @@
-"""Execution rules for Aggregatons - mostly TODO
+"""Execution rules for Aggregatons - mostly TODO.
 
 - ops.Aggregation
 - ops.Any

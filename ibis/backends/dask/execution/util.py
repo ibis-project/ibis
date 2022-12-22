@@ -213,13 +213,14 @@ def compute_sort_key(
     scope: Scope = None,
     **kwargs,
 ):
-    """
-    Note - we use this function instead of the pandas.execution.util so that we
-    use the dask `execute` method
+    """Compute a sort key.
 
-    This function borrows the logic in the pandas backend. ``by`` can be a
-    string or an expression. If ``by.get_name()`` raises an exception, we must
-    ``execute`` the expression and sort by the new derived column.
+    We use this function instead of the pandas.execution.util so that we
+    use the dask `execute` method.
+
+    This function borrows the logic in the pandas backend. `by` can be a
+    string or an expression. If `by.get_name()` raises an exception, we must
+    `execute` the expression and sort by the new derived column.
     """
     name = ibis.util.guid()
     if key.name in data:
@@ -263,15 +264,20 @@ def assert_identical_grouping_keys(*args):
 def add_partitioned_sorted_column(
     df: dd.DataFrame | dd.Series,
 ) -> dd.DataFrame:
-    """Add a column that is already partitioned and sorted This columns acts as
-    if we had a global index across the distributed data. Important properties:
+    """Add a column that is already partitioned and sorted.
+
+    This column acts as if we had a global index across the distributed data.
+
+    Important properties:
 
     - Each row has a unique id (i.e. a value in this column)
     - IDs within each partition are already sorted
-    - Any id in partition N_{t} is less than any id in partition N_{t+1}
+    - Any id in partition $N_{t}$ is less than any id in partition $N_{t+1}$
+
     We do this by designating a sufficiently large space of integers per
     partition via a base and adding the existing index to that base. See
     `helper` below.
+
     Though the space per partition is bounded, real world usage should not
     hit these bounds. We also do not explicity deal with overflow in the
     bounds.
@@ -288,7 +294,6 @@ def add_partitioned_sorted_column(
 
     Examples
     --------
-
     >>> ddf = dd.from_pandas(pd.DataFrame({'a': [1, 2,3, 4]}), npartitions=2)
     >>> ddf
     Dask DataFrame Structure:

@@ -565,7 +565,7 @@ class StringValue(Value):
         pattern: str | StringValue,
         replacement: str | StringValue,
     ) -> StringValue:
-        """Replace match found by regex `pattern` with `replacement`.
+        r"""Replace match found by regex `pattern` with `replacement`.
 
         Parameters
         ----------

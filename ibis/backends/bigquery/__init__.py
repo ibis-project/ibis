@@ -398,14 +398,7 @@ class Backend(BaseSQLBackend):
 
 
 def compile(expr, params=None, **kwargs):
-    """Compile an expression for BigQuery.
-    Returns
-    -------
-    compiled : str
-    See Also
-    --------
-    ibis.expr.types.Expr.compile
-    """
+    """Compile an expression for BigQuery."""
     backend = Backend()
     return backend.compile(expr, params=params, **kwargs)
 

@@ -178,10 +178,11 @@ def execute_alias_series(op, _, **kwargs):
 
 @execute_node.register(ops.Arbitrary, dd.Series, (dd.Series, type(None)))
 def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
-    """
-    Note: we cannot use the pandas version because Dask does not support .iloc
-    See https://docs.dask.org/en/latest/dataframe-indexing.html. .loc will
-    only work if our index lines up with the label.
+    """Execute a masked `ops.Arbitrary` operation.
+
+    We cannot use the pandas version because
+    [Dask does not support `.iloc`](https://docs.dask.org/en/latest/dataframe-indexing.html).
+    `.loc` will only work if our index lines up with the label.
     """
     data = data[mask] if mask is not None else data
     if op.how == 'first':

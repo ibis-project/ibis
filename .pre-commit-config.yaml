@@ -27,10 +27,6 @@ repos:
       - id: ruff
         # makes sure to exclude a file even if it's passed in explicitly
         args: ["--force-exclude"]
-  - repo: https://github.com/pycqa/docformatter
-    rev: v1.5.1
-    hooks:
-      - id: docformatter
   - repo: local
     hooks:
       - id: prettier
@@ -46,12 +42,9 @@ repos:
         name: shellcheck
         language: system
         entry: shellcheck
-        files: \.sh$
-        types:
-          - shell
         types_or:
-          - file
           - sh
+          - shell
           - ash
           - bash
           - bats
@@ -61,11 +54,14 @@ repos:
         name: shfmt
         language: system
         entry: shfmt -i 2 -sr -s
-        files: \.sh$
-        types:
-          - file
         types_or:
-          - file
+          - sh
+          - shell
+          - ash
+          - bash
+          - bats
+          - dash
+          - ksh
       - id: just
         name: just
         language: system
@@ -78,22 +74,14 @@ repos:
         name: nixpkgs-fmt
         language: system
         entry: nixpkgs-fmt
-        exclude: nix/sources\.nix
-        files: \.nix$
         types:
-          - file
-        types_or:
-          - file
+          - nix
       - id: nix-linter
         name: nix-linter
         language: system
         entry: nix-linter --check="no-FreeLetInFunc"
-        exclude: nix/sources\.nix
-        files: \.nix$
         types:
-          - file
-        types_or:
-          - file
+          - nix
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

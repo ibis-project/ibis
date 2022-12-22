@@ -451,8 +451,7 @@ def append_admonition(
 
 
 def deprecated(*, instead, version=''):
-    """Decorate deprecated function to warn of usage, with stacktrace, and what
-    to do instead."""
+    """Decorate to warn of deprecated usage, with stacktrace, and what to do instead."""
 
     def decorator(func):
         msg = deprecated_msg(func.__name__, instead=instead, version=version)
@@ -486,8 +485,7 @@ def backend_sensitive(
 
 
 def experimental(func):
-    """Decorate experimental function to add warning about potential API
-    instability in docstring."""
+    """Decorate a callable to add warning about API instability in docstring."""
 
     func.__doc__ = append_admonition(
         func, msg="This API is experimental and subject to change."
@@ -518,8 +516,8 @@ def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
 def import_object(qualname: str) -> Any:
     """Attempt to import an object given its full qualname.
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> out = import_object("foo.bar.baz")
 
     Is the same as

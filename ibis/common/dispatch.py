@@ -26,22 +26,22 @@ def normalize(r):
 
 
 class RegexDispatcher:
-    """Regular Expression Dispatcher.
+    r"""Regular Expression Dispatcher.
 
     >>> f = RegexDispatcher('f')
 
-    >>> f.register('\\d*')
+    >>> f.register('\d*')
     ... def parse_int(s):
     ...     return int(s)
 
-    >>> f.register('\\d*\\.\\d*')
+    >>> f.register('\d*\.\d*')
     ... def parse_float(s):
     ...     return float(s)
 
     Set priorities to break ties between multiple matches.
     Default priority is set to 10
 
-    >>> f.register('\\w*', priority=9)
+    >>> f.register('\w*', priority=9)
     ... def parse_str(s):
     ...     return s
 
@@ -114,15 +114,14 @@ class RegexDispatcher:
 
 
 def lazy_singledispatch(func):
-    """A singledispatch implementation that supports lazily registering
-    implementations."""
+    """A `singledispatch` implementation that supports lazily registering implementations."""
 
     lookup = {object: func}
     abc_lookup = {}
     lazy_lookup = defaultdict(dict)
 
     def register(cls, func=None):
-        """Registers a new implementation for arguments of type `cls`"""
+        """Registers a new implementation for arguments of type `cls`."""
 
         def inner(func):
             if isinstance(cls, tuple):
@@ -140,7 +139,7 @@ def lazy_singledispatch(func):
         return inner if func is None else inner(func)
 
     def dispatch(cls):
-        """Return the implementation for the given `cls`"""
+        """Return the implementation for the given `cls`."""
         for cls2 in cls.__mro__:
             # 1. Check for a concrete implementation
             try:

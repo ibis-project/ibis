@@ -60,16 +60,17 @@ def get_time_col():
 
 
 class TimeContextRelation(enum.Enum):
-    """Enum to classify the relationship between two time contexts Assume that
-    we have two timecontext `c1 (begin1, end1)`, `c2(begin2, end2)`:
+    """Enum to classify the relationship between two time contexts.
 
-    - SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or
+    Assume that we have two timecontext `c1 (begin1, end1)`, `c2(begin2, end2)`:
+
+    - `SUBSET` means `c1` is a subset of `c2`, `begin1` is greater than or
       equal to `begin2`, and `end1` is less than or equal to `end2`.
-    - SUPERSET means that `begin1` is earlier than `begin2`, and `end1`
+    - `SUPERSET` means that `begin1` is earlier than `begin2`, and `end1`
       is later than `end2`.
     - If neither of the two contexts is a superset of each other, and they
-      share some time range in common, we called them OVERLAP.
-    - NONOVERLAP means the two contexts doesn't overlap at all, which
+      share some time range in common, we called them `OVERLAP`.
+    - `NONOVERLAP` means the two contexts doesn't overlap at all, which
       means `end1` is earlier than `begin2` or `end2` is earlier than
       `begin1`.
     """
@@ -256,20 +257,22 @@ def construct_time_context_aware_series(
 
 @functools.singledispatch
 def adjust_context(op: Any, scope: Scope, timecontext: TimeContext) -> TimeContext:
-    """
-    Params
-    -------
-    op: ibis.expr.operations.Node
-    scope: Scope
-    timecontext: TimeContext
-        time context associated with the node
+    """Adjust the `timecontext` for `op`.
+
+    Parameters
+    ----------
+    op
+        Ibis operation.
+    scope
+        Incoming scope.
+    timecontext
+        Time context associated with the node.
 
     Returns
-    --------
-    Adjusted time context
-        For op that is not of type Node, we raise an error to avoid failing
-        silently since the default behavior is to return input timecontext
-        itself.
+    -------
+    TimeContext
+        For `op` that is not of type Node, raise an error to avoid failing
+        silently since the default behavior is to return `timecontext`.
     """
     raise com.IbisError(f'Unsupported input type for adjust context for {op}')
 

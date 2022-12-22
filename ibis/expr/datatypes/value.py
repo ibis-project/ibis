@@ -270,9 +270,7 @@ def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
 
 
 def normalize(typ, value):
-    """Ensure that the Python type underlying an
-    :class:`~ibis.expr.operations.generic.Literal` resolves to a single
-    acceptable type regardless of the input value."""
+    """Ensure that the Python type underlying a literal resolves to a single type."""
     if value is None:
         if not typ.nullable:
             raise TypeError("Cannot convert `None` to non-nullable type {typ!r}")

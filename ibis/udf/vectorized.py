@@ -202,8 +202,7 @@ class UserDefinedFunction:
         self.coercion_fn = self._get_coercion_function()
 
     def _get_coercion_function(self):
-        """Return the appropriate function to coerce the result of the UDF,
-        according to the func type and output type of the UDF."""
+        """Return the appropriate function to coerce the result of the UDF."""
         if self.output_type.is_struct():
             # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
             if (
