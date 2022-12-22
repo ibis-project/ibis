@@ -151,7 +151,7 @@
           name = "release";
           nativeBuildInputs = with pkgs; [
             git
-            ibisSmallDevEnv.pkgs.poetry
+            poetry
             nodejs
             unzip
             gnugrep

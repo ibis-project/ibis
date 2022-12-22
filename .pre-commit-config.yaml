@@ -25,14 +25,44 @@ repos:
     rev: v0.0.206
     hooks:
       - id: ruff
-        # makes sure to exclude a file even if it's passed in explicitly
+        # exclude a file (if configured to do so), even if it's passed in explicitly
         args: ["--force-exclude"]
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.28.0
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-vcs-permalinks
+      - id: destroyed-symlinks
+      - id: detect-aws-credentials
+        args: ["--allow-missing-credentials"]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: .+/snapshots/.+
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+        exclude: .+/snapshots/.+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
   - repo: local
     hooks:
       - id: prettier
         name: prettier
         language: system
-        entry: prettier --write
+        entry: prettier
+        args: ["--write"]
         types_or:
           - json
           - toml
@@ -53,7 +83,8 @@ repos:
       - id: shfmt
         name: shfmt
         language: system
-        entry: shfmt -i 2 -sr -s
+        entry: shfmt
+        args: ["-i", "2", "-sr", "-s"]
         types_or:
           - sh
           - shell
@@ -65,11 +96,10 @@ repos:
       - id: just
         name: just
         language: system
-        entry: just --fmt --unstable --check
+        entry: just
+        args: ["--fmt", "--unstable"]
         files: ^justfile$
         pass_filenames: false
-        types:
-          - file
       - id: nixpkgs-fmt
         name: nixpkgs-fmt
         language: system
@@ -79,12 +109,8 @@ repos:
       - id: statix
         name: statix
         language: system
-        entry: statix check
+        entry: statix
+        args: ["fix"]
         pass_filenames: false
         types:
           - nix
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: check-executables-have-shebangs
-      - id: check-shebang-scripts-are-executable

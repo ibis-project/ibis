@@ -1,16 +1,5 @@
-from __future__ import annotations
-
-import functools
-import logging
-import traceback
-from datetime import datetime
-
-import ibis
-from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
-from ibis.config import options
-from ibis.expr import types as ir
-
 """Module that adds tracing to dask execution.
+
 With tracing enabled, this module will log time and call stack information of
 the executed expression. Call stack information is presented with indentation
 level.
@@ -61,8 +50,20 @@ DEBUG:ibis.dask.trace:         execute_until_in_scope ElementWiseVectorizedUDF 0
 DEBUG:ibis.dask.trace:       main_execute ElementWiseVectorizedUDF 0:00:05.052819
 DEBUG:ibis.dask.trace:     execute_selection_dataframe Selection 0:00:05.054894
 DEBUG:ibis.dask.trace:   execute_until_in_scope Selection 0:00:05.055662
-DEBUG:ibis.dask.trace: main_execute Selection 0:00:05.056556
+DEBUG:ibis.dask.trace: main_execute Selection 0:00:05.056556.
 """
+
+from __future__ import annotations
+
+import functools
+import logging
+import traceback
+from datetime import datetime
+
+import ibis
+from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
+from ibis.config import options
+from ibis.expr import types as ir
 
 _logger = logging.getLogger('ibis.dask.trace')
 
