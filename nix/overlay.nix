@@ -35,9 +35,9 @@ in
     '';
   };
 
-  ibis38 = pkgs.python38Packages.callPackage ./ibis.nix { };
-  ibis39 = pkgs.python39Packages.callPackage ./ibis.nix { };
-  ibis310 = pkgs.python310Packages.callPackage ./ibis.nix { };
+  ibis38 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python38; };
+  ibis39 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python39; };
+  ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
 
   ibisDevEnv38 = mkPoetryDevEnv pkgs.python38;
   ibisDevEnv39 = mkPoetryDevEnv pkgs.python39;
