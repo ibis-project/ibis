@@ -261,8 +261,7 @@ def _udf_decorator(node_type, input_type, output_type):
 
 
 def analytic(input_type, output_type):
-    """Define an *analytic* user-defined function that takes N pandas Series or
-    scalar values as inputs and produces N rows of output.
+    """Define an analytic UDF that produces the same of rows as the input.
 
     Parameters
     ----------
@@ -303,8 +302,7 @@ def analytic(input_type, output_type):
 
 
 def elementwise(input_type, output_type):
-    """Define a UDF (user-defined function) that operates element wise on a
-    Pandas Series.
+    """Define a UDF that operates element-wise on a Pandas Series.
 
     Parameters
     ----------
@@ -346,8 +344,7 @@ def elementwise(input_type, output_type):
 
 
 def reduction(input_type, output_type):
-    """Define a user-defined reduction function that takes N pandas Series or
-    scalar values as inputs and produces one row of output.
+    """Define a UDF reduction function that produces 1 row of output for N rows of input.
 
     Parameters
     ----------

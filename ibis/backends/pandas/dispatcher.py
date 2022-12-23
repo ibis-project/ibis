@@ -2,8 +2,7 @@ from multipledispatch import Dispatcher
 
 
 class TwoLevelDispatcher(Dispatcher):
-    """An implementation of multipledispatch.Dispatcher that utilizes two
-    levels of dispatching.
+    """A `multipledispatch.Dispatcher` with two levels of dispatching.
 
     The major change is that this class no longer trigger reorder in
     dispatch_iter. Because the majority of the slowness is happening

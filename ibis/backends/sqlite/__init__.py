@@ -56,8 +56,9 @@ def to_datetime(value: str | None) -> datetime.datetime | None:
 
 
 class ISODATETIME(DATETIME):
-    """A thin datetime type to override sqlalchemy's datetime parsing to
-    support a wider range of timestamp formats accepted by SQLite.
+    """A thin `datetime` type to override sqlalchemy's datetime parsing.
+
+    This is to support a wider range of timestamp formats accepted by SQLite.
 
     See https://sqlite.org/lang_datefunc.html#time_values for the full
     list of datetime formats SQLite accepts.

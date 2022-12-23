@@ -275,10 +275,9 @@ class Backend(BaseBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        """Execute expression and return results in an iterator of pyarrow
-        record batches.
+        """Execute expression and return an iterator of pyarrow record batches.
 
         This method is eager and will execute the associated expression
         immediately.

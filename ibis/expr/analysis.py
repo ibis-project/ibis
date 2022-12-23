@@ -119,8 +119,10 @@ def reduction_to_aggregation(node):
 
 
 def find_immediate_parent_tables(input_node, keep_input=True):
-    """Find every first occurrence of a :class:`ibis.expr.types.Table` object
-    in `expr`.
+    """Find every first occurrence of a `ir.Table` object in `input_node`.
+
+    This function does not traverse into `Table` objects. For example, the
+    underlying `PhysicalTable` of a `Selection` will not be yielded.
 
     Parameters
     ----------
@@ -131,12 +133,8 @@ def find_immediate_parent_tables(input_node, keep_input=True):
 
     Yields
     ------
-    e : ir.Expr
-
-    Notes
-    -----
-    This function does not traverse into Table objects. This means that the
-    underlying PhysicalTable of a Selection will not be yielded, for example.
+    ir.Expr
+        Parent table expression
 
     Examples
     --------
@@ -507,12 +505,14 @@ def simplify_aggregation(agg):
 
 
 class Projector:
-    """Analysis and validation of projection operation, taking advantage of
-    "projection fusion" opportunities where they exist, i.e. combining
-    compatible projections together rather than nesting them.
+    """Analysis and validation of projection operation.
 
-    Translation / evaluation later will not attempt to do any further
-    fusion / simplification.
+    This pass tries to take advantage of projection fusion opportunities where
+    they exist, i.e. combining compatible projections together rather than
+    nesting them.
+
+    Translation / evaluation later will not attempt to do any further fusion /
+    simplification.
     """
 
     def __init__(self, parent, proj_exprs):

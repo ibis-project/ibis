@@ -160,8 +160,9 @@ def wrap_uda(
     serialize_fn: str | None = None,
     name: str | None = None,
 ):
-    """Creates a callable aggregation function object. Must be created in
-    Impala to be used.
+    """Creates a callable aggregation function object.
+
+    Must be created in Impala to be used.
 
     Parameters
     ----------
@@ -203,8 +204,9 @@ def wrap_uda(
 
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
-    """Creates a callable scalar function object. Must be created in Impala to
-    be used.
+    """Creates a callable scalar function object.
+
+    Must be created in Impala to be used.
 
     Parameters
     ----------

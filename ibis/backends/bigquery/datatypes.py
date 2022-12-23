@@ -4,11 +4,8 @@ import ibis.expr.datatypes as dt
 
 
 class TypeTranslationContext:
-    """A tag class to allow alteration of the way a particular type is
-    translated.
+    """A tag class to alter the way a type is translated.
 
-    Notes
-    -----
     This is used to raise an exception when INT64 types are encountered to
     avoid suprising results due to BigQuery's handling of INT64 types in
     JavaScript UDFs.

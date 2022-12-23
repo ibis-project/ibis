@@ -98,8 +98,7 @@ def instance_of(klasses, arg, **kwargs):
 
 
 class lazy_instance_of(Validator):
-    """A version of `instance_of` that accepts class qualnames instead of "
-    "already imported classes.
+    """A version of `instance_of` that accepts qualnames instead of imported classes.
 
     Useful for delaying imports.
     """

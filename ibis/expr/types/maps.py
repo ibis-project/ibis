@@ -18,8 +18,9 @@ class MapValue(Value):
         key: ir.Value,
         default: ir.Value | None = None,
     ) -> ir.Value:
-        """Return the value for `key` from `expr` or the default if `key` is
-        not in the map.
+        """Return the value for `key` from `expr`.
+
+        Return `default` if `key` is not in the map.
 
         Parameters
         ----------

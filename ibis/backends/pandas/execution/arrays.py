@@ -58,8 +58,9 @@ def _concat_iterables_to_series(
     iter1: Collection[Any],
     iter2: Collection[Any],
 ) -> pd.Series:
-    """Concatenate two collections elementwise ("horizontally") to create a
-    Series. The two collections are assumed to have the same length.
+    """Concatenate two collections to create a Series.
+
+    The two collections are assumed to have the same length.
 
     Used for ArrayConcat implementation.
     """

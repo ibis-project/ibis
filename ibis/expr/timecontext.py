@@ -100,11 +100,7 @@ def compare_timecontext(
 def canonicalize_context(
     timecontext: TimeContext | None,
 ) -> TimeContext | None:
-    """Convert a timecontext to canonical one with type pandas.Timestamp for
-    its begin and end time.
-
-    Raise Exception for illegal inputs
-    """
+    """Canonicalize a timecontext with type pandas.Timestamp for its begin and end time."""
     import pandas as pd
 
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp

@@ -1147,18 +1147,6 @@ _map_interval_op_to_op = {
 
 
 def _replace_interval_with_scalar(expr: ir.Expr | dt.Interval | float):
-    """Good old Depth-First Search to identify the Interval and IntervalValue
-    components of the expression and return a comparable scalar expression.
-
-    Parameters
-    ----------
-    expr : float or expression of intervals
-        For example, ``ibis.interval(days=1) + ibis.interval(hours=5)``
-
-    Returns
-    -------
-    preceding : float or ir.FloatingScalar, depending upon the expr
-    """
     if isinstance(expr, ir.Expr):
         expr_op = expr.op()
     else:

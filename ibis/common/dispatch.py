@@ -7,18 +7,17 @@ from typing import Any
 from ibis.util import import_object
 
 
-def normalize(r):
-    """Normalize a regular expression by ensuring that it is wrapped with: '^'
-    and '$'.
+def normalize(r: str | re.Pattern):
+    """Normalize a expression by wrapping it with `'^'` and `'$'`.
 
     Parameters
     ----------
-    r : str or Pattern
+    r
         The pattern to normalize.
 
     Returns
     -------
-    p : Pattern
+    Pattern
         The compiled regex.
     """
     r = getattr(r, "pattern", r)

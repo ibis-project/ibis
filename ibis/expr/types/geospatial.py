@@ -281,8 +281,7 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoOrderingEquals(self, right).to_expr()
 
     def overlaps(self, right: GeoSpatialValue) -> ir.BooleanValue:
-        """Check if the geometries share space, have the same dimension, and
-        are not completely contained by each other.
+        """Check if the geometries share space, have the same dimension, and are not completely contained by each other.
 
         Parameters
         ----------
@@ -297,8 +296,7 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoOverlaps(self, right).to_expr()
 
     def touches(self, right: GeoSpatialValue) -> ir.BooleanValue:
-        """Check if the geometries have at least one point in common, but do
-        not intersect.
+        """Check if the geometries have at least one point in common, but do not intersect.
 
         Parameters
         ----------
@@ -348,8 +346,7 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoPerimeter(self).to_expr()
 
     def max_distance(self, right: GeoSpatialValue) -> ir.FloatingValue:
-        """Returns the 2-dimensional maximum distance between two geometries in
-        projected units.
+        """Returns the 2-dimensional max distance between two geometries in projected units.
 
         If `self` and `right` are the same geometry the function will return
         the distance between the two vertices most far from each other in that
@@ -475,6 +472,7 @@ class GeoSpatialValue(NumericValue):
 
     def point_n(self, n: ir.IntegerValue) -> PointValue:
         """Return the Nth point in a single linestring in the geometry.
+
         Negative values are counted backwards from the end of the LineString,
         so that -1 is the last point. Returns NULL if there is no linestring in
         the geometry.
@@ -539,9 +537,9 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoSetSRID(self, srid=srid).to_expr()
 
     def buffer(self, radius: float | ir.FloatingValue) -> GeoSpatialValue:
-        """Returns a geometry that represents all points whose distance from
-        this Geometry is less than or equal to distance. Calculations are in
-        the Spatial Reference System of this Geometry.
+        """Return all points whose distance from this geometry is less than or equal to `radius`.
+
+        Calculations are in the Spatial Reference System of this Geometry.
 
         Parameters
         ----------
@@ -591,11 +589,9 @@ class GeoSpatialValue(NumericValue):
         return ops.GeoWithin(self, right).to_expr()
 
     def azimuth(self, right: GeoSpatialValue) -> ir.FloatingValue:
-        """Return the angle in radians from the horizontal of the vector
-        defined by `self` and `right`.
+        """Return the angle in radians from the horizontal of the vector defined by the inputs.
 
-        Angle is computed clockwise from down-to-up on the clock:
-        12=0; 3=PI/2; 6=PI; 9=3PI/2.
+        Angle is computed clockwise from down-to-up on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
 
         Parameters
         ----------

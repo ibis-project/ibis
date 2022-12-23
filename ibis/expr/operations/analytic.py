@@ -62,8 +62,9 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    """Compute position of first element within each equal-value group in
-    sorted order. Equivalent to SQL RANK().
+    """Compute position of first element within each equal-value group ins sorted order.
+
+    Equivalent to SQL's `RANK()`.
 
     Examples
     --------
@@ -86,8 +87,11 @@ class MinRank(RankBase):
 
 @public
 class DenseRank(RankBase):
-    """Compute position of first element within each equal-value group in
-    sorted order, ignoring duplicate values. Equivalent to SQL DENSE_RANK().
+    """Position of first element within each group of equal values.
+
+    Values are returned in sorted order and duplicate values are ignored.
+
+    Equivalent to SQL's `DENSE_RANK()`.
 
     Examples
     --------
@@ -110,8 +114,9 @@ class DenseRank(RankBase):
 
 @public
 class RowNumber(RankBase):
-    """Compute row number starting from 0 after sorting by column expression.
-    Equivalent to SQL ROW_NUMBER().
+    """Compute the row number over a window, starting from 0.
+
+    Equivalent to SQL's `ROW_NUMBER()`.
 
     Examples
     --------
