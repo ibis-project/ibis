@@ -13,8 +13,7 @@ from ibis.expr.datatypes import DataType
 
 
 def _parameter_count(funcsig: Signature) -> int:
-    """Get the number of positional-or-keyword or position-only parameters in a
-    function signature.
+    """Get the number of positional parameters in a function signature.
 
     Parameters
     ----------
@@ -26,16 +25,16 @@ def _parameter_count(funcsig: Signature) -> int:
     int
         The number of parameters
     """
+    kinds = (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY)
     return sum(
-        param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
+        param.kind in kinds
         for param in funcsig.parameters.values()
         if param.default is Parameter.empty
     )
 
 
 def validate_input_type(input_type: List[DataType], func: Callable) -> Signature:
-    """Check that the declared number of inputs (the length of `input_type`)
-    and the number of inputs to `func` are equal.
+    """Check that the declared number of inputs and signature of func are compatible.
 
     If the signature of `func` uses *args, then no check is done (since no
     check can be done).

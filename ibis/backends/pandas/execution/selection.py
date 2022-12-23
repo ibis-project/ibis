@@ -112,8 +112,7 @@ def compute_projection(
 
 
 def remap_overlapping_column_names(table, root_table, data_columns):
-    """Return a mapping of possibly-suffixed column names to column names
-    without suffixes.
+    """Return a mapping of suffixed column names to column names without suffixes.
 
     Parameters
     ----------

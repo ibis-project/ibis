@@ -1,4 +1,6 @@
-"""The pandas backend is a departure from the typical ibis backend in that it
+"""The pandas backend.
+
+The pandas backend is a departure from the typical ibis backend in that it
 doesn't compile to anything, and the execution of the ibis expression is under
 the purview of ibis itself rather than executing SQL on a server.
 
@@ -379,8 +381,9 @@ def main_execute(
     cache: Mapping[ops.Node, Any] | None = None,
     **kwargs: Any,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
+
+    If no data are bound, raise an Exception.
 
     Parameters
     ----------
@@ -448,14 +451,13 @@ def execute_and_reset(
     aggcontext=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
 
-    Notes
-    -----
+    If no data are bound, raise an Exception.
+
     The difference between this function and
-    :func:`~ibis.backends.pandas.core.execute` is that this function resets
-    the index of the result, if the result has an index.
+    `ibis.backends.pandas.core.execute` is that this function resets the index
+    of the result, if the result has an index.
 
     Parameters
     ----------

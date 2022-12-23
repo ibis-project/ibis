@@ -216,8 +216,7 @@ class GeoLength(GeoSpatialUnOp):
 
 @public
 class GeoMaxDistance(GeoSpatialBinOp):
-    """Returns the 2-dimensional maximum distance between two geometries in
-    projected units.
+    """Returns the 2-dimensional max distance between two geometries in projected units.
 
     If g1 and g2 is the same geometry the function will return the
     distance between the two vertices most far from each other in that
@@ -297,8 +296,7 @@ class GeoEndPoint(GeoSpatialUnOp):
 
 @public
 class GeoPoint(GeoSpatialBinOp):
-    """Return a point constructed on the fly from the provided coordinate
-    values.
+    """Return a point constructed from the input coordinate values.
 
     Constant coordinates result in construction of a POINT literal.
     """
@@ -324,20 +322,16 @@ class GeoPointN(GeoSpatialUnOp):
 
 @public
 class GeoNPoints(GeoSpatialUnOp):
-    """Return the number of points in a geometry.
-
-    Works for all geometries
-    """
+    """Return the number of points in a geometry."""
 
     output_dtype = dt.int64
 
 
 @public
 class GeoNRings(GeoSpatialUnOp):
-    """If the geometry is a polygon or multi-polygon returns the number of
-    rings.
+    """Return the number of rings for polygons or multipolygons.
 
-    It counts the outer rings as well
+    Outer rings are counted.
     """
 
     output_dtype = dt.int64
@@ -361,10 +355,9 @@ class GeoSetSRID(GeoSpatialUnOp):
 
 @public
 class GeoBuffer(GeoSpatialUnOp):
-    """Returns a geometry that represents all points whose distance from this
-    Geometry is less than or equal to distance.
+    """Return all points whose distance from this geometry is less than or equal to `radius`.
 
-    Calculations are in the Spatial Reference System of this Geometry.
+    Calculations are in the Spatial Reference System of this geometry.
     """
 
     radius = rlz.floating
@@ -405,8 +398,7 @@ class GeoEnvelope(GeoSpatialUnOp):
 
 @public
 class GeoAzimuth(GeoSpatialBinOp):
-    """Returns the angle in radians from the horizontal of the vector defined
-    by pointA and pointB.
+    """Return the angle in radians from the horizontal of the vector defined by the two inputs.
 
     Angle is computed clockwise from down-to-up: on the clock: 12=0;
     3=PI/2; 6=PI; 9=3PI/2.

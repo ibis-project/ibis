@@ -336,7 +336,6 @@ ignore = [
   "D107", # init
   "D202", # blank lines after function docstring
   "D203", # blank line before class docstring
-  "D205", # blank line between summary line and description
   "D213", # Multi-line docstring summary should start at the second line
   "D402", # First line should not be the function's signature
 

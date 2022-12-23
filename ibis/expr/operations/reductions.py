@@ -239,11 +239,7 @@ class GroupConcat(Filterable, Reduction):
 
 @public
 class ApproxMedian(Filterable, Reduction):
-    """Compute the approximate median of a set of comparable values using the
-    Count-Min-Sketch algorithm.
-
-    Exposed in Impala using APPX_MEDIAN.
-    """
+    """Compute the approximate median of a set of comparable values."""
 
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like('arg')

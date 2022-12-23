@@ -31,10 +31,10 @@ TypeRegistrationDict = Dict[
 def register_types_to_dispatcher(
     dispatcher: TraceTwoLevelDispatcher, types: TypeRegistrationDict
 ):
-    """Many dask operations utilize the functions defined in the pandas backend
-    without modification.
+    """Perform registrations in bulk.
 
-    This function helps perform registrations in bulk
+    Many dask operations utilize the functions defined in the pandas backend
+    without modification.
     """
     for ibis_op, registration_list in types.items():
         for types_to_register, fn in registration_list:
@@ -67,11 +67,7 @@ def make_meta_series(
 
 
 def make_selected_obj(gs: SeriesGroupBy) -> dd.DataFrame | dd.Series:
-    """When you select a column from a `pandas.DataFrameGroupBy` the underlying
-    `.obj` reflects that selection.
-
-    This function emulates that behavior.
-    """
+    """Select a column from a `pandas.DataFrameGroupBy`."""
     # TODO profile this for data shuffling
     # We specify drop=False in the case that we are grouping on the column
     # we are selecting
@@ -169,8 +165,7 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
 
 
 def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
-    """Concat a list of `dd.Series` or `dd.DataFrame` objects into one
-    DataFrame.
+    """Concatenate a list of `dd.Series` or `dd.DataFrame` objects into a DataFrame.
 
     This will use `DataFrame.concat` if all pieces are the same length.
     Otherwise we will iterratively join.

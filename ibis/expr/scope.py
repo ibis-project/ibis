@@ -1,5 +1,6 @@
-"""Module for scope The motivation of Scope is to cache data for calculated
-ops.
+"""Module for scope.
+
+The motivation of Scope is to cache data for calculated ops.
 
 `scope` in Scope class is the main cache. It is a dictionary mapping
 ibis node instances to concrete data, and the time context associate
@@ -53,8 +54,7 @@ class Scope:
         param: dict[Node, Any] = None,
         timecontext: TimeContext | None = None,
     ):
-        """Take a dict of `op`, `result`, create a new scope and save those
-        pairs in scope.
+        """Create a new scope.
 
         Associate None as timecontext by default. This is mostly used to
         init a scope with a set of given params.

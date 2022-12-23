@@ -1,4 +1,6 @@
-"""The dask backend is a very close port of the pandas backend, and thus has
+"""The Dask backend.
+
+The dask backend is a very close port of the pandas backend, and thus has
 the similar caveats.
 
 The dask backend is a departure from the typical ibis backend in that it
@@ -414,14 +416,12 @@ def execute_and_reset(
     aggcontext=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
 
-    Notes
-    -----
-    The difference between this function and :func:`~ibis.dask.core.execute`
-    is that this function resets the index of the result, if the result has
-    an index.
+    If no data are bound, raise an Exception.
+
+    The difference between this function and `ibis.dask.core.execute` is that
+    this function resets the index of the result, if the result has an index.
 
     Parameters
     ----------

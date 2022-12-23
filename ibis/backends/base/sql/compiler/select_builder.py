@@ -106,8 +106,9 @@ def _get_column(name):
 
 
 class SelectBuilder:
-    """Transforms expression IR to a query pipeline (potentially multiple
-    queries). There will typically be a primary SELECT query, perhaps with some
+    """Transforms expression IR to a query pipeline.
+
+    There will typically be a primary SELECT query, perhaps with some
     subqueries and other DDL to ingest and tear down intermediate data sources.
 
     Walks the expression tree and catalogues distinct query units,
