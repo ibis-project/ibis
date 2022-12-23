@@ -37,8 +37,11 @@ def fixed_arity(sa_func, arity):
         sa_func = getattr(sa.func, sa_func)
 
     def formatter(t, op):
-        if arity != len(op.args):
-            raise com.IbisError('incorrect number of args')
+        arg_count = len(op.args)
+        if arity != arg_count:
+            raise com.IbisError(
+                f'Incorrect number of args. Expected: {arity}. Current: {arg_count}'
+            )
 
         return _varargs_call(sa_func, t, op.args)
 
