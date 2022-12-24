@@ -82,13 +82,13 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             lambda x: x.day_of_week.index(),
             1,
             id='day_of_week_index',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda x: x.day_of_week.full_name(),
             'Tuesday',
             id='day_of_week_full_name',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
     ],
 )
@@ -649,7 +649,7 @@ def test_string_to_timestamp(alltypes, fmt):
         param('2017-01-07', 5, 'Saturday', id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "impala", "mssql"])
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -659,7 +659,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -689,7 +689,7 @@ def test_day_of_week_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
