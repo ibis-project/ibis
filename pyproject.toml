@@ -337,7 +337,6 @@ ignore = [
   "D205", # blank line between summary line and description
   "D213", # Multi-line docstring summary should start at the second line
   "D402", # First line should not be the function's signature
-  "D417", # Missing argument descriptions
 
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]

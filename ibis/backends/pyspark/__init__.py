@@ -307,6 +307,8 @@ class Backend(BaseSQLBackend):
             Database name
         path
             Path where to store the database data; otherwise uses Spark default
+        force
+            Whether to append `IF EXISTS` to the database creation SQL
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
         return self.raw_sql(statement.compile())
@@ -354,19 +356,22 @@ class Backend(BaseSQLBackend):
 
         return sch.infer(df)
 
-    def _schema_from_csv(self, path, **kwargs):
-        """Return a Schema object for the indicated csv file. Spark goes
-        through the file once to determine the schema. See documentation for
-        `pyspark.sql.DataFrameReader` for kwargs.
+    def _schema_from_csv(self, path: str, **kwargs: Any) -> sch.Schema:
+        """Return a Schema object for the indicated csv file.
+
+        Spark goes through the file once to determine the schema.
 
         Parameters
         ----------
         path
             Path to CSV
+        kwargs
+            See documentation for `pyspark.sql.DataFrameReader` for more information.
 
         Returns
         -------
-        schema : ibis Schema
+        sch.Schema
+            An ibis schema instance
         """
         options = _read_csv_defaults.copy()
         options.update(kwargs)

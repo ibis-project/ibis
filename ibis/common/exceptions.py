@@ -90,26 +90,11 @@ class BackendConfigurationNotRegistered(IbisError):
 
 
 def mark_as_unsupported(f: Callable) -> Callable:
-    """Decorate an unsupported method.
-
-    Parameters
-    ----------
-    f : callable
-
-    Returns
-    -------
-    callable
-
-    Raises
-    ------
-    UnsupportedOperationError
-    """
+    """Decorate an unsupported method."""
     # function that raises UnsupportedOperationError
     def _mark_as_unsupported(self):
         raise UnsupportedOperationError(
-            'Method `{}` are unsupported by class `{}`.'.format(
-                f.__name__, self.__class__.__name__
-            )
+            f'Method `{f.__name__}` is unsupported by class `{self.__class__.__name__}`.'
         )
 
     _mark_as_unsupported.__doc__ = f.__doc__

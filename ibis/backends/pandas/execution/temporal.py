@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 
 import numpy as np
@@ -260,12 +262,8 @@ def execute_day_of_week_index_series_group_by(op, data, **kwargs):
     return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings, group_keys=False)
 
 
-def day_name(obj):
-    """Backwards compatible name of day getting function.
-
-    Parameters
-    ----------
-    obj : Union[Series, pd.Timestamp]
+def day_name(obj: pd.core.indexes.accessors.DatetimeProperties | pd.Timestamp) -> str:
+    """Backwards compatible name-of-day getting function.
 
     Returns
     -------

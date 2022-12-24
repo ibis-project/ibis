@@ -646,14 +646,6 @@ def shares_some_roots(exprs, parents):
 def flatten_predicate(node):
     """Yield the expressions corresponding to the `And` nodes of a predicate.
 
-    Parameters
-    ----------
-    expr : ir.BooleanColumn
-
-    Returns
-    -------
-    exprs : List[ir.BooleanColumn]
-
     Examples
     --------
     >>> import ibis
@@ -711,14 +703,6 @@ def is_reduction(node):
     aggregation" in a GROUP BY-type expression and should be treated a
     literal, and must be computed as a separate query and stored in a
     temporary variable (or joined, for bound aggregations with keys)
-
-    Parameters
-    ----------
-    expr : ir.Expr
-
-    Returns
-    -------
-    check output : bool
     """
 
     def predicate(node):

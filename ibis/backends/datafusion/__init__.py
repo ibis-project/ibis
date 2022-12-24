@@ -60,17 +60,6 @@ def _file(raw, path, table_name=None, **kwargs):
     return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
 
 
-def _to_pyarrow_table(frame):
-    batches = frame.collect()
-    if batches:
-        return pa.Table.from_batches(batches)
-    else:
-        # TODO(kszucs): file a bug to datafusion because the fields'
-        # nullability from frame.schema() is not always consistent
-        # with the first record batch's schema
-        return pa.Table.from_batches(batches, schema=frame.schema())
-
-
 class Backend(BaseBackend):
     name = 'datafusion'
     builder = None
@@ -126,11 +115,7 @@ class Backend(BaseBackend):
             return list(filter(lambda t: pattern.findall(t), tables))
         return tables
 
-    def table(
-        self,
-        name: str,
-        schema: sch.Schema | None = None,
-    ) -> ir.Table:
+    def table(self, name: str, schema: sch.Schema | None = None) -> ir.Table:
         """Get an ibis expression representing a DataFusion table.
 
         Parameters
@@ -152,13 +137,9 @@ class Backend(BaseBackend):
         return self.table_class(name, schema, self).to_expr()
 
     def register(
-        self,
-        source: str | Path,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, source: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
-        """Register a CSV or Parquet file with `table_name` located at
-        `source`.
+        """Register a CSV or Parquet file with `table_name` located at `source`.
 
         Parameters
         ----------
@@ -166,6 +147,8 @@ class Backend(BaseBackend):
             The path to the file
         table_name
             The name of the table
+        kwargs
+            Datafusion-specific keyword arguments
         """
         if isinstance(source, (str, Path)):
             method, path, name = _register_file(

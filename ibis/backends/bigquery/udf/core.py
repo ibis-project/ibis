@@ -6,6 +6,7 @@ import functools
 import inspect
 import textwrap
 from collections import ChainMap
+from typing import Callable
 
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.udf.find import find_names
@@ -49,13 +50,8 @@ def indent(lines, spaces=4):
     return textwrap.indent(text, " " * spaces)
 
 
-def semicolon(f):
-    """Add a semicolon to the result of a visit_* call.
-
-    Parameters
-    ----------
-    f : callable
-    """
+def semicolon(f: Callable) -> Callable:
+    """Add a semicolon to the result of a `visit_*` call."""
 
     @functools.wraps(f)
     def wrapper(*args, **kwargs):

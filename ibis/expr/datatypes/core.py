@@ -664,9 +664,7 @@ class Struct(DataType):
 
     @classmethod
     def from_tuples(
-        cls,
-        pairs: Iterable[tuple[str, str | DataType]],
-        nullable: bool = True,
+        cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
     ) -> Struct:
         """Construct a `Struct` type from pairs.
 
@@ -674,6 +672,8 @@ class Struct(DataType):
         ----------
         pairs
             An iterable of pairs of field name and type
+        nullable
+            Whether the type is nullable
 
         Returns
         -------
@@ -685,9 +685,7 @@ class Struct(DataType):
 
     @classmethod
     def from_dict(
-        cls,
-        pairs: Mapping[str, str | DataType],
-        nullable: bool = True,
+        cls, pairs: Mapping[str, str | DataType], nullable: bool = True
     ) -> Struct:
         """Construct a `Struct` type from a [`dict`][dict].
 
@@ -695,6 +693,8 @@ class Struct(DataType):
         ----------
         pairs
             A [`dict`][dict] of `field: type`
+        nullable
+            Whether the type is nullable
 
         Returns
         -------

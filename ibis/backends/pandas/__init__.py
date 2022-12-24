@@ -200,6 +200,7 @@ class Backend(BasePandasBackend):
         expr: ir.Expr,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        **kwargs: Any,
     ) -> pa.Table:
         pa = self._import_pyarrow()
         output = self.execute(expr, params=params, limit=limit)

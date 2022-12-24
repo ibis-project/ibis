@@ -36,16 +36,8 @@ class NameFinder:
         return toolz.concat(map(self.find, (getattr(node, field) for field in fields)))
 
 
-def find_names(node):
-    """Return the unique :class:`ast.Name` instances in an AST.
-
-    Parameters
-    ----------
-    node : ast.AST
-
-    Returns
-    -------
-    unique_names : List[ast.Name]
+def find_names(node: ast.AST) -> list[ast.Name]:
+    """Return the unique `ast.Name` instances in an AST.
 
     Examples
     --------

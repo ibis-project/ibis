@@ -269,6 +269,8 @@ class Expr(Immutable):
             execute will result in an error.
         params
             Mapping of scalar parameter expressions to value
+        kwargs
+            Keyword arguments
         """
         return self._find_backend(use_default=True).execute(
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
@@ -325,6 +327,8 @@ class Expr(Immutable):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -359,6 +363,8 @@ class Expr(Immutable):
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
 
         Returns
         -------

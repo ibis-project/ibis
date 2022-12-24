@@ -293,6 +293,8 @@ class ImpalaTable(ir.Table):
             dict of partition field name to value. For example for the
             partition (year=2007, month=7), this can be either (2007, 7) or
             {'year': 2007, 'month': 7}.
+        values
+            Unsupported and unused
         validate
             If True, do more rigorous validation that schema of table being
             inserted is compatible with the existing table

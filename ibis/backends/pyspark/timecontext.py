@@ -17,15 +17,7 @@ def filter_by_time_context(
     timecontext: TimeContext | None,
     adjusted_timecontext: TimeContext | None = None,
 ) -> DataFrame:
-    """Filter a Dataframe by given time context.
-
-    Parameters
-    ----------
-    df
-        Spark dataframe input
-    timecontext
-        time context
-    """
+    """Filter a Dataframe by given time context."""
     # Return original df if there is no timecontext (timecontext is not used)
     # or timecontext and adjusted_timecontext are the same
     if (not timecontext) or (
@@ -66,24 +58,16 @@ def combine_time_context(
 
     Examples
     --------
-    >>> timecontexts = [(pd.Timestamp('20200102'), pd.Timestamp('20200103')),
-        (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
-        (pd.Timestamp('20200109'), pd.Timestamp('20200110')),
-    ]
+    >>> timecontexts = [
+    ...     (pd.Timestamp('20200102'), pd.Timestamp('20200103')),
+    ...     (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
+    ...     (pd.Timestamp('20200109'), pd.Timestamp('20200110')),
+    ... ]
     >>> combine_time_context(timecontexts)
     (pd.Timestamp('20200101'), pd.Timestamp('20200110'))
-
     >>> timecontexts = [None]
     >>> combine_time_context(timecontexts)
     None
-
-    Parameters
-    ----------
-    timecontexts: List[TimeContext]
-
-    Returns
-    -------
-    TimeContext
     """
     begin = min((t[0] for t in timecontexts if t), default=None)
     end = max((t[1] for t in timecontexts if t), default=None)

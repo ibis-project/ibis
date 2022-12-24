@@ -367,16 +367,19 @@ def sa_struct(dialect, satype, nullable=True):
 
 
 @sch.infer.register((sa.Table, sa.sql.TableClause))
-def schema_from_table(table, schema=None):
+def schema_from_table(table: sa.Table, schema: sch.Schema | None = None) -> sch.Schema:
     """Retrieve an ibis schema from a SQLAlchemy ``Table``.
 
     Parameters
     ----------
-    table : sa.Table
+    table
+        Table whose schema to infer
+    schema
+        Schema to pull types from
 
     Returns
     -------
-    schema : ibis.expr.datatypes.Schema
+    schema
         An ibis schema corresponding to the types of the columns in `table`.
     """
     schema = schema if schema is not None else {}

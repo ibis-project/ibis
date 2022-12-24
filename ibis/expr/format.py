@@ -81,22 +81,10 @@ def fmt_truncated(
 
 
 def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
-    """Compute the length of the longest name of input expressions.
-
-    Parameters
-    ----------
-    expressions
-        Expressions whose name to compute the maximum length of
-
-    Returns
-    -------
-    int
-        Max length
-    """
-    try:
-        return max(len(node.name) for node in nodes if isinstance(node, ops.Named))
-    except ValueError:
-        return 0
+    """Compute the length of the longest name of input expressions."""
+    return max(
+        (len(node.name) for node in nodes if isinstance(node, ops.Named)), default=0
+    )
 
 
 @functools.singledispatch

@@ -171,6 +171,10 @@ class Backend(BaseBackend):
             Whether or not to use compression.
             Default is `'lz4'` if installed else False.
             True is equivalent to `'lz4'`.
+        external_tables
+            External tables that can be used in a query.
+        kwargs
+            Client specific keyword arguments
 
         Examples
         --------
@@ -290,6 +294,8 @@ class Backend(BaseBackend):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
