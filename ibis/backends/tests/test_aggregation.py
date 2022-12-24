@@ -84,7 +84,6 @@ aggregate_test_params = [
 ]
 
 argidx_not_grouped_marks = [
-    "bigquery",
     "datafusion",
     "impala",
     "mysql",
@@ -305,7 +304,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmin',
             marks=pytest.mark.notyet(
                 [
-                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
@@ -324,7 +322,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmax',
             marks=pytest.mark.notyet(
                 [
-                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
