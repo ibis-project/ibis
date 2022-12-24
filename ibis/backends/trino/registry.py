@@ -112,6 +112,7 @@ operation_registry.update(
         ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
+        ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
         ops.ExtractEpochSeconds: unary(sa.func.to_unixtime),
