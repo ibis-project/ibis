@@ -98,6 +98,7 @@ operation_registry.update(
         ops.ArrayIndex: _array_index,
         ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
+        ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.Translate: fixed_arity(sa.func.translate, 3),
         ops.Capitalize: _capitalize,
         ops.StrRight: _string_right,
