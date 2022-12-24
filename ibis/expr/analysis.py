@@ -312,6 +312,17 @@ def apply_filter(op, predicates):
 
 
 def _filter_selection(op, predicates):
+    # We can't push down filters on Unnest or Window because they
+    # change the shape and potential values of the data.
+    if any(
+        isinstance(
+            sel.arg if isinstance(sel, ops.Alias) else sel,
+            (ops.Unnest, ops.Window),
+        )
+        for sel in op.selections
+    ):
+        return ops.Selection(op, selections=[], predicates=predicates)
+
     # if any of the filter predicates have the parent expression among
     # their roots, then pushdown (at least of that predicate) is not
     # possible
@@ -338,18 +349,7 @@ def _filter_selection(op, predicates):
     except IntegrityError:
         pass
     else:
-        if shares_all_roots(simplified_predicates, op.table) and not any(
-            # we can't push down filters on unnest because unnest changes the
-            # shape and potential values of the data: unnest can potentially
-            # produce NULLs
-            #
-            # the getattr shenanigans is to handle Alias
-            isinstance(
-                sel.arg if isinstance(sel, ops.Alias) else sel,
-                ops.Unnest,
-            )
-            for sel in op.selections
-        ):
+        if shares_all_roots(simplified_predicates, op.table):
             return ops.Selection(
                 op.table,
                 selections=op.selections,

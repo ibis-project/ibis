@@ -284,6 +284,7 @@ operation_registry.update(
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.DateTruncate: _truncate(sa.func.date),
         ops.Date: unary(sa.func.date),
+        ops.Time: unary(sa.func.time),
         ops.TimestampTruncate: _truncate(sa.func.datetime),
         ops.Strftime: _strftime,
         ops.ExtractYear: _strftime_int('%Y'),
