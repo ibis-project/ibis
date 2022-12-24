@@ -78,6 +78,27 @@ def _string_right(t, op):
     return sa.func.substr(sa_arg, -sa_length)
 
 
+_truncate_precisions = {
+    's': 'second',
+    'm': 'minute',
+    'h': 'hour',
+    'D': 'day',
+    'W': 'week',
+    'M': 'month',
+    'Q': 'quarter',
+    'Y': 'year',
+}
+
+
+def _timestamp_truncate(t, op):
+    sa_arg = t.translate(op.arg)
+    try:
+        precision = _truncate_precisions[op.unit]
+    except KeyError:
+        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
+    return sa.func.date_trunc(precision, sa_arg)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -123,5 +144,7 @@ operation_registry.update(
         ops.Repeat: fixed_arity(
             lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
         ),
+        ops.DateTruncate: _timestamp_truncate,
+        ops.TimestampTruncate: _timestamp_truncate,
     }
 )
