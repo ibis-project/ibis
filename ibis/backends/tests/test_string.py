@@ -148,7 +148,6 @@ def test_string_col_is_unicode(alltypes, df):
                     "mssql",
                     "mysql",
                     "polars",
-                    "trino",
                 ]
             ),
         ),
