@@ -130,25 +130,10 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.repeat(2),
             lambda t: t.string_col * 2,
             id="repeat_method",
-            marks=pytest.mark.broken(
-                ["trino"], reason="repeat returns an array, not concat"
-            ),
         ),
+        param(lambda t: 2 * t.string_col, lambda t: 2 * t.string_col, id="repeat_left"),
         param(
-            lambda t: 2 * t.string_col,
-            lambda t: 2 * t.string_col,
-            id="repeat_left",
-            marks=pytest.mark.broken(
-                ["trino"], reason="repeat returns an array, not concat"
-            ),
-        ),
-        param(
-            lambda t: t.string_col * 2,
-            lambda t: t.string_col * 2,
-            id="repeat_right",
-            marks=pytest.mark.broken(
-                ["trino"], reason="repeat returns an array, not concat"
-            ),
+            lambda t: t.string_col * 2, lambda t: t.string_col * 2, id="repeat_right"
         ),
         param(
             lambda t: t.string_col.translate('01', 'ab'),

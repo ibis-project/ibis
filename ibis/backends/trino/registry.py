@@ -84,5 +84,8 @@ operation_registry.update(
         ops.ArrayIndex: _array_index,
         ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
+        ops.Repeat: fixed_arity(
+            lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
+        ),
     }
 )
