@@ -310,7 +310,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.right(2),
             lambda t: t.date_string_col.str[-2:],
             id="right",
-            marks=pytest.mark.notimpl(["datafusion", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.date_string_col[1:3],
