@@ -2,6 +2,7 @@
 
 import base64
 import datetime
+from typing import Literal
 
 import numpy as np
 from multipledispatch import Dispatcher
@@ -464,6 +465,18 @@ def _array_agg(t, op):
     return f"ARRAY_AGG({t.translate(arg)} IGNORE NULLS)"
 
 
+def _arg_min_max(sort_dir: Literal["ASC", "DESC"]):
+    def translate(t, op: ops.ArgMin | ops.ArgMax) -> str:
+        arg = op.arg
+        if (where := op.where) is not None:
+            arg = ops.Where(where, arg, None)
+        arg = t.translate(arg)
+        key = t.translate(op.key)
+        return f"ARRAY_AGG({arg} IGNORE NULLS ORDER BY {key} {sort_dir} LIMIT 1)[SAFE_OFFSET(0)]"
+
+    return translate
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -587,6 +600,8 @@ OPERATION_REGISTRY = {
     ops.FloorDivide: _floor_divide,
     ops.IsNan: _is_nan,
     ops.IsInf: _is_inf,
+    ops.ArgMin: _arg_min_max("ASC"),
+    ops.ArgMax: _arg_min_max("DESC"),
 }
 
 _invalid_operations = {
