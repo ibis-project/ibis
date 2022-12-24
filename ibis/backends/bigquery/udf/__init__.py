@@ -4,7 +4,7 @@ import collections
 import functools
 import inspect
 import itertools
-from typing import Iterable, Mapping
+from typing import Callable, Iterable, Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -39,33 +39,35 @@ def create_udf_node(name, fields):
     return type(external_name, (BigQueryUDFNode,), fields)
 
 
-def udf(input_type, output_type, strict=True, libraries=None):
+def udf(
+    input_type: Iterable[dt.DataType],
+    output_type: dt.DataType,
+    strict: bool = True,
+    libraries: Iterable[str] | None = None,
+) -> Callable:
     '''Define a UDF for BigQuery.
+
+    `INT64` is not supported as an argument type or a return type, as per
+    [the BigQuery documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript).
 
     Parameters
     ----------
-    input_type : List[DataType]
-    output_type : DataType
-    strict : bool
+    input_type
+        Iterable of types, one per argument.
+    output_type
+        Return type of the UDF.
+    strict
         Whether or not to put a ``'use strict';`` string at the beginning of
         the UDF. Setting to ``False`` is probably a bad idea.
-    libraries : List[str]
-        A list of Google Cloud Storage URIs containing to JavaScript source
+    libraries
+        An iterable of Google Cloud Storage URIs containing to JavaScript source
         code. Note that any symbols (functions, classes, variables, etc.) that
         are exposed in these JavaScript files will be visible inside the UDF.
 
     Returns
     -------
-    wrapper : Callable
-        The wrapped function
-
-    Notes
-    -----
-    - ``INT64`` is not supported as an argument type or a return type, as per
-      `the BigQuery documentation
-      <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
-    - `The follow example doctest doesn't work for Python 3.8
-      <https://github.com/ibis-project/ibis/issues/2085>`_.
+    Callable
+        The wrapped user-defined function.
 
     Examples
     --------

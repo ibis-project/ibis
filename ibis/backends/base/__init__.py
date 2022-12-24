@@ -256,6 +256,8 @@ class ResultHandler:
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -316,6 +318,8 @@ class ResultHandler:
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -761,6 +765,8 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     ----------
     resource
         A URL or path to the resource to be connected to.
+    kwargs
+        Backend specific keyword arguments
 
     Examples
     --------

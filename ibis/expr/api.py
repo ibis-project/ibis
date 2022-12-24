@@ -566,6 +566,8 @@ def timestamp(
     ----------
     value
         The value to use for constructing the timestamp
+    args
+        Additional arguments used when constructing a timestamp
     timezone
         The timezone of the timestamp
 

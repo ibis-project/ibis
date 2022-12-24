@@ -69,51 +69,19 @@ def _ibis_sqlite_translate(string, from_string, to_string):
 
 @udf
 def _ibis_sqlite_regex_search(string, regex):
-    """Return whether `regex` exists in `string`.
-
-    Parameters
-    ----------
-    string : str
-    regex : str
-
-    Returns
-    -------
-    found : bool
-    """
+    """Return whether `regex` exists in `string`."""
     return re.search(regex, string) is not None
 
 
 @udf
 def _ibis_sqlite_regex_replace(string, pattern, replacement):
-    """Replace occurences of `pattern` in `string` with `replacement`.
-
-    Parameters
-    ----------
-    string : str
-    pattern : str
-    replacement : str
-
-    Returns
-    -------
-    result : str
-    """
+    """Replace occurences of `pattern` in `string` with `replacement`."""
     return re.sub(pattern, replacement, string)
 
 
 @udf
 def _ibis_sqlite_regex_extract(string, pattern, index):
-    """Extract match of regular expression `pattern` from `string` at `index`.
-
-    Parameters
-    ----------
-    string : str
-    pattern : str
-    index : int
-
-    Returns
-    -------
-    result : str or None
-    """
+    """Extract match of regular expression `pattern` from `string` at `index`."""
     result = re.search(pattern, string)
     if result is not None and 0 <= index <= (result.lastindex or -1):
         return result.group(index)
@@ -399,7 +367,8 @@ def register_all(dbapi_connection):
 
     Parameters
     ----------
-    con : sqlalchemy.Connection
+    dbapi_connection
+        sqlalchemy.Connection object
     """
     for func in _SQLITE_UDF_REGISTRY:
         dbapi_connection.create_function(

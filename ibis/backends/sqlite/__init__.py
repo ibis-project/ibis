@@ -102,6 +102,8 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If `None`, creates an
             in-memory transient database and you can use attach() to add more
             files
+        path
+            Deprecated, use `database`
         type_map
             An optional mapping from a string name of a SQLite "type" to the
             corresponding ibis DataType that it represents. This can be used

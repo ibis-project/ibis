@@ -39,15 +39,6 @@ def validate_input_type(input_type: List[DataType], func: Callable) -> Signature
 
     If the signature of `func` uses *args, then no check is done (since no
     check can be done).
-
-    Parameters
-    ----------
-    input_type : List[DataType]
-    func : callable
-
-    Returns
-    -------
-    inspect.Signature
     """
     funcsig = signature(func)
     params = funcsig.parameters.values()

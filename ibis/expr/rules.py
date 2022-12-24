@@ -205,15 +205,18 @@ def value(dtype, arg, **kwargs):
 
     Parameters
     ----------
-    dtype : DataType subclass or DataType instance
-    arg : python literal or an ibis expression
-      If a python literal is given the validator tries to coerce it to an ibis
-      literal.
+    dtype
+        DataType subclass or DataType instance
+    arg
+        If a Python literal is given the validator tries to coerce it to an ibis
+        literal.
+    kwargs
+        Keyword arguments
 
     Returns
     -------
-    arg : Value
-      An ibis value expression with the specified datatype
+    ir.Value
+        An ibis value expression with the specified datatype
     """
     import ibis.expr.operations as ops
 
@@ -470,12 +473,14 @@ def table(arg, schema=None, **kwargs):
 
     Parameters
     ----------
+    arg
+        A table node
     schema
         A validator for the table's columns. Only column subset validators are
         currently supported. Accepts any arguments that `sch.schema` accepts.
         See the example for usage.
-    arg
-        An argument
+    kwargs
+        Keyword arguments
 
     The following op will accept an argument named `'table'`. Note that the
     `schema` argument specifies rules for columns that are required to be in

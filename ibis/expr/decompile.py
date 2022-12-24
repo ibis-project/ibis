@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import functools
 import io
@@ -340,22 +342,29 @@ class CodeContext:
 
 
 @experimental
-def decompile(node, render_import=True, assign_result_to='result', format=False):
+def decompile(
+    node: ops.Node | ir.Expr,
+    render_import: bool = True,
+    assign_result_to: str = 'result',
+    format: bool = False,
+) -> str:
     """Decompile an ibis expression into Python source code.
 
     Parameters
     ----------
-    node : ir.Expr
-    render_import : bool, default True
-        Whether to add 'import ibis' import statement.
-    assign_result_to : str | None, default 'result'
+    node
+        node or expression to decompile
+    render_import
+        Whether to add `import ibis` to the result.
+    assign_result_to
         Variable name to store the result at, pass None to avoid assignment.
-    format : bool, default False
+    format
         Whether to format the generated code using black code formatter.
 
     Returns
     -------
-    code : str
+    str
+        Equivalent Python source code for `node`.
     """
     if isinstance(node, ir.Expr):
         node = node.op()

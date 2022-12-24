@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import json
 import operator
@@ -170,22 +172,24 @@ def _sql_like_to_regex(pattern, escape):
         cur_i += skip
 
 
-def sql_like_to_regex(pattern, escape=None):
-    """Convert a SQL LIKE pattern to an equivalent Python regular expression.
+def sql_like_to_regex(pattern: str, escape: str | None = None) -> str:
+    """Convert a SQL `LIKE` pattern to an equivalent Python regular expression.
 
     Parameters
     ----------
-    pattern : str
+    pattern
         A LIKE pattern with the following semantics:
-        * ``%`` matches zero or more characters
-        * ``_`` matches exactly one character
-        * To escape ``%`` and ``_`` (or to match the `escape` parameter
+        * `%` matches zero or more characters
+        * `_` matches exactly one character
+        * To escape `%` and `_` (or to match the `escape` parameter
           itself), prefix the desired character with `escape`.
+    escape
+        Escape character
 
     Returns
     -------
-    new_pattern : str
-        A regular expression pattern equivalent to the input SQL LIKE pattern.
+    str
+        A regular expression pattern equivalent to the input SQL `LIKE` pattern.
 
     Examples
     --------
@@ -202,7 +206,7 @@ def sql_like_to_regex(pattern, escape=None):
     >>> sql_like_to_regex('abc%')  # any string starting with "abc"
     '^abc.*$'
     """
-    return '^{}$'.format(''.join(_sql_like_to_regex(pattern, escape)))
+    return f"^{''.join(_sql_like_to_regex(pattern, escape))}$"
 
 
 @execute_node.register(ops.StringSQLLike, pd.Series, str, (str, type(None)))

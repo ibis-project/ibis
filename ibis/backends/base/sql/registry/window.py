@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from operator import add, mul, sub
-from typing import Optional
 
 import ibis
 import ibis.common.exceptions as com
@@ -41,18 +42,19 @@ _cumulative_to_reduction = {
 }
 
 
-def _replace_interval_with_scalar(op: ops.Node):
-    """Good old Depth-First Search to identify the Interval and IntervalValue
-    components of the expression and return a comparable scalar expression.
+def _replace_interval_with_scalar(op: ops.Value) -> float | ir.FloatingScalar:
+    """Replace an interval type or expression with its equivalent numeric scalar.
 
     Parameters
     ----------
-    expr : float or expression of intervals
-        For example, ``ibis.interval(days=1) + ibis.interval(hours=5)``
+    op
+        float or interval expression.
+        For example, `ibis.interval(days=1) + ibis.interval(hours=5)`
 
     Returns
     -------
-    preceding : float or ir.FloatingScalar, depending upon the expr
+    preceding
+        `float` or `ir.FloatingScalar`, depending on the expr.
     """
     if isinstance(op, ops.Literal):
         unit = getattr(op.output_dtype, "unit", "us")
@@ -127,7 +129,7 @@ def format_window(translator, op, window):
 
     p, f = window.preceding, window.following
 
-    def _prec(p: Optional[int]) -> str:
+    def _prec(p: int | None) -> str:
         assert p is None or p >= 0
 
         if p is None:
@@ -138,7 +140,7 @@ def format_window(translator, op, window):
             prefix = str(p)
         return f'{prefix} PRECEDING'
 
-    def _foll(f: Optional[int]) -> str:
+    def _foll(f: int | None) -> str:
         assert f is None or f >= 0
 
         if f is None:

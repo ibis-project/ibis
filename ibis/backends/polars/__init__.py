@@ -53,30 +53,22 @@ def _file(raw, path, table_name=None, **kwargs):
 
 
 class Backend(BaseBackend):
-    name = 'polars'
+    name = "polars"
     builder = None
 
     def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
-        self._tables = None
+        super().__init__(*args, **kwargs)
+        self._tables = dict()
 
-    def do_connect(
-        self,
-        _tables: MutableMapping[str, pl.LazyFrame],
-        *args,
-        **kwargs,
-    ) -> None:
-        """Construct a client from a dictionary of polars LazyFrames.
+    def do_connect(self, tables: MutableMapping[str, pl.LazyFrame]) -> None:
+        """Construct a client from a dictionary of `polars.LazyFrame`s.
 
         Parameters
         ----------
-        _tables
+        tables
             Mutable mapping of string table names to polars LazyFrames.
         """
-        if isinstance(_tables, dict):
-            self._tables = _tables
-        else:
-            self._tables = dict()
+        self._tables.update(tables)
 
     @property
     def version(self) -> str:

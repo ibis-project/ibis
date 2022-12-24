@@ -178,10 +178,12 @@ def traverse(
     fn
         A function applied on each expression. The first element of the tuple
         controls the traversal, and the second is the result if its not `None`.
-    expr
+    node
         The Node expression or a list of expressions.
     dedup
         Whether to allow expression traversal more than once
+    filter
+        Restrict initial traversal to this kind of node
     """
     args = reversed(node) if isinstance(node, Iterable) else [node]
     todo = deque(arg for arg in args if isinstance(arg, filter))

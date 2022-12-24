@@ -84,18 +84,7 @@ class TimeContextRelation(enum.Enum):
 def compare_timecontext(
     left_context: TimeContext, right_context: TimeContext
 ) -> TimeContextRelation:
-    """Compare two timecontext and return the relationship between two time
-    context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
-
-    Parameters
-    ----------
-    left_context: TimeContext
-    right_context: TimeContext
-
-    Returns
-    -------
-    result : TimeContextRelation
-    """
+    """Compare two time contexts and return the relationship between them."""
     left_begin, left_end = left_context
     right_begin, right_end = right_context
     if right_begin <= left_begin and right_end >= left_end:
@@ -163,15 +152,6 @@ def construct_time_context_aware_series(
     time column from the parent Dataframe `frame`.
     See `trim_window_result` in execution/window.py for
     trimming implementation.
-
-    Parameters
-    ----------
-    series: pd.Series, the result series of an udf execution
-    frame: pd.DataFrame, the parent Dataframe of `series`
-
-    Returns
-    -------
-    pd.Series
 
     Examples
     --------

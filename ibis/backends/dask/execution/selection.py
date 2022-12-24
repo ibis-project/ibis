@@ -44,22 +44,8 @@ def compute_projection(
 ):
     """Compute a projection.
 
-    Parameters
-    ----------
-    node : Union[ops.Scalar, ops.Column, ops.TableNode]
-    parent : ops.Selection
-    data : pd.DataFrame
-    scope : Scope
-    timecontext:Optional[TimeContext]
-
-    Returns
-    -------
-    value : scalar, pd.Series, pd.DataFrame
-
-    Notes
-    -----
-    :class:`~ibis.expr.types.Scalar` instances occur when a specific column
-    projection is a window operation.
+    `ibis.expr.types.Scalar` instances occur when a specific column projection
+    is a window operation.
     """
     if isinstance(node, ops.TableNode):
         if node == parent.table:
@@ -244,24 +230,8 @@ def _compute_predicates(
 ):
     """Compute the predicates for a table operation.
 
-    Parameters
-    ----------
-    table_op : TableNode
-    predicates : List[ir.Column]
-    data : pd.DataFrame
-    scope : Scope
-    timecontext: Optional[TimeContext]
-    kwargs : dict
-
-    Returns
-    -------
-    computed_predicate : pd.Series[bool]
-
-    Notes
-    -----
-    This handles the cases where the predicates are computed columns, in
-    addition to the simple case of named columns coming directly from the input
-    table.
+    This handles the cases where `predicates` are computed columns, in addition
+    to the simple case of named columns coming directly from the input table.
     """
     for predicate in predicates:
         # Map each root table of the predicate to the data so that we compute

@@ -253,6 +253,10 @@ class Backend(BaseSQLBackend):
             | `'GSSAPI'` | Kerberos-secured clusters      |
         kerberos_service_name
             Specify a particular `impalad` service principal.
+        pool_size
+            Size of the connection pool. Typically this is not necessary to configure.
+        hdfs_client
+            An existing HDFS client.
 
         Examples
         --------
@@ -714,6 +718,8 @@ class Backend(BaseSQLBackend):
             Database to create the table in
         delimiter
             Character used to delimit columns
+        na_rep
+            Character used to represent NULL values
         escapechar
             Character used to escape special characters
         lineterminator

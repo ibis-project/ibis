@@ -108,7 +108,7 @@ from __future__ import annotations
 import datetime
 import functools
 import numbers
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -173,32 +173,32 @@ ibis.util.consume(
 
 
 def execute_with_scope(
-    node,
+    node: ops.Node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
+    aggcontext: agg_ctx.AggregationContext | None = None,
     clients=None,
-    **kwargs,
+    **kwargs: Any,
 ):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
     ----------
-    node : ibis.expr.operations.Node
+    node
         The operation node to execute.
-    scope : Scope
-        A Scope class, with dictionary mapping
-        :class:`~ibis.expr.operations.Node` subclass instances to concrete
-        data such as a pandas DataFrame.
-    timecontext : Optional[TimeContext]
+    scope
+        A Scope class, with dictionary mapping `ibis.expr.operations.Node`
+        subclass instances to concrete data such as a pandas DataFrame.
+    timecontext
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/backends/pandas/execution/timecontext.py) for
         detailed usage for this time context.
-    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
-
-    Returns
-    -------
-    result : scalar, pd.Series, pd.DataFrame
+    aggcontext
+        Aggregation context
+    clients
+        Iterable of clients
+    kwargs
+        Keyword arguments
     """
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
@@ -245,22 +245,12 @@ def execute_until_in_scope(
     node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
-    clients=None,
-    post_execute_=None,
-    **kwargs,
+    aggcontext: agg_ctx.AggregationContext = None,
+    clients: Iterable | None = None,
+    post_execute_: Callable | None = None,
+    **kwargs: Any,
 ) -> Scope:
-    """Execute until our op is in `scope`.
-
-    Parameters
-    ----------
-    node : ibis.expr.operations.Node
-    scope : Scope
-    timecontext : Optional[TimeContext]
-    aggcontext : Optional[AggregationContext]
-    clients : List[ibis.backends.base.BaseBackend]
-    kwargs : Mapping
-    """
+    """Execute until our op is in `scope`."""
     # these should never be None
     assert aggcontext is not None, 'aggcontext is None'
     assert clients is not None, 'clients is None'
@@ -381,13 +371,13 @@ execute = Dispatcher('execute')
 @execute.register(ops.Node)
 @trace
 def main_execute(
-    node,
-    params=None,
-    scope=None,
+    node: ops.Node,
+    params: Mapping[ops.Node, Any] | None = None,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
-    cache=None,
-    **kwargs,
+    aggcontext: agg_ctx.AggregationContext = None,
+    cache: Mapping[ops.Node, Any] | None = None,
+    **kwargs: Any,
 ):
     """Execute an expression against data that are bound to it. If no data are
     bound, raise an Exception.
@@ -406,7 +396,9 @@ def main_execute(
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
         column.
-    kwargs : Dict[str, object]
+    cache
+        Mapping for storing computation results.
+    kwargs
         Additional arguments that can potentially be used by individual node
         execution
 

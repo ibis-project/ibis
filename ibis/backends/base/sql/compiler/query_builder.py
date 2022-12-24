@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Iterable
 
 import toolz
 
@@ -442,15 +443,18 @@ class Difference(SetOp):
     _keyword = "EXCEPT"
 
 
-def flatten_set_op(op):
+def flatten_set_op(op) -> Iterable[ops.Table | bool]:
     """Extract all union queries from `table`.
 
     Parameters
     ----------
-    table : ops.TableNode
+    op
+        Set operation to flatten
+
     Returns
     -------
-    Iterable[Union[Table, bool]].
+    Iterable[Table | bool]
+        Iterable of tables and `bool`s indicating `distinct`.
     """
 
     if isinstance(op, ops.SetOp):
@@ -470,10 +474,13 @@ def flatten(op: ops.TableNode):
 
     Parameters
     ----------
-    table : Table
+    op
+        Table operation to flatten
+
     Returns
     -------
-    Iterable[Union[Table]].
+    Iterable[Table | bool]
+        Iterable of tables and `bool`s indicating `distinct`.
     """
     return list(toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right)))
 

@@ -332,14 +332,14 @@ class Table(Expr, JupyterMixin):
         """
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, *tables: Table, distinct: bool = True, **kwargs) -> Table:
+    def difference(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        *tables
+        tables
             One or more table expressions
         distinct
             Only diff distinct rows not occurring in the calling table
@@ -608,7 +608,7 @@ class Table(Expr, JupyterMixin):
         *exprs: ir.Value | str | Iterable[ir.Value | str],
         **named_exprs: ir.Value | str,
     ) -> Table:
-        """Compute a new table expression using `exprs`.
+        """Compute a new table expression using `exprs` and `named_exprs`.
 
         Passing an aggregate function to this method will broadcast the
         aggregate's value over the number of rows in the table and
@@ -624,6 +624,8 @@ class Table(Expr, JupyterMixin):
         exprs
             Column expression, string, or list of column expressions and
             strings.
+        named_exprs
+            Column expressions
 
         Returns
         -------
