@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.udf.vectorized import analytic, reduction
 
 
@@ -779,3 +780,19 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         .rename("lagged_value")
     )
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["clickhouse"], reason="clickhouse returns incorrect results")
+def test_mutate_window_filter(backend, alltypes, df):
+    t = alltypes
+    win = ibis.window(order_by=[t.id])
+    expr = (
+        t.mutate(next_int=_.int_col.lead().over(win))
+        .filter(_.int_col == 1)
+        .select("int_col", "next_int")
+        .limit(3)
+    )
+    res = expr.execute()
+    sol = pd.DataFrame({"int_col": [1, 1, 1], "next_int": [2, 2, 2]})
+    backend.assert_frame_equal(res, sol, check_dtype=False)
