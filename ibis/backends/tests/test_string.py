@@ -24,7 +24,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.contains('6'),
             lambda t: t.string_col.str.contains('6'),
             id='contains',
-            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "mssql"]),
         ),
         param(
             lambda t: t.string_col.like('6%'),

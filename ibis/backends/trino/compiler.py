@@ -38,6 +38,11 @@ def _no_op(expr):
     return expr
 
 
+@rewrites(ops.StringContains)
+def _rewrite_string_contains(op):
+    return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
+
+
 class TrinoSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = False
     translator_class = TrinoSQLExprTranslator
