@@ -285,9 +285,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(
-                ["bigquery", "clickhouse", "duckdb", "mssql", "trino"]
-            ),
+            marks=pytest.mark.notimpl(["bigquery", "clickhouse", "duckdb", "mssql"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),

@@ -51,6 +51,13 @@ def _array_column(t, op):
     return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
 
 
+def _capitalize(t, op):
+    sa_arg = t.translate(op.arg)
+    return sa.func.concat(
+        sa.func.upper(sa.func.substring(sa_arg, 1, 2)), sa.func.substring(sa_arg, 2)
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -85,6 +92,7 @@ operation_registry.update(
         ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
         ops.Translate: fixed_arity(sa.func.translate, 3),
+        ops.Capitalize: _capitalize,
         ops.Repeat: fixed_arity(
             lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
         ),
