@@ -51,6 +51,19 @@ def _array_column(t, op):
     return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
 
 
+def _day_of_week_index(t, op):
+    sa_arg = t.translate(op.arg)
+
+    return sa.cast(
+        sa.cast(sa.func.day_of_week(sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+    )
+
+
+def _day_of_week_name(t, op):
+    sa_arg = t.translate(op.arg)
+    return sa.func.date_format(sa_arg, "%W")
+
+
 def _capitalize(t, op):
     sa_arg = t.translate(op.arg)
     return sa.func.concat(
@@ -99,6 +112,8 @@ operation_registry.update(
         ops.ArrayColumn: _array_column,
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
+        ops.DayOfWeekIndex: _day_of_week_index,
+        ops.DayOfWeekName: _day_of_week_name,
         ops.Translate: fixed_arity(sa.func.translate, 3),
         ops.Capitalize: _capitalize,
         ops.StrRight: _string_right,
