@@ -114,6 +114,7 @@ operation_registry.update(
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.DayOfWeekName: _day_of_week_name,
+        ops.ExtractEpochSeconds: unary(sa.func.to_unixtime),
         ops.Translate: fixed_arity(sa.func.translate, 3),
         ops.Capitalize: _capitalize,
         ops.StrRight: _string_right,
