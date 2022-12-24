@@ -154,13 +154,13 @@ PANDAS_UNITS = {
         param(
             'ms',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
+                ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"]
             ),
         ),
         param(
             'us',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
+                ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"]
             ),
         ),
         param(
@@ -177,13 +177,14 @@ PANDAS_UNITS = {
                     "sqlite",
                     "snowflake",
                     "polars",
+                    "trino",
                 ]
             ),
         ),
     ],
 )
 @pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name('tmp')
 
@@ -215,7 +216,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name('tmp')
 
