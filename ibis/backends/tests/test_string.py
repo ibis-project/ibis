@@ -360,7 +360,6 @@ def test_string_col_is_unicode(alltypes, df):
                     "sqlite",
                     "snowflake",
                     "mssql",
-                    "trino",
                 ]
             ),
         ),

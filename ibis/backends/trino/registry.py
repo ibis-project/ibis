@@ -101,6 +101,7 @@ operation_registry.update(
         ops.Translate: fixed_arity(sa.func.translate, 3),
         ops.Capitalize: _capitalize,
         ops.StrRight: _string_right,
+        ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Repeat: fixed_arity(
             lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
         ),

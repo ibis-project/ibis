@@ -165,7 +165,17 @@ def test_scalar_param(alltypes, df, value, dtype, col):
 @pytest.mark.parametrize(
     ("value", "dtype"),
     [
-        param("2009-01-20", "date", id="string_date"),
+        param(
+            "2009-01-20",
+            "date",
+            id="string_date",
+            marks=[
+                pytest.mark.broken(
+                    ["trino"],
+                    reason="generates incorrect SQL for date string values",
+                )
+            ],
+        ),
         param(datetime.date(2009, 1, 20), "date", id="date_date"),
         param(datetime.datetime(2009, 1, 20), "date", id="datetime_date"),
     ],
@@ -181,7 +191,6 @@ def test_scalar_param(alltypes, df, value, dtype, col):
         "impala",
         "pyspark",
         "mssql",
-        "trino",
     ]
 )
 def test_scalar_param_date(backend, alltypes, value, dtype):
