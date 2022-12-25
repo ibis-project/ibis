@@ -1,11 +1,12 @@
 """Tests for JSON operations."""
 
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 @pytest.mark.notyet(["clickhouse"], reason="upstream is broken")
 @pytest.mark.never(["impala"], reason="doesn't support JSON and never will")
 @pytest.mark.parametrize(
@@ -33,7 +34,7 @@ from pytest import param
         ),
     ],
 )
-def test_json_getitem(backend, json_t, expr_fn, expected):
+def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
     result = expr.execute()
-    backend.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected)

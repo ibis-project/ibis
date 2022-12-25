@@ -19,7 +19,7 @@ from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
-from ibis.backends.tests.data import non_null_array_types, struct_types, win
+from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
 
 DATASET_ID = "ibis_gbq_testing"
 DEFAULT_PROJECT_ID = "ibis-gbq"
@@ -73,7 +73,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_floating_modulus = False
     returned_timestamp_unit = "us"
     supports_structs = True
-    supports_json = False
+    supports_json = True
     check_names = False
 
     @staticmethod
@@ -237,6 +237,22 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                         schema=ibis_schema_to_bq_schema(
                             dict(g="string", x="int64", y="int64")
                         ),
+                    ),
+                )
+            )
+
+            futures.append(
+                e.submit(
+                    make_job,
+                    client.load_table_from_file,
+                    io.StringIO(
+                        "\n".join(f"{{\"js\": {row}}}" for row in json_types.js)
+                    ),
+                    bq.TableReference(testing_dataset, "json_t"),
+                    job_config=bq.LoadJobConfig(
+                        write_disposition=write_disposition,
+                        schema=ibis_schema_to_bq_schema(dict(js="json")),
+                        source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
                     ),
                 )
             )
