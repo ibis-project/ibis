@@ -320,7 +320,7 @@ def to_rich_table(table, console_width=None):
     else:
         add_row = rich_table.add_row
 
-    if formatted_dtypes:
+    if ibis.options.repr.interactive.show_types:
         add_row(
             *(Align(s, align="left") for s in formatted_dtypes),
             end_section=True,

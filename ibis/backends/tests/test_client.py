@@ -804,6 +804,22 @@ def test_repr(alltypes, interactive):
         ibis.options.interactive = old
 
 
+@pytest.mark.parametrize("show_types", [True, False])
+def test_interactive_repr_show_types(alltypes, show_types):
+    expr = alltypes.select("id")
+    old = ibis.options.interactive
+    ibis.options.interactive = True
+    ibis.options.repr.interactive.show_types = show_types
+    try:
+        s = repr(expr)
+        if show_types:
+            assert "int" in s
+        else:
+            assert "int" not in s
+    finally:
+        ibis.options.interactive = old
+
+
 @pytest.mark.parametrize("expr_type", ["table", "column"])
 @pytest.mark.parametrize("interactive", [True, False])
 def test_repr_mimebundle(alltypes, interactive, expr_type):
