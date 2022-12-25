@@ -680,6 +680,7 @@ OPERATION_REGISTRY = {
     ops.E: lambda *_: "EXP(1)",
     ops.RandomScalar: fixed_arity("RAND", 0),
     ops.NthValue: _nth_value,
+    ops.JSONGetItem: lambda t, op: f"{t.translate(op.arg)}[{t.translate(op.index)}]",
 }
 
 _invalid_operations = {

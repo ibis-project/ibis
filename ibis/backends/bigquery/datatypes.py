@@ -114,3 +114,8 @@ def trans_numeric(t, context):
 @ibis_type_to_bigquery_type.register(dt.Decimal, UDFContext)
 def trans_numeric_udf(t, context):
     raise TypeError("Decimal types are not supported in BigQuery UDFs")
+
+
+@ibis_type_to_bigquery_type.register(dt.JSON, TypeTranslationContext)
+def trans_json(t, context):
+    return "JSON"
