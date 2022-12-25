@@ -46,6 +46,18 @@ def test_array_scalar(con):
     assert np.array_equal(result, expected)
 
 
+@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
+def test_array_repeat(con):
+    expr = ibis.array([1.0, 2.0]) * 2
+
+    result = con.execute(expr.name("tmp"))
+    expected = np.array([1.0, 2.0, 1.0, 2.0])
+
+    # This does not check whether `result` is an np.array or a list,
+    # because it varies across backends and backend configurations
+    assert np.array_equal(result, expected)
+
+
 # Issues #2370
 @pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
 def test_array_concat(con):
