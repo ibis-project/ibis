@@ -325,9 +325,7 @@ def _array_repeat(t, op):
     arg = t.translate(op.arg)
     times = t.translate(op.times)
 
-    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
-    # expression to workaround this.
-    array = sa.column(arg.name, type_=arg.type)
+    array = sa.sql.elements.Grouping(arg) if isinstance(op.arg, ops.Literal) else arg
 
     # We still need to prefix the table name to the column name in the final
     # query, so make sure the column knows its origin
