@@ -559,9 +559,7 @@ def test_reduction_ops(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id='corr_pop',
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
-                ),
+                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -610,9 +608,7 @@ def test_reduction_ops(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id='corr_pop_bool',
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
-                ),
+                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),

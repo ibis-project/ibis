@@ -380,32 +380,36 @@ def compiles_approx(translator, op):
     return f"APPROX_QUANTILES({translator.translate(arg)}, 2)[OFFSET(1)]"
 
 
-def compiles_covar(translator, op):
-    left = op.left
-    right = op.right
-    where = op.where
-    how = op.how
+def compiles_covar_corr(func):
+    def translate(translator, op):
+        left = op.left
+        right = op.right
 
-    if op.how == "sample":
-        how = "SAMP"
-    elif op.how == "pop":
-        how = "POP"
-    else:
-        raise ValueError(f"Covariance with how={how!r} is not supported.")
+        if (where := op.where) is not None:
+            left = ops.Where(where, left, None)
+            right = ops.Where(where, right, None)
 
-    if where is not None:
-        left = ops.Where(where, left, ibis.NA)
-        right = ops.Where(where, right, ibis.NA)
+        left = translator.translate(
+            ops.Cast(left, dt.int64) if left.output_dtype.is_boolean() else left
+        )
+        right = translator.translate(
+            ops.Cast(right, dt.int64) if right.output_dtype.is_boolean() else right
+        )
+        return f"{func}({left}, {right})"
 
-    left = translator.translate(
-        ops.Cast(left, dt.int64) if isinstance(left.output_dtype, dt.Boolean) else left
-    )
-    right = translator.translate(
-        ops.Cast(right, dt.int64)
-        if isinstance(right.output_dtype, dt.Boolean)
-        else right
-    )
-    return f"COVAR_{how}({left}, {right})"
+    return translate
+
+
+def _covar(translator, op):
+    how = op.how[:4].upper()
+    assert how in ("POP", "SAMP"), 'how not in ("POP", "SAMP")'
+    return compiles_covar_corr(f"COVAR_{how}")(translator, op)
+
+
+def _corr(translator, op):
+    if (how := op.how) == "sample":
+        raise ValueError(f"Correlation with how={how!r} is not supported.")
+    return compiles_covar_corr("CORR")(translator, op)
 
 
 def bigquery_compile_any(translator, op):
@@ -474,7 +478,8 @@ OPERATION_REGISTRY = {
     ops.NotAll: bigquery_compile_notall,
     # Math
     ops.CMSMedian: compiles_approx,
-    ops.Covariance: compiles_covar,
+    ops.Covariance: _covar,
+    ops.Correlation: _corr,
     ops.Divide: bigquery_compiles_divide,
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
