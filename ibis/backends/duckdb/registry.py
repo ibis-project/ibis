@@ -188,6 +188,14 @@ operation_registry.update(
     {
         ops.ArrayColumn: _array_column,
         ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
+        ops.ArrayRepeat: fixed_arity(
+            lambda arg, times: sa.func.flatten(
+                sa.func.array(
+                    sa.select(arg).select_from(sa.func.range(times)).scalar_subquery()
+                )
+            ),
+            2,
+        ),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
