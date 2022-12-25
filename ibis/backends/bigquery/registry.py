@@ -477,6 +477,17 @@ def _arg_min_max(sort_dir: Literal["ASC", "DESC"]):
     return translate
 
 
+def _array_repeat(t, op):
+    start = step = 1
+    times = t.translate(op.times)
+    arg = t.translate(op.arg)
+    array_length = f"ARRAY_LENGTH({arg})"
+    stop = f"GREATEST({times}, 0) * {array_length}"
+    idx = f"COALESCE(NULLIF(MOD(i, {array_length}), 0), {array_length})"
+    series = f"GENERATE_ARRAY({start}, {stop}, {step})"
+    return f"ARRAY(SELECT {arg}[SAFE_ORDINAL({idx})] FROM UNNEST({series}) AS i)"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -546,12 +557,10 @@ OPERATION_REGISTRY = {
     ops.ArrayConcat: _array_concat,
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
+    ops.ArrayRepeat: _array_repeat,
     ops.HLLCardinality: reduction("APPROX_COUNT_DISTINCT"),
     ops.Log: _log,
     ops.Log2: _log2,
-    # BigQuery doesn't have these operations built in.
-    # ops.ArrayRepeat: _array_repeat,
-    # ops.ArraySlice: _array_slice,
     ops.Arbitrary: _arbitrary,
     # Geospatial Columnar
     ops.GeoUnaryUnion: unary("ST_UNION_AGG"),
