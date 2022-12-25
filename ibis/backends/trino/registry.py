@@ -146,5 +146,8 @@ operation_registry.update(
         ),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
+        ops.ArrayRepeat: fixed_arity(
+            lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
+        ),
     }
 )
