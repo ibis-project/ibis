@@ -60,8 +60,8 @@ from ibis.backends.pandas.execution.generic import (
     execute_node_ifnull_series,
     execute_node_not_contains_series_nodes,
     execute_node_not_contains_series_sequence,
+    execute_node_nullif_scalar_series,
     execute_node_nullif_series,
-    execute_node_nullif_series_scalar,
     execute_node_self_reference_dataframe,
     execute_null_if_zero_series,
     execute_searched_case,
@@ -151,8 +151,8 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, dd.Series), execute_node_ifnull_series),
     ],
     ops.NullIf: [
-        ((dd.Series, dd.Series), execute_node_nullif_series),
-        ((dd.Series, simple_types), execute_node_nullif_series_scalar),
+        ((dd.Series, (dd.Series, *simple_types)), execute_node_nullif_series),
+        ((simple_types, dd.Series), execute_node_nullif_scalar_series),
     ],
     ops.Distinct: [((dd.DataFrame,), execute_distinct_dataframe)],
     ops.ZeroIfNull: [
@@ -446,8 +446,7 @@ def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
 
 @execute_node.register(ops.NullIf, simple_types, dd.Series)
 def execute_node_nullif_scalar_series(op, value, series, **kwargs):
-    # TODO - not preserving the index
-    return dd.from_array(da.where(series.eq(value).values, np.nan, value))
+    return series.where(series != value)
 
 
 def wrap_case_result(raw: np.ndarray, expr: ir.Value):
