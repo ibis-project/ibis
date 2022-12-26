@@ -166,6 +166,7 @@ services:
       - trino
     volumes:
       - $PWD/docker/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties:ro
+      - $PWD/docker/trino/catalog/memory.properties:/etc/trino/catalog/memory.properties:ro
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
 networks:

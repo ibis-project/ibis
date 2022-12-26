@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "pyspark", "trino"]),
+    pytest.mark.notimpl(["datafusion", "pyspark"]),
 ]
 
 
@@ -18,10 +18,15 @@ pytestmark = [
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
-    result = expr.execute()
-    expected = struct_df.abc.map(
-        lambda value: value[field] if isinstance(value, dict) else value
-    ).rename(field)
+    result = expr.execute().sort_values().reset_index(drop=True)
+    expected = (
+        struct_df.abc.map(
+            lambda value: value[field] if isinstance(value, dict) else value
+        )
+        .rename(field)
+        .sort_values()
+        .reset_index(drop=True)
+    )
     backend.assert_series_equal(result, expected)
 
 
@@ -29,7 +34,9 @@ def test_single_field(backend, struct, struct_df, field):
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
-    tm.assert_series_equal(result, expected)
+    assert set(row if pd.isna(row) else tuple(row.items()) for row in result) == set(
+        row if pd.isna(row) else tuple(row.items()) for row in expected
+    )
 
 
 _SIMPLE_DICT = dict(a=1, b="2", c=3.0)

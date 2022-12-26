@@ -144,13 +144,12 @@ def test_rename_table(con, temp_table, new_schema):
 
 @mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
+@mark.notyet(
+    ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
-        [
-            ('foo', 'int64'),
-            ('bar', ibis.expr.datatypes.int64(nullable=False)),
-            ('baz', 'boolean'),
-        ]
+        [('foo', 'int64'), ('bar', dt.int64(nullable=False)), ('baz', 'boolean')]
     )
 
     con.create_table(temp_table, schema=sch)
