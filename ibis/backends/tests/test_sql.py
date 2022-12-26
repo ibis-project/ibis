@@ -59,7 +59,7 @@ no_structs = mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["bigquery", "postgres", "snowflake", "mssql", "trino"],
+    ["bigquery", "postgres", "snowflake", "mssql"],
     reason="struct literals are not yet implemented",
 )
 not_sql = mark.never(

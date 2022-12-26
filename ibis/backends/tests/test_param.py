@@ -70,15 +70,7 @@ def test_scalar_param_array(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "impala",
-        "postgres",
-        "pyspark",
-        "snowflake",
-        "trino",
-    ]
+    ["clickhouse", "datafusion", "impala", "postgres", "pyspark", "snowflake"]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
