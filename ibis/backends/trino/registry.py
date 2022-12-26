@@ -3,6 +3,7 @@ import sqlalchemy as sa
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
+from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     reduction,
@@ -14,6 +15,12 @@ from ibis.backends.postgres.registry import _corr, _covar
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
+
+
+def _literal(t, op):
+    if (dtype := op.output_dtype).is_struct():
+        return sa.cast(sa.func.row(*op.value.values()), to_sqla_type(dtype))
+    return _alchemy_literal(t, op)
 
 
 def _arbitrary(t, op):
@@ -144,6 +151,16 @@ def _timestamp_from_unix(t, op):
         raise ValueError(f"{unit!r} unit is not supported!")
 
 
+def _struct_field(t, op):
+    return t.translate(op.arg).op(".")(sa.text(op.field))
+
+
+def _struct_column(t, op):
+    return sa.cast(
+        sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -201,5 +218,8 @@ operation_registry.update(
         ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.StructField: _struct_field,
+        ops.StructColumn: _struct_column,
+        ops.Literal: _literal,
     }
 )

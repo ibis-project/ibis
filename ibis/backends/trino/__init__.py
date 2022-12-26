@@ -49,6 +49,7 @@ class Backend(BaseAlchemyBackend):
             port=port,
             database=database,
         )
+        connect_args.setdefault("experimental_python_types", True)
         super().do_connect(sa.create_engine(url, connect_args=connect_args))
         self._meta = sa.MetaData(bind=self.con, schema=schema)
 

@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
-from trino.sqlalchemy.datatype import JSON
-from trino.sqlalchemy.dialect import TrinoDialect
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.trino.registry import operation_registry
@@ -48,8 +45,3 @@ def _rewrite_string_contains(op):
 class TrinoSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = False
     translator_class = TrinoSQLExprTranslator
-
-
-@dt.dtype.register(TrinoDialect, JSON)
-def sa_jsonb(_, satype, nullable=True):
-    return dt.JSON(nullable=nullable)
