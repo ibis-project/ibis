@@ -388,11 +388,11 @@ def test_null_if_zero(t, df, column):
             id='series_series',
         ),
         pytest.param(
-            lambda t: ibis.literal('a'),
+            lambda _: ibis.literal('a'),
             lambda t: t.dup_strings,
-            lambda df: dd.from_array(
-                da.where(df.dup_strings.eq('a').values, np.nan, 'a')
-            ),
+            lambda _: dd.from_array(
+                np.array(["d", np.nan, "d"], dtype="object")
+            ).rename("dup_strings"),
             tm.assert_series_equal,
             id='literal_series',
         ),

@@ -289,9 +289,7 @@ def test_null_if_zero(t, df, column):
         pytest.param(
             lambda t: ibis.literal('a'),
             lambda t: t.dup_strings,
-            lambda df: pd.Series(
-                np.where(df.dup_strings == 'a', np.nan, 'a'), index=df.index
-            ),
+            lambda _: pd.Series(["d", np.nan, "d"], name="dup_strings"),
             tm.assert_series_equal,
             id='literal_series',
         ),
