@@ -124,6 +124,10 @@ operation_registry.update(
         ops.Tan: unary(sa.func.tan),
         ops.Round: _round,
         ops.RandomScalar: fixed_arity(sa.func.RAND, 0),
+        ops.Ln: fixed_arity(sa.func.log, 1),
+        ops.Log: fixed_arity(lambda x, p: sa.func.log(x, p), 2),
+        ops.Log2: fixed_arity(lambda x: sa.func.log(x, 2), 1),
+        ops.Log10: fixed_arity(lambda x: sa.func.log(x, 10), 1),
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
         ops.ExtractYear: _extract('year'),
