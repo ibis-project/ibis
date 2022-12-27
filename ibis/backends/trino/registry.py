@@ -179,5 +179,6 @@ operation_registry.update(
         ops.TimeFromHMS: _time_from_hms,
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.Strftime: fixed_arity(sa.func.date_format, 2),
+        ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
     }
 )

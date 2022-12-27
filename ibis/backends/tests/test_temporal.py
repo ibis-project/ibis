@@ -608,7 +608,7 @@ def test_integer_to_timestamp(backend, con, unit):
             'MM/dd/yy',
             id="pyspark_format",
             marks=pytest.mark.never(
-                ["bigquery", "mysql", "polars", "duckdb"],
+                ["bigquery", "mysql", "polars", "duckdb", "trino"],
                 reason="datetime formatting style not supported",
             ),
         ),
@@ -625,7 +625,6 @@ def test_integer_to_timestamp(backend, con, unit):
         'datafusion',
         'snowflake',
         'mssql',
-        'trino',
     ]
 )
 def test_string_to_timestamp(alltypes, fmt):
