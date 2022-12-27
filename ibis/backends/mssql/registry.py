@@ -74,6 +74,15 @@ def _extract(fmt):
     return translator
 
 
+def _round(t, op):
+    sa_arg = t.translate(op.arg)
+
+    if op.digits is not None:
+        return sa.func.round(sa_arg, t.translate(op.digits))
+    else:
+        return sa.func.round(sa_arg, 0)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -113,6 +122,7 @@ operation_registry.update(
         ops.Sin: unary(sa.func.sin),
         ops.Sqrt: unary(sa.func.sqrt),
         ops.Tan: unary(sa.func.tan),
+        ops.Round: _round,
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
         ops.ExtractYear: _extract('year'),
