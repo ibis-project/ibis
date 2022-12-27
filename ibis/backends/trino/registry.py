@@ -180,5 +180,6 @@ operation_registry.update(
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.Strftime: fixed_arity(sa.func.date_format, 2),
         ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
+        ops.TimestampNow: fixed_arity(sa.func.now, 0),
     }
 )
