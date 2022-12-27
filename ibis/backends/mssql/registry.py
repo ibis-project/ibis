@@ -142,5 +142,11 @@ operation_registry.update(
         ops.DayOfWeekIndex: fixed_arity(
             lambda x: sa.func.datepart(sa.text('weekday'), x) - 1, 1
         ),
+        ops.ExtractEpochSeconds: fixed_arity(
+            lambda x: sa.cast(
+                sa.func.datediff(sa.text('s'), '1970-01-01 00:00:00', x), sa.BIGINT
+            ),
+            1,
+        ),
     }
 )

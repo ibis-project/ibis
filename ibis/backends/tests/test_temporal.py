@@ -108,7 +108,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name('tmp')
     result = expr.execute()
