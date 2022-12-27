@@ -138,5 +138,6 @@ operation_registry.update(
         ops.ExtractMinute: _extract('minute'),
         ops.ExtractSecond: _extract('second'),
         ops.ExtractMillisecond: _extract('millisecond'),
+        ops.ExtractWeekOfYear: _extract('iso_week'),
     }
 )

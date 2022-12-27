@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Literal
 
 import sqlalchemy as sa
@@ -37,3 +38,13 @@ class Backend(BaseAlchemyBackend):
         )
         self.database_name = alchemy_url.database
         super().do_connect(sa.create_engine(alchemy_url))
+
+    @contextlib.contextmanager
+    def begin(self):
+        with super().begin() as bind:
+            previous_datefirst = bind.execute('SELECT @@DATEFIRST').scalar()
+            bind.execute('SET DATEFIRST 1')
+            try:
+                yield bind
+            finally:
+                bind.execute(f"SET DATEFIRST {previous_datefirst}")
