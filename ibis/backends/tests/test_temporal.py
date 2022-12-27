@@ -120,7 +120,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion", "mssql"])
+@pytest.mark.notimpl(["bigquery", "datafusion"])
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name('tmp')
     result = expr.execute()
