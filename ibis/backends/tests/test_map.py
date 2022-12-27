@@ -16,12 +16,17 @@ pytestmark = [
             "snowflake",
             "polars",
             "mssql",
-            "trino",
         ],
         reason="Not implemented yet",
     ),
     pytest.mark.notyet(["bigquery"], reason="BigQuery doesn't implement map types"),
 ]
+
+
+@pytest.mark.notimpl(["pandas", "dask"])
+def test_map_table(con):
+    table = con.table("map")
+    assert not table.execute().empty
 
 
 def test_literal_map_keys(con):
@@ -34,10 +39,7 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ['1', '2'])
 
 
-@pytest.mark.notimpl(
-    ["snowflake"],
-    reason="snowflake doesn't implement map values",
-)
+@pytest.mark.notimpl(["snowflake"], reason="snowflake doesn't implement map values")
 def test_literal_map_values(con):
     mapping = ibis.literal({'1': 'a', '2': 'b'})
     expr = mapping.values().name('tmp')
@@ -46,6 +48,7 @@ def test_literal_map_values(con):
     assert np.array_equal(result, ['a', 'b'])
 
 
+@pytest.mark.notimpl(["trino"])
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({'a': 1, 'b': 2})
     a = ibis.literal('a')
@@ -123,7 +126,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-def test_map_construction(backend, con, alltypes, df):
+def test_map_construction(con, alltypes, df):
     expr = ibis.map(['a', 'b'], [1, 2])
     result = con.execute(expr.name('tmp'))
     assert result == {'a': 1, 'b': 2}

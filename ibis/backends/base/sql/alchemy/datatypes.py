@@ -32,6 +32,15 @@ class StructType(UserDefinedType):
         return f"STRUCT({pairs})"
 
 
+class MapType(UserDefinedType):
+    def __init__(self, key_type: sa.types.TypeEngine, value_type: sa.types.TypeEngine):
+        self.key_type = sa.types.to_instance(key_type)
+        self.value_type = sa.types.to_instance(value_type)
+
+    def get_col_spec(self, **_):
+        return f"MAP({self.key_type}, {self.value_type})"
+
+
 class UInt64(sa.types.Integer):
     pass
 
@@ -148,6 +157,11 @@ def _(itype, **_):
     return StructType(
         [(name, to_sqla_type(type)) for name, type in itype.pairs.items()]
     )
+
+
+@to_sqla_type.register(dt.Map)
+def _(itype, **_):
+    return MapType(to_sqla_type(itype.key_type), to_sqla_type(itype.value_type))
 
 
 @to_sqla_type.register(dt.GeoSpatial)

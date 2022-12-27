@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
@@ -17,9 +18,18 @@ operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
 
+def _array(t, elements):
+    return t.translate(ibis.array(elements).op())
+
+
 def _literal(t, op):
-    if (dtype := op.output_dtype).is_struct():
-        return sa.cast(sa.func.row(*op.value.values()), to_sqla_type(dtype))
+    value = op.value
+    dtype = op.output_dtype
+
+    if dtype.is_struct():
+        return sa.cast(sa.func.row(*value.values()), to_sqla_type(dtype))
+    elif dtype.is_map():
+        return sa.func.map(_array(t, value.keys()), _array(t, value.values()))
     return _alchemy_literal(t, op)
 
 
@@ -221,5 +231,19 @@ operation_registry.update(
         ops.StructField: _struct_field,
         ops.StructColumn: _struct_column,
         ops.Literal: _literal,
+        ops.MapLength: fixed_arity(sa.func.cardinality, 1),
+        ops.MapGet: fixed_arity(
+            lambda arg, key, default: sa.func.coalesce(
+                sa.func.element_at(arg, key), default
+            ),
+            3,
+        ),
+        ops.MapKeys: fixed_arity(sa.func.map_keys, 1),
+        ops.MapValues: fixed_arity(sa.func.map_values, 1),
+        ops.Map: fixed_arity(sa.func.map, 2),
+        ops.MapMerge: fixed_arity(sa.func.map_concat, 2),
+        ops.MapContains: fixed_arity(
+            lambda arg, key: sa.func.contains(sa.func.map_keys(arg), key), 2
+        ),
     }
 )
