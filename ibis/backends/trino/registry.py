@@ -99,6 +99,16 @@ def _timestamp_truncate(t, op):
     return sa.func.date_trunc(precision, sa_arg)
 
 
+def _date_from_ymd(t, op):
+    ymdstr = sa.func.format(
+        '%04d-%02d-%02d',
+        t.translate(op.year),
+        t.translate(op.month),
+        t.translate(op.day),
+    )
+    return sa.func.from_iso8601_date(ymdstr)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -149,5 +159,6 @@ operation_registry.update(
         ops.ArrayRepeat: fixed_arity(
             lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
         ),
+        ops.DateFromYMD: _date_from_ymd,
     }
 )
