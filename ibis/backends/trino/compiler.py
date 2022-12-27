@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlalchemy as sa
 from trino.sqlalchemy.datatype import JSON
 from trino.sqlalchemy.dialect import TrinoDialect
 
@@ -14,6 +15,7 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = True
+    integer_to_timestamp = sa.func.from_unixtime
     _forbids_frame_clause = (
         *AlchemyExprTranslator._forbids_frame_clause,
         ops.Lead,
