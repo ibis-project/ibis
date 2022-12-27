@@ -128,6 +128,22 @@ def _timestamp_from_ymdhms(t, op):
     return sa.func.from_iso8601_timestamp(timestr)
 
 
+def _timestamp_from_unix(t, op):
+    arg, unit = op.args
+    arg = t.translate(arg)
+
+    if unit == "ms":
+        return sa.func.from_unixtime(arg / 1_000)
+    elif unit == "s":
+        return sa.func.from_unixtime(arg)
+    elif unit == "us":
+        return sa.func.from_unixtime_nanos((arg - arg % 1_000_000) * 1_000)
+    elif unit == "ns":
+        return sa.func.from_unixtime_nanos(arg - (arg % 1_000_000_000))
+    else:
+        raise ValueError(f"{unit!r} unit is not supported!")
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -184,5 +200,6 @@ operation_registry.update(
         ops.Strftime: fixed_arity(sa.func.date_format, 2),
         ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
+        ops.TimestampFromUNIX: _timestamp_from_unix,
     }
 )
