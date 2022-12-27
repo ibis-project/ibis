@@ -82,7 +82,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             lambda x: x.day_of_week.index(),
             1,
             id='day_of_week_index',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda x: x.day_of_week.full_name(),
@@ -686,10 +685,13 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
             id="day_of_week_full_name",
+            marks=[
+                pytest.mark.notimpl(["mssql"]),
+            ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion"])
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):

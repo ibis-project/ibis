@@ -139,5 +139,8 @@ operation_registry.update(
         ops.ExtractSecond: _extract('second'),
         ops.ExtractMillisecond: _extract('millisecond'),
         ops.ExtractWeekOfYear: _extract('iso_week'),
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda x: sa.func.datepart(sa.text('weekday'), x) - 1, 1
+        ),
     }
 )
