@@ -79,6 +79,9 @@ def _string_right(t, op):
 
 
 _truncate_precisions = {
+    # ms unit is not yet officially documented in Trino's public documentation,
+    # but it just works.
+    'ms': 'millisecond',
     's': 'second',
     'm': 'minute',
     'h': 'hour',

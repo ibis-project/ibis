@@ -154,7 +154,7 @@ PANDAS_UNITS = {
         param(
             'ms',
             marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"]
+                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
             ),
         ),
         param(
