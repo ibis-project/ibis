@@ -87,6 +87,14 @@ class TestConf(BackendTest, RoundHalfToEven):
         with con.begin() as c:
             c.execute("DROP TABLE IF EXISTS struct")
             c.execute(f"CREATE TABLE struct AS {' UNION ALL '.join(selects)}")
+            c.execute("DROP TABLE IF EXISTS map")
+            c.execute("CREATE TABLE map (kv MAP<VARCHAR, BIGINT>)")
+            c.execute(
+                "INSERT INTO map VALUES (MAP(ARRAY['a', 'b', 'c'], ARRAY[1, 2, 3]))"
+            )
+            c.execute(
+                "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
+            )
 
     @staticmethod
     def connect(data_directory: Path):

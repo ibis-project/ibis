@@ -105,3 +105,9 @@ INSERT INTO struct VALUES
     (tuple(2.0, NULL, 3)),
     (tuple(NULL, NULL, NULL)),
     (tuple(3.0, 'orange', NULL));
+
+CREATE OR REPLACE TABLE map (kv Map(String, Nullable(Int64))) ENGINE = Memory;
+
+INSERT INTO map VALUES
+    (map('a', 1, 'b', 2, 'c', 3)),
+    (map('d', 4, 'e', 5, 'c', 6));
