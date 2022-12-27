@@ -148,5 +148,13 @@ operation_registry.update(
             ),
             1,
         ),
+        ops.DateFromYMD: fixed_arity(sa.func.datefromparts, 3),
+        ops.TimestampFromYMDHMS: fixed_arity(
+            lambda y, m, d, h, min, s: sa.func.datetimefromparts(y, m, d, h, min, s, 0),
+            6,
+        ),
+        ops.TimeFromHMS: fixed_arity(
+            lambda h, m, s: sa.func.timefromparts(h, m, s, 0), 3
+        ),
     }
 )
