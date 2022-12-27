@@ -119,6 +119,12 @@ def _time_from_hms(t, op):
     return sa.cast(timestr, sa.TIME)
 
 
+def _timestamp_from_ymdhms(t, op):
+    y, mo, d, h, m, s = (t.translate(x) if x is not None else None for x in op.args)
+    timestr = sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
+    return sa.func.from_iso8601_timestamp(timestr)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -171,5 +177,6 @@ operation_registry.update(
         ),
         ops.DateFromYMD: _date_from_ymd,
         ops.TimeFromHMS: _time_from_hms,
+        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
     }
 )

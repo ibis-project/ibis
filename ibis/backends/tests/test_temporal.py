@@ -769,7 +769,6 @@ def test_date_literal(con):
         "pyspark",
         "snowflake",
         "mssql",
-        "trino",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
