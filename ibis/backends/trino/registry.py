@@ -109,6 +109,16 @@ def _date_from_ymd(t, op):
     return sa.func.from_iso8601_date(ymdstr)
 
 
+def _time_from_hms(t, op):
+    timestr = sa.func.format(
+        '%02d:%02d:%02d',
+        t.translate(op.hours),
+        t.translate(op.minutes),
+        t.translate(op.seconds),
+    )
+    return sa.cast(timestr, sa.TIME)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -160,5 +170,6 @@ operation_registry.update(
             lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
         ),
         ops.DateFromYMD: _date_from_ymd,
+        ops.TimeFromHMS: _time_from_hms,
     }
 )
