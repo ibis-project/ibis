@@ -102,7 +102,6 @@ def test_isnan_isinf(
             L(5.5).round(),
             6.0,
             id='round',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             L(5.556).round(2),
