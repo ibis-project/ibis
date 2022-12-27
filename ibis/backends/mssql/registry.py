@@ -123,6 +123,7 @@ operation_registry.update(
         ops.Sqrt: unary(sa.func.sqrt),
         ops.Tan: unary(sa.func.tan),
         ops.Round: _round,
+        ops.RandomScalar: fixed_arity(sa.func.RAND, 0),
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
         ops.ExtractYear: _extract('year'),

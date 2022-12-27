@@ -564,7 +564,7 @@ def test_sa_default_numeric_precision_and_scale(
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars", "mssql"]
+    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars"]
 )
 @pytest.mark.notyet(
     ["clickhouse"],
