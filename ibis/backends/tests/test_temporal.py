@@ -751,7 +751,6 @@ def test_now_from_projection(alltypes):
         "pyspark",
         "snowflake",
         "mssql",
-        "trino",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
@@ -816,7 +815,7 @@ def test_time_literal(con):
         "mssql",
     ]
 )
-@pytest.mark.notyet(["clickhouse", "impala", "trino"])
+@pytest.mark.notyet(["clickhouse", "impala"])
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
