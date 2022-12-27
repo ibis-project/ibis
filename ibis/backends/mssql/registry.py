@@ -83,6 +83,10 @@ def _round(t, op):
         return sa.func.round(sa_arg, 0)
 
 
+def _timestamp_from_unix(x):
+    return sa.func.dateadd(sa.text('s'), x, '1970-01-01 00:00:00')
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -148,6 +152,7 @@ operation_registry.update(
             ),
             1,
         ),
+        ops.TimestampFromUNIX: fixed_arity(_timestamp_from_unix, 1),
         ops.DateFromYMD: fixed_arity(sa.func.datefromparts, 3),
         ops.TimestampFromYMDHMS: fixed_arity(
             lambda y, m, d, h, min, s: sa.func.datetimefromparts(y, m, d, h, min, s, 0),
