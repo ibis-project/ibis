@@ -575,7 +575,7 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql", "trino"]
+    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql"]
 )
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
