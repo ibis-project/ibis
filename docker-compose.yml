@@ -122,7 +122,7 @@ services:
       retries: 3
       test:
         - CMD-SHELL
-        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
+        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
       timeout: 10s
     build:
       context: .
