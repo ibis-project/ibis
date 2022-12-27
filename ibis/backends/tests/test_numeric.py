@@ -140,25 +140,24 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "trino"]),
         ),
         param(
             L(5.556).ln(),
             math.log(5.556),
             id='ln',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             L(5.556).log2(),
             math.log(5.556, 2),
             id='log2',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).radians(),
@@ -311,19 +310,18 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "trino"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
             lambda t: np.log(t.double_col + 1),
             id='ln',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -336,9 +334,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "datafusion", "polars", "mssql", "trino"]
-            ),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "trino"]),
         ),
     ],
 )
