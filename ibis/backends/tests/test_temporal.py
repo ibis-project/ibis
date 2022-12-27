@@ -743,17 +743,7 @@ def test_now_from_projection(alltypes):
     tm.assert_series_equal(ts.dt.year, year_expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "datafusion",
-        "mysql",
-        "dask",
-        "pyspark",
-        "snowflake",
-        "mssql",
-    ]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_date_literal(con):
     expr = ibis.date(2022, 2, 4)
@@ -761,17 +751,7 @@ def test_date_literal(con):
     assert result.strftime('%Y-%m-%d') == '2022-02-04'
 
 
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "datafusion",
-        "mysql",
-        "dask",
-        "pyspark",
-        "snowflake",
-        "mssql",
-    ]
-)
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_timestamp_literal(con):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
@@ -811,7 +791,6 @@ def test_time_literal(con):
         "dask",
         "pyspark",
         "snowflake",
-        "mssql",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
