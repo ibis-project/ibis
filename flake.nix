@@ -81,12 +81,12 @@
         actionlint
         git
         just
-        nix-linter
         nixpkgs-fmt
         pre-commit
         prettier
         shellcheck
         shfmt
+        statix
       ];
 
       mkDevShell = name: env: pkgs.mkShell {
@@ -100,8 +100,9 @@
           # used in the justfile
           jq
           yj
-          # linting
+          # commit linting
           commitlint
+          # link checking
           lychee
           # release automation
           nodejs
