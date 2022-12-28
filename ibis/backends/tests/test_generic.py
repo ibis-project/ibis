@@ -22,13 +22,13 @@ from ibis import literal as L
         param(
             ibis.NA.fillna(5),
             5,
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
             id="na_fillna",
         ),
         param(
             L(5).fillna(10),
             5,
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
             id="non_na_fillna",
         ),
         param(L(5).nullif(5), None, id="nullif_null"),
@@ -54,7 +54,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         param(
             "nan_col",
             _.nan_col.isnan(),
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
             id="nan_col",
         ),
         param(
@@ -94,6 +94,7 @@ def test_isna(backend, alltypes, col, filt):
                     "mysql",
                     "snowflake",
                     "polars",
+                    "trino",
                 ],
                 reason="NaN != NULL for these backends",
             ),
@@ -101,7 +102,7 @@ def test_isna(backend, alltypes, col, filt):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -312,7 +313,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql"])
 @pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -366,7 +367,7 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -381,7 +382,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
