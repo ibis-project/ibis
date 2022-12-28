@@ -313,13 +313,6 @@ def _regex_extract(t, op):
     return sa.case([(does_match, matches[index])], else_=None)
 
 
-def _cardinality(array):
-    return sa.case(
-        [(array.is_(None), None)],
-        else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
-    )
-
-
 def _array_repeat(t, op):
     """Repeat an array."""
     arg = t.translate(op.arg)
@@ -331,7 +324,7 @@ def _array_repeat(t, op):
     # query, so make sure the column knows its origin
     array.table = arg.table
 
-    array_length = _cardinality(array)
+    array_length = sa.func.cardinality(array)
 
     # sequence from 1 to the total number of elements desired in steps of 1.
     # the call to greatest isn't necessary, but it provides clearer intent
@@ -404,36 +397,40 @@ def _mod(t, op):
 
 
 def _neg_idx_to_pos(array, idx):
-    return sa.case(
-        [
-            (array.is_(None), None),
-            (idx < 0, sa.func.array_length(array, 1) + idx),
-        ],
-        else_=idx,
-    )
+    return sa.case([(idx < 0, sa.func.cardinality(array) + idx)], else_=idx)
 
 
-def _array_slice(t, op):
-    arg, start, stop = op.args
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
+def _array_slice(*, index_converter, array_length):
+    def translate(t, op):
+        arg = t.translate(op.arg)
 
-    if stop is None:
-        sa_stop = _cardinality(sa_arg)
-    else:
-        sa_stop = t.translate(stop)
+        arg_length = array_length(arg)
 
-    sa_start = _neg_idx_to_pos(sa_arg, sa_start)
-    sa_stop = _neg_idx_to_pos(sa_arg, sa_stop)
-    return sa_arg[sa_start + 1 : sa_stop]
+        if (start := op.start) is None:
+            start = 0
+        else:
+            start = t.translate(start)
+            start = sa.func.least(arg_length, index_converter(arg, start))
+
+        if (stop := op.stop) is None:
+            stop = arg_length
+        else:
+            stop = index_converter(arg, t.translate(stop))
+
+        return arg[start + 1 : stop]
+
+    return translate
 
 
-def _array_index(t, op):
-    sa_array = t.translate(op.arg)
-    sa_index = t.translate(op.index)
-    if isinstance(op.arg, ops.Literal):
-        sa_array = sa.sql.elements.Grouping(sa_array)
-    return sa_array[_neg_idx_to_pos(sa_array, sa_index) + 1]
+def _array_index(*, index_converter):
+    def translate(t, op):
+        sa_array = t.translate(op.arg)
+        sa_index = t.translate(op.index)
+        if isinstance(op.arg, ops.Literal):
+            sa_array = sa.sql.elements.Grouping(sa_array)
+        return sa_array[index_converter(sa_array, sa_index) + 1]
+
+    return translate
 
 
 def _literal(_, op):
@@ -583,11 +580,14 @@ operation_registry.update(
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
-        ops.ArrayLength: unary(_cardinality),
+        ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.ArrayColumn: _array_column,
-        ops.ArraySlice: _array_slice,
-        ops.ArrayIndex: _array_index,
+        ops.ArraySlice: _array_slice(
+            index_converter=_neg_idx_to_pos,
+            array_length=sa.func.cardinality,
+        ),
+        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
         ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),

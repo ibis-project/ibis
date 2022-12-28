@@ -12,7 +12,12 @@ from ibis.backends.base.sql.alchemy.registry import (
     geospatial_functions,
     reduction,
 )
-from ibis.backends.postgres.registry import fixed_arity, operation_registry
+from ibis.backends.postgres.registry import (
+    _array_index,
+    _array_slice,
+    fixed_arity,
+    operation_registry,
+)
 
 operation_registry = {
     op: operation_registry[op]
@@ -108,6 +113,12 @@ def _array_column(t, op):
     return sa.cast(sa.func.list_value(*map(t.translate, arg)), sqla_type)
 
 
+def _neg_idx_to_pos(array, idx):
+    if_ = getattr(sa.func, "if")
+    arg_length = sa.func.array_length(array)
+    return if_(idx < 0, arg_length + sa.func.greatest(idx, -arg_length), idx)
+
+
 def _struct_field(t, op):
     return sa.func.struct_extract(
         t.translate(op.arg),
@@ -196,6 +207,12 @@ operation_registry.update(
             ),
             2,
         ),
+        ops.ArrayLength: unary(sa.func.array_length),
+        ops.ArraySlice: _array_slice(
+            index_converter=_neg_idx_to_pos,
+            array_length=sa.func.array_length,
+        ),
+        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
