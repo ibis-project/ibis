@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
@@ -91,6 +92,29 @@ def _timestamp_from_unix(x, unit='s'):
     raise ValueError(f"{unit!r} unit is not supported!")
 
 
+_truncate_precisions = {
+    'us': 'microsecond',
+    'ms': 'millisecond',
+    's': 'second',
+    'm': 'minute',
+    'h': 'hour',
+    'D': 'day',
+    'W': 'week',
+    'M': 'month',
+    'Q': 'quarter',
+    'Y': 'year',
+}
+
+
+def _timestamp_truncate(t, op):
+    arg = t.translate(op.arg)
+    unit = op.unit
+    if unit not in _truncate_precisions:
+        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
+
+    return sa.func.datetrunc(sa.text(_truncate_precisions[unit]), arg)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -167,5 +191,7 @@ operation_registry.update(
         ops.TimeFromHMS: fixed_arity(
             lambda h, m, s: sa.func.timefromparts(h, m, s, 0, 0), 3
         ),
+        ops.TimestampTruncate: _timestamp_truncate,
+        ops.DateTruncate: _timestamp_truncate,
     }
 )
