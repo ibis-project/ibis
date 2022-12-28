@@ -767,7 +767,6 @@ def test_timestamp_literal(con):
         "dask",
         "pyspark",
         "polars",
-        "mssql",
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
