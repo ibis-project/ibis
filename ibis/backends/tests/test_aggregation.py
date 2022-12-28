@@ -691,7 +691,6 @@ def test_corr_cov(
         "sqlite",
         "snowflake",
         "mssql",
-        "trino",
     ]
 )
 def test_approx_median(alltypes):

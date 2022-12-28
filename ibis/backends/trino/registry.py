@@ -166,6 +166,7 @@ operation_registry.update(
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
         ops.ApproxCountDistinct: reduction(sa.func.approx_distinct),
+        ops.ApproxMedian: reduction(lambda arg: sa.func.approx_percentile(arg, 0.5)),
         ops.RegexExtract: fixed_arity(sa.func.regexp_extract, 3),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.RegexSearch: fixed_arity(
