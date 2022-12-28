@@ -51,7 +51,7 @@ except ImportError:
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql"])
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -140,7 +140,7 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             L(5.556).ln(),
@@ -151,13 +151,11 @@ def test_isnan_isinf(
             L(5.556).log2(),
             math.log(5.556, 2),
             id='log2',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).radians(),
@@ -300,7 +298,7 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -311,7 +309,6 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -324,7 +321,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "trino"]),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
         ),
     ],
 )
@@ -450,13 +447,11 @@ def test_floating_mod(backend, alltypes, df):
         'bigint_col',
         pytest.param(
             'float_col',
-            marks=[
-                pytest.mark.broken(
-                    "polars",
-                    strict=False,
-                    reason="output types is float64 instead of the expected float32",
-                )
-            ],
+            marks=pytest.mark.broken(
+                "polars",
+                strict=False,
+                reason="output type is float64 instead of the expected float32",
+            ),
         ),
         'double_col',
     ],
