@@ -9,7 +9,7 @@ ci:
     - shfmt
     - just
     - nixpkgs-fmt
-    - nix-linter
+    - statix
 default_stages:
   - commit
 repos:
@@ -76,10 +76,11 @@ repos:
         entry: nixpkgs-fmt
         types:
           - nix
-      - id: nix-linter
-        name: nix-linter
+      - id: statix
+        name: statix
         language: system
-        entry: nix-linter --check="no-FreeLetInFunc"
+        entry: statix check
+        pass_filenames: false
         types:
           - nix
   - repo: https://github.com/pre-commit/pre-commit-hooks
