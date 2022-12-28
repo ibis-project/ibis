@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import pandas.testing as tm
 import pytest
 import toolz
@@ -16,11 +17,12 @@ except ImportError:
     duckdb = None
 
 pytestmark = [
-    pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support")
+    pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support"),
+    pytest.mark.notyet(["impala"], reason="No array support"),
 ]
 
 
-@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "snowflake"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -33,7 +35,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -46,7 +48,7 @@ def test_array_scalar(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
+@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -59,7 +61,7 @@ def test_array_repeat(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -72,13 +74,13 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_list_literal(con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -89,7 +91,7 @@ def test_list_literal(con):
     assert np.array_equal(result, arr)
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_np_array_literal(con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
@@ -101,7 +103,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion"])
+@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -136,11 +138,6 @@ builtin_array = toolz.compose(
     ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion", "dask"]),
-    # unclear if this will ever be supported
-    pytest.mark.notyet(
-        ["impala"],
-        reason="impala doesn't support array types",
-    ),
     duckdb_0_4_0,
 )
 
@@ -231,7 +228,6 @@ def test_array_discovery_desired(con):
         "dask",
         "datafusion",
         "duckdb",
-        "impala",
         "mysql",
         "pandas",
         "polars",
@@ -359,3 +355,32 @@ def test_unnest_default_name(con):
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
     tm.assert_series_equal(result, expected.astype("float64"))
+
+
+@pytest.mark.parametrize(
+    ("start", "stop"),
+    [
+        (1, 3),
+        (1, 1),
+        (2, 3),
+        (2, 5),
+        (None, 3),
+        (None, None),
+        (3, None),
+        (-3, None),
+        (None, -3),
+        (-3, -1),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "polars", "snowflake"])
+@pytest.mark.notyet(
+    ["bigquery"], reason="BigQuery doesn't have native array slicing functionality"
+)
+def test_array_slice(con, start, stop):
+    array_types = con.tables.array_types
+    expr = array_types.select(sliced=array_types.y[start:stop])
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {'sliced': array_types.y.execute().map(lambda x: x[start:stop])}
+    )
+    tm.assert_frame_equal(result, expected)

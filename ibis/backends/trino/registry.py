@@ -171,6 +171,31 @@ def _struct_column(t, op):
     )
 
 
+def _neg_idx_to_pos(array, idx):
+    if_ = getattr(sa.func, "if")
+    arg_length = sa.func.cardinality(array)
+    return if_(idx < 0, arg_length + sa.func.greatest(idx, -arg_length), idx)
+
+
+def _array_slice(t, op):
+    arg = t.translate(op.arg)
+
+    arg_length = sa.func.cardinality(arg)
+
+    if (start := op.start) is None:
+        start = 0
+    else:
+        start = sa.func.least(arg_length, _neg_idx_to_pos(arg, t.translate(start)))
+
+    if (stop := op.stop) is None:
+        stop = arg_length
+    else:
+        stop = _neg_idx_to_pos(arg, t.translate(stop))
+
+    length = stop - start
+    return sa.func.slice(arg, start + 1, length, type_=arg.type)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -203,6 +228,10 @@ operation_registry.update(
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayIndex: _array_index,
         ops.ArrayColumn: _array_column,
+        ops.ArrayRepeat: fixed_arity(
+            lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
+        ),
+        ops.ArraySlice: _array_slice,
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
@@ -218,9 +247,6 @@ operation_registry.update(
         ),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
-        ops.ArrayRepeat: fixed_arity(
-            lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
-        ),
         ops.DateFromYMD: _date_from_ymd,
         ops.TimeFromHMS: _time_from_hms,
         ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,

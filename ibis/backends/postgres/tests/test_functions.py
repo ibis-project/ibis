@@ -985,30 +985,6 @@ def test_array_collect(array_types):
     tm.assert_frame_equal(result, expected, check_column_type=False)
 
 
-@pytest.mark.parametrize(
-    ['start', 'stop'],
-    [
-        (1, 3),
-        (1, 1),
-        (2, 3),
-        (2, 5),
-        (None, 3),
-        (None, None),
-        (3, None),
-        (-3, None),
-        (None, -3),
-        (-3, -1),
-    ],
-)
-def test_array_slice(array_types, start, stop):
-    expr = array_types[array_types.y[start:stop].name('sliced')]
-    result = expr.execute()
-    expected = pd.DataFrame(
-        {'sliced': array_types.y.execute().map(lambda x: x[start:stop])}
-    )
-    tm.assert_frame_equal(result, expected)
-
-
 @pytest.mark.parametrize('index', [0, 1, 3, 4, 11, -1, -3, -4, -11])
 def test_array_index(array_types, index):
     expr = array_types[array_types.y[index].name('indexed')]
