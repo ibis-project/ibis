@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -34,8 +36,11 @@ def test_single_field(backend, struct, struct_df, field):
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
-    assert set(row if pd.isna(row) else tuple(row.items()) for row in result) == set(
-        row if pd.isna(row) else tuple(row.items()) for row in expected
+
+    assert set(
+        row if not isinstance(row, Mapping) else tuple(row.items()) for row in result
+    ) == set(
+        row if not isinstance(row, Mapping) else tuple(row.items()) for row in expected
     )
 
 
