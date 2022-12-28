@@ -165,7 +165,7 @@ operation_registry.update(
             6,
         ),
         ops.TimeFromHMS: fixed_arity(
-            lambda h, m, s: sa.func.timefromparts(h, m, s, 0), 3
+            lambda h, m, s: sa.func.timefromparts(h, m, s, 0, 0), 3
         ),
     }
 )
