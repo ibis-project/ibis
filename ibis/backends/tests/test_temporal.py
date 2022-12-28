@@ -552,7 +552,7 @@ def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     backend.assert_series_equal(result, expected)
 
 
-unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
+unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
 
 
 @pytest.mark.parametrize(
@@ -565,17 +565,15 @@ unit_factors = {'s': int(1e9), 'ms': int(1e6), 'us': int(1e3), 'ns': 1}
         ),
         param(
             'us',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark"]),
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark", "mssql"]),
         ),
         param(
             'ns',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark"]),
+            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark", "mssql"]),
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql"]
-)
+@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite", "snowflake"])
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
