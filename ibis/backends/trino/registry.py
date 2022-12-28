@@ -176,6 +176,11 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.ApproxCountDistinct: reduction(sa.func.approx_distinct),
         ops.ParseURL: _parse_url,
+        ops.RegexExtract: fixed_arity(sa.func.regexp_extract, 3),
+        ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.RegexSearch: fixed_arity(
+            lambda arg, pattern: sa.func.regexp_position(arg, pattern) != -1, 2
+        ),
         ops.GroupConcat: _group_concat,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
