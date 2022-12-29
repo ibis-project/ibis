@@ -3,11 +3,11 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis import util
+from ibis import _, util
 
 REQUIRES_EXPLICIT_SCHEMA = {"sqlite"}
 table_dot_sql_notimpl = pytest.mark.notimpl(
-    ["bigquery", "sqlite", "clickhouse", "impala", "mssql"]
+    ["bigquery", "sqlite", "clickhouse", "impala"]
 )
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
@@ -28,7 +28,7 @@ pytestmark = pytest.mark.xdist_group("dot_sql")
 @pytest.mark.parametrize(
     "schema",
     [
-        param(None, marks=pytest.mark.notimpl(["mssql"]), id="implicit_schema"),
+        param(None, id="implicit_schema"),
         param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )
@@ -87,7 +87,8 @@ def test_table_dot_sql(backend, con):
         .group_by("s")  # group by a column from SQL
         .aggregate(fancy_af=lambda t: t.new_col.mean())
         .alias("awesome_t")  # create a name for the aggregate
-        .sql("SELECT fancy_af AS yas FROM awesome_t ORDER BY fancy_af")
+        .sql("SELECT fancy_af AS yas FROM awesome_t")
+        .order_by(_.yas)
     )
 
     alltypes_df = alltypes.execute()
