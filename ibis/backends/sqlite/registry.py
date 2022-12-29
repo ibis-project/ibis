@@ -250,11 +250,8 @@ def _date_from_ymd(t, op):
 
 
 def _timestamp_from_ymdhms(t, op):
-    y, mo, d, h, m, s, *rest = (
-        t.translate(x) if x is not None else None for x in op.args
-    )
-    tz = rest[0] if rest else ''
-    timestr = sa.func.printf('%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s, tz)
+    y, mo, d, h, m, s = (t.translate(x) for x in op.args)
+    timestr = sa.func.printf('%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s)
     return sa.func.datetime(timestr)
 
 
