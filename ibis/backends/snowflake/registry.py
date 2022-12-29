@@ -64,6 +64,41 @@ def _day_of_week_name(t, op):
     )
 
 
+_PARSE_URL_FUNCS = {
+    "PROTOCOL": lambda url, _: sa.func.as_varchar(sa.func.get(url, "scheme")),
+    "PATH": lambda url, _: "/" + sa.func.as_varchar(sa.func.get(url, "path")),
+    "REF": lambda url, _: sa.func.as_varchar(sa.func.get(url, "fragment")),
+    "AUTHORITY": lambda url, _: sa.func.concat_ws(
+        ":",
+        sa.func.as_varchar(sa.func.get(url, "host")),
+        sa.func.as_varchar(sa.func.get(url, "port")),
+    ),
+    "FILE": lambda url, _: sa.func.concat_ws(
+        "?",
+        "/" + sa.func.as_varchar(sa.func.get(url, "path")),
+        sa.func.as_varchar(sa.func.get(url, "query")),
+    ),
+    "QUERY": lambda url, key: sa.func.as_varchar(
+        sa.func.get(sa.func.get(url, "query"), key)
+        if key is not None
+        else sa.func.get(url, "query")
+    ),
+}
+
+
+def _parse_url(t, op):
+    if (func := _PARSE_URL_FUNCS.get(extract := op.extract)) is None:
+        raise ValueError(f"`{extract}` is not supported in the Snowflake backend")
+
+    return sa.func.nullif(
+        func(
+            sa.func.parse_url(t.translate(op.arg), 1),
+            t.translate(key) if (key := op.key) is not None else key,
+        ),
+        "",
+    )
+
+
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
 _SF_NEG_INF = -_SF_POS_INF
 _SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
@@ -94,5 +129,6 @@ operation_registry.update(
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
         ops.DayOfWeekName: _day_of_week_name,
+        ops.ParseURL: _parse_url,
     }
 )
