@@ -425,3 +425,67 @@ def test_substr_with_null_values(backend, alltypes, df):
     expected['substr_col_null'] = expected['substr_col_null'].str.slice(0, 2)
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    [
+        param("PROTOCOL", "http", id="protocol"),
+        param(
+            "AUTHORITY",
+            "user:pass@example.com:80",
+            id="authority",
+            marks=[pytest.mark.notyet(["trino"])],
+        ),
+        param(
+            "HOST",
+            "example.com",
+            id="host",
+            marks=[
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    reason="Backend is foiled by the presence of a password",
+                ),
+                pytest.mark.notyet(
+                    ["snowflake"], raises=ValueError, reason="host is netloc"
+                ),
+            ],
+        ),
+        param("PATH", "/docs/books/tutorial/index.html", id="path"),
+        param("QUERY", "name=networking", id="query"),
+        param("FILE", "/docs/books/tutorial/index.html?name=networking", id="file"),
+        param("REF", "DOWNLOADING", id="ref"),
+        param(
+            "USERINFO",
+            "user:pass",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse", "snowflake", "trino"],
+                    raises=ValueError,
+                    reason="doesn't support `USERINFO`",
+                )
+            ],
+            id="userinfo",
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "duckdb",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ]
+)
+def test_parse_url(con, field, expected):
+    url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
+    expr = ibis.literal(url).name("url").parse_url(field)
+    result = con.execute(expr)
+    assert result == expected
