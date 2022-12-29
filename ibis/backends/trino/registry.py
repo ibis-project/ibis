@@ -141,6 +141,13 @@ def _extract_url_query(t, op):
     return sa.func.nullif(result, "")
 
 
+def _round(t, op):
+    arg = t.translate(op.arg)
+    if (digits := op.digits) is not None:
+        return sa.func.round(arg, t.translate(digits))
+    return sa.func.round(arg)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -187,20 +194,18 @@ operation_registry.update(
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
-        ops.DayOfWeekIndex: fixed_arity(
+        ops.DayOfWeekIndex: unary(
             lambda arg: sa.cast(
                 sa.cast(sa.func.day_of_week(arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
-            ),
-            1,
+            )
         ),
-        ops.DayOfWeekName: fixed_arity(lambda arg: sa.func.date_format(arg, "%W"), 1),
+        ops.DayOfWeekName: unary(lambda arg: sa.func.date_format(arg, "%W")),
         ops.ExtractEpochSeconds: unary(sa.func.to_unixtime),
         ops.Translate: fixed_arity(sa.func.translate, 3),
-        ops.Capitalize: fixed_arity(
+        ops.Capitalize: unary(
             lambda arg: sa.func.concat(
                 sa.func.upper(sa.func.substring(arg, 1, 2)), sa.func.substring(arg, 2)
-            ),
-            1,
+            )
         ),
         ops.StrRight: fixed_arity(lambda arg, nchars: sa.func.substr(arg, -nchars), 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
@@ -229,47 +234,48 @@ operation_registry.update(
         ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.StructField: (lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field))),
-        ops.StructColumn: (
-            lambda t, op: sa.cast(
-                sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
-            )
+        ops.StructField: lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field)),
+        ops.StructColumn: lambda t, op: sa.cast(
+            sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
         ),
         ops.Literal: _literal,
-        ops.MapLength: fixed_arity(sa.func.cardinality, 1),
+        ops.MapLength: unary(sa.func.cardinality),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(
                 sa.func.element_at(arg, key), default
             ),
             3,
         ),
-        ops.MapKeys: fixed_arity(sa.func.map_keys, 1),
-        ops.MapValues: fixed_arity(sa.func.map_values, 1),
+        ops.MapKeys: unary(sa.func.map_keys),
+        ops.MapValues: unary(sa.func.map_values),
         ops.Map: fixed_arity(sa.func.map, 2),
         ops.MapMerge: fixed_arity(sa.func.map_concat, 2),
         ops.MapContains: fixed_arity(
             lambda arg, key: sa.func.contains(sa.func.map_keys(arg), key), 2
         ),
-        ops.ExtractProtocol: fixed_arity(
-            lambda arg: sa.func.nullif(sa.func.url_extract_protocol(arg), ""), 1
+        ops.ExtractProtocol: unary(
+            lambda arg: sa.func.nullif(sa.func.url_extract_protocol(arg), "")
         ),
-        ops.ExtractHost: fixed_arity(
-            lambda arg: sa.func.nullif(sa.func.url_extract_host(arg), ""), 1
+        ops.ExtractHost: unary(
+            lambda arg: sa.func.nullif(sa.func.url_extract_host(arg), "")
         ),
-        ops.ExtractPath: fixed_arity(
-            lambda arg: sa.func.nullif(sa.func.url_extract_path(arg), ""), 1
+        ops.ExtractPath: unary(
+            lambda arg: sa.func.nullif(sa.func.url_extract_path(arg), "")
         ),
-        ops.ExtractFragment: fixed_arity(
-            lambda arg: sa.func.nullif(sa.func.url_extract_fragment(arg), ""), 1
+        ops.ExtractFragment: unary(
+            lambda arg: sa.func.nullif(sa.func.url_extract_fragment(arg), "")
         ),
-        ops.ExtractFile: fixed_arity(
+        ops.ExtractFile: unary(
             lambda arg: sa.func.concat_ws(
                 "?",
                 sa.func.nullif(sa.func.url_extract_path(arg), ""),
                 sa.func.nullif(sa.func.url_extract_query(arg), ""),
-            ),
-            1,
+            )
         ),
         ops.ExtractQuery: _extract_url_query,
+        ops.Cot: unary(lambda arg: 1.0 / sa.func.tan(arg)),
+        ops.Round: _round,
+        ops.Pi: fixed_arity(sa.func.pi, 0),
+        ops.E: fixed_arity(sa.func.e, 0),
     }
 )
