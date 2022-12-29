@@ -9,7 +9,7 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import _random_identifier
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import struct_types
 
 TRINO_USER = os.environ.get(
@@ -28,7 +28,7 @@ IBIS_TEST_TRINO_DB = os.environ.get(
 )
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(BackendTest, RoundAwayFromZero):
     # trino rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
