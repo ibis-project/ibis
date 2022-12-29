@@ -292,28 +292,6 @@ def _regex_extract(op, **kw):
     return f"if({does_match}, {then}, NULL)"
 
 
-@translate_val.register(ops.ParseURL)
-def _parse_url(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    extract = op.extract
-    if extract == "HOST":
-        return f"domain({arg})"
-    elif extract == "PROTOCOL":
-        return f"protocol({arg})"
-    elif extract == "PATH":
-        return f"path({arg})"
-    elif extract == "QUERY":
-        if (key := op.key) is not None:
-            key = translate_val(key, **kw)
-            return f"extractURLParameter({arg}, {key})"
-        else:
-            return f"queryString({arg})"
-    else:
-        raise com.UnsupportedOperationError(
-            f"ParseURL with extract {extract} is not supported"
-        )
-
-
 @translate_val.register(ops.FindInSet)
 def _index_of(op, **kw):
     values = map(partial(translate_val, **kw), op.values)
@@ -1360,3 +1338,33 @@ def _first_value(op, **kw):
 @translate_val.register(ops.LastValue)
 def _last_value(op, **kw):
     return f"last_value({translate_val(op.arg, **kw)})"
+
+
+_PARSE_URL_FUNCS = {
+    "PROTOCOL": lambda arg, _: f"protocol({arg})",
+    "AUTHORITY": lambda arg, _: f"netloc({arg})",
+    "HOST": lambda arg, _: f"domain({arg})",
+    "PATH": lambda arg, _: f"path({arg})",
+    "REF": lambda arg, _: f"fragment({arg})",
+    "FILE": lambda arg, _: f"cutFragment(pathFull({arg}))",
+    "QUERY": lambda arg, key: (
+        f"extractURLParameter({arg}, {key})"
+        if key is not None
+        else f"queryString({arg})"
+    ),
+}
+
+
+@translate_val.register(ops.ParseURL)
+def _parse_url(op, **kw):
+    if (func := _PARSE_URL_FUNCS.get(extract := op.extract)) is None:
+        raise ValueError(
+            f"`{extract}` is not supported in the parse_url implementation for the "
+            "ClickHouse backend"
+        )
+
+    result = func(
+        translate_val(op.arg, **kw),
+        translate_val(key, **kw) if (key := op.key) is not None else None,
+    )
+    return f"CAST(nullIf({result}, '') AS Nullable(String))"
