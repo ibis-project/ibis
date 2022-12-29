@@ -573,7 +573,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.DateFromYMD: fixed_arity(sa.func.date, 3),
     ops.TimeFromHMS: fixed_arity(sa.func.time, 3),
     ops.TimestampFromYMDHMS: lambda t, op: sa.func.make_timestamp(
-        *map(t.translate, op.args[:6])  # ignore timezone
+        *map(t.translate, op.args)
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),
