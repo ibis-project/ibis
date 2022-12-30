@@ -131,7 +131,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         client.create_table(date_table, exists_ok=True)
 
         write_disposition = bq.WriteDisposition.WRITE_TRUNCATE
-        make_job = lambda func, *a, **kw: func(*a, **kw).result()  # noqa: E731
+        make_job = lambda func, *a, **kw: func(*a, **kw).result()
 
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as e:

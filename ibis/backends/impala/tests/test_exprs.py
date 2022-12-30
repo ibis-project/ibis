@@ -709,7 +709,7 @@ def test_filter_with_analytic(snapshot):
 def test_named_from_filter_group_by(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     gb = t.filter(t.value == 42).group_by(t.key)
-    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
+    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
     snapshot.assert_match(ibis.impala.compile(expr), "abc.sql")
 

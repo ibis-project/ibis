@@ -325,6 +325,7 @@ respect-gitignore = true
 ignore = [
   "B904", # raise from e or raise from None in exception handlers
   "E501",
+  "E731",
   "PGH003",
   "RET504",
   "RET505",

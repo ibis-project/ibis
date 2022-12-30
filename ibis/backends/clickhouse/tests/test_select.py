@@ -304,7 +304,7 @@ def test_timestamp_scalar_in_filter(alltypes):
 def test_named_from_filter_groupby(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     gb = t.filter(t.value == 42).group_by(t.key)
-    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
+    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
     result = ibis.clickhouse.compile(expr)
     snapshot.assert_match(result, "out1.sql")
