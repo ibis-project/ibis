@@ -187,7 +187,7 @@ def test_lambda_with_splat(snapshot):
                 total += value
             return total
 
-        splat_sum = lambda *args: sum(args)  # noqa: E731
+        splat_sum = lambda *args: sum(args)
         return splat_sum(1, 2, 3)
 
     js = compile(f)

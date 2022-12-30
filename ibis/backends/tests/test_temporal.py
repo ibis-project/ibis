@@ -413,8 +413,8 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     backend.assert_series_equal(result, expected)
 
 
-plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)  # noqa: E731
-minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)  # noqa: E731
+plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)
+minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
 
 
 @pytest.mark.parametrize(

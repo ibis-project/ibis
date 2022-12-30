@@ -320,6 +320,7 @@ select = [
 respect-gitignore = true
 ignore = [
   "E501",
+  "E731",
   "PGH003",
   "RET504",
   "RET505",
