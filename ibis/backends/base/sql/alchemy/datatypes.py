@@ -85,7 +85,7 @@ def table_from_schema(name, meta, schema, database: str | None = None):
         column = sa.Column(colname, satype, nullable=dtype.nullable)
         columns.append(column)
 
-    return sa.Table(name, meta, schema=database, *columns)
+    return sa.Table(name, meta, *columns, schema=database)
 
 
 # TODO(cleanup)
