@@ -293,8 +293,6 @@ class Backend(BaseBackend):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
-        kwargs
-            Keyword arguments
 
         Returns
         -------
