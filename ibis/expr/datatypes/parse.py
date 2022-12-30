@@ -228,7 +228,6 @@ def parse(text: str) -> dt.DataType:
         | set
         | map
         | struct
-        | spaceless_string("jsonb").result(dt.jsonb)
         | spaceless_string("json").result(dt.json)
         | spaceless_string("uuid").result(dt.uuid)
         | spaceless_string("macaddr").result(dt.macaddr)

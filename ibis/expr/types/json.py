@@ -30,18 +30,3 @@ class JSONScalar(Scalar, JSONValue):
 @public
 class JSONColumn(Column, JSONValue):
     pass
-
-
-@public
-class JSONBValue(Value):
-    pass
-
-
-@public
-class JSONBScalar(Scalar, JSONBValue):
-    pass
-
-
-@public
-class JSONBColumn(Column, JSONBValue):
-    pass

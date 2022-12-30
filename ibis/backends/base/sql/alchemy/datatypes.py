@@ -268,13 +268,9 @@ def sa_inet(_, satype, nullable=True):
 
 
 @dt.dtype.register(Dialect, sa.types.JSON)
+@dt.dtype.register(PGDialect, postgresql.JSONB)
 def sa_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.JSONB)
-def sa_jsonb(_, satype, nullable=True):
-    return dt.JSONB(nullable=nullable)
 
 
 if geospatial_supported:
