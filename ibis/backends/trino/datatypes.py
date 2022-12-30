@@ -153,7 +153,7 @@ def sa_trino_map(dialect, satype, nullable=True):
 
 
 @dt.dtype.register(TrinoDialect, JSON)
-def sa_jsonb(_, satype, nullable=True):
+def sa_trino_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
 
 

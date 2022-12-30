@@ -123,7 +123,6 @@ geospatial_dtypes = st.one_of(
 string_dtype = st.builds(dt.String, nullable=nullable)
 binary_dtype = st.builds(dt.Binary, nullable=nullable)
 json_dtype = st.builds(dt.JSON, nullable=nullable)
-jsonb_dtype = st.builds(dt.JSONB, nullable=nullable)
 inet_dtype = st.builds(dt.INET, nullable=nullable)
 macaddr_dtype = st.builds(dt.MACADDR, nullable=nullable)
 uuid_dtype = st.builds(dt.UUID, nullable=nullable)
@@ -132,7 +131,6 @@ variadic_dtypes = st.one_of(
     string_dtype,
     binary_dtype,
     json_dtype,
-    jsonb_dtype,
     inet_dtype,
     macaddr_dtype,
     array_dtypes(),

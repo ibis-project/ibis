@@ -157,9 +157,6 @@ class DataType(Concrete):
     def is_json(self) -> bool:
         return isinstance(self, JSON)
 
-    def is_jsonb(self) -> bool:
-        return isinstance(self, JSONB)
-
     def is_linestring(self) -> bool:
         return isinstance(self, LineString)
 
@@ -781,18 +778,6 @@ class JSON(String):
 
 
 @public
-class JSONB(Binary):
-    """JSON data stored in a binary representation.
-
-    This representation eliminates whitespace, duplicate keys, and does
-    not preserve key ordering.
-    """
-
-    scalar = ir.JSONBScalar
-    column = ir.JSONBColumn
-
-
-@public
 class GeoSpatial(DataType):
     """Geospatial values."""
 
@@ -946,7 +931,6 @@ multipoint = MultiPoint()
 multipolygon = MultiPolygon()
 # json
 json = JSON()
-jsonb = JSONB()
 # special string based data type
 uuid = UUID()
 macaddr = MACADDR()
@@ -1017,7 +1001,6 @@ public(
     multipoint=multipoint,
     multipolygon=multipolygon,
     json=json,
-    jsonb=jsonb,
     uuid=uuid,
     macaddr=macaddr,
     inet=inet,
