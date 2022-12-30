@@ -298,6 +298,7 @@ markers = [
 [tool.ruff]
 line-length = 88
 select = [
+  "B", # flake8-bugbear
   "D", # pydocstyle
   "E", # pycodestyle
   "W", # pycodestyle
@@ -317,10 +318,12 @@ select = [
   "RET", # flake8-return
   "BLE", # flake8-blind-except
   "ISC", # flake8-implicit-str-concat
+  "YTT", # flake8-2020
 
 ]
 respect-gitignore = true
 ignore = [
+  "B904", # raise from e or raise from None in exception handlers
   "E501",
   "PGH003",
   "RET504",

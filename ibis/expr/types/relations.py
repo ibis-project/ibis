@@ -50,7 +50,7 @@ def _regular_join_method(
         "any_left",
     ],
 ):
-    def f(
+    def f(  # noqa: D417
         self: Table,
         right: Table,
         predicates: str
@@ -59,7 +59,7 @@ def _regular_join_method(
         ] = (),
         suffixes: tuple[str, str] = ("_x", "_y"),
     ) -> Table:
-        f"""Perform a{'n' * how.startswith(tuple("aeiou"))} {how} join between two tables.
+        """Perform a join between two tables.
 
         Parameters
         ----------

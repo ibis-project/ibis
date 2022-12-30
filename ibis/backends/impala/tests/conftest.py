@@ -128,7 +128,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(
         data_directory: Path,
-        database: str | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),
+        database: str
+        | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),  # noqa: B008
         with_hdfs: bool = True,
     ):
         fsspec = pytest.importorskip("fsspec")

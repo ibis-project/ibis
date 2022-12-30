@@ -100,7 +100,8 @@ def execute_map_concat_series_dict(op, lhs, rhs, **kwargs):
 
 @execute_node.register(ops.MapMerge, dd.Series, dd.Series)
 def execute_map_concat_series_series(op, lhs, rhs, **kwargs):
+    rhsiter = iter(rhs.values)
     return lhs.map(
-        lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter)),
+        lambda m, rhsiter=rhsiter: safe_merge(m, next(rhsiter)),
         meta=(lhs.name, lhs.dtype),
     )

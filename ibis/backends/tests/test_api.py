@@ -60,12 +60,12 @@ def test_tables_accessor_getattr(con):
     assert isinstance(con.tables.functional_alltypes, ir.Table)
 
     with pytest.raises(AttributeError, match="doesnt_exist"):
-        getattr(con.tables, "doesnt_exist")
+        con.tables.doesnt_exist
 
     # Underscore/double-underscore attributes are never available, since many
     # python apis expect checking for the absence of these to be cheap.
     with pytest.raises(AttributeError, match="_private_attr"):
-        getattr(con.tables, "_private_attr")
+        con.tables._private_attr
 
 
 def test_tables_accessor_tab_completion(con):

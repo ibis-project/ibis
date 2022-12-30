@@ -99,8 +99,13 @@ class BackendTest(abc.ABC):
         """Return a connection with data loaded from `data_directory`."""
 
     @staticmethod
-    def _load_data(data_directory: Path, script_directory: Path, **kwargs: Any) -> None:
-        ...
+    def _load_data(  # noqa: B027
+        data_directory: Path, script_directory: Path, **kwargs: Any
+    ) -> None:
+        """Load test data into a backend.
+
+        Default implementation is a no-op.
+        """
 
     @classmethod
     def load_data(

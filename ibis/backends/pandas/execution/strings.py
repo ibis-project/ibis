@@ -262,9 +262,8 @@ def execute_string_ascii_group_by(op, data, **kwargs):
 
 @execute_node.register(ops.RegexSearch, pd.Series, str)
 def execute_series_regex_search(op, data, pattern, **kwargs):
-    return data.map(
-        lambda x, pattern=re.compile(pattern): pattern.search(x) is not None
-    )
+    pattern = re.compile(pattern)
+    return data.map(lambda x, pattern=pattern: pattern.search(x) is not None)
 
 
 @execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
@@ -274,9 +273,11 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
-@execute_node.register(ops.RegexExtract, pd.Series, (pd.Series, str), integer_types)
+@execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
-    def extract(x, pattern=re.compile(pattern), index=index):
+    pattern = re.compile(pattern)
+
+    def extract(x, pattern=pattern, index=index):
         match = pattern.match(x)
         if match is not None:
             return match.group(index) or np.nan
@@ -295,7 +296,9 @@ def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
 
 @execute_node.register(ops.RegexReplace, pd.Series, str, str)
 def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
-    def replacer(x, pattern=re.compile(pattern)):
+    pattern = re.compile(pattern)
+
+    def replacer(x, pattern=pattern):
         return pattern.sub(replacement, x)
 
     return data.apply(replacer)
@@ -383,8 +386,9 @@ def haystack_to_series_of_lists(haystack, index=None):
 def execute_series_find_in_set(op, needle, haystack, **kwargs):
     haystack = [execute(arg, **kwargs) for arg in haystack]
     pieces = haystack_to_series_of_lists(haystack, index=needle.index)
+    index = itertools.count()
     return pieces.map(
-        lambda elements, needle=needle, index=itertools.count(): (
+        lambda elements, needle=needle, index=index: (
             ibis.util.safe_index(elements, needle.iat[next(index)])
         )
     )
@@ -465,12 +469,10 @@ def execute_json_getitem_series_str_int(_, data, key, **kwargs):
 
 @execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
 def execute_json_getitem_series_series(_, data, key, **kwargs):
+    keyiter = iter(key)
     return pd.Series(
         list(
-            map(
-                lambda value, keyiter=iter(key): try_getitem(value, next(keyiter)),
-                data,
-            )
+            map(lambda value, keyiter=keyiter: try_getitem(value, next(keyiter)), data)
         ),
         dtype="object",
     )

@@ -95,7 +95,7 @@ def map_dtypes(key_strategy=primitive_dtypes, value_strategy=primitive_dtypes):
 def struct_dtypes(
     draw,
     item_strategy=primitive_dtypes,
-    num_fields=st.integers(min_value=0, max_value=20),
+    num_fields=st.integers(min_value=0, max_value=20),  # noqa: B008
 ):
     num_fields = draw(num_fields)
     names = draw(st.lists(st.text(), min_size=num_fields, max_size=num_fields))
@@ -177,7 +177,7 @@ all_schema = schema(all_dtypes)
 
 
 @st.composite
-def memtable(draw, schema=schema(primitive_dtypes)):
+def memtable(draw, schema=schema(primitive_dtypes)):  # noqa: B008
     schema = draw(schema)
 
     columns = [past.column(name, dtype=dtype) for name, dtype in schema.to_pandas()]

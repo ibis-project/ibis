@@ -21,22 +21,8 @@ def db(con, test_data_db):
     return con.database(test_data_db)
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason='Temporary not setting default backends. #2676',
-)
-def test_execute_exprs_default_backend(con_no_hdfs):
-    expr = ibis.literal(2)
-    expected = 2
-
-    assert ibis.options.default_backend is not None
-
-    result = expr.execute()
-    assert result == expected
-
-
 def test_cursor_garbage_collection(con):
-    for i in range(5):
+    for _ in range(5):
         con.raw_sql('select 1').fetchall()
         con.raw_sql('select 1').fetchone()
 

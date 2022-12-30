@@ -48,7 +48,7 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
         elif field_length <= 64:
             typ = dt.int64
         else:
-            assert False, "invalid field length for BIT type"
+            raise AssertionError('invalid field length for BIT type')
     else:
         if flags.is_set:
             # sets are limited to strings
