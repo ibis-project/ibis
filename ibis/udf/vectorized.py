@@ -165,7 +165,7 @@ def _coerce_to_dataframe(
             result = data.to_frame()
         else:
             num_cols = len(data.iloc[0])
-            series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+            series = [data.apply(lambda t, i=i: t[i]) for i in range(num_cols)]
             result = pd.concat(series, axis=1)
     elif isinstance(data, (tuple, list, np.ndarray)):
         if isinstance(data[0], pd.Series):

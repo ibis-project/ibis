@@ -313,13 +313,13 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 )
 def test_interval(unit):
     definition = f"interval('{unit}')"
-    dt.Interval(unit, dt.int32) == dt.dtype(definition)
+    dt.Interval(unit, dt.int32) == dt.dtype(definition)  # noqa: B015
 
     definition = f"interval<uint16>('{unit}')"
-    dt.Interval(unit, dt.uint16) == dt.dtype(definition)
+    dt.Interval(unit, dt.uint16) == dt.dtype(definition)  # noqa: B015
 
     definition = f"interval<int64>('{unit}')"
-    dt.Interval(unit, dt.int64) == dt.dtype(definition)
+    dt.Interval(unit, dt.int64) == dt.dtype(definition)  # noqa: B015
 
 
 def test_interval_invalid_type():

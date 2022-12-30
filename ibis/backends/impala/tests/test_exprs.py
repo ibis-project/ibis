@@ -173,16 +173,16 @@ def _check_impala_output_types_match(con, table):
             x = x.to_integer_type()
         return x
 
-    left, right = t.schema(), table.schema()
-    for n, left, right in zip(left.names, left.types, right.types):
-        left = _clean_type(left)
-        right = _clean_type(right)
+    left_schema, right_schema = t.schema(), table.schema()
+    for n, left_type, right_type in zip(
+        left_schema.names, left_schema.types, right_schema.types
+    ):
+        left_ty = _clean_type(left_type)
+        right_ty = _clean_type(right_type)
 
-        if left != right:
-            pytest.fail(
-                'Value for {} had left type {}'
-                ' and right type {}\nquery:\n{}'.format(n, left, right, query)
-            )
+        assert (
+            left_ty == right_ty
+        ), f'Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}'
 
 
 @pytest.mark.parametrize(

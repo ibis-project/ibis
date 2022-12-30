@@ -675,9 +675,9 @@ def test_comparable_cache_reuse(cache):
 
     expected = 0
     for a, b in zip(nodes, nodes):
-        a == a
-        a == b
-        b == a
+        a == a  # noqa: B015
+        a == b  # noqa: B015
+        b == a  # noqa: B015
         if a != b:
             expected += 1
         assert Node.num_equal_calls == expected

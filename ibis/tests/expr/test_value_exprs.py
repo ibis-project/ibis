@@ -632,18 +632,18 @@ def test_null_column_union():
 
 def test_string_compare_numeric_array(table):
     with pytest.raises(TypeError):
-        table.g == table.f
+        table.g == table.f  # noqa: B015
 
     with pytest.raises(TypeError):
-        table.g == table.c
+        table.g == table.c  # noqa: B015
 
 
 def test_string_compare_numeric_literal(table):
     with pytest.raises(TypeError):
-        table.g == ibis.literal(1.5)
+        table.g == ibis.literal(1.5)  # noqa: B015
 
     with pytest.raises(TypeError):
-        table.g == ibis.literal(5)
+        table.g == ibis.literal(5)  # noqa: B015
 
 
 def test_between(table):
@@ -675,7 +675,7 @@ def test_between(table):
 
 def test_chained_comparisons_not_allowed(table):
     with pytest.raises(ValueError):
-        0 < table.f < 1
+        0 < table.f < 1  # noqa: B015
 
 
 @pytest.mark.parametrize(
@@ -1596,7 +1596,7 @@ def test_array_length_scalar():
     ]
     + [
         param(
-            lambda ts: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
+            lambda ts, func=func: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
             dt.timestamp,
             id=func.__name__,
         )
@@ -1635,7 +1635,7 @@ def test_logical_comparison_rlz_incompatible_error(table, operation):
 
 def test_case_rlz_incompatible_error(table):
     with pytest.raises(TypeError, match=r"a:int8 and Literal\(foo\):string"):
-        table.a == 'foo'
+        table.a == 'foo'  # noqa: B015
 
 
 @pytest.mark.parametrize("func", [ibis.asc, ibis.desc])

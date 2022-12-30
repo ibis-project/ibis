@@ -169,7 +169,7 @@ def lazy_singledispatch(func):
                     return impl
         # Can never get here, since a base `object` implementation is
         # always registered
-        assert False, "should never get here"  # pragma: no cover
+        raise AssertionError('should never get here')  # pragma: no cover
 
     @functools.wraps(func)
     def call(arg, *args, **kwargs):
