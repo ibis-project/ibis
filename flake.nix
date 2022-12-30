@@ -89,11 +89,13 @@
         statix
       ];
 
-      mkDevShell = name: env: pkgs.mkShell {
-        inherit name;
+      mkDevShell = env: pkgs.mkShell {
+        name = "ibis-${env.python.version}";
         nativeBuildInputs = (with pkgs; [
           # python dev environment
           env
+          # poetry executable
+          env.pkgs.poetry
           # rendering release notes
           changelog
           glow
@@ -106,8 +108,6 @@
           lychee
           # release automation
           nodejs
-          # poetry executable
-          env.pkgs.poetry
           # used in notebooks to download data
           curl
         ])
@@ -131,9 +131,9 @@
       };
 
       devShells = rec {
-        ibis38 = mkDevShell "ibis38" pkgs.ibisDevEnv38;
-        ibis39 = mkDevShell "ibis39" pkgs.ibisDevEnv39;
-        ibis310 = mkDevShell "ibis310" pkgs.ibisDevEnv310;
+        ibis38 = mkDevShell pkgs.ibisDevEnv38;
+        ibis39 = mkDevShell pkgs.ibisDevEnv39;
+        ibis310 = mkDevShell pkgs.ibisDevEnv310;
 
         default = ibis310;
 
