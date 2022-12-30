@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.dask.execution.aggregations import *  # noqa: F403
 from ibis.backends.dask.execution.arrays import *  # noqa: F403
 from ibis.backends.dask.execution.decimal import *  # noqa: F403

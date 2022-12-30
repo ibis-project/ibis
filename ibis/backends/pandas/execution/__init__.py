@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.pandas.execution.arrays import *  # noqa: F403
 from ibis.backends.pandas.execution.decimal import *  # noqa: F403
 from ibis.backends.pandas.execution.generic import *  # noqa: F403

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.base.sql.ddl import (
     CTAS,
     AlterTable,

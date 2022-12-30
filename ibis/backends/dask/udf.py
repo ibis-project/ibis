@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import itertools
-from typing import List, Tuple
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
@@ -18,7 +19,7 @@ from ibis.backends.dask.execution.util import (
 )
 
 
-def make_struct_op_meta(op: ir.Expr) -> List[Tuple[str, np.dtype]]:
+def make_struct_op_meta(op: ir.Expr) -> list[tuple[str, np.dtype]]:
     """Unpacks a dt.Struct into a DataFrame meta."""
     return list(
         zip(

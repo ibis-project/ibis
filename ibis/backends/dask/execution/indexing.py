@@ -1,5 +1,7 @@
 """Execution rules for ops.Where operations."""
 
+from __future__ import annotations
+
 import dask.dataframe as dd
 
 import ibis.expr.operations as ops

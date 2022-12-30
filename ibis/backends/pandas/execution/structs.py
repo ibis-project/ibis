@@ -1,5 +1,7 @@
 """Pandas backend execution of struct fields and literals."""
 
+from __future__ import annotations
+
 import collections
 import functools
 

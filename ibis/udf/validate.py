@@ -5,8 +5,10 @@ Warning: This is an experimental module and API here can change without notice.
 DO NOT USE DIRECTLY.
 """
 
+from __future__ import annotations
+
 from inspect import Parameter, Signature, signature
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 import ibis.common.exceptions as com
 from ibis.expr.datatypes import DataType
@@ -33,7 +35,7 @@ def _parameter_count(funcsig: Signature) -> int:
     )
 
 
-def validate_input_type(input_type: List[DataType], func: Callable) -> Signature:
+def validate_input_type(input_type: list[DataType], func: Callable) -> Signature:
     """Check that the declared number of inputs and signature of func are compatible.
 
     If the signature of `func` uses *args, then no check is done (since no

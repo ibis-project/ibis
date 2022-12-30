@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from multipledispatch import Dispatcher
 
 import ibis.backends.pandas.core as core_dispatch

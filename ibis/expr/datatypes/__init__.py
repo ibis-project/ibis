@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.expr.datatypes.cast import *  # noqa: F403
 from ibis.expr.datatypes.core import *  # noqa: F403
 from ibis.expr.datatypes.parse import *  # noqa: F403

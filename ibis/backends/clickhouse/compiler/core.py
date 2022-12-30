@@ -39,6 +39,8 @@ Recurses top-down and translates the arguments of the value expression and uses
 those as input to construct the output.
 """
 
+from __future__ import annotations
+
 from typing import Any, Mapping
 
 import sqlglot as sg

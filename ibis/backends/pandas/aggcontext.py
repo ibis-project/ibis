@@ -214,11 +214,13 @@ Ibis
     >>> t.value.sum().over(window)  # doctest: +SKIP
 """
 
+from __future__ import annotations
+
 import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Iterator
 
 import numpy as np
 import pandas as pd
@@ -263,8 +265,8 @@ class AggregationContext(abc.ABC):
 
 def wrap_for_apply(
     function: Callable,
-    args: Optional[Tuple[Any, ...]] = None,
-    kwargs: Optional[Dict[str, Any]] = None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
 ) -> Callable:
     """Wrap a function for use with Pandas `apply`.
 
@@ -279,11 +281,11 @@ def wrap_for_apply(
     """
     assert callable(function), f'function {function} is not callable'
 
-    new_args: Tuple[Any, ...] = ()
+    new_args: tuple[Any, ...] = ()
     if args is not None:
         new_args = args
 
-    new_kwargs: Dict[str, Any] = {}
+    new_kwargs: dict[str, Any] = {}
     if kwargs is not None:
         new_kwargs = kwargs
 
@@ -291,8 +293,8 @@ def wrap_for_apply(
     def wrapped_func(
         data: Any,
         function: Callable = function,
-        args: Tuple[Any, ...] = new_args,
-        kwargs: Dict[str, Any] = new_kwargs,
+        args: tuple[Any, ...] = new_args,
+        kwargs: dict[str, Any] = new_kwargs,
     ) -> Callable:
         return function(data, *args, **kwargs)
 
@@ -301,8 +303,8 @@ def wrap_for_apply(
 
 def wrap_for_agg(
     function: Callable,
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> Callable:
     """Wrap a function for use with Pandas `agg`.
 
@@ -337,8 +339,8 @@ def wrap_for_agg(
     def wrapped_func(
         data: Any,
         function: Callable = function,
-        args: Tuple[Any, ...] = args,
-        kwargs: Dict[str, Any] = kwargs,
+        args: tuple[Any, ...] = args,
+        kwargs: dict[str, Any] = kwargs,
     ) -> Callable:
         # `data` will be a scalar here if Pandas `agg` is trying to behave like
         # like Pandas `apply`.
@@ -434,8 +436,8 @@ def window_agg_built_in(
     windowed: pd.core.window.Window,
     function: str,
     max_lookback: int,
-    *args: Tuple[Any],
-    **kwargs: Dict[str, Any],
+    *args: tuple[Any],
+    **kwargs: dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with built-in aggregators."""
     assert isinstance(function, str)
@@ -459,7 +461,7 @@ def window_agg_built_in(
 
 
 def create_window_input_iter(
-    grouped_data: Union[SeriesGroupBy, pd.Series],
+    grouped_data: SeriesGroupBy | pd.Series,
     masked_window_lower_indices: pd.Series,
     masked_window_upper_indices: pd.Series,
 ) -> Iterator[np.ndarray]:
@@ -484,8 +486,8 @@ def window_agg_udf(
     result_index: pd.Index,
     dtype: np.dtype,
     max_lookback: int,
-    *args: Tuple[Any],
-    **kwargs: Dict[str, Any],
+    *args: tuple[Any],
+    **kwargs: dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with UDFs.
 
@@ -557,8 +559,8 @@ class Window(AggregationContext):
 
     def agg(
         self,
-        grouped_data: Union[pd.Series, SeriesGroupBy],
-        function: Union[str, Callable],
+        grouped_data: pd.Series | SeriesGroupBy,
+        function: str | Callable,
         *args: Any,
         **kwargs: Any,
     ) -> pd.Series:

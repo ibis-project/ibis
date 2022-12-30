@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.base.sql.registry.aggregate import reduction
 from ibis.backends.base.sql.registry.helpers import (
     quote_identifier,

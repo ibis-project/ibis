@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from ibis.backends.clickhouse.compiler.core import translate

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.expr.operations.analytic import *  # noqa: F403
 from ibis.expr.operations.arrays import *  # noqa: F403
 from ibis.expr.operations.core import *  # noqa: F403

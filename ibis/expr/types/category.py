@@ -1,4 +1,6 @@
-from typing import Optional, Sequence
+from __future__ import annotations
+
+from typing import Sequence
 
 from public import public
 
@@ -9,7 +11,7 @@ from ibis.expr.types.strings import StringValue
 
 @public
 class CategoryValue(Value):
-    def label(self, labels: Sequence[str], nulls: Optional[str] = None) -> StringValue:
+    def label(self, labels: Sequence[str], nulls: str | None = None) -> StringValue:
         """Format a known number of categories as strings.
 
         Parameters
