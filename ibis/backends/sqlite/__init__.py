@@ -207,7 +207,7 @@ class Backend(BaseAlchemyBackend):
 
     def _table_from_schema(self, name, schema, database: str | None = None) -> sa.Table:
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, schema=database, *columns)
+        return sa.Table(name, self.meta, *columns, schema=database)
 
     @property
     def _current_schema(self) -> str | None:
