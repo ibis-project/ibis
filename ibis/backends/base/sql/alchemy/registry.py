@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import functools
 import operator
-from typing import Any, Dict
+from typing import Any
 
 import sqlalchemy as sa
 
@@ -482,7 +484,7 @@ def _extract(fmt: str):
     return translator
 
 
-sqlalchemy_operation_registry: Dict[Any, Any] = {
+sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
     ops.Or: fixed_arity(operator.or_, 2),

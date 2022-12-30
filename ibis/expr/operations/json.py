@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 import ibis.expr.datatypes as dt

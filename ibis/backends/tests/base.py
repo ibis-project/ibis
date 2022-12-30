@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import abc
 import inspect
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -169,13 +171,13 @@ class BackendTest(abc.ABC):
         return self.connection.table('awards_players')
 
     @property
-    def geo(self) -> Optional[ir.Table]:
+    def geo(self) -> ir.Table | None:
         if 'geo' in self.connection.list_tables():
             return self.connection.table('geo')
         return None
 
     @property
-    def struct(self) -> Optional[ir.Table]:
+    def struct(self) -> ir.Table | None:
         if self.supports_structs:
             return self.connection.table("struct")
         else:
@@ -183,7 +185,7 @@ class BackendTest(abc.ABC):
             return None
 
     @property
-    def json_t(self) -> Optional[ir.Table]:
+    def json_t(self) -> ir.Table | None:
         from ibis import _
 
         if self.supports_json:
@@ -196,5 +198,5 @@ class BackendTest(abc.ABC):
     def api(self):
         return self.connection
 
-    def make_context(self, params: Optional[Mapping[ir.Value, Any]] = None):
+    def make_context(self, params: Mapping[ir.Value, Any] | None = None):
         return self.api.compiler.make_context(params=params)

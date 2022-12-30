@@ -1,5 +1,7 @@
 """Methods to translate BigQuery expressions before compilation."""
 
+from __future__ import annotations
+
 import toolz
 
 import ibis.expr.datatypes as dt

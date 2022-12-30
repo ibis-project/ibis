@@ -10,6 +10,8 @@ dask specific types and pandas types. This cannot be done via the
 dispatcher since the top level container is a list.
 """
 
+from __future__ import annotations
+
 import functools
 from collections.abc import Sized
 

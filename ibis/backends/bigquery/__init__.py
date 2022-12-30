@@ -1,6 +1,8 @@
 """BigQuery public API."""
+
+from __future__ import annotations
+
 import warnings
-from typing import Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -73,14 +75,14 @@ class Backend(BaseSQLBackend):
 
     def connect(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         dataset_id: str = "",
-        credentials: Optional[google.auth.credentials.Credentials] = None,
-        application_name: Optional[str] = None,
+        credentials: google.auth.credentials.Credentials | None = None,
+        application_name: str | None = None,
         auth_local_webserver: bool = True,
         auth_external_data: bool = False,
         auth_cache: str = "default",
-        partition_column: Optional[str] = "PARTITIONTIME",
+        partition_column: str | None = "PARTITIONTIME",
     ) -> "Backend":
         """Create a :class:`Backend` for use with Ibis.
 
@@ -180,7 +182,7 @@ class Backend(BaseSQLBackend):
 
         return new_backend
 
-    def _parse_project_and_dataset(self, dataset) -> Tuple[str, str]:
+    def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
         project, _, dataset = parse_project_and_dataset(
@@ -406,14 +408,14 @@ def compile(expr, params=None, **kwargs):
 
 
 def connect(
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     dataset_id: str = "",
-    credentials: Optional[google.auth.credentials.Credentials] = None,
-    application_name: Optional[str] = None,
+    credentials: google.auth.credentials.Credentials | None = None,
+    application_name: str | None = None,
     auth_local_webserver: bool = False,
     auth_external_data: bool = False,
     auth_cache: str = "default",
-    partition_column: Optional[str] = "PARTITIONTIME",
+    partition_column: str | None = "PARTITIONTIME",
 ) -> Backend:
     """Create a :class:`Backend` for use with Ibis.
 

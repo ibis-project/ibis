@@ -1,5 +1,7 @@
 """The dask client implementation."""
 
+from __future__ import annotations
+
 import dask.dataframe as dd
 import numpy as np
 from pandas.api.types import DatetimeTZDtype

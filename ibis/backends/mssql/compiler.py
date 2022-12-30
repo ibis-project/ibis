@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy.dialects import mssql
 
 import ibis.expr.datatypes as dt

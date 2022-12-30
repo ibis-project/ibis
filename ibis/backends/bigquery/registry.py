@@ -1,5 +1,7 @@
 """Module to convert from Ibis expression to SQL string."""
 
+from __future__ import annotations
+
 import base64
 import datetime
 from typing import Literal

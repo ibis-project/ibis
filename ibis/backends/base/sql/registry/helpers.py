@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import identifiers

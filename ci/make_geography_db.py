@@ -13,6 +13,8 @@
 #
 # The source of the `independence` table has been obtained from
 # [Wikipedia](https://en.wikipedia.org/wiki/List_of_national_independence_days).
+from __future__ import annotations
+
 import argparse
 import datetime
 import tempfile

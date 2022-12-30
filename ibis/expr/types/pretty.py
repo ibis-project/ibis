@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from functools import singledispatch
 from math import isfinite

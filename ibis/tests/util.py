@@ -1,5 +1,7 @@
 """Test utilities."""
 
+from __future__ import annotations
+
 import pickle
 
 import ibis

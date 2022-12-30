@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sqlalchemy as sa
 
 import ibis.common.exceptions as com

@@ -1,7 +1,8 @@
 """Constants for the pandas backend."""
 
+from __future__ import annotations
+
 import operator
-from typing import Dict, Type, Union
 
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ ALTERNATE_SUFFIXES = {
 }
 
 
-IBIS_TYPE_TO_PANDAS_TYPE: Dict[dt.DataType, Union[Type, str]] = {
+IBIS_TYPE_TO_PANDAS_TYPE: dict[dt.DataType, type | str] = {
     dt.float16: np.float16,
     dt.float32: np.float32,
     dt.float64: np.float64,

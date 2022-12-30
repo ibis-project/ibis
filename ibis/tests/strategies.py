@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hypothesis as h
 import hypothesis.extra.pandas as past
 import hypothesis.extra.pytz as tzst

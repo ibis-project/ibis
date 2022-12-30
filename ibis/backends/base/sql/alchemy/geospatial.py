@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 try:
     import geoalchemy2
     import geoalchemy2.shape  # noqa: F401

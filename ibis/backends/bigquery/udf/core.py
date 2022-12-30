@@ -1,5 +1,7 @@
 """Translate a Python AST to JavaScript."""
 
+from __future__ import annotations
+
 import ast
 import contextlib
 import functools

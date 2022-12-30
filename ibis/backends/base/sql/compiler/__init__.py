@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.base.sql.compiler.base import DDL, DML
 from ibis.backends.base.sql.compiler.query_builder import (
     Compiler,
