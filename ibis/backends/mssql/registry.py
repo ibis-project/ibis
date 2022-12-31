@@ -58,17 +58,11 @@ def _string_find(t, op):
     return sa.func.charindex(sa_substr, sa_arg) - 1
 
 
-# Numerical
-def _floor_divide(t, op):
-    left, right = map(t.translate, op.args)
-    return sa.func.floor(left / right)
-
-
 def _extract(fmt):
     def translator(t, op):
         (arg,) = op.args
         sa_arg = t.translate(arg)
-        # sa.literal_column is used becuase it makes the argument pass
+        # sa.literal_column is used because it makes the argument pass
         # in NOT as a parameter
         return sa.cast(sa.func.datepart(sa.literal_column(fmt), sa_arg), sa.SMALLINT)
 
@@ -148,7 +142,9 @@ operation_registry.update(
         ops.Ceil: unary(sa.func.ceiling),
         ops.Cos: unary(sa.func.cos),
         ops.Floor: unary(sa.func.floor),
-        ops.FloorDivide: _floor_divide,
+        ops.FloorDivide: fixed_arity(
+            lambda left, right: sa.func.floor(left / right), 2
+        ),
         ops.Power: fixed_arity(sa.func.power, 2),
         ops.Sign: unary(sa.func.sign),
         ops.Sin: unary(sa.func.sin),
