@@ -7,6 +7,7 @@ import pytest
 
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
+from ibis.backends.tests.data import win
 
 dd = pytest.importorskip("dask.dataframe")
 
@@ -50,18 +51,22 @@ class TestConf(PandasTest):
                     pd.read_csv(str(data_directory / 'diamonds.csv')),
                     npartitions=NPARTITIONS,
                 ),
-                'json_t': pd.DataFrame(
-                    {
-                        "js": [
-                            '{"a": [1,2,3,4], "b": 1}',
-                            '{"a":null,"b":2}',
-                            '{"a":"foo", "c":null}',
-                            "null",
-                            "[42,47,55]",
-                            "[]",
-                        ]
-                    }
+                'json_t': dd.from_pandas(
+                    pd.DataFrame(
+                        {
+                            "js": [
+                                '{"a": [1,2,3,4], "b": 1}',
+                                '{"a":null,"b":2}',
+                                '{"a":"foo", "c":null}',
+                                "null",
+                                "[42,47,55]",
+                                "[]",
+                            ]
+                        }
+                    ),
+                    npartitions=NPARTITIONS,
                 ),
+                "win": dd.from_pandas(win, npartitions=NPARTITIONS),
             }
         )
 

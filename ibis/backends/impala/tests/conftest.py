@@ -19,6 +19,7 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
+from ibis.backends.tests.data import win
 from ibis.tests.expr.mocks import MockBackend
 
 
@@ -493,6 +494,12 @@ def impala_create_test_database(con, env):
         ),
         database=env.test_data_db,
     )
+    con.create_table(
+        "win",
+        schema=ibis.schema(dict(g="string", x="int64", y="int64")),
+        database=env.test_data_db,
+    )
+    con.table("win", database=env.test_data_db).insert(win, overwrite=True)
 
 
 PARQUET_SCHEMAS = {

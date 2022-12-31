@@ -111,3 +111,11 @@ CREATE OR REPLACE TABLE map (kv Map(String, Nullable(Int64))) ENGINE = Memory;
 INSERT INTO map VALUES
     (map('a', 1, 'b', 2, 'c', 3)),
     (map('d', 4, 'e', 5, 'c', 6));
+
+CREATE OR REPLACE TABLE win (g String, x Int64, y Int64) ENGINE = Memory;
+INSERT INTO win VALUES
+    ('a', 0, 3),
+    ('a', 1, 2),
+    ('a', 2, 0),
+    ('a', 3, 1),
+    ('a', 4, 1);

@@ -6,7 +6,7 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
-from ibis.backends.tests.data import array_types, json_types, struct_types
+from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 
 class TestConf(BackendTest, RoundHalfToEven):
@@ -35,6 +35,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 'struct': struct_types,
                 'json_t': json_types,
                 'array_types': array_types,
+                'win': win,
             }
         )
 

@@ -12,6 +12,7 @@ from ibis import util
 from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.data import win
 
 pytest.importorskip("pyspark")
 
@@ -200,6 +201,9 @@ def get_common_spark_testing_client(data_directory, connect):
         )
     )
     df_json_t.createOrReplaceTempView("json_t")
+
+    win_t = s.createDataFrame(win)
+    win_t.createOrReplaceTempView("win")
 
     return _spark_testing_client
 
