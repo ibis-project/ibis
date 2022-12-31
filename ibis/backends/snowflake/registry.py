@@ -42,15 +42,9 @@ def _round(t, op):
     return sa.func.round(*args)
 
 
-def _random(t, op):
-    min_value = sa.cast(0, sa.dialects.postgresql.FLOAT())
-    max_value = sa.cast(1, sa.dialects.postgresql.FLOAT())
-    return sa.func.uniform(min_value, max_value, sa.func.random())
-
-
-def _day_of_week_name(t, op):
+def _day_of_week_name(arg):
     return sa.case(
-        value=sa.func.dayname(t.translate(op.arg)),
+        value=sa.func.dayname(arg),
         whens=[
             ("Sun", "Sunday"),
             ("Mon", "Monday"),
@@ -103,7 +97,6 @@ _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
 _SF_NEG_INF = -_SF_POS_INF
 _SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
 
-
 operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
@@ -124,11 +117,18 @@ operation_registry.update(
         ops.Mode: reduction(sa.func.mode),
         ops.Where: fixed_arity(sa.func.iff, 3),
         # numbers
-        ops.RandomScalar: _random,
+        ops.RandomScalar: fixed_arity(
+            lambda: sa.func.uniform(
+                sa.cast(0, sa.dialects.postgresql.FLOAT()),
+                sa.cast(1, sa.dialects.postgresql.FLOAT()),
+                sa.func.random(),
+            ),
+            0,
+        ),
         # time and dates
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
-        ops.DayOfWeekName: _day_of_week_name,
+        ops.DayOfWeekName: fixed_arity(_day_of_week_name, 1),
         ops.ParseURL: _parse_url,
     }
 )
