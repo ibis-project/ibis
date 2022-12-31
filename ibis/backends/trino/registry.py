@@ -56,43 +56,12 @@ def _group_concat(t, op):
     return sa.func.array_join(arg, t.translate(op.sep))
 
 
-def _array_index(t, op):
-    return sa.func.element_at(t.translate(op.arg), t.translate(op.index) + 1)
-
-
 def _array_column(t, op):
     args = ", ".join(
         str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
         for arg in op.cols
     )
     return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
-
-
-def _day_of_week_index(t, op):
-    sa_arg = t.translate(op.arg)
-
-    return sa.cast(
-        sa.cast(sa.func.day_of_week(sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
-    )
-
-
-def _day_of_week_name(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.func.date_format(sa_arg, "%W")
-
-
-def _capitalize(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.func.concat(
-        sa.func.upper(sa.func.substring(sa_arg, 1, 2)), sa.func.substring(sa_arg, 2)
-    )
-
-
-def _string_right(t, op):
-    sa_arg = t.translate(op.arg)
-    sa_length = t.translate(op.nchars)
-
-    return sa.func.substr(sa_arg, -sa_length)
 
 
 _truncate_precisions = {
@@ -119,32 +88,6 @@ def _timestamp_truncate(t, op):
     return sa.func.date_trunc(precision, sa_arg)
 
 
-def _date_from_ymd(t, op):
-    ymdstr = sa.func.format(
-        '%04d-%02d-%02d',
-        t.translate(op.year),
-        t.translate(op.month),
-        t.translate(op.day),
-    )
-    return sa.func.from_iso8601_date(ymdstr)
-
-
-def _time_from_hms(t, op):
-    timestr = sa.func.format(
-        '%02d:%02d:%02d',
-        t.translate(op.hours),
-        t.translate(op.minutes),
-        t.translate(op.seconds),
-    )
-    return sa.cast(timestr, sa.TIME)
-
-
-def _timestamp_from_ymdhms(t, op):
-    y, mo, d, h, m, s = (t.translate(x) for x in op.args)
-    timestr = sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
-    return sa.func.from_iso8601_timestamp(timestr)
-
-
 def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
@@ -159,16 +102,6 @@ def _timestamp_from_unix(t, op):
         return sa.func.from_unixtime_nanos(arg - (arg % 1_000_000_000))
     else:
         raise ValueError(f"{unit!r} unit is not supported!")
-
-
-def _struct_field(t, op):
-    return t.translate(op.arg).op(".")(sa.text(op.field))
-
-
-def _struct_column(t, op):
-    return sa.cast(
-        sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
-    )
 
 
 def _neg_idx_to_pos(array, idx):
@@ -255,7 +188,9 @@ operation_registry.update(
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.ArrayConcat: fixed_arity(sa.func.concat, 2),
         ops.ArrayLength: unary(sa.func.cardinality),
-        ops.ArrayIndex: _array_index,
+        ops.ArrayIndex: fixed_arity(
+            lambda arg, index: sa.func.element_at(arg, index + 1), 2
+        ),
         ops.ArrayColumn: _array_column,
         ops.ArrayRepeat: fixed_arity(
             lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
@@ -264,27 +199,54 @@ operation_registry.update(
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
-        ops.DayOfWeekIndex: _day_of_week_index,
-        ops.DayOfWeekName: _day_of_week_name,
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda arg: sa.cast(
+                sa.cast(sa.func.day_of_week(arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+            ),
+            1,
+        ),
+        ops.DayOfWeekName: fixed_arity(lambda arg: sa.func.date_format(arg, "%W"), 1),
         ops.ExtractEpochSeconds: unary(sa.func.to_unixtime),
         ops.Translate: fixed_arity(sa.func.translate, 3),
-        ops.Capitalize: _capitalize,
-        ops.StrRight: _string_right,
+        ops.Capitalize: fixed_arity(
+            lambda arg: sa.func.concat(
+                sa.func.upper(sa.func.substring(arg, 1, 2)), sa.func.substring(arg, 2)
+            ),
+            1,
+        ),
+        ops.StrRight: fixed_arity(lambda arg, nchars: sa.func.substr(arg, -nchars), 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Repeat: fixed_arity(
             lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
         ),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
-        ops.DateFromYMD: _date_from_ymd,
-        ops.TimeFromHMS: _time_from_hms,
-        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
+        ops.DateFromYMD: fixed_arity(
+            lambda y, m, d: sa.func.from_iso8601_date(
+                sa.func.format('%04d-%02d-%02d', y, m, d)
+            ),
+            3,
+        ),
+        ops.TimeFromHMS: fixed_arity(
+            lambda h, m, s: sa.cast(sa.func.format('%02d:%02d:%02d', h, m, s), sa.TIME),
+            3,
+        ),
+        ops.TimestampFromYMDHMS: fixed_arity(
+            lambda y, mo, d, h, m, s: sa.func.from_iso8601_timestamp(
+                sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
+            ),
+            6,
+        ),
         ops.Strftime: fixed_arity(sa.func.date_format, 2),
         ops.StringToTimestamp: fixed_arity(sa.func.date_parse, 2),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.StructField: _struct_field,
-        ops.StructColumn: _struct_column,
+        ops.StructField: (lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field))),
+        ops.StructColumn: (
+            lambda t, op: sa.cast(
+                sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
+            )
+        ),
         ops.Literal: _literal,
         ops.MapLength: fixed_arity(sa.func.cardinality, 1),
         ops.MapGet: fixed_arity(
