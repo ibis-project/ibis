@@ -84,3 +84,13 @@ INSERT INTO json_t VALUES
     ('null'),
     ('[42,47,55]'),
     ('[]');
+
+DROP TABLE IF EXISTS win CASCADE;
+
+CREATE TABLE win (g TEXT, x BIGINT, y BIGINT);
+INSERT INTO win VALUES
+    ('a', 0, 3),
+    ('a', 1, 2),
+    ('a', 2, 0),
+    ('a', 3, 1),
+    ('a', 4, 1);

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -796,3 +797,29 @@ def test_mutate_window_filter(backend, alltypes, df):
     res = expr.execute()
     sol = pd.DataFrame({"int_col": [1, 1, 1], "next_int": [2, 2, 2]})
     backend.assert_frame_equal(res, sol, check_dtype=False)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["impala"], reason="the database returns incorrect results")
+def test_first_last(con):
+    t = con.table("win")
+    w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
+    expr = t.mutate(
+        x_first=t.x.first().over(w),
+        x_last=t.x.last().over(w),
+        y_first=t.y.first().over(w),
+        y_last=t.y.last().over(w),
+    )
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {
+            "g": ["a"] * 5,
+            "x": range(5),
+            "y": [3, 2, 0, 1, 1],
+            "x_first": [0, 0, 1, 2, 3],
+            "x_last": range(5),
+            "y_first": [3, 3, 2, 0, 1],
+            "y_last": [3, 2, 0, 1, 1],
+        }
+    )
+    tm.assert_frame_equal(result, expected)

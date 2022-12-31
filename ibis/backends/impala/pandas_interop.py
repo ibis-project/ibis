@@ -19,6 +19,7 @@ import os
 import tempfile
 from posixpath import join as pjoin
 
+import ibis.backends.pandas.client  # noqa: F401
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.util as util
