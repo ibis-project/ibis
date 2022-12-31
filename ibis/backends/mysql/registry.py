@@ -26,30 +26,6 @@ if geospatial_supported:
     operation_registry.update(geospatial_functions)
 
 
-def _capitalize(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.func.concat(
-        sa.func.ucase(sa.func.left(sa_arg, 1)), sa.func.substring(sa_arg, 2)
-    )
-
-
-def _startswith(t, op):
-    arg = t.translate(op.arg)
-    start = t.translate(op.start)
-    # LIKE in mysql is case insensitive
-    return arg.op("LIKE BINARY")(sa.func.concat(start, "%"))
-
-
-def _endswith(t, op):
-    arg = t.translate(op.arg)
-    end = t.translate(op.end)
-    return arg.op("LIKE BINARY")(sa.func.concat("%", end))
-
-
-def _extract_millisecond(t, op):
-    return sa.func.floor(sa.extract('microsecond', t.translate(op.arg)) / 1000)
-
-
 _truncate_formats = {
     's': '%Y-%m-%d %H:%i:%s',
     'm': '%Y-%m-%d %H:%i:00',
@@ -68,12 +44,6 @@ def _truncate(t, op):
     except KeyError:
         raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit}')
     return sa.func.date_format(sa_arg, fmt)
-
-
-def _log(t, op):
-    sa_arg = t.translate(op.arg)
-    sa_base = t.translate(op.base)
-    return sa.func.log(sa_base, sa_arg)
 
 
 def _round(t, op):
@@ -102,18 +72,6 @@ def _interval_from_integer(t, op):
     if isinstance(sa_arg, sa.sql.elements.BindParameter):
         return sa.text(f'INTERVAL :arg {text_unit}').bindparams(arg=sa_arg.value)
     return sa.text(f'INTERVAL {sa_arg} {text_unit}')
-
-
-def _timestamp_diff(t, op):
-    sa_left = t.translate(op.left)
-    sa_right = t.translate(op.right)
-    return sa.func.timestampdiff(sa.text('SECOND'), sa_right, sa_left)
-
-
-def _string_to_timestamp(t, op):
-    sa_arg = t.translate(op.arg)
-    sa_format_str = t.translate(op.format_str)
-    return sa.func.str_to_date(sa_arg, sa_format_str)
 
 
 def _literal(_, op):
@@ -147,26 +105,6 @@ def _group_concat(t, op):
     return sa.func.group_concat(arg.op('SEPARATOR')(sep))
 
 
-def _day_of_week_index(t, op):
-    left = sa.func.dayofweek(t.translate(op.arg)) - 2
-    right = 7
-    return (left % right + right) % right
-
-
-def _day_of_week_name(t, op):
-    return sa.func.dayname(t.translate(op.arg))
-
-
-def _find_in_set(t, op):
-    return (
-        sa.func.find_in_set(
-            t.translate(op.needle),
-            sa.func.concat_ws(",", *map(t.translate, op.values)),
-        )
-        - 1
-    )
-
-
 def _json_get_item(t, op):
     arg = t.translate(op.arg)
     index = t.translate(op.index)
@@ -185,13 +123,31 @@ operation_registry.update(
         ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # strings
         ops.StringFind: _gen_string_find(sa.func.locate),
-        ops.FindInSet: _find_in_set,
-        ops.StartsWith: _startswith,
-        ops.EndsWith: _endswith,
-        ops.Capitalize: _capitalize,
+        ops.FindInSet: (
+            lambda t, op: (
+                sa.func.find_in_set(
+                    t.translate(op.needle),
+                    sa.func.concat_ws(",", *map(t.translate, op.values)),
+                )
+                - 1
+            )
+        ),
+        # LIKE in mysql is case insensitive
+        ops.StartsWith: fixed_arity(
+            lambda arg, start: arg.op("LIKE BINARY")(sa.func.concat(start, "%")), 2
+        ),
+        ops.EndsWith: fixed_arity(
+            lambda arg, end: arg.op("LIKE BINARY")(sa.func.concat("%", end)), 2
+        ),
+        ops.Capitalize: fixed_arity(
+            lambda arg: sa.func.concat(
+                sa.func.ucase(sa.func.left(arg, 1)), sa.func.substring(arg, 2)
+            ),
+            1,
+        ),
         ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
         # math
-        ops.Log: _log,
+        ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
         ops.Log2: unary(sa.func.log2),
         ops.Log10: unary(sa.func.log10),
         ops.Round: _round,
@@ -201,8 +157,12 @@ operation_registry.update(
         ops.DateDiff: fixed_arity(sa.func.datediff, 2),
         ops.TimestampAdd: fixed_arity(operator.add, 2),
         ops.TimestampSub: fixed_arity(operator.sub, 2),
-        ops.TimestampDiff: _timestamp_diff,
-        ops.StringToTimestamp: _string_to_timestamp,
+        ops.TimestampDiff: fixed_arity(
+            lambda left, right: sa.func.timestampdiff(sa.text('SECOND'), right, left), 2
+        ),
+        ops.StringToTimestamp: fixed_arity(
+            lambda arg, format_str: sa.func.str_to_date(arg, format_str), 2
+        ),
         ops.DateTruncate: _truncate,
         ops.TimestampTruncate: _truncate,
         ops.IntervalFromInteger: _interval_from_integer,
@@ -210,12 +170,16 @@ operation_registry.update(
         ops.ExtractDayOfYear: unary(sa.func.dayofyear),
         ops.ExtractEpochSeconds: unary(sa.func.UNIX_TIMESTAMP),
         ops.ExtractWeekOfYear: unary(sa.func.weekofyear),
-        ops.ExtractMillisecond: _extract_millisecond,
+        ops.ExtractMillisecond: fixed_arity(
+            lambda arg: sa.func.floor(sa.extract('microsecond', arg) / 1000), 1
+        ),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         # others
         ops.GroupConcat: _group_concat,
-        ops.DayOfWeekIndex: _day_of_week_index,
-        ops.DayOfWeekName: _day_of_week_name,
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda arg: (sa.func.dayofweek(arg) + 5) % 7, 1
+        ),
+        ops.DayOfWeekName: fixed_arity(lambda arg: sa.func.dayname(arg), 1),
         ops.JSONGetItem: _json_get_item,
     }
 )
