@@ -40,28 +40,6 @@ if geospatial_supported:
     operation_registry.update(geospatial_functions)
 
 
-def _epoch(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.extract('epoch', sa_arg), sa.INTEGER)
-
-
-def _second(t, op):
-    # extracting the second gives us the fractional part as well, so smash that
-    # with a cast to SMALLINT
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.func.floor(sa.extract('second', sa_arg)), sa.SMALLINT)
-
-
-def _millisecond(t, op):
-    # we get total number of milliseconds including seconds with extract so we
-    # mod 1000
-    sa_arg = t.translate(op.arg)
-    return sa.cast(
-        sa.func.floor(sa.extract('millisecond', sa_arg)) % 1000,
-        sa.SMALLINT,
-    )
-
-
 _truncate_precisions = {
     'us': 'microseconds',
     'ms': 'milliseconds',
@@ -83,23 +61,6 @@ def _timestamp_truncate(t, op):
     except KeyError:
         raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
     return sa.func.date_trunc(precision, sa_arg)
-
-
-def _interval_from_integer(t, op):
-    sa_arg = t.translate(op.arg)
-    interval = sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
-    return sa_arg * interval
-
-
-def _is_nan(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa_arg == float('nan')
-
-
-def _is_inf(t, op):
-    sa_arg = t.translate(op.arg)
-    inf = float('inf')
-    return sa.or_(sa_arg == inf, sa_arg == -inf)
 
 
 def _typeof(t, op):
@@ -260,8 +221,7 @@ def _reduce_tokens(tokens, arg):
     return reduced
 
 
-def _strftime(t, op):
-    arg, pattern = map(t.translate, op.args)
+def _strftime(arg, pattern):
     tokens, _ = _scanner.scan(pattern.value)
     reduced = _reduce_tokens(tokens, arg)
     return functools.reduce(sa.sql.ColumnElement.concat, reduced)
@@ -283,13 +243,6 @@ def _find_in_set(t, op):
     )
 
 
-def _regex_replace(t, op):
-    string, pattern, replacement = map(t.translate, op.args)
-
-    # postgres defaults to replacing only the first occurrence
-    return sa.func.regexp_replace(string, pattern, replacement, 'g')
-
-
 def _log(t, op):
     arg, base = op.args
     sa_arg = t.translate(arg)
@@ -302,12 +255,11 @@ def _log(t, op):
     return sa.func.ln(sa_arg)
 
 
-def _regex_extract(t, op):
-    arg = t.translate(op.arg)
+def _regex_extract(arg, pattern, index):
     # wrap in parens to support 0th group being the whole string
-    pattern = "(" + t.translate(op.pattern) + ")"
+    pattern = "(" + pattern + ")"
     # arrays are 1-based in postgres
-    index = t.translate(op.index) + 1
+    index = index + 1
     does_match = sa.func.textregexeq(arg, pattern)
     matches = sa.func.regexp_match(arg, pattern, type_=pg.ARRAY(sa.TEXT))
     return sa.case([(does_match, matches[index])], else_=None)
@@ -454,20 +406,6 @@ def _literal(_, op):
         return sa.literal(value)
 
 
-def _day_of_week_index(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT)
-
-
-def _day_of_week_name(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
-
-
-def _array_column(t, op):
-    return pg.array(list(map(t.translate, op.cols)))
-
-
 def _string_agg(t, op):
     agg = sa.func.string_agg(t.translate(op.arg), t.translate(op.sep))
     if (where := op.where) is not None:
@@ -526,8 +464,10 @@ operation_registry.update(
         # types
         ops.TypeOf: _typeof,
         # Floating
-        ops.IsNan: _is_nan,
-        ops.IsInf: _is_inf,
+        ops.IsNan: fixed_arity(lambda arg: arg == float('nan'), 1),
+        ops.IsInf: fixed_arity(
+            lambda arg: sa.or_(arg == float('inf'), arg == float('-inf')), 1
+        ),
         # null handling
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),
         # boolean reductions
@@ -539,9 +479,15 @@ operation_registry.update(
         ops.GroupConcat: _string_agg,
         ops.Capitalize: unary(sa.func.initcap),
         ops.RegexSearch: fixed_arity(lambda x, y: x.op("~")(y), 2),
-        ops.RegexReplace: _regex_replace,
+        # postgres defaults to replacing only the first occurrence
+        ops.RegexReplace: fixed_arity(
+            lambda string, pattern, replacement: sa.func.regexp_replace(
+                string, pattern, replacement, 'g'
+            ),
+            3,
+        ),
         ops.Translate: fixed_arity('translate', 3),
-        ops.RegexExtract: _regex_extract,
+        ops.RegexExtract: fixed_arity(_regex_extract, 3),
         ops.StringSplit: fixed_arity(
             lambda col, sep: sa.func.string_to_array(
                 col, sep, type_=sa.ARRAY(col.type)
@@ -559,21 +505,46 @@ operation_registry.update(
         ops.DateFromYMD: fixed_arity(sa.func.make_date, 3),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
-        ops.IntervalFromInteger: _interval_from_integer,
+        ops.IntervalFromInteger: (
+            lambda t, op: t.translate(op.arg)
+            * sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
+        ),
         ops.DateAdd: fixed_arity(operator.add, 2),
         ops.DateSub: fixed_arity(operator.sub, 2),
         ops.DateDiff: fixed_arity(operator.sub, 2),
         ops.TimestampAdd: fixed_arity(operator.add, 2),
         ops.TimestampSub: fixed_arity(operator.sub, 2),
         ops.TimestampDiff: fixed_arity(operator.sub, 2),
-        ops.Strftime: _strftime,
-        ops.ExtractEpochSeconds: _epoch,
+        ops.Strftime: fixed_arity(_strftime, 2),
+        ops.ExtractEpochSeconds: fixed_arity(
+            lambda arg: sa.cast(sa.extract('epoch', arg), sa.INTEGER), 1
+        ),
         ops.ExtractDayOfYear: _extract('doy'),
         ops.ExtractWeekOfYear: _extract('week'),
-        ops.ExtractSecond: _second,
-        ops.ExtractMillisecond: _millisecond,
-        ops.DayOfWeekIndex: _day_of_week_index,
-        ops.DayOfWeekName: _day_of_week_name,
+        # extracting the second gives us the fractional part as well, so smash that
+        # with a cast to SMALLINT
+        ops.ExtractSecond: fixed_arity(
+            lambda arg: sa.cast(sa.func.floor(sa.extract('second', arg)), sa.SMALLINT),
+            1,
+        ),
+        # we get total number of milliseconds including seconds with extract so we
+        # mod 1000
+        ops.ExtractMillisecond: fixed_arity(
+            lambda arg: sa.cast(
+                sa.func.floor(sa.extract('millisecond', arg)) % 1000,
+                sa.SMALLINT,
+            ),
+            1,
+        ),
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda arg: sa.cast(
+                sa.cast(sa.extract('dow', arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+            ),
+            1,
+        ),
+        ops.DayOfWeekName: fixed_arity(
+            lambda arg: sa.func.trim(sa.func.to_char(arg, 'Day')), 1
+        ),
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
@@ -582,7 +553,7 @@ operation_registry.update(
         # array operations
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayCollect: reduction(sa.func.array_agg),
-        ops.ArrayColumn: _array_column,
+        ops.ArrayColumn: (lambda t, op: pg.array(list(map(t.translate, op.cols)))),
         ops.ArraySlice: _array_slice(
             index_converter=_neg_idx_to_pos,
             array_length=sa.func.cardinality,
