@@ -66,7 +66,7 @@ def _extract_url_query(t, op):
     else:
         r = sa.func.get(parsed_url, 'query')
 
-    return sa.func.nullif(r, "")
+    return sa.func.nullif(sa.func.as_varchar(r), "")
 
 
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
@@ -105,24 +105,42 @@ operation_registry.update(
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
         ops.DayOfWeekName: fixed_arity(_day_of_week_name, 1),
-        ops.ExtractProtocol: lambda arg: sa.func.nullif(
-            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "scheme"), "")
+        ops.ExtractProtocol: fixed_arity(
+            lambda arg: sa.func.nullif(
+                sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "scheme")), ""
+            ),
+            1,
         ),
-        ops.ExtractAuthority: lambda arg: sa.func.concat_ws(
-            ":",
-            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "host")),
-            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "port")),
+        ops.ExtractAuthority: fixed_arity(
+            lambda arg: sa.func.concat_ws(
+                ":",
+                sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "host")),
+                sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "port")),
+            ),
+            1,
         ),
-        ops.ExtractFile: lambda arg: sa.func.concat_ws(
-            "?",
-            "/" + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
-            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "query")),
+        ops.ExtractFile: fixed_arity(
+            lambda arg: sa.func.concat_ws(
+                "?",
+                "/"
+                + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
+                sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "query")),
+            ),
+            1,
         ),
-        ops.ExtractPath: lambda arg: "/"
-        + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
+        ops.ExtractPath: fixed_arity(
+            lambda arg: (
+                "/" + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path"))
+            ),
+            1,
+        ),
         ops.ExtractQuery: _extract_url_query,
-        ops.ExtractFragment: lambda arg: sa.func.nullif(
-            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "fragment"), "")
+        ops.ExtractFragment: fixed_arity(
+            lambda arg: sa.func.nullif(
+                sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "fragment")),
+                "",
+            ),
+            1,
         ),
     }
 )
