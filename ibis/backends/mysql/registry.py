@@ -60,7 +60,7 @@ def _round(t, op):
 def _interval_from_integer(t, op):
     if op.unit in {'ms', 'ns'}:
         raise com.UnsupportedOperationError(
-            'MySQL does not allow operation ' 'with INTERVAL offset {}'.format(op.unit)
+            f'MySQL does not allow operation with INTERVAL offset {op.unit}'
         )
 
     sa_arg = t.translate(op.arg)

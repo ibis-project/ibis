@@ -19,7 +19,7 @@ class Node(Concrete, Traversable):
     def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(
-                "invalid equality comparison between Node and " f"{type(other)}"
+                f"invalid equality comparison between Node and {type(other)}"
             )
         return self.__cached_equals__(other)
 

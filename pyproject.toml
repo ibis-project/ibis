@@ -86,7 +86,7 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 black = ">=22.1.0,<23"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
-ruff = ">=0.0.189,<1"
+ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<23"
@@ -316,6 +316,7 @@ select = [
   "ICN", # flake8-import-conventions
   "RET", # flake8-return
   "BLE", # flake8-blind-except
+  "ISC", # flake8-implicit-str-concat
 
 ]
 respect-gitignore = true

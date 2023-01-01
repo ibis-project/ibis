@@ -349,7 +349,7 @@ class Backend(BaseSQLBackend):
         """
         if database is not None:
             raise com.UnsupportedArgumentError(
-                'Spark does not support the `database` argument for ' '`get_schema`'
+                'Spark does not support the `database` argument for `get_schema`'
             )
 
         df = self._session.table(table_name)

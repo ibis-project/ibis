@@ -101,7 +101,7 @@ def _clean_join_predicates(left, right, predicates):
     for pred in predicates:
         if isinstance(pred, tuple):
             if len(pred) != 2:
-                raise com.ExpressionError('Join key tuple must be ' 'length 2')
+                raise com.ExpressionError('Join key tuple must be length 2')
             lk, rk = pred
             lk = left.to_expr()._ensure_expr(lk)
             rk = right.to_expr()._ensure_expr(rk)

@@ -63,7 +63,7 @@ class DataType(Concrete):
     def equals(self, other):
         if not isinstance(other, DataType):
             raise TypeError(
-                "invalid equality comparison between DataType and " f"{type(other)}"
+                f"invalid equality comparison between DataType and {type(other)}"
             )
         return super().__cached_equals__(other)
 
@@ -411,7 +411,7 @@ class Floating(Primitive, Numeric):
     @property
     def _nbytes(self) -> int:
         raise TypeError(
-            "Cannot determine the size in bytes of an abstract floating " "point type."
+            "Cannot determine the size in bytes of an abstract floating point type."
         )
 
 

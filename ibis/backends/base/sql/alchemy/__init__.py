@@ -189,7 +189,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Creating tables from a different database is not yet ' 'implemented'
+                'Creating tables from a different database is not yet implemented'
             )
 
         if expr is None and schema is None:
@@ -270,7 +270,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Dropping tables from a different database is not yet ' 'implemented'
+                'Dropping tables from a different database is not yet implemented'
             )
 
         t = self._get_sqla_table(table_name, schema=database, autoload=False)
@@ -527,7 +527,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         raise NotImplementedError(
-            f"The {self.name} backend does not implement temporary view " "creation"
+            f"The {self.name} backend does not implement temporary view creation"
         )
 
     def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:

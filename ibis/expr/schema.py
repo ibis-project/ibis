@@ -111,7 +111,7 @@ class Schema(Concrete):
         """
         if not isinstance(other, Schema):
             raise TypeError(
-                "invalid equality comparison between Schema and " f"{type(other)}"
+                f"invalid equality comparison between Schema and {type(other)}"
             )
         return self.__cached_equals__(other)
 

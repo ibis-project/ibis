@@ -149,7 +149,7 @@ def _array_slice_op(op, **kw):
 
         length = (
             f"if({stop} < 0, {stop}, "
-            + f"if({start} < 0, {diff_fmt(neg_start)}, {diff_fmt(start)}))"
+            f"if({start} < 0, {diff_fmt(neg_start)}, {diff_fmt(start)}))"
         )
 
         return f"arraySlice({arg}, {start_correct}, {length})"
@@ -1042,7 +1042,7 @@ def format_window(op, window, **kw):
 
     if window.max_lookback is not None:
         raise NotImplementedError(
-            'Rows with max lookback is not implemented ' 'for string-based backends.'
+            'Rows with max lookback is not implemented for string-based backends.'
         )
 
     if window._group_by:
@@ -1177,8 +1177,8 @@ def _replace_interval_with_scalar(expr: ir.Expr | dt.Interval | float):
         except KeyError:
             raise ValueError(
                 "Expected preceding values of week(), "
-                + "day(), hour(), minute(), second(), millisecond(), "
-                + f"microseconds(), nanoseconds(); got {expr}"
+                "day(), hour(), minute(), second(), millisecond(), "
+                f"microseconds(), nanoseconds(); got {expr}"
             )
     elif expr_op.args and isinstance(expr, ir.IntervalValue):
         if len(expr_op.args) > 2:

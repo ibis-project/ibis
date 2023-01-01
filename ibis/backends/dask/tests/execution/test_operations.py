@@ -1019,9 +1019,7 @@ def test_difference(client, df1, intersect_df2):
             True,
             marks=pytest.mark.xfail(
                 raises=TypeError,
-                reason=(
-                    "dask cannot compute the distinct element of an " "array column"
-                ),
+                reason="dask cannot compute the distinct element of an array column",
             ),
         ),
         False,

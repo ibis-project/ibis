@@ -529,7 +529,7 @@ def column_from(table_ref, column, **kwargs):
 
     if not isinstance(column, ir.Column):
         raise com.IbisTypeError(
-            "value must be an int or str or Column, got " f"{type(column).__name__}"
+            f"value must be an int or str or Column, got {type(column).__name__}"
         )
 
     if not column.has_name():
@@ -633,7 +633,7 @@ def window_from(table_ref, win, **kwargs):
         win = win.bind(table.to_expr())
 
     if win.max_lookback is not None:
-        error_msg = "'max lookback' windows must be ordered " "by a timestamp column"
+        error_msg = "`max_lookback` window must be ordered by a timestamp column"
         if len(win._order_by) != 1:
             raise com.IbisInputError(error_msg)
         order_var = win._order_by[0].args[0]

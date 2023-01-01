@@ -116,7 +116,7 @@ def format_window(translator, op, window):
 
     if window.max_lookback is not None:
         raise NotImplementedError(
-            'Rows with max lookback is not implemented ' 'for Impala-based backends.'
+            'Rows with max lookback is not implemented for Impala-based backends.'
         )
 
     if window._group_by:
