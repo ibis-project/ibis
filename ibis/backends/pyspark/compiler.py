@@ -24,7 +24,7 @@ from ibis.backends.pyspark.timecontext import (
 )
 from ibis.config import options
 from ibis.expr.timecontext import adjust_context
-from ibis.util import frozendict, guid
+from ibis.util import any_of, frozendict, guid
 
 
 class PySparkDatabaseTable(ops.DatabaseTable):
@@ -905,9 +905,9 @@ def compile_substring(t, op, **kwargs):
     start = t.translate(op.start, **kwargs, raw=True) + 1
     length = t.translate(op.length, **kwargs, raw=True)
 
-    if isinstance(start, pyspark.sql.Column) or isinstance(length, pyspark.sql.Column):
+    if any_of((start, length), pyspark.sql.Column):
         raise NotImplementedError(
-            "Specifiying Start and length with column expressions " "are not supported."
+            "Specifiying `start` or `length` with column expressions is not supported."
         )
 
     return src_column.substr(start, length)
@@ -1500,7 +1500,7 @@ def compile_date_sub(t, op, **kwargs):
 @compiles(ops.DateDiff)
 def compile_date_diff(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support DateDiff as there is no ' 'timedelta type.'
+        'PySpark backend does not support DateDiff as there is no timedelta type.'
     )
 
 

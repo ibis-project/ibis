@@ -66,7 +66,7 @@ class Expr(Immutable):
     def equals(self, other):
         if not isinstance(other, Expr):
             raise TypeError(
-                "invalid equality comparison between Expr and " f"{type(other)}"
+                f"invalid equality comparison between Expr and {type(other)}"
             )
         return self._arg.equals(other._arg)
 

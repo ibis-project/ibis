@@ -120,11 +120,11 @@ def canonicalize_context(
         )
     if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
-            f'end time value {end} of type {type(begin)} is not' ' of type pd.Timestamp'
+            f'end time value {end} of type {type(begin)} is not of type pd.Timestamp'
         )
     if begin > end:
         raise com.IbisError(
-            f'begin time {begin} must be before or equal' f' to end time {end}'
+            f'begin time {begin} must be before or equal to end time {end}'
         )
     return begin, end
 

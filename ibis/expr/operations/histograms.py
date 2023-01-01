@@ -53,6 +53,6 @@ class CategoryLabel(Value):
         cardinality = arg.output_dtype.cardinality
         if len(labels) != cardinality:
             raise ValueError(
-                'Number of labels must match number of ' f'categories: {cardinality}'
+                f"Number of labels must match number of categories: {cardinality}"
             )
         super().__init__(arg=arg, labels=labels, **kwargs)

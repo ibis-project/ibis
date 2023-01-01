@@ -79,7 +79,7 @@ def get_preceding_value_mlb(preceding: RowsWithMaxLookback):
     preceding_value = preceding.rows
     if not isinstance(preceding_value, (int, np.integer)):
         raise TypeError(
-            "'Rows with max look-back' only supports integer " "row-based indexing."
+            f"{type(preceding).__name__} only supports integer row-based indexing."
         )
     return preceding_value
 
@@ -179,7 +179,7 @@ class Window(Comparable):
 
         if (preceding_tuple and has_following) or (following_tuple and has_preceding):
             raise IbisInputError(
-                'Can only specify one window side when you want an ' 'off-center window'
+                'Can only specify one window side when you want an off-center window'
             )
         elif preceding_tuple:
             start, end = self.preceding
@@ -298,7 +298,7 @@ class Window(Comparable):
     def equals(self, other):
         if not isinstance(other, Window):
             raise TypeError(
-                "invalid equality comparison between Window and " f"{type(other)}"
+                f"invalid equality comparison between {type(self)} and {type(other)}"
             )
         return self.__cached_equals__(other)
 

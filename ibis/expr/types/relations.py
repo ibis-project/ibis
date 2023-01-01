@@ -184,7 +184,7 @@ class Table(Expr, JupyterMixin):
         if key in common_typos:
             hint = common_typos[key]
             raise AttributeError(
-                f"'Table' object has no attribute {key!r}, " f"did you mean '{hint}'"
+                f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}"
             )
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 

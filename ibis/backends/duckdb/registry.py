@@ -146,7 +146,7 @@ def _strftime(t, op):
     format_str = op.format_str
     if not isinstance(format_str_op := format_str, ops.Literal):
         raise TypeError(
-            "DuckDB format_str must be a literal `str`; " f"got {type(format_str)}"
+            f"DuckDB format_str must be a literal `str`; got {type(format_str)}"
         )
     return sa.func.strftime(t.translate(op.arg), sa.text(repr(format_str_op.value)))
 

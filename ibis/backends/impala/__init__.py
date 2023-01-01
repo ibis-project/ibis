@@ -1075,9 +1075,7 @@ class Backend(BaseSQLBackend):
                     return
                 else:
                     raise Exception(
-                        "More than one function "
-                        + f"with {name} found."
-                        + "Please specify force=True"
+                        f"More than one function with {name} found. Please specify force=True"
                     )
             elif len(result) == 1:
                 func = result.pop()

@@ -370,7 +370,7 @@ def pytest_runtest_call(item):
             pytest.mark.xfail(
                 condition,
                 reason=(
-                    "unsupported functionality for server version " f"{server_version}"
+                    f"unsupported functionality for server version {server_version}"
                 ),
                 **kwargs,
             )
@@ -390,9 +390,7 @@ def pytest_runtest_call(item):
         else:
             condition = vparse(version) < vparse(min_version)
             if reason is None:
-                reason = (
-                    f"test requires {backend}>={version}; " f"got version {version}"
-                )
+                reason = f"test requires {backend}>={version}; got version {version}"
             else:
                 reason = f"{backend}@{version} (<{min_version}): {reason}"
         item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))

@@ -45,7 +45,7 @@ class TableSetFormatter:
     # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
         if util.all_of([op.left, op.right], ops.Join):
-            raise NotImplementedError('Do not support joins between ' 'joins yet')
+            raise NotImplementedError('Do not support joins between joins yet')
 
         jname = self._get_join_type(op)
 

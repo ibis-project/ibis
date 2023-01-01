@@ -21,7 +21,7 @@ execute_node = TraceTwoLevelDispatcher(
 @execute_node.register(ops.Node)
 def raise_unknown_op(node, **kwargs):
     raise NotImplementedError(
-        f"Operation {type(node).__name__!r} is not implemented " f"for this backend"
+        f"Operation {type(node).__name__!r} is not implemented for this backend"
     )
 
 
