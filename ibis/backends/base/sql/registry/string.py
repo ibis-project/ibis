@@ -65,15 +65,26 @@ def string_ilike(translator, op):
     return f'upper({arg}) LIKE upper({pattern})'
 
 
-def parse_url(translator, op):
-    arg, extract, key = op.args
-    arg_formatted = translator.translate(arg)
+def extract_url_field(extract):
+    if extract == 'QUERY':
 
-    if key is None:
-        return f"parse_url({arg_formatted}, '{extract}')"
+        def _op(translator, op):
+            arg, key = op.args
+            arg_formatted = translator.translate(arg)
+
+            if key is None:
+                return f"parse_url({arg_formatted}, '{extract}')"
+            else:
+                key_fmt = translator.translate(key)
+                return f"parse_url({arg_formatted}, '{extract}', {key_fmt})"
+
     else:
-        key_fmt = translator.translate(key)
-        return f"parse_url({arg_formatted}, '{extract}', {key_fmt})"
+
+        def _op(translator, op):
+            arg_formatted = translator.translate(op.arg)
+            return f"parse_url({arg_formatted}, '{extract}')"
+
+    return _op
 
 
 def startswith(translator, op):

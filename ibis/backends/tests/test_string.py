@@ -3,6 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import OperationNotDefinedError
 
 
 def is_text_type(x):
@@ -420,15 +421,27 @@ def test_substr_with_null_values(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("result_func", "expected"),
     [
-        param(lambda d: d.parse_url("PROTOCOL"), "http", id="protocol"),
+        param(lambda d: d.protocol(), "http", id="protocol"),
         param(
-            lambda d: d.parse_url("AUTHORITY"),
+            lambda d: d.authority(),
             "user:pass@example.com:80",
             id="authority",
             marks=[pytest.mark.notyet(["trino"])],
         ),
         param(
-            lambda d: d.parse_url("HOST"),
+            lambda d: d.userinfo(),
+            "user:pass",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse", "snowflake", "trino"],
+                    raises=(NotImplementedError, OperationNotDefinedError),
+                    reason="doesn't support `USERINFO`",
+                )
+            ],
+            id="userinfo",
+        ),
+        param(
+            lambda d: d.host(),
             "example.com",
             id="host",
             marks=[
@@ -437,38 +450,26 @@ def test_substr_with_null_values(backend, alltypes, df):
                     reason="Backend is foiled by the presence of a password",
                 ),
                 pytest.mark.notyet(
-                    ["snowflake"], raises=ValueError, reason="host is netloc"
+                    ["snowflake"],
+                    raises=(NotImplementedError, OperationNotDefinedError),
+                    reason="host is netloc",
                 ),
             ],
         ),
         param(
-            lambda d: d.parse_url("PATH"), "/docs/books/tutorial/index.html", id="path"
-        ),
-        param(lambda d: d.parse_url("QUERY"), "name=networking", id="query"),
-        param(lambda d: d.parse_url("QUERY", 'name'), "networking", id="query-key"),
-        param(
-            lambda d: d.parse_url("QUERY", ibis.literal('na') + ibis.literal('me')),
-            "networking",
-            id="query-dynamic-key",
-        ),
-        param(
-            lambda d: d.parse_url("FILE"),
+            lambda d: d.file(),
             "/docs/books/tutorial/index.html?name=networking",
             id="file",
         ),
-        param(lambda d: d.parse_url("REF"), "DOWNLOADING", id="ref"),
+        param(lambda d: d.path(), "/docs/books/tutorial/index.html", id="path"),
+        param(lambda d: d.query(), "name=networking", id="query"),
+        param(lambda d: d.query('name'), "networking", id="query-key"),
         param(
-            lambda d: d.parse_url("USERINFO"),
-            "user:pass",
-            marks=[
-                pytest.mark.notyet(
-                    ["clickhouse", "snowflake", "trino"],
-                    raises=ValueError,
-                    reason="doesn't support `USERINFO`",
-                )
-            ],
-            id="userinfo",
+            lambda d: d.query(ibis.literal('na') + ibis.literal('me')),
+            "networking",
+            id="query-dynamic-key",
         ),
+        param(lambda d: d.fragment(), "DOWNLOADING", id="ref"),
     ],
 )
 @pytest.mark.notimpl(

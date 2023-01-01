@@ -129,32 +129,14 @@ def _array_slice(t, op):
     return sa.func.slice(arg, start + 1, length, type_=arg.type)
 
 
-_PARSE_URL_FUNCS = {
-    "PROTOCOL": lambda arg, _: sa.func.url_extract_protocol(arg),
-    "HOST": lambda arg, _: sa.func.url_extract_host(arg),
-    "PATH": lambda arg, _: sa.func.url_extract_path(arg),
-    "REF": lambda arg, _: sa.func.url_extract_fragment(arg),
-    "FILE": lambda arg, _: sa.func.concat_ws(
-        "?",
-        sa.func.nullif(sa.func.url_extract_path(arg), ""),
-        sa.func.nullif(sa.func.url_extract_query(arg), ""),
-    ),
-    "QUERY": lambda arg, key: (
-        sa.func.url_extract_parameter(arg, key)
-        if key is not None
-        else sa.func.url_extract_query(arg)
-    ),
-}
-
-
-def _parse_url(t, op):
-    if (func := _PARSE_URL_FUNCS.get(extract := op.extract)) is None:
-        raise ValueError(f"`{extract}` is not supported in the Trino backend")
-
-    return sa.func.nullif(
-        func(t.translate(op.arg), key if (key := op.key) is None else t.translate(key)),
-        "",
-    )
+def _extract_url_query(t, op):
+    arg = t.translate(op.arg)
+    key = op.key
+    if key is None:
+        result = sa.func.url_extract_query(arg)
+    else:
+        result = sa.func.url_extract_parameter(arg, t.translate(key))
+    return sa.func.nullif(result, "")
 
 
 operation_registry.update(
@@ -175,7 +157,6 @@ operation_registry.update(
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
         ops.ApproxCountDistinct: reduction(sa.func.approx_distinct),
-        ops.ParseURL: _parse_url,
         ops.RegexExtract: fixed_arity(sa.func.regexp_extract, 3),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.RegexSearch: fixed_arity(
@@ -267,5 +248,26 @@ operation_registry.update(
         ops.MapContains: fixed_arity(
             lambda arg, key: sa.func.contains(sa.func.map_keys(arg), key), 2
         ),
+        ops.ExtractProtocol: fixed_arity(
+            lambda arg: sa.func.nullif(sa.func.url_extract_protocol(arg), ""), 1
+        ),
+        ops.ExtractHost: fixed_arity(
+            lambda arg: sa.func.nullif(sa.func.url_extract_host(arg), ""), 1
+        ),
+        ops.ExtractPath: fixed_arity(
+            lambda arg: sa.func.nullif(sa.func.url_extract_path(arg), ""), 1
+        ),
+        ops.ExtractFragment: fixed_arity(
+            lambda arg: sa.func.nullif(sa.func.url_extract_fragment(arg), ""), 1
+        ),
+        ops.ExtractFile: fixed_arity(
+            lambda arg: sa.func.concat_ws(
+                "?",
+                sa.func.nullif(sa.func.url_extract_path(arg), ""),
+                sa.func.nullif(sa.func.url_extract_query(arg), ""),
+            ),
+            1,
+        ),
+        ops.ExtractQuery: _extract_url_query,
     }
 )
