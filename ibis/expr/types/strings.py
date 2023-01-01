@@ -4,6 +4,8 @@ import functools
 import operator
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
+from ibis.util import deprecated
+
 if TYPE_CHECKING:
     from ibis.expr import types as ir
 
@@ -635,17 +637,23 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
+    @deprecated(
+        version='4.0',
+        instead=(
+            'use .protocol(), .authroity(), .userinfo(), .host(), .file(), .path(), .query(), or .fragment().'
+        ),
+    )
     def parse_url(
         self,
         extract: Literal[
             "PROTOCOL",
-            "HOST",
-            "PATH",
-            "REF",
             "AUTHORITY",
-            "FILE",
             "USERINFO",
+            "HOST",
+            "FILE",
+            "PATH",
             "QUERY",
+            "REF",
         ],
         key: str | None = None,
     ) -> StringValue:
@@ -672,6 +680,142 @@ class StringValue(Value):
             Extracted string value
         """
         return ops.ParseURL(self, extract, key).to_expr()
+
+    def protocol(self):
+        """Parse a URL and extract protocol.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
+        >>> result = url.protocol()  # https
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractProtocol(self).to_expr()
+
+    def authority(self):
+        """Parse a URL and extract authority.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
+        >>> result = url.authority()  # user:pass@example.com:80
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractAuthority(self).to_expr()
+
+    def userinfo(self):
+        """Parse a URL and extract user info.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
+        >>> result = url.authority()  # user:pass
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractUserInfo(self).to_expr()
+
+    def host(self):
+        """Parse a URL and extract host.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
+        >>> result = url.authority()  # example.com
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractHost(self).to_expr()
+
+    def file(self):
+        """Parse a URL and extract file.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> result = url.authority()  # docs/books/tutorial/index.html?name=networking
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractFile(self).to_expr()
+
+    def path(self):
+        """Parse a URL and extract path.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> result = url.authority()  # docs/books/tutorial/index.html
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractPath(self).to_expr()
+
+    def query(self, key: str | StringValue | None = None):
+        """Parse a URL and returns query strring or query string parameter.
+
+        If key is passed, return the value of the query string parameter named.
+        If key is absent, return the query string.
+
+        Parameters
+        ----------
+        key
+            Query component to extract
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> result = url.query()  # name=networking
+        >>> query_name = url.query('name')  # networking
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractQuery(self, key).to_expr()
+
+    def fragment(self):
+        """Parse a URL and extract fragment identifier.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> url = ibis.literal("https://example.com:80/docs/#DOWNLOADING")
+        >>> result = url.fragment()  # DOWNLOADING
+
+        Returns
+        -------
+        StringValue
+            Extracted string value
+        """
+        return ops.ExtractFragment(self).to_expr()
 
     def split(self, delimiter: str | StringValue) -> ir.ArrayValue:
         """Split as string on `delimiter`.

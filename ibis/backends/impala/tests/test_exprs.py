@@ -343,11 +343,9 @@ def test_string_functions(con, expr, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (L("https://www.cloudera.com").parse_url('HOST'), "www.cloudera.com"),
+        (L("https://www.cloudera.com").host(), "www.cloudera.com"),
         (
-            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').parse_url(
-                'QUERY', 'v'
-            ),
+            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').query('v'),
             'kEuEcWfewf8',
         ),
     ],

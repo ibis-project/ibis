@@ -1340,31 +1340,47 @@ def _last_value(op, **kw):
     return f"last_value({translate_val(op.arg, **kw)})"
 
 
-_PARSE_URL_FUNCS = {
-    "PROTOCOL": lambda arg, _: f"protocol({arg})",
-    "AUTHORITY": lambda arg, _: f"netloc({arg})",
-    "HOST": lambda arg, _: f"domain({arg})",
-    "PATH": lambda arg, _: f"path({arg})",
-    "REF": lambda arg, _: f"fragment({arg})",
-    "FILE": lambda arg, _: f"cutFragment(pathFull({arg}))",
-    "QUERY": lambda arg, key: (
-        f"extractURLParameter({arg}, {key})"
-        if key is not None
-        else f"queryString({arg})"
-    ),
-}
+@translate_val.register(ops.ExtractProtocol)
+def _extract_protocol(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(protocol({arg}), '')"
 
 
-@translate_val.register(ops.ParseURL)
-def _parse_url(op, **kw):
-    if (func := _PARSE_URL_FUNCS.get(extract := op.extract)) is None:
-        raise ValueError(
-            f"`{extract}` is not supported in the parse_url implementation for the "
-            "ClickHouse backend"
-        )
+@translate_val.register(ops.ExtractAuthority)
+def _extract_authority(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(netloc({arg}), '')"
 
-    result = func(
-        translate_val(op.arg, **kw),
-        translate_val(key, **kw) if (key := op.key) is not None else None,
-    )
-    return f"CAST(nullIf({result}, '') AS Nullable(String))"
+
+@translate_val.register(ops.ExtractHost)
+def _extract_host(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(domain({arg}), '')"
+
+
+@translate_val.register(ops.ExtractFile)
+def _extract_file(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(cutFragment(pathFull({arg})), '')"
+
+
+@translate_val.register(ops.ExtractPath)
+def _extract_path(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(path({arg}), '')"
+
+
+@translate_val.register(ops.ExtractQuery)
+def _extract_query(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    if (key := op.key) is not None:
+        key = translate_val(key, **kw)
+        return f"nullIf(extractURLParameter({arg}, {key}), '')"
+    else:
+        return f"nullIf(queryString({arg}), '')"
+
+
+@translate_val.register(ops.ExtractFragment)
+def _extract_fragment(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"nullIf(fragment({arg}), '')"

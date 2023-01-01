@@ -58,39 +58,15 @@ def _day_of_week_name(arg):
     )
 
 
-_PARSE_URL_FUNCS = {
-    "PROTOCOL": lambda url, _: sa.func.as_varchar(sa.func.get(url, "scheme")),
-    "PATH": lambda url, _: "/" + sa.func.as_varchar(sa.func.get(url, "path")),
-    "REF": lambda url, _: sa.func.as_varchar(sa.func.get(url, "fragment")),
-    "AUTHORITY": lambda url, _: sa.func.concat_ws(
-        ":",
-        sa.func.as_varchar(sa.func.get(url, "host")),
-        sa.func.as_varchar(sa.func.get(url, "port")),
-    ),
-    "FILE": lambda url, _: sa.func.concat_ws(
-        "?",
-        "/" + sa.func.as_varchar(sa.func.get(url, "path")),
-        sa.func.as_varchar(sa.func.get(url, "query")),
-    ),
-    "QUERY": lambda url, key: sa.func.as_varchar(
-        sa.func.get(sa.func.get(url, "parameters"), key)
-        if key is not None
-        else sa.func.get(url, "query")
-    ),
-}
+def _extract_url_query(t, op):
+    parsed_url = sa.func.parse_url(t.translate(op.arg), 1)
 
+    if (key := op.key) is not None:
+        r = sa.func.get(sa.func.get(parsed_url, 'parameters'), t.translate(key))
+    else:
+        r = sa.func.get(parsed_url, 'query')
 
-def _parse_url(t, op):
-    if (func := _PARSE_URL_FUNCS.get(extract := op.extract)) is None:
-        raise ValueError(f"`{extract}` is not supported in the Snowflake backend")
-
-    return sa.func.nullif(
-        func(
-            sa.func.parse_url(t.translate(op.arg), 1),
-            t.translate(key) if (key := op.key) is not None else key,
-        ),
-        "",
-    )
+    return sa.func.nullif(r, "")
 
 
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
@@ -129,6 +105,24 @@ operation_registry.update(
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
         ops.DayOfWeekName: fixed_arity(_day_of_week_name, 1),
-        ops.ParseURL: _parse_url,
+        ops.ExtractProtocol: lambda arg: sa.func.nullif(
+            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "scheme"), "")
+        ),
+        ops.ExtractAuthority: lambda arg: sa.func.concat_ws(
+            ":",
+            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "host")),
+            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "port")),
+        ),
+        ops.ExtractFile: lambda arg: sa.func.concat_ws(
+            "?",
+            "/" + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
+            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "query")),
+        ),
+        ops.ExtractPath: lambda arg: "/"
+        + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
+        ops.ExtractQuery: _extract_url_query,
+        ops.ExtractFragment: lambda arg: sa.func.nullif(
+            sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "fragment"), "")
+        ),
     }
 )
