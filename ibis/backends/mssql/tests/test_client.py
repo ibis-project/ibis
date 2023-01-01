@@ -46,7 +46,7 @@ DB_TYPES = [
     ('UNIQUEIDENTIFIER', dt.uuid),
     ('GEOMETRY', dt.geometry),
     ('GEOGRAPHY', dt.geography),
-    ('TIMESTAMP', dt.timestamp),
+    ('TIMESTAMP', dt.binary),
 ]
 
 
