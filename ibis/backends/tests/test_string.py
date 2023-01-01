@@ -428,17 +428,17 @@ def test_substr_with_null_values(backend, alltypes, df):
 
 
 @pytest.mark.parametrize(
-    ("field", "expected"),
+    ("result_func", "expected"),
     [
-        param("PROTOCOL", "http", id="protocol"),
+        param(lambda d: d.parse_url("PROTOCOL"), "http", id="protocol"),
         param(
-            "AUTHORITY",
+            lambda d: d.parse_url("AUTHORITY"),
             "user:pass@example.com:80",
             id="authority",
             marks=[pytest.mark.notyet(["trino"])],
         ),
         param(
-            "HOST",
+            lambda d: d.parse_url("HOST"),
             "example.com",
             id="host",
             marks=[
@@ -451,12 +451,24 @@ def test_substr_with_null_values(backend, alltypes, df):
                 ),
             ],
         ),
-        param("PATH", "/docs/books/tutorial/index.html", id="path"),
-        param("QUERY", "name=networking", id="query"),
-        param("FILE", "/docs/books/tutorial/index.html?name=networking", id="file"),
-        param("REF", "DOWNLOADING", id="ref"),
         param(
-            "USERINFO",
+            lambda d: d.parse_url("PATH"), "/docs/books/tutorial/index.html", id="path"
+        ),
+        param(lambda d: d.parse_url("QUERY"), "name=networking", id="query"),
+        param(lambda d: d.parse_url("QUERY", 'name'), "networking", id="query-key"),
+        param(
+            lambda d: d.parse_url("QUERY", ibis.literal('na') + ibis.literal('me')),
+            "networking",
+            id="query-dynamic-key",
+        ),
+        param(
+            lambda d: d.parse_url("FILE"),
+            "/docs/books/tutorial/index.html?name=networking",
+            id="file",
+        ),
+        param(lambda d: d.parse_url("REF"), "DOWNLOADING", id="ref"),
+        param(
+            lambda d: d.parse_url("USERINFO"),
             "user:pass",
             marks=[
                 pytest.mark.notyet(
@@ -484,8 +496,8 @@ def test_substr_with_null_values(backend, alltypes, df):
         "sqlite",
     ]
 )
-def test_parse_url(con, field, expected):
+def test_parse_url(con, result_func, expected):
     url = "http://user:pass@example.com:80/docs/books/tutorial/index.html?name=networking#DOWNLOADING"
-    expr = ibis.literal(url).name("url").parse_url(field)
+    expr = result_func(ibis.literal(url).name("url"))
     result = con.execute(expr)
     assert result == expected

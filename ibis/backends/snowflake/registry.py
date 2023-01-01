@@ -73,7 +73,7 @@ _PARSE_URL_FUNCS = {
         sa.func.as_varchar(sa.func.get(url, "query")),
     ),
     "QUERY": lambda url, key: sa.func.as_varchar(
-        sa.func.get(sa.func.get(url, "query"), key)
+        sa.func.get(sa.func.get(url, "parameters"), key)
         if key is not None
         else sa.func.get(url, "query")
     ),
