@@ -607,3 +607,11 @@ def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
     assert len(results.value_counts()) == n
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "pyspark"])
+@pytest.mark.parametrize("const", ["e", "pi"])
+def test_constants(con, const):
+    expr = getattr(ibis, const)
+    result = con.execute(expr)
+    assert pytest.approx(result) == getattr(math, const)
