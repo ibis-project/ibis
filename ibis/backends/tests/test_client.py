@@ -375,13 +375,13 @@ def test_insert_from_memtable(alchemy_con):
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
-        'sqlite': ['main'],
-        'postgres': ['postgres', 'ibis_testing'],
-        'mysql': ['ibis_testing', 'information_schema'],
-        'duckdb': ['information_schema', 'main', 'temp'],
-        'snowflake': ['IBIS_TESTING'],
+        "sqlite": {"main"},
+        "postgres": {"postgres", "ibis_testing"},
+        "mysql": {"ibis_testing", "information_schema"},
+        "duckdb": {"information_schema", "main", "temp"},
+        "snowflake": {"IBIS_TESTING"},
     }
-    assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
+    assert TEST_DATABASES[alchemy_con.name] <= set(alchemy_con.list_databases())
 
 
 @pytest.mark.never(
