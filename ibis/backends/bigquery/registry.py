@@ -613,6 +613,8 @@ OPERATION_REGISTRY = {
     ops.IsInf: _is_inf,
     ops.ArgMin: _arg_min_max("ASC"),
     ops.ArgMax: _arg_min_max("DESC"),
+    ops.Pi: lambda *_: "ACOS(-1)",
+    ops.E: lambda *_: "EXP(1)",
 }
 
 _invalid_operations = {
