@@ -225,8 +225,9 @@ filterwarnings = [
   # duckdb-engine
   'ignore:The URL\.__to_string__ method is deprecated:',
   # ibis
-  "ignore:`database` is deprecated:FutureWarning",
-  "ignore:`set_database` is deprecated:FutureWarning",
+  "ignore:`BaseBackend.database` is deprecated:FutureWarning",
+  "ignore:`Backend.database` is deprecated:FutureWarning",
+  "ignore:`Backend.set_database` is deprecated:FutureWarning",
   # ibis on postgres + windows
   "ignore:locale specific date formats:UserWarning",
   # shapely
@@ -246,7 +247,7 @@ filterwarnings = [
   # duckdb-engine
   "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # snowflake
-  "ignore:`op` is deprecated:FutureWarning",
+  "ignore:`Node.op` is deprecated:FutureWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [

@@ -445,14 +445,14 @@ def deprecated(*, instead, version=''):
     """Decorate to warn of deprecated usage, with stacktrace, and what to do instead."""
 
     def decorator(func):
-        msg = deprecated_msg(func.__name__, instead=instead, version=version)
+        msg = deprecated_msg(func.__qualname__, instead=instead, version=version)
 
         func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             warn_deprecated(
-                func.__name__, instead=instead, version=version, stacklevel=2
+                func.__qualname__, instead=instead, version=version, stacklevel=2
             )
             return func(*args, **kwargs)
 
