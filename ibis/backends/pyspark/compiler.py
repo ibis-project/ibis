@@ -1885,3 +1885,13 @@ def compile_scalar_parameter(t, op, timecontext=None, scope=None, **kwargs):
     assert scope is not None, "scope is None"
     raw_value = scope.get_value(op, timecontext)
     return F.lit(raw_value).cast(spark_dtype(op.output_dtype))
+
+
+@compiles(ops.E)
+def compile_e(t, op, **kwargs):
+    return F.exp(F.lit(1))
+
+
+@compiles(ops.Pi)
+def compile_pi(t, op, **kwargs):
+    return F.acos(F.lit(-1))

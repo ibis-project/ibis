@@ -599,7 +599,7 @@ def test_histogram(con, alltypes):
     assert len(results.value_counts()) == n
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "pyspark"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
 @pytest.mark.parametrize("const", ["e", "pi"])
 def test_constants(con, const):
     expr = getattr(ibis, const)
