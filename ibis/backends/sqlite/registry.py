@@ -300,5 +300,7 @@ operation_registry.update(
         ops.BitwiseXor: fixed_arity(sa.func._ibis_sqlite_xor, 2),
         ops.BitwiseNot: unary(sa.func._ibis_sqlite_inv),
         ops.Where: fixed_arity(sa.func.iif, 3),
+        ops.Pi: fixed_arity(sa.func._ibis_sqlite_pi, 0),
+        ops.E: fixed_arity(sa.func._ibis_sqlite_e, 0),
     }
 )
