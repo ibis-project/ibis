@@ -10,13 +10,13 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
-import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
 from ibis import literal as L
 from ibis.common.exceptions import RelationError
+from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip

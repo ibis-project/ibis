@@ -5,10 +5,10 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.backends.impala.compiler import ImpalaCompiler
+from ibis.expr import api
 from ibis.expr.datatypes import Category
 
 

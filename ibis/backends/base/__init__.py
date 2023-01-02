@@ -31,7 +31,7 @@ import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 

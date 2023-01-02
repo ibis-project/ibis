@@ -11,7 +11,7 @@ import toolz
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Comparable
 

@@ -9,13 +9,13 @@ import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.backends.pandas.execution.util as pd_util
-import ibis.common.graph as graph
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util
 from ibis.backends.dask.core import execute
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
+from ibis.common import graph
 from ibis.expr.scope import Scope
 
 if TYPE_CHECKING:

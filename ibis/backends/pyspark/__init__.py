@@ -14,8 +14,7 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.expr.types as types
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -217,16 +216,16 @@ class Backend(BaseSQLBackend):
         **kwargs: Any,
     ) -> Any:
         """Execute an expression."""
-        if isinstance(expr, types.Table):
+        if isinstance(expr, ir.Table):
             return self.compile(expr, timecontext, params, **kwargs).toPandas()
-        elif isinstance(expr, types.Column):
+        elif isinstance(expr, ir.Column):
             # expression must be named for the projection
             if not expr.has_name():
                 expr = expr.name("tmp")
             return self.compile(
                 expr.to_projection(), timecontext, params, **kwargs
             ).toPandas()[expr.get_name()]
-        elif isinstance(expr, types.Scalar):
+        elif isinstance(expr, ir.Scalar):
             compiled = self.compile(expr, timecontext, params, **kwargs)
             if isinstance(compiled, Column):
                 # attach result column to a fake DataFrame and

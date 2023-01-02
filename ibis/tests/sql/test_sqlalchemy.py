@@ -15,8 +15,8 @@
 import operator
 
 import pytest
-import sqlalchemy.sql as sql
 from sqlalchemy import func as F
+from sqlalchemy import sql
 from sqlalchemy import types as sat
 
 import ibis

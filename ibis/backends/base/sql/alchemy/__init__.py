@@ -11,7 +11,7 @@ import ibis
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy.database import AlchemyDatabase, AlchemyTable
 from ibis.backends.base.sql.alchemy.datatypes import (

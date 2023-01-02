@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 import pytest
 
 import ibis
-import ibis.util as util
+from ibis import util
 from ibis.backends.base import _get_backend_names
 
 TEST_TABLES = {

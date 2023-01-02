@@ -13,8 +13,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-import ibis.util as util
-from ibis import options
+from ibis import options, util
 from ibis.backends.base import BaseBackend
 from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator

@@ -7,9 +7,9 @@ import pytz
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import config
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")

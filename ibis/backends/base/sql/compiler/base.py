@@ -7,7 +7,7 @@ import toolz
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-import ibis.util as util
+from ibis import util
 
 
 class DML(abc.ABC):

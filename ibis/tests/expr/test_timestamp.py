@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+from ibis.expr import api
 
 
 def test_field_select(alltypes):
