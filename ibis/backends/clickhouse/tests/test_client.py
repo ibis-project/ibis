@@ -3,9 +3,9 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import config
 from ibis.backends.clickhouse.tests.conftest import (
     CLICKHOUSE_HOST,
     CLICKHOUSE_PASS,

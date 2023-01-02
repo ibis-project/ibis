@@ -310,6 +310,7 @@ select = [
   "PGH", # pygrep-hooks
   "PLC", # pylint
   "PLE", # pylint
+  "PLR", # pylint import style
   "PLW", # pylint
   "RET", # flake8-return
   "RUF", # ruff-specific rules

@@ -6,7 +6,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.util as util
+from ibis import util
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")

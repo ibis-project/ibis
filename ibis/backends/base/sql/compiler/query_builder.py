@@ -8,7 +8,7 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
 from ibis.backends.base.sql.compiler.select_builder import SelectBuilder, _LimitSpec
 from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext

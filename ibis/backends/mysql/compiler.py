@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
-import sqlalchemy.dialects.mysql as mysql
+from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator

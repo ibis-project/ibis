@@ -22,7 +22,7 @@ from typing import Iterable, Sequence
 import ibis.expr.analysis as an
 import ibis.expr.types as ir
 import ibis.expr.window as _window
-import ibis.util as util
+from ibis import util
 from ibis.expr.deferred import Deferred
 
 _function_types = tuple(

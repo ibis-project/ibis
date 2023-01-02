@@ -8,7 +8,7 @@ import warnings
 from typing import Literal
 
 import sqlalchemy as sa
-import sqlalchemy.dialects.mysql as mysql
+from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch

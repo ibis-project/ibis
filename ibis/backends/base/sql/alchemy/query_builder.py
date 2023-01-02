@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 
 import sqlalchemy as sa
-import sqlalchemy.sql as sql
+from sqlalchemy import sql
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch

@@ -14,7 +14,7 @@
 
 import pytest
 
-import ibis.config as config
+from ibis import config
 from ibis.tests.expr.mocks import MockBackend
 
 

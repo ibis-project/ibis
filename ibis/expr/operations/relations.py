@@ -11,7 +11,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.common.annotations import attribute
 from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value

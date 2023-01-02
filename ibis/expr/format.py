@@ -9,13 +9,13 @@ from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 import rich.pretty
 
 import ibis
-import ibis.common.graph as graph
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as win
-import ibis.util as util
+from ibis import util
+from ibis.common import graph
 
 Aliases = Mapping[ops.TableNode, int]
 Deps = Deque[Tuple[int, ops.TableNode]]

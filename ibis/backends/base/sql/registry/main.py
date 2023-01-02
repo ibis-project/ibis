@@ -4,7 +4,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql.registry import (
     aggregate,
     binary_infix,

@@ -11,9 +11,9 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import config
 from ibis import literal as L
 from ibis.expr.window import rows_with_max_lookback
 

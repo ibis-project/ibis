@@ -38,8 +38,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 import ibis.common.exceptions as com
-import ibis.config as config
 import ibis.expr.operations as ops
+from ibis import config
 
 if TYPE_CHECKING:
     import pandas as pd
