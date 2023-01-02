@@ -92,7 +92,7 @@ class InMemoryTable(PhysicalTable):
 # TODO(kszucs): desperately need to clean this up, the majority of this
 # functionality should be handled by input rules for the Join class
 def _clean_join_predicates(left, right, predicates):
-    import ibis.expr.analysis as L
+    import ibis.expr.analysis as an
     import ibis.expr.types as ir
     from ibis.expr.analysis import shares_all_roots
 
@@ -119,7 +119,7 @@ def _clean_join_predicates(left, right, predicates):
         if not isinstance(pred, ir.BooleanColumn):
             raise com.ExpressionError('Join predicate must be comparison')
 
-        preds = L.flatten_predicate(pred.op())
+        preds = an.flatten_predicate(pred.op())
         result.extend(preds)
 
     # Validate join predicates. Each predicate must be valid jointly when

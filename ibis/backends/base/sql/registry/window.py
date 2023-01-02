@@ -4,7 +4,7 @@ from operator import add, mul, sub
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -86,7 +86,7 @@ def cumulative_to_window(translator, op, window):
         new_op = rule(new_op)
 
     win = ibis.cumulative_window().group_by(window._group_by).order_by(window._order_by)
-    new_expr = L.windowize_function(new_op.to_expr(), win)
+    new_expr = an.windowize_function(new_op.to_expr(), win)
     return new_expr.op()
 
 
