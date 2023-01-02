@@ -436,7 +436,7 @@ def window_agg_built_in(
     windowed: pd.core.window.Window,
     function: str,
     max_lookback: int,
-    *args: tuple[Any],
+    *args: tuple[Any, ...],
     **kwargs: dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with built-in aggregators."""
@@ -486,7 +486,7 @@ def window_agg_udf(
     result_index: pd.Index,
     dtype: np.dtype,
     max_lookback: int,
-    *args: tuple[Any],
+    *args: tuple[Any, ...],
     **kwargs: dict[str, Any],
 ) -> pd.Series:
     """Apply window aggregation with UDFs.
