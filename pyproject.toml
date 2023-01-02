@@ -299,41 +299,33 @@ markers = [
 line-length = 88
 select = [
   "B", # flake8-bugbear
+  "BLE", # flake8-blind-except
+  "C4", # comprehensions
   "D", # pydocstyle
   "E", # pycodestyle
-  "W", # pycodestyle
   "F", # pyflakes
   "I", # isort
-  "UP", # pyupgrade
-  "RUF", # ruff-specific rules
-  "TID", # flake8-tidy-imports
-  "T10", # flake8-debugger
+  "ICN", # flake8-import-conventions
+  "ISC", # flake8-implicit-str-concat
   "PGH", # pygrep-hooks
   "PLC", # pylint
   "PLE", # pylint
   "PLW", # pylint
-  "SIM", # flake8-simplify
-  "T20", # flake8-print
-  "ICN", # flake8-import-conventions
   "RET", # flake8-return
-  "BLE", # flake8-blind-except
-  "ISC", # flake8-implicit-str-concat
+  "RUF", # ruff-specific rules
+  "SIM", # flake8-simplify
+  "T10", # flake8-debugger
+  "T20", # flake8-print
+  "TID", # flake8-tidy-imports
+  "UP", # pyupgrade
+  "W", # pycodestyle
   "YTT", # flake8-2020
-  "C4", # comprehensions
 
 ]
 respect-gitignore = true
 ignore = [
   "B904", # raise from e or raise from None in exception handlers
   "C408", # dict(...) as literal
-  "E501",
-  "E731",
-  "PGH003",
-  "RET504",
-  "RET505",
-  "RET506",
-  "RET507",
-  "RET508",
   "D100", # public module
   "D101", # public class
   "D102", # public method
@@ -344,7 +336,14 @@ ignore = [
   "D203", # blank line before class docstring
   "D213", # Multi-line docstring summary should start at the second line
   "D402", # First line should not be the function's signature
-
+  "E501",
+  "E731",
+  "PGH003",
+  "RET504",
+  "RET505",
+  "RET506",
+  "RET507",
+  "RET508",
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
