@@ -62,7 +62,7 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    """Compute position of first element within each equal-value group ins sorted order.
+    """Compute position of first element within each equal-value group in sorted order.
 
     Equivalent to SQL's `RANK()`.
 
