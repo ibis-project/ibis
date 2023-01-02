@@ -464,15 +464,9 @@ def try_getitem(value, key):
 
 @execute_node.register(ops.JSONGetItem, pd.Series, (str, int))
 def execute_json_getitem_series_str_int(_, data, key, **kwargs):
-    return pd.Series(list(map(partial(try_getitem, key=key), data)), dtype="object")
+    return pd.Series(map(partial(try_getitem, key=key), data), dtype="object")
 
 
 @execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
 def execute_json_getitem_series_series(_, data, key, **kwargs):
-    keyiter = iter(key)
-    return pd.Series(
-        list(
-            map(lambda value, keyiter=keyiter: try_getitem(value, next(keyiter)), data)
-        ),
-        dtype="object",
-    )
+    return pd.Series(map(try_getitem, data, key), dtype="object")

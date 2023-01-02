@@ -37,7 +37,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
     assert udf.func_args[0] == table.a.op()
     assert udf.func_args[1] == table.b.op()
     assert udf.func_args[2] == table.c.op()
-    assert udf.input_type == tuple([dt.int8(), dt.string(), dt.boolean()])
+    assert udf.input_type == (dt.int8(), dt.string(), dt.boolean())
     assert udf.return_type == dt.int8()
 
     assert isinstance(udf.to_expr(), output_type)

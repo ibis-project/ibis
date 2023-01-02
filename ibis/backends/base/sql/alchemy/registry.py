@@ -332,7 +332,7 @@ def _window(t, op):
     # if we're here, then the input is valid, we just need to interpret it
     # correctly
     if isinstance(window.preceding, tuple):
-        start, end = map(lambda x: -1 * x if x is not None else None, window.preceding)
+        start, end = (-1 * x if x is not None else None for x in window.preceding)
     elif isinstance(window.following, tuple):
         start, end = window.following
     else:
