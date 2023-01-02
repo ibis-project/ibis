@@ -22,7 +22,7 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.201
+    rev: v0.0.206
     hooks:
       - id: ruff
         # makes sure to exclude a file even if it's passed in explicitly
