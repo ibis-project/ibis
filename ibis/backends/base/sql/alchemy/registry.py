@@ -7,7 +7,7 @@ from typing import Any
 import sqlalchemy as sa
 
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -308,7 +308,7 @@ def _cumulative_to_window(translator, op, window):
         new_expr = translator._rewrites[type(new_op)](new_expr)
 
     # TODO(kszucs): rewrite to receive and return an ops.Node
-    return L.windowize_function(new_expr, win)
+    return an.windowize_function(new_expr, win)
 
 
 def _window(t, op):

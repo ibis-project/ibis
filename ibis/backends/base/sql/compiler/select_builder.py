@@ -7,7 +7,7 @@ from typing import NamedTuple
 import toolz
 
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler.base import _extract_common_table_expressions
@@ -24,7 +24,7 @@ class _CorrelatedRefCheck:
         self.ctx = query.context
         self.node = node
         self.query_roots = frozenset(
-            L.find_immediate_parent_tables(self.query.table_set)
+            an.find_immediate_parent_tables(self.query.table_set)
         )
         self.has_foreign_root = False
         self.has_query_root = False
@@ -167,8 +167,8 @@ class SelectBuilder:
 
         elif isinstance(node, ops.Value):
             if node.output_shape.is_scalar():
-                if L.is_scalar_reduction(node):
-                    table_expr = L.reduction_to_aggregation(node)
+                if an.is_scalar_reduction(node):
+                    table_expr = an.reduction_to_aggregation(node)
                     return table_expr.op(), _get_scalar(node.name)
                 else:
                     return node, _get_scalar(node.name)
@@ -390,7 +390,7 @@ class SelectBuilder:
         # format these depending on the database. Most likely the
         # GROUP BY 1, 2, ... style
         if toplevel:
-            sub_op = L.substitute_parents(op)
+            sub_op = an.substitute_parents(op)
 
             self.group_by = self._convert_group_by(sub_op.by)
             self.having = sub_op.having
@@ -433,7 +433,7 @@ class SelectBuilder:
 
     def _collect_Join(self, op, toplevel=False):
         if toplevel:
-            subbed = L.substitute_parents(op)
+            subbed = an.substitute_parents(op)
             self.table_set = subbed
             self.select_set = [subbed]
 
