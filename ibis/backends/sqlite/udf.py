@@ -272,6 +272,16 @@ def _ibis_sqlite_inv(x):
     return None if x is None else ~x
 
 
+@udf
+def _ibis_sqlite_pi():
+    return math.pi
+
+
+@udf
+def _ibis_sqlite_e():
+    return math.e
+
+
 class _ibis_sqlite_var:
     def __init__(self, offset):
         self.mean = 0.0
