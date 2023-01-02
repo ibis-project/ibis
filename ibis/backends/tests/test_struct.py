@@ -38,11 +38,11 @@ def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
 
-    assert set(
+    assert {
         row if not isinstance(row, Mapping) else tuple(row.items()) for row in result
-    ) == set(
+    } == {
         row if not isinstance(row, Mapping) else tuple(row.items()) for row in expected
-    )
+    }
 
 
 _SIMPLE_DICT = dict(a=1, b="2", c=3.0)
