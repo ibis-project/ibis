@@ -319,11 +319,13 @@ select = [
   "BLE", # flake8-blind-except
   "ISC", # flake8-implicit-str-concat
   "YTT", # flake8-2020
+  "C4", # comprehensions
 
 ]
 respect-gitignore = true
 ignore = [
   "B904", # raise from e or raise from None in exception handlers
+  "C408", # dict(...) as literal
   "E501",
   "E731",
   "PGH003",
