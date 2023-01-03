@@ -7,6 +7,7 @@ import enum
 import ipaddress
 import uuid
 from functools import partial
+from operator import methodcaller
 from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
 
 import dateutil.parser
@@ -315,10 +316,14 @@ def normalize(typ, value):
             elif typ.is_multipolygon():
                 return tuple(normalize(dt.polygon, item) for item in value)
         return _WellKnownText(value.wkt)
-    elif typ.is_timestamp():
+    elif (is_timestamp := typ.is_timestamp()) or typ.is_date():
         import pandas as pd
 
-        converter = partial(_convert_timezone, tz=typ.timezone)
+        converter = (
+            partial(_convert_timezone, tz=typ.timezone)
+            if is_timestamp
+            else methodcaller("date")
+        )
 
         if isinstance(value, str):
             return converter(dateutil.parser.parse(value))
@@ -336,15 +341,16 @@ def normalize(typ, value):
             if isinstance(raw_value, int):
                 unit, _ = np.datetime_data(original_value)
                 return converter(pd.Timestamp(raw_value, unit=unit).to_pydatetime())
-            if isinstance(raw_value, datetime.datetime):
+            elif isinstance(raw_value, datetime.datetime):
                 return converter(raw_value)
-            return converter(
-                datetime.datetime(
-                    year=raw_value.year, month=raw_value.month, day=raw_value.day
-                )
-            )
+            elif is_timestamp:
+                return datetime.datetime(raw_value.year, raw_value.month, raw_value.day)
+            else:
+                return raw_value
 
-        raise TypeError(f"Unsupported timestamp literal type: {type(value)}")
+        raise TypeError(
+            f"Unsupported {'timestamp' if is_timestamp else 'date'} literal type: {type(value)}"
+        )
     else:
         return value
 
