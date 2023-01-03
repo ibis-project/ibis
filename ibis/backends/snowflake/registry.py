@@ -19,14 +19,31 @@ operation_registry = {
 
 
 def _literal(t, op):
-    if isinstance(op, ops.Literal) and op.output_dtype.is_floating():
-        value = op.value
+    value = op.value
+    dtype = op.output_dtype
 
+    if dtype.is_floating():
         if np.isnan(value):
             return _SF_NAN
 
         if np.isinf(value):
             return _SF_NEG_INF if value < 0 else _SF_POS_INF
+    elif dtype.is_timestamp():
+        args = (
+            value.year,
+            value.month,
+            value.day,
+            value.hour,
+            value.minute,
+            value.second,
+            value.microsecond * 1_000,
+        )
+        if (tz := value.tzinfo) is not None:
+            return sa.func.timestamp_tz_from_parts(*args, str(tz))
+        else:
+            return sa.func.timestamp_from_parts(*args)
+    elif dtype.is_date():
+        return sa.func.date_from_parts(value.year, value.month, value.day)
     return _postgres_literal(t, op)
 
 

@@ -76,7 +76,13 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             methodcaller('millisecond'),
             359,
             id='millisecond',
-            marks=[pytest.mark.notimpl(["clickhouse", "pyspark"])],
+            marks=[
+                pytest.mark.notimpl(["clickhouse", "pyspark"]),
+                pytest.mark.notyet(
+                    ["snowflake"],
+                    reason="milliseconds doesn't seem to work at all upstream",
+                ),
+            ],
         ),
         param(
             lambda x: x.day_of_week.index(),
@@ -398,7 +404,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, _: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
-            marks=pytest.mark.notimpl(["bigquery", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["bigquery", "pyspark"]),
         ),
     ],
 )

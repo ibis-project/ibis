@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
-_NATIVE_PANDAS = True
+_NATIVE_ARROW = True
 
 
 class SnowflakeExprTranslator(AlchemyExprTranslator):
@@ -101,14 +101,20 @@ class Backend(BaseAlchemyBackend):
         )
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        global _NATIVE_PANDAS
+        global _NATIVE_ARROW
 
-        if _NATIVE_PANDAS:
+        if _NATIVE_ARROW:
             try:
-                df = cursor.cursor.fetch_pandas_all()
+                table = cursor.cursor.fetch_arrow_all()
             except sfc.NotSupportedError:
-                _NATIVE_PANDAS = False
+                _NATIVE_ARROW = False
             else:
+                if table is None:
+                    import pandas as pd
+
+                    df = pd.DataFrame(columns=schema.names)
+                else:
+                    df = table.to_pandas(timestamp_as_object=True)
                 return schema.apply_to(df)
         return super().fetch_from_cursor(cursor, schema)
 
