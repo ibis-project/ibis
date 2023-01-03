@@ -117,7 +117,7 @@ mkdocs-git-revision-date-plugin = ">=0.3.2,<1"
 mkdocs-jupyter = ">=0.20.0,<1"
 mkdocs-literate-nav = ">=0.4.1,<1"
 mkdocs-macros-plugin = ">=0.6.3,<1"
-mkdocs-material = ">=8.2.1,<8.5.12"
+mkdocs-material = ">=8.2.1,<9.0.2"
 mkdocs-table-reader-plugin = ">=1.0.0,<2"
 mkdocstrings = ">=0.17.0,<0.18.0"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
