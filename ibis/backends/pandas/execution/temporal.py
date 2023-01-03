@@ -294,13 +294,21 @@ def execute_day_of_week_name_series_group_by(op, data, **kwargs):
 
 
 @execute_node.register(ops.DateSub, date_types, timedelta_types)
-@execute_node.register((ops.DateDiff, ops.DateSub), date_types, pd.Series)
 @execute_node.register(ops.DateSub, pd.Series, timedelta_types)
 @execute_node.register((ops.DateDiff, ops.DateSub), pd.Series, pd.Series)
 @execute_node.register(ops.DateDiff, date_types, date_types)
-@execute_node.register(ops.DateDiff, pd.Series, date_types)
 def execute_date_sub_diff(op, left, right, **kwargs):
     return left - right
+
+
+@execute_node.register((ops.DateDiff, ops.DateSub), date_types, pd.Series)
+def execute_date_sub_diff_date_series(op, left, right, **kwargs):
+    return pd.Timestamp(left, unit="D") - right
+
+
+@execute_node.register(ops.DateDiff, pd.Series, date_types)
+def execute_date_sub_diff_series_date(op, left, right, **kwargs):
+    return left - pd.Timestamp(right, unit="D")
 
 
 @execute_node.register(ops.DateAdd, pd.Series, timedelta_types)

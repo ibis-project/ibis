@@ -393,10 +393,7 @@ def execute_cast_string_to_timestamp(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
 def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
     """Cast timestamps to other timestamps including timezone if necessary."""
-    try:
-        input_timezone = data.tzinfo.tzname(data)
-    except AttributeError:
-        input_timezone = None
+    input_timezone = data.tzinfo
     target_timezone = type.timezone
 
     if input_timezone == target_timezone:
