@@ -74,22 +74,22 @@ def test_drop(table):
 @pytest.mark.parametrize(
     'unit',
     [
-        param('Y', marks=pytest.mark.xfail(raises=TypeError)),
-        param('M', marks=pytest.mark.xfail(raises=TypeError)),
-        param('D', marks=pytest.mark.xfail(raises=TypeError)),
-        param('h', marks=pytest.mark.xfail(raises=TypeError)),
-        param('m', marks=pytest.mark.xfail(raises=TypeError)),
-        param('s', marks=pytest.mark.xfail(raises=TypeError)),
-        param('ms', marks=pytest.mark.xfail(raises=TypeError)),
-        param('us', marks=pytest.mark.xfail(raises=TypeError)),
+        'Y',
+        'M',
+        'D',
+        'h',
+        'm',
+        's',
+        'ms',
+        'us',
         'ns',
-        param('ps', marks=pytest.mark.xfail(raises=TypeError)),
-        param('fs', marks=pytest.mark.xfail(raises=TypeError)),
-        param('as', marks=pytest.mark.xfail(raises=TypeError)),
+        param('ps', marks=pytest.mark.xfail),
+        param('fs', marks=pytest.mark.xfail),
+        param('as', marks=pytest.mark.xfail),
     ],
 )
 def test_datetime64_infer(client, unit):
     value = np.datetime64('2018-01-02', unit)
     expr = ibis.literal(value, type='timestamp')
     result = client.execute(expr)
-    assert result == value
+    assert result == pd.Timestamp(value).to_pydatetime()

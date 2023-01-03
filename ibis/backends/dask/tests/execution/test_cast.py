@@ -1,6 +1,7 @@
 import decimal
 
 import pytest
+import pytz
 from pandas import Timestamp
 from pytest import param
 
@@ -77,7 +78,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value // int(1e9)),
+        ('int64', lambda x: Timestamp(x).value // int(1e9)),
         param(
             'double',
             float,
@@ -85,7 +86,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_localize('America/Los_Angeles'),
+            lambda x: x.astimezone(tz=pytz.timezone('America/Los_Angeles')),
         ),
     ],
 )
@@ -101,11 +102,11 @@ def test_cast_timestamp_scalar_naive(to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value // int(1e9)),
+        ('int64', lambda x: Timestamp(x).value // int(1e9)),
         param('double', float, marks=pytest.mark.notimpl(["dask"])),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_convert('America/Los_Angeles'),
+            lambda x: x.astimezone(tz=pytz.timezone('America/Los_Angeles')),
         ),
     ],
 )
@@ -118,7 +119,7 @@ def test_cast_timestamp_scalar(to, expected, tz):
     assert result == expected(raw)
 
 
-def test_timestamp_with_timezone_is_inferred_correctly(t, df):
+def test_timestamp_with_timezone_is_inferred_correctly(t):
     assert t.plain_datetimes_naive.type().equals(dt.timestamp)
     assert t.plain_datetimes_ny.type().equals(dt.Timestamp('America/New_York'))
     assert t.plain_datetimes_utc.type().equals(dt.Timestamp('UTC'))

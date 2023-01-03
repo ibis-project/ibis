@@ -31,7 +31,7 @@ def execute_strftime_series_str(op, data, format_string, **kwargs):
     return data.dt.strftime(format_string)
 
 
-@execute_node.register(ops.ExtractTemporalField, pd.Timestamp)
+@execute_node.register(ops.ExtractTemporalField, datetime.datetime)
 def execute_extract_timestamp_field_timestamp(op, data, **kwargs):
     field_name = type(op).__name__.lower().replace('extract', '')
     return getattr(data, field_name)
@@ -45,17 +45,17 @@ def execute_extract_timestamp_field_series(op, data, **kwargs):
     return getattr(data.dt, field_name).astype(np.int32)
 
 
-@execute_node.register(ops.ExtractMillisecond, pd.Timestamp)
+@execute_node.register(ops.ExtractMillisecond, datetime.datetime)
 def execute_extract_millisecond_timestamp(op, data, **kwargs):
-    return int(data.microsecond // 1000.0)
+    return int(data.microsecond // 1_000)
 
 
 @execute_node.register(ops.ExtractMillisecond, pd.Series)
 def execute_extract_millisecond_series(op, data, **kwargs):
-    return (data.dt.microsecond // 1000).astype(np.int32)
+    return (data.dt.microsecond // 1_000).astype(np.int32)
 
 
-@execute_node.register(ops.ExtractEpochSeconds, (pd.Timestamp, pd.Series))
+@execute_node.register(ops.ExtractEpochSeconds, (datetime.datetime, pd.Series))
 def execute_epoch_seconds(op, data, **kwargs):
     # older versions of dask do not have a view method, so use astype
     # instead

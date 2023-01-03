@@ -91,7 +91,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     assert con.execute(func(value).name("tmp")) == expected
@@ -464,11 +464,41 @@ def test_temporal_binop_pandas_timedelta(
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(["bigquery", "mssql"])
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
-    comparison_fn = getattr(operator, func_name)
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
+
+    comparison_fn = getattr(operator, func_name)
     expr = alltypes.filter(
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
     )
+
+    col = df.timestamp_col.dt.tz_localize("UTC")
+    expected = df[comparison_fn(col, ts)]
+    result = con.execute(expr)
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "func_name",
+    [
+        param("gt", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("ge", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("lt", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("le", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        "eq",
+        "ne",
+    ],
+)
+@pytest.mark.notimpl(["bigquery", "mssql"])
+def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
+    ts = np.datetime64('2010-03-02 00:00:00.000123')
+
+    comparison_fn = getattr(operator, func_name)
+    expr = alltypes.filter(
+        comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
+    )
+
+    ts = pd.Timestamp(ts.item(), tz="UTC")
 
     col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
@@ -580,7 +610,7 @@ def test_integer_to_timestamp(backend, con, unit):
     factor = unit_factors[unit]
 
     ts = ibis.timestamp('2018-04-13 09:54:11.872832')
-    pandas_ts = ibis.pandas.execute(ts).floor(unit).value
+    pandas_ts = pd.Timestamp(ibis.pandas.execute(ts)).floor(unit).value
 
     # convert the now timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)
