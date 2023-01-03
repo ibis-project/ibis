@@ -212,8 +212,7 @@ def _trig_func_binary(func, arg1, arg2):
 @udf
 def _ibis_sqlite_cot(arg):
     return _trig_func_unary(
-        lambda arg: float("inf") if not arg else math.cos(arg) / math.sin(arg),
-        arg,
+        lambda arg: float("inf") if not arg else 1.0 / math.tan(arg), arg
     )
 
 

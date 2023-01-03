@@ -243,7 +243,7 @@ def execute_series_atan(_, data, **kwargs):
 
 @execute_node.register(ops.Cot, (pd.Series, *numeric_types))
 def execute_series_cot(_, data, **kwargs):
-    return np.cos(data) / np.sin(data)
+    return 1.0 / np.tan(data)
 
 
 @execute_node.register(

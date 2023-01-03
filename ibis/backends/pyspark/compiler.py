@@ -1783,7 +1783,7 @@ def compile_trig(t, op, **kwargs):
 @compiles(ops.Cot)
 def compile_cot(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
-    return F.cos(arg) / F.sin(arg)
+    return 1.0 / F.tan(arg)
 
 
 @compiles(ops.Atan2)

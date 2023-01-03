@@ -805,7 +805,7 @@ _unary = {
     ops.Atan: operator.methodcaller('arctan'),
     ops.Ceil: lambda arg: arg.ceil().cast(pl.Int64),
     ops.Cos: operator.methodcaller('cos'),
-    ops.Cot: lambda arg: arg.cos() / arg.sin(),
+    ops.Cot: lambda arg: 1.0 / arg.tan(),
     ops.DayOfWeekIndex: (
         lambda arg: arg.dt.weekday().cast(pl.Int16) - _day_of_week_offset
     ),
