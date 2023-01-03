@@ -16,7 +16,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.bigquery import version as ibis_bigquery_version
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
     BigQueryDatabase,
@@ -33,7 +32,6 @@ try:
 except ImportError:
     pass
 
-__version__: str = ibis_bigquery_version.__version__
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
