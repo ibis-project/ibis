@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import pytz
 import toolz
 from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
@@ -392,18 +393,21 @@ def execute_cast_string_to_timestamp(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
 def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
     """Cast timestamps to other timestamps including timezone if necessary."""
-    input_timezone = data.tz
+    try:
+        input_timezone = data.tzinfo.tzname(data)
+    except AttributeError:
+        input_timezone = None
     target_timezone = type.timezone
-
-    data = pd.Timestamp(data)
 
     if input_timezone == target_timezone:
         return data
 
     if input_timezone is None or target_timezone is None:
-        return data.tz_localize(target_timezone)
+        return data.astimezone(
+            tz=None if target_timezone is None else pytz.timezone(target_timezone)
+        )
 
-    return data.tz_convert(target_timezone)
+    return data.astimezone(tz=pytz.timezone(target_timezone))
 
 
 @execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)

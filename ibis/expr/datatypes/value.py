@@ -6,9 +6,12 @@ import decimal
 import enum
 import ipaddress
 import uuid
+from functools import partial
 from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
 
+import dateutil.parser
 import numpy as np
+import pytz
 import toolz
 from public import public
 
@@ -312,8 +315,42 @@ def normalize(typ, value):
             elif typ.is_multipolygon():
                 return tuple(normalize(dt.polygon, item) for item in value)
         return _WellKnownText(value.wkt)
+    elif typ.is_timestamp():
+        import pandas as pd
+
+        converter = partial(_convert_timezone, tz=typ.timezone)
+
+        if isinstance(value, str):
+            return converter(dateutil.parser.parse(value))
+        elif isinstance(value, pd.Timestamp):
+            return converter(value.to_pydatetime())
+        elif isinstance(value, datetime.datetime):
+            return converter(value)
+        elif isinstance(value, datetime.date):
+            return converter(
+                datetime.datetime(year=value.year, month=value.month, day=value.day)
+            )
+        elif isinstance(value, np.datetime64):
+            original_value = value
+            raw_value = value.item()
+            if isinstance(raw_value, int):
+                unit, _ = np.datetime_data(original_value)
+                return converter(pd.Timestamp(raw_value, unit=unit).to_pydatetime())
+            if isinstance(raw_value, datetime.datetime):
+                return converter(raw_value)
+            return converter(
+                datetime.datetime(
+                    year=raw_value.year, month=raw_value.month, day=raw_value.day
+                )
+            )
+
+        raise TypeError(f"Unsupported timestamp literal type: {type(value)}")
     else:
         return value
+
+
+def _convert_timezone(value: datetime.datetime, *, tz: str | None) -> datetime.datetime:
+    return value if tz is None else value.astimezone(tz=pytz.timezone(tz))
 
 
 public(infer=infer, normalize=normalize)

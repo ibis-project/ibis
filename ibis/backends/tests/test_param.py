@@ -116,11 +116,7 @@ def test_scalar_param_map(con):
         param(0.0, "float64", "double_col", id="double"),
         param(True, "bool", "bool_col", id="bool"),
         param(
-            "2009-01-20 01:02:03",
-            "timestamp",
-            "timestamp_col",
-            id="string_timestamp",
-            marks=[pytest.mark.notimpl(["trino"])],
+            "2009-01-20 01:02:03", "timestamp", "timestamp_col", id="string_timestamp"
         ),
         param(
             datetime.date(2009, 1, 20),
