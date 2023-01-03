@@ -610,7 +610,7 @@ def _string_right(op, **kw):
 @translate_val.register(ops.Cot)
 def _cotangent(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"cos({arg}) / sin({arg})"
+    return f"1.0 / tan({arg})"
 
 
 def _bit_agg(func):

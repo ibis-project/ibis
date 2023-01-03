@@ -60,7 +60,7 @@ def execute_series_atan(_, data, **kwargs):
 
 @execute_node.register(ops.Cot, dd.Series)
 def execute_series_cot(_, data, **kwargs):
-    return np.cos(data) / np.sin(data)
+    return 1.0 / np.tan(data)
 
 
 @execute_node.register(ops.Atan2, dd.Series, dd.Series)

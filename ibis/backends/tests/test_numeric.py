@@ -193,7 +193,7 @@ def test_math_functions_literals(con, expr, expected):
         param(L(0.0).atan(), math.atan(0.0), id="atan"),
         param(L(0.0).atan2(1.0), math.atan2(0.0, 1.0), id="atan2"),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
-        param(L(1.0).cot(), math.cos(1.0) / math.sin(1.0), id="cot"),
+        param(L(1.0).cot(), 1.0 / math.tan(1.0), id="cot"),
         param(L(0.0).sin(), math.sin(0.0), id="sin"),
         param(L(0.0).tan(), math.tan(0.0), id="tan"),
     ],
