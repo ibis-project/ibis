@@ -123,12 +123,6 @@ def test_scalar_param_map(con):
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
-            marks=[
-                pytest.mark.broken(
-                    ["impala"],
-                    reason="generates incorrect SQL for date literal values",
-                )
-            ],
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
