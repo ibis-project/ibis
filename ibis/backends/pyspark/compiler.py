@@ -345,7 +345,6 @@ def compile_subtract(t, op, **kwargs):
 @compile_nan_as_null
 def compile_literal(t, op, *, raw=False, **kwargs):
     """If raw is True, don't wrap the result with F.lit()."""
-    import pandas as pd
 
     value = op.value
     dtype = op.dtype
@@ -368,9 +367,9 @@ def compile_literal(t, op, *, raw=False, **kwargs):
         return F.array(*map(F.lit, value))
     elif dtype.is_struct():
         return F.struct(*(F.lit(val).alias(name) for name, val in value.items()))
+    elif dtype.is_timestamp():
+        return F.from_utc_timestamp(F.lit(str(value)), tz="UTC")
     else:
-        if isinstance(value, pd.Timestamp) and value.tz is None:
-            value = value.tz_localize("UTC").to_pydatetime()
         return F.lit(value)
 
 
