@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import builtins
 import enum
 import operator
 from itertools import product, starmap
 
+from public import public
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
-from ibis.common.annotations import attribute, optional  # noqa: F401
-from ibis.common.validators import (  # noqa: F401
+from ibis import util
+from ibis.common.annotations import attribute, optional
+from ibis.common.validators import (
     bool_,
     instance_of,
     isin,
@@ -25,6 +29,7 @@ from ibis.expr.deferred import Deferred
 
 
 # TODO(kszucs): consider to rename to datashape
+@public
 class Shape(enum.IntEnum):
     SCALAR = 0
     COLUMNAR = 1
@@ -37,6 +42,7 @@ class Shape(enum.IntEnum):
         return self is Shape.COLUMNAR
 
 
+@public
 def highest_precedence_shape(nodes):
     if builtins.any(node.output_shape.is_columnar() for node in nodes):
         return Shape.COLUMNAR
@@ -44,6 +50,7 @@ def highest_precedence_shape(nodes):
         return Shape.SCALAR
 
 
+@public
 def highest_precedence_dtype(nodes):
     """Return the highest precedence type from the passed expressions.
 
@@ -64,6 +71,7 @@ def highest_precedence_dtype(nodes):
     return dt.highest_precedence(node.output_dtype for node in nodes)
 
 
+@public
 def castable(source, target):
     """Return whether source ir type is implicitly castable to target.
 
@@ -73,6 +81,7 @@ def castable(source, target):
     return dt.castable(source.output_dtype, target.output_dtype, value=value)
 
 
+@public
 def comparable(left, right):
     return castable(left, right) or castable(right, left)
 
@@ -198,15 +207,18 @@ def value(dtype, arg, **kwargs):
 
     Parameters
     ----------
-    dtype : DataType subclass or DataType instance
-    arg : python literal or an ibis expression
-      If a python literal is given the validator tries to coerce it to an ibis
-      literal.
+    dtype
+        DataType subclass or DataType instance
+    arg
+        If a Python literal is given the validator tries to coerce it to an ibis
+        literal.
+    kwargs
+        Keyword arguments
 
     Returns
     -------
-    arg : Value
-      An ibis value expression with the specified datatype
+    ir.Value
+        An ibis value expression with the specified datatype
     """
     import ibis.expr.operations as ops
 
@@ -296,7 +308,44 @@ multilinestring = value(dt.MultiLineString)
 multipoint = value(dt.MultiPoint)
 multipolygon = value(dt.MultiPolygon)
 
+public(
+    any=any,
+    array=array,
+    bool=bool_,
+    boolean=boolean,
+    category=category,
+    date=date,
+    decimal=decimal,
+    double=double,
+    floating=floating,
+    geospatial=geospatial,
+    integer=integer,
+    isin=isin,
+    json=json,
+    lazy_instance_of=lazy_instance_of,
+    linestring=linestring,
+    mapping=mapping,
+    multilinestring=multilinestring,
+    multipoint=multipoint,
+    numeric=numeric,
+    optional=optional,
+    point=point,
+    polygon=polygon,
+    ref=ref,
+    set_=set_,
+    soft_numeric=soft_numeric,
+    str_=str_,
+    strict_numeric=strict_numeric,
+    string=string,
+    struct=struct,
+    temporal=temporal,
+    time=time,
+    timestamp=timestamp,
+    tuple_of=tuple_of,
+)
 
+
+@public
 @rule
 def interval(arg, units=None, **kwargs):
     arg = value(dt.Interval, arg)
@@ -307,6 +356,7 @@ def interval(arg, units=None, **kwargs):
     return arg
 
 
+@public
 @validator
 def client(arg, **kwargs):
     from ibis.backends.base import BaseBackend
@@ -318,6 +368,7 @@ def client(arg, **kwargs):
 # Ouput type functions
 
 
+@public
 def dtype_like(name):
     @attribute.default
     def output_dtype(self):
@@ -328,6 +379,7 @@ def dtype_like(name):
     return output_dtype
 
 
+@public
 def shape_like(name):
     @attribute.default
     def output_shape(self):
@@ -395,6 +447,7 @@ def _promote_decimal_binop(args, op):
         return highest_precedence_dtype(args)
 
 
+@public
 def numeric_like(name, op):
     @attribute.default
     def output_dtype(self):
@@ -415,18 +468,21 @@ def numeric_like(name, op):
 # TODO(kszucs): it could be as simple as rlz.instance_of(ops.TableNode)
 # we have a single test case testing the schema superset condition, not
 # used anywhere else
+@public
 @rule
 def table(arg, schema=None, **kwargs):
     """A table argument.
 
     Parameters
     ----------
+    arg
+        A table node
     schema
         A validator for the table's columns. Only column subset validators are
         currently supported. Accepts any arguments that `sch.schema` accepts.
         See the example for usage.
-    arg
-        An argument
+    kwargs
+        Keyword arguments
 
     The following op will accept an argument named `'table'`. Note that the
     `schema` argument specifies rules for columns that are required to be in
@@ -452,6 +508,7 @@ def table(arg, schema=None, **kwargs):
     return arg
 
 
+@public
 @rule
 def column_from(table_ref, column, **kwargs):
     """A column from a named table.
@@ -474,7 +531,7 @@ def column_from(table_ref, column, **kwargs):
 
     if not isinstance(column, ir.Column):
         raise com.IbisTypeError(
-            "value must be an int or str or Column, got " f"{type(column).__name__}"
+            f"value must be an int or str or Column, got {type(column).__name__}"
         )
 
     if not column.has_name():
@@ -490,6 +547,7 @@ def column_from(table_ref, column, **kwargs):
         raise com.IbisTypeError(f"Cannot get column {maybe_column} from {type(table)}")
 
 
+@public
 @rule
 def base_table_of(table_ref, *, this, strict=True):
     from ibis.expr.analysis import find_first_base_table
@@ -501,6 +559,7 @@ def base_table_of(table_ref, *, this, strict=True):
     return base
 
 
+@public
 @rule
 def function_of(table_ref, fn, *, output_rule=any, this=None):
     arg = table_ref(this=this).to_expr()
@@ -517,6 +576,7 @@ def function_of(table_ref, fn, *, output_rule=any, this=None):
     return output_rule(arg, this=this)
 
 
+@public
 @rule
 def reduction(arg, **kwargs):
     from ibis.expr.analysis import is_reduction
@@ -527,6 +587,7 @@ def reduction(arg, **kwargs):
     return arg
 
 
+@public
 @rule
 def non_negative_integer(arg, **kwargs):
     if not isinstance(arg, int):
@@ -538,6 +599,7 @@ def non_negative_integer(arg, **kwargs):
     return arg
 
 
+@public
 @rule
 def pair(inner_left, inner_right, arg, **kwargs):
     try:
@@ -547,6 +609,7 @@ def pair(inner_left, inner_right, arg, **kwargs):
     return inner_left(a[0], **kwargs), inner_right(b, **kwargs)
 
 
+@public
 @rule
 def analytic(arg, **kwargs):
     from ibis.expr.analysis import is_analytic
@@ -556,6 +619,7 @@ def analytic(arg, **kwargs):
     return arg
 
 
+@public
 @validator
 def window_from(table_ref, win, **kwargs):
     from ibis.expr.window import Window
@@ -571,7 +635,7 @@ def window_from(table_ref, win, **kwargs):
         win = win.bind(table.to_expr())
 
     if win.max_lookback is not None:
-        error_msg = "'max lookback' windows must be ordered " "by a timestamp column"
+        error_msg = "`max_lookback` window must be ordered by a timestamp column"
         if len(win._order_by) != 1:
             raise com.IbisInputError(error_msg)
         order_var = win._order_by[0].args[0]

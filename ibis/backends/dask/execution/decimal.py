@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import decimal
 
 import dask.dataframe as dd
@@ -12,11 +14,9 @@ def execute_cast_series_to_decimal(op, data, type, **kwargs):
     precision = type.precision
     scale = type.scale
     context = decimal.Context(prec=precision)
-    places = context.create_decimal(
-        '{}.{}'.format('0' * (precision - scale), '0' * scale)
-    )
+    places = context.create_decimal(f"{'0' * (precision - scale)}.{'0' * scale}")
     return data.apply(
-        lambda x, context=context, places=places: (  # noqa: E501
+        lambda x, context=context, places=places: (
             context.create_decimal(x).quantize(places)
         ),
         meta=(data.name, "object"),

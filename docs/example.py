@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis
 
 con = ibis.sqlite.connect("crunchbase.db")

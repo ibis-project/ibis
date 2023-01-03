@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
 
-import ibis.common.graph as graph
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
 
@@ -24,10 +24,6 @@ if TYPE_CHECKING:
 __all__ = [
     'BaseSQLBackend',
 ]
-
-
-def _find_memtables(op):
-    return graph.proceed, op if isinstance(op, ops.InMemoryTable) else None
 
 
 class BaseSQLBackend(BaseBackend):
@@ -139,6 +135,7 @@ class BaseSQLBackend(BaseBackend):
         if cursor:
             return cursor
         cursor.release()
+        return None
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
@@ -167,9 +164,8 @@ class BaseSQLBackend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
-        """Execute expression and return results in an iterator of pyarrow
-        record batches.
+    ) -> pa.ipc.RecordBatchReader:
+        """Execute expression and return an iterator of pyarrow record batches.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -185,6 +181,8 @@ class BaseSQLBackend(BaseBackend):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -207,7 +205,7 @@ class BaseSQLBackend(BaseBackend):
                 )
                 yield pa.RecordBatch.from_struct_array(struct_array)
 
-        return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
 
     def execute(
         self,
@@ -270,7 +268,7 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_tables(self, expr):
         if self.compiler.cheap_in_memory_tables:
-            for memtable in graph.traverse(_find_memtables, expr.op()):
+            for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)
 
     @abc.abstractmethod

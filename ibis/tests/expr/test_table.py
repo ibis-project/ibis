@@ -9,15 +9,14 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.config as config
 import ibis.expr.analysis as an
-import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
 from ibis import literal as L
 from ibis.common.exceptions import RelationError
+from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
@@ -174,18 +173,6 @@ def test_projection_invalid_root(table):
         left.projection(exprs)
 
 
-def test_projection_unnamed_literal_interactive_blowup(con):
-    # #147 and #153 alike
-    table = con.table('functional_alltypes')
-    exprs = [table.bigint_col, ibis.literal(5)]
-
-    with config.option_context('interactive', True):
-        try:
-            table.select(exprs)
-        except Exception as e:
-            assert 'named' in e.args[0]
-
-
 def test_projection_with_star_expr(table):
     new_expr = (table['a'] * 5).name('bigger_a')
 
@@ -235,6 +222,12 @@ def test_projection_array_expr(table):
     result = table[table.a]
     expected = table[[table.a]]
     assert_equal(result, expected)
+
+
+@pytest.mark.parametrize("empty", [list(), dict()])
+def test_projection_no_expr(table, empty):
+    with pytest.raises(com.IbisTypeError, match="must select at least one"):
+        table.select(empty)
 
 
 def test_mutate(table):
@@ -502,26 +495,20 @@ def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
     result = table[int_col].sum()
     assert isinstance(result, ir.IntegerScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Sum)
-    assert result.get_name() == "sum"
+    assert isinstance(result.op(), ops.Sum)
 
 
 def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
     result = table[float_col].sum()
     assert isinstance(result, ir.FloatingScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Sum)
-    assert result.get_name() == "sum"
+    assert isinstance(result.op(), ops.Sum)
 
 
 def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
     assert isinstance(result, ir.FloatingScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.Mean)
-    assert result.get_name() == "mean"
+    assert isinstance(result.op(), ops.Mean)
 
 
 def test_aggregate_no_keys(table):
@@ -766,22 +753,6 @@ def test_aggregate_unnamed_expr(con):
     schema = agg.schema()
     assert schema.names == ('Substring(Lowercase(n_name), 0, 1)', 'metric')
     assert schema.types == (dt.string, dt.int64)
-
-
-def test_default_reduction_names(table):
-    d = table.f
-    cases = [
-        (d.count(), 'count'),
-        (d.sum(), 'sum'),
-        (d.mean(), 'mean'),
-        (d.approx_nunique(), 'approx_nunique'),
-        (d.approx_median(), 'approx_median'),
-        (d.min(), 'min'),
-        (d.max(), 'max'),
-    ]
-
-    for expr, ex_name in cases:
-        assert expr.get_name() == ex_name
 
 
 def test_join_no_predicate_list(con):

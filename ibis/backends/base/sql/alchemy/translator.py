@@ -80,10 +80,8 @@ class AlchemyExprTranslator(ExprTranslator):
                 sa_args = tuple(map(self.translate, argtuple))
                 return sa_func(*sa_args).filter(self.translate(where))
             else:
-                # TODO(kszucs): avoid expression roundtrips
                 sa_args = tuple(
-                    self.translate(where.to_expr().ifelse(arg, None).op())
-                    for arg in argtuple
+                    self.translate(ops.Where(where, arg, None)) for arg in argtuple
                 )
         else:
             sa_args = tuple(map(self.translate, argtuple))

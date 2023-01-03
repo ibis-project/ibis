@@ -1,10 +1,10 @@
 {
   "rules": {
     "body-leading-blank": [1, "always"],
-    "body-max-line-length": [2, "always", 200],
+    "body-max-line-length": [2, "always", 250],
     "footer-leading-blank": [1, "always"],
-    "footer-max-line-length": [2, "always", 200],
-    "header-max-length": [2, "always", 100],
+    "footer-max-line-length": [2, "always", 250],
+    "header-max-length": [2, "always", 120],
     "subject-case": [
       2,
       "never",

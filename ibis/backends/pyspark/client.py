@@ -112,7 +112,7 @@ class PySparkTable(ir.Table):
         if isinstance(obj, pd.DataFrame):
             spark_df = self._session.createDataFrame(obj)
             spark_df.insertInto(self.name, overwrite=overwrite)
-            return
+            return None
 
         expr = obj
 

@@ -9,6 +9,7 @@ import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import IbisTypeError
 
 
 def test_validate_type():
@@ -145,6 +146,14 @@ def test_struct_from_dict():
     result = dt.Struct.from_dict({'b': 'int64', 'a': dt.float64})
 
     assert result == dt.Struct(names=['b', 'a'], types=[dt.int64, dt.float64])
+
+
+def test_struct_names_and_types_legth_must_match():
+    with pytest.raises(IbisTypeError):
+        dt.Struct(names=["a", "b"], types=["int", "str", "float"])
+
+    dtype = dt.Struct(names=["a", "b"], types=["int", "str"])
+    assert isinstance(dtype, dt.Struct)
 
 
 @pytest.mark.parametrize(
@@ -304,13 +313,13 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 )
 def test_interval(unit):
     definition = f"interval('{unit}')"
-    dt.Interval(unit, dt.int32) == dt.dtype(definition)
+    dt.Interval(unit, dt.int32) == dt.dtype(definition)  # noqa: B015
 
     definition = f"interval<uint16>('{unit}')"
-    dt.Interval(unit, dt.uint16) == dt.dtype(definition)
+    dt.Interval(unit, dt.uint16) == dt.dtype(definition)  # noqa: B015
 
     definition = f"interval<int64>('{unit}')"
-    dt.Interval(unit, dt.int64) == dt.dtype(definition)
+    dt.Interval(unit, dt.int64) == dt.dtype(definition)  # noqa: B015
 
 
 def test_interval_invalid_type():
@@ -521,25 +530,6 @@ def test_struct_datatype_subclass_from_tuples():
 
 def test_parse_null():
     assert dt.parse("null") == dt.null
-
-
-def test_traversal_map():
-    dtype = dt.Struct.from_tuples([('a', 'int64'), ('b', dt.Array('int64'))])
-    results = dtype.map(lambda dtype, *args, **kwargs: str(dtype))
-    assert results == {
-        dt.int64: 'int64',
-        dt.Array(dt.int64): 'array<int64>',
-        dtype: 'struct<a: int64, b: array<int64>>',
-    }
-
-
-def test_traversal_replace():
-    dtype = dt.Struct.from_tuples([('a', 'int64'), ('b', dt.Array('string'))])
-    subs = {dt.string: dt.timestamp, dt.int64: dt.bool}
-
-    result = dtype.replace(subs)
-    expected = dt.Struct.from_tuples([('a', 'bool'), ('b', dt.Array('timestamp'))])
-    assert result == expected
 
 
 def get_leaf_classes(op):

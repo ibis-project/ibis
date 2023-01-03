@@ -40,31 +40,6 @@ def test_infer_dtype(value, expected_dtype):
 
 
 @pytest.mark.parametrize(
-    ('numpy_dtype', 'ibis_dtype'),
-    [
-        (np.bool_, dt.boolean),
-        (np.int8, dt.int8),
-        (np.int16, dt.int16),
-        (np.int32, dt.int32),
-        (np.int64, dt.int64),
-        (np.uint8, dt.uint8),
-        (np.uint16, dt.uint16),
-        (np.uint32, dt.uint32),
-        (np.uint64, dt.uint64),
-        (np.float16, dt.float16),
-        (np.float32, dt.float32),
-        (np.float64, dt.float64),
-        (np.double, dt.double),
-        (np.str_, dt.string),
-        (np.datetime64, dt.timestamp),
-        (np.timedelta64, dt.interval),
-    ],
-)
-def test_numpy_dtype(numpy_dtype, ibis_dtype):
-    assert dt.dtype(np.dtype(numpy_dtype)) == ibis_dtype
-
-
-@pytest.mark.parametrize(
     ('dask_dtype', 'ibis_dtype'),
     [
         (

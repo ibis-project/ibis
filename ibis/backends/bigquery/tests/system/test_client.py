@@ -133,6 +133,7 @@ FROM \\(
         .group_by("string_col")
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
+        .name("count")
     )
     result = expr.compile(params={p: "20140101"})
     assert re.match(expected, result) is not None
@@ -307,7 +308,7 @@ def test_string_to_timestamp(client):
         datetime.datetime(year=2017, month=2, day=6, hour=5),
         tz=pytz.timezone("UTC"),
     )
-    expr_tz = ibis.literal("2017-02-06").to_timestamp("%F", "America/New_York")
+    expr_tz = ibis.literal("2017-02-06 America/New_York").to_timestamp("%F %Z")
     result_tz = client.execute(expr_tz)
     assert result_tz == timestamp_tz
 

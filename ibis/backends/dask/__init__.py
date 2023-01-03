@@ -9,13 +9,14 @@ from dask.base import DaskMethodsMixin
 
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
-import ibis.backends.pandas.execution  # noqa: F401
+import ibis.backends.pandas.execution
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.dask.client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
+from ibis.backends.pandas.core import _apply_schema
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas
@@ -83,11 +84,12 @@ class Backend(BasePandasBackend):
                 )
             )
 
-        result = self.compile(query, params, **kwargs)
-        if isinstance(result, DaskMethodsMixin):
-            return result.compute()
+        compiled = self.compile(query, params, **kwargs)
+        if isinstance(compiled, DaskMethodsMixin):
+            result = compiled.compute()
         else:
-            return result
+            result = compiled
+        return _apply_schema(query.op(), result)
 
     def compile(
         self, query: ir.Expr, params: Mapping[ir.Expr, object] = None, **kwargs

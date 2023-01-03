@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
@@ -5,7 +7,7 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.backends.tests.data import array_types, struct_types
+from ibis.backends.tests.data import array_types, struct_types, win
 
 pl = pytest.importorskip("polars")
 
@@ -43,8 +45,10 @@ class TestConf(BackendTest, RoundAwayFromZero):
         client.register(
             data_directory / 'awards_players.csv', table_name='awards_players'
         )
+        client.register(data_directory / 'diamonds.csv', table_name='diamonds')
         client.register(array_types, table_name='array_types')
         client.register(struct_types, table_name='struct')
+        client.register(win, table_name="win")
 
         return client
 

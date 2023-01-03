@@ -32,6 +32,15 @@ class StructType(UserDefinedType):
         return f"STRUCT({pairs})"
 
 
+class MapType(UserDefinedType):
+    def __init__(self, key_type: sa.types.TypeEngine, value_type: sa.types.TypeEngine):
+        self.key_type = sa.types.to_instance(key_type)
+        self.value_type = sa.types.to_instance(value_type)
+
+    def get_col_spec(self, **_):
+        return f"MAP({self.key_type}, {self.value_type})"
+
+
 class UInt64(sa.types.Integer):
     pass
 
@@ -76,7 +85,7 @@ def table_from_schema(name, meta, schema, database: str | None = None):
         column = sa.Column(colname, satype, nullable=dtype.nullable)
         columns.append(column)
 
-    return sa.Table(name, meta, schema=database, *columns)
+    return sa.Table(name, meta, *columns, schema=database)
 
 
 # TODO(cleanup)
@@ -148,6 +157,11 @@ def _(itype, **_):
     return StructType(
         [(name, to_sqla_type(type)) for name, type in itype.pairs.items()]
     )
+
+
+@to_sqla_type.register(dt.Map)
+def _(itype, **_):
+    return MapType(to_sqla_type(itype.key_type), to_sqla_type(itype.value_type))
 
 
 @to_sqla_type.register(dt.GeoSpatial)
@@ -254,13 +268,9 @@ def sa_inet(_, satype, nullable=True):
 
 
 @dt.dtype.register(Dialect, sa.types.JSON)
+@dt.dtype.register(PGDialect, postgresql.JSONB)
 def sa_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.JSONB)
-def sa_jsonb(_, satype, nullable=True):
-    return dt.JSONB(nullable=nullable)
 
 
 if geospatial_supported:
@@ -352,7 +362,9 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
 def sa_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
-        raise NotImplementedError('Nested array types not yet supported')
+        raise NotImplementedError(
+            f"Nested array types not yet supported for {dialect.name} dialect"
+        )
 
     value_dtype = dt.dtype(dialect, satype.item_type)
     return dt.Array(value_dtype, nullable=nullable)
@@ -365,16 +377,19 @@ def sa_struct(dialect, satype, nullable=True):
 
 
 @sch.infer.register((sa.Table, sa.sql.TableClause))
-def schema_from_table(table, schema=None):
+def schema_from_table(table: sa.Table, schema: sch.Schema | None = None) -> sch.Schema:
     """Retrieve an ibis schema from a SQLAlchemy ``Table``.
 
     Parameters
     ----------
-    table : sa.Table
+    table
+        Table whose schema to infer
+    schema
+        Schema to pull types from
 
     Returns
     -------
-    schema : ibis.expr.datatypes.Schema
+    schema
         An ibis schema corresponding to the types of the columns in `table`.
     """
     schema = schema if schema is not None else {}

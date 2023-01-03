@@ -1,1 +1,1 @@
-indexOf(['a','b','c'], `string_col`) - 1
+indexOf(['a', 'b', 'c'], string_col) - 1

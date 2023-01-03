@@ -175,7 +175,7 @@ def test_multiple_argument_udf(t, df):
 
     result = expr.execute()
     expected = (df.b + df.c).compute()
-    tm.assert_series_equal(result, expected, check_index=False)
+    tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
 
 def test_multiple_argument_udf_group_by(t):
@@ -220,7 +220,7 @@ def test_udaf_elementwise_tzcol(t_timestamp, df_timestamp):
     result = expr.execute().reset_index(drop=True)
 
     expected = my_tz_add_one.func(df_timestamp.a.compute())
-    tm.assert_series_equal(result, expected, check_index=False)
+    tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
 
 def test_udaf_analytic(t, df):
@@ -234,7 +234,7 @@ def test_udaf_analytic(t, df):
         return s.sub(s.mean()).div(s.std())
 
     expected = (f(df.c)).compute()
-    tm.assert_series_equal(result, expected, check_index=False)
+    tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
 
 def test_udaf_analytic_group_by(t, df):
@@ -475,7 +475,7 @@ def test_array_return_type_reduction_window(t, df):
     result = expr.execute()
     expected_raw = df.b.compute().tolist()
     expected = pd.Series([expected_raw] * len(df))
-    tm.assert_series_equal(result, expected, check_index=False)
+    tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
 
 def test_array_return_type_reduction_group_by(t, df):

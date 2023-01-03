@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import ast
 import re
 
 import parsy
 
-_STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
+_STRING_REGEX = (
+    """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""
+)
 
 SPACES = parsy.regex(r'\s*', re.MULTILINE)
 

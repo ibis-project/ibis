@@ -13,12 +13,14 @@
 #
 # The source of the `independence` table has been obtained from
 # [Wikipedia](https://en.wikipedia.org/wiki/List_of_national_independence_days).
+from __future__ import annotations
+
+import argparse
 import datetime
 import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
-import click
 import requests
 import sqlalchemy as sa
 import toolz
@@ -83,30 +85,34 @@ def make_geography_db(
             )
 
 
-@click.command(help="Create the geography SQLite database for the Ibis tutorial")
-@click.option(
-    "-d",
-    "--output-directory",
-    default=Path(tempfile.gettempdir()),
-    type=click.Path(dir_okay=True, path_type=Path),
-    help="The directory to which the database will be output",
-    show_default=True,
-)
-@click.option(
-    "-u",
-    "--input-data-url",
-    default="https://storage.googleapis.com/ibis-tutorial-data/geography.json",
-    type=str,
-    help="The URL containing the data with which to populate the database",
-)
-def main(output_directory: Path, input_data_url: str) -> None:
-    response = requests.get(input_data_url)
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Create the geography SQLite database for the Ibis tutorial"
+    )
+    parser.add_argument(
+        "-d",
+        "--output-directory",
+        default=tempfile.gettempdir(),
+        type=str,
+        help="The directory to which the database will be output",
+    )
+    parser.add_argument(
+        "-u",
+        "--input-data-url",
+        default="https://storage.googleapis.com/ibis-tutorial-data/geography.json",
+        type=str,
+        help="The URL containing the data with which to populate the database",
+    )
+
+    args = parser.parse_args()
+
+    response = requests.get(args.input_data_url)
     response.raise_for_status()
     input_data = response.json()
-    db_path = output_directory.joinpath("geography.db")
+    db_path = Path(args.output_directory).joinpath("geography.db")
     con = sa.create_engine(f"sqlite:///{db_path}")
     make_geography_db(input_data, con)
-    click.echo(db_path)
+    print(db_path)  # noqa: T201
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from collections.abc import Mapping
 
 import dask.dataframe as dd
 import numpy as np
-import pandas
+import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.backends.dask.dispatch import execute_node
@@ -29,11 +31,12 @@ from ibis.backends.pandas.execution.maps import (
 
 # NOTE - to avoid dispatch ambiguities we must unregister pandas, only to
 # re-register below. The ordering in which dispatches are registered is
-# meaningful. See https://multiple-dispatch.readthedocs.io/en/latest/resolution.html#ambiguities # noqa E501
+# meaningful. See
+# https://multiple-dispatch.readthedocs.io/en/latest/resolution.html#ambiguities
 # for more detail.
 PANDAS_REGISTERED_TYPES = [
-    (ops.MapGet, Mapping, object, pandas.Series),
-    (ops.MapGet, Mapping, pandas.Series, object),
+    (ops.MapGet, Mapping, object, pd.Series),
+    (ops.MapGet, Mapping, pd.Series, object),
 ]
 for registered_type in PANDAS_REGISTERED_TYPES:
     del execute_node[registered_type]
@@ -45,24 +48,15 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, object, object), map_get_series_scalar_scalar),
         ((dd.Series, object, dd.Series), map_get_series_scalar_series),
         ((dd.Series, dd.Series, object), map_get_series_series_scalar),
-        (
-            (dd.Series, dd.Series, dd.Series),
-            map_get_series_series_series,
-        ),
+        ((dd.Series, dd.Series, dd.Series), map_get_series_series_series),
         # This never occurs but we need to register it so multipledispatch
         # does not see below registrations as ambigious. See NOTE above.
         (
-            (Mapping, (dd.Series, pandas.Series), (dd.Series, pandas.Series)),
+            (Mapping, (dd.Series, pd.Series), (dd.Series, pd.Series)),
             map_get_dict_series_series,
         ),
-        (
-            (Mapping, object, (dd.Series, pandas.Series)),
-            map_get_dict_scalar_series,
-        ),
-        (
-            (Mapping, (dd.Series, pandas.Series), object),
-            map_get_dict_series_scalar,
-        ),
+        ((Mapping, object, (dd.Series, pd.Series)), map_get_dict_scalar_series),
+        ((Mapping, (dd.Series, pd.Series), object), map_get_dict_series_scalar),
     ],
     ops.MapContains: [
         ((Mapping, dd.Series), map_contains_dict_series),
@@ -106,7 +100,8 @@ def execute_map_concat_series_dict(op, lhs, rhs, **kwargs):
 
 @execute_node.register(ops.MapMerge, dd.Series, dd.Series)
 def execute_map_concat_series_series(op, lhs, rhs, **kwargs):
+    rhsiter = iter(rhs.values)
     return lhs.map(
-        lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter)),
+        lambda m, rhsiter=rhsiter: safe_merge(m, next(rhsiter)),
         meta=(lhs.name, lhs.dtype),
     )

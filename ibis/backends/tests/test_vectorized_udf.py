@@ -550,7 +550,6 @@ def test_elementwise_udf_named_destruct(udf_backend, udf_alltypes):
         )
 
 
-@pytest.mark.notimpl(["dask", "pandas"])
 def test_elementwise_udf_struct(udf_backend, udf_alltypes):
     add_one_struct_udf = create_add_one_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
@@ -559,8 +558,8 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
         new_col=add_one_struct_udf(udf_alltypes['double_col'])
     ).execute()
     result = result.assign(
-        col1=result['new_col'].apply(lambda x: x[0]),
-        col2=result['new_col'].apply(lambda x: x[1]),
+        col1=result['new_col'].apply(lambda x: x['col1']),
+        col2=result['new_col'].apply(lambda x: x['col2']),
     )
     result = result.drop('new_col', axis=1)
     expected = udf_alltypes.mutate(

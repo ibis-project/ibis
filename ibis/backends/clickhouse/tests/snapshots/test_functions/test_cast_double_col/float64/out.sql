@@ -1,1 +1,1 @@
-CAST(`double_col` AS Float64)
+CAST(double_col AS Float64)

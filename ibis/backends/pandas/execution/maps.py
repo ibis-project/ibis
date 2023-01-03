@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import functools
 
@@ -37,8 +39,9 @@ def map_get_series_scalar_scalar(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, pd.Series, object, pd.Series)
 def map_get_series_scalar_series(op, data, key, default, **kwargs):
+    defaultiter = iter(default.values)
     return data.map(
-        lambda mapping, key=key, defaultiter=iter(default.values): safe_get(
+        lambda mapping, key=key, defaultiter=defaultiter: safe_get(
             mapping, key, next(defaultiter)
         )
     )
@@ -46,8 +49,9 @@ def map_get_series_scalar_series(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, pd.Series, pd.Series, object)
 def map_get_series_series_scalar(op, data, key, default, **kwargs):
+    keyiter = iter(key.values)
     return data.map(
-        lambda mapping, keyiter=iter(key.values), default=default: safe_get(
+        lambda mapping, keyiter=keyiter, default=default: safe_get(
             mapping, next(keyiter), default
         )
     )
@@ -55,7 +59,10 @@ def map_get_series_series_scalar(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, pd.Series, pd.Series, pd.Series)
 def map_get_series_series_series(op, data, key, default):
-    def get(mapping, keyiter=iter(key.values), defaultiter=iter(default.values)):
+    keyiter = iter(key.values)
+    defaultiter = iter(default.values)
+
+    def get(mapping, keyiter=keyiter, defaultiter=defaultiter):
         return safe_get(mapping, next(keyiter), next(defaultiter))
 
     return data.map(get)
@@ -78,8 +85,9 @@ def map_get_dict_series_scalar(op, data, key, default, **kwargs):
 
 @execute_node.register(ops.MapGet, collections.abc.Mapping, pd.Series, pd.Series)
 def map_get_dict_series_series(op, data, key, default, **kwargs):
+    defaultiter = iter(default.values)
     return key.map(
-        lambda k, data=data, defaultiter=iter(default.values): safe_get(
+        lambda k, data=data, defaultiter=defaultiter: safe_get(
             data, k, next(defaultiter)
         )
     )
@@ -196,4 +204,5 @@ def map_merge_series_dict(op, lhs, rhs, **kwargs):
 
 @execute_node.register(ops.MapMerge, pd.Series, pd.Series)
 def map_merge_series_series(op, lhs, rhs, **kwargs):
-    return lhs.map(lambda m, rhsiter=iter(rhs.values): safe_merge(m, next(rhsiter)))
+    rhsiter = iter(rhs.values)
+    return lhs.map(lambda m, rhsiter=rhsiter: safe_merge(m, next(rhsiter)))

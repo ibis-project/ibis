@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 @public
 class Value(Expr):
-
-    """Base class for a data generating expression having a fixed and known
-    type, either a single value (scalar)"""
+    """Base class for a data generating expression having a known type."""
 
     def name(self, name):
         """Rename an expression to `name`.
@@ -270,7 +268,7 @@ class Value(Expr):
         r1 := UnboundTable: unbound_table_1
           string_col string
         Contains(value=r1.string_col, options=r0.other_string_col)
-        """  # noqa: E501
+        """
         return ops.Contains(self, values).to_expr()
 
     def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
@@ -379,7 +377,7 @@ class Value(Expr):
         r0 := UnboundTable[t]
           string_col string
         SimpleCase(base=r0.string_col, cases=[List(values=['a', 'b'])], results=[List(values=['an a', 'a b'])], default='null or (not a and not b)')
-        """  # noqa: E501
+        """
         import ibis.expr.builders as bl
 
         return bl.SimpleCaseBuilder(self.op())
@@ -437,8 +435,7 @@ class Value(Expr):
         sep: str = ",",
         where: ir.BooleanValue | None = None,
     ) -> ir.StringScalar:
-        """Concatenate values using the indicated separator to produce a
-        string.
+        """Concatenate values using the indicated separator to produce a string.
 
         Parameters
         ----------
@@ -494,8 +491,8 @@ class Value(Expr):
                 'involving multiple base table references '
                 'to a projection'
             )
-
-        return roots[0].to_expr().projection([self])
+        table = roots[0].to_expr()
+        return table.projection([self])
 
 
 @public
@@ -506,6 +503,27 @@ class Scalar(Value):
         if not ibis.options.interactive:
             return console.render(Text(self._repr()), options=options)
         return console.render(repr(self.execute()), options=options)
+
+    def as_table(self) -> ir.Table:
+        from ibis.expr.analysis import (
+            find_first_base_table,
+            is_scalar_reduction,
+            reduction_to_aggregation,
+        )
+
+        op = self.op()
+        if is_scalar_reduction(op):
+            return reduction_to_aggregation(op)
+
+        table = find_first_base_table(op)
+        if table is not None:
+            agg = ops.Aggregation(table=table, metrics=(op,))
+        else:
+            agg = ops.DummyTable(values=(op,))
+        return agg.to_expr()
+
+    def _repr_html_(self) -> str | None:
+        return None
 
 
 @public
@@ -518,9 +536,12 @@ class Column(Value, JupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
+    def as_table(self):
+        return self.to_projection()
+
     def __rich_console__(self, console, options):
         named = self.name(self.op().name)
-        projection = named.to_projection()
+        projection = named.as_table()
         return console.render(projection, options=options)
 
     def approx_nunique(
@@ -545,7 +566,7 @@ class Column(Value, JupyterMixin):
         Scalar
             An approximate count of the distinct elements of `self`
         """
-        return ops.ApproxCountDistinct(self, where).to_expr().name("approx_nunique")
+        return ops.ApproxCountDistinct(self, where).to_expr()
 
     def approx_median(
         self,
@@ -569,19 +590,19 @@ class Column(Value, JupyterMixin):
         Scalar
             An approximation of the median of `self`
         """
-        return ops.ApproxMedian(self, where).to_expr().name("approx_median")
+        return ops.ApproxMedian(self, where).to_expr()
 
     def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column."""
-        return ops.Mode(self, where).to_expr().name("mode")
+        return ops.Mode(self, where).to_expr()
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column."""
-        return ops.Max(self, where).to_expr().name("max")
+        return ops.Max(self, where).to_expr()
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column."""
-        return ops.Min(self, where).to_expr().name("min")
+        return ops.Min(self, where).to_expr()
 
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`."""
@@ -592,7 +613,7 @@ class Column(Value, JupyterMixin):
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
-        return ops.CountDistinct(self, where).to_expr().name("nunique")
+        return ops.CountDistinct(self, where).to_expr()
 
     def topk(
         self,
@@ -619,7 +640,7 @@ class Column(Value, JupyterMixin):
         arg_table = find_first_base_table(self.op()).to_expr()
 
         if by is None:
-            by = self.count()
+            by = self.count().name("count")
 
         if callable(by):
             by = by(arg_table)
@@ -664,12 +685,13 @@ class Column(Value, JupyterMixin):
             Metrics list
         """
         if exact_nunique:
-            unique_metric = self.nunique().name('uniques')
+            unique_metric = self.nunique()
         else:
-            unique_metric = self.approx_nunique().name('uniques')
+            unique_metric = self.approx_nunique()
+        unique_metric = unique_metric.name("uniques")
 
         metrics = [
-            self.count(),
+            self.count().name("count"),
             self.isnull().sum().name('nulls'),
             unique_metric,
         ]
@@ -680,7 +702,7 @@ class Column(Value, JupyterMixin):
     def arbitrary(
         self,
         where: ir.BooleanValue | None = None,
-        how: Literal["first", "last", "heavy"] | None = None,
+        how: Literal["first", "last", "heavy"] = "first",
     ) -> Scalar:
         """Select an arbitrary value in a column.
 
@@ -717,10 +739,15 @@ class Column(Value, JupyterMixin):
         IntegerScalar
             Number of elements in an expression
         """
-        return ops.Count(self, where).to_expr().name("count")
+        return ops.Count(self, where).to_expr()
 
     def value_counts(self, metric_name: str = "count") -> ir.Table:
         """Compute a frequency table.
+
+        Parameters
+        ----------
+        metric_name
+            Output column name of the `count()` metric
 
         Returns
         -------
@@ -798,17 +825,17 @@ class Column(Value, JupyterMixin):
 
 @public
 class NullValue(Value):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class NullScalar(Scalar, NullValue, Singleton):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class NullColumn(Column, NullValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public

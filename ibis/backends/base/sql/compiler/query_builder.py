@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Iterable
 
 import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
 from ibis.backends.base.sql.compiler.select_builder import SelectBuilder, _LimitSpec
 from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
@@ -17,7 +18,6 @@ from ibis.config import options
 
 
 class TableSetFormatter:
-
     _join_names = {
         ops.InnerJoin: 'INNER JOIN',
         ops.LeftJoin: 'LEFT OUTER JOIN',
@@ -45,7 +45,7 @@ class TableSetFormatter:
     # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
         if util.all_of([op.left, op.right], ops.Join):
-            raise NotImplementedError('Do not support joins between ' 'joins yet')
+            raise NotImplementedError('Do not support joins between joins yet')
 
         jname = self._get_join_type(op)
 
@@ -164,10 +164,7 @@ class TableSetFormatter:
 
 
 class Select(DML, Comparable):
-
-    """A SELECT statement which, after execution, might yield back to the user
-    a table, array/list, or scalar value, depending on the expression that
-    generated it."""
+    """A SELECT statement."""
 
     def __init__(
         self,
@@ -235,8 +232,11 @@ class Select(DML, Comparable):
         )
 
     def compile(self):
-        """This method isn't yet idempotent; calling multiple times may yield
-        unexpected results."""
+        """Compile a query.
+
+        This method isn't yet idempotent; calling multiple times may yield
+        unexpected results.
+        """
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
 
@@ -281,7 +281,7 @@ class Select(DML, Comparable):
 
     def format_subqueries(self):
         if not self.subqueries:
-            return
+            return None
 
         context = self.context
 
@@ -443,14 +443,18 @@ class Difference(SetOp):
     _keyword = "EXCEPT"
 
 
-def flatten_set_op(op):
+def flatten_set_op(op) -> Iterable[ops.Table | bool]:
     """Extract all union queries from `table`.
+
     Parameters
     ----------
-    table : ops.TableNode
+    op
+        Set operation to flatten
+
     Returns
     -------
-    Iterable[Union[Table, bool]]
+    Iterable[Table | bool]
+        Iterable of tables and `bool`s indicating `distinct`.
     """
 
     if isinstance(op, ops.SetOp):
@@ -467,12 +471,16 @@ def flatten_set_op(op):
 
 def flatten(op: ops.TableNode):
     """Extract all intersection or difference queries from `table`.
+
     Parameters
     ----------
-    table : Table
+    op
+        Table operation to flatten
+
     Returns
     -------
-    Iterable[Union[Table]]
+    Iterable[Table | bool]
+        Iterable of tables and `bool`s indicating `distinct`.
     """
     return list(toolz.concatv(flatten_set_op(op.left), flatten_set_op(op.right)))
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 
 from public import public
@@ -108,14 +110,13 @@ class Abs(Unary):
 
 @public
 class Ceil(Unary):
-    """Round up to the nearest integer value greater than or equal to this
-    value.
+    """Round up to the nearest integer value greater than or equal to this value.
 
     Returns
     -------
-    ceiled : type depending on input
-      Decimal values: yield decimal
-      Other numeric values: yield integer (int32)
+    DecimalValue | IntegerValue
+        Decimal values: yield decimal
+        Other numeric values: yield integer (int32)
     """
 
     arg = rlz.numeric
@@ -130,14 +131,13 @@ class Ceil(Unary):
 
 @public
 class Floor(Unary):
-    """Round down to the nearest integer value less than or equal to this
-    value.
+    """Round down to the nearest integer value less than or equal to this value.
 
     Returns
     -------
-    floored : type depending on input
-      Decimal values: yield decimal
-      Other numeric values: yield integer (int32)
+    DecimalValue | IntegerValue
+        Decimal values: yield decimal
+        Other numeric values: yield integer (int32)
     """
 
     arg = rlz.numeric

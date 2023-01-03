@@ -84,7 +84,6 @@ aggregate_test_params = [
 ]
 
 argidx_not_grouped_marks = [
-    "bigquery",
     "datafusion",
     "impala",
     "mysql",
@@ -205,7 +204,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     # Row ordering may differ depending on backend, so sort on the
     # grouping key
     result1 = result1.sort_values(by=grouping_key_cols).reset_index(drop=True)
-    expected = expected.sort_values(by=grouping_key_cols).reset_index(drop=True)
+    expected = (
+        expected.sort_values(by=grouping_key_cols)
+        .reset_index(drop=True)
+        .assign(int_col=lambda df: df.int_col.astype("int32"))
+    )
 
     backend.assert_frame_equal(result1, expected)
 
@@ -263,7 +266,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col > 0).sum(where=where),
             lambda t, where: (t.int_col > 0)[where].sum(),
             id="bool_sum",
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "pyspark", "mssql"]),
+            marks=pytest.mark.notimpl(["datafusion", "pyspark", "mssql"]),
         ),
         param(
             lambda t, where: t.double_col.mean(where=where),
@@ -305,7 +308,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmin',
             marks=pytest.mark.notyet(
                 [
-                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
@@ -324,7 +326,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmax',
             marks=pytest.mark.notyet(
                 [
-                    "bigquery",
                     "impala",
                     "mysql",
                     "postgres",
@@ -368,6 +369,23 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=pytest.mark.notimpl(['polars', "datafusion"]),
         ),
         param(
+            lambda t, where: t.double_col.arbitrary(where=where),
+            lambda t, where: t.double_col[where].iloc[0],
+            id='arbitrary_default',
+            marks=pytest.mark.notimpl(
+                [
+                    'impala',
+                    'postgres',
+                    'mysql',
+                    'sqlite',
+                    'snowflake',
+                    'polars',
+                    'datafusion',
+                    "mssql",
+                ]
+            ),
+        ),
+        param(
             lambda t, where: t.double_col.arbitrary(how='first', where=where),
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
@@ -381,7 +399,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'polars',
                     'datafusion',
                     "mssql",
-                    "trino",
                 ]
             ),
         ),
@@ -434,7 +451,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_and',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
+                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
                 ),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
@@ -445,7 +462,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_or',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
+                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
                 ),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
@@ -480,7 +497,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "sqlite",
                         "datafusion",
                         "mssql",
-                        "trino",
                     ]
                 )
             ],
@@ -544,9 +560,7 @@ def test_reduction_ops(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id='corr_pop',
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
-                ),
+                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -595,9 +609,7 @@ def test_reduction_ops(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id='corr_pop_bool',
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "dask", "datafusion", "pandas", "polars"]
-                ),
+                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -698,7 +710,7 @@ def test_approx_median(alltypes):
             L(":") + ":",
             "::",
             id="expr",
-            marks=mark.notyet(["bigquery", "duckdb", "mysql", "pyspark"]),
+            marks=mark.notyet(["bigquery", "duckdb", "mysql", "pyspark", "trino"]),
         ),
     ],
 )
@@ -720,7 +732,7 @@ def test_approx_median(alltypes):
         ),
     ],
 )
-@mark.notimpl(["datafusion", "snowflake", "polars", "mssql", "trino"])
+@mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
 def test_group_concat(
     backend,
     alltypes,
@@ -896,14 +908,14 @@ def test_agg_sort(alltypes):
     query.execute()
 
 
-@pytest.mark.xfail_version(polars="0.14.31", reason="projection of scalars is broken")
-@pytest.mark.xfail_version(polars="0.15.2", reason="projection of scalars is broken")
+@pytest.mark.xfail_version(polars="==0.14.31", reason="projection of scalars is broken")
+@pytest.mark.xfail_version(polars="==0.15.*", reason="projection of scalars is broken")
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
         .mutate(x=L(1, "int64"))
         .group_by(_.x)
-        .aggregate(_.double_col.sum())
+        .aggregate(sum=_.double_col.sum())
     )
 
     # TODO: The pyspark backend doesn't apply schemas to outputs

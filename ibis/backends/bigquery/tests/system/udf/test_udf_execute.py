@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.bigquery import udf  # noqa: E402
+from ibis.backends.bigquery import udf
 
 PROJECT_ID = os.environ.get("GOOGLE_BIGQUERY_PROJECT_ID", "ibis-gbq")
 DATASET_ID = "testing"

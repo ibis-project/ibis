@@ -67,15 +67,13 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional')) == 1
 
 
-def test_compile_toplevel():
+def test_compile_toplevel(snapshot):
     t = ibis.table([('foo', 'double')], name='t0')
 
     # it works!
     expr = t.foo.sum()
     result = ibis.postgres.compile(expr)
-    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"
-
-    assert str(result) == expected
+    snapshot.assert_match(str(result), "out.sql")
 
 
 def test_list_databases(con):
@@ -103,7 +101,7 @@ def test_schema_type_conversion():
     typespec = [
         # name, type, nullable
         ('json', postgresql.JSON, True, dt.JSON),
-        ('jsonb', postgresql.JSONB, True, dt.JSONB),
+        ('jsonb', postgresql.JSONB, True, dt.JSON),
         ('uuid', postgresql.UUID, True, dt.UUID),
         ('macaddr', postgresql.MACADDR, True, dt.MACADDR),
         ('inet', postgresql.INET, True, dt.INET),
@@ -112,8 +110,7 @@ def test_schema_type_conversion():
     sqla_types = []
     ibis_types = []
     for name, t, nullable, ibis_type in typespec:
-        sqla_type = sa.Column(name, t, nullable=nullable)
-        sqla_types.append(sqla_type)
+        sqla_types.append(sa.Column(name, t, nullable=nullable))
         ibis_types.append((name, ibis_type(nullable=nullable)))
 
     # Create a table with placeholder stubs for JSON, JSONB, and UUID.
@@ -238,7 +235,7 @@ def test_create_and_drop_table(con, temp_table, params):
             ("numeric", dt.decimal),
             ("numeric(3, 2)", dt.Decimal(3, 2)),
             ("uuid", dt.uuid),
-            ("jsonb", dt.jsonb),
+            ("jsonb", dt.json),
             ("geometry", dt.geometry),
             ("geography", dt.geography),
         ]

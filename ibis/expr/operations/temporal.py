@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 
 import toolz
@@ -116,7 +118,6 @@ class Strftime(Value):
 class StringToTimestamp(Value):
     arg = rlz.string
     format_str = rlz.string
-    timezone = rlz.optional(rlz.string)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.Timestamp(timezone='UTC')

@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import Counter
-from typing import Mapping
+from typing import Iterator, Mapping
 
 import toolz
 
@@ -107,31 +107,34 @@ def reduction_to_aggregation(node):
     tables = find_immediate_parent_tables(node)
 
     # TODO(kszucs): avoid the expression roundtrip
+    node = ops.Alias(node, node.name)
+    expr = node.to_expr()
     if len(tables) == 1:
         (table,) = tables
-        agg = table.to_expr().aggregate([node.to_expr()])
+        agg = table.to_expr().aggregate([expr])
     else:
-        agg = ScalarAggregate(node.to_expr()).get_result()
+        agg = ScalarAggregate(expr).get_result()
 
     return agg
 
 
-def find_immediate_parent_tables(node):
-    """Find every first occurrence of a :class:`ibis.expr.types.Table` object
-    in `expr`.
+def find_immediate_parent_tables(input_node, keep_input=True):
+    """Find every first occurrence of a `ir.Table` object in `input_node`.
+
+    This function does not traverse into `Table` objects. For example, the
+    underlying `PhysicalTable` of a `Selection` will not be yielded.
 
     Parameters
     ----------
-    expr : ir.Expr
+    input_node
+        Input node
+    keep_input
+        Whether to keep the input when traversing
 
     Yields
     ------
-    e : ir.Expr
-
-    Notes
-    -----
-    This function does not traverse into Table objects. This means that the
-    underlying PhysicalTable of a Selection will not be yielded, for example.
+    ir.Expr
+        Parent table expression
 
     Examples
     --------
@@ -149,15 +152,18 @@ def find_immediate_parent_tables(node):
         r0
         foo: r0.a + 1
     """
-    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(node))
+    assert all(isinstance(arg, ops.Node) for arg in util.promote_list(input_node))
 
     def finder(node):
         if isinstance(node, ops.TableNode):
-            return g.halt, node
+            if keep_input or node != input_node:
+                return g.halt, node
+            else:
+                return g.proceed, None
         else:
             return g.proceed, None
 
-    return list(toolz.unique(g.traverse(finder, node)))
+    return list(toolz.unique(g.traverse(finder, input_node)))
 
 
 def substitute(fn, node):
@@ -189,10 +195,7 @@ def substitute(fn, node):
 
 
 def substitute_parents(node):
-    """Rewrite the input expression by replacing any table expressions part of
-    a "commutative table operation unit" (for lack of scientific term, a set of
-    operations that can be written down in any order and still yield the same
-    semantic result)"""
+    """Rewrite `node` by replacing table nodes that commute."""
     assert isinstance(node, ops.Node), type(node)
 
     def fn(node):
@@ -219,11 +222,10 @@ def substitute_parents(node):
 
 
 def substitute_unbound(node):
-    """Rewrite the input expression by replacing any table expressions with an
-    equivalent unbound table."""
+    """Rewrite `node` by replacing table expressions with an equivalent unbound table."""
     assert isinstance(node, ops.Node), type(node)
 
-    def fn(node, *args, **kwargs):
+    def fn(node, _, *args, **kwargs):
         if isinstance(node, ops.DatabaseTable):
             return ops.UnboundTable(name=node.name, schema=node.schema)
         else:
@@ -233,8 +235,7 @@ def substitute_unbound(node):
 
 
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
-    """Given the list of exprs and the underlying table of a mutation op,
-    return the exprs to use to instantiate the mutation."""
+    """Return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
     # assignment exprs into two disjoint sets:
     # 1) overwriting_cols_to_expr, which maps a column name to its expr
@@ -309,6 +310,17 @@ def apply_filter(op, predicates):
 
 
 def _filter_selection(op, predicates):
+    # We can't push down filters on Unnest or Window because they
+    # change the shape and potential values of the data.
+    if any(
+        isinstance(
+            sel.arg if isinstance(sel, ops.Alias) else sel,
+            (ops.Unnest, ops.Window),
+        )
+        for sel in op.selections
+    ):
+        return ops.Selection(op, selections=[], predicates=predicates)
+
     # if any of the filter predicates have the parent expression among
     # their roots, then pushdown (at least of that predicate) is not
     # possible
@@ -335,18 +347,7 @@ def _filter_selection(op, predicates):
     except IntegrityError:
         pass
     else:
-        if shares_all_roots(simplified_predicates, op.table) and not any(
-            # we can't push down filters on unnest because unnest changes the
-            # shape and potential values of the data: unnest can potentially
-            # produce NULLs
-            #
-            # the getattr shenanigans is to handle Alias
-            isinstance(
-                sel.arg if isinstance(sel, ops.Alias) else sel,
-                ops.Unnest,
-            )
-            for sel in op.selections
-        ):
+        if shares_all_roots(simplified_predicates, op.table):
             return ops.Selection(
                 op.table,
                 selections=op.selections,
@@ -504,13 +505,14 @@ def simplify_aggregation(agg):
 
 
 class Projector:
+    """Analysis and validation of projection operation.
 
-    """Analysis and validation of projection operation, taking advantage of
-    "projection fusion" opportunities where they exist, i.e. combining
-    compatible projections together rather than nesting them.
+    This pass tries to take advantage of projection fusion opportunities where
+    they exist, i.e. combining compatible projections together rather than
+    nesting them.
 
-    Translation / evaluation later will not attempt to do any further
-    fusion / simplification.
+    Translation / evaluation later will not attempt to do any further fusion /
+    simplification.
     """
 
     def __init__(self, parent, proj_exprs):
@@ -644,14 +646,6 @@ def shares_some_roots(exprs, parents):
 def flatten_predicate(node):
     """Yield the expressions corresponding to the `And` nodes of a predicate.
 
-    Parameters
-    ----------
-    expr : ir.BooleanColumn
-
-    Returns
-    -------
-    exprs : List[ir.BooleanColumn]
-
     Examples
     --------
     >>> import ibis
@@ -709,14 +703,6 @@ def is_reduction(node):
     aggregation" in a GROUP BY-type expression and should be treated a
     literal, and must be computed as a separate query and stored in a
     temporary variable (or joined, for bound aggregations with keys)
-
-    Parameters
-    ----------
-    expr : ir.Expr
-
-    Returns
-    -------
-    check output : bool
     """
 
     def predicate(node):
@@ -867,3 +853,12 @@ def _rewrite_filter_value_list(op, **kwargs):
         return op
 
     return op.__class__(*visited)
+
+
+def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
+    """Find all in-memory tables in `node`."""
+
+    def finder(node):
+        return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
+
+    return g.traverse(finder, node, filter=ops.Node)

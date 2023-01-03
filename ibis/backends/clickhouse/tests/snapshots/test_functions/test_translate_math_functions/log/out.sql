@@ -1,1 +1,1 @@
-log(`double_col`)
+log(double_col)

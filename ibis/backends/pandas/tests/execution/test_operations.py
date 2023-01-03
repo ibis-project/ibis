@@ -4,7 +4,6 @@ from operator import methodcaller
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -12,6 +11,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
 def test_table_column(t, df):
@@ -258,40 +258,38 @@ def test_null_if_zero(t, df, column):
 @pytest.mark.parametrize(
     ('left', 'right', 'expected', 'compare'),
     [
-        pytest.param(
+        param(
             lambda t: ibis.literal(1),
             lambda t: ibis.literal(1),
             lambda df: np.nan,
             np.testing.assert_array_equal,  # treats NaNs as equal
             id='literal_literal_equal',
         ),
-        pytest.param(
+        param(
             lambda t: ibis.literal(1),
             lambda t: ibis.literal(2),
             lambda df: 1,
             np.testing.assert_equal,
             id='literal_literal_not_equal',
         ),
-        pytest.param(
+        param(
             lambda t: t.dup_strings,
             lambda t: ibis.literal('a'),
             lambda df: df.dup_strings.where(df.dup_strings != 'a'),
             tm.assert_series_equal,
             id='series_literal',
         ),
-        pytest.param(
+        param(
             lambda t: t.dup_strings,
             lambda t: t.dup_strings,
             lambda df: df.dup_strings.where(df.dup_strings != df.dup_strings),
             tm.assert_series_equal,
             id='series_series',
         ),
-        pytest.param(
+        param(
             lambda t: ibis.literal('a'),
             lambda t: t.dup_strings,
-            lambda df: pd.Series(
-                np.where(df.dup_strings == 'a', np.nan, 'a'), index=df.index
-            ),
+            lambda _: pd.Series(["d", np.nan, "d"], name="dup_strings"),
             tm.assert_series_equal,
             id='literal_series',
         ),
@@ -523,44 +521,34 @@ def test_cast_on_group_by(t, df):
 
 
 @pytest.mark.parametrize(
-    'op',
-    [
-        operator.add,
-        operator.mul,
-        operator.sub,
-        operator.truediv,
-        operator.floordiv,
-        operator.mod,
-        operator.pow,
-    ],
-    ids=operator.attrgetter('__name__'),
+    "opname", ["add", "mul", "sub", "truediv", "floordiv", "mod", "pow"]
 )
-@pytest.mark.parametrize('args', [lambda c: (1.0, c), lambda c: (c, 1.0)])
-def test_left_binary_op(t, df, op, args):
-    expr = op(*args(t.float64_with_zeros))
+@pytest.mark.parametrize(
+    "argfunc", [param(lambda c: (1.0, c), id="1c"), param(lambda c: (c, 1.0), id="c1")]
+)
+def test_left_binary_op(t, df, opname, argfunc):
+    op = getattr(operator, opname)
+    left, right = argfunc(t.float64_with_zeros)
+    expr = op(left, right)
     result = expr.execute()
-    expected = op(*args(df.float64_with_zeros))
-    tm.assert_series_equal(result, expected)
+    expected = op(*argfunc(df.float64_with_zeros))
+    tm.assert_series_equal(
+        result,
+        expected,
+        check_dtype=not (isinstance(right, float) and opname == "floordiv"),
+    )
 
 
 @pytest.mark.parametrize(
-    'op',
-    [
-        operator.add,
-        operator.mul,
-        operator.sub,
-        operator.truediv,
-        operator.floordiv,
-        operator.mod,
-        operator.pow,
-    ],
-    ids=operator.attrgetter('__name__'),
+    "opname", ["add", "mul", "sub", "truediv", "floordiv", "mod", "pow"]
 )
-@pytest.mark.parametrize('argfunc', [lambda c: (1.0, c), lambda c: (c, 1.0)])
-def test_left_binary_op_gb(t, df, op, argfunc):
-    expr = t.group_by('dup_strings').aggregate(
-        foo=op(*argfunc(t.float64_with_zeros)).sum()
-    )
+@pytest.mark.parametrize(
+    "argfunc", [param(lambda c: (1.0, c), id="1c"), param(lambda c: (c, 1.0), id="c1")]
+)
+def test_left_binary_op_gb(t, df, opname, argfunc):
+    op = getattr(operator, opname)
+    left, right = argfunc(t.float64_with_zeros)
+    expr = t.group_by('dup_strings').aggregate(foo=op(left, right).sum())
     result = expr.execute()
     expected = (
         df.groupby('dup_strings')
@@ -568,11 +556,29 @@ def test_left_binary_op_gb(t, df, op, argfunc):
         .reset_index()
         .rename(columns={'float64_with_zeros': 'foo'})
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result,
+        expected,
+        check_dtype=not (isinstance(right, float) and opname == "floordiv"),
+    )
 
 
-@pytest.mark.parametrize("left_f", [lambda e: e - 1, lambda e: 0.0, lambda e: None])
-@pytest.mark.parametrize("right_f", [lambda e: e + 1, lambda e: 1.0, lambda e: None])
+@pytest.mark.parametrize(
+    "left_f",
+    [
+        param(lambda e: e - 1, id="sub"),
+        param(lambda _: 0.0, id="zero"),
+        param(lambda _: None, id="none"),
+    ],
+)
+@pytest.mark.parametrize(
+    "right_f",
+    [
+        param(lambda e: e + 1, id="add"),
+        param(lambda _: 1.0, id="one"),
+        param(lambda _: None, id="none"),
+    ],
+)
 def test_where_series(t, df, left_f, right_f):
     col_expr = t['plain_int64']
     result = ibis.where(
@@ -586,14 +592,14 @@ def test_where_series(t, df, left_f, right_f):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
     expected = left.where(cond, right_f(ser))
 
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(
     ('cond', 'expected_func'),
     [
-        (True, lambda df: df['plain_int64']),
-        (False, lambda df: pd.Series(np.repeat(3.0, len(df)))),
+        param(True, lambda df: df['plain_int64'].astype("float64"), id="true"),
+        param(False, lambda df: pd.Series(np.repeat(3.0, len(df))), id="false"),
     ],
 )
 def test_where_scalar(t, df, cond, expected_func):
@@ -608,7 +614,7 @@ def test_where_long(batting, batting_df):
     result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).execute()
 
     ser = batting_df['AB']
-    expected = ser.where(ser > ser.mean(), other=0.0)
+    expected = ser.where(ser > ser.mean(), other=0.0).astype("float64")
 
     tm.assert_series_equal(result, expected)
 
@@ -831,13 +837,11 @@ def test_difference(client, df1, intersect_df2):
 @pytest.mark.parametrize(
     "distinct",
     [
-        pytest.param(
+        param(
             True,
             marks=pytest.mark.xfail(
                 raises=TypeError,
-                reason=(
-                    "Pandas cannot compute the distinct element of an " "array column"
-                ),
+                reason="Pandas cannot compute the distinct element of an array column",
             ),
         ),
         False,
@@ -911,4 +915,6 @@ def test_unsigned_integers(t, df, operation):
     expr = operation(t.plain_uint64)
     result = expr.execute()
     expected = operation(df.plain_uint64)
-    tm.assert_series_equal(result, expected)
+    expected_dtype = expr.type().to_pandas()
+    assert result.dtype == expected_dtype
+    tm.assert_series_equal(result, expected.astype(expected_dtype))

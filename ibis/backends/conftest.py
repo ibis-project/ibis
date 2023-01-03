@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
 import _pytest
 import pandas as pd
 import sqlalchemy as sa
+from packaging.requirements import Requirement
 from packaging.version import parse as vparse
 
 if TYPE_CHECKING:
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 import pytest
 
 import ibis
-import ibis.util as util
+from ibis import util
 from ibis.backends.base import _get_backend_names
 
 TEST_TABLES = {
@@ -369,7 +370,7 @@ def pytest_runtest_call(item):
             pytest.mark.xfail(
                 condition,
                 reason=(
-                    "unsupported functionality for server version " f"{server_version}"
+                    f"unsupported functionality for server version {server_version}"
                 ),
                 **kwargs,
             )
@@ -389,9 +390,7 @@ def pytest_runtest_call(item):
         else:
             condition = vparse(version) < vparse(min_version)
             if reason is None:
-                reason = (
-                    f"test requires {backend}>={version}; " f"got version {version}"
-                )
+                reason = f"test requires {backend}>={version}; got version {version}"
             else:
                 reason = f"{backend}@{version} (<{min_version}): {reason}"
         item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
@@ -449,14 +448,16 @@ def pytest_runtest_call(item):
             continue
 
         provided_reason = kwargs.pop("reason", None)
-        broken_version = kwargs.pop(backend)
+        spec = kwargs.pop(backend)
         module = importlib.import_module(backend)
         version = getattr(module, "__version__", None)
-        condition = vparse(version) == vparse(broken_version)
-        reason = f"{backend} backend test requires {backend} != {version}"
+        assert version is not None, f"{backend} module has no __version__ attribute"
+        condition = Requirement(f"{backend}{spec}").specifier.contains(version)
+        reason = f"{backend} backend test fails with {backend}{spec}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
-        item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
+        if condition:
+            item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
@@ -481,6 +482,7 @@ def _setup_backend(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"
         )
+        return None
     else:
         cls = _get_backend_conf(backend)
         return cls.load_data(

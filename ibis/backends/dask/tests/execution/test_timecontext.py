@@ -143,13 +143,13 @@ def test_setting_timecontext_in_scope(time_table, time_df3):
 
     context = Timestamp('20170105'), Timestamp('20170111')
     window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
-    """
-    In the following expression, Selection node will be executed first and
-    get table in context ('20170105', '20170101'). Then in window execution
-    table will be executed again with a larger context adjusted by window
-    preceeding days ('20170102', '20170111'). To get the correct result,
-    the cached table result with a smaller context must be discard and updated
-    to a larger time range.
+    """In the following expression, Selection node will be executed first and
+    get table in context ('20170105', '20170101').
+
+    Then in window execution table will be executed again with a larger
+    context adjusted by window preceeding days ('20170102', '20170111').
+    To get the correct result, the cached table result with a smaller
+    context must be discard and updated to a larger time range.
     """
     expr = time_table.mutate(value=time_table['value'].mean().over(window1))
     result = expr.execute(timecontext=context)
@@ -297,12 +297,16 @@ def test_adjust_context_complete_shift(
     trimmed_df2 = time_keyed_df2[
         time_keyed_df2['time'] >= context[0] - Timedelta(days=4)
     ][time_keyed_df2['time'] < context[1] - Timedelta(days=4)]
-    expected = dd.merge_asof(
-        trimmed_df1,
-        trimmed_df2,
-        on='time',
-        by='key',
-        tolerance=Timedelta('4D'),
-    ).compute()
+    expected = (
+        dd.merge_asof(
+            trimmed_df1,
+            trimmed_df2,
+            on='time',
+            by='key',
+            tolerance=Timedelta('4D'),
+        )
+        .compute()
+        .reset_index(drop=True)
+    )
 
     tm.assert_frame_equal(result, expected)

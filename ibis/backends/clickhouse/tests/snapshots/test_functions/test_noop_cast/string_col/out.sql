@@ -1,1 +1,1 @@
-`string_col`
+string_col

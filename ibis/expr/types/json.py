@@ -1,11 +1,22 @@
+"""JSON value operations."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from public import public
 
 from ibis.expr.types import Column, Scalar, Value
 
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
+
 
 @public
 class JSONValue(Value):
-    def __getitem__(self, key):
+    def __getitem__(
+        self, key: str | int | ir.StringValue | ir.IntegerValue
+    ) -> JSONValue:
         import ibis.expr.operations as ops
 
         return ops.JSONGetItem(self, key).to_expr()
@@ -13,24 +24,9 @@ class JSONValue(Value):
 
 @public
 class JSONScalar(Scalar, JSONValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class JSONColumn(Column, JSONValue):
-    pass  # noqa: E701,E302
-
-
-@public
-class JSONBValue(Value):
-    pass  # noqa: E701,E302
-
-
-@public
-class JSONBScalar(Scalar, JSONBValue):
-    pass  # noqa: E701,E302
-
-
-@public
-class JSONBColumn(Column, JSONBValue):
-    pass  # noqa: E701,E302
+    pass

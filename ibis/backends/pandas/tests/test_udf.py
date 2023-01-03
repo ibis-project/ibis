@@ -2,7 +2,6 @@ import collections
 
 import numpy as np
 import pandas as pd
-import pandas._testing as tm
 import pytest
 from packaging.version import parse as vparse
 
@@ -10,6 +9,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.pandas import Backend
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
 
 
@@ -394,7 +394,7 @@ def test_array_return_type_reduction(con, t, df, qs):
     expr = quantiles(t.b, quantiles=qs)
     result = expr.execute()
     expected = np.array(df.b.quantile(qs))
-    tm.assert_numpy_array_equal(result, expected)
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_array_return_type_reduction_window(con, t, df, qs):

@@ -63,7 +63,7 @@ class DataType(Concrete):
     def equals(self, other):
         if not isinstance(other, DataType):
             raise TypeError(
-                "invalid equality comparison between DataType and " f"{type(other)}"
+                f"invalid equality comparison between DataType and {type(other)}"
             )
         return super().__cached_equals__(other)
 
@@ -157,9 +157,6 @@ class DataType(Concrete):
     def is_json(self) -> bool:
         return isinstance(self, JSON)
 
-    def is_jsonb(self) -> bool:
-        return isinstance(self, JSONB)
-
     def is_linestring(self) -> bool:
         return isinstance(self, LineString)
 
@@ -247,7 +244,7 @@ class Primitive(DataType, Singleton):
 
 
 @public
-class Null(DataType, Singleton):
+class Null(Primitive):
     """Null values."""
 
     scalar = ir.NullScalar
@@ -411,7 +408,7 @@ class Floating(Primitive, Numeric):
     @property
     def _nbytes(self) -> int:
         raise TypeError(
-            "Cannot determine the size in bytes of an abstract floating " "point type."
+            "Cannot determine the size in bytes of an abstract floating point type."
         )
 
 
@@ -560,31 +557,28 @@ class Decimal(Numeric):
 class Interval(DataType):
     """Interval values."""
 
-    unit = optional(
-        map_to(
-            {
-                'days': 'D',
-                'hours': 'h',
-                'minutes': 'm',
-                'seconds': 's',
-                'milliseconds': 'ms',
-                'microseconds': 'us',
-                'nanoseconds': 'ns',
-                'Y': 'Y',
-                'Q': 'Q',
-                'M': 'M',
-                'W': 'W',
-                'D': 'D',
-                'h': 'h',
-                'm': 'm',
-                's': 's',
-                'ms': 'ms',
-                'us': 'us',
-                'ns': 'ns',
-            }
-        ),
-        default="s",
-    )
+    __valid_units__ = {
+        'days': 'D',
+        'hours': 'h',
+        'minutes': 'm',
+        'seconds': 's',
+        'milliseconds': 'ms',
+        'microseconds': 'us',
+        'nanoseconds': 'ns',
+        'Y': 'Y',
+        'Q': 'Q',
+        'M': 'M',
+        'W': 'W',
+        'D': 'D',
+        'h': 'h',
+        'm': 'm',
+        's': 's',
+        'ms': 'ms',
+        'us': 'us',
+        'ns': 'ns',
+    }
+
+    unit = optional(map_to(__valid_units__), default='s')
     """The time unit of the interval."""
 
     value_type = optional(all_of([datatype, instance_of(Integer)]), default=Int32())
@@ -658,11 +652,16 @@ class Struct(DataType):
     scalar = ir.StructScalar
     column = ir.StructColumn
 
+    def __init__(self, names, types, **kwargs):
+        if len(names) != len(types):
+            raise IbisTypeError(
+                'Struct datatype names and types must have the same length'
+            )
+        super().__init__(names=names, types=types, **kwargs)
+
     @classmethod
     def from_tuples(
-        cls,
-        pairs: Iterable[tuple[str, str | DataType]],
-        nullable: bool = True,
+        cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
     ) -> Struct:
         """Construct a `Struct` type from pairs.
 
@@ -670,6 +669,8 @@ class Struct(DataType):
         ----------
         pairs
             An iterable of pairs of field name and type
+        nullable
+            Whether the type is nullable
 
         Returns
         -------
@@ -681,9 +682,7 @@ class Struct(DataType):
 
     @classmethod
     def from_dict(
-        cls,
-        pairs: Mapping[str, str | DataType],
-        nullable: bool = True,
+        cls, pairs: Mapping[str, str | DataType], nullable: bool = True
     ) -> Struct:
         """Construct a `Struct` type from a [`dict`][dict].
 
@@ -691,6 +690,8 @@ class Struct(DataType):
         ----------
         pairs
             A [`dict`][dict] of `field: type`
+        nullable
+            Whether the type is nullable
 
         Returns
         -------
@@ -777,23 +778,11 @@ class JSON(String):
 
 
 @public
-class JSONB(Binary):
-    """JSON data stored in a binary representation.
-
-    This representation eliminates whitespace, duplicate keys, and does
-    not preserve key ordering.
-    """
-
-    scalar = ir.JSONBScalar
-    column = ir.JSONBColumn
-
-
-@public
 class GeoSpatial(DataType):
     """Geospatial values."""
 
     geotype = optional(isin({"geography", "geometry"}))
-    """The specific geospatial type"""
+    """The specific geospatial type."""
 
     srid = optional(instance_of(int))
     """The spatial reference identifier."""
@@ -942,7 +931,6 @@ multipoint = MultiPoint()
 multipolygon = MultiPolygon()
 # json
 json = JSON()
-jsonb = JSONB()
 # special string based data type
 uuid = UUID()
 macaddr = MACADDR()
@@ -1013,7 +1001,6 @@ public(
     multipoint=multipoint,
     multipolygon=multipolygon,
     json=json,
-    jsonb=jsonb,
     uuid=uuid,
     macaddr=macaddr,
     inet=inet,

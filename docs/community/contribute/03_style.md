@@ -2,17 +2,12 @@
 
 ## Code Style
 
-The following tools are run in both CI and `pre-commit` checks to ensure codebase hygiene:
-
 - [`black`](https://github.com/psf/black): Formatting Python code
-- [`isort`](https://github.com/PyCQA/isort): Formatting and sorting `import` statements
-- [`absolufy-imports`](https://github.com/MarcoGorelli/absolufy-imports): Automatically convert relative imports to absolute
-- [`flake8`](https://flake8.pycqa.org/en/latest/): Linting Python code
-- [`nix-linter`](https://github.com/Synthetica9/nix-linter): Linting nix files
-- [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt): Formatting nix files
+- [`ruff`](https://github.com/charliermarsh/ruff): Formatting and sorting `import` statements
 - [`shellcheck`](https://github.com/koalaman/shellcheck): Linting shell scripts
 - [`shfmt`](https://github.com/mvdan/sh): Formatting shell scripts
-- [`pyupgrade`](https://github.com/asottile/pyupgrade): Ensuring the latest available Python syntax is used
+- [`statix`](https://github.com/nerdypepper/statix): Linting nix files
+- [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt): Formatting nix files
 
 !!! tip
 

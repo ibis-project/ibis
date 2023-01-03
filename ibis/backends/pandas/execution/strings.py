@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import json
 import operator
@@ -5,9 +7,13 @@ from functools import partial, reduce
 
 import numpy as np
 import pandas as pd
-import regex as re
 import toolz
 from pandas.core.groupby import SeriesGroupBy
+
+try:
+    import regex as re
+except ImportError:
+    import re
 
 import ibis.expr.operations as ops
 import ibis.util
@@ -166,22 +172,24 @@ def _sql_like_to_regex(pattern, escape):
         cur_i += skip
 
 
-def sql_like_to_regex(pattern, escape=None):
-    """Convert a SQL LIKE pattern to an equivalent Python regular expression.
+def sql_like_to_regex(pattern: str, escape: str | None = None) -> str:
+    """Convert a SQL `LIKE` pattern to an equivalent Python regular expression.
 
     Parameters
     ----------
-    pattern : str
+    pattern
         A LIKE pattern with the following semantics:
-        * ``%`` matches zero or more characters
-        * ``_`` matches exactly one character
-        * To escape ``%`` and ``_`` (or to match the `escape` parameter
+        * `%` matches zero or more characters
+        * `_` matches exactly one character
+        * To escape `%` and `_` (or to match the `escape` parameter
           itself), prefix the desired character with `escape`.
+    escape
+        Escape character
 
     Returns
     -------
-    new_pattern : str
-        A regular expression pattern equivalent to the input SQL LIKE pattern.
+    str
+        A regular expression pattern equivalent to the input SQL `LIKE` pattern.
 
     Examples
     --------
@@ -198,7 +206,7 @@ def sql_like_to_regex(pattern, escape=None):
     >>> sql_like_to_regex('abc%')  # any string starting with "abc"
     '^abc.*$'
     """
-    return '^{}$'.format(''.join(_sql_like_to_regex(pattern, escape)))
+    return f"^{''.join(_sql_like_to_regex(pattern, escape))}$"
 
 
 @execute_node.register(ops.StringSQLLike, pd.Series, str, (str, type(None)))
@@ -254,9 +262,8 @@ def execute_string_ascii_group_by(op, data, **kwargs):
 
 @execute_node.register(ops.RegexSearch, pd.Series, str)
 def execute_series_regex_search(op, data, pattern, **kwargs):
-    return data.map(
-        lambda x, pattern=re.compile(pattern): pattern.search(x) is not None
-    )
+    pattern = re.compile(pattern)
+    return data.map(lambda x, pattern=pattern: pattern.search(x) is not None)
 
 
 @execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
@@ -266,9 +273,11 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
-@execute_node.register(ops.RegexExtract, pd.Series, (pd.Series, str), integer_types)
+@execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
-    def extract(x, pattern=re.compile(pattern), index=index):
+    pattern = re.compile(pattern)
+
+    def extract(x, pattern=pattern, index=index):
         match = pattern.match(x)
         if match is not None:
             return match.group(index) or np.nan
@@ -287,7 +296,9 @@ def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
 
 @execute_node.register(ops.RegexReplace, pd.Series, str, str)
 def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
-    def replacer(x, pattern=re.compile(pattern)):
+    pattern = re.compile(pattern)
+
+    def replacer(x, pattern=pattern):
         return pattern.sub(replacement, x)
 
     return data.apply(replacer)
@@ -375,8 +386,9 @@ def haystack_to_series_of_lists(haystack, index=None):
 def execute_series_find_in_set(op, needle, haystack, **kwargs):
     haystack = [execute(arg, **kwargs) for arg in haystack]
     pieces = haystack_to_series_of_lists(haystack, index=needle.index)
+    index = itertools.count()
     return pieces.map(
-        lambda elements, needle=needle, index=itertools.count(): (
+        lambda elements, needle=needle, index=index: (
             ibis.util.safe_index(elements, needle.iat[next(index)])
         )
     )
@@ -452,17 +464,9 @@ def try_getitem(value, key):
 
 @execute_node.register(ops.JSONGetItem, pd.Series, (str, int))
 def execute_json_getitem_series_str_int(_, data, key, **kwargs):
-    return pd.Series(list(map(partial(try_getitem, key=key), data)), dtype="object")
+    return pd.Series(map(partial(try_getitem, key=key), data), dtype="object")
 
 
 @execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
 def execute_json_getitem_series_series(_, data, key, **kwargs):
-    return pd.Series(
-        list(
-            map(
-                lambda value, keyiter=iter(key): try_getitem(value, next(keyiter)),
-                data,
-            )
-        ),
-        dtype="object",
-    )
+    return pd.Series(map(try_getitem, data, key), dtype="object")

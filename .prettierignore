@@ -2,9 +2,8 @@
 .direnv
 .mypy_cache
 .pytest_cache
-nix/sources.json
-result
-result-*
+.ruff_cache
+result*
 docs/release_notes.md
 docs/overrides/*.html
 docs/api/expressions/top_level.md
@@ -12,4 +11,4 @@ docs/SUMMARY.md
 site
 ci/udf/CMakeFiles
 poetry.lock
-ibis/**/*.js
+ibis

@@ -31,7 +31,7 @@ def table(mockcon):
         pytest.param(lambda s: s.re_extract(r'[\d]+', 0), id="re_extract"),
         pytest.param(lambda s: s.re_replace(r'[\d]+', 'aaa'), id="re_replace"),
         pytest.param(lambda s: s.repeat(2), id="repeat"),
-        pytest.param(lambda s: s.parse_url('HOST'), id="parse_url"),
+        pytest.param(lambda s: s.host(), id="extract_host"),
         pytest.param(lambda s: s.translate('a', 'b'), id="translate"),
         pytest.param(lambda s: s.find('a'), id="find"),
         pytest.param(lambda s: s.find('a', 2), id="find_with_offset"),

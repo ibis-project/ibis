@@ -1,1 +1,1 @@
-ceil(`double_col`)
+ceil(double_col)

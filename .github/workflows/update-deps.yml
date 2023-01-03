@@ -29,11 +29,15 @@ jobs:
     needs:
       - get-flakes
     strategy:
+      fail-fast: false
       matrix: ${{ fromJSON(needs.get-flakes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
 
       - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -41,7 +45,7 @@ jobs:
           name: ibis
           extraPullNames: nix-community,poetry2nix
 
-      - uses: cpcloud/flake-dep-info-action@v2.0.8
+      - uses: cpcloud/flake-dep-info-action@v2.0.10
         id: get_current_commit
         with:
           input: ${{ matrix.flake }}
@@ -49,7 +53,7 @@ jobs:
       - name: update ${{ matrix.flake }}
         run: nix flake lock --update-input ${{ matrix.flake }}
 
-      - uses: cpcloud/flake-dep-info-action@v2.0.8
+      - uses: cpcloud/flake-dep-info-action@v2.0.10
         id: get_new_commit
         with:
           input: ${{ matrix.flake }}
@@ -72,7 +76,7 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
-      - uses: cpcloud/compare-commits-action@v5.0.26
+      - uses: cpcloud/compare-commits-action@v5.0.27
         if: fromJSON(steps.needs_pr.outputs.did_change)
         id: compare_commits
         with:

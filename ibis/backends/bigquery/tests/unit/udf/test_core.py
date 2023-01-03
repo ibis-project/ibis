@@ -64,7 +64,7 @@ def test_assign(snapshot):
     def f():
         a = 1
         a = 2
-        print(a)
+        print(a)  # noqa: T201
         return 1
 
     js = compile(f)
@@ -187,7 +187,7 @@ def test_lambda_with_splat(snapshot):
                 total += value
             return total
 
-        splat_sum = lambda *args: sum(args)  # noqa: E731
+        splat_sum = lambda *args: sum(args)
         return splat_sum(1, 2, 3)
 
     js = compile(f)

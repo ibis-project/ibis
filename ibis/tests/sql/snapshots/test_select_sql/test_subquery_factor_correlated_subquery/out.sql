@@ -12,7 +12,7 @@ WITH t0 AS (
 SELECT t0.*
 FROM t0
 WHERE t0.`amount` > (
-  SELECT avg(t4.`amount`) AS `mean`
+  SELECT avg(t4.`amount`) AS `Mean(amount)`
   FROM t0 t4
   WHERE t4.`region` = t0.`region`
 )

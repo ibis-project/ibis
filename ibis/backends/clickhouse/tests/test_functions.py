@@ -43,7 +43,6 @@ def test_cast_string_col(alltypes, translate, to_type, snapshot):
     'column',
     [
         'index',
-        'Unnamed: 0',
         'id',
         'bool_col',
         'tinyint_col',
@@ -224,9 +223,8 @@ def test_string_contains(con, op, value, expected):
     assert con.execute(op(value)) == expected
 
 
-# TODO: clickhouse-driver escaping bug
 def test_re_replace(con):
-    expr1 = L('Hello, World!').re_replace('.', '\\\\0\\\\0')
+    expr1 = L('Hello, World!').re_replace('.', '\\0\\0')
     expr2 = L('Hello, World!').re_replace('^', 'here: ')
 
     assert con.execute(expr1) == 'HHeelllloo,,  WWoorrlldd!!'
@@ -250,37 +248,6 @@ def test_string_column_find_in_set(con, alltypes, translate, snapshot):
     expr = s.find_in_set(vals)
     snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
-
-
-@pytest.mark.parametrize(
-    ('url', 'extract', 'expected'),
-    [
-        (L('https://www.cloudera.com'), 'HOST', 'www.cloudera.com'),
-        (L('https://www.cloudera.com'), 'PROTOCOL', 'https'),
-        (
-            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'),
-            'PATH',
-            '/watch',
-        ),
-        (
-            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'),
-            'QUERY',
-            'v=kEuEcWfewf8&t=10',
-        ),
-    ],
-)
-def test_parse_url(con, url, extract, expected):
-    expr = url.parse_url(extract)
-    assert con.execute(expr) == expected
-
-
-def test_parse_url_query_parameter(con):
-    url = L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
-    expr = url.parse_url('QUERY', 't')
-    assert con.execute(expr) == '10'
-
-    expr = url.parse_url('QUERY', 'v')
-    assert con.execute(expr) == 'kEuEcWfewf8'
 
 
 @pytest.mark.parametrize(
@@ -401,13 +368,12 @@ def test_greatest_least(con, alltypes, translate, snapshot):
     assert len(con.execute(expr))
 
 
-# TODO: clickhouse-driver escaping bug
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
         (L('abcd').re_search('[a-z]'), True),
-        (L('abcd').re_search(r'[\\d]+'), False),
-        (L('1222').re_search(r'[\\d]+'), True),
+        (L('abcd').re_search(r'[\d]+'), False),
+        (L('1222').re_search(r'[\d]+'), True),
     ],
 )
 def test_regexp(con, expr, expected):
@@ -457,7 +423,7 @@ def test_null_column(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_literal_none_to_nullable_colum(alltypes):
+def test_literal_none_to_nullable_column(alltypes):
     # GH: 2985
     t = alltypes
     nrows = t.count().execute()

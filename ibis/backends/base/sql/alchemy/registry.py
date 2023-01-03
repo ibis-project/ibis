@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 import functools
 import operator
-from typing import Any, Dict
+from typing import Any
 
 import sqlalchemy as sa
 
-import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -26,8 +27,7 @@ def variance_reduction(func_name):
         func = getattr(sa.func, f'{func_name}_{suffix[op.how]}')
 
         if op.where is not None:
-            # TODO(kszucs): avoid roundtripping to expression
-            arg = op.where.to_expr().ifelse(arg, None).op()
+            arg = ops.Where(op.where, arg, None)
 
         return func(t.translate(arg))
 
@@ -39,8 +39,11 @@ def fixed_arity(sa_func, arity):
         sa_func = getattr(sa.func, sa_func)
 
     def formatter(t, op):
-        if arity != len(op.args):
-            raise com.IbisError('incorrect number of args')
+        arg_count = len(op.args)
+        if arity != arg_count:
+            raise com.IbisError(
+                f'Incorrect number of args. Expected: {arity}. Current: {arg_count}'
+            )
 
         return _varargs_call(sa_func, t, op.args)
 
@@ -196,16 +199,6 @@ def _contains(func):
     return translate
 
 
-def _group_concat(t, op):
-    sep = t.translate(op.sep)
-    if op.where is not None:
-        # TODO(kszucs): avoid expression roundtrip
-        arg = t.translate(op.where.to_expr().ifelse(op.arg, ibis.NA).op())
-    else:
-        arg = t.translate(op.arg)
-    return sa.func.group_concat(arg, sep)
-
-
 def _alias(t, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
@@ -218,6 +211,8 @@ def _literal(_, op):
 
     if dtype.is_set():
         return list(map(sa.literal, value))
+    elif dtype.is_array():
+        value = list(value)
 
     return sa.literal(value)
 
@@ -313,7 +308,7 @@ def _cumulative_to_window(translator, op, window):
         new_expr = translator._rewrites[type(new_op)](new_expr)
 
     # TODO(kszucs): rewrite to receive and return an ops.Node
-    return L.windowize_function(new_expr, win)
+    return an.windowize_function(new_expr, win)
 
 
 def _window(t, op):
@@ -337,7 +332,7 @@ def _window(t, op):
     # if we're here, then the input is valid, we just need to interpret it
     # correctly
     if isinstance(window.preceding, tuple):
-        start, end = map(lambda x: -1 * x if x is not None else None, window.preceding)
+        start, end = (-1 * x if x is not None else None for x in window.preceding)
     elif isinstance(window.following, tuple):
         start, end = window.following
     else:
@@ -489,7 +484,7 @@ def _extract(fmt: str):
     return translator
 
 
-sqlalchemy_operation_registry: Dict[Any, Any] = {
+sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),
     ops.Or: fixed_arity(operator.or_, 2),
@@ -515,7 +510,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.HLLCardinality: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.ApproxCountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
-    ops.GroupConcat: _group_concat,
+    ops.GroupConcat: reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
@@ -580,7 +575,7 @@ sqlalchemy_operation_registry: Dict[Any, Any] = {
     ops.DateFromYMD: fixed_arity(sa.func.date, 3),
     ops.TimeFromHMS: fixed_arity(sa.func.time, 3),
     ops.TimestampFromYMDHMS: lambda t, op: sa.func.make_timestamp(
-        *map(t.translate, op.args[:6])  # ignore timezone
+        *map(t.translate, op.args)
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),

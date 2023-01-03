@@ -1,1 +1,1 @@
-least(`int_col`, `bigint_col`)
+least(int_col, bigint_col)

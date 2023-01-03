@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
+from ibis.util import deprecated
 
 
 @public
@@ -228,19 +231,71 @@ class ParseURL(Value):
     extract = rlz.isin(
         {
             'PROTOCOL',
-            'HOST',
-            'PATH',
-            'REF',
             'AUTHORITY',
-            'FILE',
             'USERINFO',
+            'HOST',
+            'FILE',
+            'PATH',
             'QUERY',
+            'REF',
         }
     )
     key = rlz.optional(rlz.string)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
+
+    @deprecated(version="4.0", instead="use ExtractURLField and its subclasses")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+@public
+class ExtractURLField(Value):
+    arg = rlz.string
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = dt.string
+
+
+@public
+class ExtractProtocol(ExtractURLField):
+    pass
+
+
+@public
+class ExtractAuthority(ExtractURLField):
+    pass
+
+
+@public
+class ExtractUserInfo(ExtractURLField):
+    pass
+
+
+@public
+class ExtractHost(ExtractURLField):
+    pass
+
+
+@public
+class ExtractFile(ExtractURLField):
+    pass
+
+
+@public
+class ExtractPath(ExtractURLField):
+    pass
+
+
+@public
+class ExtractQuery(ExtractURLField):
+    key = rlz.optional(rlz.string)
+
+
+@public
+class ExtractFragment(ExtractURLField):
+    pass
 
 
 @public

@@ -1,7 +1,6 @@
 import ibis
 
 
-lit = ibis.literal(0)
 functional_alltypes = ibis.table(
     name="functional_alltypes",
     schema={
@@ -20,6 +19,7 @@ functional_alltypes = ibis.table(
         "month": "int32",
     },
 )
+lit = ibis.literal(0)
 alias = functional_alltypes.string_col.name("key")
 difference = (
     functional_alltypes.select(

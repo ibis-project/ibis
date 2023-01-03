@@ -5,8 +5,8 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.config as config
 import ibis.expr.types as ir
+from ibis import config
 
 pytest.importorskip("sqlalchemy")
 
@@ -53,15 +53,12 @@ def test_attach_file(dbpath):
     assert foo_tables == bar_tables
 
 
-def test_compile_toplevel():
-    t = ibis.table([('foo', 'double')], name='t0')
+def test_compile_toplevel(snapshot):
+    t = ibis.table([("a", "double")], name="t")
 
-    # it works!
-    expr = t.foo.sum()
+    expr = t.a.sum()
     result = ibis.sqlite.compile(expr)
-    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"  # noqa: W291
-
-    assert str(result) == expected
+    snapshot.assert_match(str(result), "out.sql")
 
 
 def test_create_and_drop_table(con):

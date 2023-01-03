@@ -1,19 +1,6 @@
 import ibis
 
 
-tpch_nation = ibis.table(
-    name="tpch_nation",
-    schema={
-        "n_nationkey": "int16",
-        "n_name": "string",
-        "n_regionkey": "int16",
-        "n_comment": "string",
-    },
-)
-tpch_region = ibis.table(
-    name="tpch_region",
-    schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
-)
 tpch_customer = ibis.table(
     name="tpch_customer",
     schema={
@@ -26,6 +13,19 @@ tpch_customer = ibis.table(
         "c_mktsegment": "string",
         "c_comment": "string",
     },
+)
+tpch_nation = ibis.table(
+    name="tpch_nation",
+    schema={
+        "n_nationkey": "int16",
+        "n_name": "string",
+        "n_regionkey": "int16",
+        "n_comment": "string",
+    },
+)
+tpch_region = ibis.table(
+    name="tpch_region",
+    schema={"r_regionkey": "int16", "r_name": "string", "r_comment": "string"},
 )
 
 result = tpch_nation.inner_join(

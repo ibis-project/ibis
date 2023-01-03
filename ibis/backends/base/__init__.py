@@ -23,6 +23,7 @@ from typing import (
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+
     import ibis.expr.schema as sch
 
 import ibis
@@ -30,7 +31,7 @@ import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -178,7 +179,7 @@ class TablesAccessor(collections.abc.Mapping):
     def __getitem__(self, name) -> ir.Table:
         try:
             return self._backend.table(name)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise KeyError(name) from exc
 
     def __getattr__(self, name) -> ir.Table:
@@ -186,7 +187,7 @@ class TablesAccessor(collections.abc.Mapping):
             raise AttributeError(name)
         try:
             return self._backend.table(name)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             raise AttributeError(name) from exc
 
     def __iter__(self) -> Iterator[str]:
@@ -217,7 +218,7 @@ class ResultHandler:
             import pyarrow
         except ImportError:
             raise ModuleNotFoundError(
-                "Exporting to arrow formats requires `pyarrow` but it is not installed"  # noqa: ignore
+                "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
             return pyarrow
@@ -255,6 +256,8 @@ class ResultHandler:
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -298,7 +301,7 @@ class ResultHandler:
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return a RecordBatchReader.
 
         This method is eager and will execute the associated expression
@@ -315,6 +318,8 @@ class ResultHandler:
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -760,6 +765,8 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     ----------
     resource
         A URL or path to the resource to be connected to.
+    kwargs
+        Backend specific keyword arguments
 
     Examples
     --------

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from ibis.expr import datatypes as dt
@@ -23,7 +25,7 @@ class GeoSpatialUnOp(Unary):
 
 @public
 class GeoDistance(GeoSpatialBinOp):
-    """Returns minimum distance between two geo spatial data."""
+    """Returns minimum distance between two geospatial operands."""
 
     output_dtype = dt.float64
 
@@ -37,39 +39,35 @@ class GeoContains(GeoSpatialBinOp):
 
 @public
 class GeoContainsProperly(GeoSpatialBinOp):
-    """Check if the first geo spatial data contains the second one, and no
-    boundary points are shared."""
+    """Check if the left value contains the right one, with no shared no boundary points."""
 
     output_dtype = dt.boolean
 
 
 @public
 class GeoCovers(GeoSpatialBinOp):
-    """Returns True if no point in Geometry B is outside Geometry A."""
+    """Check if no point in the right operand is outside that of the left."""
 
     output_dtype = dt.boolean
 
 
 @public
 class GeoCoveredBy(GeoSpatialBinOp):
-    """Returns True if no point in Geometry/Geography A is outside
-    Geometry/Geography B."""
+    """Check if no point in the left operand is outside that of the right."""
 
     output_dtype = dt.boolean
 
 
 @public
 class GeoCrosses(GeoSpatialBinOp):
-    """Returns True if the supplied geometries have some, but not all, interior
-    points in common."""
+    """Check if the inputs have some but not all interior points in common."""
 
     output_dtype = dt.boolean
 
 
 @public
 class GeoDisjoint(GeoSpatialBinOp):
-    """Returns True if the Geometries do not “spatially intersect” - if they do
-    not share any space together."""
+    """Check if the Geometries do not spatially intersect."""
 
     output_dtype = dt.boolean
 
@@ -98,9 +96,9 @@ class GeoGeometryType(GeoSpatialUnOp):
 
 @public
 class GeoIntersects(GeoSpatialBinOp):
-    """Returns True if the Geometries/Geography “spatially intersect in 2D”
+    """Returns True if the Geometries/Geography “spatially intersect in 2D”.
 
-    - (share any portion of space) and False if they don’t (they are Disjoint).
+    - (share any portion of space) and False if they don`t (they are Disjoint).
     """
 
     output_dtype = dt.boolean
@@ -171,16 +169,14 @@ class GeoOrderingEquals(GeoSpatialBinOp):
 
 @public
 class GeoOverlaps(GeoSpatialBinOp):
-    """Returns True if the Geometries share space, are of the same dimension,
-    but are not completely contained by each other."""
+    """Check if the inputs are of the same dimension but are not completely contained by each other."""
 
     output_dtype = dt.boolean
 
 
 @public
 class GeoTouches(GeoSpatialBinOp):
-    """Returns True if the geometries have at least one point in common, but
-    their interiors do not intersect."""
+    """Check if the inputs have at least one point in common but their interiors do not intersect."""
 
     output_dtype = dt.boolean
 
@@ -222,8 +218,7 @@ class GeoLength(GeoSpatialUnOp):
 
 @public
 class GeoMaxDistance(GeoSpatialBinOp):
-    """Returns the 2-dimensional maximum distance between two geometries in
-    projected units.
+    """Returns the 2-dimensional max distance between two geometries in projected units.
 
     If g1 and g2 is the same geometry the function will return the
     distance between the two vertices most far from each other in that
@@ -283,24 +278,27 @@ class GeoYMax(GeoSpatialUnOp):
 
 @public
 class GeoStartPoint(GeoSpatialUnOp):
-    """Returns the first point of a LINESTRING geometry as a POINT or NULL if
-    the input parameter is not a LINESTRING."""
+    """Return the first point of a `LINESTRING` geometry as a POINT.
+
+    Returns `NULL` if the input is not a LINESTRING.
+    """
 
     output_dtype = dt.point
 
 
 @public
 class GeoEndPoint(GeoSpatialUnOp):
-    """Returns the last point of a LINESTRING geometry as a POINT or NULL if
-    the input parameter is not a LINESTRING."""
+    """Return the last point of a `LINESTRING` geometry as a POINT.
+
+    Returns `NULL` if the input is not a LINESTRING.
+    """
 
     output_dtype = dt.point
 
 
 @public
 class GeoPoint(GeoSpatialBinOp):
-    """Return a point constructed on the fly from the provided coordinate
-    values.
+    """Return a point constructed from the input coordinate values.
 
     Constant coordinates result in construction of a POINT literal.
     """
@@ -326,20 +324,16 @@ class GeoPointN(GeoSpatialUnOp):
 
 @public
 class GeoNPoints(GeoSpatialUnOp):
-    """Return the number of points in a geometry.
-
-    Works for all geometries
-    """
+    """Return the number of points in a geometry."""
 
     output_dtype = dt.int64
 
 
 @public
 class GeoNRings(GeoSpatialUnOp):
-    """If the geometry is a polygon or multi-polygon returns the number of
-    rings.
+    """Return the number of rings for polygons or multipolygons.
 
-    It counts the outer rings as well
+    Outer rings are counted.
     """
 
     output_dtype = dt.int64
@@ -363,10 +357,9 @@ class GeoSetSRID(GeoSpatialUnOp):
 
 @public
 class GeoBuffer(GeoSpatialUnOp):
-    """Returns a geometry that represents all points whose distance from this
-    Geometry is less than or equal to distance.
+    """Return all points whose distance from this geometry is less than or equal to `radius`.
 
-    Calculations are in the Spatial Reference System of this Geometry.
+    Calculations are in the Spatial Reference System of this geometry.
     """
 
     radius = rlz.floating
@@ -382,8 +375,7 @@ class GeoCentroid(GeoSpatialUnOp):
 
 @public
 class GeoDFullyWithin(GeoSpatialBinOp):
-    """Returns True if the geometries are fully within the specified distance
-    of one another."""
+    """Check if the geometries are fully within `distance` of one another."""
 
     distance = rlz.floating
 
@@ -392,8 +384,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
 
 @public
 class GeoDWithin(GeoSpatialBinOp):
-    """Returns True if the geometries are within the specified distance of one
-    another."""
+    """Check if the geometries are within `distance` of one another."""
 
     distance = rlz.floating
 
@@ -402,15 +393,14 @@ class GeoDWithin(GeoSpatialBinOp):
 
 @public
 class GeoEnvelope(GeoSpatialUnOp):
-    """Represents the bounding box of the supplied geometry."""
+    """The bounding box of the supplied geometry."""
 
     output_dtype = dt.polygon
 
 
 @public
 class GeoAzimuth(GeoSpatialBinOp):
-    """Returns the angle in radians from the horizontal of the vector defined
-    by pointA and pointB.
+    """Return the angle in radians from the horizontal of the vector defined by the two inputs.
 
     Angle is computed clockwise from down-to-up: on the clock: 12=0;
     3=PI/2; 6=PI; 9=3PI/2.
@@ -431,16 +421,14 @@ class GeoWithin(GeoSpatialBinOp):
 
 @public
 class GeoIntersection(GeoSpatialBinOp):
-    """Returns a geometry that represents the point set intersection of the
-    Geometries."""
+    """Return a geometry that represents the point-set intersection of the inputs."""
 
     output_dtype = dt.geometry
 
 
 @public
 class GeoDifference(GeoSpatialBinOp):
-    """Returns a geometry that represents that part of geometry A that does not
-    intersect with geometry B."""
+    """Return a geometry that is the delta between the left and right inputs."""
 
     output_dtype = dt.geometry
 
@@ -466,31 +454,27 @@ class GeoTransform(GeoSpatialUnOp):
 
 @public
 class GeoAsBinary(GeoSpatialUnOp):
-    """Return the Well-Known Binary (WKB) representation of the
-    geometry/geography without SRID meta data."""
+    """Return the Well-Known Binary (WKB) representation of the input, without SRID meta data."""
 
     output_dtype = dt.binary
 
 
 @public
 class GeoAsEWKB(GeoSpatialUnOp):
-    """Return the Well-Known Binary (WKB) representation of the
-    geometry/geography with SRID meta data."""
+    """Return the Well-Known Binary representation of the input, with SRID meta data."""
 
     output_dtype = dt.binary
 
 
 @public
 class GeoAsEWKT(GeoSpatialUnOp):
-    """Return the Well-Known Text (WKT) representation of the
-    geometry/geography with SRID meta data."""
+    """Return the Well-Known Text representation of the input, with SRID meta data."""
 
     output_dtype = dt.string
 
 
 @public
 class GeoAsText(GeoSpatialUnOp):
-    """Return the Well-Known Text (WKT) representation of the
-    geometry/geography without SRID metadata."""
+    """Return the Well-Known Text (WKT) representation of the input, without SRID metadata."""
 
     output_dtype = dt.string

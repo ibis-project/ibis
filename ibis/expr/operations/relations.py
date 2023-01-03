@@ -11,7 +11,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.common.annotations import attribute
 from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value
@@ -92,7 +92,7 @@ class InMemoryTable(PhysicalTable):
 # TODO(kszucs): desperately need to clean this up, the majority of this
 # functionality should be handled by input rules for the Join class
 def _clean_join_predicates(left, right, predicates):
-    import ibis.expr.analysis as L
+    import ibis.expr.analysis as an
     import ibis.expr.types as ir
     from ibis.expr.analysis import shares_all_roots
 
@@ -101,7 +101,7 @@ def _clean_join_predicates(left, right, predicates):
     for pred in predicates:
         if isinstance(pred, tuple):
             if len(pred) != 2:
-                raise com.ExpressionError('Join key tuple must be ' 'length 2')
+                raise com.ExpressionError('Join key tuple must be length 2')
             lk, rk = pred
             lk = left.to_expr()._ensure_expr(lk)
             rk = right.to_expr()._ensure_expr(rk)
@@ -119,7 +119,7 @@ def _clean_join_predicates(left, right, predicates):
         if not isinstance(pred, ir.BooleanColumn):
             raise com.ExpressionError('Join predicate must be comparison')
 
-        preds = L.flatten_predicate(pred.op())
+        preds = an.flatten_predicate(pred.op())
         result.extend(preds)
 
     # Validate join predicates. Each predicate must be valid jointly when
@@ -385,17 +385,16 @@ class Selection(Projection):
 
 
 @public
+class DummyTable(TableNode):
+    values = rlz.tuple_of(rlz.scalar(rlz.any), min_length=1)
+
+    @property
+    def schema(self):
+        return sch.Schema.from_dict({op.name: op.output_dtype for op in self.values})
+
+
+@public
 class Aggregation(TableNode):
-
-    """
-    metrics : per-group scalar aggregates
-    by : group expressions
-    having : post-aggregation predicate
-
-    TODO: not putting this in the aggregate operation yet
-    where : pre-aggregation predicate
-    """
-
     table = rlz.table
     metrics = rlz.optional(
         rlz.tuple_of(

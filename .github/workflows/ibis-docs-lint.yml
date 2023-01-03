@@ -14,6 +14,11 @@ concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  # increase the rate limit for nix operations hitting github, but limit the
+  # permissions to reading things
+  contents: read
+
 jobs:
   commitlint:
     runs-on: ubuntu-latest
@@ -28,6 +33,8 @@ jobs:
         uses: cachix/install-nix-action@v18
         with:
           nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: lint commits
         run: nix run 'nixpkgs#commitlint' -- --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
@@ -40,6 +47,9 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -50,7 +60,7 @@ jobs:
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks
-        run: nix develop --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -112,6 +122,9 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -126,10 +139,10 @@ jobs:
           fetch-depth: 0
 
       - name: build docs
-        run: nix develop -c mkdocs build --strict
+        run: nix develop --ignore-environment -c mkdocs build --strict
 
       - name: verify internal links
-        run: nix develop -c just checklinks --offline --no-progress
+        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
 
   docs_push:
     runs-on: ubuntu-latest
@@ -142,6 +155,9 @@ jobs:
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -172,7 +188,8 @@ jobs:
 
       - name: build and push dev docs
         run: |
-          nix develop -c mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
+          nix develop --ignore-environment -c \
+            mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
 
   simulate_release:
     runs-on: ubuntu-latest
@@ -182,6 +199,9 @@ jobs:
           fetch-depth: 0
 
       - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - uses: cachix/cachix-action@v12
         with:

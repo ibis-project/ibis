@@ -9,13 +9,13 @@ from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 import rich.pretty
 
 import ibis
-import ibis.common.graph as graph
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as win
-import ibis.util as util
+from ibis import util
+from ibis.common import graph
 
 Aliases = Mapping[ops.TableNode, int]
 Deps = Deque[Tuple[int, ops.TableNode]]
@@ -81,22 +81,10 @@ def fmt_truncated(
 
 
 def selection_maxlen(nodes: Iterable[ops.Node]) -> int:
-    """Compute the length of the longest name of input expressions.
-
-    Parameters
-    ----------
-    expressions
-        Expressions whose name to compute the maximum length of
-
-    Returns
-    -------
-    int
-        Max length
-    """
-    try:
-        return max(len(node.name) for node in nodes if isinstance(node, ops.Named))
-    except ValueError:
-        return 0
+    """Compute the length of the longest name of input expressions."""
+    return max(
+        (len(node.name) for node in nodes if isinstance(node, ops.Named)), default=0
+    )
 
 
 @functools.singledispatch
@@ -137,7 +125,7 @@ def _fmt_root_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
 
 @functools.singledispatch
 def fmt_table_op(op: ops.TableNode, **_: Any) -> str:
-    assert False, f"`fmt_table_op` not implemented for operation: {type(op)}"
+    raise AssertionError(f'`fmt_table_op` not implemented for operation: {type(op)}')
 
 
 @fmt_table_op.register
@@ -226,7 +214,7 @@ def _fmt_table_op_sql_view(
 
 @functools.singledispatch
 def fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
-    assert False, f"join type {type(op)} not implemented"
+    raise AssertionError(f'join type {type(op)} not implemented')
 
 
 @fmt_join.register(ops.Join)
@@ -444,11 +432,17 @@ def _fmt_table_op_in_memory_table(op: ops.InMemoryTable, **_: Any) -> str:
     )
 
 
+@fmt_table_op.register
+def _fmt_table_op_dummy_table(op: ops.DummyTable, **_: Any) -> str:
+    formatted_schema = fmt_schema(op.schema)
+    schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
+    return "\n".join([op.__class__.__name__, schema_field])
+
+
 @functools.singledispatch
 def fmt_selection_column(value_expr: object, **_: Any) -> str:
-    assert False, (
-        "expression type not implemented for "
-        f"fmt_selection_column: {type(value_expr)}"
+    raise AssertionError(
+        f'expression type not implemented for fmt_selection_column: {type(value_expr)}'
     )
 
 
@@ -536,7 +530,7 @@ def _fmt_value_function_type(func: types.FunctionType, **_: Any) -> str:
 
 @fmt_value.register
 def _fmt_value_node(op: ops.Node, **_: Any) -> str:
-    assert False, f"`fmt_value` not implemented for operation: {type(op)}"
+    raise AssertionError(f'`fmt_value` not implemented for operation: {type(op)}')
 
 
 @fmt_value.register

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, Mapping
@@ -65,7 +66,7 @@ class Expr(Immutable):
     def equals(self, other):
         if not isinstance(other, Expr):
             raise TypeError(
-                "invalid equality comparison between Expr and " f"{type(other)}"
+                f"invalid equality comparison between Expr and {type(other)}"
             )
         return self._arg.equals(other._arg)
 
@@ -88,12 +89,10 @@ class Expr(Immutable):
         except ImportError:
             return None
         else:
-            try:
+            # Something may go wrong, and we can't error in the notebook
+            # so fallback to the default text representation.
+            with contextlib.suppress(Exception):
                 return viz.to_graph(self).pipe(format='png')
-            except Exception:
-                # Something may go wrong, and we can't error in the notebook
-                # so fallback to the default text representation.
-                return None
 
     def visualize(
         self,
@@ -270,6 +269,8 @@ class Expr(Immutable):
             execute will result in an error.
         params
             Mapping of scalar parameter expressions to value
+        kwargs
+            Keyword arguments
         """
         return self._find_backend(use_default=True).execute(
             self, limit=limit, timecontext=timecontext, params=params, **kwargs
@@ -311,7 +312,7 @@ class Expr(Immutable):
         params: Mapping[ir.Value, Any] | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> pa.RecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return a RecordBatchReader.
 
         This method is eager and will execute the associated expression
@@ -326,6 +327,8 @@ class Expr(Immutable):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Number of rows in each returned record batch.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -360,6 +363,8 @@ class Expr(Immutable):
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
 
         Returns
         -------
@@ -371,11 +376,14 @@ class Expr(Immutable):
         )
 
     def unbind(self) -> ir.Table:
-        """Return equivalent expression built on `UnboundTable` instead of
-        backend-specific table objects."""
+        """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.analysis import substitute_unbound
 
         return substitute_unbound(self.op()).to_expr()
+
+    def as_table(self) -> ir.Table:
+        """Convert an expression to a table."""
+        raise NotImplementedError(type(self))
 
 
 unnamed = UnnamedMarker()

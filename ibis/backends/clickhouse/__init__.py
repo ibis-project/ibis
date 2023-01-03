@@ -1,24 +1,29 @@
 from __future__ import annotations
 
-import contextlib
+import ast
 import json
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
 import clickhouse_driver
+import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 
 import ibis
 import ibis.config
+import ibis.expr.analysis as an
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.clickhouse.client import ClickhouseTable, fully_qualified_re
-from ibis.backends.clickhouse.compiler import ClickhouseCompiler
+from ibis import util
+from ibis.backends.base import BaseBackend
+from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
 from ibis.config import options
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 _default_compression: str | bool
 
@@ -31,12 +36,42 @@ except ImportError:
     _default_compression = False
 
 
-class Backend(BaseSQLBackend):
+class ClickhouseTable(ir.Table):
+    """References a physical table in Clickhouse."""
+
+    @property
+    def _client(self):
+        return self.op().source
+
+    @property
+    def name(self):
+        return self.op().name
+
+    def insert(self, obj, **kwargs):
+        import pandas as pd
+
+        from ibis.backends.clickhouse.identifiers import quote_identifier
+
+        schema = self.schema()
+
+        assert isinstance(obj, pd.DataFrame)
+        assert set(schema.names) >= set(obj.columns)
+
+        columns = ", ".join(map(quote_identifier, obj.columns))
+        query = f"INSERT INTO {self.name} ({columns}) VALUES"
+
+        settings = kwargs.pop("settings", {})
+        settings["use_numpy"] = True
+        return self._client._client.insert_dataframe(
+            query,
+            obj,
+            settings=settings,
+            **kwargs,
+        )
+
+
+class Backend(BaseBackend):
     name = 'clickhouse'
-    # for now map clickhouse to mysql so that _something_ works
-    _sqlglot_dialect = "mysql"
-    table_expr_class = ClickhouseTable
-    compiler = ClickhouseCompiler
 
     class Options(ibis.config.Config):
         """Clickhouse options.
@@ -55,6 +90,52 @@ class Backend(BaseSQLBackend):
 
     def _register_in_memory_table(self, table_op):
         self._external_tables[table_op.name] = table_op.data.to_frame()
+
+    def _log(self, sql: str) -> None:
+        """Log the SQL, usually to the standard output.
+
+        This method can be implemented by subclasses. The logging
+        happens when `ibis.options.verbose` is `True`.
+        """
+        util.log(sql)
+
+    def sql(self, query: str, schema=None) -> ir.Table:
+        if schema is None:
+            schema = self._get_schema_using_query(query)
+        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
+
+    def _from_url(self, url: str) -> BaseBackend:
+        """Connect to a backend using a URL `url`.
+
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+        """
+        url = sa.engine.make_url(url)
+
+        kwargs = {
+            name: value
+            for name in ("host", "port", "database", "password")
+            if (value := getattr(url, name, None))
+        }
+        if username := url.username:
+            kwargs["user"] = username
+
+        kwargs.update(url.query)
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
+
+    def _convert_kwargs(self, kwargs):
+        try:
+            kwargs["secure"] = bool(ast.literal_eval(kwargs["secure"]))
+        except KeyError:
+            pass
 
     def do_connect(
         self,
@@ -90,6 +171,10 @@ class Backend(BaseSQLBackend):
             Whether or not to use compression.
             Default is `'lz4'` if installed else False.
             True is equivalent to `'lz4'`.
+        external_tables
+            External tables that can be used in a query.
+        kwargs
+            Client specific keyword arguments
 
         Examples
         --------
@@ -100,7 +185,7 @@ class Backend(BaseSQLBackend):
         >>> client = ibis.clickhouse.connect(host=clickhouse_host,  port=clickhouse_port)
         >>> client  # doctest: +ELLIPSIS
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-        """  # noqa: E501
+        """
         options = dict(
             host=host,
             port=port,
@@ -153,8 +238,7 @@ class Backend(BaseSQLBackend):
         return self._filter_with_like(tables, like)
 
     def _normalize_external_tables(self, external_tables=None):
-        """Merge registered external tables with any new external tables, and
-        process them to be passed to clickhouse_driver."""
+        """Merge registered external tables with any new external tables."""
         import pandas as pd
 
         external_tables_list = []
@@ -184,6 +268,55 @@ class Backend(BaseSQLBackend):
                 external_tables=external_tables,
             )
 
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        """Execute expression and return an iterator of pyarrow record batches.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to export to pyarrow
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Number of rows in each returned record batch.
+
+        Returns
+        -------
+        results
+            RecordBatchReader
+        """
+        pa = self._import_pyarrow()
+
+        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
+
+        schema = self._table_or_column_schema(expr)
+
+        def _batches():
+            for batch in self._cursor_batches(
+                expr, params=params, limit=limit, chunk_size=chunk_size
+            ):
+                struct_array = pa.array(
+                    map(tuple, batch),
+                    type=ibis_to_pyarrow_struct(schema),
+                )
+                yield pa.RecordBatch.from_struct_array(struct_array)
+
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+
     def _cursor_batches(
         self,
         expr: ir.Expr,
@@ -191,19 +324,83 @@ class Backend(BaseSQLBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
     ) -> Iterable[list]:
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
-        cursor = self.raw_sql(str(sql))
+        sql = self.compile(expr, limit=limit, params=params)
+        cursor = self.raw_sql(sql)
         try:
             while batch := cursor.fetchmany(chunk_size):
                 yield batch
         finally:
             cursor.close()
 
+    def execute(
+        self,
+        expr: ir.Expr,
+        limit: str | None = 'default',
+        external_tables: Mapping[str, pd.DataFrame] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+        table_expr = expr.as_table()
+        sql = self.compile(table_expr, limit=limit, **kwargs)
+        self._log(sql)
+
+        for memtable in an.find_memtables(expr.op()):
+            self._register_in_memory_table(memtable)
+
+        result = self.fetch_from_cursor(
+            self.raw_sql(sql, external_tables=external_tables),
+            table_expr.schema(),
+        )
+        if isinstance(expr, ir.Scalar):
+            return result.iloc[0, 0]
+        elif isinstance(expr, ir.Column):
+            return result.iloc[:, 0]
+        else:
+            return result
+
+    def compile(self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any):
+        table_expr = expr.as_table()
+
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
+
+        if params is None:
+            params = {}
+
+        sql = translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sg.exp.Subquery)
+
+        if isinstance(sql, sg.exp.Table):
+            sql = sg.select("*").from_(sql)
+
+        assert not isinstance(sql, sg.exp.Subquery)
+        return sql.sql(dialect="clickhouse", pretty=True)
+
+    def table(self, name: str, database: str | None = None) -> ir.Table:
+        """Construct a table expression.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        schema = self.get_schema(name, database=database)
+        return ClickhouseTable(ops.DatabaseTable(name, schema, self))
+
     def raw_sql(
         self,
         query: str,
         external_tables: Mapping[str, pd.DataFrame] | None = None,
+        **_,
     ) -> Any:
         """Execute a SQL string `query` against the database.
 
@@ -228,20 +425,10 @@ class Backend(BaseSQLBackend):
         cursor.execute(query)
         return cursor
 
-    @contextlib.contextmanager
-    def _safe_raw_sql(self, *args, **kwargs):
-        results = self._client_execute(*args, **kwargs)
-        yield results
-
     def fetch_from_cursor(self, cursor, schema):
         import pandas as pd
 
-        data, _ = cursor
-        names = schema.names
-        if not data:
-            df = pd.DataFrame([], columns=names)
-        else:
-            df = pd.DataFrame.from_dict(dict(zip(names, data)))
+        df = pd.DataFrame.from_records(iter(cursor), columns=schema.names)
         return schema.apply_to(df)
 
     def close(self):
@@ -250,11 +437,7 @@ class Backend(BaseSQLBackend):
         self.con.close()
 
     def _fully_qualified_name(self, name, database):
-        if fully_qualified_re.search(name):
-            return name
-
-        database = database or self.current_database
-        return f'{database}.`{name}`'
+        return sg.table(name, db=database or self.current_database).sql()
 
     def get_schema(
         self,
@@ -266,7 +449,8 @@ class Backend(BaseSQLBackend):
         Parameters
         ----------
         table_name
-            May be fully qualified
+            May **not** be fully qualified. Use `database` if you want to
+            qualify the identifier.
         database
             Database name
 
@@ -300,3 +484,9 @@ class Backend(BaseSQLBackend):
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return f'{cmd} {qualified_name}'
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        from ibis.backends.clickhouse.compiler.values import translate_val
+
+        return operation in translate_val.registry

@@ -42,11 +42,7 @@ def info():
         ('LastAccessTime:', 'UNKNOWN', nan),
         ('Protect Mode:', 'None', nan),
         ('Retention:', '0', nan),
-        (
-            'Location:',
-            ('hdfs://host-name:20500/my.db' '/dbname.table_name'),
-            nan,
-        ),
+        ('Location:', 'hdfs://host-name:20500/my.db/dbname.table_name', nan),
         ('Table Type:', 'EXTERNAL_TABLE', nan),
         ('Table Parameters:', nan, nan),
         ('', 'EXTERNAL', 'TRUE'),
@@ -60,11 +56,7 @@ def info():
 def storage_info():
     return [
         ('# Storage Information', nan, nan),
-        (
-            'SerDe Library:',
-            ('org.apache.hadoop' '.hive.serde2.lazy.LazySimpleSerDe'),
-            nan,
-        ),
+        ('SerDe Library:', 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe', nan),
         ('InputFormat:', 'org.apache.hadoop.mapred.TextInputFormat', nan),
         (
             'OutputFormat:',

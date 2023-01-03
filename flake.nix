@@ -18,345 +18,146 @@
 
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
   };
 
-  outputs =
-    { self
-    , flake-utils
-    , gitignore
-    , nixpkgs
-    , poetry2nix
-    , rust-overlay
-    , ...
-    }:
+  outputs = { self, flake-utils, gitignore, nixpkgs, poetry2nix, ... }: {
+    overlays.default = nixpkgs.lib.composeManyExtensions [
+      gitignore.overlay
+      poetry2nix.overlay
+      (import ./nix/overlay.nix)
+    ];
+  } // flake-utils.lib.eachDefaultSystem (
+    localSystem:
     let
-      backends = [
-        "dask"
-        "datafusion"
-        "duckdb"
-        "pandas"
-        "polars"
-        "sqlite"
+      pkgs = import nixpkgs {
+        inherit localSystem;
+        overlays = [ self.overlays.default ];
+      };
+      inherit (pkgs) lib;
+
+      backendDevDeps = with pkgs; [
+        # impala UDFs
+        clang_12
+        cmake
+        ninja
+        # snowflake
+        openssl
+        # backend test suite
+        docker-compose
+        # visualization
+        graphviz-nox
+        # duckdb
+        duckdb
+        # mysql
+        mariadb-client
+        # pyspark
+        openjdk17_headless
+        # postgres
+        postgresql
+        # sqlite
+        sqlite-interactive
       ];
-      drv =
-        { poetry2nix
-        , python
-        , lib
-        , gitignoreSource
-        , gdal
-        , graphviz-nox
-        , proj
-        , sqlite
-        , rsync
-        , ibisTestingData
-        , ...
-        }: poetry2nix.mkPoetryApplication rec {
-          inherit python;
+      shellHook = ''
+        export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
 
-          groups = [ ];
-          checkGroups = [ "test" ];
-          projectDir = gitignoreSource ./.;
-          src = gitignoreSource ./.;
+        ${pkgs.rsync}/bin/rsync \
+          --chmod=Du+rwx,Fu+rw --archive --delete \
+          "${pkgs.ibisTestingData}/" \
+          "$IBIS_TEST_DATA_DIRECTORY"
 
-          overrides = poetry2nix.overrides.withDefaults (
-            import ./poetry-overrides.nix
-          );
+        export TEMPDIR
+        TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
 
-          buildInputs = [ gdal graphviz-nox proj sqlite ];
-          checkInputs = buildInputs;
+        # necessary for mkdocs
+        export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
+      '';
 
-          preCheck = ''
-            set -euo pipefail
+      preCommitDeps = with pkgs; [
+        actionlint
+        git
+        just
+        nixpkgs-fmt
+        pre-commit
+        prettier
+        shellcheck
+        shfmt
+        statix
+      ];
 
-            export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
+      mkDevShell = env: pkgs.mkShell {
+        name = "ibis-${env.python.version}";
+        nativeBuildInputs = (with pkgs; [
+          # python dev environment
+          env
+          # poetry executable
+          env.pkgs.poetry
+          # rendering release notes
+          changelog
+          glow
+          # used in the justfile
+          jq
+          yj
+          # commit linting
+          commitlint
+          # link checking
+          lychee
+          # release automation
+          nodejs
+          # used in notebooks to download data
+          curl
+        ])
+        ++ preCommitDeps
+        ++ backendDevDeps;
 
-            ${rsync}/bin/rsync \
-              --chmod=Du+rwx,Fu+rw --archive --delete \
-              "${ibisTestingData}/" \
-              "$IBIS_TEST_DATA_DIRECTORY"
-          '';
+        inherit shellHook;
 
-          checkPhase = ''
-            set -euo pipefail
-
-            runHook preCheck
-
-            pytest --numprocesses auto --dist loadgroup -m '${lib.concatStringsSep " or " backends} or core'
-
-            runHook postCheck
-          '';
-
-          doCheck = true;
-
-          pythonImportsCheck = [ "ibis" ] ++ (map (backend: "ibis.backends.${backend}") backends);
-        };
+        PGPASSWORD = "postgres";
+        MYSQL_PWD = "ibis";
+        MSSQL_SA_PASSWORD = "1bis_Testing!";
+      };
     in
-    {
-      overlays.default = nixpkgs.lib.composeManyExtensions [
-        gitignore.overlay
-        poetry2nix.overlay
-        rust-overlay.overlays.default
-        (pkgs: super: {
-          ibisTestingData = pkgs.fetchFromGitHub {
-            owner = "ibis-project";
-            repo = "testing-data";
-            rev = "master";
-            sha256 = "sha256-BZWi4kEumZemQeYoAtlUSw922p+R6opSWp/bmX0DjAo=";
-          };
+    rec {
+      packages = {
+        inherit (pkgs) ibis38 ibis39 ibis310;
 
-          rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
+        default = pkgs.ibis310;
 
-          mkPoetryEnv = groups: python: pkgs.poetry2nix.mkPoetryEnv {
-            inherit python groups;
-            projectDir = pkgs.gitignoreSource ./.;
-            editablePackageSources = { ibis = pkgs.gitignoreSource ./ibis; };
-            overrides = pkgs.poetry2nix.overrides.withDefaults (import ./poetry-overrides.nix);
-          };
+        inherit (pkgs) update-lock-files;
+      };
 
-          mkPoetryDocsEnv = pkgs.mkPoetryEnv [ "docs" ];
-          mkPoetryDevEnv = pkgs.mkPoetryEnv [ "dev" "test" ];
-          mkPoetryFullDevEnv = pkgs.mkPoetryEnv [ "dev" "docs" "test" ];
+      devShells = rec {
+        ibis38 = mkDevShell pkgs.ibisDevEnv38;
+        ibis39 = mkDevShell pkgs.ibisDevEnv39;
+        ibis310 = mkDevShell pkgs.ibisDevEnv310;
 
-          prettierTOML = pkgs.writeShellScriptBin "prettier" ''
-            ${pkgs.nodePackages.prettier}/bin/prettier \
-            --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" "$@"
-          '';
+        default = ibis310;
 
-          ibis38 = pkgs.callPackage drv { python = pkgs.python38; };
-          ibis39 = pkgs.callPackage drv { python = pkgs.python39; };
-          ibis310 = pkgs.callPackage drv { python = pkgs.python310; };
-
-          ibisDevEnv38 = pkgs.mkPoetryDevEnv pkgs.python38;
-          ibisDevEnv39 = pkgs.mkPoetryDevEnv pkgs.python39;
-          ibisDevEnv310 = pkgs.mkPoetryDevEnv pkgs.python310;
-
-          ibisDevEnv = pkgs.ibisDevEnv310;
-
-          ibisDocsEnv38 = pkgs.mkPoetryDocsEnv pkgs.python38;
-          ibisDocsEnv39 = pkgs.mkPoetryDocsEnv pkgs.python39;
-          ibisDocsEnv310 = pkgs.mkPoetryDocsEnv pkgs.python310;
-
-          ibisDocsEnv = pkgs.ibisDocsEnv310;
-
-          ibisFullDevEnv38 = pkgs.mkPoetryFullDevEnv pkgs.python38;
-          ibisFullDevEnv39 = pkgs.mkPoetryFullDevEnv pkgs.python39;
-          ibisFullDevEnv310 = pkgs.mkPoetryFullDevEnv pkgs.python310;
-
-          ibisFullDevEnv = pkgs.ibisFullDevEnv310;
-
-          changelog = pkgs.writeShellApplication {
-            name = "changelog";
-            runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
-            text = "conventional-changelog --config ./.conventionalcommits.js";
-          };
-
-          arrow-cpp = (super.arrow-cpp.override {
-            enableS3 = !super.stdenv.isDarwin;
-          }).overrideAttrs
-            (attrs: {
-              # tests hang for some reason on macos with python 3.9 and 3.10
-              doInstallCheck = !super.stdenv.isDarwin;
-              buildInputs = attrs.buildInputs or [ ] ++ pkgs.lib.optionals super.stdenv.isDarwin [
-                pkgs.libxcrypt
-                pkgs.sqlite
-              ];
-            });
-        })
-      ];
-    } // flake-utils.lib.eachDefaultSystem (
-      localSystem:
-      let
-        pkgs = import nixpkgs {
-          inherit localSystem;
-          overlays = [ self.overlays.default ];
+        preCommit = pkgs.mkShell {
+          name = "preCommit";
+          nativeBuildInputs = [ pkgs.ibisSmallDevEnv ] ++ preCommitDeps;
         };
-        inherit (pkgs) lib;
 
-        backendDevDeps = with pkgs; [
-          # impala UDFs
-          clang_12
-          cmake
-          ninja
-          # snowflake
-          openssl
-          # backend test suite
-          docker-compose
-          # visualization
-          graphviz-nox
-          # duckdb
-          duckdb
-          # mysql
-          mariadb-client
-          # pyspark
-          openjdk11_headless
-          # postgres
-          postgresql
-          # geospatial
-          gdal
-          proj
-          # sqlite
-          sqlite-interactive
-        ];
-        mkDevShell = env: pkgs.mkShell {
-          nativeBuildInputs = (with pkgs; [
-            # python dev environment
-            env
-            # rendering release notes
-            changelog
-            glow
-            # used in the justfile
-            jq
-            yj
-            # linting
-            commitlint
-            lychee
-            # release automation
-            nodejs
-            # poetry executable
-            env.pkgs.poetry
-            env.pkgs.poetry-core
-            # pre-commit deps
-            actionlint
+        links = pkgs.mkShell {
+          name = "links";
+          nativeBuildInputs = with pkgs; [ just lychee ];
+        };
+
+        release = pkgs.mkShell {
+          name = "release";
+          nativeBuildInputs = with pkgs; [
             git
-            just
-            nix-linter
-            nixpkgs-fmt
-            pre-commit
-            prettierTOML
-            shellcheck
-            shfmt
-          ])
-          # backend development dependencies
-          ++ backendDevDeps;
-
-          shellHook = ''
-            export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
-
-            ${pkgs.rsync}/bin/rsync \
-              --chmod=Du+rwx,Fu+rw --archive --delete \
-              "${pkgs.ibisTestingData}/" \
-              "$IBIS_TEST_DATA_DIRECTORY"
-
-            export TEMPDIR
-            TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
-
-            # necessary for mkdocs
-            export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
-          '';
-
-          PGPASSWORD = "postgres";
-          MYSQL_PWD = "ibis";
-          MSSQL_SA_PASSWORD = "1bis_Testing!";
+            poetry
+            nodejs
+            unzip
+            gnugrep
+          ];
         };
-      in
-      rec {
-        packages = rec {
-          ibis38 = pkgs.ibis38;
-          ibis39 = pkgs.ibis39;
-          ibis310 = pkgs.ibis310;
-          default = ibis310;
-
-          update-polars = pkgs.writeShellApplication {
-            name = "update-polars";
-            runtimeInputs = with pkgs; [
-              git
-              gnused
-              jq
-              rustNightly
-              sd
-              yj
-            ];
-            text = ''
-              top="$PWD"
-              clone="''${1}"
-              tag="py-$(yj -tj < "''${top}/poetry.lock" | jq '.package[] | select(.name == "polars") | .version' -rcM)"
-
-              git -C "''${clone}" fetch
-              git -C "''${clone}" checkout .
-              git -C "''${clone}" checkout "''${tag}"
-
-              # remove patch dependencies and use thin lto to dramatically speed up builds
-              sed -i \
-                -e '/\[patch\.crates-io\]/d' \
-                -e '/cmake = .*/,+1d' \
-                -e '/codegen-units = 1/d' \
-                -e 's/lto = "fat"/lto = "thin"/g' \
-                "''${clone}/py-polars/Cargo.toml"
-
-              pushd "''${clone}/py-polars"
-              cargo generate-lockfile
-              popd
-
-              mkdir -p "''${top}/nix/patches"
-
-              git -C "''${clone}" diff | sd "py-polars/" "" > "''${top}/nix/patches/py-polars.patch"
-            '';
-          };
-          update-datafusion = pkgs.writeShellApplication {
-            name = "update-datafusion";
-            runtimeInputs = with pkgs; [
-              git
-              gnused
-              jq
-              rustNightly
-              yj
-            ];
-
-            text = ''
-              top="''${PWD}"
-              clone="''${1}"
-              tag="$(yj -tj < "''${top}/poetry.lock" | jq -rcM '.package[] | select(.name == "datafusion") | .version')"
-
-              git -C "''${clone}" fetch
-              git -C "''${clone}" checkout .
-              git -C "''${clone}" checkout "''${tag}"
-
-              # use thin lto to dramatically speed up builds
-              sed -i \
-                -e '/codegen-units = 1/d' \
-                -e 's/lto = true/lto = "thin"/g' \
-                "''${clone}/Cargo.toml"
-
-              pushd "''${clone}"
-              cargo generate-lockfile
-              popd
-
-              mkdir -p "''${top}/nix/patches"
-
-              git -C "''${clone}" diff > "''${top}/nix/patches/datafusion.patch"
-            '';
-          };
-
-          update-lock-files = pkgs.writeShellApplication {
-            name = "update-lock-files";
-            runtimeInputs = with pkgs; [ poetry ];
-
-            text = ''
-              export PYTHONHASHSEED=0
-
-              TOP="''${PWD}"
-
-              poetry lock --no-update
-              poetry export --with dev --with test --with docs --without-hashes --no-ansi > "''${TOP}/requirements.txt"
-            '';
-          };
-        };
-
-        devShells = rec {
-          ibis38 = mkDevShell pkgs.ibisFullDevEnv38;
-          ibis39 = mkDevShell pkgs.ibisFullDevEnv39;
-          ibis310 = mkDevShell pkgs.ibisFullDevEnv310;
-          default = ibis310;
-        };
-      }
-    );
+      };
+    }
+  );
 }

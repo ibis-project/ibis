@@ -56,9 +56,7 @@ class RowID(Value, Named):
 
 @public
 class TableArrayView(Value, Named):
-
-    """(Temporary?) Helper operation class for SQL translation (fully formed
-    table subqueries to be viewed as arrays)"""
+    """Helper operation class for creating scalar subqueries."""
 
     table = rlz.table
 
@@ -167,31 +165,30 @@ class Least(Value):
 
 @public
 class Literal(Value):
+    __valid_input_types__ = (
+        bytes,
+        datetime.date,
+        datetime.datetime,
+        datetime.time,
+        datetime.timedelta,
+        enum.Enum,
+        float,
+        frozenset,
+        int,
+        ipaddress.IPv4Address,
+        ipaddress.IPv6Address,
+        frozendict,
+        np.generic,
+        np.ndarray,
+        str,
+        tuple,
+        type(None),
+        uuid.UUID,
+        decimal.Decimal,
+    )
     value = rlz.one_of(
         (
-            rlz.instance_of(
-                (
-                    bytes,
-                    datetime.date,
-                    datetime.datetime,
-                    datetime.time,
-                    datetime.timedelta,
-                    decimal.Decimal,
-                    enum.Enum,
-                    float,
-                    frozendict,
-                    frozenset,
-                    int,
-                    ipaddress.IPv4Address,
-                    ipaddress.IPv6Address,
-                    np.generic,
-                    np.ndarray,
-                    str,
-                    tuple,
-                    type(None),
-                    uuid.UUID,
-                )
-            ),
+            rlz.instance_of(__valid_input_types__),
             rlz.lazy_instance_of("shapely.geometry.BaseGeometry"),
         )
     )

@@ -5,10 +5,10 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.expr.api as api
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.backends.impala.compiler import ImpalaCompiler
+from ibis.expr import api
 from ibis.expr.datatypes import Category
 
 
@@ -173,16 +173,16 @@ def _check_impala_output_types_match(con, table):
             x = x.to_integer_type()
         return x
 
-    left, right = t.schema(), table.schema()
-    for n, left, right in zip(left.names, left.types, right.types):
-        left = _clean_type(left)
-        right = _clean_type(right)
+    left_schema, right_schema = t.schema(), table.schema()
+    for n, left_type, right_type in zip(
+        left_schema.names, left_schema.types, right_schema.types
+    ):
+        left_ty = _clean_type(left_type)
+        right_ty = _clean_type(right_type)
 
-        if left != right:
-            pytest.fail(
-                'Value for {} had left type {}'
-                ' and right type {}\nquery:\n{}'.format(n, left, right, query)
-            )
+        assert (
+            left_ty == right_ty
+        ), f'Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}'
 
 
 @pytest.mark.parametrize(
@@ -343,11 +343,9 @@ def test_string_functions(con, expr, expected):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        (L("https://www.cloudera.com").parse_url('HOST'), "www.cloudera.com"),
+        (L("https://www.cloudera.com").host(), "www.cloudera.com"),
         (
-            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').parse_url(
-                'QUERY', 'v'
-            ),
+            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').query('v'),
             'kEuEcWfewf8',
         ),
     ],
@@ -711,7 +709,7 @@ def test_filter_with_analytic(snapshot):
 def test_named_from_filter_group_by(snapshot):
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     gb = t.filter(t.value == 42).group_by(t.key)
-    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
+    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
     snapshot.assert_match(ibis.impala.compile(expr), "abc.sql")
 

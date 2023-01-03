@@ -1,7 +1,10 @@
 """Module to convert from Ibis expression to SQL string."""
 
+from __future__ import annotations
+
 import base64
 import datetime
+from typing import Literal
 
 import numpy as np
 from multipledispatch import Dispatcher
@@ -233,7 +236,7 @@ def _arbitrary(translator, op):
     if where is not None:
         arg = ops.Where(where, arg, ibis.NA)
 
-    if how not in (None, "first"):
+    if how != "first":
         raise com.UnsupportedOperationError(
             f"{how!r} value not supported for arbitrary in BigQuery"
         )
@@ -244,7 +247,7 @@ def _arbitrary(translator, op):
 _date_units = {
     "Y": "YEAR",
     "Q": "QUARTER",
-    "W": "WEEK",
+    "W": "WEEK(MONDAY)",
     "M": "MONTH",
     "D": "DAY",
 }
@@ -359,14 +362,8 @@ def compiles_strftime(translator, op):
 
 def compiles_string_to_timestamp(translator, op):
     """Timestamp parsing."""
-    arg, format_string, timezone_arg = op.args
-    fmt_string = translator.translate(format_string)
-    arg_formatted = translator.translate(arg)
-    if timezone_arg is not None:
-        timezone_str = translator.translate(timezone_arg)
-        return "PARSE_TIMESTAMP({}, {}, {})".format(
-            fmt_string, arg_formatted, timezone_str
-        )
+    fmt_string = translator.translate(op.format_str)
+    arg_formatted = translator.translate(op.arg)
     return f"PARSE_TIMESTAMP({fmt_string}, {arg_formatted})"
 
 
@@ -386,32 +383,36 @@ def compiles_approx(translator, op):
     return f"APPROX_QUANTILES({translator.translate(arg)}, 2)[OFFSET(1)]"
 
 
-def compiles_covar(translator, op):
-    left = op.left
-    right = op.right
-    where = op.where
-    how = op.how
+def compiles_covar_corr(func):
+    def translate(translator, op):
+        left = op.left
+        right = op.right
 
-    if op.how == "sample":
-        how = "SAMP"
-    elif op.how == "pop":
-        how = "POP"
-    else:
-        raise ValueError(f"Covariance with how={how!r} is not supported.")
+        if (where := op.where) is not None:
+            left = ops.Where(where, left, None)
+            right = ops.Where(where, right, None)
 
-    if where is not None:
-        left = ops.Where(where, left, ibis.NA)
-        right = ops.Where(where, right, ibis.NA)
+        left = translator.translate(
+            ops.Cast(left, dt.int64) if left.output_dtype.is_boolean() else left
+        )
+        right = translator.translate(
+            ops.Cast(right, dt.int64) if right.output_dtype.is_boolean() else right
+        )
+        return f"{func}({left}, {right})"
 
-    left = translator.translate(
-        ops.Cast(left, dt.int64) if isinstance(left.output_dtype, dt.Boolean) else left
-    )
-    right = translator.translate(
-        ops.Cast(right, dt.int64)
-        if isinstance(right.output_dtype, dt.Boolean)
-        else right
-    )
-    return f"COVAR_{how}({left}, {right})"
+    return translate
+
+
+def _covar(translator, op):
+    how = op.how[:4].upper()
+    assert how in ("POP", "SAMP"), 'how not in ("POP", "SAMP")'
+    return compiles_covar_corr(f"COVAR_{how}")(translator, op)
+
+
+def _corr(translator, op):
+    if (how := op.how) == "sample":
+        raise ValueError(f"Correlation with how={how!r} is not supported.")
+    return compiles_covar_corr("CORR")(translator, op)
 
 
 def bigquery_compile_any(translator, op):
@@ -466,6 +467,29 @@ def _array_agg(t, op):
     return f"ARRAY_AGG({t.translate(arg)} IGNORE NULLS)"
 
 
+def _arg_min_max(sort_dir: Literal["ASC", "DESC"]):
+    def translate(t, op: ops.ArgMin | ops.ArgMax) -> str:
+        arg = op.arg
+        if (where := op.where) is not None:
+            arg = ops.Where(where, arg, None)
+        arg = t.translate(arg)
+        key = t.translate(op.key)
+        return f"ARRAY_AGG({arg} IGNORE NULLS ORDER BY {key} {sort_dir} LIMIT 1)[SAFE_OFFSET(0)]"
+
+    return translate
+
+
+def _array_repeat(t, op):
+    start = step = 1
+    times = t.translate(op.times)
+    arg = t.translate(op.arg)
+    array_length = f"ARRAY_LENGTH({arg})"
+    stop = f"GREATEST({times}, 0) * {array_length}"
+    idx = f"COALESCE(NULLIF(MOD(i, {array_length}), 0), {array_length})"
+    series = f"GENERATE_ARRAY({start}, {stop}, {step})"
+    return f"ARRAY(SELECT {arg}[SAFE_ORDINAL({idx})] FROM UNNEST({series}) AS i)"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -480,13 +504,15 @@ OPERATION_REGISTRY = {
     ops.NotAll: bigquery_compile_notall,
     # Math
     ops.CMSMedian: compiles_approx,
-    ops.Covariance: compiles_covar,
+    ops.Covariance: _covar,
+    ops.Correlation: _corr,
     ops.Divide: bigquery_compiles_divide,
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
     ops.Sign: unary("SIGN"),
     # Temporal functions
     ops.Date: unary("DATE"),
+    ops.DateFromYMD: fixed_arity("DATE", 3),
     ops.DateAdd: _timestamp_op("DATE_ADD", {"D", "W", "M", "Q", "Y"}),
     ops.DateSub: _timestamp_op("DATE_SUB", {"D", "W", "M", "Q", "Y"}),
     ops.DateTruncate: _truncate("DATE", _date_units),
@@ -497,6 +523,7 @@ OPERATION_REGISTRY = {
     ops.ExtractQuarter: _extract_field("quarter"),
     ops.ExtractMonth: _extract_field("month"),
     ops.ExtractDay: _extract_field("day"),
+    ops.ExtractDayOfYear: _extract_field("dayofyear"),
     ops.ExtractHour: _extract_field("hour"),
     ops.ExtractMinute: _extract_field("minute"),
     ops.ExtractSecond: _extract_field("second"),
@@ -504,9 +531,11 @@ OPERATION_REGISTRY = {
     ops.Strftime: compiles_strftime,
     ops.StringToTimestamp: compiles_string_to_timestamp,
     ops.Time: unary("TIME"),
+    ops.TimeFromHMS: fixed_arity("TIME", 3),
     ops.TimeTruncate: _truncate("TIME", _timestamp_units),
     ops.TimestampAdd: _timestamp_op("TIMESTAMP_ADD", {"h", "m", "s", "ms", "us"}),
     ops.TimestampFromUNIX: integer_to_timestamp,
+    ops.TimestampFromYMDHMS: fixed_arity("DATETIME", 6),
     ops.TimestampNow: fixed_arity("CURRENT_TIMESTAMP", 0),
     ops.TimestampSub: _timestamp_op("TIMESTAMP_SUB", {"h", "m", "s", "ms", "us"}),
     ops.TimestampTruncate: _truncate("TIMESTAMP", _timestamp_units),
@@ -530,12 +559,10 @@ OPERATION_REGISTRY = {
     ops.ArrayConcat: _array_concat,
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
+    ops.ArrayRepeat: _array_repeat,
     ops.HLLCardinality: reduction("APPROX_COUNT_DISTINCT"),
     ops.Log: _log,
     ops.Log2: _log2,
-    # BigQuery doesn't have these operations built in.
-    # ops.ArrayRepeat: _array_repeat,
-    # ops.ArraySlice: _array_slice,
     ops.Arbitrary: _arbitrary,
     # Geospatial Columnar
     ops.GeoUnaryUnion: unary("ST_UNION_AGG"),
@@ -584,6 +611,10 @@ OPERATION_REGISTRY = {
     ops.FloorDivide: _floor_divide,
     ops.IsNan: _is_nan,
     ops.IsInf: _is_inf,
+    ops.ArgMin: _arg_min_max("ASC"),
+    ops.ArgMax: _arg_min_max("DESC"),
+    ops.Pi: lambda *_: "ACOS(-1)",
+    ops.E: lambda *_: "EXP(1)",
 }
 
 _invalid_operations = {

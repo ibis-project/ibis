@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import concurrent.futures
 import functools
 import io
@@ -16,7 +18,7 @@ from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
-from ibis.backends.tests.data import non_null_array_types, struct_types
+from ibis.backends.tests.data import non_null_array_types, struct_types, win
 
 DATASET_ID = "ibis_gbq_testing"
 DEFAULT_PROJECT_ID = "ibis-gbq"
@@ -129,7 +131,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         client.create_table(date_table, exists_ok=True)
 
         write_disposition = bq.WriteDisposition.WRITE_TRUNCATE
-        make_job = lambda func, *a, **kw: func(*a, **kw).result()  # noqa: E731
+        make_job = lambda func, *a, **kw: func(*a, **kw).result()
 
         futures = []
         with concurrent.futures.ThreadPoolExecutor() as e:
@@ -168,6 +170,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     ),
                 )
             )
+
             futures.append(
                 e.submit(
                     make_job,
@@ -219,6 +222,21 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                             dict(string_col="string", numeric_col="decimal(38, 9)")
                         ),
                         source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
+                    ),
+                )
+            )
+
+            futures.append(
+                e.submit(
+                    make_job,
+                    client.load_table_from_dataframe,
+                    win,
+                    bq.TableReference(testing_dataset, "win"),
+                    job_config=bq.LoadJobConfig(
+                        write_disposition=write_disposition,
+                        schema=ibis_schema_to_bq_schema(
+                            dict(g="string", x="int64", y="int64")
+                        ),
                     ),
                 )
             )

@@ -1,11 +1,14 @@
 """Translate a Python AST to JavaScript."""
 
+from __future__ import annotations
+
 import ast
 import contextlib
 import functools
 import inspect
 import textwrap
 from collections import ChainMap
+from typing import Callable
 
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.udf.find import find_names
@@ -49,13 +52,8 @@ def indent(lines, spaces=4):
     return textwrap.indent(text, " " * spaces)
 
 
-def semicolon(f):
-    """Add a semicolon to the result of a visit_* call.
-
-    Parameters
-    ----------
-    f : callable
-    """
+def semicolon(f: Callable) -> Callable:
+    """Add a semicolon to the result of a `visit_*` call."""
 
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -233,10 +231,10 @@ class PythonToJavaScriptTranslator:
         return "/"
 
     def visit_FloorDiv(self, node):
-        assert False, "should never reach FloorDiv"
+        raise AssertionError('should never reach FloorDiv')
 
     def visit_Pow(self, node):
-        assert False, "should never reach Pow"
+        raise AssertionError('should never reach Pow')
 
     def visit_UnaryOp(self, node):
         return f"({self.visit(node.op)}{self.visit(node.operand)})"
@@ -560,21 +558,21 @@ if __name__ == "__main__":
         some_stuff = [x + y for x, y in [[1, 4], [2, 5], [3, 6]] if 2 < x < 3]
         some_stuff1 = [range(x) for x in [1, 2, 3]]
         some_stuff2 = [x + y for x, y in [(1, 4), (2, 5), (3, 6)]]
-        print(some_stuff)
-        print(some_stuff1)
-        print(some_stuff2)
+        print(some_stuff)  # noqa: T201
+        print(some_stuff1)  # noqa: T201
+        print(some_stuff2)  # noqa: T201
 
         x = 1
         y = 2
         x = 3
         values = []
-        for i in range(10):  # noqa: F821
+        for i in range(10):
             values.append(i)
 
         i = 0
         foo = 2
-        bar = lambda x: x  # noqa: E731
-        bazel = lambda x: y  # noqa: E731
+        bar = lambda x: x
+        bazel = lambda x: y
         while i < n:
             foo = bar(bazel(10))
             i += 1
@@ -591,7 +589,7 @@ if __name__ == "__main__":
         w = 3
         w = not False
         yyz = None
-        print(yyz)  # noqa: F821
+        print(yyz)  # noqa: T201
         foobar = x < y < z < w  # x < y and y < z
         foobar = 1
         baz = foobar // 3
@@ -604,4 +602,4 @@ if __name__ == "__main__":
         nnn = len(values)
         return [sum(values) - a + b * y**-x, z, foo.width, nnn]
 
-    print(my_func.js)
+    print(my_func.js)  # noqa: T201

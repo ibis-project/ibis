@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import itertools
 import operator
@@ -5,7 +7,7 @@ import operator
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import numpy as np
-import pandas
+import pandas as pd
 import toolz
 from pandas import isnull
 
@@ -194,7 +196,10 @@ def execute_substring_series_series(op, data, start, length, **kwargs):
     end = start + length
 
     # TODO - this is broken
-    def iterate(value, start_iter=start.items(), end_iter=end.items()):
+    start_iter = start.items()
+    end_iter = end.items()
+
+    def iterate(value, start_iter=start_iter, end_iter=end_iter):
         _, begin = next(start_iter)
         _, end = next(end_iter)
         if (begin is not None and isnull(begin)) or (end is not None and isnull(end)):
@@ -254,7 +259,7 @@ def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **
 
 @execute_node.register(ops.StringAscii, dd.Series)
 def execute_string_ascii(op, data, **kwargs):
-    output_meta = pandas.Series([], dtype=np.dtype('int32'), name=data.name)
+    output_meta = pd.Series([], dtype=np.dtype('int32'), name=data.name)
     return data.map(ord, meta=output_meta)
 
 

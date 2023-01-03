@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql.registry import (
     aggregate,
     binary_infix,
@@ -333,10 +335,18 @@ operation_registry = {
     ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: string.string_join,
     ops.StringSQLLike: string.string_like,
+    ops.StringSQLILike: string.string_ilike,
     ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
-    ops.ParseURL: string.parse_url,
+    ops.ExtractProtocol: string.extract_url_field('PROTOCOL'),
+    ops.ExtractAuthority: string.extract_url_field('AUTHORITY'),
+    ops.ExtractUserInfo: string.extract_url_field('USERINFO'),
+    ops.ExtractHost: string.extract_url_field('HOST'),
+    ops.ExtractFile: string.extract_url_field('FILE'),
+    ops.ExtractPath: string.extract_url_field('PATH'),
+    ops.ExtractQuery: string.extract_url_field('QUERY'),
+    ops.ExtractFragment: string.extract_url_field('REF'),
     ops.StartsWith: string.startswith,
     ops.EndsWith: string.endswith,
     ops.StringReplace: fixed_arity('replace', 3),

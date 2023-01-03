@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
@@ -112,5 +114,13 @@ struct_types = pd.DataFrame(
             pd.NA,
             {'a': 3.0, 'b': 'orange', 'c': pd.NA},
         ]
+    }
+)
+
+win = pd.DataFrame(
+    {
+        "g": ["a", "a", "a", "a", "a"],
+        "x": [0, 1, 2, 3, 4],
+        "y": [3, 2, 0, 1, 1],
     }
 )

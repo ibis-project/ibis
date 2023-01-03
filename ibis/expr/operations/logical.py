@@ -53,13 +53,13 @@ class Comparison(Binary):
     output_dtype = dt.boolean
 
     def __init__(self, left, right):
-        """
+        """Construct a comparison operation between `left` and `right`.
+
         Casting rules for type promotions (for resolving the output type) may
-        depend in some cases on the target backend.
-        TODO: how will overflows be handled? Can we provide anything useful in
+        depend on the target backend.
+
+        TODO: how are overflows handled? Can we provide anything useful in
         Ibis to help the user avoid them?
-        :param left:
-        :param right:
         """
         if not rlz.comparable(left, right):
             raise TypeError(
@@ -158,11 +158,11 @@ class NotContains(Contains):
 
 @public
 class Where(Value):
-
     """Ternary case expression, equivalent to.
 
-    bool_expr.case()          .when(True, true_expr)
-    .else_(false_or_null_expr)
+    bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
+
+    Many backends implement this as a built-in function.
     """
 
     bool_expr = rlz.boolean

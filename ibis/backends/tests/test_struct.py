@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -10,7 +12,7 @@ import ibis.expr.datatypes as dt
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "pyspark", "trino"]),
+    pytest.mark.notimpl(["datafusion"]),
 ]
 
 
@@ -18,10 +20,15 @@ pytestmark = [
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
-    result = expr.execute()
-    expected = struct_df.abc.map(
-        lambda value: value[field] if isinstance(value, dict) else value
-    ).rename(field)
+    result = expr.execute().sort_values().reset_index(drop=True)
+    expected = (
+        struct_df.abc.map(
+            lambda value: value[field] if isinstance(value, dict) else value
+        )
+        .rename(field)
+        .sort_values()
+        .reset_index(drop=True)
+    )
     backend.assert_series_equal(result, expected)
 
 
@@ -29,7 +36,12 @@ def test_single_field(backend, struct, struct_df, field):
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
-    tm.assert_series_equal(result, expected)
+
+    assert {
+        row if not isinstance(row, Mapping) else tuple(row.items()) for row in result
+    } == {
+        row if not isinstance(row, Mapping) else tuple(row.items()) for row in expected
+    }
 
 
 _SIMPLE_DICT = dict(a=1, b="2", c=3.0)
@@ -41,23 +53,17 @@ _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
 @pytest.mark.notimpl(["postgres", "snowflake", "bigquery"])
-@pytest.mark.notyet(
-    ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
-)
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]
-    result = pd.Series([con.execute(query)])
+    dtype = query.type().to_pandas()
+    result = pd.Series([con.execute(query)], dtype=dtype)
     result = result.replace({np.nan: None})
     expected = pd.Series([_SIMPLE_DICT[field]])
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result, expected.astype(dtype))
 
 
 @pytest.mark.notimpl(["postgres", "snowflake"])
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="clickhouse doesn't support nullable nested types",
-)
 @pytest.mark.parametrize(
     "field",
     [
@@ -69,6 +75,9 @@ def test_literal(con, field):
             "c", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
         ),
     ],
+)
+@pytest.mark.notyet(
+    ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
 )
 def test_null_literal(con, field):
     query = _NULL_STRUCT_LITERAL[field]

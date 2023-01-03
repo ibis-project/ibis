@@ -7,13 +7,11 @@ from weakref import WeakValueDictionary
 
 from ibis.common.annotations import Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
-from ibis.common.graph import Graph, Traversable
 from ibis.common.validators import Validator
-from ibis.util import frozendict, recursive_get
+from ibis.util import frozendict
 
 
 class BaseMeta(ABCMeta):
-
     __slots__ = ()
 
     def __new__(metacls, clsname, bases, dct, **kwargs):
@@ -26,7 +24,6 @@ class BaseMeta(ABCMeta):
 
 
 class Base(metaclass=BaseMeta):
-
     __slots__ = ('__weakref__',)
 
     @classmethod
@@ -35,8 +32,7 @@ class Base(metaclass=BaseMeta):
 
 
 class AnnotableMeta(BaseMeta):
-    """Metaclass to turn class annotations into a validatable function
-    signature."""
+    """Metaclass to turn class annotations into a validatable function signature."""
 
     __slots__ = ()
 
@@ -104,17 +100,14 @@ class Annotable(Base, metaclass=AnnotableMeta):
         return super().__create__(**kwargs)
 
     def __init__(self, **kwargs) -> None:
-        # set the already validated fields using object.__setattr__
+        # set the already validated arguments
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
-        # allow child classes to do some post-initialization
-        self.__post_init__()
 
-    def __post_init__(self) -> None:
+        # post-initialize the remaining attributes
         for name, field in self.__attributes__.items():
             if isinstance(field, Attribute):
-                value = field.initialize(self)
-                if value is not None:
+                if (value := field.initialize(self)) is not None:
                     object.__setattr__(self, name, value)
 
     def __setattr__(self, name, value) -> None:
@@ -132,19 +125,13 @@ class Annotable(Base, metaclass=AnnotableMeta):
             return NotImplemented
 
         return all(
-            getattr(self, n, None) == getattr(other, n, None)
-            for n in self.__attributes__.keys()
+            getattr(self, name, None) == getattr(other, name, None)
+            for name in self.__attributes__.keys()
         )
 
     @property
     def __args__(self):
         return tuple(getattr(self, name) for name in self.__argnames__)
-
-    def __getstate__(self) -> dict[str, Any]:
-        return {n: getattr(self, n, None) for n in self.__attributes__.keys()}
-
-    def __setstate__(self, state) -> None:
-        self.__init__(**state)
 
     def copy(self, **overrides: Any) -> Annotable:
         """Return a copy of this object with the given overrides.
@@ -161,10 +148,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
         """
         this = copy(self)
         for name, value in overrides.items():
-            if field := self.__attributes__.get(name):
-                value = field.validate(value, this=this)
-            object.__setattr__(this, name, value)
-        this.__post_init__()
+            setattr(this, name, value)
         return this
 
 
@@ -177,7 +161,6 @@ class Immutable(Base):
 
 
 class Singleton(Base):
-
     __instances__ = WeakValueDictionary()
 
     @classmethod
@@ -192,14 +175,13 @@ class Singleton(Base):
 
 
 class Comparable(Base):
-
     __cache__ = WeakCache()
 
     def __eq__(self, other) -> bool:
         try:
             return self.__cached_equals__(other)
         except TypeError:
-            return NotImplemented  # noqa: F901
+            return NotImplemented
 
     @abstractmethod
     def __equals__(self, other) -> bool:
@@ -228,7 +210,7 @@ class Comparable(Base):
         return result
 
 
-class Concrete(Immutable, Comparable, Annotable, Traversable):
+class Concrete(Immutable, Comparable, Annotable):
     """Opinionated base class for immutable data classes."""
 
     @attribute.default
@@ -239,20 +221,16 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     def __precomputed_hash__(self):
         return hash((self.__class__, self.__args__))
 
-    def __getstate__(self):
+    def __reduce__(self):
         # assuming immutability and idempotency of the __init__ method, we can
-        # reconstruct the instance from the arguments
-        return dict(zip(self.__argnames__, self.__args__))
+        # reconstruct the instance from the arguments without additional attributes
+        return (self.__class__, self.__args__)
 
     def __hash__(self):
         return self.__precomputed_hash__
 
     def __equals__(self, other):
         return self.__args__ == other.__args__
-
-    @property
-    def __children__(self):
-        return self.__args__
 
     @property
     def args(self):
@@ -262,26 +240,7 @@ class Concrete(Immutable, Comparable, Annotable, Traversable):
     def argnames(self):
         return self.__argnames__
 
-    # TODO(kszucs): perhaps move it to graph.py traversable class
-    def map(self, fn, filter=None):
-        if filter is None:
-            filter = Concrete
-
-        results = {}
-        for node in Graph.from_bfs(self, filter=filter).toposort():
-            kwargs = recursive_get(node.__getstate__(), results)
-            results[node] = fn(node, **kwargs)
-
-        return results
-
-    def substitute(self, fn, filter=None):
-        return self.map(fn, filter=filter)[self]
-
-    def replace(self, subs, filter=None):
-        def fn(node, **kwargs):
-            try:
-                return subs[node]
-            except KeyError:
-                return node.__class__(**kwargs)
-
-        return self.substitute(fn, filter=filter)
+    def copy(self, **overrides):
+        kwargs = dict(zip(self.__argnames__, self.__args__))
+        kwargs.update(overrides)
+        return self.__class__(**kwargs)

@@ -165,7 +165,7 @@ def _coerce_to_dataframe(
             result = data.to_frame()
         else:
             num_cols = len(data.iloc[0])
-            series = [data.apply(lambda t: t[i]) for i in range(num_cols)]
+            series = [data.apply(lambda t, i=i: t[i]) for i in range(num_cols)]
             result = pd.concat(series, axis=1)
     elif isinstance(data, (tuple, list, np.ndarray)):
         if isinstance(data[0], pd.Series):
@@ -202,8 +202,7 @@ class UserDefinedFunction:
         self.coercion_fn = self._get_coercion_function()
 
     def _get_coercion_function(self):
-        """Return the appropriate function to coerce the result of the UDF,
-        according to the func type and output type of the UDF."""
+        """Return the appropriate function to coerce the result of the UDF."""
         if self.output_type.is_struct():
             # Case 1: Struct output, non-reduction UDF -> coerce to DataFrame
             if (
@@ -262,8 +261,7 @@ def _udf_decorator(node_type, input_type, output_type):
 
 
 def analytic(input_type, output_type):
-    """Define an *analytic* user-defined function that takes N pandas Series or
-    scalar values as inputs and produces N rows of output.
+    """Define an analytic UDF that produces the same of rows as the input.
 
     Parameters
     ----------
@@ -304,8 +302,7 @@ def analytic(input_type, output_type):
 
 
 def elementwise(input_type, output_type):
-    """Define a UDF (user-defined function) that operates element wise on a
-    Pandas Series.
+    """Define a UDF that operates element-wise on a Pandas Series.
 
     Parameters
     ----------
@@ -347,8 +344,7 @@ def elementwise(input_type, output_type):
 
 
 def reduction(input_type, output_type):
-    """Define a user-defined reduction function that takes N pandas Series or
-    scalar values as inputs and produces one row of output.
+    """Define a UDF reduction function that produces 1 row of output for N rows of input.
 
     Parameters
     ----------

@@ -1,1 +1,1 @@
-CAST(`timestamp_col` AS DateTime64(6))
+CAST(timestamp_col AS DateTime64(6))

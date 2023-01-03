@@ -20,7 +20,7 @@ import ibis.config
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
     CTAS,
@@ -39,7 +39,7 @@ from ibis.backends.impala.client import ImpalaConnection, ImpalaDatabase, Impala
 from ibis.backends.impala.compat import HS2Error, ImpylaError
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.pandas_interop import DataFrameWriter
-from ibis.backends.impala.udf import (  # noqa F408
+from ibis.backends.impala.udf import (
     aggregate_function,
     scalar_function,
     wrap_uda,
@@ -50,6 +50,14 @@ from ibis.config import options
 if TYPE_CHECKING:
     import pandas as pd
 
+
+__all__ = (
+    "Backend",
+    "aggregate_function",
+    "scalar_function",
+    "wrap_uda",
+    "wrap_udf",
+)
 
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
@@ -79,7 +87,6 @@ _arg_type = re.compile(r'(.*)\.\.\.|([^\.]*)')
 
 
 class _type_parser:
-
     NORMAL, IN_PAREN = 0, 1
 
     def __init__(self, value):
@@ -246,6 +253,10 @@ class Backend(BaseSQLBackend):
             | `'GSSAPI'` | Kerberos-secured clusters      |
         kerberos_service_name
             Specify a particular `impalad` service principal.
+        pool_size
+            Size of the connection pool. Typically this is not necessary to configure.
+        hdfs_client
+            An existing HDFS client.
 
         Examples
         --------
@@ -544,7 +555,6 @@ class Backend(BaseSQLBackend):
 
     @contextlib.contextmanager
     def _setup_insert(self, obj):
-
         import pandas as pd
 
         if isinstance(obj, pd.DataFrame):
@@ -708,6 +718,8 @@ class Backend(BaseSQLBackend):
             Database to create the table in
         delimiter
             Character used to delimit columns
+        na_rep
+            Character used to represent NULL values
         escapechar
             Character used to escape special characters
         lineterminator
@@ -960,10 +972,10 @@ class Backend(BaseSQLBackend):
         """Drop view or table."""
         try:
             self.drop_table(name, database=database)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             try:
                 self.drop_view(name, database=database)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
@@ -984,7 +996,7 @@ class Backend(BaseSQLBackend):
         >>> db = 'operations'
         >>> pool = 'op_4GB_pool'
         >>> con.cache_table('my_table', database=db, pool=pool)  # doctest: +SKIP
-        """  # noqa: E501
+        """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self.raw_sql(statement)
 
@@ -1063,9 +1075,7 @@ class Backend(BaseSQLBackend):
                     return
                 else:
                     raise Exception(
-                        "More than one function "
-                        + f"with {name} found."
-                        + "Please specify force=True"
+                        f"More than one function with {name} found. Please specify force=True"
                     )
             elif len(result) == 1:
                 func = result.pop()

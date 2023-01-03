@@ -53,17 +53,17 @@ def test_string_temporal_compare(con, op, left, right, type):
 @pytest.mark.parametrize(
     ('op', 'expected'),
     [
-        (lambda a, b: a + b, '`int_col` + `tinyint_col`'),
-        (lambda a, b: a - b, '`int_col` - `tinyint_col`'),
-        (lambda a, b: a * b, '`int_col` * `tinyint_col`'),
-        (lambda a, b: a / b, '`int_col` / `tinyint_col`'),
-        (lambda a, b: a**b, 'pow(`int_col`, `tinyint_col`)'),
-        (lambda a, b: a < b, '`int_col` < `tinyint_col`'),
-        (lambda a, b: a <= b, '`int_col` <= `tinyint_col`'),
-        (lambda a, b: a > b, '`int_col` > `tinyint_col`'),
-        (lambda a, b: a >= b, '`int_col` >= `tinyint_col`'),
-        (lambda a, b: a == b, '`int_col` = `tinyint_col`'),
-        (lambda a, b: a != b, '`int_col` != `tinyint_col`'),
+        (lambda a, b: a + b, 'int_col + tinyint_col'),
+        (lambda a, b: a - b, 'int_col - tinyint_col'),
+        (lambda a, b: a * b, 'int_col * tinyint_col'),
+        (lambda a, b: a / b, 'int_col / tinyint_col'),
+        (lambda a, b: a**b, 'pow(int_col, tinyint_col)'),
+        (lambda a, b: a < b, 'int_col < tinyint_col'),
+        (lambda a, b: a <= b, 'int_col <= tinyint_col'),
+        (lambda a, b: a > b, 'int_col > tinyint_col'),
+        (lambda a, b: a >= b, 'int_col >= tinyint_col'),
+        (lambda a, b: a == b, 'int_col = tinyint_col'),
+        (lambda a, b: a != b, 'int_col != tinyint_col'),
     ],
 )
 def test_binary_infix_operators(con, alltypes, translate, op, expected):
@@ -84,12 +84,12 @@ def test_binary_infix_operators(con, alltypes, translate, op, expected):
     [
         (
             lambda a, b, c: (a + b) + c,
-            '(`int_col` + `tinyint_col`) + `double_col`',
+            '(int_col + tinyint_col) + double_col',
         ),
-        (lambda a, b, c: a.log() + c, 'log(`int_col`) + `double_col`'),
+        (lambda a, _, c: a.log() + c, 'log(int_col) + double_col'),
         (
             lambda a, b, c: (b + (-(a + c))),
-            '`tinyint_col` + (-(`int_col` + `double_col`))',
+            'tinyint_col + (-(int_col + double_col))',
         ),
     ],
 )
@@ -105,7 +105,7 @@ def test_binary_infix_parenthesization(con, alltypes, translate, op, expected):
 
 def test_between(con, alltypes, translate):
     expr = alltypes.int_col.between(0, 10)
-    assert translate(expr.op()) == '`int_col` BETWEEN 0 AND 10'
+    assert translate(expr.op()) == 'int_col BETWEEN 0 AND 10'
     assert len(con.execute(expr))
 
 
@@ -148,19 +148,19 @@ def test_field_in_literals(con, alltypes, translate, container):
     expected = tuple(values)
 
     expr = alltypes.string_col.isin(foobar)
-    assert translate(expr.op()) == f"`string_col` IN {expected}"
+    assert translate(expr.op()) == f"string_col IN {expected}"
     assert len(con.execute(expr))
 
     expr = alltypes.string_col.notin(foobar)
-    assert translate(expr.op()) == f"`string_col` NOT IN {expected}"
+    assert translate(expr.op()) == f"string_col NOT IN {expected}"
     assert len(con.execute(expr))
 
 
 @pytest.mark.parametrize('column', ['int_col', 'float_col', 'bool_col'])
 def test_negate(con, alltypes, translate, column):
     # clickhouse represent boolean as UInt8
-    expr = -getattr(alltypes, column)
-    assert translate(expr.op()) == f'-`{column}`'
+    expr = -alltypes[column]
+    assert translate(expr.op()) == f'-{column}'
     assert len(con.execute(expr))
 
 
@@ -177,7 +177,7 @@ def test_negate(con, alltypes, translate, column):
         'month',
     ],
 )
-def test_negate_non_boolean(con, alltypes, field, df):
+def test_negate_non_boolean(alltypes, field, df):
     t = alltypes.limit(10)
     expr = t.projection([(-t[field]).name(field)])
     result = expr.execute()[field]
@@ -220,11 +220,7 @@ def test_simple_case(con, alltypes, translate):
         t.string_col.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
     )
 
-    expected = """CASE `string_col`
-  WHEN 'foo' THEN 'bar'
-  WHEN 'baz' THEN 'qux'
-  ELSE 'default'
-END"""
+    expected = """CASE string_col WHEN 'foo' THEN 'bar' WHEN 'baz' THEN 'qux' ELSE 'default' END"""
     assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
@@ -239,11 +235,7 @@ def test_search_case(con, alltypes, translate):
         .end()
     )
 
-    expected = """CASE
-  WHEN `float_col` > 0 THEN `int_col` * 2
-  WHEN `float_col` < 0 THEN `int_col`
-  ELSE 0
-END"""
+    expected = """CASE WHEN float_col > 0 THEN int_col * 2 WHEN float_col < 0 THEN int_col ELSE 0 END"""
     assert translate(expr.op()) == expected
     assert len(con.execute(expr))
 
@@ -297,14 +289,13 @@ def test_array_concat(con, arrays):
 )
 def test_array_repeat(con, arr, times):
     expected = arr * times
-    expr = L(arr)
-
-    assert con.execute(expr * times) == expected
+    expr = L(arr) * times
+    assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize('arr', [[], [1], [1, 2, 3, 4, 5, 6]])
 @pytest.mark.parametrize('start', [None, 0, 1, 2, -1, -3])
 @pytest.mark.parametrize('stop', [None, 0, 1, 3, -2, -4])
 def test_array_slice(con, arr, start, stop):
-    expr = L(arr)
+    expr = L(arr, type="array<int8>")
     assert con.execute(expr[start:stop]) == arr[start:stop]

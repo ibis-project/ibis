@@ -1,4 +1,6 @@
-"""The pandas backend is a departure from the typical ibis backend in that it
+"""The pandas backend.
+
+The pandas backend is a departure from the typical ibis backend in that it
 doesn't compile to anything, and the execution of the ibis expression is under
 the purview of ibis itself rather than executing SQL on a server.
 
@@ -108,7 +110,7 @@ from __future__ import annotations
 import datetime
 import functools
 import numbers
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -173,32 +175,32 @@ ibis.util.consume(
 
 
 def execute_with_scope(
-    node,
+    node: ops.Node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
+    aggcontext: agg_ctx.AggregationContext | None = None,
     clients=None,
-    **kwargs,
+    **kwargs: Any,
 ):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
     ----------
-    node : ibis.expr.operations.Node
+    node
         The operation node to execute.
-    scope : Scope
-        A Scope class, with dictionary mapping
-        :class:`~ibis.expr.operations.Node` subclass instances to concrete
-        data such as a pandas DataFrame.
-    timecontext : Optional[TimeContext]
+    scope
+        A Scope class, with dictionary mapping `ibis.expr.operations.Node`
+        subclass instances to concrete data such as a pandas DataFrame.
+    timecontext
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/backends/pandas/execution/timecontext.py) for
         detailed usage for this time context.
-    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
-
-    Returns
-    -------
-    result : scalar, pd.Series, pd.DataFrame
+    aggcontext
+        Aggregation context
+    clients
+        Iterable of clients
+    kwargs
+        Keyword arguments
     """
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
@@ -245,22 +247,12 @@ def execute_until_in_scope(
     node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
-    clients=None,
-    post_execute_=None,
-    **kwargs,
+    aggcontext: agg_ctx.AggregationContext = None,
+    clients: Iterable | None = None,
+    post_execute_: Callable | None = None,
+    **kwargs: Any,
 ) -> Scope:
-    """Execute until our op is in `scope`.
-
-    Parameters
-    ----------
-    node : ibis.expr.operations.Node
-    scope : Scope
-    timecontext : Optional[TimeContext]
-    aggcontext : Optional[AggregationContext]
-    clients : List[ibis.backends.base.BaseBackend]
-    kwargs : Mapping
-    """
+    """Execute until our op is in `scope`."""
     # these should never be None
     assert aggcontext is not None, 'aggcontext is None'
     assert clients is not None, 'clients is None'
@@ -381,16 +373,17 @@ execute = Dispatcher('execute')
 @execute.register(ops.Node)
 @trace
 def main_execute(
-    node,
-    params=None,
-    scope=None,
+    node: ops.Node,
+    params: Mapping[ops.Node, Any] | None = None,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
-    cache=None,
-    **kwargs,
+    aggcontext: agg_ctx.AggregationContext = None,
+    cache: Mapping[ops.Node, Any] | None = None,
+    **kwargs: Any,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
+
+    If no data are bound, raise an Exception.
 
     Parameters
     ----------
@@ -406,7 +399,9 @@ def main_execute(
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
         column.
-    kwargs : Dict[str, object]
+    cache
+        Mapping for storing computation results.
+    kwargs
         Additional arguments that can potentially be used by individual node
         execution
 
@@ -456,14 +451,13 @@ def execute_and_reset(
     aggcontext=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
 
-    Notes
-    -----
+    If no data are bound, raise an Exception.
+
     The difference between this function and
-    :func:`~ibis.backends.pandas.core.execute` is that this function resets
-    the index of the result, if the result has an index.
+    `ibis.backends.pandas.core.execute` is that this function resets the index
+    of the result, if the result has an index.
 
     Parameters
     ----------
@@ -485,9 +479,8 @@ def execute_and_reset(
 
     Returns
     -------
-    result : Union[
-        pandas.Series, pandas.DataFrame, ibis.backends.pandas.core.simple_types
-    ]
+    pandas.Series | pandas.DataFrame | ibis.backends.pandas.core.simple_types
+        Result of execution
 
     Raises
     ------
@@ -502,11 +495,18 @@ def execute_and_reset(
         aggcontext=aggcontext,
         **kwargs,
     )
+    return _apply_schema(node, result)
+
+
+def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
+    assert isinstance(op, ops.Node), type(op)
     if isinstance(result, pd.DataFrame):
         df = result.reset_index()
-        return df.loc[:, node.schema.names]
+        schema = op.schema
+        return schema.apply_to(df.loc[:, list(schema.names)])
     elif isinstance(result, pd.Series):
-        return result.reset_index(drop=True)
+        schema = op.to_expr().to_projection().schema()
+        return schema.apply_to(result.to_frame()).iloc[:, 0].reset_index(drop=True)
     return result
 
 

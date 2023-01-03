@@ -15,8 +15,8 @@
 import operator
 
 import pytest
-import sqlalchemy.sql as sql
 from sqlalchemy import func as F
+from sqlalchemy import sql
 from sqlalchemy import types as sat
 
 import ibis
@@ -557,7 +557,9 @@ def test_where_correlated_subquery(con, foo, snapshot):
     foo = con.meta.tables["foo"]
     t0 = foo.alias('t0')
     t1 = foo.alias('t1')
-    subq = sa.select([F.avg(t1.c.y).label('mean')]).where(t0.c.dept_id == t1.c.dept_id)
+    subq = sa.select([F.avg(t1.c.y).label("Mean(y)")]).where(
+        t0.c.dept_id == t1.c.dept_id
+    )
     # For versions of SQLAlchemy where scalar_subquery exists,
     # it should be used (otherwise, a deprecation warning is raised)
     if hasattr(subq, 'scalar_subquery'):
@@ -804,7 +806,7 @@ def test_where_correlated_subquery_with_join():
         .where(
             t0.c.ps_supplycost
             == (
-                sa.select([sa.func.min(t3.c.ps_supplycost).label("min")])
+                sa.select([sa.func.min(t3.c.ps_supplycost).label("Min(ps_supplycost)")])
                 .select_from(t3)
                 .where(t3.c.ps_partkey == t0.c.p_partkey)
                 .scalar_subquery()

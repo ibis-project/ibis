@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import sqlalchemy as sa
-import sqlalchemy.dialects.mysql as mysql
+from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
@@ -24,7 +26,6 @@ class MySQLExprTranslator(AlchemyExprTranslator):
             dt.String: mysql.VARCHAR,
         }
     )
-    _bool_aggs_need_cast_to_int32 = False
     integer_to_timestamp = sa.func.from_unixtime
     native_json_type = False
 

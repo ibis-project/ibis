@@ -2,6 +2,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.types as ir
+from ibis.backends.conftest import TEST_TABLES
 
 
 def test_backend_name(backend):
@@ -49,23 +50,22 @@ def test_tables_accessor_mapping(con):
     with pytest.raises(KeyError, match="doesnt_exist"):
         con.tables["doesnt_exist"]
 
-    tables = con.list_tables()
-    con_tables = list(con.tables)
-
-    assert len(con_tables) == len(tables)
-    assert sorted(con_tables) == sorted(tables)
+    # temporary might pop into existence in parallel test runs, in between the
+    # first `list_tables` call and the second, so we check a subset relationship
+    assert TEST_TABLES.keys() <= set(con.list_tables())
+    assert TEST_TABLES.keys() <= set(con.tables)
 
 
 def test_tables_accessor_getattr(con):
     assert isinstance(con.tables.functional_alltypes, ir.Table)
 
     with pytest.raises(AttributeError, match="doesnt_exist"):
-        getattr(con.tables, "doesnt_exist")
+        con.tables.doesnt_exist
 
     # Underscore/double-underscore attributes are never available, since many
     # python apis expect checking for the absence of these to be cheap.
     with pytest.raises(AttributeError, match="_private_attr"):
-        getattr(con.tables, "_private_attr")
+        con.tables._private_attr
 
 
 def test_tables_accessor_tab_completion(con):

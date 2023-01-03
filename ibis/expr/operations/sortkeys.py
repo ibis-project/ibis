@@ -1,5 +1,7 @@
 """Sort key operations."""
 
+from __future__ import annotations
+
 from public import public
 
 import ibis.expr.rules as rlz

@@ -1,9 +1,11 @@
 """Test utilities."""
 
+from __future__ import annotations
+
 import pickle
 
 import ibis
-import ibis.util as util
+from ibis import util
 
 
 def assert_equal(left, right):

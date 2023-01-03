@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from functools import singledispatch
 from math import isfinite
@@ -169,7 +171,7 @@ def format_column(dtype, values):
 
     try:
         max_width = max(map(len, out))
-    except Exception:
+    except Exception:  # noqa: BLE001
         max_width = None
         min_width = 20
     else:
@@ -193,21 +195,23 @@ def to_rich_table(table, console_width=None):
     if console_width is None:
         console_width = float("inf")
 
+    orig_ncols = len(table.columns)
+
     # First determine the maximum subset of columns that *might* fit in the
     # current console. Note that not every column here may actually fit later
     # on once we know the repr'd width of the data.
-    columns_truncated = False
     if console_width:
         computed_cols = []
         remaining = console_width - 1  # 1 char for left boundary
         for c in table.columns:
             needed = len(c) + 3  # padding + 1 char for right boundary
-            if needed < remaining:
+            if (
+                needed < remaining or not computed_cols
+            ):  # always select at least one col
                 computed_cols.append(c)
                 remaining -= needed
             else:
                 table = table.select(*computed_cols)
-                columns_truncated = True
                 break
 
     # Compute the data and return a pandas dataframe
@@ -230,6 +234,7 @@ def to_rich_table(table, console_width=None):
         ):
             # Don't truncate non-nested dtypes
             min_width = max(min_width, len(dtype_str))
+
         min_width = max(min_width, len(name))
         if max_width is not None:
             max_width = max(min_width, max_width)
@@ -239,19 +244,30 @@ def to_rich_table(table, console_width=None):
             col_data.append(formatted)
             formatted_dtypes.append(dtype_str)
             remaining -= needed
+        elif not col_info:
+            # Always pretty print at least one column. If only one column, we
+            # truncate to fill the available space, leaving room for the
+            # ellipsis & framing.
+            min_width = remaining - 3  # 3 for framing
+            if orig_ncols > 1:
+                min_width -= 4  # 4 for ellipsis
+            col_info.append((name, dtype, min_width, min_width))
+            col_data.append(formatted)
+            formatted_dtypes.append(dtype_str)
+            break
         else:
             if remaining < 4:
                 # Not enough space for ellipsis column, drop previous column
                 col_info.pop()
                 col_data.pop()
                 formatted_dtypes.pop()
-            columns_truncated = True
             break
 
     # rich's column width computations are super buggy and can result in tables
     # that are much wider than the available console space. To work around this
     # for now we manually compute all column widths rather than letting rich
     # figure it out for us.
+    columns_truncated = orig_ncols > len(col_info)
     col_widths = {}
     flex_cols = []
     remaining = console_width - 1
@@ -306,7 +322,7 @@ def to_rich_table(table, console_width=None):
     else:
         add_row = rich_table.add_row
 
-    if formatted_dtypes:
+    if ibis.options.repr.interactive.show_types:
         add_row(
             *(Align(s, align="left") for s in formatted_dtypes),
             end_section=True,

@@ -102,7 +102,6 @@ def test_isnan_isinf(
             L(5.5).round(),
             6.0,
             id='round',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             L(5.556).round(2),
@@ -141,25 +140,24 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "trino"]),
         ),
         param(
             L(5.556).ln(),
             math.log(5.556),
             id='ln',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             L(5.556).log2(),
             math.log(5.556, 2),
             id='log2',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).radians(),
@@ -195,12 +193,7 @@ def test_math_functions_literals(con, expr, expected):
         param(L(0.0).atan(), math.atan(0.0), id="atan"),
         param(L(0.0).atan2(1.0), math.atan2(0.0, 1.0), id="atan2"),
         param(L(0.0).cos(), math.cos(0.0), id="cos"),
-        param(
-            L(1.0).cot(),
-            math.cos(1.0) / math.sin(1.0),
-            id="cot",
-            marks=pytest.mark.notimpl(["trino"]),
-        ),
+        param(L(1.0).cot(), 1.0 / math.tan(1.0), id="cot"),
         param(L(0.0).sin(), math.sin(0.0), id="sin"),
         param(L(0.0).tan(), math.tan(0.0), id="tan"),
     ],
@@ -218,12 +211,7 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.atan(), np.arctan, id="atan"),
         param(_.dc.atan2(_.dc), lambda c: np.arctan2(c, c), id="atan2"),
         param(_.dc.cos(), np.cos, id="cos"),
-        param(
-            _.dc.cot(),
-            lambda c: 1.0 / np.tan(c),
-            id="cot",
-            marks=pytest.mark.notimpl(["trino"]),
-        ),
+        param(_.dc.cot(), lambda c: 1.0 / np.tan(c), id="cot"),
         param(_.dc.sin(), np.sin, id="sin"),
         param(_.dc.tan(), np.tan, id="tan"),
     ],
@@ -312,19 +300,18 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion", "mssql", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "trino"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
             lambda t: np.log(t.double_col + 1),
             id='ln',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -337,9 +324,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "datafusion", "polars", "mssql", "trino"]
-            ),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "trino"]),
         ),
     ],
 )
@@ -359,7 +344,7 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.round(),
             lambda be, t: be.round(t.double_col),
             id='round',
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda be, t: t.double_col.add(0.05).round(3),
@@ -470,8 +455,7 @@ def test_floating_mod(backend, alltypes, df):
                     "polars",
                     strict=False,
                     reason="output types is float64 instead of the expected float32",
-                ),
-                pytest.mark.notimpl(["trino"]),
+                )
             ],
         ),
         'double_col',
@@ -495,7 +479,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     result = expr.name('tmp').execute()
 
     expected = df[column].div(denominator)
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected).astype("float64")
 
     backend.assert_series_equal(result, expected)
 
@@ -565,7 +549,7 @@ def test_sa_default_numeric_precision_and_scale(
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars", "mssql"]
+    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars"]
 )
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -608,8 +592,16 @@ def test_clip(alltypes, df, ibis_func, pandas_func):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars", "trino"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
     assert len(results.value_counts()) == n
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.parametrize("const", ["e", "pi"])
+def test_constants(con, const):
+    expr = getattr(ibis, const)
+    result = con.execute(expr)
+    assert pytest.approx(result) == getattr(math, const)

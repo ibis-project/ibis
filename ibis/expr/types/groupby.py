@@ -22,7 +22,7 @@ from typing import Iterable, Sequence
 import ibis.expr.analysis as an
 import ibis.expr.types as ir
 import ibis.expr.window as _window
-import ibis.util as util
+from ibis import util
 from ibis.expr.deferred import Deferred
 
 _function_types = tuple(
@@ -183,7 +183,7 @@ class GroupedTable:
         -------
         Table
             A table expression with window functions applied
-        """  # noqa: E501
+        """
         if exprs is None:
             exprs = []
         else:
@@ -229,13 +229,12 @@ class GroupedTable:
         )
 
     def over(self, window: _window.Window) -> GroupedTable:
-        """Add a window frame clause to be applied to child analytic
-        expressions.
+        """Apply a window over the input expressions.
 
         Parameters
         ----------
         window
-            Window to add to child analytic expressions
+            Window to add to the input
 
         Returns
         -------

@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import pandas.testing as tm
 import pytest
 import toolz
@@ -16,11 +17,12 @@ except ImportError:
     duckdb = None
 
 pytestmark = [
-    pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support")
+    pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support"),
+    pytest.mark.notyet(["impala"], reason="No array support"),
 ]
 
 
-@pytest.mark.notimpl(["bigquery", "impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["bigquery", "datafusion", "snowflake"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -33,7 +35,7 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -46,8 +48,20 @@ def test_array_scalar(con):
     assert np.array_equal(result, expected)
 
 
+@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
+def test_array_repeat(con):
+    expr = ibis.array([1.0, 2.0]) * 2
+
+    result = con.execute(expr.name("tmp"))
+    expected = np.array([1.0, 2.0, 1.0, 2.0])
+
+    # This does not check whether `result` is an np.array or a list,
+    # because it varies across backends and backend configurations
+    assert np.array_equal(result, expected)
+
+
 # Issues #2370
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -60,13 +74,13 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["impala", "datafusion", "snowflake", "trino"])
+@pytest.mark.notimpl(["datafusion", "snowflake"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_list_literal(con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -77,7 +91,7 @@ def test_list_literal(con):
     assert np.array_equal(result, arr)
 
 
-@pytest.mark.notimpl(["impala", "snowflake"])
+@pytest.mark.notimpl(["snowflake"])
 def test_np_array_literal(con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
@@ -89,8 +103,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["impala", "snowflake", "polars", "datafusion", "trino"])
-@pytest.mark.notyet(["postgres"], reason="generated code is invalid")
+@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -121,15 +134,10 @@ builtin_array = toolz.compose(
     ),
     pytest.mark.never(
         ["snowflake"],
-        reason="snowflake has an extremely specialized way of implementing arrays",  # noqa: E501
+        reason="snowflake has an extremely specialized way of implementing arrays",
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["datafusion", "dask", "trino"]),
-    # unclear if thi will ever be supported
-    pytest.mark.notyet(
-        ["impala"],
-        reason="impala doesn't support array types",
-    ),
+    pytest.mark.notimpl(["datafusion", "dask"]),
     duckdb_0_4_0,
 )
 
@@ -137,7 +145,8 @@ unnest = toolz.compose(
     builtin_array,
     pytest.mark.notimpl(["pandas"]),
     pytest.mark.notyet(
-        ["bigquery", "snowflake"], reason="doesn't support unnest in SELECT position"
+        ["bigquery", "snowflake", "trino"],
+        reason="doesn't support unnest in SELECT position",
     ),
 )
 
@@ -165,7 +174,7 @@ def test_array_discovery_postgres_duckdb(con):
 
 @builtin_array
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars"],
+    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
     reason="backend supports nullable nested types",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
@@ -192,6 +201,10 @@ def test_array_discovery_clickhouse(con):
     ["clickhouse", "duckdb", "postgres"],
     reason="backend does not support nullable nested types",
 )
+@pytest.mark.notimpl(
+    ["trino"],
+    reason="trino supports nested arrays, but not with the postgres connector",
+)
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_desired(con):
     t = con.table("array_types")
@@ -215,7 +228,6 @@ def test_array_discovery_desired(con):
         "dask",
         "datafusion",
         "duckdb",
-        "impala",
         "mysql",
         "pandas",
         "polars",
@@ -343,3 +355,32 @@ def test_unnest_default_name(con):
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
     tm.assert_series_equal(result, expected.astype("float64"))
+
+
+@pytest.mark.parametrize(
+    ("start", "stop"),
+    [
+        (1, 3),
+        (1, 1),
+        (2, 3),
+        (2, 5),
+        (None, 3),
+        (None, None),
+        (3, None),
+        (-3, None),
+        (None, -3),
+        (-3, -1),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "polars", "snowflake"])
+@pytest.mark.notyet(
+    ["bigquery"], reason="BigQuery doesn't have native array slicing functionality"
+)
+def test_array_slice(con, start, stop):
+    array_types = con.tables.array_types
+    expr = array_types.select(sliced=array_types.y[start:stop])
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {'sliced': array_types.y.execute().map(lambda x: x[start:stop])}
+    )
+    tm.assert_frame_equal(result, expected)

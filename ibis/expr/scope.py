@@ -1,5 +1,6 @@
-"""Module for scope The motivation of Scope is to cache data for calculated
-ops.
+"""Module for scope.
+
+The motivation of Scope is to cache data for calculated ops.
 
 `scope` in Scope class is the main cache. It is a dictionary mapping
 ibis node instances to concrete data, and the time context associate
@@ -53,8 +54,7 @@ class Scope:
         param: dict[Node, Any] = None,
         timecontext: TimeContext | None = None,
     ):
-        """Take a dict of `op`, `result`, create a new scope and save those
-        pairs in scope.
+        """Create a new scope.
 
         Associate None as timecontext by default. This is mostly used to
         init a scope with a set of given params.
@@ -86,28 +86,26 @@ class Scope:
     def set_value(self, op: Node, timecontext: TimeContext | None, value: Any) -> None:
         """Set values in scope.
 
-            Given an `op`, `timecontext` and `value`, set `op` and
-            `(value, timecontext)` in scope.
+        Given an `op`, `timecontext` and `value`, set `op` and
+        `(value, timecontext)` in scope.
+
+        This method doesn't simply override and set, but takes time context
+        into consideration.
+
+        If there is a value associated with the key, but time context is
+        smaller than the current time context we are going to set, `get_value`
+        will return None and we will proceed to set the new value in scope.
 
         Parameters
         ----------
-        scope : collections.Mapping
-            a dictionary mapping :class:`~ibis.expr.operations.Node`
-            subclass instances to concrete data, and the time context associate
-            with it (if any).
-        op: ibis.expr.operations.Node
-            key in scope.
-        timecontext: Optional[TimeContext]
-        value: Any
+        op
+            Key in scope
+        timecontext
+            Time context
+        value
             the cached result to save in scope, an object whose type may
             differ in different backends.
         """
-        # Note that this set method doesn't simply override and set, but
-        # takes time context into consideration.
-        # If there is a value associated with the key, but time context is
-        # smaller than the current time context we are going to set,
-        # `get_value` will return None and we will proceed to set the new
-        # value in scope.
         if self.get_value(op, timecontext) is None:
             self._items[op] = ScopeItem(timecontext, value)
 
@@ -116,18 +114,16 @@ class Scope:
 
         Parameters
         ----------
-        scope : collections.Mapping
-            a dictionary mapping :class:`~ibis.expr.operations.Node`
-            subclass instances to concrete data, and the time context associate
-            with it (if any).
-        op: ibis.expr.operations.Node
-            key in scope.
-        timecontext: Optional[TimeContext]
+        op
+            Key in scope
+        timecontext
+            Time context
 
         Returns
         -------
-        result: the cached result, an object whose types may differ in
-        different backends.
+        Any
+            The cached result, an object whose type may differ in different
+            backends.
         """
         if op not in self:
             return None

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from trino.sqlalchemy.datatype import JSON
-from trino.sqlalchemy.dialect import TrinoDialect
+import sqlalchemy as sa
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.trino.registry import operation_registry
@@ -14,6 +12,17 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = True
+    integer_to_timestamp = sa.func.from_unixtime
+    _forbids_frame_clause = (
+        *AlchemyExprTranslator._forbids_frame_clause,
+        ops.Lead,
+        ops.Lag,
+    )
+    _require_order_by = (
+        *AlchemyExprTranslator._require_order_by,
+        ops.Lag,
+        ops.Lead,
+    )
 
 
 rewrites = TrinoSQLExprTranslator.rewrites
@@ -28,11 +37,11 @@ def _no_op(expr):
     return expr
 
 
+@rewrites(ops.StringContains)
+def _rewrite_string_contains(op):
+    return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
+
+
 class TrinoSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = False
     translator_class = TrinoSQLExprTranslator
-
-
-@dt.dtype.register(TrinoDialect, JSON)
-def sa_jsonb(_, satype, nullable=True):
-    return dt.JSON(nullable=nullable)

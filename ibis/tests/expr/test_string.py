@@ -92,7 +92,7 @@ def test_contains(table):
     assert isinstance(expr.op(), ops.StringContains)
 
     with pytest.raises(TypeError):
-        'foo' in table.g
+        'foo' in table.g  # noqa: B015
 
 
 @pytest.mark.parametrize(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import json
 
 from ibis.backends.base.sql.ddl import (
@@ -158,7 +159,6 @@ class CreateTableAvro(CreateTable):
 
 
 class LoadData(BaseDDL):
-
     """Generate DDL for LOAD DATA command.
 
     Cannot be cancelled
@@ -260,7 +260,6 @@ class CacheTable(BaseDDL):
 
 
 class CreateFunction(BaseDDL):
-
     _object_type = 'FUNCTION'
 
     def __init__(self, func, name=None, database=None):

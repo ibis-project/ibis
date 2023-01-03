@@ -1,1 +1,1 @@
-greatest(`int_col`, `bigint_col`)
+greatest(int_col, bigint_col)

@@ -1,1 +1,1 @@
-`smallint_col`
+smallint_col

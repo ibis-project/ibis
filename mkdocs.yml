@@ -87,6 +87,7 @@ plugins:
       execute_ignore: "tutorial/*Geospatial*.ipynb"
       include_source: true
       theme: dark
+      allow_errors: false
   - literate-nav
 markdown_extensions:
   - admonition

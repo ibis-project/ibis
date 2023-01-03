@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import time
 import traceback
 from typing import TYPE_CHECKING
@@ -9,7 +10,7 @@ import sqlalchemy as sa
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base import Database
 from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.ddl import (
@@ -130,10 +131,8 @@ class ImpalaCursor:
         self.options = options
 
     def __del__(self):
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
     def close(self):
         try:
@@ -294,6 +293,8 @@ class ImpalaTable(ir.Table):
             dict of partition field name to value. For example for the
             partition (year=2007, month=7), this can be either (2007, 7) or
             {'year': 2007, 'month': 7}.
+        values
+            Unsupported and unused
         validate
             If True, do more rigorous validation that schema of table being
             inserted is compatible with the existing table

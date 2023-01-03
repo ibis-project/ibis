@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
 from ibis.util import UnnamedMarker, deprecated
 
@@ -14,17 +15,17 @@ if TYPE_CHECKING:
 
 
 @public
-class Node(Concrete):
+class Node(Concrete, Traversable):
     def equals(self, other):
         if not isinstance(other, Node):
             raise TypeError(
-                "invalid equality comparison between Node and " f"{type(other)}"
+                f"invalid equality comparison between Node and {type(other)}"
             )
         return self.__cached_equals__(other)
 
     @deprecated(version='4.0', instead='remove intermediate .op() calls')
     def op(self):
-        'For a bit of backwards compatibility with code that uses Expr.op().'
+        """Make `Node` backwards compatible with code that uses `Expr.op()`."""
         return self
 
     @abstractmethod
@@ -37,7 +38,6 @@ class Node(Concrete):
 
 @public
 class Named(ABC):
-
     __slots__ = tuple()
 
     @property
@@ -53,7 +53,6 @@ class Named(ABC):
 
 @public
 class Value(Node, Named):
-
     # TODO(kszucs): cover it with tests
     # TODO(kszucs): figure out how to represent not named arguments
     @property

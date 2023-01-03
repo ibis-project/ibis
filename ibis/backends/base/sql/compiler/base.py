@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 from itertools import chain
 
@@ -5,7 +7,7 @@ import toolz
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-import ibis.util as util
+from ibis import util
 
 
 class DML(abc.ABC):
@@ -21,7 +23,6 @@ class DDL(abc.ABC):
 
 
 class QueryAST:
-
     __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
 
     def __init__(self, context, dml, setup_queries=None, teardown_queries=None):

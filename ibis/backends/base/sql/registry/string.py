@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import helpers
 
@@ -36,6 +38,8 @@ def string_find(translator, op):
             return 'locate({}, {}, {}) - 1'.format(
                 substr_formatted, arg_formatted, sval + 1
             )
+        else:
+            raise ValueError(f"invalid `start` value: {sval}")
     else:
         return f'locate({substr_formatted}, {arg_formatted}) - 1'
 
@@ -57,15 +61,32 @@ def string_like(translator, op):
     return f'{arg} LIKE {pattern}'
 
 
-def parse_url(translator, op):
-    arg, extract, key = op.args
-    arg_formatted = translator.translate(arg)
+def string_ilike(translator, op):
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    return f'upper({arg}) LIKE upper({pattern})'
 
-    if key is None:
-        return f"parse_url({arg_formatted}, '{extract}')"
+
+def extract_url_field(extract):
+    if extract == 'QUERY':
+
+        def _op(translator, op):
+            arg, key = op.args
+            arg_formatted = translator.translate(arg)
+
+            if key is None:
+                return f"parse_url({arg_formatted}, '{extract}')"
+            else:
+                key_fmt = translator.translate(key)
+                return f"parse_url({arg_formatted}, '{extract}', {key_fmt})"
+
     else:
-        key_fmt = translator.translate(key)
-        return f"parse_url({arg_formatted}, '{extract}', {key_fmt})"
+
+        def _op(translator, op):
+            arg_formatted = translator.translate(op.arg)
+            return f"parse_url({arg_formatted}, '{extract}')"
+
+    return _op
 
 
 def startswith(translator, op):

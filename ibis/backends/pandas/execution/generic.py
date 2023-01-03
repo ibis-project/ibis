@@ -243,7 +243,7 @@ def execute_series_atan(_, data, **kwargs):
 
 @execute_node.register(ops.Cot, (pd.Series, *numeric_types))
 def execute_series_cot(_, data, **kwargs):
-    return np.cos(data) / np.sin(data)
+    return 1.0 / np.tan(data)
 
 
 @execute_node.register(
@@ -894,7 +894,7 @@ def execute_null_if_zero_series(op, data, **kwargs):
 def execute_string_split(op, data, delimiter, **kwargs):
     # Doing the iteration using `map` is much faster than doing the iteration
     # using `Series.apply` due to Pandas-related overhead.
-    return pd.Series(map(lambda s: np.array(s.split(delimiter)), data))
+    return pd.Series(np.array(s.split(delimiter)) for s in data)
 
 
 @execute_node.register(
@@ -1182,21 +1182,14 @@ def execute_node_nullif_scalars(op, value1, value2, **kwargs):
     return np.nan if value1 == value2 else value1
 
 
-@execute_node.register(ops.NullIf, pd.Series, pd.Series)
-def execute_node_nullif_series(op, series1, series2, **kwargs):
-    return series1.where(series1 != series2)
-
-
-@execute_node.register(ops.NullIf, pd.Series, simple_types)
-def execute_node_nullif_series_scalar(op, series, value, **kwargs):
-    return series.where(series != value)
+@execute_node.register(ops.NullIf, pd.Series, (pd.Series, *simple_types))
+def execute_node_nullif_series(op, left, right, **kwargs):
+    return left.where(left != right)
 
 
 @execute_node.register(ops.NullIf, simple_types, pd.Series)
 def execute_node_nullif_scalar_series(op, value, series, **kwargs):
-    return pd.Series(
-        np.where(series.values == value, np.nan, value), index=series.index
-    )
+    return series.where(series != value)
 
 
 def coalesce(values):
@@ -1310,7 +1303,7 @@ def execute_table_array_view(op, _, **kwargs):
 
 @execute_node.register(ops.ZeroIfNull, pd.Series)
 def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.output_dtype.to_pandas().type(0)
+    zero = op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
@@ -1320,5 +1313,5 @@ def execute_zero_if_null_series(op, data, **kwargs):
 )
 def execute_zero_if_null_scalar(op, data, **kwargs):
     if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.output_dtype.to_pandas().type(0)
+        return op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
     return data

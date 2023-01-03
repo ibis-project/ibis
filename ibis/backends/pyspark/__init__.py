@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import pyspark
 import sqlalchemy as sa
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.column import Column
 
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-import ibis.expr.types as types
 import ibis.expr.types as ir
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -194,13 +192,13 @@ class Backend(BaseSQLBackend):
             )
 
         # Insert params in scope
-        if params is None:
-            scope = Scope()
-        else:
-            scope = Scope(
-                {param.op(): raw_value for param, raw_value in params.items()},
-                timecontext,
-            )
+        scope = Scope(
+            {
+                param.op(): raw_value
+                for param, raw_value in ({} if params is None else params).items()
+            },
+            timecontext,
+        )
         return PySparkExprTranslator().translate(
             expr.op(),
             scope=scope,
@@ -208,31 +206,17 @@ class Backend(BaseSQLBackend):
             session=self._session,
         )
 
-    def execute(
-        self,
-        expr: ir.Expr,
-        timecontext: Mapping | None = None,
-        params: Mapping[ir.Scalar, Any] | None = None,
-        limit: str = 'default',
-        **kwargs: Any,
-    ) -> Any:
+    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
-        if isinstance(expr, types.Table):
-            return self.compile(expr, timecontext, params, **kwargs).toPandas()
-        elif isinstance(expr, types.Column):
-            # expression must be named for the projection
-            if not expr.has_name():
-                expr = expr.name("tmp")
-            return self.compile(
-                expr.to_projection(), timecontext, params, **kwargs
-            ).toPandas()[expr.get_name()]
-        elif isinstance(expr, types.Scalar):
-            compiled = self.compile(expr, timecontext, params, **kwargs)
-            if isinstance(compiled, Column):
-                # attach result column to a fake DataFrame and
-                # select the result
-                compiled = self._session.range(0, 1).select(compiled)
-            return compiled.toPandas().iloc[0, 0]
+        table_expr = expr.as_table()
+        df = self.compile(table_expr, **kwargs).toPandas()
+        result = table_expr.schema().apply_to(df)
+        if isinstance(expr, ir.Table):
+            return result
+        elif isinstance(expr, ir.Column):
+            return result.iloc[:, 0]
+        elif isinstance(expr, ir.Scalar):
+            return result.iloc[0, 0]
         else:
             raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
@@ -307,6 +291,8 @@ class Backend(BaseSQLBackend):
             Database name
         path
             Path where to store the database data; otherwise uses Spark default
+        force
+            Whether to append `IF EXISTS` to the database creation SQL
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
         return self.raw_sql(statement.compile())
@@ -347,26 +333,29 @@ class Backend(BaseSQLBackend):
         """
         if database is not None:
             raise com.UnsupportedArgumentError(
-                'Spark does not support the `database` argument for ' '`get_schema`'
+                'Spark does not support the `database` argument for `get_schema`'
             )
 
         df = self._session.table(table_name)
 
         return sch.infer(df)
 
-    def _schema_from_csv(self, path, **kwargs):
-        """Return a Schema object for the indicated csv file. Spark goes
-        through the file once to determine the schema. See documentation for
-        `pyspark.sql.DataFrameReader` for kwargs.
+    def _schema_from_csv(self, path: str, **kwargs: Any) -> sch.Schema:
+        """Return a Schema object for the indicated csv file.
+
+        Spark goes through the file once to determine the schema.
 
         Parameters
         ----------
         path
             Path to CSV
+        kwargs
+            See documentation for `pyspark.sql.DataFrameReader` for more information.
 
         Returns
         -------
-        schema : ibis Schema
+        sch.Schema
+            An ibis schema instance
         """
         options = _read_csv_defaults.copy()
         options.update(kwargs)
@@ -453,7 +442,7 @@ class Backend(BaseSQLBackend):
                 if force:
                     mode = 'overwrite'
                 spark_df.write.saveAsTable(table_name, format=format, mode=mode)
-                return
+                return None
             else:
                 self._register_in_memory_tables(obj)
 
@@ -628,4 +617,4 @@ class Backend(BaseSQLBackend):
         return self.raw_sql(stmt)
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
-        return operation in PySparkExprTranslator._registry.keys()
+        return operation in PySparkExprTranslator._registry

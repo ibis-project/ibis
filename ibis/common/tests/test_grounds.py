@@ -1,19 +1,18 @@
+import copy
 import pickle
 import weakref
-from collections.abc import Hashable
 
 import pytest
 
 from ibis.common.annotations import (
     Parameter,
     Signature,
+    argument,
     attribute,
-    immutable_property,
     mandatory,
     optional,
 )
 from ibis.common.caching import WeakCache
-from ibis.common.graph import Traversable, bfs, children
 from ibis.common.grounds import (
     Annotable,
     Base,
@@ -22,7 +21,7 @@ from ibis.common.grounds import (
     Immutable,
     Singleton,
 )
-from ibis.common.validators import instance_of, one_of, tuple_of, validator
+from ibis.common.validators import instance_of, validator
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
@@ -46,22 +45,40 @@ class StringOp(Value):
     arg = instance_of(str)
 
 
-def test_annotable():
-    class Between(Annotable):
-        value = is_int
-        lower = optional(is_int, default=0)
-        upper = optional(is_int, default=None)
+class BetweenSimple(Annotable):
+    value = is_int
+    lower = optional(is_int, default=0)
+    upper = optional(is_int, default=None)
 
-    class InBetween(Between):
+
+class BetweenWithExtra(Annotable):
+    extra = attribute(is_int)
+    value = is_int
+    lower = optional(is_int, default=0)
+    upper = optional(is_int, default=None)
+
+
+class BetweenWithCalculated(Concrete):
+    value = is_int
+    lower = optional(is_int, default=0)
+    upper = optional(is_int, default=None)
+
+    @attribute.default
+    def calculated(self):
+        return self.value + self.lower
+
+
+def test_annotable():
+    class InBetween(BetweenSimple):
         pass
 
     argnames = ('value', 'lower', 'upper')
-    signature = Between.__signature__
+    signature = BetweenSimple.__signature__
     assert isinstance(signature, Signature)
     assert tuple(signature.parameters.keys()) == argnames
-    assert Between.__slots__ == argnames
+    assert BetweenSimple.__slots__ == argnames
 
-    obj = Between(10, lower=2)
+    obj = BetweenSimple(10, lower=2)
     assert obj.value == 10
     assert obj.lower == 2
     assert obj.upper is None
@@ -74,9 +91,22 @@ def test_annotable():
     assert obj.__slots__ == tuple()
     assert not hasattr(obj, "__dict__")
     assert obj == obj.copy()
-
+    assert obj == copy.copy(obj)
     obj2 = InBetween(10, lower=8)
     assert obj.copy(lower=8) == obj2
+
+
+def test_annotable_with_additional_attributes():
+    a = BetweenWithExtra(10, lower=2)
+    b = BetweenWithExtra(10, lower=2)
+    assert a == b
+    assert a is not b
+
+    a.extra = 1
+    assert a.extra == 1
+    assert a != b
+
+    assert a == pickle.loads(pickle.dumps(a))
 
 
 def test_annotable_is_mutable_by_default():
@@ -273,7 +303,7 @@ def test_keyword_argument_reordering():
     assert obj.e == 4
 
 
-def test_not_copy_default():
+def test_dont_copy_default_argument():
     default = tuple()
 
     class Op(Annotable):
@@ -281,6 +311,37 @@ def test_not_copy_default():
 
     op = Op()
     assert op.arg is default
+
+
+def test_copy_mutable_with_default_attribute():
+    class Test(Annotable):
+        a = attribute(instance_of(dict), default={})
+        b = argument(instance_of(str))
+
+        @attribute.default
+        def c(self):
+            return self.b.upper()
+
+    t = Test("t")
+    assert t.a == {}
+    assert t.b == "t"
+    assert t.c == "T"
+
+    with pytest.raises(TypeError):
+        t.a = 1
+    t.a = {"map": "ping"}
+    assert t.a == {"map": "ping"}
+
+    assert t.copy() == t
+
+    u = t.copy(b="u")
+    assert u.b == "u"
+    assert u.c == "T"
+    assert u.a == {"map": "ping"}
+
+    x = t.copy(a={"emp": "ty"})
+    assert x.a == {"emp": "ty"}
+    assert x.b == "t"
 
 
 def test_slots_are_inherited_and_overridable():
@@ -367,7 +428,7 @@ def test_multiple_inheritance_argument_order():
 
     assert (
         str(Sum.__signature__)
-        == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
+        == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"
     )
 
 
@@ -385,7 +446,7 @@ def test_multiple_inheritance_optional_argument_order():
 
     assert (
         str(Between.__signature__)
-        == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"  # noqa: E501
+        == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"
     )
 
 
@@ -407,6 +468,9 @@ class Value2(Value):
     @attribute.default
     def k(self):
         return 3
+
+
+# TODO(kszucs): add a test case with __dict__ added to __slots__
 
 
 def test_annotable_attribute():
@@ -437,17 +501,20 @@ def test_annotable_attribute_init():
 
 def test_annotable_mutability_and_serialization():
     v_ = Value(1)
+    v_.j = 2
     v = Value(1)
+    v.j = 2
     assert v_ == v
+    assert v_.j == v.j == 2
 
     assert repr(v) == "Value(i=1)"
-    assert v.__getstate__() == {'i': 1, 'j': None}
     w = pickle.loads(pickle.dumps(v))
+    assert w.i == 1
+    assert w.j == 2
     assert v == w
 
     v.j = 4
     assert v_ != v
-    assert v.__getstate__() == {'i': 1, 'j': 4}
     w = pickle.loads(pickle.dumps(v))
     assert w == v
     assert repr(w) == "Value(i=1)"
@@ -466,8 +533,6 @@ def test_initialized_attribute_basics():
     assert op.double_a == 2
     assert len(Value.__attributes__) == 2
     assert "double_a" in Value.__slots__
-
-    assert attribute.default == immutable_property
 
 
 def test_initialized_attribute_mixed_with_classvar():
@@ -502,7 +567,6 @@ def test_initialized_attribute_mixed_with_classvar():
 
 
 class Node(Comparable):
-
     # override the default cache object
     __cache__ = WeakCache()
     __slots__ = ('name',)
@@ -611,9 +675,9 @@ def test_comparable_cache_reuse(cache):
 
     expected = 0
     for a, b in zip(nodes, nodes):
-        a == a
-        a == b
-        b == a
+        a == a  # noqa: B015
+        a == b  # noqa: B015
+        b == a  # noqa: B015
         if a != b:
             expected += 1
         assert Node.num_equal_calls == expected
@@ -698,36 +762,24 @@ def test_composition_of_annotable_and_singleton():
     assert SingAnn(3) is obj2
 
 
-class Between(Concrete):
-    value = is_int
-    lower = optional(is_int, default=0)
-    upper = optional(is_int, default=None)
-
-    @immutable_property
-    def calculated(self):
-        return self.value + self.lower
-
-
 def test_concrete():
-    assert Between.__mro__ == (
-        Between,
+    assert BetweenWithCalculated.__mro__ == (
+        BetweenWithCalculated,
         Concrete,
         Immutable,
         Comparable,
         Annotable,
         Base,
-        Traversable,
-        Hashable,
         object,
     )
 
-    assert Between.__create__.__func__ is Annotable.__create__.__func__
-    assert Between.__eq__ is Comparable.__eq__
-    assert Between.__argnames__ == ("value", "lower", "upper")
+    assert BetweenWithCalculated.__create__.__func__ is Annotable.__create__.__func__
+    assert BetweenWithCalculated.__eq__ is Comparable.__eq__
+    assert BetweenWithCalculated.__argnames__ == ("value", "lower", "upper")
 
     # annotable
-    obj = Between(10, lower=5, upper=15)
-    obj2 = Between(10, lower=5, upper=15)
+    obj = BetweenWithCalculated(10, lower=5, upper=15)
+    obj2 = BetweenWithCalculated(10, lower=5, upper=15)
     assert obj.value == 10
     assert obj.lower == 5
     assert obj.upper == 15
@@ -751,46 +803,7 @@ def test_concrete():
     assert ref() == obj
 
     # serializable
-    assert obj.__getstate__() == {"value": 10, "lower": 5, "upper": 15}
     assert pickle.loads(pickle.dumps(obj)) == obj
-
-
-def test_concrete_with_traversable_children():
-    class Bool(Concrete):
-        pass
-
-    class Value(Bool):
-        value = is_bool
-
-    class Either(Bool):
-        left = instance_of(Bool)
-        right = instance_of(Bool)
-
-    class All(Bool):
-        arguments = tuple_of(instance_of(Bool))
-        strict = is_bool
-
-    T, F = Value(True), Value(False)
-
-    node = All((T, F), strict=True)
-    assert node.__args__ == ((T, F), True)
-    assert node.__children__ == node.__args__
-    assert children(node) == (
-        T,
-        F,
-    )
-
-    node = Either(T, F)
-    assert node.__args__ == (T, F)
-    assert node.__children__ == (T, F)
-
-    node = All((T, Either(T, Either(T, F))), strict=False)
-    assert node.__args__ == ((T, Either(T, Either(T, F))), False)
-    assert node.__children__ == node.__args__
-    assert children(node) == (T, Either(T, Either(T, F)))
-
-    copied = node.copy(arguments=(T, F))
-    assert copied == All((T, F), strict=False)
 
 
 def test_composition_of_concrete_and_singleton():
@@ -814,56 +827,13 @@ def test_composition_of_concrete_and_singleton():
     assert SingConc(3) is obj2
 
 
-# TODO(kszucs): test that annotable subclasses can use __init_subclass__ kwargs
+def test_init_subclass_keyword_arguments():
+    class Test(Annotable):
+        def __init_subclass__(cls, **kwargs):
+            super().__init_subclass__()
+            cls.kwargs = kwargs
 
+    class Test2(Test, something="value", value="something"):
+        pass
 
-class Example(Annotable, Traversable):
-    @property
-    def __children__(self):
-        return tuple(getattr(self, name) for name in self.__argnames__)
-
-    def __hash__(self):
-        return hash((self.__class__, self.__children__))
-
-
-class Literal(Example):
-    value = is_any
-
-
-class BoolLiteral(Literal):
-    value = is_bool
-
-
-class And(Example):
-    operands = tuple_of(instance_of(BoolLiteral))
-
-
-class Or(Example):
-    operands = tuple_of(instance_of(BoolLiteral))
-
-
-class Collect(Example):
-    arguments = tuple_of(one_of([tuple_of(instance_of(Example)), instance_of(Example)]))
-
-
-def test_example():
-    a = BoolLiteral(True)
-    b = BoolLiteral(False)
-    c = BoolLiteral(True)
-    d = BoolLiteral(False)
-
-    and_ = And((a, b, c, d))
-    or_ = Or((a, c))
-    collect = Collect([and_, (or_, or_)])
-
-    graph = bfs(collect)
-
-    expected = {
-        collect: (and_, or_, or_),
-        or_: (a, c),
-        and_: (a, b, c, d),
-        a: (),
-        b: (),
-        # c and d are identical with a and b
-    }
-    assert graph == expected
+    assert Test2.kwargs == {"something": "value", "value": "something"}

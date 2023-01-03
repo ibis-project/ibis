@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.udf.vectorized import analytic, reduction
-
-pytestmark = [pytest.mark.notimpl(["trino"])]
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -158,7 +158,6 @@ def calc_zscore(s):
             id='cumnotany',
             marks=pytest.mark.notyet(
                 (
-                    "clickhouse",
                     "duckdb",
                     'impala',
                     'postgres',
@@ -166,6 +165,7 @@ def calc_zscore(s):
                     'mysql',
                     'sqlite',
                     'snowflake',
+                    'trino',
                 ),
                 reason="notany() over window not supported",
             ),
@@ -192,7 +192,6 @@ def calc_zscore(s):
             id='cumnotall',
             marks=pytest.mark.notyet(
                 (
-                    "clickhouse",
                     "duckdb",
                     'impala',
                     'postgres',
@@ -200,6 +199,7 @@ def calc_zscore(s):
                     'mysql',
                     'sqlite',
                     'snowflake',
+                    'trino',
                 ),
                 reason="notall() over window not supported",
             ),
@@ -287,6 +287,7 @@ def test_grouped_bounded_expanding_window(
                         "postgres",
                         "sqlite",
                         "snowflake",
+                        "trino",
                     ]
                 )
             ],
@@ -434,6 +435,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -518,6 +520,7 @@ def test_grouped_unbounded_window(
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -537,6 +540,7 @@ def test_grouped_unbounded_window(
                     "postgres",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -563,6 +567,13 @@ def test_grouped_unbounded_window(
                         "automatically inserts an order by"
                     ),
                 ),
+                pytest.mark.broken(
+                    ["trino"],
+                    reason=(
+                        "this isn't actually broken: the trino backend "
+                        "result is equal up to ordering"
+                    ),
+                ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
                 pytest.mark.notyet(
                     ["snowflake", "mssql"], reason="backend requires ordering"
@@ -582,6 +593,13 @@ def test_grouped_unbounded_window(
             False,
             id='unordered-lead',
             marks=[
+                pytest.mark.broken(
+                    ["trino"],
+                    reason=(
+                        "this isn't actually broken: the trino backend "
+                        "result is equal up to ordering"
+                    ),
+                ),
                 pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
                 pytest.mark.notyet(
                     ["snowflake", "mssql"], reason="backend requires ordering"
@@ -607,6 +625,7 @@ def test_grouped_unbounded_window(
                     "pyspark",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -627,6 +646,7 @@ def test_grouped_unbounded_window(
                     "pyspark",
                     "sqlite",
                     "snowflake",
+                    "trino",
                 ]
             ),
         ),
@@ -761,3 +781,45 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         .rename("lagged_value")
     )
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["clickhouse"], reason="clickhouse returns incorrect results")
+def test_mutate_window_filter(backend, alltypes, df):
+    t = alltypes
+    win = ibis.window(order_by=[t.id])
+    expr = (
+        t.mutate(next_int=_.int_col.lead().over(win))
+        .filter(_.int_col == 1)
+        .select("int_col", "next_int")
+        .limit(3)
+    )
+    res = expr.execute()
+    sol = pd.DataFrame({"int_col": [1, 1, 1], "next_int": [2, 2, 2]})
+    backend.assert_frame_equal(res, sol, check_dtype=False)
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.broken(["impala"], reason="the database returns incorrect results")
+def test_first_last(con):
+    t = con.table("win")
+    w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
+    expr = t.mutate(
+        x_first=t.x.first().over(w),
+        x_last=t.x.last().over(w),
+        y_first=t.y.first().over(w),
+        y_last=t.y.last().over(w),
+    )
+    result = expr.execute()
+    expected = pd.DataFrame(
+        {
+            "g": ["a"] * 5,
+            "x": range(5),
+            "y": [3, 2, 0, 1, 1],
+            "x_first": [0, 0, 1, 2, 3],
+            "x_last": range(5),
+            "y_first": [3, 3, 2, 0, 1],
+            "y_last": [3, 2, 0, 1, 1],
+        }
+    )
+    tm.assert_frame_equal(result, expected)

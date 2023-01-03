@@ -1,1 +1,1 @@
-CAST(`string_col` AS Map(String, Nullable(Int64)))
+CAST(string_col AS Map(String, Nullable(Int64)))

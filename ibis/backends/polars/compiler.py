@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import calendar
 import functools
 import math
@@ -704,7 +706,6 @@ def interval_from_integer(op):
 def string_to_timestamp(op):
     arg = translate(op.arg)
     _assert_literal(op.format_str)
-    # TODO(kszucs): raise if op.timezone is not None
     return arg.str.strptime(pl.Datetime, op.format_str.value)
 
 
@@ -716,13 +717,21 @@ def timestamp_add(op):
 
 
 @translate.register(ops.TimestampSub)
-@translate.register(ops.TimestampDiff)
 @translate.register(ops.DateDiff)
 @translate.register(ops.IntervalSubtract)
 def timestamp_sub(op):
     left = translate(op.left)
     right = translate(op.right)
     return left - right
+
+
+@translate.register(ops.TimestampDiff)
+def timestamp_diff(op):
+    left = translate(op.left)
+    right = translate(op.right)
+    # TODO: truncating both to seconds is necessary to conform to the output
+    # type of the operation
+    return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
 @translate.register(ops.ArrayLength)
@@ -796,7 +805,7 @@ _unary = {
     ops.Atan: operator.methodcaller('arctan'),
     ops.Ceil: lambda arg: arg.ceil().cast(pl.Int64),
     ops.Cos: operator.methodcaller('cos'),
-    ops.Cot: lambda arg: arg.cos() / arg.sin(),
+    ops.Cot: lambda arg: 1.0 / arg.tan(),
     ops.DayOfWeekIndex: (
         lambda arg: arg.dt.weekday().cast(pl.Int16) - _day_of_week_offset
     ),

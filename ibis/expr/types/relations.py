@@ -50,7 +50,7 @@ def _regular_join_method(
         "any_left",
     ],
 ):
-    def f(
+    def f(  # noqa: D417
         self: Table,
         right: Table,
         predicates: str
@@ -59,7 +59,7 @@ def _regular_join_method(
         ] = (),
         suffixes: tuple[str, str] = ("_x", "_y"),
     ) -> Table:
-        f"""Perform a{'n' * how.startswith(tuple("aeiou"))} {how} join between two tables.
+        """Perform a join between two tables.
 
         Parameters
         ----------
@@ -75,7 +75,7 @@ def _regular_join_method(
         -------
         Table
             Joined table
-        """  # noqa: E501
+        """
         return self.join(right, predicates, how=how, suffixes=suffixes)
 
     f.__name__ = name
@@ -91,6 +91,9 @@ class Table(Expr, JupyterMixin):
 
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
+
+    def as_table(self):
+        return self
 
     def __contains__(self, name):
         return name in self.schema()
@@ -181,7 +184,7 @@ class Table(Expr, JupyterMixin):
         if key in common_typos:
             hint = common_typos[key]
             raise AttributeError(
-                f"'Table' object has no attribute {key!r}, " f"did you mean '{hint}'"
+                f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}"
             )
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 
@@ -247,7 +250,7 @@ class Table(Expr, JupyterMixin):
         return list(self._arg.schema.names)
 
     def schema(self) -> sch.Schema:
-        """Get the schema for this table (if one is known)
+        """Get the schema for this table (if one is known).
 
         Returns
         -------
@@ -291,7 +294,7 @@ class Table(Expr, JupyterMixin):
         -------
         GroupedTable
             A grouped table expression
-        """  # noqa: E501
+        """
         from ibis.expr.types.groupby import GroupedTable
 
         return GroupedTable(self, by, **additional_grouping_expressions)
@@ -329,14 +332,14 @@ class Table(Expr, JupyterMixin):
         """
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, *tables: Table, distinct: bool = True, **kwargs) -> Table:
+    def difference(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        *tables
+        tables
             One or more table expressions
         distinct
             Only diff distinct rows not occurring in the calling table
@@ -605,7 +608,7 @@ class Table(Expr, JupyterMixin):
         *exprs: ir.Value | str | Iterable[ir.Value | str],
         **named_exprs: ir.Value | str,
     ) -> Table:
-        """Compute a new table expression using `exprs`.
+        """Compute a new table expression using `exprs` and `named_exprs`.
 
         Passing an aggregate function to this method will broadcast the
         aggregate's value over the number of rows in the table and
@@ -621,6 +624,8 @@ class Table(Expr, JupyterMixin):
         exprs
             Column expression, string, or list of column expressions and
             strings.
+        named_exprs
+            Column expressions
 
         Returns
         -------
@@ -684,6 +689,12 @@ class Table(Expr, JupyterMixin):
                 ),
             )
         )
+
+        if not exprs:
+            raise com.IbisTypeError(
+                "You must select at least one column for a valid projection"
+            )
+
         op = an.Projector(self, exprs).get_result()
 
         return op.to_expr()

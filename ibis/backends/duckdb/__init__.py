@@ -180,6 +180,8 @@ class Backend(BaseAlchemyBackend):
         ----------
         database
             Path to a duckdb database.
+        path
+            Deprecated, use `database` instead.
         read_only
             Whether the database is read-only.
         temp_directory
@@ -308,6 +310,7 @@ class Backend(BaseAlchemyBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
+        **kwargs: Any,
     ) -> IbisRecordBatchReader:
         _ = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
@@ -329,6 +332,7 @@ class Backend(BaseAlchemyBackend):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        **kwargs: Any,
     ) -> pa.Table:
         _ = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
@@ -440,7 +444,7 @@ class Backend(BaseAlchemyBackend):
         return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
 
-class IbisRecordBatchReader(pa.RecordBatchReader):
+class IbisRecordBatchReader(pa.ipc.RecordBatchReader):
     def __init__(self, reader, cursor):
         self.reader = reader
         self.cursor = cursor

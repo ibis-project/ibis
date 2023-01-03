@@ -18,8 +18,9 @@ class MapValue(Value):
         key: ir.Value,
         default: ir.Value | None = None,
     ) -> ir.Value:
-        """Return the value for `key` from `expr` or the default if `key` is
-        not in the map.
+        """Return the value for `key` from `expr`.
+
+        Return `default` if `key` is not in the map.
 
         Parameters
         ----------
@@ -43,7 +44,7 @@ class MapValue(Value):
         MapGet(frozendict({'a': 1, 'b': 2}), key='c', default=3)
         >>> m.get("d")
         MapGet(frozendict({'a': 1, 'b': 2}), key='d', default=None)
-        """  # noqa: E501
+        """
 
         return ops.MapGet(self, key, default).to_expr()
 
@@ -90,7 +91,7 @@ class MapValue(Value):
         MapValueForKey(frozendict({'a': 1, 'b': 2}), key='a')
         >>> m["c"]  # note that this does not fail on construction
         MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
-        """  # noqa: E501
+        """
         return ops.MapGet(self, key).to_expr()
 
     def contains(
@@ -164,7 +165,7 @@ class MapValue(Value):
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
-        """  # noqa: E501
+        """
         return ops.MapMerge(self, other).to_expr()
 
     def __radd__(self, other: MapValue) -> MapValue:
@@ -187,18 +188,18 @@ class MapValue(Value):
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
         MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
-        """  # noqa: E501
+        """
         return ops.MapMerge(self, other).to_expr()
 
 
 @public
 class MapScalar(Scalar, MapValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class MapColumn(Column, MapValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public

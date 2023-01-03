@@ -24,8 +24,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
 if TYPE_CHECKING:
-    import ibis.expr.types as ir
     import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 import ibis.expr.schema as sch
 from ibis.backends.base import Database
@@ -36,8 +36,10 @@ from ibis.expr.schema import datatype
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
-    """Convert a str to a datetime according to SQLite's rules, ignoring `None`
-    values."""
+    """Convert a `str` to a `datetime` according to SQLite's rules.
+
+    This function ignores `None` values.
+    """
     if value is None:
         return None
     if value.endswith("Z"):
@@ -54,8 +56,9 @@ def to_datetime(value: str | None) -> datetime.datetime | None:
 
 
 class ISODATETIME(DATETIME):
-    """A thin datetime type to override sqlalchemy's datetime parsing to
-    support a wider range of timestamp formats accepted by SQLite.
+    """A thin `datetime` type to override sqlalchemy's datetime parsing.
+
+    This is to support a wider range of timestamp formats accepted by SQLite.
 
     See https://sqlite.org/lang_datefunc.html#time_values for the full
     list of datetime formats SQLite accepts.
@@ -100,6 +103,8 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If `None`, creates an
             in-memory transient database and you can use attach() to add more
             files
+        path
+            Deprecated, use `database`
         type_map
             An optional mapping from a string name of a SQLite "type" to the
             corresponding ibis DataType that it represents. This can be used
@@ -203,7 +208,7 @@ class Backend(BaseAlchemyBackend):
 
     def _table_from_schema(self, name, schema, database: str | None = None) -> sa.Table:
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, schema=database, *columns)
+        return sa.Table(name, self.meta, *columns, schema=database)
 
     @property
     def _current_schema(self) -> str | None:

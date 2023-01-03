@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 import tempfile
 from html import escape
@@ -124,7 +126,7 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
 
 def draw(graph, path=None, format='png', verbose: bool = False):
     if verbose:
-        print(graph.source, file=sys.stderr)
+        print(graph.source, file=sys.stderr)  # noqa: T201
 
     piped_source = graph.pipe(format=format)
 

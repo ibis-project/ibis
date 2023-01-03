@@ -6,7 +6,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.impala.pandas_interop import DataFrameWriter  # noqa: E402
+from ibis.backends.impala.pandas_interop import DataFrameWriter
 
 pytest.importorskip("impala")
 

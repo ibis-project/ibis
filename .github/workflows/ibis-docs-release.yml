@@ -48,4 +48,4 @@ jobs:
 
       - name: build and push docs on tag
         run: |
-          nix develop -c mike deploy --push --rebase --update-aliases --prefix docs --message "docs(release): ibis@${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}" latest
+          nix develop --ignore-environment -c mike deploy --push --rebase --update-aliases --prefix docs --message "docs(release): ibis@${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}" latest

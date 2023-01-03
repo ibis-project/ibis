@@ -30,8 +30,7 @@ def _ibis_to_pg_sa_type(ibis_type):
 
 
 def _sa_type_to_postgres_str(sa_type):
-    """Map a Postgres-compatible sqlalchemy type to a Postgres-appropriate
-    string."""
+    """Map a postgres-compatible sqlalchemy type to a postgres string."""
     if callable(sa_type):
         sa_type = sa_type()
     return sa_type.compile(dialect=dialect())
@@ -66,22 +65,7 @@ def _create_udf_node(
 
 
 def existing_udf(name, input_types, output_type, schema=None, parameters=None):
-    """Create an ibis function that refers to an existing Postgres UDF already
-    defined in database.
-
-    Parameters
-    ----------
-    name: str
-    input_types : List[DataType]
-    output_type : DataType
-    schema: str - optionally specify the schema that the UDF is defined in
-    parameters: List[str] - give names to the arguments of the UDF
-
-    Returns
-    -------
-    Callable
-        The wrapped function
-    """
+    """Create an ibis function that refers to an existing Postgres UDF."""
 
     if parameters is None:
         parameters = [f'v{i}' for i in range(len(input_types))]

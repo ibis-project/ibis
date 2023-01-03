@@ -14,14 +14,14 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
-import ibis.expr.api as api
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import _, literal
 from ibis.common.exceptions import IbisTypeError
+from ibis.expr import api
 from ibis.tests.util import assert_equal
 
 
@@ -325,8 +325,7 @@ def test_distinct_table(functional_alltypes):
 
 def test_nunique(functional_alltypes):
     expr = functional_alltypes.string_col.nunique()
-    assert isinstance(expr.op(), ops.Alias)
-    assert isinstance(expr.op().arg, ops.CountDistinct)
+    assert isinstance(expr.op(), ops.CountDistinct)
 
 
 def test_isnull(table):
@@ -493,7 +492,7 @@ def test_negate_boolean_column(table, op):
 
 
 @pytest.mark.parametrize('column', ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
-@pytest.mark.parametrize('how', [None, 'first', 'last', 'heavy'])
+@pytest.mark.parametrize('how', ['first', 'last', 'heavy'])
 @pytest.mark.parametrize('condition_fn', [lambda t: None, lambda t: t.a > 8])
 def test_arbitrary(table, column, how, condition_fn):
     col = table[column]
@@ -501,7 +500,7 @@ def test_arbitrary(table, column, how, condition_fn):
     expr = col.arbitrary(how=how, where=where)
     assert expr.type() == col.type()
     assert isinstance(expr, ir.Scalar)
-    assert L.is_reduction(expr.op())
+    assert an.is_reduction(expr.op())
 
 
 @pytest.mark.parametrize(
@@ -517,7 +516,7 @@ def test_arbitrary(table, column, how, condition_fn):
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
     assert isinstance(expr, ir.BooleanScalar)
-    assert L.is_reduction(expr.op())
+    assert an.is_reduction(expr.op())
 
 
 @pytest.mark.parametrize(
@@ -633,18 +632,18 @@ def test_null_column_union():
 
 def test_string_compare_numeric_array(table):
     with pytest.raises(TypeError):
-        table.g == table.f
+        table.g == table.f  # noqa: B015
 
     with pytest.raises(TypeError):
-        table.g == table.c
+        table.g == table.c  # noqa: B015
 
 
 def test_string_compare_numeric_literal(table):
     with pytest.raises(TypeError):
-        table.g == ibis.literal(1.5)
+        table.g == ibis.literal(1.5)  # noqa: B015
 
     with pytest.raises(TypeError):
-        table.g == ibis.literal(5)
+        table.g == ibis.literal(5)  # noqa: B015
 
 
 def test_between(table):
@@ -676,7 +675,7 @@ def test_between(table):
 
 def test_chained_comparisons_not_allowed(table):
     with pytest.raises(ValueError):
-        0 < table.f < 1
+        0 < table.f < 1  # noqa: B015
 
 
 @pytest.mark.parametrize(
@@ -1597,7 +1596,7 @@ def test_array_length_scalar():
     ]
     + [
         param(
-            lambda ts: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
+            lambda ts, func=func: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
             dt.timestamp,
             id=func.__name__,
         )
@@ -1636,7 +1635,7 @@ def test_logical_comparison_rlz_incompatible_error(table, operation):
 
 def test_case_rlz_incompatible_error(table):
     with pytest.raises(TypeError, match=r"a:int8 and Literal\(foo\):string"):
-        "foo" == table.a
+        table.a == 'foo'  # noqa: B015
 
 
 @pytest.mark.parametrize("func", [ibis.asc, ibis.desc])

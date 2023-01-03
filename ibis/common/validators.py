@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from contextlib import suppress
-from typing import Any, Callable, Union
+from typing import Any, Callable, Iterable, Union
 
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
@@ -98,8 +98,7 @@ def instance_of(klasses, arg, **kwargs):
 
 
 class lazy_instance_of(Validator):
-    """A version of `instance_of` that accepts class qualnames instead of "
-    "already imported classes.
+    """A version of `instance_of` that accepts qualnames instead of imported classes.
 
     Useful for delaying imports.
     """
@@ -139,18 +138,18 @@ one_of = any_of
 
 
 @validator
-def all_of(inners, arg, **kwargs):
-    """All of the inner validators must pass.
-
-    The order of inner validators matters.
+def all_of(inners: Iterable[validator], arg: Any, **kwargs: Any) -> Any:
+    """Construct a validator of other valdiators.
 
     Parameters
     ----------
-    inners : List[validator]
-      Functions are applied from right to left so allof([rule1, rule2], arg) is
-      the same as rule1(rule2(arg)).
-    arg : Any
-      Value to be validated.
+    inners
+        Iterable of function Functions, each of which is applied from right to
+        left so `allof([rule1, rule2], arg)` is the same as `rule1(rule2(arg))`.
+    arg
+        Value to be validated.
+    kwargs
+        Keyword arguments
 
     Returns
     -------

@@ -9,13 +9,13 @@ import pandas as pd
 from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis.backends.pandas.execution.util as pd_util
-import ibis.common.graph as graph
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util
 from ibis.backends.dask.core import execute
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
+from ibis.common import graph
 from ibis.expr.scope import Scope
 
 if TYPE_CHECKING:
@@ -31,10 +31,10 @@ TypeRegistrationDict = Dict[
 def register_types_to_dispatcher(
     dispatcher: TraceTwoLevelDispatcher, types: TypeRegistrationDict
 ):
-    """Many dask operations utilize the functions defined in the pandas backend
-    without modification.
+    """Perform registrations in bulk.
 
-    This function helps perform registrations in bulk
+    Many dask operations utilize the functions defined in the pandas backend
+    without modification.
     """
     for ibis_op, registration_list in types.items():
         for types_to_register, fn in registration_list:
@@ -67,11 +67,7 @@ def make_meta_series(
 
 
 def make_selected_obj(gs: SeriesGroupBy) -> dd.DataFrame | dd.Series:
-    """When you select a column from a `pandas.DataFrameGroupBy` the underlying
-    `.obj` reflects that selection.
-
-    This function emulates that behavior.
-    """
+    """Select a column from a `pandas.DataFrameGroupBy`."""
     # TODO profile this for data shuffling
     # We specify drop=False in the case that we are grouping on the column
     # we are selecting
@@ -169,8 +165,7 @@ def _pandas_dtype_from_dd_scalar(x: dd.core.Scalar):
 
 
 def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
-    """Concat a list of `dd.Series` or `dd.DataFrame` objects into one
-    DataFrame.
+    """Concatenate a list of `dd.Series` or `dd.DataFrame` objects into a DataFrame.
 
     This will use `DataFrame.concat` if all pieces are the same length.
     Otherwise we will iterratively join.
@@ -186,7 +181,7 @@ def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
     path is aggregations where aggregations return different numbers of rows
     (see `test_aggregation_group_by` for a specific example).
     TODO - performance.
-    """  # noqa: E501
+    """
     if len(dfs) == 1:
         maybe_df = dfs[0]
         if isinstance(maybe_df, dd.Series):
@@ -213,13 +208,14 @@ def compute_sort_key(
     scope: Scope = None,
     **kwargs,
 ):
-    """
-    Note - we use this function instead of the pandas.execution.util so that we
-    use the dask `execute` method
+    """Compute a sort key.
 
-    This function borrows the logic in the pandas backend. ``by`` can be a
-    string or an expression. If ``by.get_name()`` raises an exception, we must
-    ``execute`` the expression and sort by the new derived column.
+    We use this function instead of the pandas.execution.util so that we
+    use the dask `execute` method.
+
+    This function borrows the logic in the pandas backend. `by` can be a
+    string or an expression. If `by.get_name()` raises an exception, we must
+    `execute` the expression and sort by the new derived column.
     """
     name = ibis.util.guid()
     if key.name in data:
@@ -263,15 +259,20 @@ def assert_identical_grouping_keys(*args):
 def add_partitioned_sorted_column(
     df: dd.DataFrame | dd.Series,
 ) -> dd.DataFrame:
-    """Add a column that is already partitioned and sorted This columns acts as
-    if we had a global index across the distributed data. Important properties:
+    """Add a column that is already partitioned and sorted.
+
+    This column acts as if we had a global index across the distributed data.
+
+    Important properties:
 
     - Each row has a unique id (i.e. a value in this column)
     - IDs within each partition are already sorted
-    - Any id in partition N_{t} is less than any id in partition N_{t+1}
+    - Any id in partition $N_{t}$ is less than any id in partition $N_{t+1}$
+
     We do this by designating a sufficiently large space of integers per
     partition via a base and adding the existing index to that base. See
     `helper` below.
+
     Though the space per partition is bounded, real world usage should not
     hit these bounds. We also do not explicity deal with overflow in the
     bounds.
@@ -288,7 +289,6 @@ def add_partitioned_sorted_column(
 
     Examples
     --------
-
     >>> ddf = dd.from_pandas(pd.DataFrame({'a': [1, 2,3, 4]}), npartitions=2)
     >>> ddf
     Dask DataFrame Structure:

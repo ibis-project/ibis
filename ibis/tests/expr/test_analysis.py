@@ -4,7 +4,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as L
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.tests.util import assert_equal
 
@@ -37,7 +37,7 @@ def test_rewrite_join_projection_without_other_ops(con):
     ex_pred2 = table['bar_id'] == table3['bar_id']
     ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
 
-    rewritten_proj = L.substitute_parents(view.op())
+    rewritten_proj = an.substitute_parents(view.op())
 
     assert not rewritten_proj.table.equals(ex_expr.op())
 
@@ -156,7 +156,7 @@ def test_no_rewrite(con):
     table = con.table('test1')
     table4 = table[['c', (table['c'] * 2).name('foo')]]
     expr = table4['c'] == table4['foo']
-    result = L.substitute_parents(expr.op()).to_expr()
+    result = an.substitute_parents(expr.op()).to_expr()
     expected = expr
     assert result.equals(expected)
 
@@ -167,7 +167,7 @@ def test_join_table_choice():
     t = x.aggregate(cnt=x.n.count())
     predicate = t.cnt > 0
 
-    result = L.sub_for(predicate.op(), {t.op(): t.op().table})
+    result = an.sub_for(predicate.op(), {t.op(): t.op().table})
     assert result == predicate.op()
 
 

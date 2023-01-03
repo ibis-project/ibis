@@ -55,12 +55,17 @@ class Attribute(Annotation):
 
     @classmethod
     def default(self, fn):
+        """Annotation to mark a field with a default value computed by a callable."""
         return Attribute(default=fn)
 
     def initialize(self, this):
+        """Compute the default value of the field."""
         if self._default is EMPTY:
             return None
-        value = self._default(this)
+        elif callable(self._default):
+            value = self._default(this)
+        else:
+            value = self._default
         return self.validate(value, this=this)
 
 
@@ -260,10 +265,10 @@ class Signature(inspect.Signature):
 
 # aliases for convenience
 attribute = Attribute
+argument = Argument
 mandatory = Argument.mandatory
 optional = Argument.optional
 default = Argument.default
-immutable_property = Attribute.default
 
 
 # TODO(kszucs): try to cache validator objects

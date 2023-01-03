@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import abc
 import re
 
@@ -19,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
-import ibis.util as util
+from ibis import util
 from ibis.backends.base.sql.registry import fixed_arity, sql_type_names
 from ibis.backends.impala.compiler import ImpalaExprTranslator
 
@@ -50,14 +52,15 @@ class Function(metaclass=abc.ABCMeta):
     def __call__(self, *args):
         return self._klass(*args).to_expr()
 
-    def register(self, name, database):
-        """Registers the given operation within the Ibis SQL translation
-        toolchain. Can also use add_operation API.
+    def register(self, name: str, database: str) -> None:
+        """Register the given operation.
 
         Parameters
         ----------
-        name: used in issuing statements to SQL engine
-        database: database the relevant operator is registered to
+        name
+            Used in issuing statements to SQL engine
+        database
+            Database the relevant operator is registered to
         """
         add_operation(self._klass, name, database)
 
@@ -147,45 +150,47 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
 
 
 def wrap_uda(
-    hdfs_file,
-    inputs,
-    output,
-    update_fn,
-    init_fn=None,
-    merge_fn=None,
-    finalize_fn=None,
-    serialize_fn=None,
-    close_fn=None,
-    name=None,
+    hdfs_file: str,
+    inputs: str,
+    output: str,
+    update_fn: str,
+    init_fn: str | None = None,
+    merge_fn: str | None = None,
+    finalize_fn: str | None = None,
+    serialize_fn: str | None = None,
+    name: str | None = None,
 ):
-    """Creates a callable aggregation function object. Must be created in
-    Impala to be used.
+    """Creates a callable aggregation function object.
+
+    Must be created in Impala to be used.
 
     Parameters
     ----------
-    hdfs_file: .so file that contains relevant UDA
-    inputs: list of strings denoting ibis datatypes
-    output: string denoting ibis datatype
-    update_fn: string
-      Library symbol name for update function
-    init_fn: string, optional
-      Library symbol name for initialization function
-    merge_fn: string, optional
-      Library symbol name for merge function
-    finalize_fn: string, optional
-      Library symbol name for finalize function
-    serialize_fn : string, optional
-      Library symbol name for serialize UDA API function. Not required for all
-      UDAs; see documentation for more.
-    close_fn : string, optional
-    name: string, optional
-      Used internally to track function
+    hdfs_file
+        .so file that contains relevant UDA
+    inputs
+        list of strings denoting ibis datatypes
+    output
+        string denoting ibis datatype
+    update_fn
+        Library symbol name for update function
+    init_fn
+        Library symbol name for initialization function
+    merge_fn
+        Library symbol name for merge function
+    finalize_fn
+        Library symbol name for finalize function
+    serialize_fn
+        Library symbol name for serialize UDA API function. Not required for all
+        UDAs.
+    name
+        Used internally to track function
 
     Returns
     -------
     container : UDA object
     """
-    func = ImpalaUDA(
+    return ImpalaUDA(
         inputs,
         output,
         update_fn,
@@ -196,63 +201,56 @@ def wrap_uda(
         name=name,
         lib_path=hdfs_file,
     )
-    return func
 
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
-    """Creates a callable scalar function object. Must be created in Impala to
-    be used.
+    """Creates a callable scalar function object.
+
+    Must be created in Impala to be used.
 
     Parameters
     ----------
-    hdfs_file: .so file that contains relevant UDF
-    inputs: list of strings or sig.TypeSignature
-      Input types to UDF
-    output: string
-      Ibis data type
-    so_symbol: string, C++ function name for relevant UDF
-    name: string (optional). Used internally to track function
-
-    Returns
-    -------
-    container : UDF object
+    hdfs_file
+        .so file that contains relevant UDF
+    inputs
+        Input types to UDF
+    output
+        Ibis data type
+    so_symbol
+        C++ function name for relevant UDF
+    name
+        Used internally to track function
     """
     func = ImpalaUDF(inputs, output, so_symbol, name=name, lib_path=hdfs_file)
     return func
 
 
 def scalar_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation().
 
-    Parameters:
-    inputs: list of strings
-      Ibis data type names
-    output: string
-      Ibis data type
-    name: string, optional
-      Used internally to track function
-
-    Returns
-    -------
-    klass, user_api : class, function
+    Parameters
+    ----------
+    inputs
+        Ibis data type names
+    output
+        Ibis data type
+    name
+        Used internally to track function
     """
     return ScalarFunction(inputs, output, name=name)
 
 
 def aggregate_function(inputs, output, name=None):
-    """Creates an operator class that can be passed to add_operation()
+    """Creates an operator class that can be passed to add_operation().
 
-    Parameters:
+    Parameters
+    ----------
     inputs: list of strings
       Ibis data type names
     output: string
       Ibis data type
     name: string, optional
         Used internally to track function
-
-    Returns
-    -------
-    klass, user_api : class, function
     """
     return AggregateFunction(inputs, output, name=name)
 
@@ -262,9 +260,12 @@ def add_operation(op, func_name, db):
 
     Parameters
     ----------
-    op: operator class
-    name: used in issuing statements to SQL engine
-    database: database the relevant operator is registered to
+    op
+        operator class
+    func_name
+        used in issuing statements to SQL engine
+    db
+        database the relevant operator is registered to
     """
     full_name = f'{db}.{func_name}'
     # TODO
@@ -301,6 +302,7 @@ def _parse_varchar(t):
     m = _VARCHAR_RE.match(t)
     if m:
         return 'string'
+    return None
 
 
 def _impala_type_to_ibis(tval):
@@ -313,8 +315,7 @@ def _ibis_string_to_impala(tval):
     if tval in sql_type_names:
         return sql_type_names[tval]
     result = dt.validate_type(tval)
-    if result:
-        return repr(result)
+    return repr(result) if result else None
 
 
 _impala_to_ibis_type = {

@@ -27,6 +27,16 @@ for that node.
 And we propose to store these data as 'timecontext', calculate in execution
 pass it along to children nodes, in the ibis tree. See each backends for
 implementation details.
+
+Time context adjustment algorithm
+    In an Ibis tree, time context is local for each node, and they should be
+    adjusted accordingly for some specific nodes. Those operations may
+    require extra data outside of the global time context that user defines.
+    For example, in asof_join, we need to look back extra `tolerance` daays
+    for the right table to get the data for joining. Similarly for window
+    operation with preceeding and following.
+    Algorithm to calculate context adjustment are defined in this module
+    and could be used by multiple backends.
 """
 
 from __future__ import annotations
@@ -38,9 +48,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 import ibis.common.exceptions as com
-import ibis.config as config
-import ibis.expr.api as ir
 import ibis.expr.operations as ops
+from ibis import config
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -61,16 +70,17 @@ def get_time_col():
 
 
 class TimeContextRelation(enum.Enum):
-    """Enum to classify the relationship between two time contexts Assume that
-    we have two timecontext `c1 (begin1, end1)`, `c2(begin2, end2)`:
+    """Enum to classify the relationship between two time contexts.
 
-    - SUBSET means `c1` is a subset of `c2`, `begin1` is greater than or
+    Assume that we have two timecontext `c1 (begin1, end1)`, `c2(begin2, end2)`:
+
+    - `SUBSET` means `c1` is a subset of `c2`, `begin1` is greater than or
       equal to `begin2`, and `end1` is less than or equal to `end2`.
-    - SUPERSET means that `begin1` is earlier than `begin2`, and `end1`
+    - `SUPERSET` means that `begin1` is earlier than `begin2`, and `end1`
       is later than `end2`.
     - If neither of the two contexts is a superset of each other, and they
-      share some time range in common, we called them OVERLAP.
-    - NONOVERLAP means the two contexts doesn't overlap at all, which
+      share some time range in common, we called them `OVERLAP`.
+    - `NONOVERLAP` means the two contexts doesn't overlap at all, which
       means `end1` is earlier than `begin2` or `end2` is earlier than
       `begin1`.
     """
@@ -84,18 +94,7 @@ class TimeContextRelation(enum.Enum):
 def compare_timecontext(
     left_context: TimeContext, right_context: TimeContext
 ) -> TimeContextRelation:
-    """Compare two timecontext and return the relationship between two time
-    context (SUBSET, SUPERSET, OVERLAP, NONOVERLAP).
-
-    Parameters
-    ----------
-    left_context: TimeContext
-    right_context: TimeContext
-
-    Returns
-    -------
-    result : TimeContextRelation
-    """
+    """Compare two time contexts and return the relationship between them."""
     left_begin, left_end = left_context
     right_begin, right_end = right_context
     if right_begin <= left_begin and right_end >= left_end:
@@ -111,11 +110,7 @@ def compare_timecontext(
 def canonicalize_context(
     timecontext: TimeContext | None,
 ) -> TimeContext | None:
-    """Convert a timecontext to canonical one with type pandas.Timestamp for
-    its begin and end time.
-
-    Raise Exception for illegal inputs
-    """
+    """Canonicalize a timecontext with type pandas.Timestamp for its begin and end time."""
     import pandas as pd
 
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
@@ -131,11 +126,11 @@ def canonicalize_context(
         )
     if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
-            f'end time value {end} of type {type(begin)} is not' ' of type pd.Timestamp'
+            f'end time value {end} of type {type(begin)} is not of type pd.Timestamp'
         )
     if begin > end:
         raise com.IbisError(
-            f'begin time {begin} must be before or equal' f' to end time {end}'
+            f'begin time {begin} must be before or equal to end time {end}'
         )
     return begin, end
 
@@ -163,15 +158,6 @@ def construct_time_context_aware_series(
     time column from the parent Dataframe `frame`.
     See `trim_window_result` in execution/window.py for
     trimming implementation.
-
-    Parameters
-    ----------
-    series: pd.Series, the result series of an udf execution
-    frame: pd.DataFrame, the parent Dataframe of `series`
-
-    Returns
-    -------
-    pd.Series
 
     Examples
     --------
@@ -243,34 +229,24 @@ def construct_time_context_aware_series(
     return series
 
 
-""" Time context adjustment algorithm
-    In an Ibis tree, time context is local for each node, and they should be
-    adjusted accordingly for some specific nodes. Those operations may
-    require extra data outside of the global time context that user defines.
-    For example, in asof_join, we need to look back extra `tolerance` daays
-    for the right table to get the data for joining. Similarly for window
-    operation with preceeding and following.
-    Algorithm to calculate context adjustment are defined in this module
-    and could be used by multiple backends.
-"""
-
-
 @functools.singledispatch
 def adjust_context(op: Any, scope: Scope, timecontext: TimeContext) -> TimeContext:
-    """
-    Params
-    -------
-    op: ibis.expr.operations.Node
-    scope: Scope
-    timecontext: TimeContext
-        time context associated with the node
+    """Adjust the `timecontext` for `op`.
+
+    Parameters
+    ----------
+    op
+        Ibis operation.
+    scope
+        Incoming scope.
+    timecontext
+        Time context associated with the node.
 
     Returns
-    --------
-    Adjusted time context
-        For op that is not of type Node, we raise an error to avoid failing
-        silently since the default behavior is to return input timecontext
-        itself.
+    -------
+    TimeContext
+        For `op` that is not of type Node, raise an error to avoid failing
+        silently since the default behavior is to return `timecontext`.
     """
     raise com.IbisError(f'Unsupported input type for adjust context for {op}')
 
@@ -310,6 +286,8 @@ def adjust_context_asof_join(
 def adjust_context_window(
     op: ops.Window, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
+    import ibis.expr.types as ir
+
     # adjust time context by preceding and following
     begin, end = timecontext
 

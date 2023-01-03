@@ -1,1 +1,1 @@
-CAST(`string_col` AS String)
+CAST(string_col AS String)

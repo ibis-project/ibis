@@ -9,7 +9,7 @@ ci:
     - shfmt
     - just
     - nixpkgs-fmt
-    - nix-linter
+    - statix
 default_stages:
   - commit
 repos:
@@ -17,42 +17,52 @@ repos:
     rev: v1.6.22
     hooks:
       - id: actionlint
-  - repo: https://github.com/pycqa/isort
-    rev: 5.11.0
-    hooks:
-      - id: isort
-        exclude: (^ibis/tests/sql/snapshots/|_py310\.py$)
   - repo: https://github.com/psf/black
     rev: 22.12.0
     hooks:
       - id: black
-        exclude: (^ibis/tests/sql/snapshots/|_py310\.py$)
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.206
     hooks:
-      - id: flake8
-        exclude: (^ibis/tests/sql/snapshots/|_py310\.py$)
-  - repo: https://github.com/pycqa/docformatter
-    rev: v1.5.0
+      - id: ruff
+        # exclude a file (if configured to do so), even if it's passed in explicitly
+        args: ["--force-exclude"]
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.28.0
     hooks:
-      - id: docformatter
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
+      - id: yamllint
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-      - id: absolufy-imports
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-vcs-permalinks
+      - id: destroyed-symlinks
+      - id: detect-aws-credentials
+        args: ["--allow-missing-credentials"]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: .+/snapshots/.+
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+        exclude: .+/snapshots/.+
+  - repo: meta
     hooks:
-      - id: pyupgrade
-        entry: pyupgrade --py38-plus --keep-runtime-typing
-        types:
-          - python
+      - id: check-hooks-apply
+      - id: check-useless-excludes
   - repo: local
     hooks:
       - id: prettier
         name: prettier
         language: system
-        entry: prettier --write
+        entry: prettier
+        args: ["--write"]
         types_or:
           - json
           - toml
@@ -62,12 +72,9 @@ repos:
         name: shellcheck
         language: system
         entry: shellcheck
-        files: \.sh$
-        types:
-          - shell
         types_or:
-          - file
           - sh
+          - shell
           - ash
           - bash
           - bats
@@ -76,41 +83,34 @@ repos:
       - id: shfmt
         name: shfmt
         language: system
-        entry: shfmt -i 2 -sr -s
-        files: \.sh$
-        types:
-          - file
+        entry: shfmt
+        args: ["-i", "2", "-sr", "-s"]
         types_or:
-          - file
+          - sh
+          - shell
+          - ash
+          - bash
+          - bats
+          - dash
+          - ksh
       - id: just
         name: just
         language: system
-        entry: just --fmt --unstable --check
+        entry: just
+        args: ["--fmt", "--unstable"]
         files: ^justfile$
         pass_filenames: false
-        types:
-          - file
       - id: nixpkgs-fmt
         name: nixpkgs-fmt
         language: system
         entry: nixpkgs-fmt
-        exclude: nix/sources\.nix
-        files: \.nix$
         types:
-          - file
-        types_or:
-          - file
-      - id: nix-linter
-        name: nix-linter
+          - nix
+      - id: statix
+        name: statix
         language: system
-        entry: nix-linter --check="no-FreeLetInFunc"
-        exclude: nix/sources\.nix
-        files: \.nix$
+        entry: statix
+        args: ["fix"]
+        pass_filenames: false
         types:
-          - file
-        types_or:
-          - file
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: debug-statements
+          - nix

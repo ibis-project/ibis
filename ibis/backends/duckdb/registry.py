@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import numbers
 import operator
@@ -12,7 +14,12 @@ from ibis.backends.base.sql.alchemy.registry import (
     geospatial_functions,
     reduction,
 )
-from ibis.backends.postgres.registry import fixed_arity, operation_registry
+from ibis.backends.postgres.registry import (
+    _array_index,
+    _array_slice,
+    fixed_arity,
+    operation_registry,
+)
 
 operation_registry = {
     op: operation_registry[op]
@@ -59,13 +66,12 @@ def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
 
-    if unit in {"us", "ns"}:
-        raise ValueError(f"`{unit}` unit is not supported!")
-
     if unit == "ms":
         return sa.func.epoch_ms(arg)
     elif unit == "s":
         return sa.func.to_timestamp(arg)
+    else:
+        raise ValueError(f"`{unit}` unit is not supported!")
 
 
 def _literal(_, op):
@@ -103,22 +109,13 @@ def _literal(_, op):
     return sa.cast(sa.literal(value), sqla_type)
 
 
-def _array_column(t, op):
-    (arg,) = op.args
-    sqla_type = to_sqla_type(op.output_dtype)
-    return sa.cast(sa.func.list_value(*map(t.translate, arg)), sqla_type)
+def _neg_idx_to_pos(array, idx):
+    if_ = getattr(sa.func, "if")
+    arg_length = sa.func.array_length(array)
+    return if_(idx < 0, arg_length + sa.func.greatest(idx, -arg_length), idx)
 
 
-def _struct_field(t, op):
-    return sa.func.struct_extract(
-        t.translate(op.arg),
-        sa.text(repr(op.field)),
-        type_=to_sqla_type(op.output_dtype),
-    )
-
-
-def _regex_extract(t, op):
-    string, pattern, index = map(t.translate, op.args)
+def _regex_extract(string, pattern, index):
     result = sa.case(
         [
             (
@@ -139,8 +136,7 @@ def _regex_extract(t, op):
     return result
 
 
-def _json_get_item(t, op):
-    left, path = map(t.translate, op.args)
+def _json_get_item(left, path):
     # Workaround for https://github.com/duckdb/duckdb/issues/5063
     # In some situations duckdb silently does the wrong thing if
     # the path is parametrized.
@@ -152,7 +148,7 @@ def _strftime(t, op):
     format_str = op.format_str
     if not isinstance(format_str_op := format_str, ops.Literal):
         raise TypeError(
-            "DuckDB format_str must be a literal `str`; " f"got {type(format_str)}"
+            f"DuckDB format_str must be a literal `str`; got {type(format_str)}"
         )
     return sa.func.strftime(t.translate(op.arg), sa.text(repr(format_str_op.value)))
 
@@ -187,8 +183,27 @@ def _struct_column(t, op):
 
 operation_registry.update(
     {
-        ops.ArrayColumn: _array_column,
+        ops.ArrayColumn: (
+            lambda t, op: sa.cast(
+                sa.func.list_value(*map(t.translate, op.cols)),
+                to_sqla_type(op.output_dtype),
+            )
+        ),
         ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
+        ops.ArrayRepeat: fixed_arity(
+            lambda arg, times: sa.func.flatten(
+                sa.func.array(
+                    sa.select(arg).select_from(sa.func.range(times)).scalar_subquery()
+                )
+            ),
+            2,
+        ),
+        ops.ArrayLength: unary(sa.func.array_length),
+        ops.ArraySlice: _array_slice(
+            index_converter=_neg_idx_to_pos,
+            array_length=sa.func.array_length,
+        ),
+        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -198,7 +213,13 @@ operation_registry.update(
         # TODO: map operations, but DuckDB's maps are multimaps
         ops.Modulus: fixed_arity(operator.mod, 2),
         ops.Round: _round,
-        ops.StructField: _struct_field,
+        ops.StructField: (
+            lambda t, op: sa.func.struct_extract(
+                t.translate(op.arg),
+                sa.text(repr(op.field)),
+                type_=to_sqla_type(op.output_dtype),
+            )
+        ),
         ops.TableColumn: _table_column,
         ops.TimestampDiff: fixed_arity(sa.func.age, 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
@@ -208,7 +229,7 @@ operation_registry.update(
             lambda *_: sa.cast(sa.func.now(), sa.TIMESTAMP),
             0,
         ),
-        ops.RegexExtract: _regex_extract,
+        ops.RegexExtract: fixed_arity(_regex_extract, 3),
         ops.RegexReplace: fixed_arity(
             lambda *args: sa.func.regexp_replace(*args, "g"), 3
         ),
@@ -218,7 +239,7 @@ operation_registry.update(
         ),
         ops.ApproxMedian: reduction(
             # without inline text, duckdb fails with
-            # RuntimeError: INTERNAL Error: Invalid PhysicalType for GetTypeIdSize # noqa: E501
+            # RuntimeError: INTERNAL Error: Invalid PhysicalType for GetTypeIdSize
             lambda arg: sa.func.approx_quantile(arg, sa.text(str(0.5)))
         ),
         ops.HLLCardinality: reduction(sa.func.approx_count_distinct),
@@ -231,24 +252,8 @@ operation_registry.update(
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
-        ops.JSONGetItem: _json_get_item,
+        ops.JSONGetItem: fixed_arity(_json_get_item, 2),
         ops.RowID: lambda *_: sa.literal_column('rowid'),
+        ops.StringToTimestamp: fixed_arity(sa.func.strptime, 2),
     }
 )
-
-try:
-    import duckdb
-except ImportError:  # pragma: no cover
-    pass
-else:
-    from packaging.version import parse as vparse
-
-    # 0.3.2 has zero-based array indexing, 0.3.3 has one-based array indexing
-    #
-    # 0.3.2: we pass in the user's arguments unchanged
-    # 0.3.3: use the postgres implementation which is also one-based
-    if vparse(duckdb.__version__) < vparse("0.3.3"):  # pragma: no cover
-        operation_registry[ops.ArrayIndex] = fixed_arity("list_element", 2)
-
-    # don't export these
-    del duckdb, vparse  # pragma: no cover

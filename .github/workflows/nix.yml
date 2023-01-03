@@ -6,6 +6,7 @@ on:
       - "**/*.nix"
       - "pyproject.toml"
       - "poetry.lock"
+      - "flake.lock"
       - "nix/**"
       - "!docs/**"
       - "!mkdocs.yml"
@@ -18,6 +19,7 @@ on:
       - "**/*.nix"
       - "pyproject.toml"
       - "poetry.lock"
+      - "flake.lock"
       - "nix/**"
       - "!docs/**"
       - "!mkdocs.yml"
@@ -49,6 +51,10 @@ jobs:
 
       - name: install nix
         uses: cachix/install-nix-action@v18
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
@@ -62,3 +68,14 @@ jobs:
 
           version='${{ matrix.python-version }}'
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
+
+      # build the whole dev shell when pushing to upstream, so that the cachix cache is populated
+      - name: nix build devShell
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+
+          version='${{ matrix.python-version }}'
+          host_system="$(nix eval --raw 'nixpkgs#stdenv.hostPlatform.system')"
+          flake=".#devShells.${host_system}.ibis${version//./}"
+          nix build "$flake" --fallback --keep-going --print-build-logs

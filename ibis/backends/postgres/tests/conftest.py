@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2015 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,8 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
 import os
 from pathlib import Path
 from typing import Any, Generator
@@ -86,7 +86,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 # incurs an unnecessary round trip and requires more code: the
                 # `data_iter` argument would have to be turned back into a CSV
                 # before being passed to `copy_expert`.
-                sql = f"COPY {table} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"  # noqa: E501
+                sql = f"COPY {table} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
                 with data_dir.joinpath(f'{table}.csv').open('r') as file:
                     cur.copy_expert(sql=sql, file=file)
 

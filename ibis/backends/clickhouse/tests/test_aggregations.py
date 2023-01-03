@@ -11,41 +11,27 @@ pytest.importorskip("clickhouse_driver")
 
 
 @pytest.mark.parametrize(
-    ('reduction', 'func_translated'),
-    [
-        ('sum', 'sum'),
-        ('count', 'count'),
-        ('mean', 'avg'),
-        ('max', 'max'),
-        ('min', 'min'),
-        ('std', 'stddevSamp'),
-        ('var', 'varSamp'),
-    ],
+    "reduction", ["sum", "count", "mean", "max", "min", "std", "var"]
 )
-def test_reduction_where(con, alltypes, translate, reduction, func_translated):
-    template = '{0}If(`double_col`, `bigint_col` < 70)'
-    expected = template.format(func_translated)
-
+def test_reduction_where(alltypes, translate, reduction, snapshot):
     method = getattr(alltypes.double_col, reduction)
     cond = alltypes.bigint_col < 70
     expr = method(where=cond)
 
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(translate(expr.op()), "out.sql")
 
 
-def test_std_var_pop(con, alltypes, translate):
+@pytest.mark.parametrize("method", ["var", "std"])
+def test_std_var_pop(con, alltypes, method, translate, snapshot):
     cond = alltypes.bigint_col < 70
-    expr1 = alltypes.double_col.std(where=cond, how='pop')
-    expr2 = alltypes.double_col.var(where=cond, how='pop')
-
-    assert translate(expr1.op()) == 'stddevPopIf(`double_col`, `bigint_col` < 70)'
-    assert translate(expr2.op()) == 'varPopIf(`double_col`, `bigint_col` < 70)'
-    assert isinstance(con.execute(expr1), float)
-    assert isinstance(con.execute(expr2), float)
+    col = alltypes.double_col
+    expr = getattr(col, method)(where=cond, how='pop')
+    snapshot.assert_match(translate(expr.op()), "out.sql")
+    assert isinstance(con.execute(expr), float)
 
 
 @pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])
-def test_reduction_invalid_where(con, alltypes, reduction):
+def test_reduction_invalid_where(alltypes, reduction):
     condbad_literal = L('T')
 
     with pytest.raises(TypeError):
@@ -173,7 +159,7 @@ def test_boolean_reduction(alltypes, op, df):
     assert result == op(df.bool_col)
 
 
-def test_anonymus_aggregate(alltypes, df, translate):
+def test_anonymous_aggregate(alltypes, df):
     t = alltypes
     expr = t[t.double_col > t.double_col.mean()]
     result = expr.execute().set_index('id')

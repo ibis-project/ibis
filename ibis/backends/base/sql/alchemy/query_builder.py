@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 
 import sqlalchemy as sa
-import sqlalchemy.sql as sql
+from sqlalchemy import sql
 
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -113,7 +113,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 # this has horrendous performance for medium to large tables
                 # should we warn?
                 rows = list(ref_op.data.to_frame().itertuples(index=False))
-                result = sa.values(*columns).data(rows)
+                result = sa.values(*columns, name=ref_op.name).data(rows)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):

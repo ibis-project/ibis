@@ -65,20 +65,19 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
 @mark.parametrize(
     ('expr_fn', 'expected'),
     [
-        (lambda t: t.string_col, [('string_col', dt.String)]),
-        (
+        param(lambda t: t.string_col, [('string_col', dt.String)], id="column"),
+        param(
             lambda t: t[t.string_col, t.bigint_col],
             [('string_col', dt.String), ('bigint_col', dt.Int64)],
+            id="table",
         ),
     ],
 )
-@mark.notimpl(["datafusion", "polars"])
-def test_query_schema(ddl_backend, ddl_con, expr_fn, expected):
+def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
 
     # we might need a public API for it
-    ast = ddl_con.compiler.to_ast(expr, ddl_backend.make_context())
-    schema = ddl_con.ast_schema(ast)
+    schema = expr.as_table().schema()
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
@@ -145,13 +144,12 @@ def test_rename_table(con, temp_table, new_schema):
 
 @mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
+@mark.notyet(
+    ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
-        [
-            ('foo', 'int64'),
-            ('bar', ibis.expr.datatypes.int64(nullable=False)),
-            ('baz', 'boolean'),
-        ]
+        [('foo', 'int64'), ('bar', dt.int64(nullable=False)), ('baz', 'boolean')]
     )
 
     con.create_table(temp_table, schema=sch)
@@ -377,13 +375,13 @@ def test_insert_from_memtable(alchemy_con):
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     TEST_DATABASES = {
-        'sqlite': ['main'],
-        'postgres': ['postgres', 'ibis_testing'],
-        'mysql': ['ibis_testing', 'information_schema'],
-        'duckdb': ['information_schema', 'main', 'temp'],
-        'snowflake': ['IBIS_TESTING'],
+        "sqlite": {"main"},
+        "postgres": {"postgres", "ibis_testing"},
+        "mysql": {"ibis_testing", "information_schema"},
+        "duckdb": {"information_schema", "main", "temp"},
+        "snowflake": {"IBIS_TESTING"},
     }
-    assert alchemy_con.list_databases() == TEST_DATABASES[alchemy_con.name]
+    assert TEST_DATABASES[alchemy_con.name] <= set(alchemy_con.list_databases())
 
 
 @pytest.mark.never(
@@ -761,7 +759,7 @@ def test_default_backend():
     sql = ibis.to_sql(expr)
     rx = """\
 SELECT
-  SUM\\((\\w+)\\.a\\) AS sum
+  SUM\\((\\w+)\\.a\\) AS ".+"
 FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
 
@@ -801,6 +799,22 @@ def test_repr(alltypes, interactive):
             assert val in s
         else:
             assert val not in s
+    finally:
+        ibis.options.interactive = old
+
+
+@pytest.mark.parametrize("show_types", [True, False])
+def test_interactive_repr_show_types(alltypes, show_types):
+    expr = alltypes.select("id")
+    old = ibis.options.interactive
+    ibis.options.interactive = True
+    ibis.options.repr.interactive.show_types = show_types
+    try:
+        s = repr(expr)
+        if show_types:
+            assert "int" in s
+        else:
+            assert "int" not in s
     finally:
         ibis.options.interactive = old
 

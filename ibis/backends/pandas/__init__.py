@@ -49,8 +49,7 @@ class BasePandasBackend(BaseBackend):
         <ibis.backends.pandas.Backend at 0x...>
         """
         # register dispatchers
-        from ibis.backends.pandas import execution  # noqa: F401
-        from ibis.backends.pandas import udf  # noqa: F401
+        from ibis.backends.pandas import execution, udf  # noqa: F401
 
         self.dictionary = dictionary
         self.schemas: MutableMapping[str, sch.Schema] = {}
@@ -201,6 +200,7 @@ class Backend(BasePandasBackend):
         expr: ir.Expr,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        **kwargs: Any,
     ) -> pa.Table:
         pa = self._import_pyarrow()
         output = self.execute(expr, params=params, limit=limit)

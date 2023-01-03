@@ -1,17 +1,19 @@
-from ibis.expr.operations.analytic import *  # noqa: F401,F403
-from ibis.expr.operations.arrays import *  # noqa: F401,F403
-from ibis.expr.operations.core import *  # noqa: F401,F403
-from ibis.expr.operations.generic import *  # noqa: F401,F403
-from ibis.expr.operations.geospatial import *  # noqa: F401,F403
-from ibis.expr.operations.histograms import *  # noqa: F401,F403
-from ibis.expr.operations.json import *  # noqa: F401,F403
-from ibis.expr.operations.logical import *  # noqa: F401,F403
-from ibis.expr.operations.maps import *  # noqa: F401,F403
-from ibis.expr.operations.numeric import *  # noqa: F401,F403
-from ibis.expr.operations.reductions import *  # noqa: F401,F403
-from ibis.expr.operations.relations import *  # noqa: F401,F403
-from ibis.expr.operations.sortkeys import *  # noqa: F401,F403
-from ibis.expr.operations.strings import *  # noqa: F401,F403
-from ibis.expr.operations.structs import *  # noqa: F401,F403
-from ibis.expr.operations.temporal import *  # noqa: F401,F403
-from ibis.expr.operations.vectorized import *  # noqa: F401,F403
+from __future__ import annotations
+
+from ibis.expr.operations.analytic import *  # noqa: F403
+from ibis.expr.operations.arrays import *  # noqa: F403
+from ibis.expr.operations.core import *  # noqa: F403
+from ibis.expr.operations.generic import *  # noqa: F403
+from ibis.expr.operations.geospatial import *  # noqa: F403
+from ibis.expr.operations.histograms import *  # noqa: F403
+from ibis.expr.operations.json import *  # noqa: F403
+from ibis.expr.operations.logical import *  # noqa: F403
+from ibis.expr.operations.maps import *  # noqa: F403
+from ibis.expr.operations.numeric import *  # noqa: F403
+from ibis.expr.operations.reductions import *  # noqa: F403
+from ibis.expr.operations.relations import *  # noqa: F403
+from ibis.expr.operations.sortkeys import *  # noqa: F403
+from ibis.expr.operations.strings import *  # noqa: F403
+from ibis.expr.operations.structs import *  # noqa: F403
+from ibis.expr.operations.temporal import *  # noqa: F403
+from ibis.expr.operations.vectorized import *  # noqa: F403

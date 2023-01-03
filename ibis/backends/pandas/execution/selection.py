@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
 from toolz import concatv, first
@@ -24,31 +24,17 @@ if TYPE_CHECKING:
 
 
 def compute_projection(
-    node,
-    parent,
-    data,
-    scope: Scope = None,
+    node: ops.Node,
+    parent: ops.Selection,
+    data: pd.DataFrame,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
-    **kwargs,
+    **kwargs: Any,
 ):
     """Compute a projection.
 
-    Parameters
-    ----------
-    node : Union[ops.Scalar, ops.Column, ops.TableNode]
-    parent : ops.Selection
-    data : pd.DataFrame
-    scope : Scope
-    timecontext:Optional[TimeContext]
-
-    Returns
-    -------
-    value : scalar, pd.Series, pd.DataFrame
-
-    Notes
-    -----
-    :class:`~ibis.expr.types.Scalar` instances occur when a specific column
-    projection is a window operation.
+    `ibis.expr.types.Scalar` instances occur when a specific column projection
+    is a window operation.
     """
     if isinstance(node, ops.TableNode):
         if node == parent.table:
@@ -126,8 +112,7 @@ def compute_projection(
 
 
 def remap_overlapping_column_names(table, root_table, data_columns):
-    """Return a mapping of possibly-suffixed column names to column names
-    without suffixes.
+    """Return a mapping of suffixed column names to column names without suffixes.
 
     Parameters
     ----------
@@ -182,33 +167,17 @@ def map_new_column_names_to_data(mapping, df):
 
 
 def _compute_predicates(
-    table_op,
-    predicates,
-    data,
+    table_op: ops.TableNode,
+    predicates: Iterable[ir.BooleanColumn],
+    data: pd.DataFrame,
     scope: Scope,
     timecontext: TimeContext | None,
-    **kwargs,
-):
+    **kwargs: Any,
+) -> pd.Series:
     """Compute the predicates for a table operation.
 
-    Parameters
-    ----------
-    table_op : TableNode
-    predicates : List[ir.Column]
-    data : pd.DataFrame
-    scope : Scope
-    timecontext: Optional[TimeContext]
-    kwargs : dict
-
-    Returns
-    -------
-    computed_predicate : pd.Series[bool]
-
-    Notes
-    -----
-    This handles the cases where the predicates are computed columns, in
-    addition to the simple case of named columns coming directly from the input
-    table.
+    This handles the cases where `predicates` are computed columns, in addition
+    to the simple case of named columns coming directly from the input table.
     """
     for predicate in predicates:
         # Map each root table of the predicate to the data so that we compute

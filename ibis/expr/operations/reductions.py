@@ -34,7 +34,7 @@ class CountStar(Filterable, Reduction):
 @public
 class Arbitrary(Filterable, Reduction):
     arg = rlz.column(rlz.any)
-    how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}))
+    how = rlz.isin({'first', 'last', 'heavy'})
     output_dtype = rlz.dtype_like('arg')
 
 
@@ -50,7 +50,7 @@ class BitAnd(Filterable, Reduction):
 
     * BigQuery [`BIT_AND`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and)
     * MySQL [`BIT_AND`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')
@@ -67,7 +67,7 @@ class BitOr(Filterable, Reduction):
 
     * BigQuery [`BIT_OR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or)
     * MySQL [`BIT_OR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')
@@ -84,7 +84,7 @@ class BitXor(Filterable, Reduction):
 
     * BigQuery [`BIT_XOR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor)
     * MySQL [`BIT_XOR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor)
-    """  # noqa: E501
+    """
 
     arg = rlz.column(rlz.integer)
     output_dtype = rlz.dtype_like('arg')
@@ -223,9 +223,10 @@ class ApproxCountDistinct(Filterable, Reduction):
 
 
 @public
-@deprecated(version='4.0', instead='use ApproxCountDistinct')
 class HLLCardinality(ApproxCountDistinct):
-    pass
+    @deprecated(version="4.0", instead="use ApproxCountDistinct")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 @public
@@ -238,20 +239,17 @@ class GroupConcat(Filterable, Reduction):
 
 @public
 class ApproxMedian(Filterable, Reduction):
-    """Compute the approximate median of a set of comparable values using the
-    Count-Min-Sketch algorithm.
-
-    Exposed in Impala using APPX_MEDIAN.
-    """
+    """Compute the approximate median of a set of comparable values."""
 
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
-@deprecated(version="4.0", instead="use ApproxMedian")
 class CMSMedian(ApproxMedian):
-    pass
+    @deprecated(version="4.0", instead="use ApproxMedian")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 @public

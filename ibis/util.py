@@ -46,7 +46,6 @@ HORIZONTAL_ELLIPSIS = "\u2026"
 
 
 class frozendict(Mapping, Hashable):
-
     __slots__ = ("_dict", "_hash")
 
     def __init__(self, *args, **kwargs):
@@ -93,12 +92,7 @@ class UnnamedMarker:
 
 
 def guid() -> str:
-    """Return a uuid4 hexadecimal value.
-
-    Returns
-    -------
-    string
-    """
+    """Return a uuid4 hexadecimal value."""
     return uuid4().hex
 
 
@@ -117,7 +111,7 @@ def indent(text: str, spaces: int) -> str:
     str
         Indented text
     """
-    prefix = ' ' * spaces
+    prefix = " " * spaces
     return textwrap.indent(text, prefix=prefix)
 
 
@@ -126,8 +120,10 @@ def is_one_of(values: Sequence[T], t: type[U]) -> Iterator[bool]:
 
     Parameters
     ----------
-    values : list or tuple
-    t : type
+    values
+        Input values
+    t
+        Type to check against
 
     Returns
     -------
@@ -145,7 +141,8 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
 
     Parameters
     ----------
-    val : list or object
+    val
+        Value to promote
 
     Returns
     -------
@@ -164,10 +161,6 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
 def is_function(v: Any) -> bool:
     """Check if the given object is a function.
 
-    Parameters
-    ----------
-    v : object
-
     Returns
     -------
     bool
@@ -177,12 +170,7 @@ def is_function(v: Any) -> bool:
 
 
 def log(msg: str) -> None:
-    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``.
-
-    Parameters
-    ----------
-    msg : string
-    """
+    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``."""
     from ibis.config import options
 
     if options.verbose:
@@ -191,12 +179,6 @@ def log(msg: str) -> None:
 
 def approx_equal(a: Real, b: Real, eps: Real):
     """Return whether the difference between `a` and `b` is less than `eps`.
-
-    Parameters
-    ----------
-    a : real
-    b : real
-    eps : real
 
     Raises
     ------
@@ -212,7 +194,8 @@ def safe_index(elements: Sequence[int], value: int) -> int:
 
     Parameters
     ----------
-    elements : list or tuple
+    elements
+        Elements to index into
     value : int
         Index of the given sequence/elements
 
@@ -264,7 +247,7 @@ def is_iterable(o: Any) -> bool:
     return not isinstance(o, (str, bytes)) and isinstance(o, collections.abc.Iterable)
 
 
-def convert_unit(value, unit, to, floor=True):
+def convert_unit(value, unit, to, floor: bool = True):
     """Convert a value between different units.
 
     Convert `value`, is assumed to be in units of `unit`, to units of `to`.
@@ -272,13 +255,19 @@ def convert_unit(value, unit, to, floor=True):
 
     Parameters
     ----------
-    value : Union[numbers.Real, ibis.expr.types.NumericValue]
-    floor : Boolean
-        Flags whether or not to use floor division on `value` if necessary.
+    value
+        Number or numeric ibis expression
+    unit
+        Unit of `value`
+    to
+        Unit to convert to
+    floor
+        Whether or not to use floor division on `value` if necessary.
 
     Returns
     -------
     Union[numbers.Integral, ibis.expr.types.NumericValue]
+        Integer converted unit
 
     Examples
     --------
@@ -329,16 +318,23 @@ def convert_unit(value, unit, to, floor=True):
 
 
 def get_logger(
-    name: str, level: str = None, format: str = None, propagate: bool = False
+    name: str,
+    level: str | None = None,
+    format: str | None = None,
+    propagate: bool = False,
 ) -> logging.Logger:
     """Get a logger.
 
     Parameters
     ----------
-    name : string
-    level : string
-    format : string
-    propagate : bool, default False
+    name
+        Logger name
+    level
+        Logging level
+    format
+        Format string
+    propagate
+        Propagate the logger
 
     Returns
     -------
@@ -367,13 +363,7 @@ def get_logger(
 
 # taken from the itertools documentation
 def consume(iterator: Iterator[T], n: int | None = None) -> None:
-    """Advance the iterator n-steps ahead. If n is None, consume entirely.
-
-    Parameters
-    ----------
-    iterator : list or tuple
-    n : int, optional
-    """
+    """Advance `iterator` n-steps ahead. If `n` is `None`, consume entirely."""
     # Use functions that consume iterators at C speed.
     if n is None:
         # feed the entire iterator into a zero-length deque
@@ -452,18 +442,17 @@ def append_admonition(
 
 
 def deprecated(*, instead, version=''):
-    """Decorate deprecated function to warn of usage, with stacktrace, and what
-    to do instead."""
+    """Decorate to warn of deprecated usage, with stacktrace, and what to do instead."""
 
     def decorator(func):
-        msg = deprecated_msg(func.__name__, instead=instead, version=version)
+        msg = deprecated_msg(func.__qualname__, instead=instead, version=version)
 
         func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             warn_deprecated(
-                func.__name__, instead=instead, version=version, stacklevel=2
+                func.__qualname__, instead=instead, version=version, stacklevel=2
             )
             return func(*args, **kwargs)
 
@@ -487,8 +476,7 @@ def backend_sensitive(
 
 
 def experimental(func):
-    """Decorate experimental function to add warning about potential API
-    instability in docstring."""
+    """Decorate a callable to add warning about API instability in docstring."""
 
     func.__doc__ = append_admonition(
         func, msg="This API is experimental and subject to change."
@@ -519,8 +507,8 @@ def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
 def import_object(qualname: str) -> Any:
     """Attempt to import an object given its full qualname.
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> out = import_object("foo.bar.baz")
 
     Is the same as

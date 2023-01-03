@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.base.sql.ddl import (
     CTAS,
     AlterTable,
@@ -15,7 +17,7 @@ _format_aliases = {'TEXTFILE': 'TEXT'}
 
 def _sanitize_format(format):
     if format is None:
-        return
+        return None
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in (
@@ -48,7 +50,6 @@ def _format_properties(props):
 
 
 class CreateTable(CreateTable):
-
     """Create a table."""
 
     def __init__(
@@ -79,7 +80,6 @@ class CreateTableWithSchema(CreateTableWithSchema):
 
 
 class CTAS(CTAS):
-
     """Create Table As Select."""
 
     def __init__(
@@ -104,7 +104,6 @@ class CTAS(CTAS):
 
 
 class CreateView(CTAS):
-
     """Create a view."""
 
     def __init__(
@@ -154,7 +153,6 @@ def _format_schema_element(name, t):
 
 
 class DropDatabase(DropObject):
-
     _object_type = 'DATABASE'
 
     def __init__(self, name, must_exist=True, cascade=False):
@@ -174,7 +172,6 @@ class DropDatabase(DropObject):
 
 
 class DropFunction(DropObject):
-
     _object_type = 'TEMPORARY FUNCTION'
 
     def __init__(self, name, must_exist=True):

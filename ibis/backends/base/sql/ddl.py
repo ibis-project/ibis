@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 import ibis.expr.datatypes as dt
@@ -11,7 +13,7 @@ _format_aliases = {'TEXT': 'TEXTFILE'}
 
 def _sanitize_format(format):
     if format is None:
-        return
+        return None
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
@@ -120,15 +122,6 @@ class _CreateDDL(BaseDDL):
 
 
 class CreateTable(_CreateDDL):
-
-    """
-
-    Parameters
-    ----------
-    partition :
-
-    """
-
     def __init__(
         self,
         table_name,
@@ -177,7 +170,6 @@ class CreateTable(_CreateDDL):
 
 
 class CTAS(CreateTable):
-
     """Create Table As Select."""
 
     def __init__(
@@ -219,7 +211,6 @@ class CTAS(CreateTable):
 
 
 class CreateView(CTAS):
-
     """Create a view."""
 
     def __init__(self, table_name, select, database=None, can_exist=False):
@@ -300,7 +291,6 @@ class DropObject(BaseDDL):
 
 
 class DropDatabase(DropObject):
-
     _object_type = 'DATABASE'
 
     def __init__(self, name, must_exist=True):
@@ -312,7 +302,6 @@ class DropDatabase(DropObject):
 
 
 class DropTable(DropObject):
-
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None, must_exist=True):
@@ -325,12 +314,10 @@ class DropTable(DropObject):
 
 
 class DropView(DropTable):
-
     _object_type = 'VIEW'
 
 
 class TruncateTable(BaseDDL):
-
     _object_type = 'TABLE'
 
     def __init__(self, table_name, database=None):

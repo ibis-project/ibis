@@ -1,1 +1,1 @@
-CAST(`string_col` AS Nullable(Date))
+CAST(string_col AS Nullable(Date))

@@ -3,7 +3,9 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-from ibis.expr import datatypes as dt
+import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+from ibis.common.exceptions import IntegrityError
 
 
 def test_whole_schema():
@@ -132,6 +134,14 @@ def test_whole_schema():
         ]
     )
     assert customers.schema() == expected
+
+
+def test_schema_names_and_types_length_must_match():
+    with pytest.raises(IntegrityError):
+        sch.Schema(names=["a", "b"], types=["int", "str", "float"])
+
+    schema = sch.Schema(names=["a", "b"], types=["int", "str"])
+    assert isinstance(schema, sch.Schema)
 
 
 def test_schema_subset():

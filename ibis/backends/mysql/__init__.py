@@ -8,7 +8,7 @@ import warnings
 from typing import Literal
 
 import sqlalchemy as sa
-import sqlalchemy.dialects.mysql as mysql
+from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -110,14 +110,16 @@ class Backend(BaseAlchemyBackend):
             previous_timezone = bind.execute('SELECT @@session.time_zone').scalar()
             try:
                 bind.execute("SET @@session.time_zone = 'UTC'")
-            except Exception as e:
-                warnings.warn(f"Couldn't set mysql timezone: {str(e)}")
+            except Exception as e:  # noqa: BLE001
+                warnings.warn(f"Couldn't set MySQL timezone: {str(e)}")
 
             try:
                 yield bind
             finally:
-                query = "SET @@session.time_zone = '{}'"
-                bind.execute(query.format(previous_timezone))
+                try:
+                    bind.execute(f"SET @@session.time_zone = '{previous_timezone}'")
+                except Exception as e:  # noqa: BLE001
+                    warnings.warn(f"Couldn't reset MySQL timezone: {str(e)}")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Infer the schema of `query`."""

@@ -1,1 +1,1 @@
-log10(`double_col`)
+log10(double_col)

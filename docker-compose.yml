@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:22.11.2.30-alpine
+    image: clickhouse/clickhouse-server:22.12.1.1752-alpine
     ports:
       - 8123:8123
       - 9000:9000
@@ -122,15 +122,16 @@ services:
       retries: 3
       test:
         - CMD-SHELL
-        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
+        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
       timeout: 10s
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    build:
+      context: .
+      dockerfile: ./docker/mssql/Dockerfile
+    image: ibis-mssql
     ports:
       - 1433:1433
     networks:
       - mssql
-    volumes:
-      - $PWD/ci/ibis-testing-data:/data:ro
   trino-postgres:
     user: postgres
     environment:
@@ -158,13 +159,14 @@ services:
         - CMD-SHELL
         - trino --execute 'SELECT 1 AS one'
       timeout: 30s
-    image: trinodb/trino:403
+    image: trinodb/trino:405
     ports:
       - 8080:8080
     networks:
       - trino
     volumes:
       - $PWD/docker/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties:ro
+      - $PWD/docker/trino/catalog/memory.properties:/etc/trino/catalog/memory.properties:ro
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
 networks:

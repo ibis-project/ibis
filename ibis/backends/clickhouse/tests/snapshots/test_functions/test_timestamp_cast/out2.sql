@@ -1,1 +1,1 @@
-CAST(`int_col` AS DateTime64(6))
+CAST(int_col AS DateTime64(6))

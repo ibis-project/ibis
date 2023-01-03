@@ -3,7 +3,7 @@ from __future__ import annotations
 import parsy as p
 import toolz
 
-import ibis.util as util
+from ibis import util
 from ibis.common.parsing import (
     COMMA,
     FIELD,

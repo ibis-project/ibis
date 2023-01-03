@@ -1,4 +1,6 @@
-"""The dask backend is a very close port of the pandas backend, and thus has
+"""The Dask backend.
+
+The dask backend is a very close port of the pandas backend, and thus has
 the similar caveats.
 
 The dask backend is a departure from the typical ibis backend in that it
@@ -109,7 +111,7 @@ See ibis.common.scope for details about the implementaion.
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Mapping
 
 import dask.dataframe as dd
 from multipledispatch import Dispatcher
@@ -142,10 +144,10 @@ is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 # TODO(kszucs): should deduplicate with pandas code since it is an exact copy
 # of pandas.execute_with_scope()
 def execute_with_scope(
-    node,
+    node: ops.Node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
+    aggcontext: agg_ctx.AggregationContext | None = None,
     clients=None,
     **kwargs,
 ):
@@ -153,21 +155,21 @@ def execute_with_scope(
 
     Parameters
     ----------
-    node : ibis.expr.operations.Node
+    node
         The operation node to execute.
-    scope : Scope
-        A Scope class, with dictionary mapping
-        :class:`~ibis.expr.operations.Node` subclass instances to concrete
-        data such as a pandas DataFrame.
-    timecontext : Optional[TimeContext]
+    scope
+        A Scope class, with dictionary mapping `ops.Node` subclass instances to
+        concrete data such as a pandas DataFrame.
+    timecontext
         A tuple of (begin, end) that is passed from parent Node to children
         see [timecontext.py](ibis/backends/pandas/execution/timecontext.py) for
         detailed usage for this time context.
-    aggcontext : Optional[ibis.backends.pandas.aggcontext.AggregationContext]
-
-    Returns
-    -------
-    result : scalar, pd.Series, pd.DataFrame
+    aggcontext
+        Context used to compute an aggregation.
+    clients
+        Sequence of clients
+    kwargs
+        Keyword arguments
     """
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
@@ -221,17 +223,7 @@ def execute_until_in_scope(
     post_execute_=None,
     **kwargs,
 ) -> Scope:
-    """Execute until our op is in `scope`.
-
-    Parameters
-    ----------
-    node : ibis.expr.operations.Node
-    scope : Scope
-    timecontext : Optional[TimeContext]
-    aggcontext : Optional[AggregationContext]
-    clients : List[ibis.backends.base.BaseBackend]
-    kwargs : Mapping
-    """
+    """Execute until our op is in `scope`."""
     # these should never be None
     assert aggcontext is not None, 'aggcontext is None'
     assert clients is not None, 'clients is None'
@@ -351,16 +343,17 @@ execute = Dispatcher('execute')
 @execute.register(ops.Node)
 @trace
 def main_execute(
-    node,
-    params=None,
-    scope=None,
+    node: ops.Node,
+    params: Mapping[ops.Node, Any] | None = None,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
-    aggcontext=None,
-    cache=None,
-    **kwargs,
+    aggcontext: agg_ctx.AggregationContext | None = None,
+    cache: Mapping[ops.Node, Any] | None = None,
+    **kwargs: Any,
 ):
-    """Execute an expression against data that are bound to it. If no data are
-    bound, raise an Exception.
+    """Execute an expression against data that are bound to it.
+
+    If no data are bound, raise a `ValueError`.
 
     Parameters
     ----------
@@ -376,15 +369,11 @@ def main_execute(
         An object indicating how to compute aggregations. For example,
         a rolling mean needs to be computed differently than the mean of a
         column.
-    kwargs : Dict[str, object]
+    cache
+        Cache used to store computations.
+    kwargs
         Additional arguments that can potentially be used by individual node
         execution
-
-    Returns
-    -------
-    result : Union[
-        pandas.Series, pandas.DataFrame, ibis.backends.pandas.core.simple_types
-    ]
 
     Raises
     ------
@@ -427,13 +416,13 @@ def execute_and_reset(
     aggcontext=None,
     **kwargs,
 ):
-    """Execute an expression against data that are bound to it. If no data
-    are bound, raise an Exception.
-    Notes
-    -----
-    The difference between this function and :func:`~ibis.dask.core.execute`
-    is that this function resets the index of the result, if the result has
-    an index.
+    """Execute an expression against data that are bound to it.
+
+    If no data are bound, raise an Exception.
+
+    The difference between this function and `ibis.dask.core.execute` is that
+    this function resets the index of the result, if the result has an index.
+
     Parameters
     ----------
     node : ibis.expr.operations.Node
@@ -458,10 +447,11 @@ def execute_and_reset(
         dask.dataframe.DataFrame,
         ibis.dask.core.simple_types
     ]
+
     Raises
     ------
     ValueError
-        * If no data are bound to the input expression
+        * If no data are bound to the input expression.
     """
     result = execute(
         node,

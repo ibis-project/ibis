@@ -178,7 +178,7 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     expr = left.join(right, left.year == right.yearID)
     filters = [expr.RBI == 9]
     q = expr.filter(filters)
-    q.execute()
+    assert not q.execute().empty
 
 
 @pytest.mark.notimpl(["datafusion"])
@@ -187,8 +187,21 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     reason="pyspark doesn't support joining on differing column names",
 )
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
-    left = batting.mutate(year=batting.yearID)
+    left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
     left = left["year", "RBI"]
     right = awards_players
     expr = left.join(right, left.year == right.yearID)
-    expr.execute()
+    assert not expr.limit(5).execute().empty
+
+
+@pytest.mark.notimpl(["datafusion", "bigquery"])
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="pyspark doesn't support joining on differing column names",
+)
+@pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
+def test_semi_join_topk(batting, awards_players):
+    batting = batting.mutate(year=batting.yearID)
+    left = batting.semi_join(batting.year.topk(5), "year").select("year", "RBI")
+    expr = left.join(awards_players, left.year == awards_players.yearID)
+    assert not expr.limit(5).execute().empty

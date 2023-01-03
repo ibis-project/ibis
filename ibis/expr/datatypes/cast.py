@@ -185,11 +185,6 @@ def can_cast_json(source, target, **kwargs):
     return True
 
 
-@castable.register(dt.JSONB, dt.JSONB)
-def can_cast_jsonb(source, target, **kwargs):
-    return True
-
-
 # geo spatial data type
 # cast between same type, used to cast from/to geometry and geography
 GEO_TYPES = (

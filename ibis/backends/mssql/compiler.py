@@ -1,10 +1,11 @@
-import sqlalchemy as sa
+from __future__ import annotations
+
 from sqlalchemy.dialects import mssql
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.mssql.registry import operation_registry
+from ibis.backends.mssql.registry import _timestamp_from_unix, operation_registry
 
 
 class MsSqlExprTranslator(AlchemyExprTranslator):
@@ -25,7 +26,7 @@ class MsSqlExprTranslator(AlchemyExprTranslator):
         }
     )
     _bool_aggs_need_cast_to_int32 = True
-    integer_to_timestamp = sa.func.from_unixtime
+    integer_to_timestamp = staticmethod(_timestamp_from_unix)
     native_json_type = False
 
     _forbids_frame_clause = AlchemyExprTranslator._forbids_frame_clause + (

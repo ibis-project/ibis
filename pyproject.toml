@@ -29,8 +29,8 @@ multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
 parsy = ">=1.3.0,<3"
-regex = ">=2021.7.6"
-rich = ">=12.4.4,<13"
+rich = ">=12.4.4,<14"
+sqlglot = ">=10.1.3,<11"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<23", optional = true }
@@ -44,7 +44,7 @@ dask = { version = ">=2022.9.1", optional = true, extras = [
 ] }
 datafusion = { version = ">=0.6,<0.8", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
-duckdb = { version = ">=0.3.2,<1", optional = true }
+duckdb = { version = ">=0.3.3,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 GeoAlchemy2 = { version = ">=0.6.3,<1", optional = true }
@@ -54,40 +54,45 @@ google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
 graphviz = { version = ">=0.16,<1", optional = true }
 impyla = { version = ">=0.17,<1", optional = true }
 lz4 = { version = ">=3.1.10,<5", optional = true }
-packaging = { version = ">=21.3,<23", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pyarrow = { version = ">=1,<10", optional = true }
+pyarrow = { version = ">=2,<11", optional = true }
 pymssql = { version = ">=2.2.7,<3", optional = true }
 pydata-google-auth = { version = "^1.4.0", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
+# used to support posix regexen in the pandas, dask and sqlite backends
+regex = { version = ">=2021.7.6", optional = true }
 requests = { version = ">=2,<3", optional = true }
 Shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
+# include an explicit dependency on `snowflake-connector-python` because the
+# lack of lower bound on this dependency as specified in `snowflake-sqlalchemy`
+# appears to cause poetry's solver to get stuck
+#
+# also, we don't support arbitrarily old versions of this library
+snowflake-connector-python = { version = ">=2.7.10,<3", optional = true, extras = [
+  "pandas"
+] }
+# the pandas extra here places a constraint on the version of pyarrow, which
+# prevents users from getting a completely broken environment when installing
+# the snowflake extra
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true, extras = [
+  "pandas"
+] }
 sqlalchemy = { version = ">=1.4,<2", optional = true }
-sqlglot = { version = ">=4.5.0,<11", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
-absolufy-imports = ">=0.3.1,<1"
 black = ">=22.1.0,<23"
-click = ">=8.0.1,<9"
-docformatter = ">=1.5.0,<2"
-flake8 = [
-  { version = ">=5,<7", python = ">=3.8.1" },
-  { version = ">=5,<6", python = "<3.8.1" }
-]
 ipython = ">=7.27.0,<9"
-isort = ">=5.9.3,<6"
 poetry-dynamic-versioning = ">=0.18.0,<1"
-pyupgrade = ">=2.26.0,<4"
+ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<23"
 filelock = ">=3.7.0,<4"
 packaging = ">=21.3,<23"
-pyarrow = ">=1,<10"
+pyarrow = ">=2,<11"
 pytest = ">=7.0.0,<8"
 pytest-benchmark = ">=3.4.1,<5"
 pytest-clarity = ">=1.0.1,<2"
@@ -98,6 +103,7 @@ pytest-randomly = ">=3.10.1,<4"
 pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
+hypothesis = ">=6.58.0,<7"
 sqlalchemy = ">=1.4,<2.0"
 
 [tool.poetry.group.docs.dependencies]
@@ -111,7 +117,7 @@ mkdocs-git-revision-date-plugin = ">=0.3.2,<1"
 mkdocs-jupyter = ">=0.20.0,<1"
 mkdocs-literate-nav = ">=0.4.1,<1"
 mkdocs-macros-plugin = ">=0.6.3,<1"
-mkdocs-material = ">=8.2.1,<8.5.12"
+mkdocs-material = ">=8.2.1,<9.0.2"
 mkdocs-table-reader-plugin = ">=1.0.0,<2"
 mkdocstrings = ">=0.17.0,<0.18.0"
 pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
@@ -124,30 +130,22 @@ bigquery = [
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
   "pydata-google-auth",
-  "sqlglot"
 ]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlglot"]
-dask = ["dask", "pyarrow"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
+dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
-duckdb = [
-  "duckdb",
-  "duckdb-engine",
-  "packaging",
-  "pyarrow",
-  "sqlalchemy",
-  "sqlglot"
-]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["fsspec", "impyla", "requests", "sqlglot", "sqlalchemy"]
-mssql = ["sqlalchemy", "pymssql", "sqlglot"]
-mysql = ["sqlalchemy", "pymysql", "sqlglot"]
-pandas = []
+impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
+mssql = ["sqlalchemy", "pymssql"]
+mysql = ["sqlalchemy", "pymysql"]
+pandas = ["regex"]
 polars = ["polars", "pyarrow"]
-postgres = ["psycopg2", "sqlalchemy", "sqlglot"]
+postgres = ["psycopg2", "sqlalchemy"]
 pyspark = ["pyarrow", "pyspark"]
-snowflake = ["snowflake-sqlalchemy", "sqlglot"]
-sqlite = ["sqlalchemy", "sqlglot"]
-trino = ["trino", "sqlalchemy", "sqlglot"]
+snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy"]
+sqlite = ["regex", "sqlalchemy"]
+trino = ["trino", "sqlalchemy"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
@@ -218,6 +216,8 @@ filterwarnings = [
   # numpy
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
+  # numpy, coming from a pandas call
+  'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
   # sqlalchemy: most of these can be removed once we have a lower bound of sqlalchemy 1.4
   'ignore:Dialect .+ does \*not\* support Decimal:',
   "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
@@ -226,8 +226,9 @@ filterwarnings = [
   # duckdb-engine
   'ignore:The URL\.__to_string__ method is deprecated:',
   # ibis
-  "ignore:`database` is deprecated:FutureWarning",
-  "ignore:`set_database` is deprecated:FutureWarning",
+  "ignore:`BaseBackend.database` is deprecated:FutureWarning",
+  "ignore:`Backend.database` is deprecated:FutureWarning",
+  "ignore:`Backend.set_database` is deprecated:FutureWarning",
   # ibis on postgres + windows
   "ignore:locale specific date formats:UserWarning",
   # shapely
@@ -239,6 +240,7 @@ filterwarnings = [
   "ignore: PY_SSIZE_T_CLEAN will be required for '#' formats:DeprecationWarning",
   # spark
   "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
+  "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
   # findspec
@@ -246,8 +248,7 @@ filterwarnings = [
   # duckdb-engine
   "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # snowflake
-  "ignore:You have an incompatible version of 'pyarrow' installed:UserWarning",
-  "ignore:`op` is deprecated:FutureWarning",
+  "ignore:`Node.op` is deprecated:FutureWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [
@@ -296,20 +297,67 @@ markers = [
   "adbc: ADBC tests",
 ]
 
+[tool.ruff]
+line-length = 88
+select = [
+  "B", # flake8-bugbear
+  "BLE", # flake8-blind-except
+  "C4", # comprehensions
+  "D", # pydocstyle
+  "E", # pycodestyle
+  "F", # pyflakes
+  "I", # isort
+  "ICN", # flake8-import-conventions
+  "ISC", # flake8-implicit-str-concat
+  "PGH", # pygrep-hooks
+  "PLC", # pylint
+  "PLE", # pylint
+  "PLR", # pylint import style
+  "PLW", # pylint
+  "RET", # flake8-return
+  "RUF", # ruff-specific rules
+  "SIM", # flake8-simplify
+  "T10", # flake8-debugger
+  "T20", # flake8-print
+  "TID", # flake8-tidy-imports
+  "UP", # pyupgrade
+  "W", # pycodestyle
+  "YTT", # flake8-2020
+
+]
+respect-gitignore = true
+ignore = [
+  "B904", # raise from e or raise from None in exception handlers
+  "C408", # dict(...) as literal
+  "D100", # public module
+  "D101", # public class
+  "D102", # public method
+  "D103", # public function
+  "D105", # magic methods
+  "D107", # init
+  "D202", # blank lines after function docstring
+  "D203", # blank line before class docstring
+  "D213", # Multi-line docstring summary should start at the second line
+  "D402", # First line should not be the function's signature
+  "E501",
+  "E731",
+  "PGH003",
+  "RET504",
+  "RET505",
+  "RET506",
+  "RET507",
+  "RET508",
+]
+exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
+target-version = "py38"
+
+[tool.ruff.per-file-ignores]
+"*test*.py" = ["D"] # ignore all docstring lints in tests
+
 [tool.black]
 line_length = 88
 skip_string_normalization = true
-extend_exclude = '\.ipynb|\.direnv|result(-\d+)?'
-
-[tool.isort]
-ensure_newline_before_comments = true
-line_length = 88
-multi_line_output = 3
-include_trailing_comma = true
-profile = "black"
-extend_skip = [".direnv"]
-extend_skip_glob = ["result*", "ibis/tests/*/snapshots/*"]
-skip_gitignore = true
+extend_exclude = '\.ipynb|\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
 
 [tool.conda-lock]
 channels = ["conda-forge"]

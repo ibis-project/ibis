@@ -1,5 +1,7 @@
 """The pandas client implementation."""
 
+from __future__ import annotations
+
 import json
 
 import numpy as np
@@ -35,6 +37,7 @@ _ibis_dtypes = toolz.valmap(
         dt.UInt16: np.uint16,
         dt.UInt32: np.uint32,
         dt.UInt64: np.uint64,
+        dt.Float16: np.float16,
         dt.Float32: np.float32,
         dt.Float64: np.float64,
         dt.Decimal: np.object_,
@@ -64,11 +67,11 @@ def schema_from_series(s):
 
 
 @sch.infer.register(pd.DataFrame)
-def infer_pandas_schema(df, schema=None):
+def infer_pandas_schema(df: pd.DataFrame, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name in df.dtypes.keys():
+    for column_name in df.dtypes.keys():  # noqa: SIM118
         if not isinstance(column_name, str):
             raise TypeError('Column names must be strings to use the pandas backend')
 
@@ -135,6 +138,13 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     return column
 
 
+@sch.convert.register(DatetimeTZDtype, dt.Date, pd.Series)
+def convert_timestamp_to_date(in_dtype, out_dtype, column):
+    if in_dtype.tz is not None:
+        column = column.dt.tz_convert("UTC").dt.tz_localize(None)
+    return column.astype(out_dtype.to_pandas(), errors='ignore').dt.normalize()
+
+
 @sch.convert.register(object, dt.DataType, pd.Series)
 def convert_any_to_any(_, out_dtype, column):
     try:
@@ -144,7 +154,7 @@ def convert_any_to_any(_, out_dtype, column):
             return column.map(date_parse)
         except TypeError:
             return column
-    except Exception:
+    except Exception:  # noqa: BLE001
         return column
 
 

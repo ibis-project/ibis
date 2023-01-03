@@ -1,8 +1,8 @@
 import ibis
 
 
-lit = ibis.timestamp("2018-01-01 00:00:00")
 s = ibis.table(name="s", schema={"b": "string"})
+lit = ibis.timestamp("2018-01-01 00:00:00")
 t = ibis.table(name="t", schema={"a": "int64", "b": "string", "c": "timestamp"})
 proj = t.select([t.a, t.b, t.c.name("C")])
 proj1 = proj.filter(proj.C == lit)

@@ -1,11 +1,10 @@
-import operator
-
 import numpy as np
+import numpy.testing as nt
 import pandas as pd
-import pandas._testing as tm
 import pytest
 
 import ibis
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
 @pytest.mark.parametrize('arr', [[1, 3, 5], np.array([1, 3, 5])])
@@ -14,10 +13,10 @@ def test_array_literal(client, arr, create_arr_expr):
     expr = create_arr_expr(arr)
     result = client.execute(expr)
     expected = np.array([1, 3, 5])
-    tm.assert_numpy_array_equal(result, expected)
+    nt.assert_array_equal(result, expected)
 
 
-def test_array_length(t, df):
+def test_array_length(t):
     expr = t.projection(
         [
             t.array_of_float64.length().name('array_of_float64_length'),
@@ -50,7 +49,7 @@ def test_array_collect(t, df):
     expr = t.float64_with_zeros.collect()
     result = expr.execute()
     expected = np.array(df.float64_with_zeros)
-    tm.assert_numpy_array_equal(result, expected)
+    nt.assert_array_equal(result, expected)
 
 
 def test_array_collect_grouped(t, df):
@@ -98,8 +97,7 @@ def test_array_collect_rolling_partitioned(t, df):
 def test_array_slice(t, df, start, stop):
     expr = t.array_of_strings[start:stop]
     result = expr.execute()
-    slicer = operator.itemgetter(slice(start, stop))
-    expected = df.array_of_strings.apply(slicer)
+    expected = df.array_of_strings.apply(lambda x: x[start:stop].tolist())
     tm.assert_series_equal(result, expected)
 
 
@@ -124,7 +122,7 @@ def test_array_slice_scalar(client, start, stop):
     expr = value[start:stop]
     result = client.execute(expr)
     expected = raw_value[start:stop]
-    tm.assert_numpy_array_equal(result, expected)
+    nt.assert_array_equal(result, expected)
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
@@ -134,7 +132,7 @@ def test_array_index(t, df, index):
     expected = pd.DataFrame(
         {
             'indexed': df.array_of_float64.apply(
-                lambda x: x[index] if -len(x) <= index < len(x) else None
+                lambda x: x[index] if -len(x) <= index < len(x) else np.nan
             )
         }
     )
@@ -157,7 +155,7 @@ def test_array_repeat(t, df, n, mul):
     expr = mul(t.array_of_strings, n)
     result = expr.execute()
     expected = df.apply(
-        lambda row: np.tile(row.array_of_strings, max(n, 0)),
+        lambda row: np.tile(row.array_of_strings, max(n, 0)).tolist(),
         axis=1,
     )
     tm.assert_series_equal(result, expected)
@@ -174,7 +172,7 @@ def test_array_repeat_scalar(client, n, mul):
         expected = np.tile(raw_array, n)
     else:
         expected = np.array([], dtype=raw_array.dtype)
-    tm.assert_numpy_array_equal(result, expected)
+    nt.assert_array_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -214,4 +212,4 @@ def test_array_concat_scalar(client, op, op_raw):
     expr = op(left, right)
     result = client.execute(expr)
     expected = op_raw(raw_left, raw_right)
-    tm.assert_numpy_array_equal(result, expected)
+    nt.assert_array_equal(result, expected)

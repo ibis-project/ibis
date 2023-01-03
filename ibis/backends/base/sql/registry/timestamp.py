@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.util as util
+from ibis import util
 
 
 def extract_field(sql_attr):

@@ -7,7 +7,10 @@ import re
 import tempfile
 from pathlib import Path
 
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -99,8 +102,6 @@ def test_register_with_dotted_name(data_directory, tmp_path):
 def test_register_parquet(
     tmp_path, data_directory, fname, in_table_name, out_table_name
 ):
-    pq = pytest.importorskip("pyarrow.parquet")
-
     fname = Path(fname)
     _, table = next(read_tables([fname.stem], data_directory))
 
@@ -130,7 +131,6 @@ def test_register_pandas():
 
 
 def test_register_pyarrow_tables():
-    pa = pytest.importorskip("pyarrow")
     pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
     con = ibis.duckdb.connect()
@@ -220,11 +220,9 @@ def test_temp_directory(tmp_path):
     "path", ["s3://data-lake/dataset/", "s3://data-lake/dataset/file_1.parquet"]
 )
 @pytest.mark.xfail(
-    condition=(
-        platform.system() == "Darwin"
-        and any(key.startswith("NIX_") for key in os.environ.keys())
-    ),
-    reason="pyarrow isn't built with S3 support in macOS nix builds",
+    platform.system() == "Darwin" and vparse(pa.__version__) < vparse("9"),
+    reason="pyarrow < 9 macos wheels not built with S3 support",
+    raises=pa.ArrowNotImplementedError,
 )
 def test_s3_parquet(path):
     with pytest.raises(OSError):

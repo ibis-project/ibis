@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 
 import ibis
-import ibis.expr.api as api
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+from ibis.expr import api
 
 
 def test_field_select(alltypes):
@@ -40,10 +40,8 @@ def test_string_cast_to_timestamp(alltypes):
 def test_extract_fields(field, expected_operation, expected_type, alltypes):
     # type-size may be database specific
     result = getattr(alltypes.i, field)()
-    assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, expected_operation)
+    assert isinstance(result.op(), expected_operation)
 
 
 def test_now():
@@ -122,10 +120,8 @@ def test_timestamp_field_access_on_date(
 ):
     date_col = alltypes.i.date()
     result = getattr(date_col, field)()
-    assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, expected_operation)
+    assert isinstance(result.op(), expected_operation)
 
 
 @pytest.mark.parametrize(
@@ -159,10 +155,8 @@ def test_timestamp_field_access_on_time(
 ):
     time_col = alltypes.i.time()
     result = getattr(time_col, field)()
-    assert result.get_name() == field
     assert isinstance(result, expected_type)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, expected_operation)
+    assert isinstance(result.op(), expected_operation)
 
 
 @pytest.mark.parametrize(

@@ -1,18 +1,11 @@
+from __future__ import annotations
+
 import ast
+from typing import Callable
 
 
-def matches(value, pattern):
-    """Check whether `value` matches `pattern`.
-
-    Parameters
-    ----------
-    value : ast.AST
-    pattern : ast.AST
-
-    Returns
-    -------
-    matched : bool
-    """
+def matches(value: ast.AST, pattern: ast.AST) -> bool:
+    """Check whether `value` matches `pattern`."""
     # types must match exactly
     if type(value) != type(pattern):
         return False
@@ -33,15 +26,10 @@ def matches(value, pattern):
 
 
 class Rewriter:
-    """AST pattern matching to enable rewrite rules.
-
-    Attributes
-    ----------
-    funcs : List[Tuple[ast.AST, Callable[ast.expr, [ast.expr]]]]
-    """
+    """AST pattern matcher to enable rewrite rules."""
 
     def __init__(self):
-        self.funcs = []
+        self.funcs: list[tuple[ast.AST, Callable[[ast.expr], ast.expr]]] = []
 
     def register(self, pattern):
         def wrapper(f):

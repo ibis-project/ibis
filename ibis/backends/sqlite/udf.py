@@ -6,14 +6,17 @@ import math
 import operator
 from typing import Callable
 
-import regex as re
+try:
+    import regex as re
+except ImportError:
+    import re
 
 _SQLITE_UDF_REGISTRY = set()
 _SQLITE_UDAF_REGISTRY = set()
 
 
 def udf(f):
-    """Create a SQLite scalar UDF from `f`
+    """Create a SQLite scalar UDF from `f`.
 
     Parameters
     ----------
@@ -66,51 +69,19 @@ def _ibis_sqlite_translate(string, from_string, to_string):
 
 @udf
 def _ibis_sqlite_regex_search(string, regex):
-    """Return whether `regex` exists in `string`.
-
-    Parameters
-    ----------
-    string : str
-    regex : str
-
-    Returns
-    -------
-    found : bool
-    """
+    """Return whether `regex` exists in `string`."""
     return re.search(regex, string) is not None
 
 
 @udf
 def _ibis_sqlite_regex_replace(string, pattern, replacement):
-    """Replace occurences of `pattern` in `string` with `replacement`.
-
-    Parameters
-    ----------
-    string : str
-    pattern : str
-    replacement : str
-
-    Returns
-    -------
-    result : str
-    """
+    """Replace occurences of `pattern` in `string` with `replacement`."""
     return re.sub(pattern, replacement, string)
 
 
 @udf
 def _ibis_sqlite_regex_extract(string, pattern, index):
-    """Extract match of regular expression `pattern` from `string` at `index`.
-
-    Parameters
-    ----------
-    string : str
-    pattern : str
-    index : int
-
-    Returns
-    -------
-    result : str or None
-    """
+    """Extract match of regular expression `pattern` from `string` at `index`."""
     result = re.search(pattern, string)
     if result is not None and 0 <= index <= (result.lastindex or -1):
         return result.group(index)
@@ -241,8 +212,7 @@ def _trig_func_binary(func, arg1, arg2):
 @udf
 def _ibis_sqlite_cot(arg):
     return _trig_func_unary(
-        lambda arg: float("inf") if not arg else math.cos(arg) / math.sin(arg),
-        arg,
+        lambda arg: float("inf") if not arg else 1.0 / math.tan(arg), arg
     )
 
 
@@ -299,6 +269,16 @@ def _ibis_sqlite_xor(x, y):
 @udf
 def _ibis_sqlite_inv(x):
     return None if x is None else ~x
+
+
+@udf
+def _ibis_sqlite_pi():
+    return math.pi
+
+
+@udf
+def _ibis_sqlite_e():
+    return math.e
 
 
 class _ibis_sqlite_var:
@@ -396,7 +376,8 @@ def register_all(dbapi_connection):
 
     Parameters
     ----------
-    con : sqlalchemy.Connection
+    dbapi_connection
+        sqlalchemy.Connection object
     """
     for func in _SQLITE_UDF_REGISTRY:
         dbapi_connection.create_function(

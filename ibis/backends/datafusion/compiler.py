@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import operator
 
@@ -418,7 +420,7 @@ def atan2(op):
 @translate.register(ops.Cot)
 def cot(op):
     x = translate(op.arg)
-    return df.functions.cos(x) / df.functions.sin(x)
+    return df.lit(1.0) / df.functions.tan(x)
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)

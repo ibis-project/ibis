@@ -1,4 +1,6 @@
-from typing import Any, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import pandas as pd
 
@@ -83,8 +85,8 @@ def compute_sorted_frame(df, order_by, group_by=(), timecontext=None, **kwargs):
 
 
 def coerce_to_output(
-    result: Any, node: ops.Node, index: Optional[pd.Index] = None
-) -> Union[pd.Series, pd.DataFrame]:
+    result: Any, node: ops.Node, index: pd.Index | None = None
+) -> pd.Series | pd.DataFrame:
     """Cast the result to either a Series or DataFrame.
 
     This method casts result of an execution to a Series or DataFrame,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import itertools
 import locale
@@ -19,6 +21,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     fixed_arity,
     get_sqla_table,
+    reduction,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
@@ -37,28 +40,6 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 
 if geospatial_supported:
     operation_registry.update(geospatial_functions)
-
-
-def _epoch(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.extract('epoch', sa_arg), sa.INTEGER)
-
-
-def _second(t, op):
-    # extracting the second gives us the fractional part as well, so smash that
-    # with a cast to SMALLINT
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.func.floor(sa.extract('second', sa_arg)), sa.SMALLINT)
-
-
-def _millisecond(t, op):
-    # we get total number of milliseconds including seconds with extract so we
-    # mod 1000
-    sa_arg = t.translate(op.arg)
-    return sa.cast(
-        sa.func.floor(sa.extract('millisecond', sa_arg)) % 1000,
-        sa.SMALLINT,
-    )
 
 
 _truncate_precisions = {
@@ -82,23 +63,6 @@ def _timestamp_truncate(t, op):
     except KeyError:
         raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
     return sa.func.date_trunc(precision, sa_arg)
-
-
-def _interval_from_integer(t, op):
-    sa_arg = t.translate(op.arg)
-    interval = sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
-    return sa_arg * interval
-
-
-def _is_nan(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa_arg == float('nan')
-
-
-def _is_inf(t, op):
-    sa_arg = t.translate(op.arg)
-    inf = float('inf')
-    return sa.or_(sa_arg == inf, sa_arg == -inf)
 
 
 def _typeof(t, op):
@@ -252,16 +216,14 @@ def _reduce_tokens(tokens, arg):
         # uninteresting text
         else:
             curtokens.append(token)
-    else:
-        # append result to r if we had more tokens or if we have no
-        # blacklisted tokens
-        if curtokens:
-            reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
+    # append result to r if we had more tokens or if we have no
+    # blacklisted tokens
+    if curtokens:
+        reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
     return reduced
 
 
-def _strftime(t, op):
-    arg, pattern = map(t.translate, op.args)
+def _strftime(arg, pattern):
     tokens, _ = _scanner.scan(pattern.value)
     reduced = _reduce_tokens(tokens, arg)
     return functools.reduce(sa.sql.ColumnElement.concat, reduced)
@@ -283,13 +245,6 @@ def _find_in_set(t, op):
     )
 
 
-def _regex_replace(t, op):
-    string, pattern, replacement = map(t.translate, op.args)
-
-    # postgres defaults to replacing only the first occurrence
-    return sa.func.regexp_replace(string, pattern, replacement, 'g')
-
-
 def _log(t, op):
     arg, base = op.args
     sa_arg = t.translate(arg)
@@ -302,22 +257,14 @@ def _log(t, op):
     return sa.func.ln(sa_arg)
 
 
-def _regex_extract(t, op):
-    arg = t.translate(op.arg)
+def _regex_extract(arg, pattern, index):
     # wrap in parens to support 0th group being the whole string
-    pattern = "(" + t.translate(op.pattern) + ")"
+    pattern = "(" + pattern + ")"
     # arrays are 1-based in postgres
-    index = t.translate(op.index) + 1
+    index = index + 1
     does_match = sa.func.textregexeq(arg, pattern)
     matches = sa.func.regexp_match(arg, pattern, type_=pg.ARRAY(sa.TEXT))
     return sa.case([(does_match, matches[index])], else_=None)
-
-
-def _cardinality(array):
-    return sa.case(
-        [(array.is_(None), None)],  # noqa: E711
-        else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
-    )
 
 
 def _array_repeat(t, op):
@@ -325,15 +272,13 @@ def _array_repeat(t, op):
     arg = t.translate(op.arg)
     times = t.translate(op.times)
 
-    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
-    # expression to workaround this.
-    array = sa.column(arg.name, type_=arg.type)
+    array = sa.sql.elements.Grouping(arg) if isinstance(op.arg, ops.Literal) else arg
 
     # We still need to prefix the table name to the column name in the final
     # query, so make sure the column knows its origin
     array.table = arg.table
 
-    array_length = _cardinality(array)
+    array_length = sa.func.cardinality(array)
 
     # sequence from 1 to the total number of elements desired in steps of 1.
     # the call to greatest isn't necessary, but it provides clearer intent
@@ -406,28 +351,40 @@ def _mod(t, op):
 
 
 def _neg_idx_to_pos(array, idx):
-    return sa.case(
-        [
-            (array.is_(None), None),
-            (idx < 0, sa.func.array_length(array, 1) + idx),
-        ],
-        else_=idx,
-    )
+    return sa.case([(idx < 0, sa.func.cardinality(array) + idx)], else_=idx)
 
 
-def _array_slice(t, op):
-    arg, start, stop = op.args
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
+def _array_slice(*, index_converter, array_length):
+    def translate(t, op):
+        arg = t.translate(op.arg)
 
-    if stop is None:
-        sa_stop = _cardinality(sa_arg)
-    else:
-        sa_stop = t.translate(stop)
+        arg_length = array_length(arg)
 
-    sa_start = _neg_idx_to_pos(sa_arg, sa_start)
-    sa_stop = _neg_idx_to_pos(sa_arg, sa_stop)
-    return sa_arg[sa_start + 1 : sa_stop]
+        if (start := op.start) is None:
+            start = 0
+        else:
+            start = t.translate(start)
+            start = sa.func.least(arg_length, index_converter(arg, start))
+
+        if (stop := op.stop) is None:
+            stop = arg_length
+        else:
+            stop = index_converter(arg, t.translate(stop))
+
+        return arg[start + 1 : stop]
+
+    return translate
+
+
+def _array_index(*, index_converter):
+    def translate(t, op):
+        sa_array = t.translate(op.arg)
+        sa_index = t.translate(op.index)
+        if isinstance(op.arg, ops.Literal):
+            sa_array = sa.sql.elements.Grouping(sa_array)
+        return sa_array[index_converter(sa_array, sa_index) + 1]
+
+    return translate
 
 
 def _literal(_, op):
@@ -449,20 +406,6 @@ def _literal(_, op):
         )
     else:
         return sa.literal(value)
-
-
-def _day_of_week_index(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.cast(sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT)
-
-
-def _day_of_week_name(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
-
-
-def _array_column(t, op):
-    return pg.array(list(map(t.translate, op.cols)))
 
 
 def _string_agg(t, op):
@@ -515,13 +458,6 @@ def _binary_variance_reduction(func):
     return variance_compiler
 
 
-def _array_collect(t, op):
-    result = sa.func.array_agg(t.translate(op.arg))
-    if (where := op.where) is not None:
-        return result.filter(t.translate(where))
-    return result
-
-
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -530,8 +466,10 @@ operation_registry.update(
         # types
         ops.TypeOf: _typeof,
         # Floating
-        ops.IsNan: _is_nan,
-        ops.IsInf: _is_inf,
+        ops.IsNan: fixed_arity(lambda arg: arg == float('nan'), 1),
+        ops.IsInf: fixed_arity(
+            lambda arg: sa.or_(arg == float('inf'), arg == float('-inf')), 1
+        ),
         # null handling
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),
         # boolean reductions
@@ -543,9 +481,15 @@ operation_registry.update(
         ops.GroupConcat: _string_agg,
         ops.Capitalize: unary(sa.func.initcap),
         ops.RegexSearch: fixed_arity(lambda x, y: x.op("~")(y), 2),
-        ops.RegexReplace: _regex_replace,
+        # postgres defaults to replacing only the first occurrence
+        ops.RegexReplace: fixed_arity(
+            lambda string, pattern, replacement: sa.func.regexp_replace(
+                string, pattern, replacement, 'g'
+            ),
+            3,
+        ),
         ops.Translate: fixed_arity('translate', 3),
-        ops.RegexExtract: _regex_extract,
+        ops.RegexExtract: fixed_arity(_regex_extract, 3),
         ops.StringSplit: fixed_arity(
             lambda col, sep: sa.func.string_to_array(
                 col, sep, type_=sa.ARRAY(col.type)
@@ -563,34 +507,60 @@ operation_registry.update(
         ops.DateFromYMD: fixed_arity(sa.func.make_date, 3),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
-        ops.IntervalFromInteger: _interval_from_integer,
+        ops.IntervalFromInteger: (
+            lambda t, op: t.translate(op.arg)
+            * sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
+        ),
         ops.DateAdd: fixed_arity(operator.add, 2),
         ops.DateSub: fixed_arity(operator.sub, 2),
         ops.DateDiff: fixed_arity(operator.sub, 2),
         ops.TimestampAdd: fixed_arity(operator.add, 2),
         ops.TimestampSub: fixed_arity(operator.sub, 2),
         ops.TimestampDiff: fixed_arity(operator.sub, 2),
-        ops.Strftime: _strftime,
-        ops.ExtractEpochSeconds: _epoch,
+        ops.Strftime: fixed_arity(_strftime, 2),
+        ops.ExtractEpochSeconds: fixed_arity(
+            lambda arg: sa.cast(sa.extract('epoch', arg), sa.INTEGER), 1
+        ),
         ops.ExtractDayOfYear: _extract('doy'),
         ops.ExtractWeekOfYear: _extract('week'),
-        ops.ExtractSecond: _second,
-        ops.ExtractMillisecond: _millisecond,
-        ops.DayOfWeekIndex: _day_of_week_index,
-        ops.DayOfWeekName: _day_of_week_name,
+        # extracting the second gives us the fractional part as well, so smash that
+        # with a cast to SMALLINT
+        ops.ExtractSecond: fixed_arity(
+            lambda arg: sa.cast(sa.func.floor(sa.extract('second', arg)), sa.SMALLINT),
+            1,
+        ),
+        # we get total number of milliseconds including seconds with extract so we
+        # mod 1000
+        ops.ExtractMillisecond: fixed_arity(
+            lambda arg: sa.cast(
+                sa.func.floor(sa.extract('millisecond', arg)) % 1000,
+                sa.SMALLINT,
+            ),
+            1,
+        ),
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda arg: sa.cast(
+                sa.cast(sa.extract('dow', arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+            ),
+            1,
+        ),
+        ops.DayOfWeekName: fixed_arity(
+            lambda arg: sa.func.trim(sa.func.to_char(arg, 'Day')), 1
+        ),
         # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
-        ops.ArrayLength: unary(_cardinality),
-        ops.ArrayCollect: _array_collect,
-        ops.ArrayColumn: _array_column,
-        ops.ArraySlice: _array_slice,
-        ops.ArrayIndex: fixed_arity(
-            lambda array, index: array[_neg_idx_to_pos(array, index) + 1], 2
+        ops.ArrayLength: unary(sa.func.cardinality),
+        ops.ArrayCollect: reduction(sa.func.array_agg),
+        ops.ArrayColumn: (lambda t, op: pg.array(list(map(t.translate, op.cols)))),
+        ops.ArraySlice: _array_slice(
+            index_converter=_neg_idx_to_pos,
+            array_length=sa.func.cardinality,
         ),
+        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
         ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),

@@ -7,9 +7,8 @@ import functools
 import itertools
 import operator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, TypeVar
 from typing import Tuple as _Tuple
-from typing import TypeVar
 from typing import Union as _Union
 
 import dateutil.parser
@@ -22,81 +21,17 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import connect
-from ibis.common.pretty import show_sql, to_sql
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
-from ibis.expr.types import (  # noqa: F401
-    ArrayColumn,
-    ArrayScalar,
-    ArrayValue,
-    BooleanColumn,
-    BooleanScalar,
-    BooleanValue,
-    CategoryScalar,
-    CategoryValue,
-    Column,
-    DateColumn,
-    DateScalar,
+from ibis.expr.sql import parse_sql, show_sql, to_sql
+from ibis.expr.types import (
     DateValue,
-    DecimalColumn,
-    DecimalScalar,
-    DecimalValue,
     Expr,
-    FloatingColumn,
-    FloatingScalar,
-    FloatingValue,
-    GeoSpatialColumn,
-    GeoSpatialScalar,
-    GeoSpatialValue,
     IntegerColumn,
-    IntegerScalar,
-    IntegerValue,
-    IntervalColumn,
-    IntervalScalar,
-    IntervalValue,
-    LineStringColumn,
-    LineStringScalar,
-    LineStringValue,
-    MapColumn,
-    MapScalar,
-    MapValue,
-    MultiLineStringColumn,
-    MultiLineStringScalar,
-    MultiLineStringValue,
-    MultiPointColumn,
-    MultiPointScalar,
-    MultiPointValue,
-    MultiPolygonColumn,
-    MultiPolygonScalar,
-    MultiPolygonValue,
-    NullColumn,
-    NullScalar,
-    NullValue,
-    NumericColumn,
-    NumericScalar,
-    NumericValue,
-    PointColumn,
-    PointScalar,
-    PointValue,
-    PolygonColumn,
-    PolygonScalar,
-    PolygonValue,
-    Scalar,
-    StringColumn,
-    StringScalar,
     StringValue,
-    StructColumn,
-    StructScalar,
-    StructValue,
     Table,
-    TimeColumn,
-    TimeScalar,
-    TimestampColumn,
-    TimestampScalar,
-    TimestampValue,
     TimeValue,
-    Value,
     array,
     literal,
     map,
@@ -200,6 +135,7 @@ __all__ = (
     'null',
     'or_',
     'param',
+    'parse_sql',
     'pi',
     'random',
     'range_window',
@@ -336,7 +272,7 @@ def schema(
     -------
     Schema
         An ibis schema
-    """  # noqa: E501
+    """
     if pairs is not None:
         return sch.schema(pairs)
     else:
@@ -630,6 +566,8 @@ def timestamp(
     ----------
     value
         The value to use for constructing the timestamp
+    args
+        Additional arguments used when constructing a timestamp
     timezone
         The timezone of the timestamp
 
@@ -854,7 +792,7 @@ def case() -> bl.SearchedCaseBuilder:
     -------
     SearchedCaseBuilder
         A builder object to use for constructing a case expression.
-    """  # noqa: E501
+    """
     return bl.SearchedCaseBuilder()
 
 

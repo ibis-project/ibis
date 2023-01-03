@@ -11,6 +11,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
 
@@ -355,7 +356,7 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -370,7 +371,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -703,7 +704,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake", "trino"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -737,7 +738,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "trino"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -767,7 +768,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "trino"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -775,7 +776,7 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake", "trino"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -783,7 +784,7 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake", "trino"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()
@@ -812,3 +813,21 @@ def test_interactive(alltypes):
 def test_correlated_subquery(alltypes):
     expr = alltypes[_.double_col > _.view().double_col]
     assert expr.compile() is not None
+
+
+def test_int_column(alltypes):
+    expr = alltypes.mutate(x=1).x
+    result = expr.execute()
+    assert expr.type() == dt.int8
+    assert result.dtype == np.int8
+
+
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.never(
+    ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
+)
+def test_int_scalar(alltypes):
+    expr = alltypes.smallint_col.min()
+    result = expr.execute()
+    assert expr.type() == dt.int16
+    assert result.dtype == np.int16

@@ -1,1 +1,1 @@
-`string_col` LIKE 'foo%'
+string_col LIKE 'foo%'

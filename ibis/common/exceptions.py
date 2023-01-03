@@ -1,4 +1,3 @@
-"""Module for exceptions."""
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Module for exceptions."""
+
+from __future__ import annotations
+
 from typing import Callable
 
 
@@ -90,26 +93,11 @@ class BackendConfigurationNotRegistered(IbisError):
 
 
 def mark_as_unsupported(f: Callable) -> Callable:
-    """Decorate an unsupported method.
-
-    Parameters
-    ----------
-    f : callable
-
-    Returns
-    -------
-    callable
-
-    Raises
-    ------
-    UnsupportedOperationError
-    """
+    """Decorate an unsupported method."""
     # function that raises UnsupportedOperationError
     def _mark_as_unsupported(self):
         raise UnsupportedOperationError(
-            'Method `{}` are unsupported by class `{}`.'.format(
-                f.__name__, self.__class__.__name__
-            )
+            f'Method `{f.__name__}` is unsupported by class `{self.__class__.__name__}`.'
         )
 
     _mark_as_unsupported.__doc__ = f.__doc__

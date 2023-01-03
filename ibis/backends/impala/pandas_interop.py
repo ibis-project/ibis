@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,16 +13,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import contextlib
 import csv
 import os
 import tempfile
 from posixpath import join as pjoin
 
+import ibis.backends.pandas.client  # noqa: F401
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-import ibis.util as util
+from ibis import util
 from ibis.config import options
 
 

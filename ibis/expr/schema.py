@@ -49,7 +49,13 @@ class Schema(Concrete):
     names = tuple_of(instance_of((str, UnnamedMarker)))
     """A sequence of [`str`][str] indicating the name of each column."""
     types = tuple_of(datatype)
-    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects representing type of each column."""  # noqa: E501
+    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
+    representing type of each column."""
+
+    def __init__(self, names, types):
+        if len(names) != len(types):
+            raise IntegrityError('Schema names and types must have the same length')
+        super().__init__(names=names, types=types)
 
     @attribute.default
     def _name_locs(self) -> dict[str, int]:
@@ -57,7 +63,7 @@ class Schema(Concrete):
         name_locs = {v: i for i, v in enumerate(self.names)}
         if len(name_locs) < len(self.names):
             duplicate_names = list(self.names)
-            for v in name_locs.keys():
+            for v in name_locs:
                 duplicate_names.remove(v)
             raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
         return name_locs
@@ -88,24 +94,24 @@ class Schema(Concrete):
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
+
         Parameters
         ----------
         other
             Schema to compare `self` to.
+
         Examples
         --------
         >>> import ibis
         >>> first = ibis.schema({"a": "int"})
         >>> second = ibis.schema({"a": "int"})
-        >>> first.equals(second)
-        True
+        >>> assert first.equals(second)
         >>> third = ibis.schema({"a": "array<int>"})
-        >>> first.equals(third)
-        False
+        >>> assert not first.equals(third)
         """
         if not isinstance(other, Schema):
             raise TypeError(
-                "invalid equality comparison between Schema and " f"{type(other)}"
+                f"invalid equality comparison between Schema and {type(other)}"
             )
         return self.__cached_equals__(other)
 

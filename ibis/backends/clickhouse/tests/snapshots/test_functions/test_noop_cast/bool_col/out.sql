@@ -1,1 +1,1 @@
-`bool_col`
+bool_col

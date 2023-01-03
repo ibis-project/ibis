@@ -6,6 +6,7 @@ import operator
 import re
 from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
+import numpy as np
 import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
@@ -155,12 +156,18 @@ def get_aggcontext_window(
     output_type = operand.output_dtype
 
     aggcontext: agg_ctx.AggregationContext
+
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
-    elif (
-        isinstance(operand, (ops.Reduction, ops.CumulativeOp, ops.Any, ops.All))
-        and order_by
-    ):
+    elif group_by and not order_by:
+        # groupby transform (window with a partition by clause in SQL parlance)
+        aggcontext = agg_ctx.Transform(
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            output_type=output_type,
+        )
+    else:
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
@@ -182,14 +189,6 @@ def get_aggcontext_window(
                 order_by=order_by,
                 output_type=output_type,
             )
-    else:
-        # groupby transform (window with a partition by clause in SQL parlance)
-        aggcontext = agg_ctx.Transform(
-            parent=parent,
-            group_by=group_by,
-            order_by=order_by,
-            output_type=output_type,
-        )
 
     return aggcontext
 
@@ -208,8 +207,8 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
     data: pd.Series or pd.DataFrame
     timecontext: Optional[TimeContext]
 
-    Returns:
-    ------
+    Returns
+    -------
     a trimmed pd.Series or or pd.DataFrame with the same Multiindex
     as data's
     """
@@ -475,8 +474,7 @@ def execute_series_lead_lag(op, data, offset, default, **kwargs):
 def execute_series_lead_lag_timedelta(
     op, data, offset, default, aggcontext=None, **kwargs
 ):
-    """An implementation of shifting a column relative to another one that is
-    in units of time rather than rows."""
+    """Shift a column relative to another one in units of time instead of rows."""
     # lagging adds time (delayed), leading subtracts time (moved up)
     func = operator.add if isinstance(op, ops.Lag) else operator.sub
     group_by = aggcontext.group_by
@@ -515,9 +513,13 @@ def execute_series_first_value(op, data, **kwargs):
     return data.values[0]
 
 
+def _getter(x: pd.Series | np.ndarray, idx: int):
+    return getattr(x, "values", x)[idx]
+
+
 @execute_node.register(ops.FirstValue, SeriesGroupBy)
 def execute_series_group_by_first_value(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'first')
+    return aggcontext.agg(data, lambda x: _getter(x, 0))
 
 
 @execute_node.register(ops.LastValue, pd.Series)
@@ -527,7 +529,7 @@ def execute_series_last_value(op, data, **kwargs):
 
 @execute_node.register(ops.LastValue, SeriesGroupBy)
 def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'last')
+    return aggcontext.agg(data, lambda x: _getter(x, -1))
 
 
 @execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))

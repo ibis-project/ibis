@@ -15,6 +15,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -134,8 +135,8 @@ def test_over_auto_bind(alltypes):
     # TODO(kszucs): the window object doesn't apply the rules for the sorting
     # keys, so need to wrap the expected order key with a SortKey for now
     # on long term we should refactor the window object to a WindowFrame op
-    actual_window = expr.op().args[1]  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+    actual_window = expr.op().args[1]
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))
 
     assert_equal(actual_window, expected)
 
@@ -148,8 +149,8 @@ def test_window_function_bind(alltypes):
 
     expr = t.f.lag().over(w)
 
-    actual_window = expr.op().args[1]  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))  # noqa
+    actual_window = expr.op().args[1]
+    expected = ibis.window(group_by=t.g, order_by=ops.SortKey(t.f))
 
     assert_equal(actual_window, expected)
 
@@ -181,38 +182,44 @@ def test_window_bind_to_table(alltypes):
     t = alltypes
     w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
-    w2 = w.bind(alltypes)  # noqa
-    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))  # noqa
+    w2 = w.bind(alltypes)
+    expected = ibis.window(group_by=t.g, order_by=ibis.desc(t.f))
 
     assert_equal(w2, expected)
 
 
-def test_preceding_following_validate(alltypes):
+def test_preceding_following_validate_works():
     # these all work
+    ibis.window(preceding=0)
+    ibis.window(following=0)
+    ibis.window(preceding=0, following=0)
+    ibis.window(preceding=(None, 4))
+    ibis.window(preceding=(10, 4))
+    ibis.window(following=(4, None))
+    ibis.window(following=(4, 10))
+
+
+@pytest.mark.parametrize(
+    "case",
     [
-        ibis.window(preceding=0),
-        ibis.window(following=0),
-        ibis.window(preceding=0, following=0),
-        ibis.window(preceding=(None, 4)),
-        ibis.window(preceding=(10, 4)),
-        ibis.window(following=(4, None)),
-        ibis.window(following=(4, 10)),
-    ]
-
-    # these are ill-specified
-    error_cases = [
-        lambda: ibis.window(preceding=(1, 3)),
-        lambda: ibis.window(preceding=(3, 1), following=2),
-        lambda: ibis.window(preceding=(3, 1), following=(2, 4)),
-        lambda: ibis.window(preceding=-1),
-        lambda: ibis.window(following=-1),
-        lambda: ibis.window(preceding=(-1, 2)),
-        lambda: ibis.window(following=(2, -1)),
-    ]
-
-    for i, case in enumerate(error_cases):
-        with pytest.raises(Exception):
-            case()
+        param(lambda: ibis.window(preceding=(1, 3)), id="double_preceding"),
+        param(
+            lambda: ibis.window(preceding=(3, 1), following=2),
+            id="preceding_and_following",
+        ),
+        param(
+            lambda: ibis.window(preceding=(3, 1), following=(2, 4)),
+            id="preceding_and_following2",
+        ),
+        param(lambda: ibis.window(preceding=-1), id="negative_preceding"),
+        param(lambda: ibis.window(following=-1), id="negative_following"),
+        param(lambda: ibis.window(preceding=(-1, 2)), id="invalid_preceding"),
+        param(lambda: ibis.window(following=(2, -1)), id="invalid_following"),
+    ],
+)
+def test_preceding_following_validate_fails(case):
+    with pytest.raises(com.IbisInputError):
+        case()
 
 
 def test_max_rows_with_lookback_validate(alltypes):

@@ -1,119 +1,82 @@
+from __future__ import annotations
+
+from abc import abstractmethod
+
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis.common.grounds import Annotable
+from ibis.common.grounds import Concrete
 
 
-class TypedCaseBuilder(Annotable):
+class Builder(Concrete):
+    @property
+    @abstractmethod
+    def __type__(self):
+        ...
+
+
+class CaseBuilder(Builder):
+    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
+    default = rlz.optional(rlz.any)
+
     def type(self):
         return rlz.highest_precedence_dtype(self.results)
 
-    def else_(self, result_expr):
-        """Specify.
+    def when(self, case_expr, result_expr):
+        """Add a new case-result pair.
 
-        Returns
-        -------
-        builder : CaseBuilder
+        Parameters
+        ----------
+        case_expr
+            Expression to equality-compare with base expression. Must be
+            comparable with the base.
+        result_expr
+            Value when the case predicate evaluates to true.
         """
-        kwargs = {
-            slot: getattr(self, slot) for slot in self.__slots__ if slot != 'default'
-        }
+        cases = self.cases + (case_expr,)
+        results = self.results + (result_expr,)
+        return self.copy(cases=cases, results=results)
 
-        result_expr = rlz.any(result_expr)
-        kwargs['default'] = result_expr
-        # Maintain immutability
-        return type(self)(**kwargs)
+    def else_(self, result_expr):
+        """Construct an `ELSE` expression."""
+        return self.copy(default=result_expr)
 
     def end(self):
         default = self.default
         if default is None:
             default = ir.null().cast(self.type())
 
-        args = [getattr(self, slot) for slot in self.__slots__ if slot != 'default']
-        args.append(default)
+        kwargs = dict(zip(self.__argnames__, self.__args__))
+        kwargs["default"] = default
 
-        op = self.__class__.op(*args)
-        return op.to_expr()
+        return self.__type__(**kwargs).to_expr()
 
 
-class SimpleCaseBuilder(TypedCaseBuilder):
-    op = ops.SimpleCase
+class SearchedCaseBuilder(CaseBuilder):
+    __type__ = ops.SearchedCase
+    cases = rlz.optional(rlz.tuple_of(rlz.boolean), default=[])
 
+
+class SimpleCaseBuilder(CaseBuilder):
+    __type__ = ops.SimpleCase
     base = rlz.any
     cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    default = rlz.optional(rlz.any)
 
     def when(self, case_expr, result_expr):
         """Add a new case-result pair.
 
         Parameters
         ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-
-        Returns
-        -------
-        builder : CaseBuilder
+        case_expr
+            Expression to equality-compare with base expression. Must be
+            comparable with the base.
+        result_expr
+            Value when the case predicate evaluates to true.
         """
-
-        # TODO(kszucs): update the rule to accept boolean predicate
         case_expr = rlz.any(case_expr)
-        result_expr = rlz.any(result_expr)
-
         if not rlz.comparable(self.base, case_expr):
             raise TypeError(
                 f'Base expression {rlz._arg_type_error_format(self.base)} and '
                 f'case {rlz._arg_type_error_format(case_expr)} are not comparable'
             )
-
-        cases = list(self.cases)
-        cases.append(case_expr)
-
-        results = list(self.results)
-        results.append(result_expr)
-
-        # Maintain immutability
-        return type(self)(self.base, cases, results, self.default)
-
-
-class SearchedCaseBuilder(TypedCaseBuilder):
-    op = ops.SearchedCase
-
-    cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    default = rlz.optional(rlz.any)
-
-    def when(self, case_expr, result_expr):
-        """Add a new case-result pair.
-
-        Parameters
-        ----------
-        case : Expr
-          Expression to equality-compare with base expression. Must be
-          comparable with the base.
-        result : Expr
-          Value when the case predicate evaluates to true.
-
-        Returns
-        -------
-        builder : CaseBuilder
-        """
-        # TODO(kszucs): update the rule to accept boolean predicate
-        case_expr = rlz.any(case_expr)
-        result_expr = rlz.any(result_expr)
-
-        if not case_expr.output_dtype.is_boolean():
-            raise TypeError(case_expr)
-
-        cases = list(self.cases)
-        cases.append(case_expr)
-
-        results = list(self.results)
-        results.append(result_expr)
-
-        # Maintain immutability
-        return type(self)(cases, results, self.default)
+        return super().when(case_expr, result_expr)

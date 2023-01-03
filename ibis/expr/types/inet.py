@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from public import public
 
 from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
@@ -5,29 +7,29 @@ from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
 
 @public
 class MACADDRValue(StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class MACADDRScalar(StringScalar, MACADDRValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class MACADDRColumn(StringColumn, MACADDRValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class INETValue(StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class INETScalar(StringScalar, INETValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 @public
 class INETColumn(StringColumn, INETValue):
-    pass  # noqa: E701,E302
+    pass

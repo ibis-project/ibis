@@ -17,10 +17,8 @@ lock:
 
 # format code
 fmt:
-    absolufy-imports ibis/**/*.py
+    ruff --fix .
     black .
-    isort .
-    pyupgrade --py38-plus --keep-runtime-typing ibis/**/*.py
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:
@@ -33,8 +31,7 @@ ci-check *args:
 # lint code
 lint:
     black -q . --check
-    isort -q . --check
-    flake8 .
+    ruff .
 
 # run the test suite for one or more backends
 test +backends:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 
@@ -12,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.execution.window import trim_window_result
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr.scope import Scope
 from ibis.expr.timecontext import (
     TimeContextRelation,
@@ -188,13 +188,13 @@ def test_setting_timecontext_in_scope(time_table, time_df3):
 
     context = pd.Timestamp('20170105'), pd.Timestamp('20170111')
     window1 = ibis.trailing_window(3 * ibis.interval(days=1), order_by=time_table.time)
-    """
-    In the following expression, Selection node will be executed first and
-    get table in context ('20170105', '20170101'). Then in window execution
-    table will be executed again with a larger context adjusted by window
-    preceeding days ('20170102', '20170111'). To get the correct result,
-    the cached table result with a smaller context must be discard and updated
-    to a larger time range.
+    """In the following expression, Selection node will be executed first and
+    get table in context ('20170105', '20170101').
+
+    Then in window execution table will be executed again with a larger
+    context adjusted by window preceeding days ('20170102', '20170111').
+    To get the correct result, the cached table result with a smaller
+    context must be discard and updated to a larger time range.
     """
     expr = time_table.mutate(value=time_table['value'].mean().over(window1))
     result = expr.execute(timecontext=context)

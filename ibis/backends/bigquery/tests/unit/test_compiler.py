@@ -408,9 +408,13 @@ def test_identical_to(alltypes, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-@pytest.mark.parametrize("timezone", [None, "America/New_York"])
-def test_to_timestamp(alltypes, timezone, snapshot):
-    expr = alltypes.date_string_col.to_timestamp("%F", timezone)
+def test_to_timestamp_no_timezone(alltypes, snapshot):
+    expr = alltypes.date_string_col.to_timestamp("%F")
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+def test_to_timestamp_timezone(alltypes, snapshot):
+    expr = (alltypes.date_string_col + " America/New_York").to_timestamp("%F %Z")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -563,18 +567,13 @@ def test_cov_invalid_how(alltypes):
         d.cov(d, how="error")
 
 
-def test_compile_toplevel():
+def test_compile_toplevel(snapshot):
     t = ibis.table([("foo", "double")], name="t0")
 
     # it works!
     expr = t.foo.sum()
     result = to_sql(expr)
-    # FIXME: remove quotes because bigquery can't use anythig that needs
-    # quoting?
-    expected = """\
-SELECT sum(`foo`) AS `sum`
-FROM t0"""  # noqa
-    assert str(result) == expected
+    snapshot.assert_match(result, "out.sql")
 
 
 def test_scalar_param_scope(alltypes):

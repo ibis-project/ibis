@@ -5,7 +5,6 @@ from typing import MutableMapping
 
 
 class WeakCache(MutableMapping):
-
     __slots__ = ('_data',)
 
     def __init__(self):

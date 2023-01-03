@@ -1,1 +1,1 @@
-`timestamp_col`
+timestamp_col

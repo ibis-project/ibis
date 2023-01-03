@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,7 +13,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from io import StringIO
 
 
@@ -86,9 +87,7 @@ def _try_int(x):
 
 
 class MetadataParser:
-
-    """A simple state-ish machine to parse the results of DESCRIBE
-    FORMATTED."""
+    """A simple state machine to parse the results of `DESCRIBE FORMATTED`."""
 
     def __init__(self, table):
         self.table = table
@@ -282,9 +281,7 @@ def _get_meta(attr, key):
 
 
 class TableMetadata:
-
-    """Container for the parsed and wrangled results of DESCRIBE FORMATTED for
-    easier Ibis use (and testing)."""
+    """Container for the parsed and wrangled results of `DESCRIBE FORMATTED`."""
 
     def __init__(self, schema, info, storage, partitions=None):
         self.schema = schema
@@ -308,7 +305,7 @@ class TableMetadata:
         if self.partitions is not None:
             data['partition schema'] = self.partitions
 
-        pprint.pprint(data, stream=buf)
+        pprint.pprint(data, stream=buf)  # noqa: T203
 
         return buf.getvalue()
 

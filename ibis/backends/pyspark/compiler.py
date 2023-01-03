@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import enum
 import functools
@@ -17,18 +19,14 @@ import ibis.expr.types as ir
 from ibis import interval
 from ibis.backends.pandas.client import PandasInMemoryTable
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pyspark.datatypes import (
-    ibis_array_dtype_to_spark_dtype,
-    ibis_dtype_to_spark_dtype,
-    spark_dtype,
-)
+from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.pyspark.timecontext import (
     combine_time_context,
     filter_by_time_context,
 )
 from ibis.config import options
 from ibis.expr.timecontext import adjust_context
-from ibis.util import frozendict, guid
+from ibis.util import any_of, frozendict, guid
 
 
 class PySparkDatabaseTable(ops.DatabaseTable):
@@ -59,17 +57,29 @@ class PySparkExprTranslator:
         found within scope, it's returned. Otherwise, the it's translated and
         cached for future reference.
 
-        :param expr: ibis expression
-        :param scope: dictionary mapping from operation to translated result
-        :param timecontext: time context associated with expr
-        :param kwargs: parameters passed as keyword args (e.g. window)
-        :return: translated PySpark DataFrame or Column object
+        Parameters
+        ----------
+        op
+            An ibis operation.
+        scope
+            dictionary mapping from operation to translated result
+        timecontext
+            time context associated with expr
+        kwargs
+            parameters passed as keyword args
+
+        Returns
+        -------
+        pyspark.sql.DataFrame
+            translated PySpark DataFrame or Column object
         """
-        result = scope.get_value(op, timecontext)
-        if result is not None:
+
+        if (
+            not isinstance(op, ops.ScalarParameter)
+            and (result := scope.get_value(op, timecontext)) is not None
+        ):
             return result
-        elif type(op) in self._registry:
-            formatter = self._registry[type(op)]
+        elif (formatter := self._registry.get(type(op))) is not None:
             result = formatter(self, op, scope=scope, timecontext=timecontext, **kwargs)
             scope.set_value(op, timecontext, result)
             return result
@@ -97,9 +107,10 @@ def compile_sql_query_result(t, op, **kwargs):
 
 
 def _can_be_replaced_by_column_name(column, table):
-    """Return whether the given column_expr can be replaced by its literal
-    name, which is True when column_expr and table[column_expr.get_name()] is
-    semantically the same."""
+    """Return whether the given `column` can be replaced by its literal name.
+
+    `True` when `column` and `table[column.get_name()]` are semantically equivalent.
+    """
     # Each check below is necessary to distinguish a pure projection from
     # other valid selections, such as a mutation that assigns a new column
     # or changes the value of an existing column.
@@ -225,6 +236,16 @@ def compile_struct_field(t, op, **kwargs):
     return arg[op.field]
 
 
+@compiles(ops.StructColumn)
+def compile_struct_column(t, op, **kwargs):
+    return F.struct(
+        *(
+            t.translate(col, **kwargs).alias(name)
+            for name, col in zip(op.names, op.values)
+        )
+    )
+
+
 @compiles(ops.SelfReference)
 def compile_self_reference(t, op, **kwargs):
     return t.translate(op.table, **kwargs)
@@ -241,10 +262,7 @@ def compile_cast(t, op, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
-    if op.to.is_array():
-        cast_type = ibis_array_dtype_to_spark_dtype(op.to)
-    else:
-        cast_type = ibis_dtype_to_spark_dtype(op.to)
+    cast_type = spark_dtype(op.to)
 
     src_column = t.translate(op.arg, **kwargs)
     return src_column.cast(cast_type)
@@ -326,7 +344,7 @@ def compile_subtract(t, op, **kwargs):
 @compiles(ops.Literal)
 @compile_nan_as_null
 def compile_literal(t, op, *, raw=False, **kwargs):
-    """If raw is True, don't wrap the result with F.lit()"""
+    """If raw is True, don't wrap the result with F.lit()."""
     import pandas as pd
 
     value = op.value
@@ -346,8 +364,10 @@ def compile_literal(t, op, *, raw=False, **kwargs):
             return set(value)
         else:
             return value
-    elif isinstance(value, tuple):
+    elif dtype.is_array():
         return F.array(*map(F.lit, value))
+    elif dtype.is_struct():
+        return F.struct(*(F.lit(val).alias(name) for name, val in value.items()))
     else:
         if isinstance(value, pd.Timestamp) and value.tz is None:
             value = value.tz_localize("UTC").to_pydatetime()
@@ -618,7 +638,7 @@ def compile_covariance(t, op, **kwargs):
 
     fn = {"sample": F.covar_samp, "pop": F.covar_pop}[how]
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
+    pyspark_double_type = spark_dtype(dt.double)
     new_op = op.__class__(
         left=ops.Cast(op.left, to=pyspark_double_type),
         right=ops.Cast(op.right, to=pyspark_double_type),
@@ -633,7 +653,7 @@ def compile_correlation(t, op, **kwargs):
     if (how := op.how) == "pop":
         raise ValueError("PySpark only implements sample correlation")
 
-    pyspark_double_type = ibis_dtype_to_spark_dtype(dt.double)
+    pyspark_double_type = spark_dtype(dt.double)
     new_op = op.__class__(
         left=ops.Cast(op.left, to=pyspark_double_type),
         right=ops.Cast(op.right, to=pyspark_double_type),
@@ -695,25 +715,22 @@ def compile_abs(t, op, **kwargs):
 
 @compiles(ops.Clip)
 def compile_clip(t, op, **kwargs):
-    spark_dtype = ibis_dtype_to_spark_dtype(op.output_dtype)
     col = t.translate(op.arg, **kwargs)
     upper = t.translate(op.upper, **kwargs) if op.upper is not None else float('inf')
     lower = t.translate(op.lower, **kwargs) if op.lower is not None else float('-inf')
 
     def column_min(value, limit):
-        """Given the minimum limit, return values that are greater than or
-        equal to this limit."""
+        """Return values greater than or equal to `limit`."""
         return F.when(value < limit, limit).otherwise(value)
 
     def column_max(value, limit):
-        """Given the maximum limit, return values that are less than or equal
-        to this limit."""
+        """Return values less than or equal to `limit`."""
         return F.when(value > limit, limit).otherwise(value)
 
     def clip(column, lower_value, upper_value):
         return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))
 
-    return clip(col, lower, upper).cast(spark_dtype)
+    return clip(col, lower, upper).cast(spark_dtype(op.output_dtype))
 
 
 @compiles(ops.Round)
@@ -892,9 +909,9 @@ def compile_substring(t, op, **kwargs):
     start = t.translate(op.start, **kwargs, raw=True) + 1
     length = t.translate(op.length, **kwargs, raw=True)
 
-    if isinstance(start, pyspark.sql.Column) or isinstance(length, pyspark.sql.Column):
+    if any_of((start, length), pyspark.sql.Column):
         raise NotImplementedError(
-            "Specifiying Start and length with column expressions " "are not supported."
+            "Specifiying `start` or `length` with column expressions is not supported."
         )
 
     return src_column.substr(start, length)
@@ -1387,13 +1404,6 @@ def compile_timestamp_now(t, op, **kwargs):
 def compile_string_to_timestamp(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
     fmt = op.format_str.value
-
-    if op.timezone is not None and op.timezone.value != "UTC":
-        raise com.UnsupportedArgumentError(
-            'PySpark backend only supports timezone UTC for converting string '
-            'to timestamp.'
-        )
-
     return F.to_timestamp(src_column, fmt)
 
 
@@ -1494,7 +1504,7 @@ def compile_date_sub(t, op, **kwargs):
 @compiles(ops.DateDiff)
 def compile_date_diff(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support DateDiff as there is no ' 'timedelta type.'
+        'PySpark backend does not support DateDiff as there is no timedelta type.'
     )
 
 
@@ -1573,7 +1583,7 @@ def compile_array_length(t, op, **kwargs):
 def compile_array_slice(t, op, **kwargs):
     start = op.start.value if op.start is not None else op.start
     stop = op.stop.value if op.stop is not None else op.stop
-    spark_type = ibis_array_dtype_to_spark_dtype(op.arg.output_dtype)
+    spark_type = spark_dtype(op.arg.output_dtype)
 
     @F.udf(spark_type)
     def array_slice(array):
@@ -1773,7 +1783,7 @@ def compile_trig(t, op, **kwargs):
 @compiles(ops.Cot)
 def compile_cot(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
-    return F.cos(arg) / F.sin(arg)
+    return 1.0 / F.tan(arg)
 
 
 @compiles(ops.Atan2)
@@ -1815,7 +1825,7 @@ def compile_random(*args, **kwargs):
 @compiles(PandasInMemoryTable)
 def compile_in_memory_table(t, op, session, **kwargs):
     fields = [
-        pt.StructField(name, ibis_dtype_to_spark_dtype(dtype), dtype.nullable)
+        pt.StructField(name, spark_dtype(dtype), dtype.nullable)
         for name, dtype in op.schema.items()
     ]
     schema = pt.StructType(fields)
@@ -1861,3 +1871,27 @@ def compile_json_getitem(t, op, **kwargs):
     else:
         path = f"$.{index}"
     return F.get_json_object(arg, path)
+
+
+@compiles(ops.DummyTable)
+def compile_dummy_table(t, op, session=None, **kwargs):
+    return session.range(0, 1).select(
+        *(t.translate(value, **kwargs) for value in op.values)
+    )
+
+
+@compiles(ops.ScalarParameter)
+def compile_scalar_parameter(t, op, timecontext=None, scope=None, **kwargs):
+    assert scope is not None, "scope is None"
+    raw_value = scope.get_value(op, timecontext)
+    return F.lit(raw_value).cast(spark_dtype(op.output_dtype))
+
+
+@compiles(ops.E)
+def compile_e(t, op, **kwargs):
+    return F.exp(F.lit(1))
+
+
+@compiles(ops.Pi)
+def compile_pi(t, op, **kwargs):
+    return F.acos(F.lit(-1))

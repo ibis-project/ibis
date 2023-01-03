@@ -72,3 +72,13 @@ CREATE TABLE functional_alltypes (
 );
 
 CREATE INDEX "ix_functional_alltypes_index" ON functional_alltypes ("index");
+
+DROP TABLE IF EXISTS win;
+
+CREATE TABLE win (g VARCHAR(MAX), x BIGINT, y BIGINT);
+INSERT INTO win VALUES
+    ('a', 0, 3),
+    ('a', 1, 2),
+    ('a', 2, 0),
+    ('a', 3, 1),
+    ('a', 4, 1);

@@ -7,7 +7,7 @@ import operator
 from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
-import pandas
+import pandas as pd
 from toolz import concatv
 
 import ibis.expr.analysis as an
@@ -44,22 +44,8 @@ def compute_projection(
 ):
     """Compute a projection.
 
-    Parameters
-    ----------
-    node : Union[ops.Scalar, ops.Column, ops.TableNode]
-    parent : ops.Selection
-    data : pd.DataFrame
-    scope : Scope
-    timecontext:Optional[TimeContext]
-
-    Returns
-    -------
-    value : scalar, pd.Series, pd.DataFrame
-
-    Notes
-    -----
-    :class:`~ibis.expr.types.Scalar` instances occur when a specific column
-    projection is a window operation.
+    `ibis.expr.types.Scalar` instances occur when a specific column projection
+    is a window operation.
     """
     if isinstance(node, ops.TableNode):
         if node == parent.table:
@@ -140,8 +126,7 @@ def build_df_from_projection(
     data: dd.DataFrame,
     **kwargs,
 ) -> dd.DataFrame:
-    """Build up a df from individual pieces by dispatching to
-    `compute_projection` for each expression."""
+    """Build up projection from individual pieces."""
     # Fast path for when we're assigning columns into the same table.
     if (selections[0] is op.table) and all(is_row_order_preserving(selections[1:])):
         for node in selections[1:]:
@@ -223,7 +208,7 @@ def execute_selection_dataframe(
         return result
 
     # create a sequence of columns that we need to drop
-    temporary_columns = pandas.Index(concatv(grouping_keys, ordering_keys)).difference(
+    temporary_columns = pd.Index(concatv(grouping_keys, ordering_keys)).difference(
         data.columns
     )
 
@@ -245,24 +230,8 @@ def _compute_predicates(
 ):
     """Compute the predicates for a table operation.
 
-    Parameters
-    ----------
-    table_op : TableNode
-    predicates : List[ir.Column]
-    data : pd.DataFrame
-    scope : Scope
-    timecontext: Optional[TimeContext]
-    kwargs : dict
-
-    Returns
-    -------
-    computed_predicate : pd.Series[bool]
-
-    Notes
-    -----
-    This handles the cases where the predicates are computed columns, in
-    addition to the simple case of named columns coming directly from the input
-    table.
+    This handles the cases where `predicates` are computed columns, in addition
+    to the simple case of named columns coming directly from the input table.
     """
     for predicate in predicates:
         # Map each root table of the predicate to the data so that we compute

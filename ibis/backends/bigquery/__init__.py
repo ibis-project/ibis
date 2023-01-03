@@ -1,6 +1,8 @@
 """BigQuery public API."""
+
+from __future__ import annotations
+
 import warnings
-from typing import Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -27,7 +29,7 @@ from ibis.backends.bigquery.client import (
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 
 try:
-    from ibis.backends.bigquery.udf import udf  # noqa F401
+    from ibis.backends.bigquery.udf import udf  # noqa: F401
 except ImportError:
     pass
 
@@ -73,40 +75,41 @@ class Backend(BaseSQLBackend):
 
     def connect(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         dataset_id: str = "",
-        credentials: Optional[google.auth.credentials.Credentials] = None,
-        application_name: Optional[str] = None,
+        credentials: google.auth.credentials.Credentials | None = None,
+        application_name: str | None = None,
         auth_local_webserver: bool = True,
         auth_external_data: bool = False,
         auth_cache: str = "default",
-        partition_column: Optional[str] = "PARTITIONTIME",
+        partition_column: str | None = "PARTITIONTIME",
     ) -> "Backend":
         """Create a :class:`Backend` for use with Ibis.
 
         Parameters
         ----------
-        project_id : str
+        project_id
             A BigQuery project id.
-        dataset_id : str
+        dataset_id
             A dataset id that lives inside of the project indicated by
             `project_id`.
-        credentials : google.auth.credentials.Credentials
-        application_name : str
+        credentials
+            Optional credentials.
+        application_name
             A string identifying your application to Google API endpoints.
-        auth_local_webserver : bool
+        auth_local_webserver
             Use a local webserver for the user authentication.  Binds a
             webserver to an open port on localhost between 8080 and 8089,
-            inclusive, to receive authentication token. If not set, defaults
-            to False, which requests a token via the console.
-        auth_external_data : bool
+            inclusive, to receive authentication token. If not set, defaults to
+            False, which requests a token via the console.
+        auth_external_data
             Authenticate using additional scopes required to `query external
             data sources
             <https://cloud.google.com/bigquery/external-data-sources>`_,
             such as Google Sheets, files in Google Cloud Storage, or files in
             Google Drive. If not set, defaults to False, which requests the
             default BigQuery scopes.
-        auth_cache : str
+        auth_cache
             Selects the behavior of the credentials cache.
 
             ``'default'``
@@ -120,13 +123,14 @@ class Backend(BaseSQLBackend):
                 Authenticates and does **not** cache credentials.
 
             Defaults to ``'default'``.
-        partition_column : str
+        partition_column
             Identifier to use instead of default ``_PARTITIONTIME`` partition
             column. Defaults to ``'PARTITIONTIME'``.
 
         Returns
         -------
         Backend
+            An instance of the BigQuery backend.
         """
         default_project_id = ""
 
@@ -178,7 +182,7 @@ class Backend(BaseSQLBackend):
 
         return new_backend
 
-    def _parse_project_and_dataset(self, dataset) -> Tuple[str, str]:
+    def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
         project, _, dataset = parse_project_and_dataset(
@@ -278,20 +282,20 @@ class Backend(BaseSQLBackend):
 
         Parameters
         ----------
-        expr : Expr
-        limit : int, default None
-          For expressions yielding result yets; retrieve at most this number of
-          values/rows. Overrides any limit already set on the expression.
-        params : not yet implemented
-        kwargs : Backends can receive extra params. For example, clickhouse
-            uses this to receive external_tables as dataframes.
+        expr
+            Ibis expression to execute
+        limit
+            Retrieve at most this number of values/rows. Overrides any limit
+            already set on the expression.
+        params
+            Query parameters
+        kwargs
+            Extra arguments specific to the backend
 
         Returns
         -------
-        output : input type dependent
-          Table expressions: pandas.DataFrame
-          Array expressions: pandas.Series
-          Scalar expressions: Python scalar value
+        pd.DataFrame | pd.Series | scalar
+            Output from execution
         """
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
@@ -398,53 +402,47 @@ class Backend(BaseSQLBackend):
 
 
 def compile(expr, params=None, **kwargs):
-    """Compile an expression for BigQuery.
-    Returns
-    -------
-    compiled : str
-    See Also
-    --------
-    ibis.expr.types.Expr.compile
-    """
+    """Compile an expression for BigQuery."""
     backend = Backend()
     return backend.compile(expr, params=params, **kwargs)
 
 
 def connect(
-    project_id: Optional[str] = None,
+    project_id: str | None = None,
     dataset_id: str = "",
-    credentials: Optional[google.auth.credentials.Credentials] = None,
-    application_name: Optional[str] = None,
+    credentials: google.auth.credentials.Credentials | None = None,
+    application_name: str | None = None,
     auth_local_webserver: bool = False,
     auth_external_data: bool = False,
     auth_cache: str = "default",
-    partition_column: Optional[str] = "PARTITIONTIME",
+    partition_column: str | None = "PARTITIONTIME",
 ) -> Backend:
     """Create a :class:`Backend` for use with Ibis.
 
     Parameters
     ----------
-    project_id : str
+    project_id
         A BigQuery project id.
-    dataset_id : str
+    dataset_id
         A dataset id that lives inside of the project indicated by
         `project_id`.
-    credentials : google.auth.credentials.Credentials
-    application_name : str
+    credentials
+        Optional credentials.
+    application_name
         A string identifying your application to Google API endpoints.
-    auth_local_webserver : bool
+    auth_local_webserver
         Use a local webserver for the user authentication.  Binds a
         webserver to an open port on localhost between 8080 and 8089,
         inclusive, to receive authentication token. If not set, defaults
         to False, which requests a token via the console.
-    auth_external_data : bool
+    auth_external_data
         Authenticate using additional scopes required to `query external
         data sources
         <https://cloud.google.com/bigquery/external-data-sources>`_,
         such as Google Sheets, files in Google Cloud Storage, or files in
         Google Drive. If not set, defaults to False, which requests the
         default BigQuery scopes.
-    auth_cache : str
+    auth_cache
         Selects the behavior of the credentials cache.
 
         ``'default'``
@@ -458,13 +456,14 @@ def connect(
             Authenticates and does **not** cache credentials.
 
         Defaults to ``'default'``.
-    partition_column : str
+    partition_column
         Identifier to use instead of default ``_PARTITIONTIME`` partition
         column. Defaults to ``'PARTITIONTIME'``.
 
     Returns
     -------
     Backend
+        An instance of the BigQuery backend
     """
     backend = Backend()
     return backend.connect(

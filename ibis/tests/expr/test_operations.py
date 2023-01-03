@@ -119,10 +119,7 @@ values = Values((one, two, three))
 
 def test_node_base():
     assert one.__args__ == (1, Name("one"))
-    assert one.__children__ == one.__args__
-
     assert values.__args__ == ((one, two, three),)
-    assert values.__children__ == values.__args__
 
     calls = []
     returns = {
@@ -135,7 +132,7 @@ def test_node_base():
         values: "final",
     }
 
-    def record(node, *args, **kwargs):
+    def record(node, _, *args, **kwargs):
         calls.append((node, args, kwargs))
         return returns[node]
 
