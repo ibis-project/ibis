@@ -772,8 +772,13 @@ def find_subqueries(node: ops.Node) -> Counter:
 
 
 # TODO(kszucs): move to types/logical.py
-def _make_any(expr, any_op_class: type[ops.Any] | type[ops.NotAny]):
-    assert isinstance(expr, ir.Expr)
+def _make_any(
+    expr,
+    any_op_class: type[ops.Any] | type[ops.NotAny],
+    *,
+    where: ir.BooleanValue | None = None,
+):
+    assert isinstance(expr, ir.Expr), type(expr)
 
     tables = find_immediate_parent_tables(expr.op())
     predicates = find_predicates(expr.op(), flatten=True)
@@ -784,7 +789,7 @@ def _make_any(expr, any_op_class: type[ops.Any] | type[ops.NotAny]):
             predicates=predicates,
         )
     else:
-        op = any_op_class(expr)
+        op = any_op_class(expr, where=where)
     return op.to_expr()
 
 

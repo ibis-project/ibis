@@ -320,6 +320,7 @@ class NumericColumn(Column, NumericValue):
             "midpoint",
             "nearest",
         ] = "linear",
+        where: ir.BooleanValue | None = None,
     ) -> NumericScalar:
         """Return value at the given quantile.
 
@@ -328,8 +329,10 @@ class NumericColumn(Column, NumericValue):
         quantile
             `0 <= quantile <= 1`, the quantile(s) to compute
         interpolation
-            This optional parameter specifies the interpolation method to use,
-            when the desired quantile lies between two data points `i` and `j`:
+            !!! warning "This parameter is backend dependent and may have no effect"
+
+            This parameter specifies the interpolation method to use, when the
+            desired quantile lies between two data points `i` and `j`:
 
             * linear: `i + (j - i) * fraction`, where `fraction` is the
               fractional part of the index surrounded by `i` and `j`.
@@ -337,6 +340,8 @@ class NumericColumn(Column, NumericValue):
             * higher: `j`.
             * nearest: `i` or `j` whichever is nearest.
             * midpoint: (`i` + `j`) / 2.
+        where
+            Boolean filter for input values
 
         Returns
         -------
@@ -347,7 +352,7 @@ class NumericColumn(Column, NumericValue):
             op = ops.MultiQuantile
         else:
             op = ops.Quantile
-        return op(self, quantile, interpolation).to_expr()
+        return op(self, quantile, interpolation, where=where).to_expr()
 
     def std(
         self,
