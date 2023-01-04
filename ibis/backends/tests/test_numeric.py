@@ -548,9 +548,7 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars"]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="backend doesn't implement a [0.0, 1.0) or [0.0, 1.0] RANDOM() function",

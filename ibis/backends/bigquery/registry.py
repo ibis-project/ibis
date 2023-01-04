@@ -654,6 +654,7 @@ OPERATION_REGISTRY = {
     ops.ArgMax: _arg_min_max("DESC"),
     ops.Pi: lambda *_: "ACOS(-1)",
     ops.E: lambda *_: "EXP(1)",
+    ops.RandomScalar: fixed_arity("RAND", 0),
 }
 
 _invalid_operations = {

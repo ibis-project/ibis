@@ -472,9 +472,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "polars", "mssql"]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars", "mssql"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
