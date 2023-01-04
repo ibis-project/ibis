@@ -180,16 +180,6 @@ def _not_all(op, **kw):
     return translate_val(ops.Not(ops.All(op.arg)), **kw)
 
 
-@translate_val.register(ops.Any)
-def _any(op, **kw):
-    return f"max({translate_val(op.arg, **kw)})"
-
-
-@translate_val.register(ops.All)
-def _all(op, **kw):
-    return f"min({translate_val(op.arg, **kw)})"
-
-
 def _agg_variance_like(func):
     variants = {"sample": f"{func}Samp", "pop": f"{func}Pop"}
 
@@ -930,6 +920,8 @@ _simple_ops = {
     ops.Sum: "sum",
     ops.Max: "max",
     ops.Min: "min",
+    ops.Any: "max",
+    ops.All: "min",
     ops.ArgMin: "argMin",
     ops.ArgMax: "argMax",
     ops.ArrayCollect: "groupArray",
