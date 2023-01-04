@@ -5026,7 +5026,7 @@ dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
 duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
-geospatial = ["GeoAlchemy2", "geopandas", "Shapely"]
+geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql"]
 mysql = ["sqlalchemy", "pymysql"]
@@ -5042,4 +5042,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "27423b8b64a4040008865aca9cbd5df9a65ad82c0ba0e7135a9531ec5c2da09e"
+content-hash = "aef45636a5dd260c88228eedf9d6ace2f8dad1056368b98361651c2b1b632233"
