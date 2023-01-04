@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import calendar
 import functools
-from datetime import date, datetime
 from functools import partial
 from operator import add, mul, sub
 from typing import Any, Literal, Mapping
@@ -406,20 +405,17 @@ def _literal(op, **kw):
         func = "toDateTime"
         args = []
 
-        if isinstance(value, datetime):
-            fmt = "%Y-%m-%dT%H:%M:%S"
+        fmt = "%Y-%m-%dT%H:%M:%S"
 
-            if micros := value.microsecond:
-                func = "toDateTime64"
-                fmt += ".%f"
+        if micros := value.microsecond:
+            func = "toDateTime64"
+            fmt += ".%f"
 
-            args.append(value.strftime(fmt))
-            if micros % 1000:
-                args.append(6)
-            elif micros // 1000:
-                args.append(3)
-        else:
-            args.append(str(value))
+        args.append(value.strftime(fmt))
+        if micros % 1000:
+            args.append(6)
+        elif micros // 1000:
+            args.append(3)
 
         if (timezone := op.output_dtype.timezone) is not None:
             args.append(timezone)
@@ -428,9 +424,8 @@ def _literal(op, **kw):
         return f"{func}({joined_args})"
 
     elif isinstance(op.output_dtype, dt.Date):
-        if isinstance(value, date):
-            value = value.strftime("%Y-%m-%d")
-        return f"toDate('{value}')"
+        formatted = value.strftime('%Y-%m-%d')
+        return f"toDate('{formatted}')"
     elif isinstance(op.output_dtype, dt.Array):
         values = ", ".join(_array_literal_values(op))
         return f"[{values}]"
