@@ -66,7 +66,7 @@ pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 requests = { version = ">=2,<3", optional = true }
-shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
+shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # include an explicit dependency on `snowflake-connector-python` because the
 # lack of lower bound on this dependency as specified in `snowflake-sqlalchemy`
 # appears to cause poetry's solver to get stuck
