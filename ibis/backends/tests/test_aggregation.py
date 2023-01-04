@@ -501,31 +501,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 )
             ],
         ),
-        param(
-            lambda t, where: t.double_col.quantile(0.5, where=where),
-            lambda t, where: t.double_col[where].quantile(0.5),
-            id="quantile",
-            marks=[
-                mark.notimpl(
-                    [
-                        "bigquery",
-                        "clickhouse",
-                        "dask",
-                        "datafusion",
-                        "duckdb",
-                        "impala",
-                        "mssql",
-                        "mysql",
-                        "polars",
-                        "postgres",
-                        "pyspark",
-                        "snowflake",
-                        "sqlite",
-                        "trino",
-                    ]
-                )
-            ],
-        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -557,6 +532,89 @@ def test_reduction_ops(
     except TypeError:  # assert_allclose only handles numerics
         # if we're not testing numerics, then the arrays should be exactly equal
         np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, where: t.double_col.quantile(0.5, where=where),
+            lambda t, where: t.double_col[where].quantile(0.5),
+            id="quantile",
+            marks=[
+                mark.notimpl(
+                    [
+                        "bigquery",
+                        "dask",
+                        "datafusion",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "sqlite",
+                    ]
+                ),
+                mark.never(
+                    ["pyspark", "trino"],
+                    reason="backend implements approximate quantiles",
+                ),
+            ],
+        ),
+        param(
+            lambda t, where: t.double_col.quantile([0.5], where=where),
+            lambda t, where: t.double_col[where].quantile([0.5]),
+            id="multi-quantile",
+            marks=[
+                mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "datafusion",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "sqlite",
+                    ]
+                ),
+                mark.notyet(
+                    ["snowflake"],
+                    reason="backend doesn't implement array of quantiles as input",
+                ),
+                mark.notyet(["clickhouse"], reason="sqlglot throws a parse error"),
+                mark.never(
+                    ["pyspark", "trino"],
+                    reason="backend implements approximate quantiles",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('ibis_cond', 'pandas_cond'),
+    [
+        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(
+            lambda t: t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.isin(['1', '7']),
+            id='is_in',
+            marks=[mark.notimpl(["datafusion"])],
+        ),
+    ],
+)
+def test_quantile(
+    alltypes,
+    df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
+):
+    expr = alltypes.agg(tmp=result_fn(alltypes, ibis_cond(alltypes))).tmp
+    result = expr.execute().squeeze()
+    expected = expected_fn(df, pandas_cond(df))
+    assert pytest.approx(result) == expected
 
 
 @pytest.mark.parametrize(
