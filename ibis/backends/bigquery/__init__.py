@@ -206,11 +206,12 @@ class Backend(BaseSQLBackend):
         return rename_partitioned_column(t, bq_table, self.partition_column)
 
     def _fully_qualified_name(self, name, database):
-        default_project, default_dataset = self._parse_project_and_dataset(database)
         parts = name.split(".")
         if len(parts) == 3:
             return name
-        elif len(parts) == 2:
+
+        default_project, default_dataset = self._parse_project_and_dataset(database)
+        if len(parts) == 2:
             return f"{default_project}.{name}"
         elif len(parts) == 1:
             return f"{default_project}.{default_dataset}.{name}"
@@ -334,7 +335,7 @@ class Backend(BaseSQLBackend):
         else:
             return True
 
-    def exists_table(self, name: str, database: str = None) -> bool:
+    def exists_table(self, name: str, database: str | None = None) -> bool:
         """Return whether a table name exists in the database.
 
         Deprecated in Ibis 2.0. Use `name in client.list_tables()`
