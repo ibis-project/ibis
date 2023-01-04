@@ -7,7 +7,6 @@ import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Value
 from ibis.expr.operations.generic import _Negatable
-from ibis.util import deprecated
 
 
 @public
@@ -223,21 +222,6 @@ class ApproxCountDistinct(Filterable, Reduction):
 
 
 @public
-class HLLCardinality(ApproxCountDistinct):
-    @deprecated(version="4.0", instead="use ApproxCountDistinct")
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
-@public
-class GroupConcat(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
-    sep = rlz.string
-
-    output_dtype = dt.string
-
-
-@public
 class ApproxMedian(Filterable, Reduction):
     """Compute the approximate median of a set of comparable values."""
 
@@ -246,10 +230,11 @@ class ApproxMedian(Filterable, Reduction):
 
 
 @public
-class CMSMedian(ApproxMedian):
-    @deprecated(version="4.0", instead="use ApproxMedian")
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class GroupConcat(Filterable, Reduction):
+    arg = rlz.column(rlz.any)
+    sep = rlz.string
+
+    output_dtype = dt.string
 
 
 @public

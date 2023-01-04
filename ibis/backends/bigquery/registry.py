@@ -502,10 +502,11 @@ OPERATION_REGISTRY = {
     ops.NullIfZero: _nullifzero,
     ops.NotAny: bigquery_compile_notany,
     ops.NotAll: bigquery_compile_notall,
-    # Math
-    ops.CMSMedian: compiles_approx,
+    # Reductions
+    ops.ApproxMedian: compiles_approx,
     ops.Covariance: _covar,
     ops.Correlation: _corr,
+    # Math
     ops.Divide: bigquery_compiles_divide,
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
@@ -560,7 +561,6 @@ OPERATION_REGISTRY = {
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,
-    ops.HLLCardinality: reduction("APPROX_COUNT_DISTINCT"),
     ops.Log: _log,
     ops.Log2: _log2,
     ops.Arbitrary: _arbitrary,

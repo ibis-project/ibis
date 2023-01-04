@@ -927,11 +927,9 @@ _simple_ops = {
     ops.Pi: "pi",
     ops.E: "e",
     # Unary aggregates
-    ops.CMSMedian: "median",
     ops.ApproxMedian: "median",
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
-    ops.HLLCardinality: "uniqHLL12",
     ops.ApproxCountDistinct: "uniqHLL12",
     ops.Mean: "avg",
     ops.Sum: "sum",

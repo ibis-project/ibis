@@ -300,8 +300,6 @@ operation_registry = {
     ops.DecimalPrecision: unary('precision'),
     ops.DecimalScale: unary('scale'),
     # Unary aggregates
-    ops.CMSMedian: aggregate.reduction('appx_median'),
-    ops.HLLCardinality: aggregate.reduction('ndv'),
     ops.ApproxMedian: aggregate.reduction('appx_median'),
     ops.ApproxCountDistinct: aggregate.reduction('ndv'),
     ops.Mean: aggregate.reduction('avg'),
