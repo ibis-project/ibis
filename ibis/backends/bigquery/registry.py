@@ -490,6 +490,24 @@ def _array_repeat(t, op):
     return f"ARRAY(SELECT {arg}[SAFE_ORDINAL({idx})] FROM UNNEST({series}) AS i)"
 
 
+def _neg_idx_to_pos(array, idx):
+    return f"IF({idx} < 0, ARRAY_LENGTH({array}) + {idx}, {idx})"
+
+
+def _array_slice(t, op):
+    arg = t.translate(op.arg)
+    cond = [f"index >= {_neg_idx_to_pos(arg, t.translate(op.start))}"]
+    if op.stop:
+        cond.append(f"index < {_neg_idx_to_pos(arg, t.translate(op.stop))}")
+    return (
+        f"ARRAY("
+        f"SELECT el "
+        f"FROM UNNEST({arg}) AS el WITH OFFSET index "
+        f"WHERE {' AND '.join(cond)}"
+        f")"
+    )
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -561,6 +579,7 @@ OPERATION_REGISTRY = {
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,
+    ops.ArraySlice: _array_slice,
     ops.Log: _log,
     ops.Log2: _log2,
     ops.Arbitrary: _arbitrary,

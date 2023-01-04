@@ -373,9 +373,6 @@ def test_unnest_default_name(con):
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "polars", "snowflake"])
-@pytest.mark.notyet(
-    ["bigquery"], reason="BigQuery doesn't have native array slicing functionality"
-)
 def test_array_slice(con, start, stop):
     array_types = con.tables.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
