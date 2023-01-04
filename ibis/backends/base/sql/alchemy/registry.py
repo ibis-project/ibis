@@ -508,7 +508,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.BitOr: reduction(sa.func.bit_or),
     ops.BitXor: reduction(sa.func.bit_xor),
     ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
-    ops.HLLCardinality: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.ApproxCountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.GroupConcat: reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
