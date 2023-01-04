@@ -293,5 +293,7 @@ operation_registry.update(
         ops.Round: _round,
         ops.Pi: fixed_arity(sa.func.pi, 0),
         ops.E: fixed_arity(sa.func.e, 0),
+        ops.Quantile: reduction(sa.func.approx_percentile),
+        ops.MultiQuantile: reduction(sa.func.approx_percentile),
     }
 )
