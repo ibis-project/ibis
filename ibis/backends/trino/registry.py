@@ -154,10 +154,10 @@ operation_registry.update(
         # static checks are not happy with using "if" as a property
         ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # boolean reductions
-        ops.Any: unary(sa.func.bool_or),
-        ops.All: unary(sa.func.bool_and),
-        ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
-        ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
+        ops.Any: reduction(sa.func.bool_or),
+        ops.All: reduction(sa.func.bool_and),
+        ops.NotAny: reduction(lambda x: sa.not_(sa.func.bool_or(x))),
+        ops.NotAll: reduction(lambda x: sa.not_(sa.func.bool_and(x))),
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
         # array ops
