@@ -156,7 +156,7 @@ table or database.
 ## Table objects
 
 <!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend.table
+::: ibis.backends.base.sql.BaseSQLBackend.table
     options:
       heading_level: 3
 <!-- prettier-ignore-end -->

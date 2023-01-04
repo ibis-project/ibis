@@ -107,7 +107,7 @@ class Repr(Config):
         SQLQueryResult operations.
     show_types : bool
         Show the inferred type of value expressions in the repr.
-    interactive
+    interactive : bool
         Options controlling the interactive repr.
     """
 

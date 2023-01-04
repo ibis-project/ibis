@@ -607,14 +607,12 @@ class Backend(BaseSQLBackend):
         database
             Database name
         noscan
-            If True, collect only basic statistics for the table (number of
+            If `True`, collect only basic statistics for the table (number of
             rows, size in bytes).
         """
-        maybe_noscan = ' NOSCAN' if noscan else ''
-        stmt = 'ANALYZE TABLE {} COMPUTE STATISTICS{}'.format(
-            self._fully_qualified_name(name, database), maybe_noscan
-        )
-        return self.raw_sql(stmt)
+        maybe_noscan = " NOSCAN" * noscan
+        name = self._fully_qualified_name(name, database)
+        return self.raw_sql(f"ANALYZE TABLE {name} COMPUTE STATISTICS{maybe_noscan}")
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in PySparkExprTranslator._registry

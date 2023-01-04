@@ -1,15 +1,17 @@
 # [{{ backend_name }}]({{ backend_url }})
 
 {% if is_experimental %}
-!!! experimental "{% if version_added %}New in v{{ version_added }}{% else %}Experimental{% endif %}"
+!!! experimental "{% if version_added %}Introduced in v{{ version_added }}{% else %}Experimental{% endif %}"
 
     The {{ backend_name }} backend is experimental and is subject to backwards incompatible changes.
 
+{% elif version_added %}
+!!! tip "Introduced in v{{ version_added }}"
 {% endif %}
 
 {% if intro %}{{ intro }}{% endif %}
 
-{% if not development_only %}
+{% if not (development_only | default(False)) %}
 
 ## Install
 
@@ -44,18 +46,18 @@ Install ibis and dependencies for the {{ backend_name }} backend:
 Create a client by passing in {{ backend_param_style }} to `ibis.{{ backend_module }}.connect`.
 
 <!-- prettier-ignore-start -->
-See [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.Backend.do_connect]
+See [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.{{ do_connect_base | default('Backend') }}.do_connect]
 for connection parameter information.
 <!-- prettier-ignore-end -->
 
 <!-- prettier-ignore-start -->
-!!! info "`ibis.{{ backend_module }}.connect` is a thin wrapper around [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.Backend.do_connect]."
+!!! info "`ibis.{{ backend_module }}.connect` is a thin wrapper around [`ibis.backends.{{ backend_module }}.Backend.do_connect`][ibis.backends.{{ backend_module }}.{{ do_connect_base | default('Backend') }}.do_connect]."
 <!-- prettier-ignore-end -->
 
 ### Connection Parameters
 
 <!-- prettier-ignore-start -->
-::: ibis.backends.{{ backend_module }}.Backend.do_connect
+::: ibis.backends.{{ backend_module }}.{{ do_connect_base | default('Backend') }}.do_connect
     options:
       heading_level: 4
 <!-- prettier-ignore-end -->

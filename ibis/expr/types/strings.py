@@ -787,6 +787,7 @@ class StringValue(Value):
         ----------
         key
             Query component to extract
+
         Examples
         --------
         >>> import ibis

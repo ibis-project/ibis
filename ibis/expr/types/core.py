@@ -101,7 +101,7 @@ class Expr(Immutable):
         label_edges: bool = False,
         verbose: bool = False,
     ) -> None:
-        """Visualize an expression in the browser.
+        """Visualize an expression as a GraphViz graph in the browser.
 
         Parameters
         ----------
@@ -112,11 +112,6 @@ class Expr(Immutable):
             Show operation input names as edge labels
         verbose
             Print the graphviz DOT code to stderr if [`True`][True]
-
-        Notes
-        -----
-        This method opens a web browser tab showing the image of the expression
-        graph created by the code in [ibis.expr.visualize][].
 
         Raises
         ------

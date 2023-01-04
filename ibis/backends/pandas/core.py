@@ -512,36 +512,38 @@ def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
 
 compute_time_context = Dispatcher(
     'compute_time_context',
-    doc="""\
-
-Compute time context for a node in execution
+    doc="""Compute the time context for a node in execution.
 
 Notes
 -----
 For a given node, return with a list of timecontext that are going to be
 passed to its children nodes.
-time context is useful when data is not uniquely defined by op tree. e.g.
-a Table can represent the query select count(a) from table, but the
-result of that is different with time context (pd.Timestamp("20190101"),
-pd.Timestamp("20200101")) vs (pd.Timestamp("20200101"),
-pd.Timestamp("20210101“)), because what data is in "table" also depends on
-the time context. And such context may not be global for all nodes. Each
-node may have its own context. compute_time_context computes attributes that
-are going to be used in executeion and passes these attributes to children
-nodes.
 
-Param:
-clients: List[ibis.backends.base.BaseBackend]
+Time context is useful when data is not uniquely defined by op tree. For example,
+a table `t` can represent the query `SELECT count(a) FROM table`, but the
+result of that is different with time context `(pd.Timestamp("20190101"),
+pd.Timestamp("20200101"))` vs `(pd.Timestamp("20200101"),
+pd.Timestamp("20210101“))` because what data is in `table` also depends on
+the time context. Such context may be different for different nodes, that is,
+each node may have a different time context.
+
+This function computes attributes that are going to be used in execution and
+passes these attributes to child nodes.
+
+Parameters
+----------
+clients : List[ibis.backends.base.BaseBackend]
     backends for execution
 timecontext : Optional[TimeContext]
     begin and end time context needed for execution
 
-Return:
+Returns
+-------
 List[Optional[TimeContext]]
-A list of timecontexts for children nodes of the current node. Note that
-timecontext are calculated for children nodes of computable args only.
-The length of the return list is same of the length of computable inputs.
-See ``computable_args`` in ``execute_until_in_scope``
+    A list of timecontexts for children nodes of the current node. Note that
+    timecontext are calculated for children nodes of computable args only.
+    The length of the return list is same of the length of computable inputs.
+    See `computable_args` in `execute_until_in_scope`
 """,
 )
 

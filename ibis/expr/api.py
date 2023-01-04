@@ -773,9 +773,7 @@ def interval(
 def case() -> bl.SearchedCaseBuilder:
     """Begin constructing a case expression.
 
-    Notes
-    -----
-    Use the `.when` method on the resulting object followed by .end to create a
+    Use the `.when` method on the resulting object followed by `.end` to create a
     complete case.
 
     Examples
@@ -783,10 +781,8 @@ def case() -> bl.SearchedCaseBuilder:
     >>> import ibis
     >>> cond1 = ibis.literal(1) == 1
     >>> cond2 = ibis.literal(2) == 1
-    >>> (ibis.case()
-    ...  .when(cond1, 3)
-    ...  .when(cond2, 4).end())
-    >>> SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
+    >>> expr = ibis.case().when(cond1, 3).when(cond2, 4).end()
+    SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
 
     Returns
     -------
@@ -802,7 +798,7 @@ def now() -> ir.TimestampScalar:
     Returns
     -------
     TimestampScalar
-        A "now" expression
+        An expression representing the current timestamp.
     """
     return ops.TimestampNow().to_expr()
 
