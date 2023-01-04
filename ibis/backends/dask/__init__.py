@@ -96,19 +96,17 @@ class Backend(BasePandasBackend):
     ):
         """Compile `expr`.
 
-        Notes
-        -----
-        For the dask backend returns a dask graph that you can run ``.compute``
-        on to get a pandas object.
+        Returns
+        -------
+        dask.dataframe.core.DataFrame | dask.dataframe.core.Series | das.dataframe.core.Scalar
+            Dask graph.
         """
-        node = query.op()
+        params = {
+            k.op() if hasattr(k, "op") else k: v
+            for k, v in ({} if params is None else params).items()
+        }
 
-        if params is None:
-            params = {}
-        else:
-            params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
-
-        return execute_and_reset(node, params=params, **kwargs)
+        return execute_and_reset(query.op(), params=params, **kwargs)
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:

@@ -136,9 +136,7 @@ class GroupedTable:
         )
 
     def mutate(
-        self,
-        exprs: ir.Value | Sequence[ir.Value] | None = None,
-        **kwds: ir.Value,
+        self, exprs: ir.Value | Sequence[ir.Value] | None = None, **kwds: ir.Value
     ):
         """Return a table projection with window functions applied.
 
@@ -166,8 +164,7 @@ class GroupedTable:
           baz float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
-        ...          .mutate(qux=lambda x: x.baz.lag(),
-        ...                  qux2=t.baz.lead()))
+        ...          .mutate(qux=lambda x: x.baz.lag(), qux2=t.baz.lead()))
         >>> print(expr)
         r0 := UnboundTable[t]
           foo string
@@ -200,7 +197,7 @@ class GroupedTable:
 
         See Also
         --------
-        ibis.expr.groupby.GroupedTable.mutate
+        [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
         """
         w = self._get_window()
         windowed_exprs = []

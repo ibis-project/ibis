@@ -115,8 +115,6 @@ class StructValue(Value):
         structs or arrays of structs. `lift` can be chained to avoid repeating
         column names and table references.
 
-        See also [`Table.unpack`][ibis.expr.types.relations.Table.unpack].
-
         Returns
         -------
         Table
@@ -139,6 +137,10 @@ class StructValue(Value):
           selections:
             b: StructField(r0.a, field='b')
             c: StructField(r0.a, field='c')
+
+        See Also
+        --------
+        [`Table.unpack`][ibis.expr.types.relations.Table.unpack].
         """
         import ibis.expr.analysis as an
 

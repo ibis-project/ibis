@@ -4,7 +4,7 @@ backend_url: https://duckdb.org/
 backend_module: duckdb
 backend_param_style: a path to a DuckDB database
 backend_connection_example: ibis.duckdb.connect("path/to/my.duckdb")
-development_only: false
+version_added: "3.0"
 intro: |
   !!! danger "`duckdb` >= 0.5.0 requires `duckdb-engine` >= 0.6.2"
 

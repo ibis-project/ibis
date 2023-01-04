@@ -101,22 +101,11 @@ class BigQueryCursor:
         return list(result.schema)
 
     def __enter__(self):
-        # For compatibility when constructed from Query.execute()
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-        """
+        """No-op for compatibility."""
         return self
 
     def __exit__(self, *_):
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-        """
+        """No-op for compatibility."""
 
 
 class BigQueryDatabase(Database):

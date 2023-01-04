@@ -988,7 +988,7 @@ class Backend(BaseSQLBackend):
         database
             Database name
         pool
-           The name of the pool in which to cache the table
+            The name of the pool in which to cache the table
 
         Examples
         --------

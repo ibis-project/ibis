@@ -974,7 +974,6 @@ class Table(Expr, JupyterMixin):
         r0 := UnboundTable: t
           a struct<b: float64, c: string>
           d string
-
         Selection[r0]
           selections:
             b: StructField(r0.a, field='b')
@@ -983,7 +982,7 @@ class Table(Expr, JupyterMixin):
 
         See Also
         --------
-        ibis.expr.types.structs.StructValue.lift
+        [`StructValue.lift`][ibis.expr.types.structs.StructValue.lift]
         """
         columns_to_unpack = frozenset(columns)
         result_columns = []
@@ -996,7 +995,9 @@ class Table(Expr, JupyterMixin):
         return self[result_columns]
 
     def info(self, buf: IO[str] | None = None) -> None:
-        """Show column names, types and null counts.
+        """Show summary information about a table.
+
+        Currently implemented as showing column names, types and null counts.
 
         Parameters
         ----------
