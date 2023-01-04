@@ -438,6 +438,20 @@ def _mode(t, op):
     return sa.func.mode().within_group(t.translate(arg))
 
 
+def _quantile(t, op):
+    if op.interpolation is not None:
+        warnings.warn(
+            f"`{t.__module__.rsplit(',', 1)[0]}` backend does not support the "
+            "`interpolation` argument"
+        )
+    arg = op.arg
+    if (where := op.where) is not None:
+        arg = ops.Where(where, arg, None)
+    return sa.func.percentile_cont(t.translate(op.quantile)).within_group(
+        t.translate(arg)
+    )
+
+
 def _binary_variance_reduction(func):
     def variance_compiler(t, op):
         x = op.left
@@ -568,5 +582,7 @@ operation_registry.update(
         ops.Correlation: _corr,
         ops.BitwiseXor: _bitwise_op("#"),
         ops.Mode: _mode,
+        ops.Quantile: _quantile,
+        ops.MultiQuantile: _quantile,
     }
 )
