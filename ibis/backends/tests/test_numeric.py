@@ -583,7 +583,7 @@ def test_random(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["bigquery", "datafusion", "impala"])
+@pytest.mark.notimpl(["datafusion", "impala"])
 def test_clip(alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
