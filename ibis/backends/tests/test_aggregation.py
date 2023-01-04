@@ -501,6 +501,31 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 )
             ],
         ),
+        param(
+            lambda t, where: t.double_col.quantile(0.5, where=where),
+            lambda t, where: t.double_col[where].quantile(0.5),
+            id="quantile",
+            marks=[
+                mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "datafusion",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "postgres",
+                        "pyspark",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                )
+            ],
+        ),
     ],
 )
 @pytest.mark.parametrize(
