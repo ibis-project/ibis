@@ -546,6 +546,8 @@ OPERATION_REGISTRY = {
     ops.Modulus: fixed_arity("MOD", 2),
     ops.Sign: unary("SIGN"),
     ops.Clip: _clip,
+    ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / ACOS(-1))",
+    ops.Radians: lambda t, op: f"(ACOS(-1) * {t.translate(op.arg)} / 180)",
     # Temporal functions
     ops.Date: unary("DATE"),
     ops.DateFromYMD: fixed_arity("DATE", 3),
