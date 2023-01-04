@@ -35,9 +35,6 @@ def variance_reduction(func_name):
 
 
 def fixed_arity(sa_func, arity):
-    if isinstance(sa_func, str):
-        sa_func = getattr(sa.func, sa_func)
-
     def formatter(t, op):
         arg_count = len(op.args)
         if arity != arg_count:
