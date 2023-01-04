@@ -132,7 +132,6 @@ def test_string_col_is_unicode(alltypes, df):
             id='translate',
             marks=pytest.mark.notimpl(
                 [
-                    "bigquery",
                     "clickhouse",
                     "datafusion",
                     "duckdb",

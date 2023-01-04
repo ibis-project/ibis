@@ -587,6 +587,7 @@ OPERATION_REGISTRY = {
     ops.Substring: _string_substring,
     ops.StrRight: _string_right,
     ops.Capitalize: _capitalize,
+    ops.Translate: fixed_arity("TRANSLATE", 3),
     ops.Repeat: fixed_arity("REPEAT", 2),
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
@@ -658,7 +659,6 @@ OPERATION_REGISTRY = {
 }
 
 _invalid_operations = {
-    ops.Translate,
     ops.FindInSet,
     ops.DateDiff,
     ops.TimestampDiff,
