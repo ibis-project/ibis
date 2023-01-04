@@ -2,6 +2,6 @@
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.base.sql.alchemy.BaseAlchemyBackend
-    selection:
+    options:
       inherited_members: true
 <!-- prettier-ignore-end -->

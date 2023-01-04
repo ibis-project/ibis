@@ -54,7 +54,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
             - https://docs.sqlalchemy.org/objects.inv
-          selection:
+          options:
             docstring_style: numpy
             filters:
               - "!^_"
@@ -74,7 +74,6 @@ plugins:
               - "!^scalar$"
               - "!^column$"
               - "!^option_context$"
-          rendering:
             show_category_heading: true
             show_root_full_path: false
             show_root_heading: true

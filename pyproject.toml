@@ -110,6 +110,7 @@ sqlalchemy = ">=1.4,<2.0"
 
 [tool.poetry.group.docs.dependencies]
 docstring_parser = ">=0.13,<0.14"
+griffe = ">=0.25.3,<1"
 ipykernel = ">=6,<7"
 mike = ">=1.1.2,<2"
 mkdocs = ">=1.2.3,<1.4.3"
@@ -121,8 +122,8 @@ mkdocs-literate-nav = ">=0.4.1,<1"
 mkdocs-macros-plugin = ">=0.6.3,<1"
 mkdocs-material = ">=8.2.1,<9.0.2"
 mkdocs-table-reader-plugin = ">=1.0.0,<2"
-mkdocstrings = ">=0.17.0,<0.18.0"
-pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
+mkdocstrings = ">=0.19.1,<1"
+mkdocstrings-python = ">=0.8.3,<1"
 requests = ">=2,<3"
 tomli = ">=2.0.1,<3"
 
