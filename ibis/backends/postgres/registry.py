@@ -473,10 +473,10 @@ operation_registry.update(
         # null handling
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),
         # boolean reductions
-        ops.Any: unary(sa.func.bool_or),
-        ops.All: unary(sa.func.bool_and),
-        ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
-        ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
+        ops.Any: reduction(sa.func.bool_or),
+        ops.All: reduction(sa.func.bool_and),
+        ops.NotAny: reduction(lambda x: sa.not_(sa.func.bool_or(x))),
+        ops.NotAll: reduction(lambda x: sa.not_(sa.func.bool_and(x))),
         # strings
         ops.GroupConcat: _string_agg,
         ops.Capitalize: unary(sa.func.initcap),
@@ -488,7 +488,7 @@ operation_registry.update(
             ),
             3,
         ),
-        ops.Translate: fixed_arity('translate', 3),
+        ops.Translate: fixed_arity(sa.func.translate, 3),
         ops.RegexExtract: fixed_arity(_regex_extract, 3),
         ops.StringSplit: fixed_arity(
             lambda col, sep: sa.func.string_to_array(
