@@ -251,5 +251,7 @@ operation_registry.update(
         ops.JSONGetItem: fixed_arity(_json_get_item, 2),
         ops.RowID: lambda *_: sa.literal_column('rowid'),
         ops.StringToTimestamp: fixed_arity(sa.func.strptime, 2),
+        ops.Quantile: reduction(sa.func.quantile_cont),
+        ops.MultiQuantile: reduction(sa.func.quantile_cont),
     }
 )
