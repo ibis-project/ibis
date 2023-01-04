@@ -508,6 +508,10 @@ def _array_slice(t, op):
     )
 
 
+def _capitalize(t, op):
+    return f"CONCAT(UPPER(SUBSTR({t.translate(op.arg)}, 1, 1)), SUBSTR({t.translate(op.arg)}, 2))"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -567,6 +571,7 @@ OPERATION_REGISTRY = {
     ops.StringFind: _string_find,
     ops.Substring: _string_substring,
     ops.StrRight: _string_right,
+    ops.Capitalize: _capitalize,
     ops.Repeat: fixed_arity("REPEAT", 2),
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
@@ -639,7 +644,6 @@ OPERATION_REGISTRY = {
 _invalid_operations = {
     ops.Translate,
     ops.FindInSet,
-    ops.Capitalize,
     ops.DateDiff,
     ops.TimestampDiff,
 }
