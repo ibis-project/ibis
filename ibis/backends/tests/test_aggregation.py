@@ -568,7 +568,6 @@ def test_reduction_ops(
                 mark.notimpl(
                     [
                         "bigquery",
-                        "clickhouse",
                         "dask",
                         "datafusion",
                         "impala",

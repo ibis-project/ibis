@@ -4,7 +4,7 @@ import calendar
 import functools
 from functools import partial
 from operator import add, mul, sub
-from typing import Any, Literal, Mapping
+from typing import Any, Callable, Literal, Mapping
 
 import sqlglot as sg
 
@@ -178,6 +178,39 @@ def _not_any(op, **kw):
 @translate_val.register(ops.NotAll)
 def _not_all(op, **kw):
     return translate_val(ops.Not(ops.All(op.arg)), **kw)
+
+
+def _quantiles(quantiles_translator_func: Callable, func_name: str):
+    def translate(op, **kw):
+        quantile = quantiles_translator_func(op.quantile)
+        args = [_sql(translate_val(op.arg, **kw))]
+        func = func_name
+
+        if (where := op.where) is not None:
+            args.append(_sql(translate_val(where, **kw)))
+            func += "If"
+
+        return f"{func}({quantile})({', '.join(args)})"
+
+    return translate
+
+
+@translate_val.register(ops.Quantile)
+def _quantile(op, **kw):
+    def quantiles_translator_func(quantiles):
+        return _sql(translate_val(quantiles, **kw))
+
+    return _quantiles(quantiles_translator_func, func_name="quantile")(op, **kw)
+
+
+@translate_val.register(ops.MultiQuantile)
+def _multi_quantile(op, **kw):
+    def quantiles_translator_func(quantiles):
+        if not isinstance(quantiles, ops.Literal):
+            raise TypeError("ClickHouse quantile only accepts a list of Python floats")
+        return ", ".join(map(str, quantiles.value))
+
+    return _quantiles(quantiles_translator_func, func_name="quantiles")(op, **kw)
 
 
 def _agg_variance_like(func):
