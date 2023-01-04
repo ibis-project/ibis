@@ -108,8 +108,15 @@ def execute_series_natural_log(op, data, **kwargs):
     return np.log(data)
 
 
-@execute_node.register(ops.Quantile, (dd.Series, ddgb.SeriesGroupBy), numeric_types)
-def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
+@execute_node.register(ops.Quantile, dd.Series, numeric_types, (pd.Series, type(None)))
+def execute_series_quantile(op, data, quantile, mask, aggcontext=None, **kwargs):
+    if mask is not None:
+        data = data.loc[mask]
+    return data.quantile(q=quantile)
+
+
+@execute_node.register(ops.Quantile, ddgb.SeriesGroupBy, numeric_types, type(None))
+def execute_series_quantile_group_by(op, data, quantile, aggcontext=None, **kwargs):
     return data.quantile(q=quantile)
 
 
@@ -119,15 +126,17 @@ def execute_series_quantile_sequence(op, data, quantile, aggcontext=None, **kwar
 
 
 # TODO - aggregations - #2553
-@execute_node.register(ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence)
-def execute_series_quantile_groupby(op, data, quantile, aggcontext=None, **kwargs):
+@execute_node.register(
+    ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence, type(None)
+)
+def execute_series_quantile_groupby(
+    op, data, quantile, mask, aggcontext=None, **kwargs
+):
     def q(x, quantile, interpolation):
         result = x.quantile(quantile, interpolation=interpolation).tolist()
-        res = [result for _ in range(len(x))]
-        return res
+        return [result for _ in range(len(x))]
 
-    result = aggcontext.agg(data, q, quantile, op.interpolation)
-    return result
+    return aggcontext.agg(data, q, quantile, op.interpolation)
 
 
 @execute_node.register(ops.Round, dd.Series, (dd.Series, np.integer, type(None), int))
