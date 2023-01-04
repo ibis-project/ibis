@@ -12,9 +12,8 @@ exclude_backend_api: true
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.sqlite.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       inherited_members: true
       members:
         - add_operation

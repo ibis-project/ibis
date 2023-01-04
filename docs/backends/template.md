@@ -56,7 +56,7 @@ for connection parameter information.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.{{ backend_module }}.Backend.do_connect
-    rendering:
+    options:
       heading_level: 4
 <!-- prettier-ignore-end -->
 
@@ -66,9 +66,8 @@ for connection parameter information.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.{{ backend_module }}.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       inherited_members: true
 <!-- prettier-ignore-end -->
 

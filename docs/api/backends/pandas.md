@@ -4,6 +4,6 @@ These base classes underlie the pandas-based backends.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.pandas.BasePandasBackend
-    selection:
+    options:
       inherited_members: true
 <!-- prettier-ignore-end -->

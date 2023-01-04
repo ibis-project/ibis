@@ -2,15 +2,15 @@
 
 <!-- prettier-ignore-start -->
 ::: ibis.config.Options
-    rendering:
+    options:
       show_bases: false
 ::: ibis.config.Repr
-    rendering:
+    options:
       show_bases: false
 ::: ibis.config.SQL
-    rendering:
+    options:
       show_bases: false
 ::: ibis.config.ContextAdjustment
-    rendering:
+    options:
       show_bases: false
 <!-- prettier-ignore-end -->
