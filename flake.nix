@@ -67,9 +67,6 @@
           --chmod=Du+rwx,Fu+rw --archive --delete \
           "${pkgs.ibisTestingData}/" "$PWD/ci/ibis-testing-data"
 
-        export TEMPDIR
-        TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
-
         # necessary for mkdocs
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
       '';
