@@ -71,7 +71,7 @@ def infer_pandas_schema(df: pd.DataFrame, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name in df.dtypes.keys():  # noqa: SIM118
+    for column_name in df.dtypes.keys():
         if not isinstance(column_name, str):
             raise TypeError('Column names must be strings to use the pandas backend')
 

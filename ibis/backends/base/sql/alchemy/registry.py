@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import operator
 from typing import Any
@@ -51,10 +52,8 @@ def _varargs_call(sa_func, t, args):
     trans_args = []
     for raw_arg in args:
         arg = t.translate(raw_arg)
-        try:
+        with contextlib.suppress(AttributeError):
             arg = arg.scalar_subquery()
-        except AttributeError:
-            pass
         trans_args.append(arg)
     return sa_func(*trans_args)
 

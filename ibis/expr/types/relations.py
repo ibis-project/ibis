@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import functools
 import itertools
 import sys
@@ -152,10 +153,8 @@ class Table(Expr, JupyterMixin):
         raise com.ExpressionError('Use .count() instead')
 
     def __getattr__(self, key):
-        try:
+        with contextlib.suppress(com.IbisTypeError):
             return self.get_column(key)
-        except com.IbisTypeError:
-            pass
 
         # Handle deprecated `groupby` and `sort_by` methods
         if key == "groupby":

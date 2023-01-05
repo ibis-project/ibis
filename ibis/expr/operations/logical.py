@@ -266,7 +266,7 @@ class UnresolvedExistsSubquery(_UnresolvedSubquery):
 
         assert isinstance(table, TableNode)
 
-        (foreign_table,) = (t for t in self.tables if not t == table)
+        (foreign_table,) = (t for t in self.tables if t != table)
         return ExistsSubquery(foreign_table, self.predicates).to_expr()
 
 
@@ -280,5 +280,5 @@ class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
 
         assert isinstance(table, TableNode)
 
-        (foreign_table,) = (t for t in self.tables if not t == table)
+        (foreign_table,) = (t for t in self.tables if t != table)
         return NotExistsSubquery(foreign_table, self.predicates).to_expr()

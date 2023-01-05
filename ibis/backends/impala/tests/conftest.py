@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import collections
 import concurrent.futures
+import contextlib
 import itertools
 import os
 import subprocess
@@ -318,16 +319,14 @@ def tmp_db(env, con, test_data_db):
         yield tmp_db
     finally:
         con.set_database(test_data_db)
-        try:
-            con.drop_database(tmp_db, force=True)
-        except impala.error.HiveServer2Error:
+        with contextlib.suppress(impala.error.HiveServer2Error):
             # The database can be dropped by another process during tear down
             # in the middle of dropping this one if tests are running in
             # parallel.
             #
             # We only care that it gets dropped before all tests are finished
             # running.
-            pass
+            con.drop_database(tmp_db, force=True)
 
 
 @pytest.fixture(scope="module")

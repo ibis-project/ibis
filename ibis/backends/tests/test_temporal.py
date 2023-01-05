@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import operator
 import warnings
@@ -810,10 +811,8 @@ def test_timestamp_literal(con):
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
-    try:
+    with contextlib.suppress(AttributeError):
         result = result.to_pytimedelta()
-    except AttributeError:
-        pass
     assert str(result) == '16:20:00'
 
 

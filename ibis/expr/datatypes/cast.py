@@ -163,13 +163,7 @@ def can_cast_map(source, target, **kwargs):
 
 @castable.register(dt.Struct, dt.Struct)
 def can_cast_struct(source, target, **kwargs):
-    source_pairs = source.pairs
-    target_pairs = target.pairs
-    for name in {*source.names, *target.names}:
-        if name in target_pairs:
-            if not castable(source_pairs[name], target_pairs[name]):
-                return False
-    return True
+    return all(castable(source[field], target[field]) for field in target.names)
 
 
 @castable.register(dt.Array, dt.Array)

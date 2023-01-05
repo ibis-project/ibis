@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 from typing import Callable, Iterable, Iterator
 
@@ -61,10 +62,8 @@ class QueryContext:
         self.always_alias = True
 
     def get_compiled_expr(self, node):
-        try:
+        with contextlib.suppress(KeyError):
             return self.top_context.subquery_memo[node]
-        except KeyError:
-            pass
 
         if isinstance(node, (ops.SQLQueryResult, ops.SQLStringView)):
             result = node.query

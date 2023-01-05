@@ -1,3 +1,4 @@
+import contextlib
 import os
 import platform
 import re
@@ -723,12 +724,10 @@ def test_default_backend_no_duckdb(backend):
     # where only the dependencies for a a given backend are installed
 
     # if duckdb is available then this test won't fail and so we skip it
-    try:
+    with contextlib.suppress(ImportError):
         import duckdb  # noqa: F401
 
         pytest.skip("duckdb is installed; it will be used as the default backend")
-    except ImportError:
-        pass
 
     df = pd.DataFrame({'a': [1, 2, 3]})
     t = ibis.memtable(df)

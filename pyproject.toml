@@ -334,7 +334,9 @@ ignore = [
   "D101", # public class
   "D102", # public method
   "D103", # public function
+  "D104", # public package
   "D105", # magic methods
+  "D106", # nested class
   "D107", # init
   "D202", # blank lines after function docstring
   "D203", # blank line before class docstring
@@ -348,6 +350,11 @@ ignore = [
   "RET506",
   "RET507",
   "RET508",
+  "SIM102", # nested ifs
+  "SIM108", # convert everything to ternary operator
+  "SIM117", # nested withs
+  "SIM118", # remove .keys() calls from dictionaries
+
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"

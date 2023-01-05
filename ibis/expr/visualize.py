@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 import tempfile
 from html import escape
@@ -13,10 +14,8 @@ from ibis.common.graph import Graph
 
 
 def get_type(node):
-    try:
+    with contextlib.suppress(AttributeError, NotImplementedError):
         return str(node.output_dtype)
-    except (AttributeError, NotImplementedError):
-        pass
 
     try:
         schema = node.schema

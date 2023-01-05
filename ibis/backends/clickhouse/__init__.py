@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import json
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
@@ -132,10 +133,8 @@ class Backend(BaseBackend):
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):
-        try:
+        with contextlib.suppress(KeyError):
             kwargs["secure"] = bool(ast.literal_eval(kwargs["secure"]))
-        except KeyError:
-            pass
 
     def do_connect(
         self,

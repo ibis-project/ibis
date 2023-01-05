@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 
 import dask.dataframe as dd
@@ -69,10 +70,8 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # kwargs here. This is true for all udf execution in this
         # file.
         # See ibis.udf.vectorized.UserDefinedFunction
-        try:
+        with contextlib.suppress(KeyError):
             return cache[(op, timecontext)]
-        except KeyError:
-            pass
 
         if op.return_type.is_struct():
             meta = make_struct_op_meta(op)
