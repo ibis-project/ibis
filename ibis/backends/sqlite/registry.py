@@ -20,7 +20,6 @@ from ibis.backends.base.sql.alchemy import (
     varargs,
     variance_reduction,
 )
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import _clip, _gen_string_find
 
 operation_registry = sqlalchemy_operation_registry.copy()
@@ -31,38 +30,39 @@ sqlite_cast = Dispatcher("sqlite_cast")
 
 
 @sqlite_cast.register(object, dt.Integer, dt.Timestamp)
-def _unixepoch(arg, from_, to):
+def _unixepoch(arg, from_, to, **_):
     return sa.func.datetime(arg, "unixepoch")
 
 
 @sqlite_cast.register(object, dt.String, dt.Timestamp)
-def _string_to_timestamp(arg, from_, to):
+def _string_to_timestamp(arg, from_, to, **_):
     return sa.func.strftime('%Y-%m-%d %H:%M:%f', arg)
 
 
 @sqlite_cast.register(object, dt.Integer, dt.Date)
-def _integer_to_date(arg, from_, to):
+def _integer_to_date(arg, from_, to, **_):
     return sa.func.date(sa.func.datetime(arg, "unixepoch"))
 
 
 @sqlite_cast.register(object, (dt.String, dt.Timestamp), dt.Date)
-def _string_or_timestamp_to_date(arg, from_, to):
+def _string_or_timestamp_to_date(arg, from_, to, **_):
     return sa.func.date(arg)
 
 
 @sqlite_cast.register(object, dt.DataType, (dt.Date, dt.Timestamp))
-def _value_to_temporal(arg, from_, to):
+def _value_to_temporal(arg, from_, to, **_):
     raise com.UnsupportedOperationError(type(arg))
 
 
 @sqlite_cast.register(object, dt.Category, dt.Int32)
-def _category_to_int(arg, from_, to):
+def _category_to_int(arg, from_, to, **_):
     return arg
 
 
 @sqlite_cast.register(object, dt.DataType, dt.DataType)
-def _default_cast_impl(arg, from_, to):
-    return sa.cast(arg, to_sqla_type(to))
+def _default_cast_impl(arg, from_, to, translator=None):
+    assert translator is not None, "translator is None"
+    return sa.cast(arg, translator.get_sqla_type(to))
 
 
 def _strftime_int(fmt):
@@ -190,7 +190,9 @@ operation_registry.update(
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
         # instance of ops.Value
         ops.Cast: (
-            lambda t, op: sqlite_cast(t.translate(op.arg), op.arg.output_dtype, op.to)
+            lambda t, op: sqlite_cast(
+                t.translate(op.arg), op.arg.output_dtype, op.to, translator=t
+            )
         ),
         ops.StrRight: fixed_arity(
             lambda arg, nchars: sa.func.substr(arg, -nchars, nchars), 2

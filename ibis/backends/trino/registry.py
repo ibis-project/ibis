@@ -5,7 +5,6 @@ import sqlalchemy as sa
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
@@ -29,7 +28,7 @@ def _literal(t, op):
     dtype = op.output_dtype
 
     if dtype.is_struct():
-        return sa.cast(sa.func.row(*value.values()), to_sqla_type(dtype))
+        return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))
     elif dtype.is_map():
         return sa.func.map(_array(t, value.keys()), _array(t, value.values()))
     return _alchemy_literal(t, op)
@@ -63,7 +62,7 @@ def _array_column(t, op):
         str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
         for arg in op.cols
     )
-    return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
+    return sa.literal_column(f"ARRAY[{args}]", type_=t.get_sqla_type(op.output_dtype))
 
 
 _truncate_precisions = {
@@ -245,7 +244,7 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.StructField: lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field)),
         ops.StructColumn: lambda t, op: sa.cast(
-            sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
+            sa.func.row(*map(t.translate, op.values)), t.get_sqla_type(op.output_dtype)
         ),
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),

@@ -257,4 +257,9 @@ def _(ty: dt.Struct) -> str:
 
 @serialize_raw.register(dt.Timestamp)
 def _(ty: dt.Timestamp) -> str:
-    return "DateTime64(6)" if ty.timezone is None else f"DateTime64(6, {ty.timezone!r})"
+    if (scale := ty.scale) is None:
+        scale = 3
+
+    if (timezone := ty.timezone) is not None:
+        return f"DateTime64({scale:d}, {timezone})"
+    return f"DateTime64({scale:d})"

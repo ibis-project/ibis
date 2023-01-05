@@ -26,7 +26,6 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_window_functions_registry,
     unary,
 )
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.registry import (
     _bitwise_op,
@@ -352,7 +351,7 @@ def _neg_idx_to_pos(array, idx):
     return sa.case((idx < 0, sa.func.cardinality(array) + idx), else_=idx)
 
 
-def _array_slice(*, index_converter, array_length):
+def _array_slice(*, index_converter, array_length, func):
     def translate(t, op):
         arg = t.translate(op.arg)
 
@@ -369,23 +368,23 @@ def _array_slice(*, index_converter, array_length):
         else:
             stop = index_converter(arg, t.translate(stop))
 
-        return arg[start + 1 : stop]
+        return func(arg, start + 1, stop)
 
     return translate
 
 
-def _array_index(*, index_converter):
+def _array_index(*, index_converter, func):
     def translate(t, op):
         sa_array = t.translate(op.arg)
         sa_index = t.translate(op.index)
         if isinstance(op.arg, ops.Literal):
             sa_array = sa.sql.elements.Grouping(sa_array)
-        return sa_array[index_converter(sa_array, sa_index) + 1]
+        return func(sa_array, index_converter(sa_array, sa_index) + 1)
 
     return translate
 
 
-def _literal(_, op):
+def _literal(t, op):
     dtype = op.output_dtype
     value = op.value
 
@@ -400,7 +399,7 @@ def _literal(_, op):
     elif isinstance(value, tuple):
         return sa.literal_column(
             str(pg.array(value).compile(compile_kwargs=dict(literal_binds=True))),
-            type_=to_sqla_type(dtype),
+            type_=t.get_sqla_type(dtype),
         )
     else:
         return sa.literal(value)
@@ -569,8 +568,11 @@ operation_registry.update(
         ops.ArraySlice: _array_slice(
             index_converter=_neg_idx_to_pos,
             array_length=sa.func.cardinality,
+            func=lambda arg, start, stop: arg[start:stop],
         ),
-        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
+        ops.ArrayIndex: _array_index(
+            index_converter=_neg_idx_to_pos, func=lambda arg, index: arg[index]
+        ),
         ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: unary(sa.func.unnest),

@@ -139,7 +139,7 @@ class Backend(BaseAlchemyBackend):
             # easier than subclassing the builtin SQLite dialect, and achieves
             # the same desired behavior.
             def _to_ischema_val(t):
-                sa_type = to_sqla_type(datatype(t))
+                sa_type = to_sqla_type(engine.dialect, datatype(t))
                 if isinstance(sa_type, sa.types.TypeEngine):
                     # SQLAlchemy expects a callable here, rather than an
                     # instance. Use a lambda to work around this.

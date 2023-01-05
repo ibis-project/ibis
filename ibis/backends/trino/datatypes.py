@@ -157,20 +157,54 @@ def sa_trino_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
 
 
-@compiles(sa.TEXT, "trino")
-def compiles_text(element, compiler, **kw):
-    return "VARCHAR"
+@to_sqla_type.register(TrinoDialect, dt.String)
+def _string(_, itype):
+    return sa.VARCHAR()
 
 
-@compiles(sat.StructType, "trino")
-def compiles_struct(element, compiler, **kw):
+@to_sqla_type.register(TrinoDialect, dt.Struct)
+def _struct(dialect, itype):
+    return ROW(
+        [(name, to_sqla_type(dialect, typ)) for name, typ in itype.pairs.items()]
+    )
+
+
+@to_sqla_type.register(TrinoDialect, dt.Timestamp)
+def _timestamp(_, itype):
+    return TIMESTAMP(precision=itype.scale, timezone=bool(itype.timezone))
+
+
+@compiles(TIMESTAMP, "trino")
+def compiles_timestamp(typ, compiler, **kw):
+    result = "TIMESTAMP"
+
+    if (prec := typ.precision) is not None:
+        result += f"({prec:d})"
+
+    if typ.timezone:
+        result += " WITH TIME ZONE"
+
+    return result
+
+
+@compiles(ROW, "trino")
+def _compiles_row(element, compiler, **kw):
+    # TODO: @compiles should live in the dialect
+    quote = compiler.dialect.identifier_preparer.quote
     content = ", ".join(
         f"{field} {compiler.process(typ, **kw)}" for field, typ in element.pairs
     )
     return f"ROW({content})"
 
 
-@compiles(sat.MapType, "trino")
+@to_sqla_type.register(TrinoDialect, dt.Map)
+def _map(dialect, itype):
+    return MAP(
+        to_sqla_type(dialect, itype.key_type), to_sqla_type(dialect, itype.value_type)
+    )
+
+
+@compiles(MAP, "trino")
 def compiles_map(typ, compiler, **kw):
     key_type = compiler.process(typ.key_type, **kw)
     value_type = compiler.process(typ.value_type, **kw)

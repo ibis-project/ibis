@@ -1,7 +1,10 @@
 from functools import partial
 from typing import Optional, TypedDict
 
+from sqlalchemy.dialects import mssql
+
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 
 
 class _FieldDescription(TypedDict):
@@ -77,3 +80,21 @@ _type_mapping = {
     # https://learn.microsoft.com/en-us/sql/t-sql/data-types/rowversion-transact-sql?view=sql-server-ver16
     'TIMESTAMP': dt.Binary,
 }
+
+
+_MSSQL_TYPE_MAP = {
+    dt.Boolean: mssql.BIT,
+    dt.Int8: mssql.TINYINT,
+    dt.Int16: mssql.SMALLINT,
+    dt.Int32: mssql.INTEGER,
+    dt.Int64: mssql.BIGINT,
+    dt.Float16: mssql.FLOAT,
+    dt.Float32: mssql.FLOAT,
+    dt.Float64: mssql.REAL,
+    dt.String: mssql.NVARCHAR,
+}
+
+
+@to_sqla_type.register(mssql.dialect, tuple(_MSSQL_TYPE_MAP.keys()))
+def _simple_types(_, itype):
+    return _MSSQL_TYPE_MAP[type(itype)]

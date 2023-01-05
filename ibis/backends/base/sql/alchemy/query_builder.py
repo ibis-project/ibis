@@ -6,9 +6,7 @@ import sqlalchemy as sa
 from sqlalchemy import sql
 
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
@@ -20,10 +18,6 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.base.sql.compiler.base import SetOp
-
-
-def _schema_to_sqlalchemy_columns(schema: sch.Schema) -> list[sa.Column]:
-    return [sa.column(n, to_sqla_type(t)) for n, t in schema.items()]
 
 
 class _AlchemyTableSetFormatter(TableSetFormatter):
@@ -94,32 +88,32 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
         alias = ctx.get_ref(op)
 
+        translator = ctx.compiler.translator_class(ref_op, ctx)
+
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
         elif isinstance(ref_op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
             result = sa.table(
-                ref_op.name,
-                *_schema_to_sqlalchemy_columns(ref_op.schema),
+                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
             )
         elif isinstance(ref_op, ops.SQLQueryResult):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns)
         elif isinstance(ref_op, ops.SQLStringView):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
         elif isinstance(ref_op, ops.View):
             # TODO(kszucs): avoid converting to expression
             child_expr = ref_op.child.to_expr()
             definition = child_expr.compile()
             result = sa.table(
-                ref_op.name,
-                *_schema_to_sqlalchemy_columns(ref_op.schema),
+                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
             )
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
         elif isinstance(ref_op, ops.InMemoryTable):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
 
             if self.context.compiler.cheap_in_memory_tables:
                 result = sa.table(ref_op.name, *columns)

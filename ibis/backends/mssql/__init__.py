@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
 from ibis.backends.mssql.datatypes import _type_from_result_set_info
-
-if TYPE_CHECKING:
-    pass
 
 
 class Backend(BaseAlchemyBackend):

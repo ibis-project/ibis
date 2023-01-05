@@ -19,6 +19,7 @@ from pytest import param
 from sqlalchemy import func as F
 from sqlalchemy import sql
 from sqlalchemy import types as sat
+from sqlalchemy.engine.default import DefaultDialect
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -1098,8 +1099,10 @@ def test_tpc_h11(h11):
 
 
 def test_to_sqla_type_array_of_non_primitive():
-    result = to_sqla_type(dt.Array(dt.Struct.from_dict(dict(a="int"))))
-    [(result_name, result_type)] = result.item_type.pairs
+    result = to_sqla_type(
+        DefaultDialect(), dt.Array(dt.Struct.from_dict(dict(a="int")))
+    )
+    [(result_name, result_type)] = result.value_type.pairs
     expected_name = "a"
     expected_type = sa.BigInteger()
     assert result_name == expected_name

@@ -32,7 +32,6 @@ _NATIVE_ARROW = True
 class SnowflakeExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
-    _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = False
     _forbids_frame_clause = (
         *AlchemyExprTranslator._forbids_frame_clause,
@@ -40,6 +39,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
         ops.Lead,
     )
     _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
+    _dialect_name = "snowflake"
 
     def cast(self, sa_expr, ibis_type: dt.DataType):
         if ibis_type.is_array() or ibis_type.is_map() or ibis_type.is_struct():

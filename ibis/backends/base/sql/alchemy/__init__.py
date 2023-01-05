@@ -402,14 +402,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """Handle cases where SQLAlchemy cannot infer the column types of `table`."""
 
         self.inspector.reflect_table(table, table.columns)
-        quoted_name = self.con.dialect.identifier_preparer.quote(table.name)
+        dialect = self.con.dialect
+        quoted_name = dialect.identifier_preparer.quote(table.name)
 
         for colname, type in self._metadata(quoted_name):
             if colname in nulltype_cols:
                 # replace null types discovered by sqlalchemy with non null
                 # types
                 table.append_column(
-                    sa.Column(colname, to_sqla_type(type), nullable=type.nullable),
+                    sa.Column(
+                        colname, to_sqla_type(dialect, type), nullable=type.nullable
+                    ),
                     replace_existing=True,
                 )
         return table
