@@ -150,11 +150,11 @@ unnest = toolz.compose(
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "pandas", "pyspark", "snowflake", "polars"],
+    ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
-def test_array_discovery_postgres_duckdb(con):
+def test_array_discovery_postgres(con):
     t = con.table("array_types")
     expected = ibis.schema(
         dict(
@@ -195,8 +195,7 @@ def test_array_discovery_clickhouse(con):
 
 @builtin_array
 @pytest.mark.notyet(
-    ["clickhouse", "duckdb", "postgres"],
-    reason="backend does not support nullable nested types",
+    ["clickhouse", "postgres"], reason="backend does not support nullable nested types"
 )
 @pytest.mark.notimpl(
     ["trino"],

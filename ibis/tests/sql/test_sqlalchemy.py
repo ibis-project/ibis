@@ -29,6 +29,7 @@ from ibis.backends.base.sql.alchemy import (
     schema_from_table,
     to_sqla_type,
 )
+from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.tests.expr.mocks import MockAlchemyBackend
 from ibis.tests.util import assert_decompile_roundtrip, assert_equal
 
@@ -1107,7 +1108,7 @@ def test_to_sqla_type_array_of_non_primitive():
     expected_type = sa.BigInteger()
     assert result_name == expected_name
     assert type(result_type) == type(expected_type)
-    assert isinstance(result, sa.ARRAY)
+    assert isinstance(result, ArrayType)
 
 
 def test_no_cart_join(con, snapshot):

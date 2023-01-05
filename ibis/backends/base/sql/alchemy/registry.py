@@ -185,7 +185,7 @@ def _cast(t, op):
     if typ.is_json() and not t.native_json_type:
         return sa_arg
 
-    return t.cast(sa_arg, typ)
+    return sa.cast(sa_arg, t.get_sqla_type(typ))
 
 
 def _contains(func):
