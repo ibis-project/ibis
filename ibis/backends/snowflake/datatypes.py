@@ -15,6 +15,7 @@ from snowflake.sqlalchemy import (
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
 
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
@@ -177,3 +178,18 @@ def sa_sf_numeric(_, satype, nullable=True):
 @dt.dtype.register(SnowflakeDialect, (sa.REAL, sa.FLOAT, sa.Float))
 def sa_sf_real_float(_, satype, nullable=True):
     return dt.Float64(nullable=nullable)
+
+
+@to_sqla_type.register(SnowflakeDialect, dt.Array)
+def _sf_array(_, itype):
+    return ARRAY
+
+
+@to_sqla_type.register(SnowflakeDialect, (dt.Map, dt.Struct))
+def _sf_map_struct(_, itype):
+    return OBJECT
+
+
+@to_sqla_type.register(SnowflakeDialect, dt.JSON)
+def _sf_json(_, itype):
+    return VARIANT

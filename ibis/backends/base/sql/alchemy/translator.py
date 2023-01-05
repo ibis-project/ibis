@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 import sqlalchemy as sa
 
 import ibis
@@ -56,7 +58,7 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _dialect_name = "default"
 
-    @property
+    @functools.cached_property
     def dialect(self) -> sa.engine.interfaces.Dialect:
         if (name := self._dialect_name) == "default":
             return _DEFAULT_DIALECT
@@ -65,8 +67,7 @@ class AlchemyExprTranslator(ExprTranslator):
 
     def _schema_to_sqlalchemy_columns(self, schema):
         return [
-            sa.column(name, to_sqla_type(self.dialect, dtype))
-            for name, dtype in schema.items()
+            sa.column(name, self.get_sqla_type(dtype)) for name, dtype in schema.items()
         ]
 
     def name(self, translated, name, force=True):
@@ -102,9 +103,6 @@ class AlchemyExprTranslator(ExprTranslator):
             sa_args = tuple(map(self.translate, argtuple))
 
         return sa_func(*sa_args)
-
-    def cast(self, sa_expr, ibis_type: dt.DataType):
-        return sa.cast(sa_expr, self.get_sqla_type(ibis_type))
 
 
 rewrites = AlchemyExprTranslator.rewrites

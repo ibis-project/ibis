@@ -6,8 +6,8 @@ from sqlalchemy.ext.compiler import compiles
 from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW
 from trino.sqlalchemy.dialect import TrinoDialect
 
-import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -192,7 +192,8 @@ def _compiles_row(element, compiler, **kw):
     # TODO: @compiles should live in the dialect
     quote = compiler.dialect.identifier_preparer.quote
     content = ", ".join(
-        f"{field} {compiler.process(typ, **kw)}" for field, typ in element.pairs
+        f"{quote(field)} {compiler.process(typ, **kw)}"
+        for field, typ in element.attr_types
     )
     return f"ROW({content})"
 
@@ -206,6 +207,7 @@ def _map(dialect, itype):
 
 @compiles(MAP, "trino")
 def compiles_map(typ, compiler, **kw):
+    # TODO: @compiles should live in the dialect
     key_type = compiler.process(typ.key_type, **kw)
     value_type = compiler.process(typ.value_type, **kw)
     return f"MAP({key_type}, {value_type})"

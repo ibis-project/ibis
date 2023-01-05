@@ -22,6 +22,16 @@ if geospatial_supported:
     import geoalchemy2 as ga
 
 
+class ArrayType(UserDefinedType):
+    def __init__(self, value_type: sa.types.TypeEngine):
+        self.value_type = sa.types.to_instance(value_type)
+
+
+@compiles(ArrayType, "default")
+def compiles_array(element, compiler, **kw):
+    return f"ARRAY({compiler.process(element.value_type, **kw)})"
+
+
 class StructType(UserDefinedType):
     def __init__(
         self,
@@ -29,9 +39,13 @@ class StructType(UserDefinedType):
     ):
         self.pairs = [(name, sa.types.to_instance(type)) for name, type in pairs]
 
-    def get_col_spec(self, **_):
-        pairs = ", ".join(f"{k} {v}" for k, v in self.pairs)
-        return f"STRUCT({pairs})"
+
+@compiles(StructType, "default")
+def compiles_struct(element, compiler, **kw):
+    content = ", ".join(
+        f"{field} {compiler.process(typ, **kw)}" for field, typ in element.pairs
+    )
+    return f"STRUCT({content})"
 
 
 class MapType(UserDefinedType):
@@ -39,8 +53,12 @@ class MapType(UserDefinedType):
         self.key_type = sa.types.to_instance(key_type)
         self.value_type = sa.types.to_instance(value_type)
 
-    def get_col_spec(self, **_):
-        return f"MAP({self.key_type}, {self.value_type})"
+
+@compiles(MapType, "default")
+def compiles_map(element, compiler, **kw):
+    key_type = compiler.process(element.key_type, **kw)
+    value_type = compiler.process(element.value_type, **kw)
+    return f"MAP({key_type}, {value_type})"
 
 
 class UInt64(sa.types.Integer):
@@ -424,6 +442,11 @@ def sa_pg_array(dialect, satype, nullable=True):
 def sa_struct(dialect, satype, nullable=True):
     pairs = [(name, dt.dtype(dialect, typ)) for name, typ in satype.pairs]
     return dt.Struct.from_tuples(pairs, nullable=nullable)
+
+
+@dt.dtype.register(Dialect, ArrayType)
+def sa_array(dialect, satype, nullable=True):
+    return dt.Array(dt.dtype(dialect, satype.value_type), nullable=nullable)
 
 
 @sch.infer.register((sa.Table, sa.sql.TableClause))
