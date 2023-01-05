@@ -292,10 +292,7 @@ class AlchemySelect(Select):
         return fragment.order_by(*clauses)
 
     def _among_select_set(self, expr):
-        for other in self.select_set:
-            if expr.equals(other):
-                return True
-        return False
+        return any(expr.equals(other) for other in self.select_set)
 
     def _add_limit(self, fragment):
         if self.limit is None:

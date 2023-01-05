@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import functools
 import io
 import os
@@ -94,10 +95,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         client = bq.Client(project=project_id, credentials=credentials)
 
         testing_dataset = bq.DatasetReference(project_id, DATASET_ID)
-        try:
+
+        with contextlib.suppress(NotFound):
             client.create_dataset(testing_dataset, exists_ok=True)
-        except NotFound:
-            pass
 
         # day partitioning
         functional_alltypes_parted = bq.Table(

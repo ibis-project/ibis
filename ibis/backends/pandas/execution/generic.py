@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import datetime
 import decimal
 import functools
@@ -176,10 +177,8 @@ def execute_cast_series_date(op, data, type, **kwargs):
     if from_type.is_string() and not from_type.is_json():
         values = data.values
         datetimes = pd.to_datetime(values, infer_datetime_format=True)
-        try:
+        with contextlib.suppress(TypeError):
             datetimes = datetimes.tz_convert(None)
-        except TypeError:
-            pass
         dates = _normalize(datetimes, data.index, data.name)
         return pd.Series(dates, index=data.index, name=data.name)
 

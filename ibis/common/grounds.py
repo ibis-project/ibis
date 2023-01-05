@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from abc import ABCMeta, abstractmethod
 from copy import copy
 from typing import Any
@@ -40,14 +41,10 @@ class AnnotableMeta(BaseMeta):
         # inherit signature from parent classes
         signatures, attributes = [], {}
         for parent in bases:
-            try:
+            with contextlib.suppress(AttributeError):
                 attributes.update(parent.__attributes__)
-            except AttributeError:
-                pass
-            try:
+            with contextlib.suppress(AttributeError):
                 signatures.append(parent.__signature__)
-            except AttributeError:
-                pass
 
         # collection type annotations and convert them to validators
         module = dct.get('__module__')

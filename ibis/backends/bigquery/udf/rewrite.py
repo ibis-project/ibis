@@ -19,10 +19,10 @@ def matches(value: ast.AST, pattern: ast.AST) -> bool:
         for field in pattern._fields
         if hasattr(pattern, field)
     ]
-    for field_name, field_value in fields:
-        if not matches(getattr(value, field_name), field_value):
-            return False
-    return True
+    return all(
+        matches(getattr(value, field_name), field_value)
+        for field_name, field_value in fields
+    )
 
 
 class Rewriter:

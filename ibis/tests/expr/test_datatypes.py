@@ -266,7 +266,7 @@ def test_array_type_not_equals():
 
     assert not left.equals(right)
     assert left != right
-    assert not (left == right)
+    assert not (left == right)  # noqa: SIM201
 
 
 def test_array_type_equals():
@@ -275,7 +275,7 @@ def test_array_type_equals():
 
     assert left.equals(right)
     assert left == right
-    assert not (left != right)
+    assert not (left != right)  # noqa: SIM202
 
 
 def test_timestamp_with_timezone_parser_single_quote():

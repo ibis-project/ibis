@@ -284,10 +284,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         qualified_name = self._fully_qualified_name(table_name, database)
 
-        try:
+        with contextlib.suppress(KeyError):
+            # schemas won't be cached if created with raw_sql
             del self._schemas[qualified_name]
-        except KeyError:  # schemas won't be cached if created with raw_sql
-            pass
 
     def load_data(
         self,

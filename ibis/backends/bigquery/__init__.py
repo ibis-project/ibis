@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import warnings
 from urllib.parse import parse_qs, urlparse
 
@@ -28,10 +29,8 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 
-try:
+with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
-except ImportError:
-    pass
 
 __version__: str = ibis_bigquery_version.__version__
 

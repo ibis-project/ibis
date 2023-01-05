@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import importlib
 import importlib.metadata
 import platform
@@ -639,10 +640,8 @@ def alchemy_temp_table(alchemy_con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             alchemy_con.drop_table(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture
@@ -662,10 +661,8 @@ def temp_table(con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             con.drop_table(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture
@@ -685,10 +682,8 @@ def temp_view(ddl_con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             ddl_con.drop_view(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture(scope='session')

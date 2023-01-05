@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any
 
 import snowflake.connector as sfc
@@ -45,10 +46,8 @@ class Backend(BaseAlchemyBackend):
     compiler = SnowflakeCompiler
 
     def _convert_kwargs(self, kwargs):
-        try:
+        with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
-        except KeyError:
-            pass
 
     @property
     def version(self) -> str:

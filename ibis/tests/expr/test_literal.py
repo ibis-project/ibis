@@ -3,7 +3,7 @@ import uuid
 import pytest
 
 import ibis
-from ibis.expr import datatypes
+import ibis.expr.datatypes as dt
 from ibis.expr.operations import Literal
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
@@ -27,8 +27,8 @@ def test_literal_equality_int_float():
 
 def test_literal_equality_int16_int32():
     # Note: This is different from the Python behavior for int/float comparison
-    a = Literal(1, datatypes.int16)
-    b = Literal(1, datatypes.int32)
+    a = Literal(1, dt.int16)
+    b = Literal(1, dt.int32)
 
     assert a != b
 
@@ -54,8 +54,8 @@ def test_literal_equality_interval():
 
 
 def test_pickle_literal():
-    a = Literal(1, datatypes.int16)
-    b = Literal(1, datatypes.int32)
+    a = Literal(1, dt.int16)
+    b = Literal(1, dt.int32)
 
     assert_pickle_roundtrip(a)
     assert_pickle_roundtrip(b)
@@ -105,7 +105,7 @@ def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
     assert a.op().value == frozendict(field1=value['field1'], field2=value['field2'])
-    assert a.type() == datatypes.dtype(typestr)
+    assert a.type() == dt.dtype(typestr)
 
 
 @pytest.mark.parametrize(
@@ -122,6 +122,11 @@ def test_struct_literal_non_castable(value):
         ibis.struct(value, type=typestr)
 
 
+def test_struct_cast_to_empty_struct():
+    value = ibis.struct({"a": 1, "b": 2.0})
+    assert value.type().castable(dt.Struct([], []))
+
+
 @pytest.mark.parametrize(
     'value',
     [
@@ -133,7 +138,7 @@ def test_map_literal(value):
     a = ibis.map(["a", "b"], [1, 2])
     assert a.op().keys.value == ("a", "b")
     assert a.op().values.value == (1, 2)
-    assert a.type() == datatypes.dtype(typestr)
+    assert a.type() == dt.dtype(typestr)
 
 
 @pytest.mark.parametrize(

@@ -998,7 +998,7 @@ def compile_regex_search(t, op, **kwargs):
 
     @F.udf('boolean')
     def regex_search(s, pattern):
-        return True if re.search(pattern, s) else False
+        return re.search(pattern, s) is not None
 
     src_column = t.translate(op.arg, **kwargs)
     pattern = t.translate(op.pattern, **kwargs)
