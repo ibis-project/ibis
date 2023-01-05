@@ -344,14 +344,18 @@ class Timestamp(Temporal):
     timezone = optional(instance_of(str))
     """The timezone of values of this type."""
 
+    scale = optional(isin(range(10)))
+    """The scale of the timestamp if known."""
+
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
     @property
     def _pretty_piece(self) -> str:
-        if (timezone := self.timezone) is not None:
-            return f"({timezone!r})"
-        return ""
+        pieces = [
+            repr(piece) for piece in (self.scale, self.timezone) if piece is not None
+        ]
+        return f"({', '.join(pieces)})" * bool(pieces)
 
 
 @public

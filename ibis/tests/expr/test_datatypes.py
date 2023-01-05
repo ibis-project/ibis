@@ -364,7 +364,7 @@ def test_timestamp_with_invalid_timezone():
 
 def test_timestamp_with_timezone_repr():
     ts = dt.Timestamp('UTC')
-    assert repr(ts) == "Timestamp(timezone='UTC', nullable=True)"
+    assert repr(ts) == "Timestamp(timezone='UTC', scale=None, nullable=True)"
 
 
 def test_timestamp_with_timezone_str():
@@ -530,6 +530,19 @@ def test_struct_datatype_subclass_from_tuples():
 
 def test_parse_null():
     assert dt.parse("null") == dt.null
+
+
+@pytest.mark.parametrize("scale", range(10))
+@pytest.mark.parametrize("tz", ["UTC", "America/New_York"])
+def test_timestamp_with_scale(scale, tz):
+    assert dt.parse(f"timestamp({tz!r}, {scale:d})") == dt.Timestamp(
+        timezone=tz, scale=scale
+    )
+
+
+@pytest.mark.parametrize("scale", range(10))
+def test_timestamp_with_scale_no_tz(scale):
+    assert dt.parse(f"timestamp({scale:d})") == dt.Timestamp(scale=scale)
 
 
 def get_leaf_classes(op):

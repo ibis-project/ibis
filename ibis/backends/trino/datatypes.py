@@ -3,7 +3,7 @@ from __future__ import annotations
 import parsy as p
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW
+from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIMESTAMP
 from trino.sqlalchemy.dialect import TrinoDialect
 
 import ibis.expr.datatypes as dt
@@ -11,12 +11,11 @@ from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
     FIELD,
-    LANGLE,
     LPAREN,
     PRECISION,
-    RANGLE,
     RPAREN,
     SCALE,
+    SINGLE_DIGIT,
     spaceless,
     spaceless_string,
 )
@@ -51,7 +50,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def timestamp():
         yield spaceless_string("timestamp")
-        yield LPAREN.then(PRECISION).skip(RPAREN).optional()
+        yield LPAREN.then(SINGLE_DIGIT.map(int)).skip(RPAREN).optional()
         return Timestamp(timezone="UTC")
 
     primitive = (
@@ -89,9 +88,9 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
 
     @p.generate
     def angle_type():
-        yield LANGLE
+        yield LPAREN
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return value_type
 
     @p.generate
@@ -103,11 +102,11 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield LANGLE
+        yield LPAREN
         key_type = yield primitive
         yield COMMA
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return Map(key_type, value_type)
 
     field = spaceless(FIELD)
@@ -148,6 +147,15 @@ def sa_trino_map(dialect, satype, nullable=True):
     return dt.Map(
         dt.dtype(dialect, satype.key_type),
         dt.dtype(dialect, satype.value_type),
+        nullable=nullable,
+    )
+
+
+@dt.dtype.register(TrinoDialect, TIMESTAMP)
+def sa_trino_timestamp(_, satype, nullable=True):
+    return dt.Timestamp(
+        timezone="UTC" if satype.timezone else None,
+        scale=satype.precision,
         nullable=nullable,
     )
 

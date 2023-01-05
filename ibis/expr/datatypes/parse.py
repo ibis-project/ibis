@@ -21,6 +21,7 @@ from ibis.common.parsing import (
     RPAREN,
     SCALE,
     SEMICOLON,
+    SINGLE_DIGIT,
     spaceless,
     spaceless_string,
 )
@@ -147,18 +148,24 @@ def parse(text: str) -> dt.DataType:
         ) or (None, None)
         return dt.Decimal(precision=precision, scale=scale)
 
-    @parsy.generate
-    def parened_string():
-        yield LPAREN
-        s = yield RAW_STRING
-        yield RPAREN
-        return s
+    parened_string = LPAREN.then(RAW_STRING).skip(RPAREN)
+    timestamp_scale = SINGLE_DIGIT.map(int)
 
-    @parsy.generate
-    def timestamp():
-        yield spaceless_string("timestamp")
-        tz = yield parened_string
-        return dt.Timestamp(tz)
+    timestamp_tz_args = (
+        LPAREN.then(
+            parsy.seq(timezone=RAW_STRING, scale=COMMA.then(timestamp_scale).optional())
+        )
+        .skip(RPAREN)
+        .combine_dict(dict)
+    )
+
+    timestamp_no_tz_args = LPAREN.then(parsy.seq(scale=timestamp_scale).skip(RPAREN))
+
+    timestamp = spaceless_string("timestamp").then(
+        parsy.alt(timestamp_tz_args, timestamp_no_tz_args)
+        .optional(default={})
+        .combine_dict(dt.Timestamp)
+    )
 
     @parsy.generate
     def angle_type():

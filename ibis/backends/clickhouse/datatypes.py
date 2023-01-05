@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from functools import partial
 
 import parsy
 
@@ -25,14 +26,30 @@ def _bool_type():
 
 
 def parse(text: str) -> dt.DataType:
-    @parsy.generate
-    def datetime():
-        yield spaceless_string("datetime64", "datetime")
-        timezone = yield parened_string.optional()
-        return dt.Timestamp(timezone=timezone, nullable=False)
+    parened_string = LPAREN.then(RAW_STRING).skip(RPAREN)
+
+    datetime64_args = LPAREN.then(
+        parsy.seq(
+            scale=parsy.decimal_digit.map(int).optional(),
+            timezone=COMMA.then(RAW_STRING).optional(),
+        )
+    ).skip(RPAREN)
+
+    datetime64 = spaceless_string("datetime64").then(
+        datetime64_args.optional(default={}).combine_dict(
+            partial(dt.Timestamp, nullable=False)
+        )
+    )
+
+    datetime = spaceless_string("datetime").then(
+        parsy.seq(timezone=parened_string.optional()).combine_dict(
+            partial(dt.Timestamp, nullable=False)
+        )
+    )
 
     primitive = (
-        datetime
+        datetime64
+        | datetime
         | spaceless_string("null", "nothing").result(dt.null)
         | spaceless_string("bigint", "int64").result(dt.Int64(nullable=False))
         | spaceless_string("double", "float64").result(dt.Float64(nullable=False))
@@ -66,13 +83,6 @@ def parse(text: str) -> dt.DataType:
             "string",
         ).result(dt.String(nullable=False))
     )
-
-    @parsy.generate
-    def parened_string():
-        yield LPAREN
-        s = yield RAW_STRING
-        yield RPAREN
-        return s
 
     @parsy.generate
     def nullable():
