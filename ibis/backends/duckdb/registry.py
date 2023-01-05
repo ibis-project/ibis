@@ -8,7 +8,7 @@ import numpy as np
 import sqlalchemy as sa
 
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import to_sqla_type, unary
+from ibis.backends.base.sql.alchemy import unary
 from ibis.backends.base.sql.alchemy.registry import (
     _table_column,
     geospatial_functions,
@@ -74,9 +74,9 @@ def _timestamp_from_unix(t, op):
         raise ValueError(f"`{unit}` unit is not supported!")
 
 
-def _literal(_, op):
+def _literal(t, op):
     dtype = op.output_dtype
-    sqla_type = to_sqla_type(dtype)
+    sqla_type = t.get_sqla_type(dtype)
     value = op.value
 
     if dtype.is_interval():
@@ -99,7 +99,7 @@ def _literal(_, op):
                 *(sa.bindparam(f"v{i:d}", val) for i, val in enumerate(value.values()))
             )
             name = op.name if isinstance(op, ops.Named) else "tmp"
-            params = {name: to_sqla_type(dtype)}
+            params = {name: t.get_sqla_type(dtype)}
             return bound_text.columns(**params).scalar_subquery()
         raise NotImplementedError(
             f"Ibis dtype `{dtype}` with mapping type "
@@ -182,7 +182,7 @@ operation_registry.update(
         ops.ArrayColumn: (
             lambda t, op: sa.cast(
                 sa.func.list_value(*map(t.translate, op.cols)),
-                to_sqla_type(op.output_dtype),
+                t.get_sqla_type(op.output_dtype),
             )
         ),
         ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
@@ -198,8 +198,11 @@ operation_registry.update(
         ops.ArraySlice: _array_slice(
             index_converter=_neg_idx_to_pos,
             array_length=sa.func.array_length,
+            func=sa.func.list_slice,
         ),
-        ops.ArrayIndex: _array_index(index_converter=_neg_idx_to_pos),
+        ops.ArrayIndex: _array_index(
+            index_converter=_neg_idx_to_pos, func=sa.func.list_extract
+        ),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -213,7 +216,7 @@ operation_registry.update(
             lambda t, op: sa.func.struct_extract(
                 t.translate(op.arg),
                 sa.text(repr(op.field)),
-                type_=to_sqla_type(op.output_dtype),
+                type_=t.get_sqla_type(op.output_dtype),
             )
         ),
         ops.TableColumn: _table_column,

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import functools
 from typing import Iterable
 
 import sqlalchemy as sa
+from multipledispatch import Dispatcher
 from sqlalchemy.dialects import mssql, mysql, postgresql, sqlite
 from sqlalchemy.dialects.mssql.base import MSDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
@@ -82,8 +82,9 @@ def table_from_schema(name, meta, schema, database: str | None = None):
     # Convert Ibis schema to SQLA table
     columns = []
 
+    dialect = getattr(meta.bind, "dialect", _DEFAULT_DIALECT)
     for colname, dtype in zip(schema.names, schema.types):
-        satype = to_sqla_type(dtype)
+        satype = to_sqla_type(dialect, dtype)
         column = sa.Column(colname, satype, nullable=dtype.nullable)
         columns.append(column)
 
@@ -115,55 +116,56 @@ ibis_type_to_sqla = {
     dt.UInt32: UInt32,
     dt.UInt64: UInt64,
     dt.JSON: sa.JSON,
+    dt.Interval: sa.Interval,
 }
 
 
-@functools.singledispatch
-def to_sqla_type(itype, type_map=None):
-    if type_map is None:
-        type_map = ibis_type_to_sqla
-    return type_map[type(itype)]
+_DEFAULT_DIALECT = DefaultDialect()
+
+to_sqla_type = Dispatcher("to_sqla_type")
 
 
-@to_sqla_type.register(dt.Decimal)
-def _(itype, **kwargs):
+@to_sqla_type.register(Dialect, dt.DataType)
+def _default(_, itype):
+    return ibis_type_to_sqla[type(itype)]
+
+
+@to_sqla_type.register(Dialect, dt.Decimal)
+def _decimal(_, itype):
     return sa.types.NUMERIC(itype.precision, itype.scale)
 
 
-@to_sqla_type.register(dt.Interval)
-def _(itype, **kwargs):
-    return sa.types.Interval()
+@to_sqla_type.register(Dialect, dt.Timestamp)
+def _timestamp(_, itype):
+    return sa.TIMESTAMP(timezone=bool(itype.timezone))
 
 
-@to_sqla_type.register(dt.Date)
-def _(itype, **kwargs):
-    return sa.Date()
+@to_sqla_type.register(Dialect, dt.Array)
+def _array(dialect, itype):
+    return ArrayType(to_sqla_type(dialect, itype.value_type))
 
 
-@to_sqla_type.register(dt.Timestamp)
-def _(itype, **kwargs):
-    return sa.TIMESTAMP(bool(itype.timezone))
-
-
-@to_sqla_type.register(dt.Array)
-def _(itype, **kwargs):
+@to_sqla_type.register(PGDialect, dt.Array)
+def _pg_array(dialect, itype):
     # Unwrap the array element type because sqlalchemy doesn't allow arrays of
     # arrays. This doesn't affect the underlying data.
     while itype.is_array():
         itype = itype.value_type
-    return sa.ARRAY(to_sqla_type(itype, **kwargs))
+    return sa.ARRAY(to_sqla_type(dialect, itype))
 
 
-@to_sqla_type.register(dt.Struct)
-def _(itype, **_):
+@to_sqla_type.register(Dialect, dt.Struct)
+def _struct(dialect, itype):
     return StructType(
-        [(name, to_sqla_type(type)) for name, type in itype.pairs.items()]
+        [(name, to_sqla_type(dialect, type)) for name, type in itype.pairs.items()]
     )
 
 
-@to_sqla_type.register(dt.Map)
-def _(itype, **_):
-    return MapType(to_sqla_type(itype.key_type), to_sqla_type(itype.value_type))
+@to_sqla_type.register(Dialect, dt.Map)
+def _map(dialect, itype):
+    return MapType(
+        to_sqla_type(dialect, itype.key_type), to_sqla_type(dialect, itype.value_type)
+    )
 
 
 @dt.dtype.register(Dialect, sa.types.NullType)
@@ -322,8 +324,8 @@ if geospatial_supported:
         else:
             raise ValueError(f"Unrecognized geometry type: {t}")
 
-    @to_sqla_type.register(dt.GeoSpatial)
-    def _(itype, **kwargs):
+    @to_sqla_type.register(Dialect, dt.GeoSpatial)
+    def _(_, itype, **kwargs):
         if itype.geotype == 'geometry':
             return ga.Geometry
         elif itype.geotype == 'geography':
@@ -406,8 +408,8 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
     return dt.Timestamp(timezone=timezone, nullable=nullable)
 
 
-@dt.dtype.register(Dialect, sa.ARRAY)
-def sa_array(dialect, satype, nullable=True):
+@dt.dtype.register(PGDialect, sa.ARRAY)
+def sa_pg_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
         raise NotImplementedError(

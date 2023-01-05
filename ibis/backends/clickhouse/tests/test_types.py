@@ -1,4 +1,5 @@
 import pytest
+from pytest import param
 
 import ibis.expr.datatypes as dt
 from ibis.backends.clickhouse.datatypes import parse
@@ -30,55 +31,104 @@ def test_columns_types_with_additional_argument(con):
 @pytest.mark.parametrize(
     ('ch_type', 'ibis_type'),
     [
-        (
+        param(
             "Enum8('' = 0, 'CDMA' = 1, 'GSM' = 2, 'LTE' = 3, 'NR' = 4)",
             dt.String(nullable=False),
+            id="enum",
         ),
-        ('IPv4', dt.inet(nullable=False)),
-        ('IPv6', dt.inet(nullable=False)),
-        ('JSON', dt.json(nullable=False)),
-        ("Object('json')", dt.json(nullable=False)),
-        ('LowCardinality(String)', dt.String(nullable=False)),
-        ('Array(Int8)', dt.Array(dt.Int8(nullable=False), nullable=False)),
-        ('Array(Int16)', dt.Array(dt.Int16(nullable=False), nullable=False)),
-        ('Array(Int32)', dt.Array(dt.Int32(nullable=False), nullable=False)),
-        ('Array(Int64)', dt.Array(dt.Int64(nullable=False), nullable=False)),
-        ('Array(UInt8)', dt.Array(dt.UInt8(nullable=False), nullable=False)),
-        ('Array(UInt16)', dt.Array(dt.UInt16(nullable=False), nullable=False)),
-        ('Array(UInt32)', dt.Array(dt.UInt32(nullable=False), nullable=False)),
-        ('Array(UInt64)', dt.Array(dt.UInt64(nullable=False), nullable=False)),
-        (
+        param('IPv4', dt.inet(nullable=False), id="ipv4"),
+        param('IPv6', dt.inet(nullable=False), id="ipv6"),
+        param('JSON', dt.json(nullable=False), id="json"),
+        param("Object('json')", dt.json(nullable=False), id="object_json"),
+        param(
+            'LowCardinality(String)', dt.String(nullable=False), id="low_card_string"
+        ),
+        param(
+            'Array(Int8)',
+            dt.Array(dt.Int8(nullable=False), nullable=False),
+            id="array_int8",
+        ),
+        param(
+            'Array(Int16)',
+            dt.Array(dt.Int16(nullable=False), nullable=False),
+            id="array_int16",
+        ),
+        param(
+            'Array(Int32)',
+            dt.Array(dt.Int32(nullable=False), nullable=False),
+            id="array_int32",
+        ),
+        param(
+            'Array(Int64)',
+            dt.Array(dt.Int64(nullable=False), nullable=False),
+            id="array_int64",
+        ),
+        param(
+            'Array(UInt8)',
+            dt.Array(dt.UInt8(nullable=False), nullable=False),
+            id="array_uint8",
+        ),
+        param(
+            'Array(UInt16)',
+            dt.Array(dt.UInt16(nullable=False), nullable=False),
+            id="array_uint16",
+        ),
+        param(
+            'Array(UInt32)',
+            dt.Array(dt.UInt32(nullable=False), nullable=False),
+            id="array_uint32",
+        ),
+        param(
+            'Array(UInt64)',
+            dt.Array(dt.UInt64(nullable=False), nullable=False),
+            id="array_uint64",
+        ),
+        param(
             'Array(Float32)',
             dt.Array(dt.Float32(nullable=False), nullable=False),
+            id="array_float32",
         ),
-        (
+        param(
             'Array(Float64)',
             dt.Array(dt.Float64(nullable=False), nullable=False),
+            id="array_float64",
         ),
-        ('Array(String)', dt.Array(dt.String(nullable=False), nullable=False)),
-        (
+        param(
+            'Array(String)',
+            dt.Array(dt.String(nullable=False), nullable=False),
+            id="array_string",
+        ),
+        param(
             'Array(FixedString(32))',
             dt.Array(dt.String(nullable=False), nullable=False),
+            id="array_fixed_string",
         ),
-        ('Array(Date)', dt.Array(dt.Date(nullable=False), nullable=False)),
-        (
+        param(
+            'Array(Date)',
+            dt.Array(dt.Date(nullable=False), nullable=False),
+            id="array_date",
+        ),
+        param(
             'Array(DateTime)',
             dt.Array(dt.Timestamp(nullable=False), nullable=False),
+            id="array_datetime",
         ),
-        (
+        param(
             'Array(DateTime64)',
             dt.Array(dt.Timestamp(nullable=False), nullable=False),
+            id="array_datetime64",
         ),
-        ('Array(Nothing)', dt.Array(dt.null, nullable=False)),
-        ('Array(Null)', dt.Array(dt.null, nullable=False)),
-        (
+        param('Array(Nothing)', dt.Array(dt.null, nullable=False), id="array_nothing"),
+        param('Array(Null)', dt.Array(dt.null, nullable=False), id="array_null"),
+        param(
             'Array(Array(Int8))',
             dt.Array(
                 dt.Array(dt.Int8(nullable=False), nullable=False),
                 nullable=False,
             ),
+            id="double_array",
         ),
-        (
+        param(
             'Array(Array(Array(Int8)))',
             dt.Array(
                 dt.Array(
@@ -87,8 +137,9 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="triple_array",
         ),
-        (
+        param(
             'Array(Array(Array(Array(Int8))))',
             dt.Array(
                 dt.Array(
@@ -100,13 +151,15 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="quad_array",
         ),
-        (
+        param(
             "Map(Nullable(String), Nullable(UInt64))",
             dt.Map(dt.string, dt.uint64, nullable=False),
+            id="map",
         ),
-        ("Decimal(10, 3)", dt.Decimal(10, 3, nullable=False)),
-        (
+        param("Decimal(10, 3)", dt.Decimal(10, 3, nullable=False), id="decimal"),
+        param(
             "Tuple(a String, b Array(Nullable(Float64)))",
             dt.Struct.from_dict(
                 dict(
@@ -115,8 +168,9 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="named_tuple",
         ),
-        (
+        param(
             "Tuple(String, Array(Nullable(Float64)))",
             dt.Struct.from_dict(
                 dict(
@@ -125,8 +179,9 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="unnamed_tuple",
         ),
-        (
+        param(
             "Tuple(a String, Array(Nullable(Float64)))",
             dt.Struct.from_dict(
                 dict(
@@ -135,8 +190,9 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="partially_named",
         ),
-        (
+        param(
             "Nested(a String, b Array(Nullable(Float64)))",
             dt.Struct.from_dict(
                 dict(
@@ -145,7 +201,24 @@ def test_columns_types_with_additional_argument(con):
                 ),
                 nullable=False,
             ),
+            id="nested",
         ),
+        param(
+            "DateTime64(0)", dt.Timestamp(scale=0, nullable=False), id="datetime64_zero"
+        ),
+        param(
+            "DateTime64(1)", dt.Timestamp(scale=1, nullable=False), id="datetime64_one"
+        ),
+        param("DateTime64", dt.Timestamp(nullable=False), id="datetime64"),
+    ]
+    + [
+        param(
+            f"DateTime64({scale}, '{tz}')",
+            dt.Timestamp(scale=scale, timezone=tz, nullable=False),
+            id=f"datetime64_{scale}_{tz}",
+        )
+        for scale in range(10)
+        for tz in ("UTC", "America/New_York", "America/Chicago", "America/Los_Angeles")
     ],
 )
 def test_parse_type(ch_type, ibis_type):

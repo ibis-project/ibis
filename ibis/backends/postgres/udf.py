@@ -19,6 +19,8 @@ from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUD
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(itertools.count)
 
+_postgres_dialect = dialect()
+
 
 class PostgresUDFError(IbisError):
     pass
@@ -26,14 +28,14 @@ class PostgresUDFError(IbisError):
 
 def _ibis_to_pg_sa_type(ibis_type):
     """Map an ibis DataType to a Postgres-compatible sqlalchemy type."""
-    return to_sqla_type(ibis_type, type_map=PostgreSQLExprTranslator._type_map)
+    return to_sqla_type(_postgres_dialect, ibis_type)
 
 
 def _sa_type_to_postgres_str(sa_type):
     """Map a postgres-compatible sqlalchemy type to a postgres string."""
     if callable(sa_type):
         sa_type = sa_type()
-    return sa_type.compile(dialect=dialect())
+    return sa_type.compile(dialect=_postgres_dialect)
 
 
 def _ibis_to_postgres_str(ibis_type):
