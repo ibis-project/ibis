@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib
 import importlib.metadata
-import os
 import platform
 from functools import lru_cache
 from pathlib import Path
@@ -119,12 +118,7 @@ def data_directory() -> Path:
     """
     root = Path(__file__).absolute().parents[2]
 
-    return Path(
-        os.environ.get(
-            "IBIS_TEST_DATA_DIRECTORY",
-            root / "ci" / "ibis-testing-data",
-        )
-    )
+    return root / "ci" / "ibis-testing-data"
 
 
 def recreate_database(
