@@ -23,6 +23,7 @@ def spaceless_string(*strings: str):
 
 
 RAW_NUMBER = parsy.decimal_digit.at_least(1).concat()
+SINGLE_DIGIT = parsy.decimal_digit
 PRECISION = SCALE = NUMBER = RAW_NUMBER.map(int)
 
 LPAREN = spaceless_string("(")

@@ -964,3 +964,59 @@ def test_large_timestamp(con):
     expr = ibis.timestamp("4567-01-01 00:00:00")
     result = con.execute(expr)
     assert result.replace(tzinfo=None) == huge_timestamp
+
+
+@pytest.mark.parametrize(
+    ("ts", "scale", "unit"),
+    [
+        param(
+            '2023-01-07 13:20:05.561',
+            3,
+            "ms",
+            id="ms",
+            marks=pytest.mark.broken(["mssql"], reason="incorrect result"),
+        ),
+        param(
+            '2023-01-07 13:20:05.561021',
+            6,
+            "us",
+            id="us",
+            marks=[
+                pytest.mark.broken(["mssql"], reason="incorrect result"),
+                pytest.mark.notyet(["sqlite"], reason="doesn't support microseconds"),
+            ],
+        ),
+        param(
+            '2023-01-07 13:20:05.561000231',
+            9,
+            "ns",
+            id="ns",
+            marks=[
+                pytest.mark.broken(
+                    [
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                        "trino",
+                    ],
+                    reason="drivers appear to truncate nanos",
+                ),
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    reason="bigquery doesn't support nanosecond timestamps",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notyet(["mysql"])
+def test_timestamp_precision_output(con, ts, scale, unit):
+    dtype = dt.Timestamp(scale=scale)
+    expr = ibis.literal(ts).cast(dtype)
+    result = con.execute(expr)
+    expected = pd.Timestamp(ts).floor(unit)
+    assert result == expected
