@@ -63,12 +63,9 @@
         sqlite-interactive
       ];
       shellHook = ''
-        export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
-
         ${pkgs.rsync}/bin/rsync \
           --chmod=Du+rwx,Fu+rw --archive --delete \
-          "${pkgs.ibisTestingData}/" \
-          "$IBIS_TEST_DATA_DIRECTORY"
+          "${pkgs.ibisTestingData}/" "$PWD/ci/ibis-testing-data"
 
         export TEMPDIR
         TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"

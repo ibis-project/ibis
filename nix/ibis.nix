@@ -29,12 +29,9 @@ poetry2nix.mkPoetryApplication rec {
   preCheck = ''
     set -euo pipefail
 
-    export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
-
     ${rsync}/bin/rsync \
       --chmod=Du+rwx,Fu+rw --archive --delete \
-      "${ibisTestingData}/" \
-      "$IBIS_TEST_DATA_DIRECTORY"
+      "${ibisTestingData}/" $PWD/ci/ibis-testing-data
   '';
 
   checkPhase = ''
