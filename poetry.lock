@@ -90,6 +90,21 @@ tests = ["attrs[tests-no-zope]", "zope.interface"]
 tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy (>=0.971,<0.990)", "mypy (>=0.971,<0.990)", "pympler", "pympler", "pytest (>=4.3.0)", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-mypy-plugins", "pytest-xdist[psutil]", "pytest-xdist[psutil]"]
 
 [[package]]
+name = "babel"
+version = "2.11.0"
+description = "Internationalization utilities"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "Babel-2.11.0-py3-none-any.whl", hash = "sha256:1ad3eca1c885218f6dce2ab67291178944f810a10a9b5f3cb8382a5a232b64fe"},
+    {file = "Babel-2.11.0.tar.gz", hash = "sha256:5ef4b3226b0180dedded4229651c8b0e1a3a6a2837d45a073272f313e4cf97f6"},
+]
+
+[package.dependencies]
+pytz = ">=2015.7"
+
+[[package]]
 name = "backcall"
 version = "0.2.0"
 description = "Specifications for callback functions passed in to an API"
@@ -2520,20 +2535,21 @@ files = [
 mkdocs = ">=1.0.3,<2.0.0"
 
 [[package]]
-name = "mkdocs-git-revision-date-plugin"
-version = "0.3.2"
-description = "MkDocs plugin for setting revision date from git per markdown file."
+name = "mkdocs-git-revision-date-localized-plugin"
+version = "1.1.0"
+description = "Mkdocs plugin that enables displaying the localized date of the last git modification of a markdown file."
 category = "dev"
 optional = false
-python-versions = ">=3.4"
+python-versions = ">=3.6"
 files = [
-    {file = "mkdocs_git_revision_date_plugin-0.3.2-py3-none-any.whl", hash = "sha256:2e67956cb01823dd2418e2833f3623dee8604cdf223bddd005fe36226a56f6ef"},
+    {file = "mkdocs-git-revision-date-localized-plugin-1.1.0.tar.gz", hash = "sha256:38517e2084229da1a1b9460e846c2748d238c2d79efd405d1b9174a87bd81d79"},
+    {file = "mkdocs_git_revision_date_localized_plugin-1.1.0-py3-none-any.whl", hash = "sha256:4ba0e49abea3e9f6ee26e2623ff7283873da657471c61f1d0cfbb986f403316d"},
 ]
 
 [package.dependencies]
+babel = ">=2.7.0"
 GitPython = "*"
-jinja2 = "*"
-mkdocs = ">=0.17"
+mkdocs = ">=1.0"
 
 [[package]]
 name = "mkdocs-jupyter"
@@ -5059,4 +5075,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "e602d72674da70206c9f00c4eb762fc69eb053c5e54ab14def4912d17b32b303"
+content-hash = "6ba620a031c6187363608b232a42f54f358d5653e8be844c5fb84045b14814c1"
