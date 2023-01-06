@@ -87,7 +87,7 @@ def test_null_literal(con, field):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "pandas", "postgres", "snowflake"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "snowflake"])
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")
