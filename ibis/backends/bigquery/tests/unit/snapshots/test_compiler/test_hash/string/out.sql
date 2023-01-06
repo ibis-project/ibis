@@ -1,1 +1,1 @@
-SELECT farm_fingerprint('test of hash') AS `tmp`
+SELECT farm_fingerprint('test of hash') AS `Hash_test_of_hash`

@@ -749,10 +749,10 @@ def _clip(op, **kw):
 
 
 @translate_val.register(ops.StructField)
-def _struct_field(op, **kw):
+def _struct_field(op, render_aliases: bool = False, **kw):
     arg = op.arg
     arg_dtype = arg.output_dtype
-    arg = translate_val(op.arg, render_aliases=False, **kw)
+    arg = translate_val(op.arg, render_aliases=render_aliases, **kw)
     idx = arg_dtype.names.index(op.field)
     typ = arg_dtype.types[idx]
     return f"CAST({arg}.{idx + 1} AS {serialize(typ)})"
