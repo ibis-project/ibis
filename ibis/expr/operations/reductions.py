@@ -123,7 +123,9 @@ class Mean(Filterable, Reduction):
 class Quantile(Filterable, Reduction):
     arg = rlz.any
     quantile = rlz.strict_numeric
-    interpolation = rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
+    interpolation = rlz.optional(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
+    )
 
     output_dtype = dt.float64
 
@@ -132,7 +134,9 @@ class Quantile(Filterable, Reduction):
 class MultiQuantile(Filterable, Reduction):
     arg = rlz.any
     quantile = rlz.value(dt.Array(dt.float64))
-    interpolation = rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
+    interpolation = rlz.optional(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
+    )
 
     output_dtype = dt.Array(dt.float64)
 
