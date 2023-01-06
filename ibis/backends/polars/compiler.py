@@ -698,8 +698,10 @@ def distinct(op, **kw):
 def count_star(op, **kw):
     if (where := op.where) is not None:
         condition = translate(where, **kw)
-        return condition.filter(condition).count()
-    return pl.count()
+        # TODO: clean up the casts and use schema.apply_to in the backend's
+        # execute method
+        return condition.filter(condition).count().cast(pl.Int64)
+    return pl.count().cast(pl.Int64)
 
 
 @translate.register(ops.TimestampNow)

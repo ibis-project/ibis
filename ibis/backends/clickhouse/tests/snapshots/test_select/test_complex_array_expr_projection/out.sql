@@ -1,5 +1,5 @@
 SELECT
-  CAST(t1.string_col AS Nullable(Float64))
+  CAST(t1.string_col AS Nullable(Float64)) AS "Cast(string_col, float64)"
 FROM (
   SELECT
     t0.string_col,

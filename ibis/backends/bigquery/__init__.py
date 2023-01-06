@@ -96,7 +96,7 @@ class Backend(BaseSQLBackend):
         partition_column: str | None = "PARTITIONTIME",
         client: bq.Client | None = None,
         storage_client: bqstorage.BigQueryReadClient | None = None,
-    ):
+    ) -> Backend:
         """Create a `Backend` for use with Ibis.
 
         Parameters

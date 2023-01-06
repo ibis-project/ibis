@@ -389,6 +389,14 @@ class Projection(TableNode):
         return Schema.from_tuples(zip(names, types))
 
 
+def _add_alias(op: ops.Value | ops.TableNode):
+    """Add a name to a projected column if necessary."""
+    if isinstance(op, ops.Value) and not isinstance(op, (ops.Alias, ops.TableColumn)):
+        return ops.Alias(op, op.name)
+    else:
+        return op
+
+
 @public
 class Selection(Projection):
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
@@ -414,7 +422,7 @@ class Selection(Projection):
 
         super().__init__(
             table=table,
-            selections=selections,
+            selections=tuple(map(_add_alias, selections)),
             predicates=predicates,
             sort_keys=sort_keys,
             **kwargs,
@@ -483,8 +491,8 @@ class Aggregation(TableNode):
 
         super().__init__(
             table=table,
-            metrics=metrics,
-            by=by,
+            metrics=tuple(map(_add_alias, metrics)),
+            by=tuple(map(_add_alias, by)),
             having=having,
             predicates=predicates,
             sort_keys=sort_keys,

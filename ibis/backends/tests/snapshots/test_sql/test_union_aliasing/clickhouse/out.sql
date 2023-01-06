@@ -23,8 +23,8 @@ FROM (
           FROM (
             SELECT
               t1.field_of_study,
-              CAST(t1.__pivoted__.1 AS Nullable(TEXT)),
-              CAST(t1.__pivoted__.2 AS Nullable(Int64))
+              CAST(t1.__pivoted__.1 AS Nullable(TEXT)) AS years,
+              CAST(t1.__pivoted__.2 AS Nullable(Int64)) AS degrees
             FROM (
               SELECT
                 t0.field_of_study,
@@ -85,8 +85,8 @@ FROM (
             FROM (
               SELECT
                 t1.field_of_study,
-                CAST(t1.__pivoted__.1 AS Nullable(TEXT)),
-                CAST(t1.__pivoted__.2 AS Nullable(Int64))
+                CAST(t1.__pivoted__.1 AS Nullable(TEXT)) AS years,
+                CAST(t1.__pivoted__.2 AS Nullable(Int64)) AS degrees
               FROM (
                 SELECT
                   t0.field_of_study,

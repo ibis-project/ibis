@@ -1486,5 +1486,26 @@ def test_group_concat_over_window(backend, con):
     expr = table.mutate(test=table.s.group_concat(sep="|").over(w)).order_by("pk")
 
     result = con.execute(expr)
+    backend.assert_frame_equal(result, expected)
 
+
+@pytest.mark.broken(
+    ["bigquery"],
+    reason="auto generated names are still invalid for outer query",
+    raises=GoogleBadRequest,
+)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["polars"],
+    reason="polars panics",
+    raises=BaseException,  # BaseException is required to catch the panic
+)
+def test_value_counts_on_expr(backend, alltypes, df):
+    expr = alltypes.bigint_col.add(1).value_counts()
+    columns = expr.columns
+    expr = expr.order_by(columns)
+    result = expr.execute().sort_values(columns).reset_index(drop=True)
+    expected = df.bigint_col.add(1).value_counts().reset_index()
+    expected.columns = columns
+    expected = expected.sort_values(by=columns).reset_index(drop=True)
     backend.assert_frame_equal(result, expected)

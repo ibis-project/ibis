@@ -63,12 +63,15 @@ def find_bigquery_udf(op):
     return lin.proceed, result
 
 
+_NAME_REGEX = re.compile(r"[_A-Za-z][A-Za-z_0-9]*")
+_EXACT_NAME_REGEX = re.compile(f"^{_NAME_REGEX.pattern}$")
+
+
 class BigQueryExprTranslator(sql_compiler.ExprTranslator):
     """Translate expressions to strings."""
 
     _registry = registry.OPERATION_REGISTRY
     _rewrites = rewrites.REWRITES
-    _valid_name_pattern = re.compile(r"^[A-Za-z][A-Za-z_0-9]*$")
 
     _forbids_frame_clause = (
         *sql_compiler.ExprTranslator._forbids_frame_clause,
@@ -79,11 +82,17 @@ class BigQueryExprTranslator(sql_compiler.ExprTranslator):
     _unsupported_reductions = (ops.ApproxMedian, ops.ApproxCountDistinct)
     _dialect_name = "bigquery"
 
+    @staticmethod
+    def _gen_valid_name(name: str) -> str:
+        name = "_".join(_NAME_REGEX.findall(name)) or "tmp"
+        return f"`{name}`"
+
     def name(self, translated: str, name: str):
         # replace invalid characters in automatically generated names
-        if self._valid_name_pattern.match(name) is None:
-            return f"{translated} AS `tmp`"
-        return super().name(translated, name)
+        valid_name = self._gen_valid_name(name)
+        if translated == valid_name:
+            return translated
+        return f"{translated} AS {valid_name}"
 
     @classmethod
     def compiles(cls, klass):
@@ -114,7 +123,7 @@ def _rewrite_notany(op):
 
 class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
     def _quote_identifier(self, name):
-        if re.match(r"^[A-Za-z][A-Za-z_0-9]*$", name):
+        if _EXACT_NAME_REGEX.match(name) is not None:
             return name
         return f"`{name}`"
 

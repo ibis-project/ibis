@@ -8,4 +8,4 @@ function my_len(s) {
 return my_len(s);
 """;
 
-SELECT my_len_0('abcd') AS `tmp`
+SELECT my_len_0('abcd') AS `my_len_0_abcd`
