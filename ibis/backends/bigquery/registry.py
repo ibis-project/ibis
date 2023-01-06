@@ -88,8 +88,20 @@ def _struct_field(translator, op):
     return f"{arg}.`{op.field}`"
 
 
+def _struct_column(translator, op):
+    cols = (
+        f'{translator.translate(value)} AS {name}'
+        for name, value, in zip(op.names, op.values)
+    )
+    return "STRUCT({})".format(", ".join(cols))
+
+
 def _array_concat(translator, op):
     return "ARRAY_CONCAT({})".format(", ".join(map(translator.translate, op.args)))
+
+
+def _array_column(translator, op):
+    return "[{}]".format(", ".join(map(translator.translate, op.cols)))
 
 
 def _array_index(translator, op):
@@ -595,8 +607,10 @@ OPERATION_REGISTRY = {
     ops.GroupConcat: reduction("STRING_AGG"),
     ops.Cast: _cast,
     ops.StructField: _struct_field,
+    ops.StructColumn: _struct_column,
     ops.ArrayCollect: _array_agg,
     ops.ArrayConcat: _array_concat,
+    ops.ArrayColumn: _array_column,
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,
