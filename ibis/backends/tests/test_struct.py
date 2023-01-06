@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -64,18 +63,7 @@ def test_literal(con, field):
 
 
 @pytest.mark.notimpl(["postgres", "snowflake"])
-@pytest.mark.parametrize(
-    "field",
-    [
-        "a",
-        param(
-            "b", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
-        ),
-        param(
-            "c", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
-        ),
-    ],
-)
+@pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
 )
