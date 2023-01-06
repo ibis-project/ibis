@@ -319,7 +319,8 @@ class NumericColumn(Column, NumericValue):
             "higher",
             "midpoint",
             "nearest",
-        ] = "linear",
+        ]
+        | None = None,
         where: ir.BooleanValue | None = None,
     ) -> NumericScalar:
         """Return value at the given quantile.
