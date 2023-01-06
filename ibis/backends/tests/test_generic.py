@@ -114,7 +114,17 @@ def test_column_fillna(backend, alltypes, value):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        param(ibis.coalesce(5, None, 4), 5, id="generic"),
+        param(
+            ibis.coalesce(5, None, 4),
+            5,
+            id="generic",
+            marks=[
+                pytest.mark.broken(
+                    "polars",
+                    reason="implementation error, cannot get ref Int8 from Boolean",
+                ),
+            ],
+        ),
         param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
         param(
             ibis.coalesce(ibis.NA, ibis.NA, 3.14),

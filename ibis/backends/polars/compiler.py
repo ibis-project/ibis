@@ -84,6 +84,8 @@ def literal(op):
         return pl.struct(values)
     elif op.dtype.is_interval():
         return _make_duration(op.value, op.dtype)
+    elif op.dtype.is_null():
+        return pl.lit(op.value)
     else:
         typ = to_polars_type(op.dtype)
         return pl.lit(op.value, dtype=typ)
@@ -865,7 +867,7 @@ def between(op):
     arg = translate(op.arg)
     lower = translate(op.lower_bound)
     upper = translate(op.upper_bound)
-    return arg.is_between(lower, upper)
+    return arg.is_between(lower, upper, closed="both")
 
 
 _bitwise_binops = {
