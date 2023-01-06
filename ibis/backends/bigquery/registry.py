@@ -536,6 +536,15 @@ def _clip(t, op):
     return arg
 
 
+def _nth_value(t, op):
+    arg = t.translate(op.arg)
+
+    if not isinstance(nth_op := op.nth, ops.Literal):
+        raise TypeError(f"Bigquery nth must be a literal; got {type(op.nth)}")
+
+    return f'NTH_VALUE({arg}, {nth_op.value + 1})'
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -670,6 +679,7 @@ OPERATION_REGISTRY = {
     ops.Pi: lambda *_: "ACOS(-1)",
     ops.E: lambda *_: "EXP(1)",
     ops.RandomScalar: fixed_arity("RAND", 0),
+    ops.NthValue: _nth_value,
 }
 
 _invalid_operations = {

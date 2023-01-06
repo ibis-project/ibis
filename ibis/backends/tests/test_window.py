@@ -103,8 +103,13 @@ def calc_zscore(s):
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["bigquery", "pandas", "snowflake"]),
+                pytest.mark.notimpl(["pandas", "snowflake"]),
                 pytest.mark.notyet(["impala", "mssql"]),
+                pytest.mark.broken(
+                    "bigquery",
+                    strict=False,
+                    reason="output types is float64 instead of the expected float32",
+                ),
             ],
         ),
         param(
