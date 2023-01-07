@@ -44,6 +44,12 @@ def bigquery_cast_timestamp_to_integer(compiled_arg, from_, to):
     return f"UNIX_MICROS({compiled_arg})"
 
 
+@bigquery_cast.register(str, dt.Integer, dt.Timestamp)
+def bigquery_cast_integer_to_timestamp(compiled_arg, from_, to):
+    """Convert INT64 (seconds since Unix epoch) to Timestamp."""
+    return f"TIMESTAMP_SECONDS({compiled_arg})"
+
+
 @bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     """Cast to desired type."""
