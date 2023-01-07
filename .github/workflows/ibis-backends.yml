@@ -67,6 +67,7 @@ jobs:
               - datafusion
           - name: pyspark
             title: PySpark
+            serial: true
             extras:
               - pyspark
           - name: polars
@@ -99,6 +100,7 @@ jobs:
               - libgeos-dev
           - name: impala
             title: Impala
+            serial: true
             extras:
               - impala
             services:
@@ -109,6 +111,7 @@ jobs:
               - ninja-build
           - name: mssql
             title: MS SQL Server
+            serial: true
             extras:
               - mssql
             services:
@@ -147,6 +150,7 @@ jobs:
             backend:
               name: pyspark
               title: PySpark
+              serial: true
               extras:
                 - pyspark
           - os: windows-latest
@@ -164,6 +168,7 @@ jobs:
             backend:
               name: impala
               title: Impala
+              serial: true
               extras:
                 - impala
               services:
@@ -176,6 +181,7 @@ jobs:
             backend:
               name: mssql
               title: MS SQL Server
+              serial: true
               extras:
                 - mssql
               services:
@@ -247,11 +253,11 @@ jobs:
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.name != 'impala' && matrix.backend.name != 'pyspark'
+        if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.name == 'impala' || matrix.backend.name == 'pyspark'
+        if: matrix.backend.serial
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_TEST_NN_HOST: localhost
