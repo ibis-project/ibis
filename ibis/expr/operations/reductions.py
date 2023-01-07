@@ -129,7 +129,7 @@ class Quantile(Filterable, Reduction):
 
 
 @public
-class MultiQuantile(Quantile):
+class MultiQuantile(Filterable, Reduction):
     arg = rlz.any
     quantile = rlz.value(dt.Array(dt.float64))
     interpolation = rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
