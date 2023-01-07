@@ -874,7 +874,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -882,7 +882,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
