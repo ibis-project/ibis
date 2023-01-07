@@ -175,6 +175,14 @@ operation_registry.update(
         ops.GroupConcat: _group_concat,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
+        ops.BitXor: reduction(
+            lambda arg: sa.func.reduce_agg(
+                arg,
+                0,
+                sa.text("(a, b) -> bitwise_xor(a, b)"),
+                sa.text("(a, b) -> bitwise_xor(a, b)"),
+            )
+        ),
         ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
         ops.BitwiseOr: fixed_arity(sa.func.bitwise_or, 2),
         ops.BitwiseXor: fixed_arity(sa.func.bitwise_xor, 2),
