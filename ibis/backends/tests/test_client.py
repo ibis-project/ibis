@@ -843,17 +843,35 @@ def test_repr_mimebundle(alltypes, interactive, expr_type):
         ibis.options.interactive = old
 
 
-@pytest.mark.never(
-    ["postgres", "mysql", "bigquery"],
-    reason="These backends explicitly do support Geo operations",
-)
-def test_has_operation_no_geo(con):
-    """Previously some backends mistakenly reported Geo operations as
+@pytest.mark.parametrize("unsupported_ops", [
+    param(
+        [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion],
+        id="geo",
+        marks=[
+            pytest.mark.never(
+                ["postgres", "mysql", "bigquery"],
+                reason="These backends explicitly do support Geo operations",
+            )
+        ]
+    ),
+    param(
+        [ops.DecimalScale, ops.DecimalPrecision],
+        id="decimal-scale-precision",
+        marks=[
+            pytest.mark.never(
+                ["impala"],
+                reason="These backends explicitly do support Decimal Scale/Precision operations",
+            )
+        ]
+    )
+])
+def test_has_operation_unsupported(con, unsupported_ops):
+    """Previously some backends mistakenly reported these operations as
     supported.
 
-    Since most backends don't support Geo operations, we test that
+    Since most backends don't support these operations, we test that
     they're excluded here, skipping the few backends that explicitly do
     support them.
     """
-    for op in [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion]:
+    for op in unsupported_ops:
         assert not con.has_operation(op)

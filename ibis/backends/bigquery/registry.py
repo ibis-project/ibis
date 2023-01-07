@@ -686,6 +686,8 @@ _invalid_operations = {
     ops.FindInSet,
     ops.DateDiff,
     ops.TimestampDiff,
+    ops.DecimalPrecision,
+    ops.DecimalScale
 }
 
 OPERATION_REGISTRY = {

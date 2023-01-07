@@ -221,6 +221,13 @@ def execute_series_group_by_negate(op, data, **kwargs):
     )
 
 
+@execute_node.register((ops.DecimalPrecision, ops.DecimalScale), pd.Series)
+def execute_decision(op, **kwargs):
+    raise NotImplementedError(
+        f"Operation {type(op).__name__!r} is not implemented for this backend"
+    )
+
+
 @execute_node.register(ops.Unary, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())

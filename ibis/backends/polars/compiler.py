@@ -837,11 +837,14 @@ def day_of_week_name(op):
     return arg
 
 
-@translate.register(ops.Unary)
 def unary(op):
     arg = translate(op.arg)
     func = _unary[type(op)]
     return func(arg)
+
+
+for op_type in _unary:
+    translate.register(op_type, unary)
 
 
 _comparisons = {
