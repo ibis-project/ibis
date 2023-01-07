@@ -295,5 +295,10 @@ operation_registry.update(
         ops.E: fixed_arity(sa.func.e, 0),
         ops.Quantile: reduction(sa.func.approx_percentile),
         ops.MultiQuantile: reduction(sa.func.approx_percentile),
+        ops.StringAscii: unary(
+            lambda d: sa.func.codepoint(
+                sa.func.cast(sa.func.substr(d, 1, 2), sa.VARCHAR(1))
+            )
+        ),
     }
 )
