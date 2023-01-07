@@ -172,6 +172,58 @@ def test_isnan_isinf(
             marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
+        param(
+            L(12.3).cast(dt.Decimal(30, 8)).precision(),
+            30,
+            id='scale',
+            marks=[
+                # Only impala support .scale()
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "datafusion",
+                        "duckdb",
+                        "mssql",
+                        "mysql",
+                        "pandas",
+                        "polars",
+                        "postgres",
+                        "pyspark",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                )
+            ],
+        ),
+        param(
+            L(12.3).cast(dt.Decimal(30, 8)).precision(),
+            8,
+            id='precision',
+            marks=[
+                # Only impala support .precision()
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "datafusion",
+                        "duckdb",
+                        "mssql",
+                        "mysql",
+                        "pandas",
+                        "polars",
+                        "postgres",
+                        "pyspark",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                )
+            ],
+        ),
     ],
 )
 def test_math_functions_literals(con, expr, expected):
