@@ -174,7 +174,7 @@ def test_isnan_isinf(
         param(L(11) % 3, 11 % 3, id='mod'),
         param(
             L(12.3).cast(dt.Decimal(30, 8)).precision(),
-            30,
+            8,
             id='scale',
             marks=[
                 # Only impala support .scale()
@@ -200,7 +200,7 @@ def test_isnan_isinf(
         ),
         param(
             L(12.3).cast(dt.Decimal(30, 8)).precision(),
-            8,
+            30,
             id='precision',
             marks=[
                 # Only impala support .precision()
