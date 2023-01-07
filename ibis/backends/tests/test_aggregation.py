@@ -473,9 +473,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_xor',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
+                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
                 ),
-                pytest.mark.notyet(["impala", "pyspark"]),
+                pytest.mark.notyet(["impala", "pyspark", "trino"]),
             ],
         ),
         param(
@@ -826,13 +826,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     assert result.shape[0] == expected.shape[0]
 
 
-@pytest.mark.parametrize(
-    'agg_fn',
-    [
-        param(lambda s: list(s), id='agg_to_list'),
-        param(lambda s: np.array(s), id='agg_to_ndarray'),
-    ],
-)
+@pytest.mark.parametrize('agg_fn', [list, np.array])
 @mark.notimpl(
     [
         "bigquery",

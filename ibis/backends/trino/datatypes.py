@@ -175,3 +175,8 @@ def compiles_map(typ, compiler, **kw):
     key_type = compiler.process(typ.key_type, **kw)
     value_type = compiler.process(typ.value_type, **kw)
     return f"MAP({key_type}, {value_type})"
+
+
+@dt.dtype.register(TrinoDialect, sa.NUMERIC)
+def sa_trino_numeric(_, satype, nullable=True):
+    return dt.Decimal(satype.precision or 18, satype.scale or 3, nullable=nullable)
