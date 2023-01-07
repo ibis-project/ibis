@@ -786,25 +786,7 @@ class FloatingColumn(NumericColumn, FloatingValue):
 
 @public
 class DecimalValue(NumericValue):
-    def precision(self) -> IntegerValue:
-        """Return the precision of `arg`.
-
-        Returns
-        -------
-        IntegerValue
-            The precision of the expression.
-        """
-        return ops.DecimalPrecision(self).to_expr()
-
-    def scale(self) -> IntegerValue:
-        """Return the scale of `arg`.
-
-        Returns
-        -------
-        IntegerValue
-            The scale of the expression.
-        """
-        return ops.DecimalScale(self).to_expr()
+    pass
 
 
 @public

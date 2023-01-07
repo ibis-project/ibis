@@ -258,18 +258,6 @@ class Pi(Constant):
 
 
 @public
-class DecimalPrecision(Unary):
-    arg = rlz.decimal
-    output_dtype = dt.int32
-
-
-@public
-class DecimalScale(Unary):
-    arg = rlz.decimal
-    output_dtype = dt.int32
-
-
-@public
 class Hash(Value):
     arg = rlz.any
     how = rlz.isin({'fnv', 'farm_fingerprint'})

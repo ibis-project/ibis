@@ -113,19 +113,6 @@ def test_fillna(lineitem):
     assert isinstance(expr, ir.DecimalColumn)
 
 
-def test_precision_scale(lineitem):
-    col = lineitem.l_extendedprice
-
-    p = col.precision()
-    s = col.scale()
-
-    assert isinstance(p, ir.IntegerValue)
-    assert isinstance(p.op(), ops.DecimalPrecision)
-
-    assert isinstance(s, ir.IntegerValue)
-    assert isinstance(s.op(), ops.DecimalScale)
-
-
 @pytest.mark.parametrize(
     ('precision', 'scale'),
     [

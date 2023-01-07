@@ -297,8 +297,6 @@ operation_registry = {
     ops.Tan: unary("tan"),
     ops.Pi: fixed_arity("pi", 0),
     ops.E: fixed_arity("exp(1)", 0),
-    ops.DecimalPrecision: unary('precision'),
-    ops.DecimalScale: unary('scale'),
     # Unary aggregates
     ops.ApproxMedian: aggregate.reduction('appx_median'),
     ops.ApproxCountDistinct: aggregate.reduction('ndv'),
