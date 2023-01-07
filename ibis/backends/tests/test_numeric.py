@@ -483,12 +483,12 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     ("default_precisions", "default_scales"),
     [
         (
-            {'postgres': None, 'mysql': 10, 'snowflake': 38},
-            {'postgres': None, 'mysql': 0, 'snowflake': 0},
+            {'postgres': None, 'mysql': 10, 'snowflake': 38, 'trino': 18},
+            {'postgres': None, 'mysql': 0, 'snowflake': 0, 'trino': 3},
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite", "duckdb", "mssql", "trino"])
+@pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
 @pytest.mark.never(
     [
         "bigquery",
