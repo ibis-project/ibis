@@ -116,7 +116,7 @@ https://conda.anaconda.org/conda-forge/noarch/cloudpickle-2.2.0-pyhd8ed1ab_0.tar
 https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_0.tar.bz2#3faab06a954c2a04039983f2c4a50d99
 https://conda.anaconda.org/conda-forge/noarch/cycler-0.11.0-pyhd8ed1ab_0.tar.bz2#a50559fad0affdbb33729a68669ca1cb
 https://conda.anaconda.org/conda-forge/noarch/dataclasses-0.8-pyhc8e2a94_3.tar.bz2#a362b2124b06aad102e2ee4581acee7d
-https://conda.anaconda.org/conda-forge/osx-arm64/debugpy-1.6.4-py39h23fbdae_0.conda#2880792ca54ef9eba24342ea8f279706
+https://conda.anaconda.org/conda-forge/osx-arm64/debugpy-1.6.5-py39h23fbdae_0.conda#7f6f4c466a8842f206186e8c9a4326b8
 https://conda.anaconda.org/conda-forge/noarch/decorator-5.1.1-pyhd8ed1ab_0.tar.bz2#43afe5ab04e35e17ba28649471dd7364
 https://conda.anaconda.org/conda-forge/noarch/defusedxml-0.7.1-pyhd8ed1ab_0.tar.bz2#961b3a227b437d82ad7054484cfa71b2
 https://conda.anaconda.org/conda-forge/noarch/entrypoints-0.4-pyhd8ed1ab_0.tar.bz2#3cf04868fee0a029769bd41f4b2fbf2d
@@ -188,7 +188,7 @@ https://conda.anaconda.org/conda-forge/noarch/six-1.16.0-pyh6c4a22f_0.tar.bz2#e5
 https://conda.anaconda.org/conda-forge/noarch/sniffio-1.3.0-pyhd8ed1ab_0.tar.bz2#dd6cbc539e74cb1f430efbd4575b9303
 https://conda.anaconda.org/conda-forge/noarch/sortedcontainers-2.4.0-pyhd8ed1ab_0.tar.bz2#6d6552722448103793743dabfbda532d
 https://conda.anaconda.org/conda-forge/noarch/soupsieve-2.3.2.post1-pyhd8ed1ab_0.tar.bz2#146f4541d643d48fc8a75cacf69f03ae
-https://conda.anaconda.org/conda-forge/noarch/sqlglot-10.4.2-pyhd8ed1ab_0.conda#c172f746c79428567731d22c8dbeeb3a
+https://conda.anaconda.org/conda-forge/noarch/sqlglot-10.4.3-pyhd8ed1ab_0.conda#3d423e9ef05dd115d2e3d23b7f6ead48
 https://conda.anaconda.org/conda-forge/noarch/tblib-1.7.0-pyhd8ed1ab_0.tar.bz2#3d4afc31302aa7be471feb6be048ed76
 https://conda.anaconda.org/conda-forge/noarch/threadpoolctl-3.1.0-pyh8a188c0_0.tar.bz2#a2995ee828f65687ac5b1e71a2ab1e0c
 https://conda.anaconda.org/conda-forge/noarch/tomli-2.0.1-pyhd8ed1ab_0.tar.bz2#5844808ffab9ebdb694585b50ba02a96
@@ -269,7 +269,7 @@ https://conda.anaconda.org/conda-forge/noarch/dask-core-2022.12.1-pyhd8ed1ab_0.c
 https://conda.anaconda.org/conda-forge/noarch/geoalchemy2-0.12.5-pyhd8ed1ab_0.tar.bz2#94768ee4a6b5eb58daaf4d2f5d11448b
 https://conda.anaconda.org/conda-forge/osx-arm64/geotiff-1.7.1-h90559a4_4.tar.bz2#01946796ab730299feff7026b1f0d222
 https://conda.anaconda.org/conda-forge/osx-arm64/google-crc32c-1.1.2-py39h17a57db_4.tar.bz2#c9e1b71cc9d98d32ac2c8a9d22b67dee
-https://conda.anaconda.org/conda-forge/noarch/googleapis-common-protos-1.57.0-pyhd8ed1ab_3.conda#35947a7b1f5319de636d74ce38dcf131
+https://conda.anaconda.org/conda-forge/noarch/googleapis-common-protos-1.57.1-pyhd8ed1ab_0.conda#cbf8b4569c1d2a0a6077d34a2d38333e
 https://conda.anaconda.org/conda-forge/osx-arm64/harfbuzz-6.0.0-hddbc195_0.conda#bc6503f2956775e3d6e481d7588b7998
 https://conda.anaconda.org/conda-forge/noarch/jsonschema-4.17.3-pyhd8ed1ab_0.conda#723268a468177cd44568eb8f794e0d80
 https://conda.anaconda.org/conda-forge/noarch/jupyter_server_terminals-0.4.3-pyhd8ed1ab_0.conda#61fb355265fe26c916141ceb604cbaae
@@ -284,10 +284,10 @@ https://conda.anaconda.org/conda-forge/noarch/platformdirs-2.6.2-pyhd8ed1ab_0.co
 https://conda.anaconda.org/conda-forge/osx-arm64/poppler-22.12.0-hae7f5f0_0.conda#8bc158f737f4119d494e288ee0880cd2
 https://conda.anaconda.org/conda-forge/noarch/proto-plus-1.22.1-pyhd8ed1ab_0.tar.bz2#cc84503b1141d76dd2872661a56b82bf
 https://conda.anaconda.org/conda-forge/osx-arm64/pyproj-3.4.1-py39h8a4ac70_0.conda#3d7e5383a3e63d6be81b915359b1a8b5
-https://conda.anaconda.org/conda-forge/noarch/rich-13.0.0-pyhd8ed1ab_0.conda#f245374921a3e908a7d33cf6f45ee936
+https://conda.anaconda.org/conda-forge/noarch/rich-13.0.1-pyhd8ed1ab_0.conda#f6ed7a402e1378ca13bc0f3d8ec2763a
 https://conda.anaconda.org/conda-forge/noarch/stack_data-0.6.2-pyhd8ed1ab_0.conda#e7df0fdd404616638df5ece6e69ba7af
 https://conda.anaconda.org/conda-forge/noarch/thrift_sasl-0.4.3-pyhd8ed1ab_2.tar.bz2#0340a97c4990a5bb5ecf1a27fef9f9c3
-https://conda.anaconda.org/conda-forge/osx-arm64/tiledb-2.13.0-h9bd36d0_1.conda#37be9b076291203718938e64e3cbc40c
+https://conda.anaconda.org/conda-forge/osx-arm64/tiledb-2.13.1-h9bd36d0_0.conda#8f99abbcafa3dc3bf4ce1187cefeb050
 https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.5-pyh9f0ad1d_2.tar.bz2#5266fcd697043c59621fda522b3d78ee
 https://conda.anaconda.org/conda-forge/osx-arm64/aiohttp-3.8.3-py39h02fc5c5_1.tar.bz2#0c2012d1910616d99773d1780f1f1c73
 https://conda.anaconda.org/conda-forge/noarch/argon2-cffi-21.3.0-pyhd8ed1ab_0.tar.bz2#a0b402db58f73aaab8ee0ca1025a362e
@@ -313,8 +313,8 @@ https://conda.anaconda.org/conda-forge/noarch/ipython-8.8.0-pyhd1c38e8_0.conda#9
 https://conda.anaconda.org/conda-forge/noarch/jupyter_client-7.4.8-pyhd8ed1ab_0.conda#bd4951aa5fbf3336a249e25c90f50333
 https://conda.anaconda.org/conda-forge/osx-arm64/librsvg-2.54.4-ha2634a2_0.tar.bz2#a9fe78f1beab7f0a90581518a0e11311
 https://conda.anaconda.org/conda-forge/noarch/nbformat-5.7.1-pyhd8ed1ab_0.conda#facb42913140f1a399a5ebb65b30915e
-https://conda.anaconda.org/conda-forge/osx-arm64/pandas-1.5.2-py39hde7b980_0.conda#b52a5a4807d3ac2ba8113860a9ee6f16
-https://conda.anaconda.org/conda-forge/osx-arm64/polars-0.15.11-py39hb39fadb_0.conda#d59f92e064cb9eaf8783b167071300bd
+https://conda.anaconda.org/conda-forge/osx-arm64/pandas-1.5.2-py39hde7b980_1.conda#73bf74cc39eeb6d7a22acb3ddc90332c
+https://conda.anaconda.org/conda-forge/osx-arm64/polars-0.15.13-py39hb39fadb_0.conda#b3222cc6ac293182d2fc1190f8493b1f
 https://conda.anaconda.org/conda-forge/osx-arm64/shapely-1.8.5-py39h472ea82_2.tar.bz2#d7691e859f86d4535844430fdf8a3953
 https://conda.anaconda.org/conda-forge/noarch/urllib3-1.26.13-pyhd8ed1ab_0.conda#3078ef2359efd6ecadbc7e085c5e0592
 https://conda.anaconda.org/conda-forge/osx-arm64/aws-sdk-cpp-1.9.379-he22300a_6.conda#e3b321bf61cf1a00385bf75764a9160f
