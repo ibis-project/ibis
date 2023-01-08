@@ -321,8 +321,29 @@ def show_sql(
     print(to_sql(expr, dialect=dialect), file=file)
 
 
+class SQLString:
+    """Object to hold a formatted SQL string.
+
+    Syntax highlights in Jupyter notebooks.
+    """
+
+    __slots__ = ("sql",)
+
+    def __init__(self, sql: str) -> None:
+        self.sql = sql
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(sql={self.sql!r})"
+
+    def __str__(self) -> str:
+        return self.sql
+
+    def _repr_markdown_(self) -> str:
+        return f"```sql\n{str(self)}\n```"
+
+
 @public
-def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
+def to_sql(expr: ir.Expr, dialect: str | None = None) -> SQLString:
     """Return the formatted SQL string for an expression.
 
     Parameters
@@ -366,5 +387,4 @@ def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
 
     assert isinstance(sql, str), f"expected `str`, got `{sql.__class__.__name__}`"
     (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
-
-    return pretty
+    return SQLString(pretty)
