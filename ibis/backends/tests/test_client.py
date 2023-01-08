@@ -736,10 +736,7 @@ def test_default_backend_no_duckdb(backend):
     # run this twice to ensure that we hit the optimizations in
     # `_default_backend`
     for _ in range(2):
-        with pytest.raises(
-            com.IbisError,
-            match="Expression depends on no backends",
-        ):
+        with pytest.raises(com.IbisError, match="Expression depends on no backends"):
             expr.execute()
 
 
@@ -755,7 +752,7 @@ def test_default_backend():
     for _ in range(2):
         assert expr.execute() == df.a.sum()
 
-    sql = ibis.to_sql(expr)
+    sql = str(ibis.to_sql(expr))
     rx = """\
 SELECT
   SUM\\((\\w+)\\.a\\) AS ".+"
