@@ -242,7 +242,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
         return [
-            sa.Column(colname, to_sqla_type(dtype), nullable=dtype.nullable)
+            sa.Column(
+                colname, to_sqla_type(self.con.dialect, dtype), nullable=dtype.nullable
+            )
             for colname, dtype in zip(schema.names, schema.types)
         ]
 

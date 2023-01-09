@@ -2,6 +2,7 @@ import contextlib
 import os
 import platform
 import re
+import string
 
 import numpy as np
 import pandas as pd
@@ -875,3 +876,38 @@ def test_get_backend(con, alltypes, monkeypatch):
     assert ibis.get_backend() is con
     expr = ibis.literal(1) + 2
     assert ibis.get_backend(expr) is con
+
+
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "duckdb",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "sqlite",
+    ],
+    reason="backend doesn't support timestamp with scale parameter",
+)
+@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notimpl(
+    ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
+)
+def test_create_table_timestamp(con):
+    schema = ibis.schema(
+        dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
+    )
+    name = f"timestamp_scale_{guid()}"
+    con.create_table(name, schema=schema, force=True)
+    try:
+        rows = con.raw_sql(f"DESCRIBE {name}").fetchall()
+        result = ibis.schema((name, typ) for name, typ, *_ in rows)
+        assert result == schema
+    finally:
+        con.drop_table(name, force=True)

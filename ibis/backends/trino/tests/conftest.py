@@ -103,6 +103,20 @@ class TestConf(BackendTest, RoundAwayFromZero):
                     "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
                 )
             )
+            c.execute(sa.text("DROP TABLE IF EXISTS ts"))
+            c.execute(
+                sa.text(
+                    "CREATE TABLE ts (x TIMESTAMP(3), y TIMESTAMP(6), z TIMESTAMP(9))"
+                )
+            )
+            c.execute(
+                sa.text(
+                    "INSERT INTO ts VALUES "
+                    "(TIMESTAMP '2023-01-07 13:20:05.561', "
+                    " TIMESTAMP '2023-01-07 13:20:05.561021', "
+                    " TIMESTAMP '2023-01-07 13:20:05.561000231')"
+                )
+            )
 
     @staticmethod
     def connect(data_directory: Path):
