@@ -31,16 +31,6 @@ def test_literals(value, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-@pytest.mark.parametrize("method_name", ["precision", "scale"])
-def test_decimal_builtins(mockcon, method_name, snapshot):
-    t = mockcon.table('tpch_lineitem')
-    col = t.l_extendedprice
-    method = getattr(col, method_name)
-    expr = method()
-    result = translate(expr)
-    snapshot.assert_match(result, "out.sql")
-
-
 def test_column_ref_table_aliases(snapshot):
     context = ImpalaCompiler.make_context()
 
