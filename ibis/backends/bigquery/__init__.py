@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import warnings
+from typing import TYPE_CHECKING, Any, Mapping
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -31,6 +32,9 @@ from ibis.backends.bigquery.compiler import BigQueryCompiler
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 __version__: str = ibis_bigquery_version.__version__
 
@@ -357,6 +361,11 @@ class Backend(BaseSQLBackend):
             return True
 
     def fetch_from_cursor(self, cursor, schema):
+        arrow_t = self._cursor_to_arrow(cursor)
+        df = arrow_t.to_pandas(timestamp_as_object=True)
+        return schema.apply_to(df)
+
+    def _cursor_to_arrow(self, cursor):
         query = cursor.query
         query_result = query.result()
         # workaround potentially not having the ability to create read sessions
@@ -364,15 +373,54 @@ class Backend(BaseSQLBackend):
         orig_project = query_result._project
         query_result._project = self.billing_project
         try:
-            arrow_t = query_result.to_arrow(
+            arrow_table = query_result.to_arrow(
                 progress_bar_type=None,
                 bqstorage_client=None,
                 create_bqstorage_client=True,
             )
         finally:
             query_result._project = orig_project
-        df = arrow_t.to_pandas(timestamp_as_object=True)
-        return schema.apply_to(df)
+        return arrow_table
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        self._import_pyarrow()
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+        cursor = self.raw_sql(sql, params=params, **kwargs)
+        table = self._cursor_to_arrow(cursor)
+        if isinstance(expr, ir.Scalar):
+            assert len(table.columns) == 1, "len(table.columns) != 1"
+            return table[0][0]
+        elif isinstance(expr, ir.Column):
+            assert len(table.columns) == 1, "len(table.columns) != 1"
+            return table[0]
+        else:
+            return table
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ):
+        self._import_pyarrow()
+
+        # kind of pointless, but it'll work if there's enough memory
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+        cursor = self.raw_sql(sql, params=params, **kwargs)
+        table = self._cursor_to_arrow(cursor)
+        return table.to_reader(chunk_size)
 
     def get_schema(self, name, database=None):
         table_id = self._fully_qualified_name(name, database)

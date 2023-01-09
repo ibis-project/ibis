@@ -134,7 +134,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         make_job = lambda func, *a, **kw: func(*a, **kw).result()
 
         futures = []
-        with concurrent.futures.ThreadPoolExecutor() as e:
+        # 10 is because of urllib3 connection pool size
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as e:
             futures.append(
                 e.submit(
                     make_job,
