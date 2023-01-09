@@ -198,7 +198,7 @@ class Backend(BaseBackend):
         **kwargs
             Additional keyword arguments passed to Polars loading function.
             See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
-        for more information.
+            for more information.
 
         Returns
         -------
