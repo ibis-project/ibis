@@ -294,7 +294,7 @@ class Backend(BaseBackend):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Number of rows in each returned record batch.
+            Maximum number of rows in each returned record batch.
 
         Returns
         -------
