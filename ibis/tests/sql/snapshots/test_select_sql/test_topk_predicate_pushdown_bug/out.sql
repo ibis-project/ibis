@@ -11,7 +11,7 @@ FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `n_name`, sum(`c_acctbal`) AS `Sum(c_acctbal)`
+      SELECT `n_name`, sum(`c_acctbal`)
       FROM t0
       GROUP BY 1
     ) t2

@@ -664,7 +664,7 @@ def aliased(op, **_):
 @public
 @rule
 def value_from(table_ref, value, **kwargs):
-    func = one_of((function_of(table_ref), column_from(table_ref), column(any)))
+    func = one_of((function_of(table_ref), column_from(table_ref), any))
     return func(value, **kwargs)
 
 

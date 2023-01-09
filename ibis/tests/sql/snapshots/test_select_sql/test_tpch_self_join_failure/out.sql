@@ -11,13 +11,12 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT `region` AS `region`, extract(`odate`, 'year') AS `year`,
+  SELECT `region`, extract(`odate`, 'year') AS `year`,
          CAST(sum(`amount`) AS double) AS `total`
   FROM t0
   GROUP BY 1, 2
 )
-SELECT t1.`region` AS `region`, t1.`year` AS `year`,
-       t1.`total` - t2.`total` AS `yoy_change`
+SELECT t1.`region`, t1.`year`, t1.`total` - t2.`total` AS `yoy_change`
 FROM t1
   INNER JOIN t1 t2
     ON t1.`year` = (t2.`year` - 1)

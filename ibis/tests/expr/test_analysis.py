@@ -146,7 +146,7 @@ def test_filter_self_join():
     proj_exprs = projected.op().selections
 
     # proj exprs unaffected by analysis
-    assert_equal(proj_exprs[0], left.region.op())
+    assert_equal(proj_exprs[0].arg, left.region.op())
     assert_equal(proj_exprs[1], metric.op())
 
 
@@ -240,13 +240,13 @@ def test_mutation_fusion_overwrite():
     assert second_selection.selections[0] == col
 
     col1 = first_selection.to_expr()['col1'].op()
-    assert second_selection.selections[1] == col1
+    assert second_selection.selections[1].arg == col1
 
     col2 = first_selection.to_expr()['col2'].op()
-    assert second_selection.selections[2] == col2
+    assert second_selection.selections[2].arg == col2
 
     col3 = first_selection.to_expr()['col3'].op()
-    assert second_selection.selections[3] == col3
+    assert second_selection.selections[3].arg == col3
 
     col4 = (t['col'] + 4).name('col4').op()
     assert second_selection.selections[4] == col4
@@ -291,7 +291,7 @@ def test_no_filter_means_no_selection():
 def test_mutate_overwrites_existing_column():
     t = ibis.table(dict(a="string"))
     mut = t.mutate(a=42).select(["a"])
-    sel = mut.op().selections[0].table.selections[0].arg
+    sel = mut.op().selections[0].arg.table.selections[0].arg
     assert isinstance(sel, ops.Literal)
     assert sel.value == 42
 

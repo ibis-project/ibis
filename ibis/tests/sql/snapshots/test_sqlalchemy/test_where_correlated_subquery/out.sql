@@ -1,5 +1,5 @@
 SELECT t0.job, t0.dept_id, t0.year, t0.y 
 FROM foo AS t0 
-WHERE t0.y > (SELECT avg(t1.y) AS "Mean(y)" 
+WHERE t0.y > (SELECT avg(t1.y) AS avg_1 
 FROM foo AS t1 
 WHERE t0.dept_id = t1.dept_id)

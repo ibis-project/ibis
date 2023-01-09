@@ -106,9 +106,7 @@ def has_multiple_bases(node):
 def reduction_to_aggregation(node):
     tables = find_immediate_parent_tables(node)
 
-    # TODO(kszucs): avoid the expression roundtrip
-    node = ops.Alias(node, node.name)
-    expr = node.to_expr()
+    expr = node.to_expr().name(node.name)
     if len(tables) == 1:
         (table,) = tables
         agg = table.to_expr().aggregate([expr])

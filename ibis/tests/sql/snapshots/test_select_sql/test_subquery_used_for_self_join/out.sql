@@ -1,9 +1,9 @@
 WITH t0 AS (
-  SELECT `g` AS `g`, `a` AS `a`, `b` AS `b`, sum(`f`) AS `total`
+  SELECT `g`, `a`, `b`, sum(`f`) AS `total`
   FROM alltypes
   GROUP BY 1, 2, 3
 )
-SELECT t0.`g` AS `g`, max(t0.`total` - `total`) AS `metric`
+SELECT t0.`g`, max(t0.`total` - `total`) AS `metric`
 FROM (
   SELECT t0.`g` AS `g_x`, t0.`a` AS `a_x`, t0.`b` AS `b_x`,
          t0.`total` AS `total_x`, t3.`g` AS `g_y`, t3.`a` AS `a_y`,

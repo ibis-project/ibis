@@ -3,7 +3,7 @@ FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `city` AS `city`, avg(`v2`) AS `Mean(v2)`
+      SELECT `city`, avg(`v2`)
       FROM tbl
       GROUP BY 1
     ) t2

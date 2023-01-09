@@ -6,6 +6,6 @@ star1 = ibis.table(
     schema={"c": "int32", "f": "float64", "foo_id": "string", "bar_id": "string"},
 )
 
-result = star1.group_by(
-    [star1.foo_id.name("foo_id"), star1.bar_id.name("bar_id")]
-).aggregate(star1.f.sum().name("total"))
+result = star1.group_by([star1.foo_id, star1.bar_id]).aggregate(
+    star1.f.sum().name("total")
+)

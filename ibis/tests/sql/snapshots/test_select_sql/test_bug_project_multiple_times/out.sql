@@ -11,8 +11,7 @@ FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `n_name`,
-             sum(CAST(`c_acctbal` AS double)) AS `Sum(Cast(c_acctbal, float64))`
+      SELECT `n_name`, sum(CAST(`c_acctbal` AS double))
       FROM t0
       GROUP BY 1
     ) t2

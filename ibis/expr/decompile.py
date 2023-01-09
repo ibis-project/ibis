@@ -203,6 +203,9 @@ def reduction(op, arg, where, **kwargs):
 
 @translate.register(ops.Alias)
 def alias(op, arg, name):
+    if op.arg.name == op.name:
+        return arg
+
     arg = _maybe_add_parens(op.arg, arg)
     return f"{arg}.name({name!r})"
 

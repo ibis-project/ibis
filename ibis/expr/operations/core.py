@@ -8,6 +8,7 @@ from public import public
 import ibis.expr.rules as rlz
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
+import ibis.common.exceptions as com
 from ibis.util import UnnamedMarker, deprecated
 
 if TYPE_CHECKING:
@@ -96,6 +97,12 @@ class Alias(Value):
 
     output_shape = rlz.shape_like("arg")
     output_dtype = rlz.dtype_like("arg")
+
+    def __init__(self, arg, **kwargs):
+        if isinstance(arg, Alias):
+            raise com.IbisTypeError("aliases cannot be aliased")
+
+        super().__init__(arg=arg, **kwargs)
 
 
 @public

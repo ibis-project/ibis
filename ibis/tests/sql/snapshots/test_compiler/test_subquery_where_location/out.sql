@@ -1,4 +1,4 @@
-SELECT count(`foo`) AS `Count(foo)`
+SELECT count(`foo`)
 FROM (
   SELECT `string_col`, sum(`float_col`) AS `foo`
   FROM (

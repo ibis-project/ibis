@@ -78,7 +78,7 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
     sel = sg.select(*selections).from_(table)
 
     if by:
-        sel = sel.group_by(*by, dialect="clickhouse")
+        sel = sel.group_by(*(b.this for b in by), dialect="clickhouse")
 
     if predicates := op.predicates:
         sel = sel.where(*map(tr_val, predicates), dialect="clickhouse")

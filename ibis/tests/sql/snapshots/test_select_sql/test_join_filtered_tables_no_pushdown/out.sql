@@ -1,4 +1,4 @@
-SELECT t0.`value_a` AS `value_a`, t1.`value_b` AS `value_b`
+SELECT t0.`value_a`, t1.`value_b`
 FROM (
   SELECT *
   FROM a

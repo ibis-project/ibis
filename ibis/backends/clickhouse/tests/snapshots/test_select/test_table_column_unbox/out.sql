@@ -1,8 +1,8 @@
 SELECT
-  t1.string_col
+  t1.string_col AS string_col
 FROM (
   SELECT
-    t0.string_col,
+    t0.string_col AS string_col,
     SUM(t0.float_col) AS total
   FROM functional_alltypes AS t0
   WHERE

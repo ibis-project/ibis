@@ -1448,9 +1448,10 @@ def test_mutate_chain():
     # we can't fuse these correctly yet
     assert isinstance(a, ops.Alias)
     assert isinstance(a.arg, ops.IfNull)
-    assert isinstance(b, ops.TableColumn)
+    assert isinstance(b, ops.Alias)
+    assert isinstance(b.arg, ops.TableColumn)
 
-    expr = b.table.selections[1]
+    expr = b.arg.table.selections[1]
     assert isinstance(expr, ops.Alias)
     assert isinstance(expr.arg, ops.IfNull)
 

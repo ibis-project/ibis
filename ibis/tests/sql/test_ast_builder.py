@@ -67,7 +67,7 @@ def test_ast_with_aggregation_join_filter(con):
         (table3['f'] - table2['value']).mean().name('foo'),
         table3['f'].sum().name('bar'),
     ]
-    ex_by = [table3['g'], table2['key']]
+    ex_by = [table3['g'].name("g"), table2['key'].name("key")]
     for res, ex in zip(stmt.select_set, ex_by + ex_metrics):
         assert res == ex.op()
 

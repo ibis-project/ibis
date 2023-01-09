@@ -199,7 +199,13 @@ class ExprTranslator:
             # This column has been given an explicitly different name
             return False
 
-        return op.name is not unnamed
+        if op.name is unnamed:
+            return False
+
+        if isinstance(op, ops.Alias):
+            return op.name != op.arg.name
+
+        return False
 
     def name(self, translated, name, force=True):
         return f'{translated} AS {quote_identifier(name, force=force)}'

@@ -1,5 +1,5 @@
 SELECT
-  t0.key,
+  t0.key AS key,
   SUM((
     (
       t0.value + 1
