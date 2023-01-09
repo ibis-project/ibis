@@ -4,7 +4,6 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.expr import api
 
