@@ -6,7 +6,7 @@ on:
       - published
 jobs:
   docs:
-    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    concurrency: docs-${{ github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: install nix
