@@ -279,6 +279,10 @@ jobs:
           name: ${{ matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
+      - name: Show docker compose logs on fail
+        if: ${{ failure() }}
+        run: docker compose logs
+
   test_backends_min_version:
     name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -396,6 +400,10 @@ jobs:
         with:
           name: ${{ matrix.backend.name }}-min-version-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
+
+      - name: Show docker compose logs on fail
+        if: ${{ failure() }}
+        run: docker compose logs
 
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
