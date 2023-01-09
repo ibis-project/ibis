@@ -147,7 +147,7 @@ jobs:
   docs_push:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    concurrency: docs-${{ github.repository }}
     needs:
       # wait on benchmarks to prevent a race condition when pushing to the
       # gh-pages branch
