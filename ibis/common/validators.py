@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from abc import ABC, abstractmethod
 from contextlib import suppress
 from typing import Any, Callable, Iterable, Mapping, Sequence, Union
 
@@ -11,6 +12,20 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import evaluate_typehint
 from ibis.util import flatten_iterable, frozendict, is_function, is_iterable
+
+try:
+    from types import UnionType
+except ImportError:
+    UnionType = object()
+
+
+class Coercible(ABC):
+    __slots__ = ()
+
+    @classmethod
+    @abstractmethod
+    def __coerce__(cls, obj):
+        ...
 
 
 class Validator(Callable):
@@ -24,11 +39,14 @@ class Validator(Callable):
         annot = evaluate_typehint(annot, module)
         origin_type = get_origin(annot)
 
-        if annot is Any:
-            return any_
-        elif origin_type is None:
-            return instance_of(annot)
-        elif origin_type is Union:
+        if origin_type is None:
+            if annot is Any:
+                return any_
+            elif issubclass(annot, Coercible):
+                return coerced_to(annot)
+            else:
+                return instance_of(annot)
+        elif origin_type is UnionType or origin_type is Union:
             inners = map(cls.from_annotation, get_args(annot))
             return any_of(tuple(inners))
         elif origin_type is Annotated:
@@ -40,8 +58,13 @@ class Validator(Callable):
         elif issubclass(origin_type, Mapping):
             key_type, value_type = map(cls.from_annotation, get_args(annot))
             return mapping_of(key_type, value_type, type=origin_type)
+        elif issubclass(origin_type, Callable):
+            # TODO(kszucs): add a more comprehensive callable_with rule here
+            return instance_of(Callable)
         else:
-            return instance_of(annot)
+            raise NotImplementedError(
+                f"Cannot create validator from annotation {annot} {origin_type}"
+            )
 
 
 # TODO(kszucs): in order to cache valiadator instances we could subclass
@@ -94,6 +117,12 @@ def instance_of(klasses, arg, **kwargs):
             f"Given argument with type {type(arg)} is not an instance of {klasses}"
         )
     return arg
+
+
+@validator
+def coerced_to(klass, arg, **kwargs):
+    value = klass.__coerce__(arg)
+    return instance_of(klass, value, **kwargs)
 
 
 class lazy_instance_of(Validator):
@@ -194,6 +223,8 @@ def sequence_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
 
 @validator
 def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
+    if not isinstance(arg, Mapping):
+        raise IbisTypeError('Argument must be a mapping')
     return type(
         (key_inner(k, **kwargs), value_inner(v, **kwargs)) for k, v in arg.items()
     )
