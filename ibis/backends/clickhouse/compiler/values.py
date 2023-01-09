@@ -4,7 +4,7 @@ import calendar
 import functools
 from functools import partial
 from operator import add, mul, sub
-from typing import Any, Callable, Literal, Mapping
+from typing import Any, Literal, Mapping
 
 import sqlglot as sg
 
@@ -180,37 +180,29 @@ def _not_all(op, **kw):
     return translate_val(ops.Not(ops.All(op.arg)), **kw)
 
 
-def _quantiles(quantiles_translator_func: Callable, func_name: str):
-    def translate(op, **kw):
-        quantile = quantiles_translator_func(op.quantile)
-        args = [_sql(translate_val(op.arg, **kw))]
-        func = func_name
+def _quantile_like(func_name: str, op: ops.Node, quantile: str, **kw):
+    args = [_sql(translate_val(op.arg, **kw))]
 
-        if (where := op.where) is not None:
-            args.append(_sql(translate_val(where, **kw)))
-            func += "If"
+    if (where := op.where) is not None:
+        args.append(_sql(translate_val(where, **kw)))
+        func_name += "If"
 
-        return f"{func}({quantile})({', '.join(args)})"
-
-    return translate
+    return f"{func_name}({quantile})({', '.join(args)})"
 
 
 @translate_val.register(ops.Quantile)
 def _quantile(op, **kw):
-    def quantiles_translator_func(quantiles):
-        return _sql(translate_val(quantiles, **kw))
-
-    return _quantiles(quantiles_translator_func, func_name="quantile")(op, **kw)
+    quantile = _sql(translate_val(op.quantile, **kw))
+    return _quantile_like("quantile", op, quantile, **kw)
 
 
 @translate_val.register(ops.MultiQuantile)
 def _multi_quantile(op, **kw):
-    def quantiles_translator_func(quantiles):
-        if not isinstance(quantiles, ops.Literal):
-            raise TypeError("ClickHouse quantile only accepts a list of Python floats")
-        return ", ".join(map(str, quantiles.value))
+    if not isinstance(op.quantile, ops.Literal):
+        raise TypeError("ClickHouse quantile only accepts a list of Python floats")
 
-    return _quantiles(quantiles_translator_func, func_name="quantiles")(op, **kw)
+    quantile = ", ".join(map(str, op.quantile.value))
+    return _quantile_like("quantiles", op, quantile, **kw)
 
 
 def _agg_variance_like(func):
