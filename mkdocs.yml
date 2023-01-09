@@ -83,7 +83,7 @@ plugins:
       execute: true
       ignore:
         - "*.py"
-      execute_ignore: "tutorial/*Geospatial*.ipynb"
+      execute_ignore: "**/rendered/*.ipynb"
       include_source: true
       theme: dark
       allow_errors: false

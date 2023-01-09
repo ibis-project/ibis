@@ -9,7 +9,7 @@
         * [Creating and Inserting External Data](tutorial/05-IO-Create-Insert-External-Data.ipynb)
         * [Complex Filtering](tutorial/06-ComplexFiltering.ipynb)
         * [Analytics Tools](tutorial/07-Analytics-Tools.ipynb)
-        * [Geospatial Analysis](tutorial/08-Geospatial-Analysis.ipynb)
+        * [Geospatial Analysis](tutorial/rendered/08-Geospatial-Analysis.ipynb)
     * [How To Guide](how_to/)
     * [Execution Backends](backends/)
     * [User Guide](user_guide/)
@@ -33,6 +33,7 @@
 * [Releases](release_notes.md)
 * Blog
     * [Ibis v4.0.0](blog/ibis-version-4.0.0-release.md)
+    * [Analyzing Ibis's CI Data with Ibis](blog/rendered/ci-analysis.ipynb)
     * [ffill and bfill using ibis](blog/ffill-and-bfill-using-ibis.md)
     * [Ibis v3.1.0](blog/Ibis-version-3.1.0-release.md)
     * [Ibis v3.0.0](blog/Ibis-version-3.0.0-release.md)
