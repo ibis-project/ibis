@@ -48,29 +48,37 @@ HORIZONTAL_ELLIPSIS = "\u2026"
 
 
 class frozendict(Mapping, Hashable):
-    __slots__ = ("_dict", "_hash")
+    __slots__ = ("__view__", "__precomputed_hash__")
 
     def __init__(self, *args, **kwargs):
-        self._dict = dict(*args, **kwargs)
-        self._hash = hash(tuple(self._dict.items()))
+        dictview = types.MappingProxyType(dict(*args, **kwargs))
+        dicthash = hash(tuple(dictview.items()))
+        object.__setattr__(self, "__view__", dictview)
+        object.__setattr__(self, "__precomputed_hash__", dicthash)
 
     def __str__(self):
-        return str(self._dict)
+        return str(self.__view__)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._dict!r})"
+        return f"{self.__class__.__name__}({self.__view__!r})"
+
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
+
+    def __reduce__(self):
+        return frozendict, (dict(self.__view__),)
 
     def __iter__(self):
-        return iter(self._dict)
+        return iter(self.__view__)
 
     def __len__(self):
-        return len(self._dict)
+        return len(self.__view__)
 
     def __getitem__(self, key):
-        return self._dict[key]
+        return self.__view__[key]
 
     def __hash__(self):
-        return self._hash
+        return self.__precomputed_hash__
 
 
 class DotDict(dict):
