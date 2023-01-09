@@ -1014,3 +1014,15 @@ def test_column_summary(alltypes):
     expr = alltypes.aggregate(bool_col_summary)
     result = expr.execute()
     assert result.shape == (1, 7)
+
+
+@pytest.mark.notimpl(["datafusion"])
+def test_value_counts_on_expr(backend, alltypes, df):
+    expr = alltypes.timestamp_col.date().value_counts()
+    result = expr.execute().sort_values(["Date(timestamp_col)"]).reset_index(drop=True)
+    expected = (
+        df.timestamp_col.dt.date.astype("datetime64[ns]").value_counts().reset_index()
+    )
+    expected.columns = result.columns
+    expected = expected.sort_values(["Date(timestamp_col)"]).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)

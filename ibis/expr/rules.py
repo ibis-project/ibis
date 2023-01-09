@@ -22,6 +22,7 @@ from ibis.common.validators import (
     one_of,
     ref,
     str_,
+    all_of,
     tuple_of,
     validator,
 )
@@ -651,3 +652,24 @@ def _arg_type_error_format(op):
         return f"Literal({op.value}):{op.output_dtype}"
     else:
         return f"{op.name}:{op.output_dtype}"
+
+
+@public
+@rule
+def aliased(op, **_):
+    """Add a name to a projected column if necessary."""
+    return op.to_expr().name(op.name).op()
+
+
+@public
+@rule
+def value_from(table_ref, value, **kwargs):
+    func = one_of((function_of(table_ref), column_from(table_ref), column(any)))
+    return func(value, **kwargs)
+
+
+@public
+@rule
+def aliased_value_from(table_ref, value, **kwargs):
+    val_from = value_from(table_ref)
+    return all_of((val_from, aliased), value, **kwargs)

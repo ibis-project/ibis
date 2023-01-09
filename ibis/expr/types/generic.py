@@ -43,12 +43,6 @@ class Value(Expr):
           a int64
         b: r0.a
         """
-        # TODO(kszucs): shouldn't do simplification here, but rather later
-        # when simplifying the whole operation tree
-        # the expression's name is idendical to the new one
-        if self.has_name() and self.get_name() == name:
-            return self
-
         if isinstance(self.op(), ops.Alias):
             # only keep a single alias operation
             op = ops.Alias(arg=self.op().arg, name=name)

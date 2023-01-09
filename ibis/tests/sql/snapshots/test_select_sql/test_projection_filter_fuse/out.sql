@@ -1,4 +1,4 @@
-SELECT `a`, `b`, `c`
+SELECT `a` AS `a`, `b` AS `b`, `c` AS `c`
 FROM (
   SELECT *
   FROM foo

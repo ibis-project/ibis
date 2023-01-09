@@ -297,14 +297,7 @@ class SelfReference(TableNode):
 class Projection(TableNode):
     table = rlz.table
     selections = rlz.tuple_of(
-        rlz.one_of(
-            (
-                rlz.table,
-                rlz.column_from(rlz.ref("table")),
-                rlz.function_of(rlz.ref("table")),
-                rlz.any,
-            )
-        )
+        rlz.one_of((rlz.table, rlz.aliased_value_from(rlz.ref("table"))))
     )
 
     @attribute.default
@@ -398,15 +391,22 @@ class Aggregation(TableNode):
     table = rlz.table
     metrics = rlz.optional(
         rlz.tuple_of(
-            rlz.one_of(
+            rlz.all_of(
                 (
-                    rlz.function_of(
-                        rlz.ref("table"),
-                        output_rule=rlz.one_of((rlz.reduction, rlz.scalar(rlz.any))),
+                    rlz.one_of(
+                        (
+                            rlz.function_of(
+                                rlz.ref("table"),
+                                output_rule=rlz.one_of(
+                                    (rlz.reduction, rlz.scalar(rlz.any))
+                                ),
+                            ),
+                            rlz.reduction,
+                            rlz.scalar(rlz.any),
+                            rlz.tuple_of(rlz.scalar(rlz.any)),
+                        )
                     ),
-                    rlz.reduction,
-                    rlz.scalar(rlz.any),
-                    rlz.tuple_of(rlz.scalar(rlz.any)),
+                    rlz.aliased,
                 )
             ),
             flatten=True,
@@ -414,15 +414,7 @@ class Aggregation(TableNode):
         default=(),
     )
     by = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of(
-                (
-                    rlz.function_of(rlz.ref("table")),
-                    rlz.column_from(rlz.ref("table")),
-                    rlz.column(rlz.any),
-                )
-            )
-        ),
+        rlz.tuple_of(rlz.aliased_value_from(rlz.ref("table"))),
         default=(),
     )
     having = rlz.optional(

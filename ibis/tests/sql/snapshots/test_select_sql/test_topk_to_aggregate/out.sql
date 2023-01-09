@@ -1,6 +1,6 @@
 SELECT *
 FROM (
-  SELECT `dest`, avg(`arrdelay`) AS `Mean(arrdelay)`
+  SELECT `dest` AS `dest`, avg(`arrdelay`) AS `Mean(arrdelay)`
   FROM airlines
   GROUP BY 1
 ) t0

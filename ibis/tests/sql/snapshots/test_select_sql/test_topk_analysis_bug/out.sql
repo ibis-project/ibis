@@ -1,4 +1,4 @@
-SELECT `origin`, count(1) AS `count`
+SELECT `origin` AS `origin`, count(1) AS `count`
 FROM (
   SELECT *
   FROM airlines
@@ -7,7 +7,7 @@ FROM (
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `dest`, avg(`arrdelay`) AS `Mean(arrdelay)`
+      SELECT `dest` AS `dest`, avg(`arrdelay`) AS `Mean(arrdelay)`
       FROM airlines
       WHERE `dest` IN ('ORD', 'JFK', 'SFO')
       GROUP BY 1

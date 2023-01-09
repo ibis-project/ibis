@@ -1,6 +1,6 @@
-SELECT `b`, count(1) AS `count`
+SELECT `b` AS `b`, count(1) AS `count`
 FROM (
-  SELECT `b`
+  SELECT `b` AS `b`
   FROM (
     SELECT *
     FROM t
