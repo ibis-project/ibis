@@ -32,6 +32,7 @@
     * [Backend Operations Matrix](backends/support_matrix.md)
 * [Releases](release_notes.md)
 * Blog
+    * [Ibis v4.0.0](blog/ibis-version-4.0.0-release.md)
     * [ffill and bfill using ibis](blog/ffill-and-bfill-using-ibis.md)
     * [Ibis v3.1.0](blog/Ibis-version-3.1.0-release.md)
     * [Ibis v3.0.0](blog/Ibis-version-3.0.0-release.md)
