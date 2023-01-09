@@ -8,4 +8,7 @@ self: super: {
   # TODO: Build grpcio from src on darwin because macOS 12_0 wheels won't install
   # TODO: Remove when the nix version of `pip` is upgraded?
   grpcio = super.grpcio.override { preferWheel = !self.pkgs.stdenv.isDarwin; };
+
+  # No macOS 12 wheel available as of 2023-01-09
+  debugpy = super.debugpy.override { preferWheel = !self.pkgs.stdenv.isDarwin; };
 }
