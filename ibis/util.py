@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
+K = TypeVar("K")
 V = TypeVar("V")
 
 # https://www.compart.com/en/unicode/U+22EE
@@ -47,7 +48,7 @@ VERTICAL_ELLIPSIS = "\u22EE"
 HORIZONTAL_ELLIPSIS = "\u2026"
 
 
-class frozendict(Mapping, Hashable):
+class frozendict(Mapping[K, V], Hashable):
     __slots__ = ("__view__", "__precomputed_hash__")
 
     def __init__(self, *args, **kwargs):
