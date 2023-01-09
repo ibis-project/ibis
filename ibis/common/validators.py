@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from contextlib import suppress
-from typing import Any, Callable, Iterable, Union
+from typing import Any, Callable, Iterable, Mapping, Sequence, Union
 
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
@@ -10,7 +10,7 @@ from typing_extensions import Annotated, get_args, get_origin
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import evaluate_typehint
-from ibis.util import flatten_iterable, is_function, is_iterable
+from ibis.util import flatten_iterable, frozendict, is_function, is_iterable
 
 
 class Validator(Callable):
@@ -24,23 +24,22 @@ class Validator(Callable):
         annot = evaluate_typehint(annot, module)
         origin_type = get_origin(annot)
 
-        if origin_type is Union:
+        if annot is Any:
+            return any_
+        elif origin_type is None:
+            return instance_of(annot)
+        elif origin_type is Union:
             inners = map(cls.from_annotation, get_args(annot))
             return any_of(tuple(inners))
-        elif origin_type is list:
-            (inner,) = map(cls.from_annotation, get_args(annot))
-            return list_of(inner)
-        elif origin_type is tuple:
-            (inner,) = map(cls.from_annotation, get_args(annot))
-            return tuple_of(inner)
-        elif origin_type is dict:
-            key_type, value_type = map(cls.from_annotation, get_args(annot))
-            return dict_of(key_type, value_type)
         elif origin_type is Annotated:
             annot, *extras = get_args(annot)
             return all_of((instance_of(annot), *extras))
-        elif annot is Any:
-            return any_
+        elif issubclass(origin_type, Sequence):
+            (inner,) = map(cls.from_annotation, get_args(annot))
+            return sequence_of(inner, type=origin_type)
+        elif issubclass(origin_type, Mapping):
+            key_type, value_type = map(cls.from_annotation, get_args(annot))
+            return mapping_of(key_type, value_type, type=origin_type)
         else:
             return instance_of(annot)
 
@@ -180,7 +179,7 @@ def map_to(mapping, variant, **kwargs):
 
 
 @validator
-def container_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
+def sequence_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
     if not is_iterable(arg):
         raise IbisTypeError('Argument must be a sequence')
 
@@ -222,5 +221,6 @@ str_ = instance_of(str)
 bool_ = instance_of(bool)
 none_ = instance_of(type(None))
 dict_of = mapping_of(type=dict)
-list_of = container_of(type=list)
-tuple_of = container_of(type=tuple)
+list_of = sequence_of(type=list)
+tuple_of = sequence_of(type=tuple)
+frozendict_of = mapping_of(type=frozendict)

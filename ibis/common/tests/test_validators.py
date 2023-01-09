@@ -9,6 +9,7 @@ from ibis.common.validators import (
     any_of,
     bool_,
     dict_of,
+    frozendict_of,
     instance_of,
     int_,
     isin,
@@ -17,6 +18,7 @@ from ibis.common.validators import (
     str_,
     tuple_of,
 )
+from ibis.util import frozendict
 
 
 @pytest.mark.parametrize(
@@ -36,6 +38,7 @@ from ibis.common.validators import (
         (any_of((str_, int_(max=8))), "foo", "foo"),
         (any_of((str_, int_(max=8))), 7, 7),
         (all_of((int_, min_(3), min_(8))), 10, 10),
+        (dict_of(str_, int_), {"a": 1, "b": 2}, {"a": 1, "b": 2}),
     ],
 )
 def test_validators_passing(validator, value, expected):
@@ -59,6 +62,7 @@ def test_validators_passing(validator, value, expected):
         (any_of((str_, int_(max=8))), 3.14),
         (any_of((str_, int_(max=8))), 9),
         (all_of((int_, min_(3), min_(8))), 7),
+        (dict_of(int_, str_), {"a": 1, "b": 2}),
     ],
 )
 def test_validators_failing(validator, value):
@@ -90,6 +94,7 @@ def endswith_d(x, this):
         (List[int], list_of(instance_of(int))),
         (Tuple[int], tuple_of(instance_of(int))),
         (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
+        (frozendict[str, int], frozendict_of(instance_of(str), instance_of(int))),
     ],
 )
 def test_validator_from_annotation(annot, expected):
