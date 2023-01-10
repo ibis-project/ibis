@@ -4,6 +4,7 @@ import functools
 
 import parsy
 
+import ibis
 import ibis.expr.datatypes as dt
 from ibis.common.parsing import (
     COMMA,
@@ -17,6 +18,10 @@ from ibis.common.parsing import (
     SPACES,
     spaceless_string,
 )
+
+
+def _bool_type():
+    return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Boolean")
 
 
 def parse(text: str) -> dt.DataType:
@@ -35,8 +40,9 @@ def parse(text: str) -> dt.DataType:
         | spaceless_string("smallint", "int16", "int2").result(dt.Int16(nullable=False))
         | spaceless_string("date32", "date").result(dt.Date(nullable=False))
         | spaceless_string("time").result(dt.Time(nullable=False))
-        | spaceless_string("tinyint", "int8", "int1", "boolean", "bool").result(
-            dt.Int8(nullable=False)
+        | spaceless_string("tinyint", "int8", "int1").result(dt.Int8(nullable=False))
+        | spaceless_string("boolean", "bool").result(
+            getattr(dt, _bool_type())(nullable=False)
         )
         | spaceless_string("integer", "int32", "int4", "int").result(
             dt.Int32(nullable=False)
@@ -221,6 +227,11 @@ def serialize_raw(ty: dt.DataType) -> str:
 @serialize_raw.register(dt.DataType)
 def _(ty: dt.DataType) -> str:
     return type(ty).__name__.capitalize()
+
+
+@serialize_raw.register(dt.Boolean)
+def _(_: dt.Boolean) -> str:
+    return _bool_type()
 
 
 @serialize_raw.register(dt.Array)

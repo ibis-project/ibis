@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -156,11 +157,17 @@ def test_field_in_literals(con, alltypes, translate, container):
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize('column', ['int_col', 'float_col', 'bool_col'])
-def test_negate(con, alltypes, translate, column):
-    # clickhouse represent boolean as UInt8
+@pytest.mark.parametrize(
+    ("column", "operator"),
+    [
+        param("int_col", "-", id="int_col"),
+        param("float_col", "-", id="float_col"),
+        param("bool_col", "NOT ", id="bool_col"),
+    ],
+)
+def test_negate(con, alltypes, translate, column, operator):
     expr = -alltypes[column]
-    assert translate(expr.op()) == f'-{column}'
+    assert translate(expr.op()) == f"{operator}{column}"
     assert len(con.execute(expr))
 
 

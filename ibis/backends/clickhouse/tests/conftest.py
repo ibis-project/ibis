@@ -24,8 +24,12 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
-    bool_is_int = True
     supports_json = False
+
+    @property
+    def native_bool(self) -> bool:
+        [(value,)] = self.connection._client.execute("SELECT true")
+        return isinstance(value, bool)
 
     @staticmethod
     def _load_data(

@@ -49,7 +49,7 @@ CREATE OR REPLACE TABLE functional_alltypes (
     `index` Nullable(Int64),
     `Unnamed: 0` Nullable(Int64),
     id Nullable(Int32),
-    bool_col Nullable(UInt8),
+    bool_col Nullable(Bool),
     tinyint_col Nullable(Int8),
     smallint_col Nullable(Int16),
     int_col Nullable(Int32),

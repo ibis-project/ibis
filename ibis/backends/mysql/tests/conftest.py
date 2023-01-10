@@ -26,7 +26,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
-    bool_is_int = True
+    native_bool = False
     supports_structs = False
 
     def __init__(self, data_directory: Path) -> None:

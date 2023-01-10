@@ -72,7 +72,7 @@ class BackendTest(abc.ABC):
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
     supports_floating_modulus = True
-    bool_is_int = False
+    native_bool = True
     supports_structs = True
     supports_json = True
     reduction_tolerance = 1e-7
@@ -163,7 +163,7 @@ class BackendTest(abc.ABC):
     @property
     def functional_alltypes(self) -> ir.Table:
         t = self.connection.table('functional_alltypes')
-        if self.bool_is_int:
+        if not self.native_bool:
             return t.mutate(bool_col=t.bool_col == 1)
         return t
 
