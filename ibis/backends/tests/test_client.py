@@ -719,6 +719,16 @@ def test_create_from_in_memory_table(backend, con, t):
         assert tmp_name not in con.list_tables()
 
 
+def test_default_backend_option():
+    orig = ibis.options.default_backend
+    ibis.options.default_backend = ibis.pandas
+    try:
+        backend = ibis.config._default_backend()
+        assert backend.name == "pandas"
+    finally:
+        ibis.options.default_backend = orig
+
+
 def test_default_backend_no_duckdb(backend):
     # backend is used to ensure that this test runs in CI in the setting
     # where only the dependencies for a a given backend are installed
