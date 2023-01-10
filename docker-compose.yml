@@ -1,7 +1,10 @@
 version: "3.4"
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:22.12.2.25-alpine
+    build:
+      context: .
+      dockerfile: ./docker/clickhouse/Dockerfile
+    image: ibis-clickhouse
     ports:
       - 8123:8123
       - 9000:9000

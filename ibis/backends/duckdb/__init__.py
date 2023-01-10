@@ -9,8 +9,6 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
-import pyarrow as pa
-import pyarrow.types as pat
 import sqlalchemy as sa
 import toolz
 
@@ -21,6 +19,7 @@ from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 if TYPE_CHECKING:
     import duckdb
     import pandas as pd
+    import pyarrow as pa
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -394,20 +393,20 @@ SELECT * FROM read_csv({', '.join(args)})"""
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
-    ) -> IbisRecordBatchReader:
+    ) -> pa.ipc.RecordBatchReader:
+        # TODO: duckdb seems to not care about the `chunk_size` argument
+        # and returns batches in 1024 row chunks
         _ = self._import_pyarrow()
+
+        from ibis.backends.duckdb.pyarrow import IbisRecordBatchReader
+
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
         cursor = self.raw_sql(sql)
 
-        _reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
-        # Horrible hack to make sure cursor isn't garbage collected
-        # before batches are streamed out of the RecordBatchReader
-        batches = IbisRecordBatchReader(_reader, cursor)
-        return batches
-        # TODO: duckdb seems to not care about the `chunk_size` argument
-        # and returns batches in 1024 row chunks
+        reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
+        return IbisRecordBatchReader(reader, cursor)
 
     def to_pyarrow(
         self,
@@ -417,7 +416,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        _ = self._import_pyarrow()
+        pa = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
@@ -444,6 +443,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         schema: sch.Schema,
     ):
         import pandas as pd
+        import pyarrow.types as pat
 
         table = cursor.cursor.fetch_arrow_table()
 
@@ -525,25 +525,3 @@ SELECT * FROM read_csv({', '.join(args)})"""
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
-
-
-class IbisRecordBatchReader(pa.ipc.RecordBatchReader):
-    def __init__(self, reader, cursor):
-        self.reader = reader
-        self.cursor = cursor
-
-    def close(self):
-        self.reader.close()
-        del self.cursor
-
-    def read_all(self):
-        return self.reader.read_all()
-
-    def read_next_batch(self):
-        return self.reader.read_next_batch()
-
-    def read_pandas(self):
-        return self.reader.read_pandas()
-
-    def schema(self):
-        return self.reader.schema

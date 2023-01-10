@@ -8,7 +8,6 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.conftest import TEST_TABLES, read_tables
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven, UnorderedComparator
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
@@ -66,10 +65,6 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
         with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
             for stmt in filter(None, map(str.strip, schema.read().split(";"))):
                 client.execute(stmt)
-
-        for table, df in read_tables(TEST_TABLES, data_dir):
-            query = f"INSERT INTO {table} VALUES"
-            client.insert_dataframe(query, df.to_pandas(), settings={"use_numpy": True})
 
     @staticmethod
     def connect(data_directory: Path):
