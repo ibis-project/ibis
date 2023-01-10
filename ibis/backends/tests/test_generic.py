@@ -699,9 +699,6 @@ def test_select_filter_select(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["snowflake"], reason="snowflake doesn't implement timestamp subtraction"
-)
 def test_interactive(alltypes):
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),
