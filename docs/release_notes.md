@@ -6,62 +6,40 @@ Release Notes
 
 ### ⚠ BREAKING CHANGES
 
-* Replace `HLLCardinality` with `ApproxCountDistinct` and `CMSMedian` with `ApproxMedian` operations.
-* **backends:** The dtype of returned execution results now more closely matches that of the ibis expression's type. Downstream code may need to be adjusted.
-* The `JSONB` type is replaced by the `JSON` type.
-* **dev-deps:** Expression types have been removed from `ibis.expr.api`. Use `import ibis.expr.types as ir` to access these types.
-* **ir:** removed @immutable_property decorator, use @attribute.default instead
-* **timestamps:** The `timezone` argument to `to_timestamp` is gone. This was only supported in the BigQuery backend. Append `%Z` to the format string and the desired time zone to the input column if necessary.
-* **deps:** Ibis now supports at minimum duckdb 0.3.3. Please upgrade your duckdb install as needed.
-* Previously `ibis.connect` would return a `Table` object
-when calling `connect` on a parquet/csv file. This now returns a backend
-containing a single table created from that file. When possible users
-may use `ibis.read` instead to read files into ibis tables.
-* The `closed` argument no longer exists because it never had any effect. Remove it from your `histogram` method calls.
-* The Pandas and Dask backends now interpret casting ints
-to/from timestamps as seconds since the unix epoch, matching other
-backends.
-* **datafusion:** `register_csv` and `register_parquet` are removed.
-Pass filename to `register` method instead.
-
-This also adds in a general backend test for the `register` API so we
-can make sure things are consistent, and fixes a small bug with the
-dispatch in polars (and datafusion which I copied) that raises a
-recursion error if you pass in garbage.
-
-Update ibis/backends/tests/test_client.py
-
-Co-authored-by: Phillip Cloud <417981+cpcloud@users.noreply.github.com>
-* **ir:** NodeList and ir.List are removed. Use tuples instead.
-* **api:** `re_extract` now follows `re.match` behavior. In particular, the `0`th group is now the entire string if there's a match, otherwise the groups are 1-based.
-* **datatypes:** Enums are now strings. Likely no action needed since no functionality existed.
-* **ir:** Replace `t[t.x.topk(...)]` with `t.semi_join(t.x.topk(...), "x")`.
-* **ir:** ir.Analytic.type() and ir.TopK.type() methods are removed
-* The default limit for table/column expressions is now
-`None` (meaning no limit).
-* Previously all column names that collided between
-`left` and `right` tables were renamed with an appended suffix. Now for
-the case of inner joins with only equality predicates, colliding columns
-that are known to be equal due to the join predicates aren't renamed.
-* kerberos support is no longer installed by default for
-the `impala` backend. To add support you'll need to install the
-`kerberos` package separately.
-* **ir:** `ops.DeferredSortKey` is removed. Use `ops.SortKey` directly instead.
-* **ir:** Annotable is mutable by default now
-* **ir:** node.has_resolved_name() is removed, use isinstance(node, ops.Named) instead; node.resolve_name() is removed use node.name instead
-* **ir:** removed Node.flat_args(), directly use node.args property instead
-* **ir:** removed ops.Node.inputs property, use the multipledispatched get_node_arguments() function in the pandas backend
-* **ir:** Node.blocks() method has been removed.
-* **ir:** HasSchema is no longer available, directly subclass ops.TableNode and implement schema property instead
-* **ir:** Removed Node.output_type in favor of abstractmethod Node.to_expr() which now must be explicitly implemented
-* **ir:** Expr(Op(Expr(Op(Expr(Op))))) is now represented as
-Expr(Op(Op(Op))), so code using ibis internals must be migrated
-* **pandas:** Use timezone conversion functions to compute the original machine localized value
-* **common:** use ibis.common.validators.{Patameter, Signature} instead
-* **ir:** ibis.expr.lineage.lineage() is now removed
-* **ir:** removed ir.DestructValue, ir.DestructScalar and ir.DestructColumn, use table.unpack() instead
-* **ir:** removed Node.root_tables() method, use ibis.expr.analysis.find_immediate_parent_tables() instead
 * functions, methods and classes marked as deprecated are removed now
+* **ir:** replace `HLLCardinality` with `ApproxCountDistinct` and `CMSMedian` with `ApproxMedian` operations.
+* **backends:** the datatype of returned execution results now more closely matches that of the ibis expression's type. Downstream code may need to be adjusted.
+* **ir:** the `JSONB` type is replaced by the `JSON` type.
+* **dev-deps:** expression types have been removed from `ibis.expr.api`. Use `import ibis.expr.types as ir` to access these types.
+* **common:** removed `@immutable_property` decorator, use `@attribute.default` instead
+* **timestamps:** the `timezone` argument to `to_timestamp` is gone. This was only supported in the BigQuery backend. Append `%Z` to the format string and the desired time zone to the input column if necessary.
+* **deps:** ibis now supports at minimum duckdb 0.3.3. Please upgrade your duckdb install as needed.
+* **api:** previously `ibis.connect` would return a `Table` object when calling `connect` on a parquet/csv file. This now returns a backend containing a single table created from that file. When possible users may use `ibis.read` instead to read files into ibis tables.
+* **api:** `histogram()`'s `closed` argument no longer exists because it never had any effect. Remove it from your `histogram` method calls.
+* **pandas/dask:** the Pandas and Dask backends now interpret casting ints to/from timestamps as seconds since the unix epoch, matching other backends.
+* **datafusion:** `register_csv` and `register_parquet` are removed. Pass filename to `register` method instead.
+* **ir:** `ops.NodeList` and `ir.List` are removed. Use tuples to represent sequence of expressions instead.
+* **api:** `re_extract` now follows `re.match` behavior. In particular, the `0`th group is now the entire string if there's a match, otherwise the groups are 1-based.
+* **datatypes:** enums are now strings. Likely no action needed since no functionality existed.
+* **ir:** Replace `t[t.x.topk(...)]` with `t.semi_join(t.x.topk(...), "x")`.
+* **ir:** `ir.Analytic.type()` and `ir.TopK.type()` methods are removed.
+* **api:** the default limit for table/column expressions is now `None` (meaning no limit).
+* **ir**: join changes: previously all column names that collided between `left` and `right` tables were renamed with an appended suffix. Now for the case of inner joins with only equality predicates, colliding columns that are known to be equal due to the join predicates aren't renamed.
+* **impala:** kerberos support is no longer installed by default for the `impala` backend. To add support you'll need to install the `kerberos` package separately.
+* **ir:** `ops.DeferredSortKey` is removed. Use `ops.SortKey` directly instead.
+* **ir:** `ibis.common.grounds.Annotable` is mutable by default now
+* **ir:** `node.has_resolved_name()` is removed, use `isinstance(node, ops.Named)` instead; `node.resolve_name()` is removed use `node.name` instead
+* **ir:** removed `ops.Node.flat_args()`, directly use `node.args` property instead
+* **ir:** removed `ops.Node.inputs` property, use the multipledispatched `get_node_arguments()` function in the pandas backend
+* **ir:** `Node.blocks()` method has been removed.
+* **ir:** `HasSchema` mixin class is no longer available, directly subclass `ops.TableNode` and implement schema property instead
+* **ir:** Removed `Node.output_type` property in favor of abstractmethod `Node.to_expr()` which now must be explicitly implemented
+* **ir:** `Expr(Op(Expr(Op(Expr(Op)))))` is now represented as `Expr(Op(Op(Op)))`, so code using ibis internals must be migrated
+* **pandas:** Use timezone conversion functions to compute the original machine localized value
+* **common:** use `ibis.common.validators.{Patameter, Signature}` instead
+* **ir:** `ibis.expr.lineage.lineage()` is now removed
+* **ir:** removed `ir.DestructValue`, `ir.DestructScalar` and `ir.DestructColumn`, use `table.unpack()` instead
+* **ir:** removed `Node.root_tables()` method, use `ibis.expr.analysis.find_immediate_parent_tables()` instead
 * **impala:** use other methods for pinging the database
 
 ### Features
