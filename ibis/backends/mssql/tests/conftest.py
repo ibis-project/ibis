@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import concurrent.futures
 import os
 from pathlib import Path
 from typing import Any
@@ -9,7 +8,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, init_database
+from ibis.backends.conftest import init_database
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 
 MSSQL_USER = os.environ.get('IBIS_TEST_MSSQL_USER', 'sa')
@@ -54,7 +53,7 @@ class TestConf(BackendTest, RoundHalfToEven):
             Location of scripts defining schemas
         """
         with open(script_dir / 'schema' / 'mssql.sql') as schema:
-            engine = init_database(
+            init_database(
                 url=sa.engine.make_url(
                     f"mssql+pymssql://{user}:{password}@{host}:{port:d}/{database}"
                 ),
@@ -62,27 +61,6 @@ class TestConf(BackendTest, RoundHalfToEven):
                 schema=schema,
                 isolation_level="AUTOCOMMIT",
             )
-
-            futures = []
-            with concurrent.futures.ThreadPoolExecutor() as e:
-                for table in TEST_TABLES:
-                    # /data is a volume mount to the ibis testing data
-                    # used for snappy test data loading
-                    # DataFrame.to_sql is unusably slow for loading CSVs
-                    query = f"""
-                    BULK INSERT {table}
-                    FROM '/data/{table}.csv'
-                    WITH (
-                      FORMAT = 'CSV',
-                      FIELDTERMINATOR = ',',
-                      ROWTERMINATOR = '\\n',
-                      FIRSTROW = 2
-                    )
-                    """
-                    futures.append(e.submit(engine.execute, query))
-
-                for future in concurrent.futures.as_completed(futures):
-                    future.result()
 
     @staticmethod
     def connect(_: Path):

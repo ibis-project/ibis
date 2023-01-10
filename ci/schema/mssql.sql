@@ -13,6 +13,14 @@ CREATE TABLE diamonds (
     z FLOAT
 );
 
+
+-- /data is a volume mount to the ibis testing data
+-- used for snappy test data loading
+-- DataFrame.to_sql is unusably slow for loading CSVs
+BULK INSERT diamonds
+FROM '/data/diamonds.csv'
+WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
+
 DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
@@ -40,6 +48,10 @@ CREATE TABLE batting (
     "GIDP" BIGINT
 );
 
+BULK INSERT batting
+FROM '/data/batting.csv'
+WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
+
 DROP TABLE IF EXISTS awards_players;
 
 CREATE TABLE awards_players (
@@ -50,6 +62,10 @@ CREATE TABLE awards_players (
     tie VARCHAR(MAX),
     notes VARCHAR(MAX)
 );
+
+BULK INSERT awards_players
+FROM '/data/awards_players.csv'
+WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
 
 DROP TABLE IF EXISTS functional_alltypes;
 
@@ -70,6 +86,10 @@ CREATE TABLE functional_alltypes (
     year INTEGER,
     month INTEGER
 );
+
+BULK INSERT functional_alltypes
+FROM '/data/functional_alltypes.csv'
+WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
 
 CREATE INDEX "ix_functional_alltypes_index" ON functional_alltypes ("index");
 
