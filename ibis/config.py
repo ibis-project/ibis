@@ -167,29 +167,19 @@ class Options(Config):
     pyspark: Optional[Config] = None
 
 
-_HAS_DUCKDB = True
-_DUCKDB_CON = None
-
-
 def _default_backend() -> Any:
-    global _HAS_DUCKDB, _DUCKDB_CON
-
-    if not _HAS_DUCKDB:
-        return None
-
-    if _DUCKDB_CON is not None:
-        return _DUCKDB_CON
+    if (backend := options.default_backend) is not None:
+        return backend
 
     try:
         import duckdb as _  # noqa: F401
     except ImportError:
-        _HAS_DUCKDB = False
         return None
 
     import ibis
 
-    _DUCKDB_CON = ibis.duckdb.connect(":memory:")
-    return _DUCKDB_CON
+    options.default_backend = con = ibis.duckdb.connect(":memory:")
+    return con
 
 
 options = Options()
