@@ -1,11 +1,12 @@
 import sys
 
-import pyarrow as pa
 import pytest
 from pytest import param
 
+pa = pytest.importorskip("pyarrow")
+
 # Adds `to_pyarrow` to created schema objects
-from ibis.backends.pyarrow.datatypes import sch  # noqa: F401
+from ibis.backends.pyarrow.datatypes import sch as _  # noqa: F401, E402
 
 
 class PackageDiscarder:

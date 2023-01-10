@@ -152,12 +152,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         )
 
     def _get_original_column_names(self, tablename: str) -> list[str]:
-        import pyarrow.parquet as pq
-
-        pq_file = pq.ParquetFile(
-            self.data_directory / "parquet" / tablename / f"{tablename}.parquet"
-        )
-        return pq_file.schema.names
+        return list(TEST_TABLES[tablename].names)
 
     def _get_renamed_table(self, tablename: str) -> ir.Table:
         t = self.connection.table(tablename)

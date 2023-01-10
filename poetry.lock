@@ -3371,7 +3371,7 @@ name = "pyarrow"
 version = "8.0.0"
 description = "Python library for Apache Arrow"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "pyarrow-8.0.0-cp310-cp310-macosx_10_13_universal2.whl", hash = "sha256:d5ef4372559b191cafe7db8932801eee252bfc35e983304e7d60b6954576a071"},
@@ -5063,4 +5063,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "91ba367221cbd68f8c1cb5ec5c10303c124a0fef19aaaf5842172f928b4cab25"
+content-hash = "75b8847db1e923e3ae6dffce8f5dca071802143f87142a8eb1cf432800bf1bd5"

@@ -95,7 +95,6 @@ ptyprocess==0.7.0 ; python_version >= "3.8" and python_version < "4.0" and sys_p
 pure-eval==0.2.2 ; python_version >= "3.8" and python_version < "4.0"
 py-cpuinfo==9.0.0 ; python_version >= "3.8" and python_version < "4.0"
 py==1.11.0 ; python_version >= "3.8" and python_version < "4.0" and implementation_name == "pypy"
-pyarrow==8.0.0 ; python_version >= "3.8" and python_version < "4.0"
 pycparser==2.21 ; python_version >= "3.8" and python_version < "4.0" and implementation_name == "pypy"
 pygments==2.14.0 ; python_version >= "3.8" and python_version < "4.0"
 pymdown-extensions==9.9 ; python_version >= "3.8" and python_version < "4.0"

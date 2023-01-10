@@ -1,17 +1,20 @@
+from __future__ import annotations
+
 import contextlib
 import csv
 import gzip
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING, Iterator
 
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
-from ibis.backends.conftest import read_tables
+from ibis.backends.conftest import TEST_TABLES
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 
 @contextlib.contextmanager
@@ -139,6 +142,19 @@ def test_register_with_dotted_name(con, data_directory, tmp_path):
         table.count().execute()
 
 
+def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
+    """For each csv `names` in `data_dir` return a `pyarrow.Table`."""
+    pac = pytest.importorskip("pyarrow.csv")
+
+    table_name = path.stem
+    schema = TEST_TABLES[table_name]
+    convert_options = pac.ConvertOptions(
+        column_types={name: typ.to_pyarrow() for name, typ in schema.items()}
+    )
+    data_dir = path.parent
+    return pac.read_csv(data_dir / f"{table_name}.csv", convert_options=convert_options)
+
+
 @pytest.mark.parametrize(
     ("fname", "in_table_name", "out_table_name"),
     [
@@ -171,8 +187,10 @@ def test_register_with_dotted_name(con, data_directory, tmp_path):
 def test_register_parquet(
     con, tmp_path, data_directory, fname, in_table_name, out_table_name
 ):
+    pq = pytest.importorskip("pyarrow.parquet")
+
     fname = Path(fname)
-    _, table = next(read_tables([fname.stem], data_directory))
+    table = read_table(data_directory / fname.name)
 
     pq.write_table(table, tmp_path / fname.name)
 
@@ -210,7 +228,7 @@ def test_register_iterator_parquet(
 ):
     pq = pytest.importorskip("pyarrow.parquet")
 
-    _, table = next(read_tables(["functional_alltypes"], data_directory))
+    table = read_table(data_directory / "functional_alltypes.csv")
 
     pq.write_table(table, tmp_path / "functional_alltypes.parquet")
 
@@ -272,6 +290,7 @@ def test_register_pandas(con):
     ]
 )
 def test_register_pyarrow_tables(con):
+    pa = pytest.importorskip("pyarrow")
     pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
     t = con.register(pa_t)
@@ -341,6 +360,7 @@ def test_csv_reregister_schema(con, tmp_path):
     ]
 )
 def test_register_garbage(con):
+    sa = pytest.importorskip("sqlalchemy")
     with pytest.raises(
         sa.exc.OperationalError, match="No files found that match the pattern"
     ):

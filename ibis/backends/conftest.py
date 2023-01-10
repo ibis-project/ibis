@@ -6,18 +6,14 @@ import importlib.metadata
 import platform
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
+from typing import Any, TextIO
 
 import _pytest
 import pandas as pd
+import pytest
 import sqlalchemy as sa
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
-
-if TYPE_CHECKING:
-    import pyarrow as pa
-
-import pytest
 
 import ibis
 from ibis import util
@@ -188,29 +184,6 @@ def init_database(
                 conn.execute(stmt)
 
     return engine
-
-
-def read_tables(
-    names: Iterable[str],
-    data_dir: Path,
-) -> Iterator[tuple[str, pa.Table]]:
-    """For each csv {names} in {data_dir} return a pyarrow.Table."""
-
-    import pyarrow.csv as pac
-
-    import ibis.backends.pyarrow.datatypes as pa_dt
-
-    for name in names:
-        schema = TEST_TABLES[name]
-        convert_options = pac.ConvertOptions(
-            column_types={
-                name: pa_dt.to_pyarrow_type(type) for name, type in schema.items()
-            }
-        )
-        yield name, pac.read_csv(
-            data_dir / f'{name}.csv',
-            convert_options=convert_options,
-        )
 
 
 def _random_identifier(suffix: str) -> str:

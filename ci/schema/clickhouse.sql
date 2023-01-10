@@ -1,55 +1,19 @@
-CREATE OR REPLACE TABLE diamonds (
-    carat Nullable(Float64),
-    cut Nullable(String),
-    color Nullable(String),
-    clarity Nullable(String),
-    depth Nullable(Float64),
-    `table` Nullable(Float64),
-    price Nullable(Int64),
-    x Nullable(Float64),
-    y Nullable(Float64),
-    z Nullable(Float64)
-) ENGINE = Memory;
+-- NB: The paths in this file are all relative to /var/lib/clickhouse/user_files
 
-CREATE OR REPLACE TABLE batting (
-    `playerID` Nullable(String),
-    `yearID` Nullable(Int64),
-    stint Nullable(Int64),
-    `teamID` Nullable(String),
-    `lgID` Nullable(String),
-    `G` Nullable(Int64),
-    `AB` Nullable(Int64),
-    `R` Nullable(Int64),
-    `H` Nullable(Int64),
-    `X2B` Nullable(Int64),
-    `X3B` Nullable(Int64),
-    `HR` Nullable(Int64),
-    `RBI` Nullable(Int64),
-    `SB` Nullable(Int64),
-    `CS` Nullable(Int64),
-    `BB` Nullable(Int64),
-    `SO` Nullable(Int64),
-    `IBB` Nullable(Int64),
-    `HBP` Nullable(Int64),
-    `SH` Nullable(Int64),
-    `SF` Nullable(Int64),
-    `GIDP` Nullable(Int64)
-) ENGINE = Memory;
+CREATE OR REPLACE TABLE diamonds ENGINE = Memory AS
+SELECT * FROM file('parquet/diamonds/diamonds.parquet', 'Parquet');
 
-CREATE OR REPLACE TABLE awards_players (
-    `playerID` Nullable(String),
-    `awardID` Nullable(String),
-    `yearID` Nullable(Int64),
-    `lgID` Nullable(String),
-    tie Nullable(String),
-    notes Nullable(String)
-) ENGINE = Memory;
+CREATE OR REPLACE TABLE batting ENGINE = Memory AS
+SELECT * FROM file('parquet/batting/batting.parquet', 'Parquet');
+
+CREATE OR REPLACE TABLE awards_players ENGINE = Memory AS
+SELECT * FROM file('parquet/awards_players/awards_players.parquet', 'Parquet');
 
 CREATE OR REPLACE TABLE functional_alltypes (
     `index` Nullable(Int64),
     `Unnamed: 0` Nullable(Int64),
     id Nullable(Int32),
-    bool_col Nullable(UInt8),
+    bool_col Nullable(Bool),
     tinyint_col Nullable(Int8),
     smallint_col Nullable(Int16),
     int_col Nullable(Int32),
@@ -58,10 +22,12 @@ CREATE OR REPLACE TABLE functional_alltypes (
     double_col Nullable(Float64),
     date_string_col Nullable(String),
     string_col Nullable(String),
+    -- TODO: clean this up when timestamp scale is supported
     timestamp_col Nullable(DateTime),
     year Nullable(Int32),
     month Nullable(Int32)
-) ENGINE = Memory;
+) ENGINE = Memory AS
+SELECT * FROM file('functional_alltypes.csv', 'CSVWithNames');
 
 CREATE OR REPLACE TABLE tzone (
     ts Nullable(DateTime),
