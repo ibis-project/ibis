@@ -13,11 +13,11 @@ Let’s talk about some of the new changes 4.0 brings for Ibis users.
 
 ## Backends
 
-Ibis 4.0 brings [Polars](https://ibis-project.org/docs/latest/backends/Polars/), [Snowflake](https://ibis-project.org/docs/dev/backends/Snowflake/), and [Trino](https://ibis-project.org/docs/dev/backends/Trino/) into an already-impressive stock of supported backends.
+Ibis 4.0 brings [Polars](https://ibis-project.org/docs/4.0.0/backends/Polars/), [Snowflake](https://ibis-project.org/docs/4.0.0/backends/Snowflake/), and [Trino](https://ibis-project.org/docs/4.0.0/backends/Trino/) into an already-impressive stock of supported backends.
 The [Polars](https://www.pola.rs/) backend adds another way for users to work locally with DataFrames.
 The [Snowflake](https://www.snowflake.com/en/) and [Trino](https://trino.io/) backends add a free and familiar python API to popular data warehouses.
 
-Alongside these new backends, Google BigQuery and Microsoft SQL have been moved to the main repo and have been updated.
+Alongside these new backends, Google BigQuery and Microsoft SQL have been moved to the main repo, so their release cycle will follow the Ibis core.
 
 ## Functionality
 
