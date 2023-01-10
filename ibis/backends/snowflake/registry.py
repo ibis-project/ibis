@@ -96,3 +96,65 @@ operation_registry.update(
         ops.DayOfWeekName: _day_of_week_name,
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.analytic
+    ops.CumulativeAll,
+    ops.CumulativeAny,
+    ops.CumulativeOp,
+    ops.NTile,
+    ops.NthValue,
+    # ibis.expr.operations.array
+    ops.ArrayColumn,
+    ops.ArrayConcat,
+    ops.ArrayIndex,
+    ops.ArrayLength,
+    ops.ArrayRepeat,
+    ops.ArraySlice,
+    ops.Unnest,
+    # ibis.expr.operations.generic
+    ops.TableArrayView,
+    ops.TypeOf,
+    # ibis.expr.operations.logical
+    ops.ExistsSubquery,
+    ops.NotExistsSubquery,
+    # ibis.expr.operations.maps
+    ops.MapKeys,
+    # ibis.expr.operations.numeric
+    ops.BitwiseAnd,
+    ops.BitwiseLeftShift,
+    ops.BitwiseNot,
+    ops.BitwiseOr,
+    ops.BitwiseRightShift,
+    ops.BitwiseXor,
+    # ibis.expr.operations.reductions
+    ops.All,
+    ops.Any,
+    ops.ArrayCollect,
+    ops.BitAnd,
+    ops.BitOr,
+    ops.BitXor,
+    ops.MultiQuantile,
+    ops.NotAll,
+    ops.NotAny,
+    # ibis.expr.operations.strings
+    ops.FindInSet,
+    ops.RegexExtract,
+    ops.RegexReplace,
+    ops.RegexSearch,
+    ops.StringSplit,
+    # ibis.expr.operations.structs
+    ops.StructField,
+    # ibis.expr.operations.temporal
+    ops.DateFromYMD,
+    ops.ExtractMillisecond,
+    ops.IntervalFromInteger,
+    ops.StringToTimestamp,
+    ops.TimestampDiff,
+    ops.TimestampFromUNIX,
+    ops.TimestampFromYMDHMS,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}

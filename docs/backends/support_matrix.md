@@ -7,12 +7,12 @@ hide:
 
 Backends are shown in descending order of the number of supported operations.
 
-!!! tip "The Snowflake backend coverage is an overestimate"
+!!! tip "Backends with low coverage are good places to start contributing!"
 
-    The Snowflake backend translation functions are reused from the PostgreSQL backend
-    and some operations that claim coverage may not work.
-
-    The Snowflake backend is a good place to start contributing!
+    Each backend implements operations differently, but this is usually very similar
+    to other backends.
+    If you want to start contributing to ibis, it's a good idea to start by adding missing operations
+    to backends that have low operation coverage.
 
 ## Core Operations
 
