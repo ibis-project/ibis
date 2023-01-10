@@ -302,3 +302,26 @@ operation_registry.update(
         ),
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.analytic
+    ops.CumulativeOp,
+    ops.NTile,
+    # ibis.expr.operations.generic
+    ops.TableArrayView,
+    ops.TypeOf,
+    # ibis.expr.operations.logical
+    ops.Between,
+    ops.ExistsSubquery,
+    ops.NotExistsSubquery,
+    # ibis.expr.operations.maps
+    ops.MapLength,
+    # ibis.expr.operations.reductions
+    ops.CountDistinct,
+    ops.MultiQuantile,
+    ops.Quantile,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}
