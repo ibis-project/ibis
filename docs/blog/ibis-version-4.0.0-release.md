@@ -23,7 +23,7 @@ Alongside these new backends, Google BigQuery and Microsoft SQL have been moved 
 
 There are a lot of improvements incoming, but some notable changes include:
 
-- [read API](https://github.com/ibis-project/ibis/pull/5005)): allows users to read various file formats directly into their [configured `default_backend`](https://ibis-project.org/docs/dev/api/config/?h=default#ibis.config.Options) (default DuckDB) through `read_*` functions, which makes working with local files easier than ever.
+- [read API](https://github.com/ibis-project/ibis/pull/5005): allows users to read various file formats directly into their [configured `default_backend`](https://ibis-project.org/docs/dev/api/config/?h=default#ibis.config.Options) (default DuckDB) through `read_*` functions, which makes working with local files easier than ever.
 - [to_pyarrow and to_pyarrow_batches](https://github.com/ibis-project/ibis/pull/4454#issuecomment-1262640204): users can now return PyArrow objects (Tables, Arrays, Scalars, RecordBatchReader) and therefore grants all of the functionality that PyArrow provides
 - [JSON getitem](https://github.com/ibis-project/ibis/pull/4525): users can now run getitem on a JSON field using Ibis expressions with some backends
 - [Plotting support through `__array__`](https://github.com/ibis-project/ibis/pull/4547): allows users to plot Ibis expressions out of the box
