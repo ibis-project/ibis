@@ -91,20 +91,49 @@ def literal(op):
         return pl.lit(op.value, dtype=typ)
 
 
+_TIMESTAMP_SCALE_TO_UNITS = {
+    0: "s",
+    1: "ms",
+    2: "ms",
+    3: "ms",
+    4: "us",
+    5: "us",
+    6: "us",
+    7: "ns",
+    8: "ns",
+    9: "ns",
+}
+
+
 @translate.register(ops.Cast)
 def cast(op):
     arg = translate(op.arg)
+    dtype = op.arg.output_dtype
+    to = op.to
 
-    if op.to.is_interval():
-        return _make_duration(arg, op.to)
-    elif op.to.is_date():
-        if op.arg.output_dtype.is_string():
+    if to.is_interval():
+        return _make_duration(arg, to)
+    elif to.is_date():
+        if dtype.is_string():
             return arg.str.strptime(pl.Date, "%Y-%m-%d")
-    elif op.to.is_timestamp():
-        if op.arg.output_dtype.is_integer():
-            return (arg * 1_000_000).cast(pl.Datetime).alias(op.name)
+    elif to.is_timestamp():
+        time_zone = to.timezone
+        time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
 
-    typ = to_polars_type(op.to)
+        if dtype.is_integer():
+            typ = pl.Datetime(time_unit="us", time_zone=time_zone)
+            arg = (arg * 1_000_000).cast(typ)
+            if time_unit != "us":
+                arg = arg.dt.truncate(f"1{time_unit}")
+            return arg.alias(op.name)
+        elif dtype.is_string():
+            typ = pl.Datetime(time_unit=time_unit, time_zone=time_zone)
+            arg = arg.str.strptime(typ)
+            if time_unit == "s":
+                return arg.dt.truncate("1s")
+            return arg
+
+    typ = to_polars_type(to)
     return arg.cast(typ)
 
 
