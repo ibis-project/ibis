@@ -16,7 +16,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     # additional_skipped_operations = frozenset({ops.StringSQLLike})
     # supports_divide_by_zero = True
     # returned_timestamp_unit = 'ns'
-    bool_is_int = True
+    native_bool = False
     supports_structs = False
     supports_json = False
 
