@@ -255,3 +255,23 @@ operation_registry.update(
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
     }
 )
+
+
+_invalid_operations = {
+    # ibis.expr.operations.analytic
+    ops.CumulativeAll,
+    ops.CumulativeAny,
+    ops.CumulativeOp,
+    ops.NTile,
+    # ibis.expr.operations.generic
+    ops.TypeOf,
+    # ibis.expr.operations.strings
+    ops.Capitalize,
+    ops.Translate,
+    # ibis.expr.operations.temporal
+    ops.TimestampDiff,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}
