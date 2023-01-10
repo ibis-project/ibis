@@ -1,6 +1,7 @@
 import decimal
 import math
 import operator
+from operator import and_, lshift, or_, rshift, xor
 
 import numpy as np
 import pandas as pd
@@ -598,3 +599,105 @@ def test_constants(con, const):
     expr = getattr(ibis, const)
     result = con.execute(expr)
     assert pytest.approx(result) == getattr(math, const)
+
+
+pyspark_no_bitshift = pytest.mark.notyet(
+    ["pyspark"], reason="pyspark doesn't implement bitshit operators"
+)
+
+
+@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    ("left_fn", "right_fn"),
+    [
+        param(lambda t: t.int_col, lambda t: t.int_col, id="col_col"),
+        param(lambda _: 3, lambda t: t.int_col, id="scalar_col"),
+        param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
+    ],
+)
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
+def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
+    result = con.execute(expr)
+
+    expected = op(left_fn(df), right_fn(df)).rename("tmp")
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("op", "left_fn", "right_fn"),
+    [
+        param(
+            lshift,
+            lambda t: t.int_col,
+            lambda t: t.int_col,
+            id="lshift_col_col",
+        ),
+        param(
+            lshift,
+            lambda _: 3,
+            lambda t: t.int_col,
+            marks=pytest.mark.broken(
+                ["impala"],
+                reason="impala's behavior differs from every other backend",
+            ),
+            id="lshift_scalar_col",
+        ),
+        param(lshift, lambda t: t.int_col, lambda _: 3, id="lshift_col_scalar"),
+        param(rshift, lambda t: t.int_col, lambda t: t.int_col, id="rshift_col_col"),
+        param(rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"),
+        param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
+    ],
+)
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
+@pyspark_no_bitshift
+def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
+    result = expr.execute()
+
+    pandas_left = getattr(left := left_fn(df), "values", left)
+    pandas_right = getattr(right := right_fn(df), "values", right)
+    expected = pd.Series(
+        op(pandas_left, pandas_right),
+        name="tmp",
+        dtype="int64",
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        param(and_, marks=[pytest.mark.notimpl(["snowflake"])]),
+        param(or_, marks=[pytest.mark.notimpl(["snowflake"])]),
+        param(xor, marks=[pytest.mark.notimpl(["snowflake"])]),
+        param(lshift, marks=pyspark_no_bitshift),
+        param(rshift, marks=pyspark_no_bitshift),
+    ],
+)
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
+)
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
+def test_bitwise_scalars(con, op, left, right):
+    expr = op(left, right)
+    result = con.execute(expr)
+    expected = op(4, 2)
+    assert result == expected
+
+
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
+def test_bitwise_not_scalar(con):
+    expr = ~L(2)
+    result = con.execute(expr)
+    expected = -3
+    assert result == expected
+
+
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
+def test_bitwise_not_col(backend, alltypes, df):
+    expr = (~alltypes.int_col).name("tmp")
+    result = expr.execute()
+    expected = ~df.int_col
+    backend.assert_series_equal(result, expected.rename("tmp"))

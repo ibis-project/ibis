@@ -187,13 +187,6 @@ _invalid_operations = {
     ops.NotExistsSubquery,
     # ibis.expr.operations.maps
     ops.MapKeys,
-    # ibis.expr.operations.numeric
-    ops.BitwiseAnd,
-    ops.BitwiseLeftShift,
-    ops.BitwiseNot,
-    ops.BitwiseOr,
-    ops.BitwiseRightShift,
-    ops.BitwiseXor,
     # ibis.expr.operations.reductions
     ops.All,
     ops.Any,
