@@ -613,6 +613,18 @@ class Column(Value, JupyterMixin):
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+        """Compute the number of distinct rows in an expression.
+
+        Parameters
+        ----------
+        where
+            Filter expression
+
+        Returns
+        -------
+        IntegerScalar
+            Number of distinct elements in an expression
+        """
         return ops.CountDistinct(self, where).to_expr()
 
     def topk(

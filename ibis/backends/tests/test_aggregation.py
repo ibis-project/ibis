@@ -222,6 +222,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='count',
         ),
         param(
+            lambda t, where: t.bool_col.nunique(where=where),
+            lambda t, where: t.bool_col[where].dropna().nunique(),
+            id='nunique',
+            marks=pytest.mark.notimpl(["polars", "pyspark", "datafusion"]),
+        ),
+        param(
             lambda t, _: t.bool_col.any(),
             lambda t, _: t.bool_col.any(),
             id='any',

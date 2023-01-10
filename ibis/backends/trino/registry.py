@@ -317,7 +317,6 @@ _invalid_operations = {
     # ibis.expr.operations.maps
     ops.MapLength,
     # ibis.expr.operations.reductions
-    ops.CountDistinct,
     ops.MultiQuantile,
     ops.Quantile,
 }
