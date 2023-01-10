@@ -137,7 +137,7 @@ def recreate_database(
     engine = sa.create_engine(url.set(database=""), **kwargs)
 
     if url.database is not None:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(f'DROP DATABASE IF EXISTS {database}')
             conn.execute(f'CREATE DATABASE {database}')
 
@@ -179,7 +179,7 @@ def init_database(
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             for stmt in filter(None, map(str.strip, schema.read().split(';'))):
                 conn.execute(stmt)
 
