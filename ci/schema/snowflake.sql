@@ -1,3 +1,11 @@
+CREATE OR REPLACE FILE FORMAT ibis_csv_fmt
+    type = 'CSV'
+    field_delimiter = ','
+    skip_header = 1
+    field_optionally_enclosed_by = '"';
+
+CREATE OR REPLACE STAGE ibis_testing_stage file_format = ibis_csv_fmt;
+
 CREATE OR REPLACE TABLE diamonds (
     "carat" FLOAT,
     "cut" TEXT,
