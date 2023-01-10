@@ -139,7 +139,7 @@ class Backend(BaseAlchemyBackend):
     def _load_extensions(self, extensions):
         for extension in extensions:
             if extension not in self._extensions:
-                with self.con.connect() as con:
+                with self.begin() as con:
                     con.execute(f"INSTALL '{extension}'")
                     con.execute(f"LOAD '{extension}'")
                 self._extensions.add(extension)

@@ -185,7 +185,7 @@ WHERE attrelid = {raw_name!r}::regclass
   AND NOT attisdropped
 ORDER BY attnum
 """
-        with self.con.connect() as con:
+        with self.begin() as con:
             con.execute(f"CREATE TEMPORARY VIEW {name} AS {query}")
             try:
                 type_info = con.execute(type_info_sql).fetchall()
