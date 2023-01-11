@@ -26,6 +26,7 @@ class Catalog(Dict[str, sch.Schema]):
         dt.Int16: "smallint",
         dt.Int32: "int",
         dt.Int64: "bigint",
+        dt.Float16: "halffloat",
         dt.Float32: "float",
         dt.Float64: "double",
         dt.Decimal: "decimal",
@@ -40,15 +41,17 @@ class Catalog(Dict[str, sch.Schema]):
         dt.Map: "map",
         dt.UUID: "uuid",
         dt.Struct: "struct",
-        dt.Geography: "geography",
-        dt.Geometry: "geometry",
     }
 
+    def to_sqlglot_dtype(self, dtype: dt.DataType) -> str:
+        if dtype.is_geospatial():
+            return dtype.geotype
+        else:
+            default = dtype.__class__.__name__.lower()
+            return self.typemap.get(type(dtype), default)
+
     def to_sqlglot_schema(self, schema: sch.Schema) -> dict[str, str]:
-        return {
-            name: self.typemap.get(type(dtype), str(dtype))
-            for name, dtype in schema.items()
-        }
+        return {name: self.to_sqlglot_dtype(dtype) for name, dtype in schema.items()}
 
     def to_sqlglot(self):
         return {

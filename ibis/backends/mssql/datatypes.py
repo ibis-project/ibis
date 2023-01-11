@@ -24,6 +24,8 @@ def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
 
     if typename in ("DECIMAL", "NUMERIC"):
         typ = partial(typ, precision=col["precision"], scale=col['scale'])
+    elif typename in ("GEOMETRY", "GEOGRAPHY"):
+        typ = partial(typ, geotype=typename.lower())
     elif typename == 'FLOAT':
         if col['precision'] <= 24:
             typ = dt.Float32
@@ -68,8 +70,8 @@ _type_mapping = {
     'VARBINARY': dt.Binary,
     # Other data types
     'UNIQUEIDENTIFIER': dt.UUID,
-    'GEOMETRY': dt.Geometry,
-    'GEOGRAPHY': dt.Geography,
+    'GEOMETRY': dt.GeoSpatial,
+    'GEOGRAPHY': dt.GeoSpatial,
     # This timestamp datatype is also known as "rowversion", and the original name is really unfortunate.
     # See:
     # https://learn.microsoft.com/en-us/sql/t-sql/data-types/rowversion-transact-sql?view=sql-server-ver16
