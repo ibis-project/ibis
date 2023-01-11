@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
-from ibis.util import UnnamedMarker, experimental
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -379,9 +379,6 @@ class Expr(Immutable):
     def as_table(self) -> ir.Table:
         """Convert an expression to a table."""
         raise NotImplementedError(type(self))
-
-
-unnamed = UnnamedMarker()
 
 
 def _binop(

@@ -8,7 +8,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import operation_registry, quote_identifier
-from ibis.expr.types.core import unnamed
 
 
 class QueryContext:
@@ -199,7 +198,7 @@ class ExprTranslator:
             # This column has been given an explicitly different name
             return False
 
-        return op.name is not unnamed
+        return bool(op.name)
 
     def name(self, translated, name, force=True):
         return f'{translated} AS {quote_identifier(name, force=force)}'
