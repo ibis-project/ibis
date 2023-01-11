@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import pytest
 from typing_extensions import Annotated
@@ -100,6 +100,7 @@ def endswith_d(x, this):
         (Tuple[int], tuple_of(instance_of(int))),
         (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
         (frozendict[str, int], frozendict_of(instance_of(str), instance_of(int))),
+        (Literal["alpha", "beta", "gamma"], isin(("alpha", "beta", "gamma"))),
     ],
 )
 def test_validator_from_annotation(annot, expected):
