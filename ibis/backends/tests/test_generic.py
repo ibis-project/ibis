@@ -719,6 +719,16 @@ def test_correlated_subquery(alltypes):
     assert expr.compile() is not None
 
 
+@pytest.mark.notimpl(["dask", "polars", "pyspark", "datafusion"])
+def test_uncorrelated_subquery(backend, batting, batting_df):
+    subset_batting = batting[batting.yearID <= 2000]
+    expr = batting[_.yearID == subset_batting.yearID.max()]['playerID', 'yearID']
+    result = expr.execute()
+
+    expected = batting_df[batting_df.yearID == 2000][['playerID', 'yearID']]
+    backend.assert_frame_equal(result, expected)
+
+
 def test_int_column(alltypes):
     expr = alltypes.mutate(x=1).x
     result = expr.execute()

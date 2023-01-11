@@ -308,7 +308,6 @@ _invalid_operations = {
     ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.generic
-    ops.TableArrayView,
     ops.TypeOf,
     # ibis.expr.operations.logical
     ops.Between,
