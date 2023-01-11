@@ -88,8 +88,8 @@ def parse(text: str) -> dt.DataType:
         @parsy.generate
         def parser():
             yield name_parser
-            sr_gt = yield geosubtype_parser.optional()
-            return type(*sr_gt) if sr_gt is not None else type()
+            gt_sr = yield geosubtype_parser.optional()
+            return type(*gt_sr) if gt_sr is not None else type()
 
         return parser
 

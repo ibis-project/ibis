@@ -109,8 +109,12 @@ polygon_dtype = st.builds(dt.Polygon, nullable=nullable)
 multipoint_dtype = st.builds(dt.MultiPoint, nullable=nullable)
 multilinestring_dtype = st.builds(dt.MultiLineString, nullable=nullable)
 multipolygon_dtype = st.builds(dt.MultiPolygon, nullable=nullable)
-geometry_dtype = st.builds(dt.Geometry, nullable=nullable)
-geography_dtype = st.builds(dt.Geography, nullable=nullable)
+geometry_dtype = st.builds(
+    dt.GeoSpatial, geotype=st.just("geometry"), nullable=nullable
+)
+geography_dtype = st.builds(
+    dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable
+)
 geospatial_dtypes = st.one_of(
     point_dtype,
     linestring_dtype,

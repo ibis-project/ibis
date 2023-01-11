@@ -179,21 +179,7 @@ def can_cast_json(source, target, **kwargs):
     return True
 
 
-# geo spatial data type
-# cast between same type, used to cast from/to geometry and geography
-GEO_TYPES = (
-    dt.Point,
-    dt.LineString,
-    dt.Polygon,
-    dt.MultiLineString,
-    dt.MultiPoint,
-    dt.MultiPolygon,
-)
-
-
-@castable.register(dt.Array, GEO_TYPES)
-@castable.register(GEO_TYPES, dt.Geometry)
-@castable.register(GEO_TYPES, dt.Geography)
+@castable.register(dt.Array, dt.GeoSpatial)
 def can_cast_geospatial(source, target, **kwargs):
     return True
 

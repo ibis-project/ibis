@@ -24,7 +24,7 @@ dtype = Dispatcher('dtype')
 
 
 @dtype.register(object)
-def default(value, **kwargs) -> DataType:
+def dtype_from_object(value, **kwargs) -> DataType:
     raise IbisTypeError(f'Value {value!r} is not a valid datatype')
 
 
@@ -123,12 +123,6 @@ class DataType(Concrete):
 
     def is_floating(self) -> bool:
         return isinstance(self, Floating)
-
-    def is_geography(self) -> bool:
-        return isinstance(self, Geography)
-
-    def is_geometry(self) -> bool:
-        return isinstance(self, Geometry)
 
     def is_geospatial(self) -> bool:
         return isinstance(self, GeoSpatial)
@@ -801,28 +795,6 @@ class GeoSpatial(DataType):
 
 
 @public
-class Geometry(GeoSpatial):
-    """Geometry values."""
-
-    column = ir.GeoSpatialColumn
-    scalar = ir.GeoSpatialScalar
-
-    def __init__(self, geotype, **kwargs):
-        super().__init__(geotype="geometry", **kwargs)
-
-
-@public
-class Geography(GeoSpatial):
-    """Geography values."""
-
-    column = ir.GeoSpatialColumn
-    scalar = ir.GeoSpatialScalar
-
-    def __init__(self, geotype, **kwargs):
-        super().__init__(geotype="geography", **kwargs)
-
-
-@public
 class Point(GeoSpatial):
     """A point described by two coordinates."""
 
@@ -921,8 +893,8 @@ timestamp = Timestamp()
 interval = Interval()
 category = Category()
 # geo spatial data type
-geometry = Geometry()
-geography = Geography()
+geometry = GeoSpatial(geotype="geometry")
+geography = GeoSpatial(geotype="geography")
 point = Point()
 linestring = LineString()
 polygon = Polygon()
@@ -1024,4 +996,6 @@ public(
     inet=inet,
     decimal=decimal,
     Enum=Enum,
+    Geography=GeoSpatial,
+    Geometry=GeoSpatial,
 )
