@@ -1654,3 +1654,11 @@ def test_rowid_only_physical_tables():
     table[table.rowid(), table.x].filter(_.x > 10)  # works
     with pytest.raises(com.IbisTypeError, match="only valid for physical tables"):
         table.filter(table.x > 0).rowid()
+
+
+def test_where_output_shape():
+    # GH-5191
+    t = ibis.table(dict(a="int64", b="string"), name="t")
+    expr = ibis.literal(True).ifelse(t.a, -t.a)
+    assert isinstance(expr, ir.IntegerColumn)
+    assert isinstance(expr, ir.ColumnExpr)
