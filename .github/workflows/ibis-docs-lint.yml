@@ -60,7 +60,7 @@ jobs:
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks
-        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files --show-diff-on-failure --color=always
 
   benchmarks:
     runs-on: ubuntu-latest
