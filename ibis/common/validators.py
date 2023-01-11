@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Any, Callable, Iterable, Mapping, Sequence, Union
+from typing import Any, Callable, Iterable, Literal, Mapping, Sequence, Union
 
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
@@ -46,6 +46,8 @@ class Validator(Callable):
                 return coerced_to(annot)
             else:
                 return instance_of(annot)
+        elif origin_type is Literal:
+            return isin(get_args(annot))
         elif origin_type is UnionType or origin_type is Union:
             inners = map(cls.from_annotation, get_args(annot))
             return any_of(tuple(inners))
