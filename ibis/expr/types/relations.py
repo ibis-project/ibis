@@ -349,6 +349,10 @@ class Table(Expr, JupyterMixin):
             The rows present in `self` that are not present in `tables`.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "difference requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Difference(left, right, distinct=distinct)
         return left.to_expr()
@@ -493,6 +497,10 @@ class Table(Expr, JupyterMixin):
             A new table containing the union of all input tables.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "union requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Union(left, right, distinct=distinct)
         return left.to_expr()
@@ -515,6 +523,10 @@ class Table(Expr, JupyterMixin):
             A new table containing the intersection of all input tables.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "intersect requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Intersection(left, right, distinct=distinct)
         return left.to_expr()
