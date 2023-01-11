@@ -10,7 +10,7 @@ from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.validators import instance_of, tuple_of, validator
-from ibis.util import UnnamedMarker, indent
+from ibis.util import indent
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -46,7 +46,7 @@ def datatype(arg, **kwargs):
 class Schema(Concrete):
     """An object for holding table schema information."""
 
-    names = tuple_of(instance_of((str, UnnamedMarker)))
+    names = tuple_of(instance_of(str))
     """A sequence of [`str`][str] indicating the name of each column."""
     types = tuple_of(datatype)
     """A sequence of [DataType][ibis.expr.datatypes.DataType] objects

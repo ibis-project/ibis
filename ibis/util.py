@@ -89,10 +89,6 @@ class DotDict(dict):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
 
-class UnnamedMarker:
-    pass
-
-
 def guid() -> str:
     """Return a uuid4 hexadecimal value."""
     return uuid4().hex

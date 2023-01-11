@@ -8,7 +8,7 @@ from public import public
 import ibis.expr.rules as rlz
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
-from ibis.util import UnnamedMarker, deprecated
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
@@ -92,7 +92,7 @@ class Value(Node, Named):
 @public
 class Alias(Value):
     arg = rlz.any
-    name = rlz.instance_of((str, UnnamedMarker))
+    name = rlz.instance_of(str)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = rlz.dtype_like("arg")

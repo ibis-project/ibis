@@ -166,7 +166,7 @@ def table_column(translator, op):
 def exists_subquery(translator, op):
     ctx = translator.context
 
-    dummy = ir.literal(1).name(ir.core.unnamed)
+    dummy = ir.literal(1).name("")
 
     filtered = op.foreign_table.to_expr().filter(
         [pred.to_expr() for pred in op.predicates]
