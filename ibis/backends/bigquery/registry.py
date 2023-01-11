@@ -553,18 +553,6 @@ def _capitalize(t, op):
     return f"CONCAT(UPPER(SUBSTR({t.translate(op.arg)}, 1, 1)), SUBSTR({t.translate(op.arg)}, 2))"
 
 
-def _clip(t, op):
-    arg = t.translate(op.arg)
-
-    if (upper := op.upper) is not None:
-        arg = f"LEAST({t.translate(upper)}, {arg})"
-
-    if (lower := op.lower) is not None:
-        arg = f"GREATEST({t.translate(lower)}, {arg})"
-
-    return arg
-
-
 def _nth_value(t, op):
     arg = t.translate(op.arg)
 
@@ -596,7 +584,6 @@ OPERATION_REGISTRY = {
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
     ops.Sign: unary("SIGN"),
-    ops.Clip: _clip,
     ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / ACOS(-1))",
     ops.Radians: lambda t, op: f"(ACOS(-1) * {t.translate(op.arg)} / 180)",
     ops.BitwiseNot: lambda t, op: f"~ {t.translate(op.arg)}",

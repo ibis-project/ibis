@@ -5,7 +5,6 @@ from operator import and_, lshift, or_, rshift, xor
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -576,13 +575,13 @@ def test_random(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala"])
-def test_clip(alltypes, df, ibis_func, pandas_func):
+@pytest.mark.notimpl(["datafusion"])
+def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
-    # Names won't match in the Pyspark backend since Pyspark
+    # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
-    tm.assert_series_equal(result, expected, check_names=False)
+    backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
@@ -601,7 +600,7 @@ def test_constants(con, const):
 
 
 pyspark_no_bitshift = pytest.mark.notyet(
-    ["pyspark"], reason="pyspark doesn't implement bitshit operators"
+    ["pyspark"], reason="pyspark doesn't implement bitshift operators"
 )
 
 
