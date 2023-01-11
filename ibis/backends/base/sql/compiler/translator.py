@@ -375,3 +375,16 @@ def _rewrite_cast(op):
 @rewrites(ops.StringContains)
 def _rewrite_string_contains(op):
     return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
+
+
+@rewrites(ops.Clip)
+def _rewrite_clip(op):
+    arg = ops.Cast(op.arg, op.output_dtype)
+
+    if (upper := op.upper) is not None:
+        arg = ops.Least((arg, ops.Cast(upper, op.output_dtype)))
+
+    if (lower := op.lower) is not None:
+        arg = ops.Greatest((arg, ops.Cast(lower, op.output_dtype)))
+
+    return arg
