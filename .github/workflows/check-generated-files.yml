@@ -46,7 +46,7 @@ jobs:
         run: poetry lock --check
 
       - name: generate requirements.txt
-        run: poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
 
       - name: check requirements.txt
         run: git diff --exit-code requirements.txt
