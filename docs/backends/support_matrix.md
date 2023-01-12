@@ -21,3 +21,7 @@ Backends are shown in descending order of the number of supported operations.
 ## Geospatial Operations
 
 {{ read_csv("docs/backends/geospatial_support_matrix.csv") }}
+
+## Raw Data
+
+You can also download data from the above tables in [CSV format](./raw_support_matrix.csv).
