@@ -129,8 +129,6 @@ def _table_array_view(t, op):
 
 
 def _exists_subquery(t, op):
-    from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
-
     ctx = t.context
 
     # TODO(kszucs): avoid converting the predicates to expressions
@@ -142,7 +140,7 @@ def _exists_subquery(t, op):
     )
 
     sub_ctx = ctx.subcontext()
-    clause = AlchemyCompiler.to_sql(filtered, sub_ctx, exists=True)
+    clause = ctx.compiler.to_sql(filtered, sub_ctx, exists=True)
 
     if isinstance(op, ops.NotExistsSubquery):
         clause = sa.not_(clause)
