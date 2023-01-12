@@ -81,24 +81,27 @@ def get_sqla_table(ctx, table):
     return sa_table
 
 
-def get_col(sa_table, op: ops.TableColumn):
-    """Get a `Column`."""
+def get_col(sa_table, op: ops.TableColumn) -> sa.sql.ColumnClause:
+    """Extract a column from a table."""
     cols = sa_table.exported_columns
     colname = op.name
 
-    try:
-        return cols[colname]
-    except KeyError:
-        # cols is a sqlalchemy column collection which contains column
-        # names that are secretly prefixed by their containing table
-        #
-        # sqlalchemy doesn't let you select by the *un*prefixed column name
-        # despite the uniqueness of `colname`
-        #
-        # however, in ibis we have already deduplicated column names so we can
-        # refer to the name by position
-        colindex = op.table.schema._name_locs[colname]
-        return cols[colindex]
+    if (col := cols.get(colname)) is not None:
+        return col
+
+    # `cols` is a SQLAlchemy column collection that contains columns
+    # with names that are secretly prefixed by table that contains them
+    #
+    # for example, in `t0.join(t1).select(t0.a, t1.b)` t0.a will be named `t0_a`
+    # and t1.b will be named `t1_b`
+    #
+    # unfortunately SQLAlchemy doesn't let you select by the *un*prefixed
+    # column name despite the uniqueness of `colname`
+    #
+    # however, in ibis we have already deduplicated column names so we can
+    # refer to the name by position
+    colindex = op.table.schema._name_locs[colname]
+    return cols[colindex]
 
 
 def _table_column(t, op):

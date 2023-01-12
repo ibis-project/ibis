@@ -1,6 +1,6 @@
 WITH t0 AS (
-  SELECT *, `b` * 2 AS `b2`
-  FROM my_table
+  SELECT t2.*, t2.`b` * 2 AS `b2`
+  FROM my_table t2
 ),
 t1 AS (
   SELECT t0.`a`, t0.`b2`
@@ -10,6 +10,6 @@ t1 AS (
 SELECT t1.*
 FROM t1
 WHERE t1.`a` = (
-  SELECT max(`a`) AS `blah`
+  SELECT max(t1.`a`) AS `blah`
   FROM t1
 )

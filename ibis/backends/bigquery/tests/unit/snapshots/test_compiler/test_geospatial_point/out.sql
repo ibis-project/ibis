@@ -1,2 +1,2 @@
-SELECT ST_GEOGPOINT(`lon`, `lat`) AS `tmp`
-FROM t
+SELECT ST_GEOGPOINT(t0.`lon`, t0.`lat`) AS `tmp`
+FROM t t0

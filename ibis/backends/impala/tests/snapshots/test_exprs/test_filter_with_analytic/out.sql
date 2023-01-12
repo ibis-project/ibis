@@ -1,15 +1,15 @@
-SELECT `col`, `analytic`
+SELECT t0.`col`, t0.`analytic`
 FROM (
-  SELECT `col`, count(1) OVER () AS `analytic`
+  SELECT t1.`col`, count(1) OVER () AS `analytic`
   FROM (
-    SELECT `col`, `filter`
+    SELECT t2.`col`, t2.`filter`
     FROM (
-      SELECT *
+      SELECT t3.*
       FROM (
-        SELECT `col`, NULL AS `filter`
-        FROM x
+        SELECT t4.`col`, NULL AS `filter`
+        FROM x t4
       ) t3
-      WHERE `filter` IS NULL
+      WHERE t3.`filter` IS NULL
     ) t2
   ) t1
 ) t0

@@ -1,2 +1,2 @@
-SELECT ST_CENTROID(`geog`) AS `tmp`
-FROM t
+SELECT ST_CENTROID(t0.`geog`) AS `tmp`
+FROM t t0

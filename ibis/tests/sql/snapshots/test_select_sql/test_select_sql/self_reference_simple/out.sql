@@ -1,2 +1,2 @@
-SELECT *
-FROM star1
+SELECT t0.*
+FROM star1 t0

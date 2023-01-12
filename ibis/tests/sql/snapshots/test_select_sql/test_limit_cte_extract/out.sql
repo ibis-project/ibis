@@ -1,6 +1,6 @@
 WITH t0 AS (
-  SELECT *
-  FROM functional_alltypes
+  SELECT t2.*
+  FROM functional_alltypes t2
   LIMIT 100
 )
 SELECT t0.*

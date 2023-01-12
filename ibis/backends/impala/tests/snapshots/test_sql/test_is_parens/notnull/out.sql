@@ -1,3 +1,3 @@
-SELECT *
-FROM `table`
-WHERE (`a` IS NOT NULL) = (`b` IS NOT NULL)
+SELECT t0.*
+FROM `table` t0
+WHERE (t0.`a` IS NOT NULL) = (t0.`b` IS NOT NULL)

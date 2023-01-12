@@ -1,7 +1,7 @@
 SELECT t0.*
 FROM (
-  SELECT *
-  FROM star1
+  SELECT t2.*
+  FROM star1 t2
   LIMIT 100
 ) t0
   INNER JOIN star2 t1

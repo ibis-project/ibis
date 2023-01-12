@@ -1,2 +1,2 @@
-SELECT ST_INTERSECTS(`geog0`, `geog1`) AS `tmp`
-FROM t
+SELECT ST_INTERSECTS(t0.`geog0`, t0.`geog1`) AS `tmp`
+FROM t t0

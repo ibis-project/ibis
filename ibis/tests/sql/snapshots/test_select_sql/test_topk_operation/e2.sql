@@ -1,13 +1,13 @@
 SELECT *
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT *
+    SELECT t2.*
     FROM (
-      SELECT `city`, count(`city`) AS `count`
-      FROM tbl
+      SELECT t0.`city`, count(t0.`city`) AS `count`
+      FROM tbl t0
       GROUP BY 1
     ) t2
-    ORDER BY `count` DESC
+    ORDER BY t2.`count` DESC
     LIMIT 10
   ) t1
     ON t0.`city` = t1.`city`

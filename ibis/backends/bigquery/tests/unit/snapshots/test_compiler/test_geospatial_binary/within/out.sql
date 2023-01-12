@@ -1,2 +1,2 @@
-SELECT ST_WITHIN(`geog0`, `geog1`) AS `tmp`
-FROM t
+SELECT ST_WITHIN(t0.`geog0`, t0.`geog1`) AS `tmp`
+FROM t t0

@@ -11,8 +11,8 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT `region`, extract(`odate`, 'year') AS `year`,
-         CAST(sum(`amount`) AS double) AS `total`
+  SELECT t0.`region`, extract(t0.`odate`, 'year') AS `year`,
+         CAST(sum(t0.`amount`) AS double) AS `total`
   FROM t0
   GROUP BY 1, 2
 )

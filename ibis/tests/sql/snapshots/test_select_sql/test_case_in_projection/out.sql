@@ -1,12 +1,12 @@
 SELECT
-  CASE `g`
+  CASE t0.`g`
     WHEN 'foo' THEN 'bar'
     WHEN 'baz' THEN 'qux'
     ELSE 'default'
   END AS `col1`,
   CASE
-    WHEN `g` = 'foo' THEN 'bar'
-    WHEN `g` = 'baz' THEN `g`
+    WHEN t0.`g` = 'foo' THEN 'bar'
+    WHEN t0.`g` = 'baz' THEN t0.`g`
     ELSE CAST(NULL AS string)
-  END AS `col2`, *
-FROM alltypes
+  END AS `col2`, t0.*
+FROM alltypes t0

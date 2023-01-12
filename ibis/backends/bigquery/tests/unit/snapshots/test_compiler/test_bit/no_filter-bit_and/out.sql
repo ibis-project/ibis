@@ -1,2 +1,2 @@
-SELECT BIT_AND(`int_col`) AS `tmp`
-FROM functional_alltypes
+SELECT BIT_AND(t0.`int_col`) AS `tmp`
+FROM functional_alltypes t0

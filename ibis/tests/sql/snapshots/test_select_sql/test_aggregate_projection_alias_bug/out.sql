@@ -1,4 +1,4 @@
-SELECT `foo_id`, sum(`value1`) AS `total`
+SELECT t0.`foo_id`, sum(t0.`value1`) AS `total`
 FROM (
   SELECT t1.*, t2.`value1`
   FROM star1 t1

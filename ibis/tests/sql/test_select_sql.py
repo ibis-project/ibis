@@ -48,7 +48,7 @@ def test_select_sql(alltypes, star1, expr_fn, snapshot):
 def test_nameless_table(snapshot):
     # Generate a unique table name when we haven't passed on
     nameless = ibis.table([('key', 'string')])
-    assert to_sql(nameless) == f'SELECT *\nFROM {nameless.op().name}'
+    assert to_sql(nameless) == f'SELECT t0.*\nFROM {nameless.op().name} t0'
 
     expr = ibis.table([('key', 'string')], name='baz')
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -219,16 +219,6 @@ def test_aggregate_count_joined(con, snapshot):
     )
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
-
-
-def test_no_aliases_needed():
-    table = ibis.table([('key1', 'string'), ('key2', 'string'), ('value', 'double')])
-
-    expr = table.aggregate([table['value'].sum().name('total')], by=['key1', 'key2'])
-
-    query = get_query(expr)
-    context = query.context
-    assert not context.need_aliases()
 
 
 def test_fuse_projections(snapshot):

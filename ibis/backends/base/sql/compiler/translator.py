@@ -24,7 +24,7 @@ class QueryContext:
         self.subquery_memo = {}
         self.indent = indent
         self.parent = parent
-        self.always_alias = False
+        self.always_alias = True
         self.query = None
         self.params = params if params is not None else {}
 
@@ -92,9 +92,6 @@ class QueryContext:
         alias = f't{i:d}'
         self.set_ref(node, alias)
 
-    def need_aliases(self, expr=None):
-        return self.always_alias or len(self.table_refs) > 1
-
     def _contexts(
         self,
         *,
@@ -114,14 +111,20 @@ class QueryContext:
     def set_ref(self, node, alias):
         self.table_refs[node] = alias
 
-    def get_ref(self, node):
+    def get_ref(self, node, search_parents=False):
         """Return the alias used to refer to an expression."""
-        assert isinstance(node, ops.Node)
+        assert isinstance(node, ops.Node), type(node)
 
         if self.is_extracted(node):
             return self.top_context.table_refs.get(node)
 
-        return self.table_refs.get(node)
+        if (ref := self.table_refs.get(node)) is not None:
+            return ref
+
+        if search_parents and (parent := self.parent) is not None:
+            return parent.get_ref(node, search_parents=search_parents)
+
+        return None
 
     def is_extracted(self, node):
         return node in self.top_context.extracted_subexprs

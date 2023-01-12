@@ -12,7 +12,7 @@ WITH t0 AS (
 SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`,
        t2.`count` / CAST(t1.`count` AS double) AS `fraction`
 FROM (
-  SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   GROUP BY 1
 ) t1
@@ -20,9 +20,9 @@ FROM (
     SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
     FROM t0
     WHERE t0.`o_totalprice` > (
-      SELECT avg(t7.`o_totalprice`) AS `mean`
-      FROM t0 t7
-      WHERE t7.`region` = t0.`region`
+      SELECT avg(t4.`o_totalprice`) AS `mean`
+      FROM t0 t4
+      WHERE t4.`region` = t0.`region`
     )
     GROUP BY 1
   ) t2

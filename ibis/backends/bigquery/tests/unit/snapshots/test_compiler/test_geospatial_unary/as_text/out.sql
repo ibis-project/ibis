@@ -1,2 +1,2 @@
-SELECT ST_ASTEXT(`geog`) AS `tmp`
-FROM t
+SELECT ST_ASTEXT(t0.`geog`) AS `tmp`
+FROM t t0

@@ -1,6 +1,6 @@
 WITH t0 AS (
-  SELECT `a`, `g`, sum(`f`) AS `metric`
-  FROM alltypes
+  SELECT t2.`a`, t2.`g`, sum(t2.`f`) AS `metric`
+  FROM alltypes t2
   GROUP BY 1, 2
 ),
 t1 AS (
