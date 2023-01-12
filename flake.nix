@@ -121,7 +121,7 @@
 
         default = pkgs.ibis310;
 
-        inherit (pkgs) update-lock-files;
+        inherit (pkgs) update-lock-files gen-all-extras;
       };
 
       devShells = rec {

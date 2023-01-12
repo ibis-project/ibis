@@ -60,7 +60,16 @@ in
     runtimeInputs = [ pkgs.poetry ];
     text = ''
       poetry lock --no-update
-      poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+      poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+    '';
+  };
+
+  gen-all-extras = pkgs.writeShellApplication {
+    name = "gen-all-extras";
+    runtimeInputs = with pkgs; [ yj jq ];
+    text = ''
+      echo -n 'all = '
+      yj -tj < pyproject.toml | jq -rM '.tool.poetry.extras | with_entries(select(.key != "all")) | [.[]] | add | unique | sort'
     '';
   };
 }
