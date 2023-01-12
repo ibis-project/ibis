@@ -600,17 +600,17 @@ def test_lower_projection_sort_key(con, star1, star2, snapshot):
     agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
     expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
     #
-    t3 = con.meta.tables["star1"].alias("t3")
-    t2 = con.meta.tables["star2"].alias("t2")
+    t4 = con.meta.tables["star1"].alias("t4")
+    t3 = con.meta.tables["star2"].alias("t3")
 
-    t4 = (
-        sa.select([t3.c.foo_id, F.sum(t3.c.f).label('total')])
-        .group_by(t3.c.foo_id)
-        .alias('t4')
+    t2 = (
+        sa.select([t4.c.foo_id, F.sum(t4.c.f).label('total')])
+        .group_by(t4.c.foo_id)
+        .alias('t2')
     )
     t1 = (
-        sa.select([t4.c.foo_id, t4.c.total, t2.c.value1])
-        .select_from(t4.join(t2, t4.c.foo_id == t2.c.foo_id))
+        sa.select([t2.c.foo_id, t2.c.total, t3.c.value1])
+        .select_from(t2.join(t3, t2.c.foo_id == t3.c.foo_id))
         .alias('t1')
     )
     t0 = (
@@ -790,16 +790,16 @@ def test_where_correlated_subquery_with_join():
     )
 
     partsupp_t2 = partsupp.alias("t2")
-    supplier_t5 = supplier.alias("t5")
-    t3 = (
+    supplier_t3 = supplier.alias("t3")
+    t1 = (
         sa.select([partsupp_t2.c.ps_partkey, partsupp_t2.c.ps_supplycost])
         .select_from(
             partsupp_t2.join(
-                supplier_t5,
-                onclause=supplier_t5.c.s_suppkey == partsupp_t2.c.ps_suppkey,
+                supplier_t3,
+                onclause=supplier_t3.c.s_suppkey == partsupp_t2.c.ps_suppkey,
             )
         )
-        .alias("t3")
+        .alias("t1")
     )
     ex = (
         sa.select([t0.c.p_partkey, t0.c.ps_supplycost])
@@ -807,9 +807,9 @@ def test_where_correlated_subquery_with_join():
         .where(
             t0.c.ps_supplycost
             == (
-                sa.select([sa.func.min(t3.c.ps_supplycost).label("Min(ps_supplycost)")])
-                .select_from(t3)
-                .where(t3.c.ps_partkey == t0.c.p_partkey)
+                sa.select([sa.func.min(t1.c.ps_supplycost).label("Min(ps_supplycost)")])
+                .select_from(t1)
+                .where(t1.c.ps_partkey == t0.c.p_partkey)
                 .scalar_subquery()
             )
         )
@@ -1090,39 +1090,38 @@ def test_tpc_h11(h11):
     )
     nation = sa.table("nation", sa.column("n_name"), sa.column("n_nationkey"))
 
-    t2 = nation.alias("t2")
-    t3 = partsupp.alias("t3")
-    t4 = supplier.alias("t4")
+    t4 = nation.alias("t4")
+    t2 = partsupp.alias("t2")
+    t3 = supplier.alias("t3")
     t1 = (
         sa.select(
-            t3.c.ps_partkey,
-            sa.func.sum(t3.c.ps_supplycost * t3.c.ps_availqty).label("value"),
+            t2.c.ps_partkey,
+            sa.func.sum(t2.c.ps_supplycost * t2.c.ps_availqty).label("value"),
         )
         .select_from(
-            t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
-                t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
+            t2.join(t3, onclause=t2.c.ps_suppkey == t3.c.s_suppkey).join(
+                t4, onclause=t4.c.n_nationkey == t3.c.s_nationkey
             )
         )
-        .where(t2.c.n_name == NATION)
-        .group_by(t3.c.ps_partkey)
+        .where(t4.c.n_name == NATION)
+        .group_by(t2.c.ps_partkey)
     ).alias("t1")
 
     anon_1 = (
-        sa.select(sa.func.sum(t3.c.ps_supplycost * t3.c.ps_availqty).label("total"))
+        sa.select(sa.func.sum(t2.c.ps_supplycost * t2.c.ps_availqty).label("total"))
         .select_from(
-            t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
-                t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
+            t2.join(t3, onclause=t2.c.ps_suppkey == t3.c.s_suppkey).join(
+                t4, onclause=t4.c.n_nationkey == t3.c.s_nationkey
             )
         )
-        .where(t2.c.n_name == NATION)
+        .where(t4.c.n_name == NATION)
         .alias("anon_1")
     )
 
     t0 = (
-        sa.select(
-            t1.c.ps_partkey.label("ps_partkey"),
-            t1.c.value.label("value"),
-        ).where(t1.c.value > sa.select(anon_1.c.total).scalar_subquery() * FRACTION)
+        sa.select(t1.c.ps_partkey.label("ps_partkey"), t1.c.value.label("value")).where(
+            t1.c.value > sa.select(anon_1.c.total).scalar_subquery() * FRACTION
+        )
     ).alias("t0")
 
     ex = sa.select(t0.c.ps_partkey, t0.c.value).order_by(t0.c.value.desc())

@@ -1,3 +1,3 @@
-SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
-       extract(`i`, 'day') AS `day`
-FROM alltypes
+SELECT extract(t0.`i`, 'year') AS `year`, extract(t0.`i`, 'month') AS `month`,
+       extract(t0.`i`, 'day') AS `day`
+FROM alltypes t0

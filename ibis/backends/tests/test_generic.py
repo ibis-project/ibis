@@ -752,18 +752,7 @@ def test_int_scalar(alltypes):
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
 @pytest.mark.notyet(["pyspark"])
-@pytest.mark.parametrize(
-    "method_name",
-    [
-        "any",
-        param(
-            "notany",
-            marks=pytest.mark.broken(
-                ["impala"], reason="aliases are incorrectly elided"
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("method_name", ["any", "notany"])
 def test_exists(batting, awards_players, method_name):
     method = methodcaller(method_name)
     expr = batting[method(batting.yearID == awards_players.yearID)]

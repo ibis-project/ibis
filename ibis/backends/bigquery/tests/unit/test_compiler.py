@@ -384,8 +384,8 @@ def test_timestamp_accepts_date_literals(alltypes):
     params = {p: date_string}
     result = to_sql(expr, params=params)
     expected = """\
-SELECT \\*, @param_\\d+ AS `param`
-FROM functional_alltypes"""
+SELECT t\\d+\\.\\*, @param_\\d+ AS `param`
+FROM functional_alltypes t\\d+"""
     assert re.match(expected, result) is not None
 
 
@@ -581,6 +581,6 @@ def test_scalar_param_scope(alltypes):
     param = ibis.param("timestamp")
     result = to_sql(t.mutate(param=param), params={param: "2017-01-01"})
     expected = """\
-SELECT \\*, @param_\\d+ AS `param`
-FROM functional_alltypes"""
+SELECT t\\d+\\.\\*, @param_\\d+ AS `param`
+FROM functional_alltypes t\\d+"""
     assert re.match(expected, result) is not None

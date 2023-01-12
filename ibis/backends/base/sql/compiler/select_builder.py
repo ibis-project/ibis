@@ -215,22 +215,6 @@ class SelectBuilder:
         if self.table_set is not None:
             self._make_table_aliases(self.table_set)
 
-        # XXX: This is a temporary solution to the table-aliasing / correlated
-        # subquery problem. Will need to revisit and come up with a cleaner
-        # design (also as one way to avoid pathological naming conflicts; for
-        # example, we could define a table alias before we know that it
-        # conflicts with the name of a table used in a subquery, join, or
-        # another part of the query structure)
-
-        # There may be correlated subqueries inside the filters, requiring that
-        # we use an explicit alias when outputting as SQL. For now, we're just
-        # going to see if any table nodes appearing in the where stack have
-        # been marked previously by the above code.
-        for expr in self.filters:
-            needs_alias = self._foreign_ref_check(self, expr)
-            if needs_alias:
-                self.context.set_always_alias()
-
     # TODO(kszucs): should be rewritten using lin.traverse()
     def _make_table_aliases(self, node):
         ctx = self.context

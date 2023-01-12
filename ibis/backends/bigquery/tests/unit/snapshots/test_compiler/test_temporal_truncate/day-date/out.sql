@@ -1,2 +1,2 @@
-SELECT DATE_TRUNC(`a`, DAY) AS `tmp`
-FROM t
+SELECT DATE_TRUNC(t0.`a`, DAY) AS `tmp`
+FROM t t0

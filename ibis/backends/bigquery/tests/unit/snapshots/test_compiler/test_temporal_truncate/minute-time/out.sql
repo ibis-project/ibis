@@ -1,2 +1,2 @@
-SELECT TIME_TRUNC(`a`, MINUTE) AS `tmp`
-FROM t
+SELECT TIME_TRUNC(t0.`a`, MINUTE) AS `tmp`
+FROM t t0

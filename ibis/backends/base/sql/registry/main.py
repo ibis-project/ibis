@@ -155,10 +155,9 @@ def table_column(translator, op):
         proj_expr = op.table.to_expr().projection([op.name]).to_array().op()
         return table_array_view(translator, proj_expr)
 
-    if ctx.need_aliases():
-        alias = ctx.get_ref(op.table)
-        if alias is not None:
-            quoted_name = f'{alias}.{quoted_name}'
+    alias = ctx.get_ref(op.table, search_parents=True)
+    if alias is not None:
+        quoted_name = f"{alias}.{quoted_name}"
 
     return quoted_name
 
@@ -175,14 +174,8 @@ def exists_subquery(translator, op):
 
     subquery = ctx.get_compiled_expr(node)
 
-    if isinstance(op, ops.ExistsSubquery):
-        key = 'EXISTS'
-    elif isinstance(op, ops.NotExistsSubquery):
-        key = 'NOT EXISTS'
-    else:
-        raise NotImplementedError
-
-    return f'{key} (\n{util.indent(subquery, ctx.indent)}\n)'
+    prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
+    return f'{prefix}EXISTS (\n{util.indent(subquery, ctx.indent)}\n)'
 
 
 # XXX this is not added to operation_registry, but looks like impala is

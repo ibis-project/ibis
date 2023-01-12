@@ -10,7 +10,7 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT extract(`odate`, 'year') AS `year`, count(1) AS `count`
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   GROUP BY 1
 )

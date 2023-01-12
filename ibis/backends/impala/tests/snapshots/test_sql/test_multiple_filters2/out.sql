@@ -1,12 +1,12 @@
-SELECT *
+SELECT t0.*
 FROM (
-  SELECT *
-  FROM t0
-  WHERE `a` < 100
+  SELECT t1.*
+  FROM t0 t1
+  WHERE t1.`a` < 100
 ) t0
-WHERE (`a` = (
-  SELECT max(`a`) AS `Max(a)`
-  FROM t0
-  WHERE `a` < 100
+WHERE (t0.`a` = (
+  SELECT max(t1.`a`) AS `Max(a)`
+  FROM t0 t1
+  WHERE t1.`a` < 100
 )) AND
-      (`b` = 'a')
+      (t0.`b` = 'a')

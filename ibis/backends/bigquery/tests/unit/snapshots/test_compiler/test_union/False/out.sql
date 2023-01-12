@@ -1,5 +1,5 @@
-SELECT *
-FROM functional_alltypes
+SELECT t0.*
+FROM functional_alltypes t0
 UNION ALL
-SELECT *
-FROM functional_alltypes
+SELECT t0.*
+FROM functional_alltypes t0

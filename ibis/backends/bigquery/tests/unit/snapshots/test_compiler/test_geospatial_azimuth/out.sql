@@ -1,2 +1,2 @@
-SELECT ST_AZIMUTH(`p0`, `p1`) AS `tmp`
-FROM t
+SELECT ST_AZIMUTH(t0.`p0`, t0.`p1`) AS `tmp`
+FROM t t0

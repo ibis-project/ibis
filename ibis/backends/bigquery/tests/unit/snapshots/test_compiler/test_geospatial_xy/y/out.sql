@@ -1,2 +1,2 @@
-SELECT ST_Y(`pt`) AS `tmp`
-FROM t
+SELECT ST_Y(t0.`pt`) AS `tmp`
+FROM t t0

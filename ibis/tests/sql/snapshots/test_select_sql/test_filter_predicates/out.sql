@@ -2,10 +2,10 @@ SELECT *
 FROM (
   SELECT *
   FROM (
-    SELECT *
-    FROM t
-    WHERE (lower(`color`) LIKE '%de%') AND
-          (locate('de', lower(`color`)) - 1 >= 0)
+    SELECT t2.*
+    FROM t t2
+    WHERE (lower(t2.`color`) LIKE '%de%') AND
+          (locate('de', lower(t2.`color`)) - 1 >= 0)
   ) t1
-  WHERE regexp_like(lower(`color`), '.*ge.*')
+  WHERE regexp_like(lower(t1.`color`), '.*ge.*')
 ) t0

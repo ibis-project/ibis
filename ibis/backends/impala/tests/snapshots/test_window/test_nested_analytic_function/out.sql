@@ -1,2 +1,2 @@
-SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f` ASC)) OVER (ORDER BY `f` ASC) AS `foo`
-FROM alltypes
+SELECT lag(t0.`f` - lag(t0.`f`) OVER (ORDER BY t0.`f` ASC)) OVER (ORDER BY t0.`f` ASC) AS `foo`
+FROM alltypes t0

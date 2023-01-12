@@ -1,11 +1,11 @@
 WITH t0 AS (
-  SELECT `uuid`, count(1) AS `count`
-  FROM t
+  SELECT t2.`uuid`, count(1) AS `count`
+  FROM t t2
   GROUP BY 1
 )
 SELECT t0.*
 FROM (
-  SELECT `uuid`, max(`count`) AS `max_count`
+  SELECT t0.`uuid`, max(t0.`count`) AS `max_count`
   FROM t0
   GROUP BY 1
 ) t1

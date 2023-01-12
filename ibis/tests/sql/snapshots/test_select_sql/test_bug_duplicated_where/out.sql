@@ -1,15 +1,15 @@
-SELECT *
+SELECT t0.*
 FROM (
   SELECT t1.*
   FROM (
-    SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
-           `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
+    SELECT t2.*, avg(t2.`arrdelay`) OVER (PARTITION BY t2.`dest`) AS `dest_avg`,
+           t2.`arrdelay` - avg(t2.`arrdelay`) OVER (PARTITION BY t2.`dest`) AS `dev`
     FROM (
-      SELECT `arrdelay`, `dest`
-      FROM airlines
-    ) t3
+      SELECT t3.`arrdelay`, t3.`dest`
+      FROM airlines t3
+    ) t2
   ) t1
   WHERE t1.`dev` IS NOT NULL
 ) t0
-ORDER BY `dev` DESC
+ORDER BY t0.`dev` DESC
 LIMIT 10

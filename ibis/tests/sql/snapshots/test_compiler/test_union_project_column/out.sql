@@ -1,10 +1,10 @@
-SELECT `key`
+SELECT t0.`key`
 FROM (
-  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` > 0
+  SELECT t1.`string_col` AS `key`, CAST(t1.`float_col` AS double) AS `value`
+  FROM functional_alltypes t1
+  WHERE t1.`int_col` > 0
   UNION ALL
-  SELECT `string_col` AS `key`, `double_col` AS `value`
-  FROM functional_alltypes
-  WHERE `int_col` <= 0
+  SELECT t1.`string_col` AS `key`, t1.`double_col` AS `value`
+  FROM functional_alltypes t1
+  WHERE t1.`int_col` <= 0
 ) t0
