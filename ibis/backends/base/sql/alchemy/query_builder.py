@@ -42,7 +42,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         for jtype, table, preds in zip(
             self.join_types, self.join_tables[1:], self.join_predicates
         ):
-            if len(preds):
+            if preds:
                 sqla_preds = [self._translate(pred) for pred in preds]
                 onclause = functools.reduce(sql.and_, sqla_preds)
             else:
@@ -59,9 +59,23 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause, full=True)
             elif jtype is ops.LeftSemiJoin:
-                result = result.select().where(sa.exists(sa.select(1).where(onclause)))
+                # subquery is required for semi and anti joins done using
+                # sqlalchemy, otherwise multiple references to the original
+                # select are treated as distinct tables
+                #
+                # with a subquery, the result is a distinct table and so there's only one
+                # thing for subsequent expressions to reference
+                result = (
+                    result.select()
+                    .where(sa.exists(sa.select(1).where(onclause)))
+                    .subquery()
+                )
             elif jtype is ops.LeftAntiJoin:
-                result = result.select().where(~sa.exists(sa.select(1).where(onclause)))
+                result = (
+                    result.select()
+                    .where(~sa.exists(sa.select(1).where(onclause)))
+                    .subquery()
+                )
             else:
                 raise NotImplementedError(jtype)
 
@@ -227,32 +241,7 @@ class AlchemySelect(Select):
         if has_select_star or table_set is None:
             return result
 
-        # if we're selecting from something that isn't a subquery e.g., Select,
-        # Alias, Table
-        if not isinstance(table_set, sa.sql.Subquery):
-            return result.select_from(table_set)
-
-        final_froms = result.get_final_froms()
-        num_froms = len(final_froms)
-
-        # if the result subquery has no FROMs then we can select from the
-        # table_set since there's only a single possibility for FROM
-        if not num_froms:
-            return result.select_from(table_set)
-
-        # we need to replace every occurrence of `result`'s `FROM`
-        # with `table_set` to handle correlated EXISTs coming from
-        # semi/anti-join
-        #
-        # previously this was `replace_selectable`, but that's deprecated so we
-        # inline its implementation here
-        #
-        # sqlalchemy suggests using the functionality in sa.sql.visitors, but
-        # that would effectively require reimplementing ClauseAdapter
-        replaced = sa.sql.util.ClauseAdapter(table_set).traverse(result)
-        num_froms = len(replaced.get_final_froms())
-        assert num_froms == 1, f"num_froms == {num_froms:d}"
-        return replaced
+        return result.select_from(table_set)
 
     def _add_group_by(self, fragment):
         # GROUP BY and HAVING

@@ -548,11 +548,20 @@ def _truncate(op, **kw):
 @translate_val.register(ops.ExistsSubquery)
 @translate_val.register(ops.NotExistsSubquery)
 def _exists_subquery(op, **kw):
-    foreign_table = translate_val(op.foreign_table, **kw)
+    # https://github.com/ClickHouse/ClickHouse/issues/6697
+    #
+    # this would work, if clickhouse supported correlated subqueries
+    from ibis.backends.clickhouse.compiler.relations import translate_rel
+
+    foreign_table = translate_rel(op.foreign_table, **kw)
     predicates = translate_val(op.predicates, **kw)
-    subq = sg.subquery(foreign_table.where(predicates, dialect="clickhouse").select(1))
+    subq = (
+        sg.select(1)
+        .from_(foreign_table, dialect="clickhouse")
+        .where(sg.condition(predicates), dialect="clickhouse")
+    )
     prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
-    return f"{prefix}EXISTS {subq}"
+    return f"{prefix}EXISTS ({subq})"
 
 
 @translate_val.register(ops.StringSplit)

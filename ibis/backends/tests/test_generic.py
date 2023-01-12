@@ -1,7 +1,7 @@
 import decimal
 import io
 from contextlib import redirect_stdout
-from operator import invert, neg
+from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
@@ -745,3 +745,27 @@ def test_int_scalar(alltypes):
     result = expr.execute()
     assert expr.type() == dt.int16
     assert result.dtype == np.int16
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notyet(
+    ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
+)
+@pytest.mark.notyet(["pyspark"])
+@pytest.mark.parametrize(
+    "method_name",
+    [
+        "any",
+        param(
+            "notany",
+            marks=pytest.mark.broken(
+                ["impala"], reason="aliases are incorrectly elided"
+            ),
+        ),
+    ],
+)
+def test_exists(batting, awards_players, method_name):
+    method = methodcaller(method_name)
+    expr = batting[method(batting.yearID == awards_players.yearID)]
+    result = expr.execute()
+    assert not result.empty
