@@ -55,15 +55,3 @@ jobs:
 
           bucket="gs://ibis-workflow-data/${yesterday}"
           gsutil cp -Z workflows.json jobs.json "${bucket}"
-
-          set +e
-
-          exit_code=0
-          for table in workflows jobs; do
-            if ! bq load --autodetect=true --source_format=NEWLINE_DELIMITED_JSON \
-              "workflows_native.${table}" "${bucket}/${table}.json"; then
-              ((++exit_code))
-            fi
-          done
-
-          exit "$exit_code"
