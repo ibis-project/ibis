@@ -108,7 +108,6 @@ hypothesis = ">=6.58.0,<7"
 sqlalchemy = ">=1.4,<2.0"
 
 [tool.poetry.group.docs.dependencies]
-docstring_parser = ">=0.13,<0.14"
 griffe = ">=0.25.3,<1"
 ipykernel = ">=6,<7"
 mike = ">=1.1.2,<2"

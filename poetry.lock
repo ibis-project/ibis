@@ -977,20 +977,6 @@ files = [
 ]
 
 [[package]]
-name = "docstring-parser"
-version = "0.13"
-description = "\"Parse Python docstrings in reST, Google and Numpydoc format\""
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
-]
-
-[package.extras]
-test = ["black", "pytest"]
-
-[[package]]
 name = "duckdb"
 version = "0.6.1"
 description = "DuckDB embedded database"
@@ -5064,4 +5050,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "b7aa80fa2c13532637ed89a013d5e857d6b53f2c13a4c943fc5dc6b0c3c021a4"
+content-hash = "ab4267fa8ff02bc53e8ab15fb4166267ac7392eca0e7b579dd7fec6c9fcd0500"
