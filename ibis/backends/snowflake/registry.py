@@ -181,9 +181,6 @@ _invalid_operations = {
     ops.Unnest,
     # ibis.expr.operations.generic
     ops.TypeOf,
-    # ibis.expr.operations.logical
-    ops.ExistsSubquery,
-    ops.NotExistsSubquery,
     # ibis.expr.operations.maps
     ops.MapKeys,
     # ibis.expr.operations.reductions
