@@ -1095,32 +1095,26 @@ def test_tpc_h11(h11):
     t4 = supplier.alias("t4")
     t1 = (
         sa.select(
-            sa.column("ps_partkey"),
-            sa.func.sum(sa.column("ps_supplycost") * sa.column("ps_availqty")).label(
-                "value"
-            ),
+            t3.c.ps_partkey,
+            sa.func.sum(t3.c.ps_supplycost * t3.c.ps_availqty).label("value"),
         )
         .select_from(
             t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
                 t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
             )
         )
-        .where(sa.column("n_name") == NATION)
-        .group_by(sa.column("ps_partkey"))
+        .where(t2.c.n_name == NATION)
+        .group_by(t3.c.ps_partkey)
     ).alias("t1")
 
     anon_1 = (
-        sa.select(
-            sa.func.sum(sa.column("ps_supplycost") * sa.column("ps_availqty")).label(
-                "total"
-            )
-        )
+        sa.select(sa.func.sum(t3.c.ps_supplycost * t3.c.ps_availqty).label("total"))
         .select_from(
             t3.join(t4, onclause=t3.c.ps_suppkey == t4.c.s_suppkey).join(
                 t2, onclause=t2.c.n_nationkey == t4.c.s_nationkey
             )
         )
-        .where(sa.column("n_name") == NATION)
+        .where(t2.c.n_name == NATION)
         .alias("anon_1")
     )
 

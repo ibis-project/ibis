@@ -81,22 +81,13 @@ def get_sqla_table(ctx, table):
     return sa_table
 
 
-def get_col_or_deferred_col(sa_table, colname):
-    """Get a `Column`, or create a "deferred" column.
+def get_col(sa_table, op: ops.TableColumn):
+    """Get a `Column`."""
+    cols = sa_table.exported_columns
+    colname = op.name
 
-    This is to handle the case when selecting a column from a join, which
-    happens when a join expression is cached during join traversal
-
-    We'd like to avoid generating a subquery just for selection but in
-    sqlalchemy the Join object is not selectable. However, at this point
-    know that the column can be referred to unambiguously
-
-    Later the expression is assembled into
-    `sa.select([sa.column(colname)]).select_from(table_set)` (roughly)
-    where `table_set` is `sa_table` above.
-    """
     try:
-        return sa_table.exported_columns[colname]
+        return cols[colname]
     except KeyError:
         # cols is a sqlalchemy column collection which contains column
         # names that are secretly prefixed by their containing table
@@ -116,7 +107,7 @@ def _table_column(t, op):
 
     sa_table = get_sqla_table(ctx, table)
 
-    out_expr = get_col_or_deferred_col(sa_table, op.name)
+    out_expr = get_col(sa_table, op)
     out_expr.quote = t._always_quote_columns
 
     # If the column does not originate from the table set in the current SELECT
