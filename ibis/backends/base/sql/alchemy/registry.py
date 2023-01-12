@@ -220,7 +220,7 @@ def _is_null(t, op):
 
 def _not_null(t, op):
     arg = t.translate(op.arg)
-    return arg.isnot(sa.null())
+    return arg.is_not(sa.null())
 
 
 def _round(t, op):
