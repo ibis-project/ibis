@@ -15,6 +15,7 @@
 import operator
 
 import pytest
+from pytest import param
 from sqlalchemy import func as F
 from sqlalchemy import sql
 from sqlalchemy import types as sat
@@ -163,8 +164,8 @@ def test_between(con, functional_alltypes, sa_functional_alltypes):
 @pytest.mark.parametrize(
     ("expr_fn", "expected_fn"),
     [
-        (lambda d: d.isnull(), lambda sd: sd.is_(sa.null())),
-        (lambda d: d.notnull(), lambda sd: sd.isnot(sa.null())),
+        param(lambda d: d.isnull(), lambda sd: sd.is_(sa.null()), id="isnull"),
+        param(lambda d: d.notnull(), lambda sd: sd.is_not(sa.null()), id="notnull"),
     ],
 )
 def test_isnull_notnull(
