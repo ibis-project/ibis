@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 from pathlib import Path
 
+import mkdocs_gen_files
 import pandas as pd
 import tomli
 
@@ -24,22 +26,18 @@ def get_leaf_classes(op):
             yield from get_leaf_classes(child_class)
 
 
-EXCLUDED_OPS = {
+INTERNAL_OPS = {
     # Never translates into anything
     ops.UnresolvedExistsSubquery,
     ops.UnresolvedNotExistsSubquery,
     ops.ScalarParameter,
-} | {
-    op
-    for op in frozenset(get_leaf_classes(ops.Value))
-    if issubclass(op, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp))
 }
 
-INCLUDED_OPS = {
-    # Parent class of MultiQuantile so it's ignored by `get_backends()`
-    ops.Quantile,
-}
+GEOSPATIAL_OPS = frozenset(get_leaf_classes(ops.GeoSpatialUnOp)) | frozenset(
+    get_leaf_classes(ops.GeoSpatialBinOp)
+)
 
+CORE_OPS = (frozenset(get_leaf_classes(ops.Value))) - INTERNAL_OPS - GEOSPATIAL_OPS
 
 ICONS = {
     True: ":material-check-decagram:{ .verified }",
@@ -47,55 +45,52 @@ ICONS = {
 }
 
 
-def gen_matrix(basename, possible_ops=None):
-    if possible_ops is None:
-        possible_ops = (
-            frozenset(get_leaf_classes(ops.Value)) | INCLUDED_OPS
-        ) - EXCLUDED_OPS
+def gen_matrix(basename, possible_ops, raw_data_format=False):
+    if raw_data_format:
+        support = {
+            "operation": [f"{op.__module__}.{op.__name__}" for op in possible_ops]
+        }
+    else:
+        support = {"operation": [f"`{op.__name__}`" for op in possible_ops]}
 
-    support = {"operation": [f"`{op.__name__}`" for op in possible_ops]}
     support.update(
         (name, list(map(backend.has_operation, possible_ops)))
         for name, backend in get_backends()
     )
 
     df = pd.DataFrame(support).set_index("operation").sort_index()
+    if not raw_data_format:
+        counts = df.sum().sort_values(ascending=False)
+        counts = counts[counts > 0]
+        num_ops = len(possible_ops)
+        coverage = (
+            counts.map(lambda n: f"_{n} ({round(100 * n / num_ops)}%)_")
+            .to_frame(name="**API Coverage**")
+            .T
+        )
 
-    counts = df.sum().sort_values(ascending=False)
-    counts = counts[counts > 0]
-    num_ops = len(possible_ops)
-    coverage = (
-        counts.map(lambda n: f"_{n} ({round(100 * n / num_ops)}%)_")
-        .to_frame(name="**API Coverage**")
-        .T
-    )
-
-    ops_table = df.loc[:, counts.index].replace(ICONS)
-    table = pd.concat([coverage, ops_table])
-    dst = Path(__file__).parent.joinpath(
-        "docs",
-        "backends",
-        f"{basename}_support_matrix.csv",
-    )
-
-    if dst.exists():
-        old = pd.read_csv(dst, index_col="Backends")
-        should_write = not old.equals(table)
+        ops_table = df.loc[:, counts.index].replace(ICONS)
+        table = pd.concat([coverage, ops_table])
     else:
-        should_write = True
+        table = df
 
-    if should_write:
-        table.to_csv(dst, index_label="Backends")
+    file_path = Path("backends", f"{basename}_support_matrix.csv")
+    local_pth = Path(__file__).parent / "docs" / file_path
+    buf = io.StringIO()
+    table.to_csv(buf, index_label="Backends")
+    local_pth.write_text(buf.getvalue())
+    with mkdocs_gen_files.open(file_path, "w") as f:
+        f.write(buf.getvalue())
 
 
 def main():
-    gen_matrix(basename="core")
+    gen_matrix(basename="core", possible_ops=CORE_OPS)
     gen_matrix(
         basename="geospatial",
-        possible_ops=(
-            frozenset(get_leaf_classes(ops.GeoSpatialUnOp))
-            | frozenset(get_leaf_classes(ops.GeoSpatialBinOp))
-        ),
+        possible_ops=GEOSPATIAL_OPS,
+    )
+    gen_matrix(
+        basename="raw", possible_ops=CORE_OPS | GEOSPATIAL_OPS, raw_data_format=True
     )
 
 
