@@ -11,5 +11,11 @@
     "poetry"
   ],
   "automerge": false,
-  "labels": ["dependencies"]
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["docker-compose", "dockerfile", "github-actions"],
+      "automerge": true
+    }
+  ]
 }
