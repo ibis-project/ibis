@@ -32,7 +32,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     _bitwise_op,
     _extract,
     geospatial_functions,
-    get_col_or_deferred_col,
+    get_col,
 )
 
 operation_registry = sqlalchemy_operation_registry.copy()
@@ -302,7 +302,7 @@ def _table_column(t, op):
     table = op.table
 
     sa_table = get_sqla_table(ctx, table)
-    out_expr = get_col_or_deferred_col(sa_table, op.name)
+    out_expr = get_col(sa_table, op)
 
     if op.output_dtype.is_timestamp():
         timezone = op.output_dtype.timezone
