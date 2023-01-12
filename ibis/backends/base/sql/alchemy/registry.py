@@ -98,7 +98,16 @@ def get_col_or_deferred_col(sa_table, colname):
     try:
         return sa_table.exported_columns[colname]
     except KeyError:
-        return sa.column(colname)
+        # cols is a sqlalchemy column collection which contains column
+        # names that are secretly prefixed by their containing table
+        #
+        # sqlalchemy doesn't let you select by the *un*prefixed column name
+        # despite the uniqueness of `colname`
+        #
+        # however, in ibis we have already deduplicated column names so we can
+        # refer to the name by position
+        colindex = op.table.schema._name_locs[colname]
+        return cols[colindex]
 
 
 def _table_column(t, op):
@@ -123,9 +132,18 @@ def _table_column(t, op):
 
 
 def _table_array_view(t, op):
+    # the table that the TableArrayView op contains (op.table) has
+    # one or more input relations that we need to "pin" for sqlalchemy's
+    # auto correlation functionality -- this is what `.correlate_except` does
+    #
+    # every relation that is NOT passed to `correlate_except` is considered an
+    # outer-query table
     ctx = t.context
     table = ctx.get_compiled_expr(op.table)
-    return table
+    # TODO: handle the case of `op.table` being a join
+    first, *_ = an.find_immediate_parent_tables(op.table, keep_input=False)
+    ref = ctx.get_ref(first)
+    return table.correlate_except(ref)
 
 
 def _exists_subquery(t, op):
