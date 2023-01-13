@@ -311,8 +311,6 @@ _invalid_operations = {
     ops.TypeOf,
     # ibis.expr.operations.logical
     ops.Between,
-    ops.ExistsSubquery,
-    ops.NotExistsSubquery,
     # ibis.expr.operations.maps
     ops.MapLength,
     # ibis.expr.operations.reductions
