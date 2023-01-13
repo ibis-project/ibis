@@ -48,7 +48,7 @@
 }
 
 #streamlit-app {
-  height: 100%;
+  height: 1000px;
   width: 100%;
   border: none;
   overflow: hidden;
