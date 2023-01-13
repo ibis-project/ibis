@@ -18,12 +18,10 @@ def load_ops_data():
     reader = csv.DictReader(response.text.splitlines())
 
     data = [
-        {k: v if k == "Backends" else v == "True" for k, v in row.items()}
+        {k: v if k == "FullOperation" else v == "True" for k, v in row.items()}
         for row in reader
     ]
     for row in data:
-        row["FullOperation"] = row['Backends']
-        del row['Backends']
         row['ShortOperation'] = row['FullOperation'].rsplit(".")[4]
         row['OpCategory'] = row['FullOperation'].rsplit(".")[3]
     return data
