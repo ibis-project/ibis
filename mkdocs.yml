@@ -40,7 +40,8 @@ plugins:
   - exclude:
       glob:
         - backends/template.md
-        - backends/support_matrix.csv
+        - backends/*_support_matrix.csv
+        - backends/app/*
         - CONTRIBUTING.md
   - gen-files:
       scripts:
