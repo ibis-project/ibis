@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import getpass
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Mapping
 
 import sqlalchemy as sa
 
@@ -532,19 +532,25 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
         pass
 
-    def _create_temp_view(
+    def _get_compiled_statement(
         self,
-        view: sa.Table,
         definition: sa.sql.Selectable,
-    ) -> None:
+        name: str,
+        compile_kwargs: Mapping[str, Any] | None = None,
+    ):
+        if compile_kwargs is None:
+            compile_kwargs = {}
+        compiled = definition.compile(compile_kwargs=compile_kwargs)
+        defn = self._get_temp_view_definition(name, definition=compiled)
+        return defn, compiled.params
+
+    def _create_temp_view(self, view: sa.Table, definition: sa.sql.Selectable) -> None:
         raw_name = view.name
         if raw_name not in self._temp_views and raw_name in self.list_tables():
             raise ValueError(f"{raw_name} already exists as a table or view")
-
-        name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
-        compiled = definition.compile()
-        defn = self._get_temp_view_definition(name, definition=compiled)
-        query = sa.text(defn).bindparams(**compiled.params)
-        self.con.execute(query)
+        name = self.con.dialect.identifier_preparer.quote_identifier(view.name)
+        compiled, params = self._get_compiled_statement(definition, name)
+        with self.begin() as con:
+            con.execute(compiled, **params)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
