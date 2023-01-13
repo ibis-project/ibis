@@ -192,3 +192,16 @@ def test_table_dot_sql_does_not_clobber_existing_tables(con):
     finally:
         con.drop_table(name, force=True)
         assert name not in con.list_tables()
+
+
+@table_dot_sql_notimpl
+@dot_sql_notimpl
+@dot_sql_notyet
+@dot_sql_never
+@pytest.mark.notimpl(["trino"])
+def test_dot_sql_alias_with_params(backend, alltypes, df):
+    t = alltypes
+    x = t.select(x=t.string_col + " abc").alias("foo")
+    result = x.execute()
+    expected = df.string_col.add(" abc").rename("x")
+    backend.assert_series_equal(result.x, expected)
