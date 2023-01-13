@@ -527,3 +527,9 @@ SELECT * FROM read_csv({', '.join(args)})"""
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        # TODO: remove this once duckdb supports CTAS prepared statements
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
+        )
