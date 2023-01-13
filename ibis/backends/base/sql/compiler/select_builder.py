@@ -18,79 +18,6 @@ class _LimitSpec(NamedTuple):
     offset: int
 
 
-class _CorrelatedRefCheck:
-    def __init__(self, query, node):
-        self.query = query
-        self.ctx = query.context
-        self.node = node
-        self.query_roots = frozenset(
-            an.find_immediate_parent_tables(self.query.table_set)
-        )
-        self.has_foreign_root = False
-        self.has_query_root = False
-        self.seen = set()
-
-    def get_result(self):
-        self.visit(self.node, in_subquery=False)
-        return self.has_query_root and self.has_foreign_root
-
-    def visit(self, node, in_subquery):
-        if node in self.seen:
-            return
-
-        in_subquery |= self.is_subquery(node)
-
-        for arg in node.args:
-            if isinstance(arg, ops.TableNode):
-                self.visit_table(arg, in_subquery=in_subquery)
-            elif isinstance(arg, ops.Node):
-                self.visit(arg, in_subquery=in_subquery)
-            elif isinstance(arg, tuple):
-                for item in arg:
-                    self.visit(item, in_subquery=in_subquery)
-
-        self.seen.add(node)
-
-    def is_subquery(self, node):
-        return isinstance(
-            node,
-            (
-                ops.TableArrayView,
-                ops.ExistsSubquery,
-                ops.NotExistsSubquery,
-            ),
-        ) or (isinstance(node, ops.TableColumn) and not self.is_root(node.table))
-
-    def visit_table(self, node, in_subquery):
-        if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
-            self.ref_check(node, in_subquery=in_subquery)
-
-        for arg in node.args:
-            if isinstance(arg, tuple):
-                for item in arg:
-                    self.visit(item, in_subquery=in_subquery)
-            elif isinstance(arg, ops.Node):
-                self.visit(arg, in_subquery=in_subquery)
-
-    def ref_check(self, node, in_subquery) -> None:
-        ctx = self.ctx
-
-        is_root = self.is_root(node)
-
-        self.has_query_root |= is_root and in_subquery
-        self.has_foreign_root |= not is_root and in_subquery
-
-        if (
-            not is_root
-            and not ctx.has_ref(node)
-            and (not in_subquery or ctx.has_ref(node, parent_contexts=True))
-        ):
-            ctx.make_alias(node)
-
-    def is_root(self, what: ops.TableNode) -> bool:
-        return what in self.query_roots
-
-
 def _get_scalar(field):
     def scalar_handler(results):
         return results[field][0]
@@ -148,11 +75,6 @@ class SelectBuilder:
         self.queries = [select_query]
 
         return select_query
-
-    @staticmethod
-    def _foreign_ref_check(query, expr):
-        checker = _CorrelatedRefCheck(query, expr)
-        return checker.get_result()
 
     @staticmethod
     def _adapt_operation(node):
