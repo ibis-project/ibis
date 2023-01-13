@@ -1,3 +1,4 @@
+import contextlib
 import csv
 from enum import Enum
 from pathlib import Path
@@ -79,8 +80,7 @@ def get_selected_backend_name():
     return selected_backend_names
 
 
-def get_selected_operation_categories():
-    all_ops_categories = {row['OpCategory'] for row in ops_data}
+def get_selected_operation_categories(all_ops_categories):
     selected_ops_categories = st.sidebar.multiselect(
         'Operation category',
         options=sorted(all_ops_categories),
@@ -91,8 +91,10 @@ def get_selected_operation_categories():
     return selected_ops_categories
 
 
+all_ops_categories = {row['OpCategory'] for row in ops_data}
 current_backend_names = get_selected_backend_name()
-current_ops_categories = get_selected_operation_categories()
+current_ops_categories = get_selected_operation_categories(all_ops_categories)
+show_geospatial = st.sidebar.checkbox('Include Geospatial ops', value=True)
 hide_supported_by_all_backends = st.sidebar.selectbox(
     'Operation compatibility',
     ['Show all', 'Show supported by all backends', 'Hide supported by all backends'],
@@ -108,6 +110,9 @@ else:
 df = df.sort_index()
 
 # Show only selected operation
+if not show_geospatial:
+    with contextlib.suppress(ValueError):
+        current_ops_categories.remove("geospatial")
 df = df[df['OpCategory'].isin(current_ops_categories)]
 
 # Show only selected backend
