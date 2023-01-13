@@ -18,6 +18,19 @@ Backends are shown in descending order of the number of supported operations.
   <iframe id="streamlit-app" src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
 </div>
 
+!!! note "This app is built using [`streamlit`](https://streamlit.io/)"
+
+    You can develop the app locally by editing `docs/backends/app/backend_info_app.py` and
+    opening a PR with your changes.
+
+    Test your changes locally by running
+
+    ```sh
+    $ streamlit run docs/backends/app/backend_info_app.py
+    ```
+
+    The changes will show up in the dev docs when your PR is merged!
+
 ## Raw Data
 
 You can also download data from the above tables in [CSV format](./raw_support_matrix.csv).
