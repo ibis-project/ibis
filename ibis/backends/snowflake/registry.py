@@ -180,7 +180,6 @@ _invalid_operations = {
     ops.ArraySlice,
     ops.Unnest,
     # ibis.expr.operations.generic
-    ops.TableArrayView,
     ops.TypeOf,
     # ibis.expr.operations.logical
     ops.ExistsSubquery,
