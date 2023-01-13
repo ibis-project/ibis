@@ -129,17 +129,7 @@ if all_visible_ops_count:
         .T
     )
 
-    table = pd.concat(
-        [
-            coverage,
-            df.replace(
-                {
-                    True: "✔️",
-                    False: "✖",
-                }
-            ),
-        ]
-    )
+    table = pd.concat([coverage, df.replace({True: "✔", False: "🚫"})])
     st.table(table)
 else:
     st.write("No data")
