@@ -25,7 +25,11 @@ def df(alltypes):
 
 
 def test_udf(alltypes, df):
-    @udf(input_type=[dt.double, dt.double], output_type=dt.double)
+    @udf(
+        input_type=[dt.double, dt.double],
+        output_type=dt.double,
+        determinism=True,
+    )
     def my_add(a, b):
         return a + b
 
