@@ -20,6 +20,8 @@ class UDFContext(TypeTranslationContext):
     __slots__ = ()
 
 
+UDF_CONTEXT = UDFContext()
+
 ibis_type_to_bigquery_type = Dispatcher("ibis_type_to_bigquery_type")
 
 
