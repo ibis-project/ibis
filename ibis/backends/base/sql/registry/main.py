@@ -396,5 +396,6 @@ operation_registry = {
     ops.DayOfWeekName: timestamp.day_of_week_name,
     ops.Strftime: timestamp.strftime,
     ops.SortKey: sort_key,
+    ops.TypeOf: unary('typeof'),
     **binary_infix_ops,
 }

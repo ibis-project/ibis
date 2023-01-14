@@ -106,19 +106,6 @@ def test_div_floordiv(con, expr, expected):
 
 @pytest.mark.parametrize(
     ('expr', 'expected'),
-    [
-        (L('foo_bar').typeof(), 'text'),
-        (L(5).typeof(), 'integer'),
-        (ibis.NA.typeof(), 'null'),
-        (L(1.2345).typeof(), 'real'),
-    ],
-)
-def test_typeof(con, expr, expected):
-    assert con.execute(expr) == expected
-
-
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
     [(L(0).nullifzero(), None), (L(5.5).nullifzero(), 5.5)],
 )
 def test_nullifzero(con, expr, expected):
