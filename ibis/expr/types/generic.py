@@ -9,6 +9,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop
 
@@ -480,7 +481,11 @@ class Value(Expr):
         """Sort an expression descending."""
         return ops.SortKey(self, ascending=False).to_expr()
 
+    @util.deprecated(version="5.0", instead="use `.as_table()`")
     def to_projection(self) -> ir.Table:
+        return self.as_table()
+
+    def as_table(self) -> ir.Table:
         """Promote this value expression to a projection."""
         from ibis.expr.analysis import find_immediate_parent_tables
 
@@ -492,7 +497,7 @@ class Value(Expr):
                 'to a projection'
             )
         table = roots[0].to_expr()
-        return table.projection([self])
+        return table.select(self)
 
 
 @public
@@ -535,9 +540,6 @@ class Column(Value, JupyterMixin):
 
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
-
-    def as_table(self):
-        return self.to_projection()
 
     def __rich_console__(self, console, options):
         named = self.name(self.op().name)

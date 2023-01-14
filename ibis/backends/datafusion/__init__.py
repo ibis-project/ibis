@@ -213,14 +213,14 @@ class Backend(BaseBackend):
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Column):
             # expression must be named for the projection
-            expr = expr.name('tmp').to_projection()
+            expr = expr.name('tmp').as_table()
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Scalar):
             if an.find_immediate_parent_tables(expr.op()):
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
                 # plan
-                expr = expr.name('tmp').to_projection()
+                expr = expr.name('tmp').as_table()
                 frame = self.compile(expr, params, **kwargs)
             else:
                 # doesn't have any tables associated so create a plan from a

@@ -252,7 +252,7 @@ class Backend(BaseBackend):
             return translate(node)
         elif isinstance(expr, ir.Column):
             # expression must be named for the projection
-            node = expr.to_projection().op()
+            node = expr.as_table().op()
             return translate(node)
         elif isinstance(expr, ir.Scalar):
             if an.is_scalar_reduction(node):
