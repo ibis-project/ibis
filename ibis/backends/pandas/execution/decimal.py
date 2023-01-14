@@ -56,13 +56,18 @@ def execute_decimal_log2(op, data, **kwargs):
 # exactly
 @execute_node.register((ops.Unary, ops.Negate), decimal.Decimal)
 def execute_decimal_unary(op, data, **kwargs):
-    operation_name = type(op).__name__.lower()
-    math_function = getattr(math, operation_name, None)
+    op_type = type(op)
+    operation_name = op_type.__name__.lower()
     function = getattr(
         decimal.Decimal,
         operation_name,
-        lambda x: decimal.Decimal(math_function(x)),
+        None,
     )
+    if function is None:
+        math_function = getattr(math, operation_name, None)
+        if math_function is None:
+            raise NotImplementedError(f'{op_type.__name__} not supported')
+        function = lambda x: decimal.Decimal(math_function(x))
     try:
         return function(data)
     except decimal.InvalidOperation:

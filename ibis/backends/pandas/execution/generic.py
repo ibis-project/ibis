@@ -200,6 +200,8 @@ def execute_sort_key_series(op, data, _, **kwargs):
 def call_numpy_ufunc(func, op, data, **kwargs):
     if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(data)
 
 

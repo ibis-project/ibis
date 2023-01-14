@@ -408,7 +408,10 @@ def string_length(op):
 @translate.register(ops.StringUnary)
 def string_unary(op):
     arg = translate(op.arg)
-    func = _string_unary[type(op)]
+    func = _string_unary.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
+
     method = getattr(arg.str, func)
     return method()
 
@@ -869,7 +872,9 @@ def day_of_week_name(op):
 @translate.register(ops.Unary)
 def unary(op):
     arg = translate(op.arg)
-    func = _unary[type(op)]
+    func = _unary.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(arg)
 
 
@@ -887,7 +892,9 @@ _comparisons = {
 def comparison(op):
     left = translate(op.left)
     right = translate(op.right)
-    func = _comparisons[type(op)]
+    func = _comparisons.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 
@@ -910,7 +917,9 @@ _bitwise_binops = {
 
 @translate.register(ops.BitwiseBinary)
 def bitwise_binops(op):
-    ufunc = _bitwise_binops[type(op)]
+    ufunc = _bitwise_binops.get(type(op))
+    if ufunc is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     left = translate(op.left)
     right = translate(op.right)
 
@@ -948,7 +957,9 @@ _binops = {
 def binop(op):
     left = translate(op.left)
     right = translate(op.right)
-    func = _binops[type(op)]
+    func = _binops.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 
