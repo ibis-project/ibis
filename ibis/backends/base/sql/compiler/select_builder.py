@@ -99,7 +99,7 @@ class SelectBuilder:
                     table_expr = node.table.to_expr()[[node.name]]
                     result_handler = _get_column(node.name)
                 else:
-                    table_expr = node.to_expr().to_projection()
+                    table_expr = node.to_expr().as_table()
                     result_handler = _get_column(node.name)
 
                 return table_expr.op(), result_handler

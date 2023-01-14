@@ -395,7 +395,7 @@ class MockBackend(BaseSQLBackend):
         try:
             schema = expr.schema()
         except AttributeError:
-            schema = expr.to_projection().schema()
+            schema = expr.as_table().schema()
         df = schema.apply_to(pd.DataFrame([], columns=schema.names))
         if isinstance(expr, ir.Scalar):
             return None

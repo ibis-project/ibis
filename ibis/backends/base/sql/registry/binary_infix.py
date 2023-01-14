@@ -72,7 +72,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
                 ctx.is_foreign_expr(leaf)
                 for leaf in an.find_immediate_parent_tables(op.options)
             ):
-                array = op.options.to_expr().to_projection().to_array().op()
+                array = op.options.to_expr().as_table().to_array().op()
                 right = table_array_view(translator, array)
             else:
                 right = translator.translate(op.options)
