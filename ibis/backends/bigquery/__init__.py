@@ -76,7 +76,7 @@ class Backend(BaseSQLBackend):
             dataset_id=result.path[1:] or params.get("dataset_id", [""])[0],
         )
 
-    def connect(
+    def do_connect(
         self,
         project_id: str | None = None,
         dataset_id: str = "",
@@ -86,7 +86,7 @@ class Backend(BaseSQLBackend):
         auth_external_data: bool = False,
         auth_cache: str = "default",
         partition_column: str | None = "PARTITIONTIME",
-    ) -> "Backend":
+    ):
         """Create a :class:`Backend` for use with Ibis.
 
         Parameters
@@ -168,22 +168,18 @@ class Backend(BaseSQLBackend):
 
         project_id = project_id or default_project_id
 
-        new_backend = self.__class__()
-
         (
-            new_backend.data_project,
-            new_backend.billing_project,
-            new_backend.dataset,
+            self.data_project,
+            self.billing_project,
+            self.dataset,
         ) = parse_project_and_dataset(project_id, dataset_id)
 
-        new_backend.client = bq.Client(
-            project=new_backend.billing_project,
+        self.client = bq.Client(
+            project=self.billing_project,
             credentials=credentials,
             client_info=_create_client_info(application_name),
         )
-        new_backend.partition_column = partition_column
-
-        return new_backend
+        self.partition_column = partition_column
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if not dataset and not self.dataset:
