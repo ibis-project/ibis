@@ -91,7 +91,7 @@ def literal(translator, op):
     elif dtype.is_set():
         typeclass = 'set'
     else:
-        raise NotImplementedError
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
     return literal_formatters[typeclass](translator, op)
 

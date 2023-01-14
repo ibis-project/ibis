@@ -52,6 +52,8 @@ class BigQueryDifference(sql_compiler.Difference):
 
 def find_bigquery_udf(op):
     """Filter which includes only UDFs from expression tree."""
+    if type(op) in BigQueryExprTranslator._rewrites:
+        op = BigQueryExprTranslator._rewrites[type(op)](op)
     if isinstance(op, operations.BigQueryUDFNode):
         result = op
     else:
@@ -118,3 +120,7 @@ class BigQueryCompiler(sql_compiler.Compiler):
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
         return list(toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
+
+
+# Register custom UDFs
+import ibis.backends.bigquery.custom_udfs  # noqa:  F401, E402

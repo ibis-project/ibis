@@ -1,4 +1,3 @@
-USE WAREHOUSE ibis_testing;
 DROP DATABASE IF EXISTS ibis_testing;
 CREATE DATABASE IF NOT EXISTS ibis_testing;
 CREATE SCHEMA IF NOT EXISTS ibis_testing.ibis_testing;
