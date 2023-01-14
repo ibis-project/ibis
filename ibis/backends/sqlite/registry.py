@@ -302,5 +302,6 @@ operation_registry.update(
         ops.Where: fixed_arity(sa.func.iif, 3),
         ops.Pi: fixed_arity(sa.func._ibis_sqlite_pi, 0),
         ops.E: fixed_arity(sa.func._ibis_sqlite_e, 0),
+        ops.TypeOf: unary(sa.func.typeof),
     }
 )

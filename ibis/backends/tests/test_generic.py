@@ -758,3 +758,11 @@ def test_exists(batting, awards_players, method_name):
     expr = batting[method(batting.yearID == awards_players.yearID)]
     result = expr.execute()
     assert not result.empty
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "pyspark"])
+@pytest.mark.notyet(["bigquery", "mysql", "mssql"])
+def test_typeof(alltypes):
+    x = alltypes.string_col.typeof()
+    res = x.execute()
+    assert len(res) == alltypes.count().execute()

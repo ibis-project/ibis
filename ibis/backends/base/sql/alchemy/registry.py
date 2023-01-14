@@ -521,7 +521,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.NotNull: _not_null,
     ops.Negate: _negate,
     ops.Round: _round,
-    ops.TypeOf: unary(sa.func.typeof),
     ops.Literal: _literal,
     ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,

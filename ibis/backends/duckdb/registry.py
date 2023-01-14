@@ -253,6 +253,7 @@ operation_registry.update(
         ops.StringToTimestamp: fixed_arity(sa.func.strptime, 2),
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
+        ops.TypeOf: unary(sa.func.typeof),
     }
 )
 
@@ -263,8 +264,6 @@ _invalid_operations = {
     ops.CumulativeAny,
     ops.CumulativeOp,
     ops.NTile,
-    # ibis.expr.operations.generic
-    ops.TypeOf,
     # ibis.expr.operations.strings
     ops.Capitalize,
     ops.Translate,

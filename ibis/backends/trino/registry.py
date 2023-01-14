@@ -300,6 +300,7 @@ operation_registry.update(
                 sa.func.cast(sa.func.substr(d, 1, 2), sa.VARCHAR(1))
             )
         ),
+        ops.TypeOf: unary(sa.func.typeof),
     }
 )
 
@@ -307,8 +308,6 @@ _invalid_operations = {
     # ibis.expr.operations.analytic
     ops.CumulativeOp,
     ops.NTile,
-    # ibis.expr.operations.generic
-    ops.TypeOf,
     # ibis.expr.operations.logical
     ops.Between,
     # ibis.expr.operations.maps
