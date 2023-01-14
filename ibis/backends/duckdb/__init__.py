@@ -250,7 +250,9 @@ class Backend(BaseAlchemyBackend):
         sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
 SELECT * FROM read_csv({', '.join(args)})"""
 
-        self._load_extensions(["httpfs"])
+        if any(source.startswith(("http://", "https://")) for source in source_list):
+            self._load_extensions(["httpfs"])
+
         with self.begin() as bind:
             bind.execute(sql)
         return self._read(table_name)
