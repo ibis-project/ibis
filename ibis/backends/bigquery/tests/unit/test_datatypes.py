@@ -4,8 +4,7 @@ from pytest import param
 
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import (
-    TypeTranslationContext,
-    UDFContext,
+    UDF_CONTEXT,
     ibis_type_to_bigquery_type,
 )
 
@@ -54,8 +53,7 @@ def test_no_ambiguities():
     ],
 )
 def test_simple(datatype, expected):
-    context = TypeTranslationContext()
-    assert ibis_type_to_bigquery_type(datatype, context) == expected
+    assert ibis_type_to_bigquery_type(datatype) == expected
 
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
@@ -81,5 +79,4 @@ def test_simple_failure_mode(datatype):
     ],
 )
 def test_ibis_type_to_bigquery_type_udf(type, expected):
-    context = UDFContext()
-    assert ibis_type_to_bigquery_type(type, context) == expected
+    assert ibis_type_to_bigquery_type(type, UDF_CONTEXT) == expected
