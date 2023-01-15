@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import itertools
+
 import numpy as np
 import sqlalchemy as sa
 from snowflake.sqlalchemy.custom_types import VARIANT
@@ -48,6 +50,10 @@ def _literal(t, op):
         return sa.func.date_from_parts(value.year, value.month, value.day)
     elif dtype.is_array():
         return sa.func.array_construct(*value)
+    elif dtype.is_map():
+        return sa.func.object_construct_keep_null(
+            *zip(itertools.chain.from_iterable(value.items()))
+        )
     return _postgres_literal(t, op)
 
 
@@ -116,6 +122,19 @@ operation_registry.update(
         ops.StructField: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
         ops.MapKeys: unary(sa.func.object_keys),
+        ops.MapGet: fixed_arity(
+            lambda arg, key, default: sa.func.coalesce(
+                sa.func.get(arg, key), sa.cast(default, VARIANT)
+            ),
+            3,
+        ),
+        ops.MapContains: fixed_arity(
+            lambda arg, key: sa.func.array_contains(
+                sa.func.cast(key, VARIANT), sa.func.object_keys(arg)
+            ),
+            2,
+        ),
+        ops.MapLength: unary(lambda arg: sa.func.array_size(sa.func.object_keys(arg))),
         ops.BitwiseLeftShift: fixed_arity(sa.func.bitshiftleft, 2),
         ops.BitwiseRightShift: fixed_arity(sa.func.bitshiftright, 2),
         ops.Ln: unary(sa.func.ln),
@@ -196,8 +215,6 @@ _invalid_operations = {
     # ibis.expr.operations.array
     ops.ArrayRepeat,
     ops.Unnest,
-    # ibis.expr.operations.maps
-    ops.MapKeys,
     # ibis.expr.operations.reductions
     ops.All,
     ops.Any,

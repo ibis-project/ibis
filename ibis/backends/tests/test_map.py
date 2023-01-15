@@ -5,21 +5,15 @@ import ibis
 import ibis.expr.datatypes as dt
 
 pytestmark = [
-    pytest.mark.never(["sqlite", "mysql"], reason="No map support"),
-    pytest.mark.notimpl(
-        [
-            "duckdb",
-            "postgres",
-            "impala",
-            "datafusion",
-            "pyspark",
-            "snowflake",
-            "polars",
-            "mssql",
-        ],
-        reason="Not implemented yet",
+    pytest.mark.never(
+        ["sqlite", "mysql", "mssql", "postgres"], reason="No map support"
     ),
-    pytest.mark.notyet(["bigquery"], reason="BigQuery doesn't implement map types"),
+    pytest.mark.notyet(
+        ["bigquery", "impala"], reason="backend doesn't implement map types"
+    ),
+    pytest.mark.notimpl(
+        ["duckdb", "datafusion", "pyspark", "polars"], reason="Not implemented yet"
+    ),
 ]
 
 
@@ -49,6 +43,7 @@ def test_literal_map_values(con):
 
 
 @pytest.mark.notimpl(["trino"])
+@pytest.mark.notyet(["snowflake"])
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({'a': 1, 'b': 2})
     a = ibis.literal('a')
@@ -78,6 +73,7 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notyet(["snowflake"])
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row['string_col']: row['int_col']}, axis=1)
@@ -88,12 +84,14 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
     backend.assert_series_equal(result, series)
 
 
+@pytest.mark.notyet(["snowflake"])
 def test_map_column_contains_key_column(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = expr.contains(alltypes.string_col).name('tmp').execute()
     assert result.all()
 
 
+@pytest.mark.notyet(["snowflake"])
 def test_literal_map_merge(con):
     a = ibis.literal({'a': 0, 'b': 2})
     b = ibis.literal({'a': 1, 'c': 3})
@@ -126,6 +124,7 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notyet(["snowflake"])
 def test_map_construction(con, alltypes, df):
     expr = ibis.map(['a', 'b'], [1, 2])
     result = con.execute(expr.name('tmp'))
