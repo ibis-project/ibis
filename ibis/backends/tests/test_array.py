@@ -22,7 +22,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -35,7 +35,6 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["snowflake"])
 def test_array_scalar(con):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
@@ -48,7 +47,7 @@ def test_array_scalar(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
+@pytest.mark.notimpl(["polars", "datafusion", "snowflake"])
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -61,7 +60,7 @@ def test_array_repeat(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -74,13 +73,12 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
 
 
-@pytest.mark.notimpl(["snowflake"])
 def test_list_literal(con):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -91,7 +89,6 @@ def test_list_literal(con):
     assert np.array_equal(result, arr)
 
 
-@pytest.mark.notimpl(["snowflake"])
 def test_np_array_literal(con):
     arr = np.array([1, 2, 3])
     expr = ibis.literal(arr)
@@ -103,7 +100,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["snowflake", "polars", "datafusion"])
+@pytest.mark.notimpl(["polars", "datafusion"])
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -372,7 +369,7 @@ def test_unnest_default_name(con):
         (-3, -1),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "polars", "snowflake"])
+@pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_array_slice(con, start, stop):
     array_types = con.tables.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
