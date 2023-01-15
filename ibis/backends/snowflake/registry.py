@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import numpy as np
 import sqlalchemy as sa
+from snowflake.sqlalchemy.custom_types import VARIANT
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     geospatial_functions,
     reduction,
+    unary,
 )
 from ibis.backends.postgres.registry import _literal as _postgres_literal
 from ibis.backends.postgres.registry import operation_registry as _operation_registry
@@ -161,6 +163,8 @@ operation_registry.update(
             ),
             1,
         ),
+        # snowflake typeof only accepts VARIANT
+        ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.cast(arg, VARIANT))),
     }
 )
 
@@ -179,8 +183,6 @@ _invalid_operations = {
     ops.ArrayRepeat,
     ops.ArraySlice,
     ops.Unnest,
-    # ibis.expr.operations.generic
-    ops.TypeOf,
     # ibis.expr.operations.maps
     ops.MapKeys,
     # ibis.expr.operations.reductions
