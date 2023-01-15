@@ -8,6 +8,7 @@ import sqlalchemy as sa
 import toolz
 from snowflake.sqlalchemy import URL
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import (
@@ -38,6 +39,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
         ops.Lead,
     )
     _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
+    _ignore_cast_types = (dt.Map, dt.Array)
 
 
 class SnowflakeCompiler(AlchemyCompiler):
