@@ -73,4 +73,4 @@ class Backend(BaseAlchemyBackend):
         name: str,
         definition: sa.sql.compiler.Compiled,
     ) -> str:
-        return f"CREATE OR ALTER VIEW {name} AS {definition}"
+        yield f"CREATE OR ALTER VIEW {name} AS {definition}"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import atexit
 import contextlib
 import getpass
 import warnings
@@ -559,7 +560,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
         )
 
     def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        pass
+        query = f"DROP VIEW IF EXISTS {name}"
+
+        def drop(self, raw_name: str, query: str):
+            with self.con.begin() as con:
+                con.execute(query)
+            self._temp_views.discard(raw_name)
+
+        atexit.register(drop, self, raw_name, query)
 
     def _get_compiled_statement(
         self,
@@ -570,17 +578,18 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if compile_kwargs is None:
             compile_kwargs = {}
         compiled = definition.compile(compile_kwargs=compile_kwargs)
-        defn = self._get_temp_view_definition(name, definition=compiled)
-        return defn, compiled.params
+        lines = self._get_temp_view_definition(name, definition=compiled)
+        return lines, compiled.params
 
     def _create_temp_view(self, view: sa.Table, definition: sa.sql.Selectable) -> None:
         raw_name = view.name
         if raw_name not in self._temp_views and raw_name in self.list_tables():
             raise ValueError(f"{raw_name} already exists as a table or view")
         name = self.con.dialect.identifier_preparer.quote_identifier(view.name)
-        compiled, params = self._get_compiled_statement(definition, name)
+        lines, params = self._get_compiled_statement(definition, name)
         with self.begin() as con:
-            con.execute(compiled, **params)
+            for line in lines:
+                con.execute(line, **params)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
 

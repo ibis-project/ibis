@@ -18,15 +18,19 @@ import datetime
 import sqlite3
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterator
 
 import sqlalchemy as sa
+import toolz
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
+import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+from ibis.backends.sqlite.datatypes import parse
 from ibis.expr.schema import datatype
 
 if TYPE_CHECKING:
@@ -216,9 +220,49 @@ class Backend(BaseAlchemyBackend):
     def _current_schema(self) -> str | None:
         return self.current_database
 
-    def _metadata(self, _: str) -> Iterable[tuple[str, dt.DataType]]:
-        raise ValueError(
-            "The SQLite backend cannot infer schemas from raw SQL - "
-            "please specify the schema directly when calling `.sql` "
-            "using the `schema` keyword argument"
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        view = f"__ibis_sqlite_metadata{util.guid()}"
+
+        with self.begin() as con:
+            # create a view that should only be visible in this transaction
+            con.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
+
+            # extract table info from the view
+            table_info = con.execute(f"PRAGMA table_info({view})")
+
+            # get names and not nullables
+            names, notnulls, raw_types = zip(
+                *toolz.pluck(["name", "notnull", "type"], table_info)
+            )
+
+            # get the type of the first row if no affinity was returned in
+            # `raw_types`; assume that reflects the rest of the rows
+            type_queries = ", ".join(map("typeof({})".format, names))
+            single_row_types = con.execute(
+                f"SELECT {type_queries} FROM {view} LIMIT 1"
+            ).fetchone()
+            for name, notnull, raw_typ, typ in zip(
+                names, notnulls, raw_types, single_row_types
+            ):
+                ibis_type = parse(raw_typ or typ)
+                yield name, ibis_type(nullable=not notnull)
+
+            # drop the view when we're done with it
+            con.execute(f"DROP VIEW IF EXISTS {view}")
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a SQLite SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
+
+    def _get_temp_view_definition(
+        self,
+        name: str,
+        definition: sa.sql.compiler.Compiled,
+    ) -> str:
+        yield f"DROP VIEW IF EXISTS {name}"
+        yield f"CREATE VIEW {name} AS {definition}"
+
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
         )
