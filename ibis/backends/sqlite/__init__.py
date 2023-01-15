@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
+import toolz
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
@@ -32,8 +33,10 @@ from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+from ibis.backends.sqlite.datatypes import parse
 from ibis.expr.schema import datatype
 
+metadata_aux_view_ix = 1457435
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
     """Convert a `str` to a `datetime` according to SQLite's rules.
@@ -214,9 +217,25 @@ class Backend(BaseAlchemyBackend):
     def _current_schema(self) -> str | None:
         return self.current_database
 
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        global metadata_aux_view_ix
+        metadata_aux_view_ix += 1
+        view = f"___IBIS_METADATA_EXTRACTION_VIEW_{metadata_aux_view_ix}"
+
+
+        con = self.con.connect()
+        con.execute(f"CREATE TEMP VIEW {view} AS {query}")
+
+        for name, type, notnull in toolz.pluck(
+            ["name", "type", "notnull"],
+            con.execute(f"PRAGMA table_info({view})"),
+        ):
+            ibis_type = parse(type)
+            yield name, ibis_type(nullable=not notnull)
+
+        con.execute(f"DROP VIEW {view}")
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        raise ValueError(
-            "The SQLite backend cannot infer schemas from raw SQL - "
-            "please specify the schema directly when calling `.sql` "
-            "using the `schema` keyword argument"
-        )
+        """Return an ibis Schema from a SQLite SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
+
