@@ -140,7 +140,7 @@ class Backend(BaseAlchemyBackend):
         name: str,
         definition: sa.sql.compiler.Compiled,
     ) -> str:
-        return f"CREATE OR REPLACE VIEW {name} AS {definition}"
+        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
 
 
 # TODO(kszucs): unsigned integers

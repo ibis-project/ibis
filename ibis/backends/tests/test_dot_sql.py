@@ -5,10 +5,7 @@ from pytest import param
 import ibis
 from ibis import _, util
 
-REQUIRES_EXPLICIT_SCHEMA = {"sqlite"}
-table_dot_sql_notimpl = pytest.mark.notimpl(
-    ["bigquery", "sqlite", "clickhouse", "impala"]
-)
+table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "clickhouse", "impala"])
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake"],
@@ -33,8 +30,6 @@ pytestmark = pytest.mark.xdist_group("dot_sql")
     ],
 )
 def test_con_dot_sql(backend, con, schema):
-    if schema is None and con.name in REQUIRES_EXPLICIT_SCHEMA:
-        pytest.xfail(f"{con.name} requires an explicit schema for .sql")
     alltypes = con.table("functional_alltypes")
     # pull out the quoted name
     name = alltypes.op().name
