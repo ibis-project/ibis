@@ -99,15 +99,15 @@ operation_registry.update(
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
         ops.StructField: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
-        ops.MapKeys: fixed_arity(sa.func.object_keys, 1),
+        ops.MapKeys: unary(sa.func.object_keys),
         ops.BitwiseLeftShift: fixed_arity(sa.func.bitshiftleft, 2),
         ops.BitwiseRightShift: fixed_arity(sa.func.bitshiftright, 2),
-        ops.Ln: fixed_arity(sa.func.ln, 1),
-        ops.Log2: fixed_arity(lambda arg: sa.func.log(2, arg), 1),
-        ops.Log10: fixed_arity(lambda arg: sa.func.log(10, arg), 1),
+        ops.Ln: unary(sa.func.ln),
+        ops.Log2: unary(lambda arg: sa.func.log(2, arg)),
+        ops.Log10: unary(lambda arg: sa.func.log(10, arg)),
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
-        ops.IsInf: fixed_arity(lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF)), 1),
-        ops.IsNan: fixed_arity(lambda arg: arg == _SF_NAN, 1),
+        ops.IsInf: unary(lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF))),
+        ops.IsNan: unary(lambda arg: arg == _SF_NAN),
         ops.Literal: _literal,
         ops.Round: _round,
         ops.Modulus: fixed_arity(sa.func.mod, 2),
@@ -125,43 +125,38 @@ operation_registry.update(
         # time and dates
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
-        ops.DayOfWeekName: fixed_arity(_day_of_week_name, 1),
-        ops.ExtractProtocol: fixed_arity(
+        ops.DayOfWeekName: unary(_day_of_week_name),
+        ops.ExtractProtocol: unary(
             lambda arg: sa.func.nullif(
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "scheme")), ""
-            ),
-            1,
+            )
         ),
-        ops.ExtractAuthority: fixed_arity(
+        ops.ExtractAuthority: unary(
             lambda arg: sa.func.concat_ws(
                 ":",
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "host")),
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "port")),
-            ),
-            1,
+            )
         ),
-        ops.ExtractFile: fixed_arity(
+        ops.ExtractFile: unary(
             lambda arg: sa.func.concat_ws(
                 "?",
                 "/"
                 + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "query")),
-            ),
-            1,
+            )
         ),
-        ops.ExtractPath: fixed_arity(
+        ops.ExtractPath: unary(
             lambda arg: (
                 "/" + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path"))
-            ),
-            1,
+            )
         ),
         ops.ExtractQuery: _extract_url_query,
-        ops.ExtractFragment: fixed_arity(
+        ops.ExtractFragment: unary(
             lambda arg: sa.func.nullif(
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "fragment")),
                 "",
-            ),
-            1,
+            )
         ),
         # snowflake typeof only accepts VARIANT
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.cast(arg, VARIANT))),
