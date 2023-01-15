@@ -46,6 +46,8 @@ def _literal(t, op):
             return sa.func.timestamp_from_parts(*args)
     elif dtype.is_date():
         return sa.func.date_from_parts(value.year, value.month, value.day)
+    elif dtype.is_array():
+        return sa.func.array_construct(*value)
     return _postgres_literal(t, op)
 
 
@@ -86,6 +88,22 @@ def _extract_url_query(t, op):
         r = sa.func.get(parsed_url, 'query')
 
     return sa.func.nullif(sa.func.as_varchar(r), "")
+
+
+def _array_slice(t, op):
+    arg = t.translate(op.arg)
+
+    if (start := op.start) is not None:
+        start = t.translate(start)
+    else:
+        start = 0
+
+    if (stop := op.stop) is not None:
+        stop = t.translate(stop)
+    else:
+        stop = sa.func.array_size(arg)
+
+    return sa.func.array_slice(t.translate(op.arg), start, stop)
 
 
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
@@ -158,6 +176,13 @@ operation_registry.update(
         ),
         # snowflake typeof only accepts VARIANT
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.cast(arg, VARIANT))),
+        ops.ArrayIndex: fixed_arity(sa.func.get, 2),
+        ops.ArrayLength: fixed_arity(sa.func.array_size, 1),
+        ops.ArrayConcat: fixed_arity(sa.func.array_cat, 2),
+        ops.ArrayColumn: lambda t, op: sa.func.array_construct(
+            *map(t.translate, op.cols)
+        ),
+        ops.ArraySlice: _array_slice,
     }
 )
 
@@ -169,12 +194,7 @@ _invalid_operations = {
     ops.NTile,
     ops.NthValue,
     # ibis.expr.operations.array
-    ops.ArrayColumn,
-    ops.ArrayConcat,
-    ops.ArrayIndex,
-    ops.ArrayLength,
     ops.ArrayRepeat,
-    ops.ArraySlice,
     ops.Unnest,
     # ibis.expr.operations.maps
     ops.MapKeys,
