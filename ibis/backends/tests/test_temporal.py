@@ -636,7 +636,8 @@ def test_integer_to_timestamp(backend, con, unit):
             '%m/%d/%y',
             id="mysql_format",
             marks=pytest.mark.never(
-                ["pyspark"], reason="datetime formatting style not supported"
+                ["pyspark", "snowflake"],
+                reason="datetime formatting style not supported",
             ),
         ),
         param(
@@ -658,7 +659,6 @@ def test_integer_to_timestamp(backend, con, unit):
         'sqlite',
         'impala',
         'datafusion',
-        'snowflake',
         'mssql',
     ]
 )

@@ -225,6 +225,7 @@ operation_registry.update(
         ops.BitOr: reduction(sa.func.bitor_agg),
         ops.BitXor: reduction(sa.func.bitxor_agg),
         ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
+        ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
     }
 )
 
@@ -250,7 +251,6 @@ _invalid_operations = {
     # ibis.expr.operations.temporal
     ops.ExtractMillisecond,
     ops.IntervalFromInteger,
-    ops.StringToTimestamp,
     ops.TimestampDiff,
     ops.TimestampFromUNIX,
     ops.TimestampFromYMDHMS,
