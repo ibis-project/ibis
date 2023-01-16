@@ -250,7 +250,7 @@ class ExprTranslator:
         if dtype.is_struct():
             literal = ibis.struct(raw_value, type=dtype)
         elif dtype.is_map():
-            literal = ibis.map(raw_value, type=dtype)
+            literal = ibis.map(list(raw_value.keys()), list(raw_value.values()))
         else:
             literal = ibis.literal(raw_value, type=dtype)
         return self.translate(literal.op())
