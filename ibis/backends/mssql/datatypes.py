@@ -31,7 +31,7 @@ def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
             typ = dt.Float32
         else:
             typ = dt.Float64
-    return typ(nullable=True)
+    return typ(nullable=col["is_nullable"])
 
 
 # The following MSSQL 2022 types are not supported: 'XML', 'SQL_VARIANT', 'SYSNAME', 'HIERARCHYID',

@@ -46,7 +46,7 @@ DB_TYPES = [
     ('UNIQUEIDENTIFIER', dt.uuid),
     ('GEOMETRY', dt.geometry),
     ('GEOGRAPHY', dt.geography),
-    ('TIMESTAMP', dt.binary),
+    ('TIMESTAMP', dt.binary(nullable=False)),
 ]
 
 
@@ -60,10 +60,12 @@ DB_TYPES = [
 def test_get_schema_from_query(con, server_type, expected_type):
     raw_name = f"tmp_{ibis.util.guid()}"
     name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    expected_schema = ibis.schema(dict(x=expected_type))
     try:
         con.raw_sql(f"CREATE TABLE {name} (x {server_type})")
-        expected_schema = ibis.schema(dict(x=expected_type))
         result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+        t = con.table(raw_name)
+        assert t.schema() == expected_schema
         assert result_schema == expected_schema
     finally:
         con.raw_sql(f"DROP TABLE IF EXISTS {name}")
