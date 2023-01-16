@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import itertools
-import json
 
 import numpy as np
 import sqlalchemy as sa
-from snowflake.sqlalchemy import VARIANT
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import (
@@ -97,6 +95,7 @@ def _extract_url_query(t, op):
     return sa.func.nullif(sa.func.as_varchar(r), "")
 
 
+<<<<<<< HEAD
 def _array_slice(t, op):
     arg = t.translate(op.arg)
 
@@ -120,13 +119,14 @@ def _map(_, op):
     ):
         raise TypeError("Both keys and values of an `ibis.map` call must be literals")
 
-    obj = dict(zip(keys.value, values.value))
-    return sa.func.to_object(sa.func.parse_json(json.dumps(obj, separators=",:")))
+    return sa.object_construct_keep_null(
+        *itertools.chain.from_iterable(zip(keys.value, values.value))
+    )
 
 
-_SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
-_SF_NEG_INF = -_SF_POS_INF
-_SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
+_SF_POS_INF = sa.func.to_double("Inf")
+_SF_NEG_INF = sa.func.to_double("-Inf")
+_SF_NAN = sa.func.to_double("NaN")
 
 operation_registry.update(
     {
@@ -136,13 +136,13 @@ operation_registry.update(
         ops.MapKeys: unary(sa.func.object_keys),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(
-                sa.func.get(arg, key), sa.cast(default, VARIANT)
+                sa.func.get(arg, key), sa.func.to_variant(default)
             ),
             3,
         ),
         ops.MapContains: fixed_arity(
             lambda arg, key: sa.func.array_contains(
-                sa.func.cast(key, VARIANT), sa.func.object_keys(arg)
+                sa.func.to_variant(key), sa.func.object_keys(arg)
             ),
             2,
         ),
@@ -163,9 +163,7 @@ operation_registry.update(
         # numbers
         ops.RandomScalar: fixed_arity(
             lambda: sa.func.uniform(
-                sa.cast(0, sa.dialects.postgresql.FLOAT()),
-                sa.cast(1, sa.dialects.postgresql.FLOAT()),
-                sa.func.random(),
+                sa.func.to_double(0.0), sa.func.to_double(1.0), sa.func.random()
             ),
             0,
         ),
@@ -206,7 +204,6 @@ operation_registry.update(
             )
         ),
         # snowflake typeof only accepts VARIANT
-        ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.cast(arg, VARIANT))),
         ops.ArrayIndex: fixed_arity(sa.func.get, 2),
         ops.ArrayLength: fixed_arity(sa.func.array_size, 1),
         ops.ArrayConcat: fixed_arity(sa.func.array_cat, 2),
@@ -217,6 +214,7 @@ operation_registry.update(
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Map: _map,
+        ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
         ops.All: reduction(sa.func.booland_agg),
         ops.NotAll: reduction(lambda arg: ~sa.func.booland_agg(arg)),
         ops.Any: reduction(sa.func.boolor_agg),
