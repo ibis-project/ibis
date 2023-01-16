@@ -135,26 +135,24 @@ def test_scalar_param(alltypes, df, value, dtype, col):
 
 
 @pytest.mark.parametrize(
-    ("value", "dtype"),
-    [
-        param("2009-01-20", "date", id="string_date"),
-        param(datetime.date(2009, 1, 20), "date", id="date_date"),
-        param(datetime.datetime(2009, 1, 20), "date", id="datetime_date"),
-    ],
+    "value",
+    ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
+    ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(
-    ["mysql", "polars", "dask", "datafusion", "sqlite", "impala", "mssql"]
-)
-def test_scalar_param_date(backend, alltypes, value, dtype):
-    param = ibis.param(dtype)
-    ds_col = alltypes.date_string_col.split("/")
-    month, day, year = ds_col[0], ds_col[1], ds_col[2]
-    date_col = ibis.literal("-").join(["20" + year, month, day]).cast(dtype)
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+def test_scalar_param_date(backend, alltypes, value):
+    param = ibis.param("date")
+    ds_col = alltypes.date_string_col
+    month = ds_col[:2]
+    day = ds_col[3:5]
+    year = "20" + ds_col[6:8]
+    date_col = (year + "-" + month + "-" + day).cast(param.type())
 
     base = alltypes.mutate(date_col=date_col)
     expr = (
         alltypes.mutate(date_col=date_col)
-        .filter([lambda t: t.date_col == param])
+        .filter(lambda t: t.date_col == param)
         .drop("date_col")
     )
 
