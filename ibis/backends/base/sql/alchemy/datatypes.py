@@ -232,6 +232,7 @@ def sa_integer(_, satype, nullable=True):
 
 
 @dt.dtype.register(Dialect, mysql.TINYINT)
+@dt.dtype.register(MSDialect, mssql.TINYINT)
 def sa_mysql_tinyint(_, satype, nullable=True):
     return dt.Int8(nullable=nullable)
 
@@ -242,8 +243,14 @@ def sa_mysql_bit(_, satype, nullable=True):
 
 
 @dt.dtype.register(Dialect, sa.types.BigInteger)
+@dt.dtype.register(MSDialect, mssql.MONEY)
 def sa_bigint(_, satype, nullable=True):
     return dt.Int64(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.SMALLMONEY)
+def sa_mssql_smallmoney(_, satype, nullable=True):
+    return dt.Int32(nullable=nullable)
 
 
 @dt.dtype.register(Dialect, sa.REAL)
@@ -259,8 +266,14 @@ def sa_double(_, satype, nullable=True):
 
 
 @dt.dtype.register(PGDialect, postgresql.UUID)
+@dt.dtype.register(MSDialect, mssql.UNIQUEIDENTIFIER)
 def sa_uuid(_, satype, nullable=True):
     return dt.UUID(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, (mssql.BINARY, mssql.TIMESTAMP))
+def sa_mssql_timestamp(_, satype, nullable=True):
+    return dt.Binary(nullable=nullable)
 
 
 @dt.dtype.register(PGDialect, postgresql.MACADDR)
