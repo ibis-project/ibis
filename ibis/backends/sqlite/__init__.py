@@ -18,21 +18,20 @@ import datetime
 import sqlite3
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
-if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
-    import ibis.expr.types as ir
-
-import ibis.expr.schema as sch
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.expr.schema import datatype
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
@@ -217,7 +216,7 @@ class Backend(BaseAlchemyBackend):
     def _current_schema(self) -> str | None:
         return self.current_database
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
+    def _metadata(self, _: str) -> Iterable[tuple[str, dt.DataType]]:
         raise ValueError(
             "The SQLite backend cannot infer schemas from raw SQL - "
             "please specify the schema directly when calling `.sql` "

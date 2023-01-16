@@ -5,13 +5,12 @@ from __future__ import annotations
 import atexit
 import contextlib
 import warnings
-from typing import Literal
+from typing import Iterable, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
@@ -121,15 +120,14 @@ class Backend(BaseAlchemyBackend):
                 except Exception as e:  # noqa: BLE001
                     warnings.warn(f"Couldn't reset MySQL timezone: {str(e)}")
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Infer the schema of `query`."""
-        result = self.con.execute(f"SELECT * FROM ({query}) _ LIMIT 0")
-        cursor = result.cursor
-        fields = [
-            (field.name, _type_from_cursor_info(descr, field))
-            for descr, field in zip(cursor.description, cursor._result.fields)
-        ]
-        return sch.Schema.from_tuples(fields)
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        with self.con.begin() as con:
+            result = con.execute(f"SELECT * FROM ({query}) _ LIMIT 0")
+            cursor = result.cursor
+            yield from (
+                (field.name, _type_from_cursor_info(descr, field))
+                for descr, field in zip(cursor.description, cursor._result.fields)
+            )
 
     def _get_temp_view_definition(
         self,

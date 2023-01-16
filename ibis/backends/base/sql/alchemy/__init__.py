@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import abc
 import contextlib
 import getpass
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
 import sqlalchemy as sa
 
@@ -38,6 +39,8 @@ from ibis.backends.base.sql.alchemy.translator import (
 
 if TYPE_CHECKING:
     import pandas as pd
+
+    import ibis.expr.datatypes as dt
 
 
 __all__ = (
@@ -554,3 +557,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
             con.execute(compiled, **params)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
+
+    @abc.abstractmethod
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        ...
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a backend-specific SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
