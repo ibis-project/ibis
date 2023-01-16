@@ -162,11 +162,7 @@ class Backend(BaseAlchemyBackend):
             if type(column_info["type"]) is TIMESTAMP:
                 column_info["type"] = ISODATETIME()
 
-    def attach(
-        self,
-        name: str,
-        path: str | Path,
-    ) -> None:
+    def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.
 
         Parameters
@@ -174,10 +170,17 @@ class Backend(BaseAlchemyBackend):
         name
             Database name within SQLite
         path
-            Path to sqlite3 database file
+            Path to sqlite3 database files
+
+        Examples
+        --------
+        >>> con1 = ibis.sqlite.connect("original.db")
+        >>> con2 = ibis.sqlite.connect("new.db")
+        >>> con1.attach("new", "new.db")
+        >>> con1.list_tables(database="new")
         """
         quoted_name = self.con.dialect.identifier_preparer.quote(name)
-        self.raw_sql(f"ATTACH DATABASE {path!r} AS {quoted_name}")
+        self.raw_sql(f"ATTACH DATABASE {str(path)!r} AS {quoted_name}")
 
     def _get_sqla_table(self, name, schema=None, autoload=True):
         return sa.Table(
