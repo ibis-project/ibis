@@ -84,7 +84,7 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars", "trino"]
+    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars"]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
