@@ -587,7 +587,10 @@ def test_reduction_ops(
                     ["snowflake"],
                     reason="backend doesn't implement array of quantiles as input",
                 ),
-                mark.notyet(["clickhouse"], reason="sqlglot throws a parse error"),
+                # strict=False untile quantilesIf works
+                mark.notyet(
+                    ["clickhouse"], reason="sqlglot throws a parse error", strict=False
+                ),
                 mark.never(
                     ["pyspark", "trino"],
                     reason="backend implements approximate quantiles",
