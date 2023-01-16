@@ -221,6 +221,9 @@ operation_registry.update(
         ops.NotAll: reduction(lambda arg: ~sa.func.booland_agg(arg)),
         ops.Any: reduction(sa.func.boolor_agg),
         ops.NotAny: reduction(lambda arg: ~sa.func.boolor_agg(arg)),
+        ops.BitAnd: reduction(sa.func.bitand_agg),
+        ops.BitOr: reduction(sa.func.bitor_agg),
+        ops.BitXor: reduction(sa.func.bitxor_agg),
     }
 )
 
@@ -235,9 +238,6 @@ _invalid_operations = {
     ops.ArrayRepeat,
     ops.Unnest,
     # ibis.expr.operations.reductions
-    ops.BitAnd,
-    ops.BitOr,
-    ops.BitXor,
     ops.MultiQuantile,
     # ibis.expr.operations.strings
     ops.FindInSet,

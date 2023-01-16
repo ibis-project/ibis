@@ -456,9 +456,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id='bit_and',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -467,9 +465,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_or.reduce(t.bigint_col[where].values),
             id='bit_or',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -478,9 +474,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_xor.reduce(t.bigint_col[where].values),
             id='bit_xor',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
