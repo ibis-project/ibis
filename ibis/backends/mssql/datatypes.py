@@ -38,7 +38,7 @@ def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
 _type_mapping = {
     # Exact numerics
     'BIGINT': dt.Int64,
-    'BIT': dt.Int8,
+    'BIT': dt.Boolean,
     'DECIMAL': dt.Decimal,
     'INT': dt.Int32,
     'MONEY': dt.Int64,

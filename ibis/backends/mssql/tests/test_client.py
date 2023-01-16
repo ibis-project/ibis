@@ -7,7 +7,7 @@ import ibis.expr.datatypes as dt
 DB_TYPES = [
     # Exact numbers
     ('BIGINT', dt.int64),
-    ('BIT', dt.int8),
+    ('BIT', dt.boolean),
     ('DECIMAL', dt.Decimal(precision=18, scale=0)),
     ('DECIMAL(5, 2)', dt.Decimal(precision=5, scale=2)),
     ('INT', dt.int32),
