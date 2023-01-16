@@ -4,7 +4,8 @@ import functools
 from typing import Iterable
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql, postgresql, sqlite
+from sqlalchemy.dialects import mssql, mysql, postgresql, sqlite
+from sqlalchemy.dialects.mssql.base import MSDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
@@ -233,6 +234,11 @@ def sa_integer(_, satype, nullable=True):
 @dt.dtype.register(Dialect, mysql.TINYINT)
 def sa_mysql_tinyint(_, satype, nullable=True):
     return dt.Int8(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.BIT)
+def sa_mysql_bit(_, satype, nullable=True):
+    return dt.Boolean(nullable=nullable)
 
 
 @dt.dtype.register(Dialect, sa.types.BigInteger)
