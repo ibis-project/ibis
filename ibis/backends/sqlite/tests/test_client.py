@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 import numpy as np
 import pandas.testing as tm
@@ -44,7 +45,7 @@ def test_list_tables(con):
 def test_attach_file(dbpath):
     client = ibis.sqlite.connect(None)
 
-    client.attach('foo', dbpath)
+    client.attach('foo', Path(dbpath))
     client.attach('bar', dbpath)
 
     foo_tables = client.list_tables(database='foo')
