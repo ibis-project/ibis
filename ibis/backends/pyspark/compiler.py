@@ -913,8 +913,8 @@ def compile_capitalize(t, op, **kwargs):
 
 
 @compiles(ops.Substring)
-def compile_substring(t, op, **kwargs):
-    src_column = t.translate(op.arg, **kwargs)
+def compile_substring(t, op, raw: bool = False, **kwargs):
+    src_column = t.translate(op.arg, raw=raw, **kwargs)
     start = t.translate(op.start, **kwargs, raw=True) + 1
     length = t.translate(op.length, **kwargs, raw=True)
 
