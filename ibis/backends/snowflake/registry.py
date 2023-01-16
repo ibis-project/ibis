@@ -226,6 +226,9 @@ operation_registry.update(
         ops.BitXor: reduction(sa.func.bitxor_agg),
         ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
         ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
+        ops.RegexExtract: fixed_arity(sa.func.regexp_substr, 3),
+        ops.RegexSearch: fixed_arity(lambda left, right: left.op('REGEXP')(right), 2),
+        ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
     }
 )
 
@@ -243,9 +246,6 @@ _invalid_operations = {
     ops.MultiQuantile,
     # ibis.expr.operations.strings
     ops.FindInSet,
-    ops.RegexExtract,
-    ops.RegexReplace,
-    ops.RegexSearch,
     # ibis.expr.operations.structs
     ops.StructField,
     # ibis.expr.operations.temporal
