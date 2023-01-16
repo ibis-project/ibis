@@ -213,6 +213,7 @@ operation_registry.update(
         ops.ArrayColumn: lambda t, op: sa.func.array_construct(
             *map(t.translate, op.cols)
         ),
+        ops.ArraySlice: _array_slice,
         ops.Map: _map,
     }
 )
