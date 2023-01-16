@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import snowflake.connector as sfc
 import sqlalchemy as sa
+import toolz
 from snowflake.sqlalchemy import URL
 
 import ibis.expr.operations as ops
@@ -19,6 +20,8 @@ from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
     import pandas as pd
+
+    import ibis.expr.datatypes as dt
 
 
 _NATIVE_ARROW = True
@@ -117,16 +120,16 @@ class Backend(BaseAlchemyBackend):
                 return schema.apply_to(df)
         return super().fetch_from_cursor(cursor, schema)
 
-    def _get_schema_using_query(self, query):
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as bind:
             result = bind.execute(f"SELECT * FROM ({query}) t0 LIMIT 0")
             info_rows = bind.execute(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
 
-        schema = {}
-        for name, raw_type, _, null, *_ in info_rows:
-            typ = parse(raw_type)
-            schema[name] = typ(nullable=null.upper() == "Y")
-        return sch.Schema.from_dict(schema)
+            for name, raw_type, null in toolz.pluck(
+                ["name", "type", "null?"], info_rows
+            ):
+                typ = parse(raw_type)
+                yield name, typ(nullable=null.upper() == "Y")
 
     def list_databases(self, like=None) -> list[str]:
         databases = [

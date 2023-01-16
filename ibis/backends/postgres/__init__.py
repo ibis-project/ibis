@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
 
-import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
 from ibis.backends.postgres.datatypes import _get_type
 from ibis.backends.postgres.udf import udf as _udf
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
 
 
 class Backend(BaseAlchemyBackend):
@@ -172,7 +174,7 @@ class Backend(BaseAlchemyBackend):
             language=language,
         )
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         raw_name = util.guid()
         name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
         type_info_sql = f"""\
@@ -187,12 +189,9 @@ ORDER BY attnum
 """
         with self.begin() as con:
             con.execute(f"CREATE TEMPORARY VIEW {name} AS {query}")
-            try:
-                type_info = con.execute(type_info_sql).fetchall()
-            finally:
-                con.execute(f"DROP VIEW {name}")
-        tuples = [(col, _get_type(typestr)) for col, typestr in type_info]
-        return sch.Schema.from_tuples(tuples)
+            type_info = con.execute(type_info_sql)
+            yield from ((col, _get_type(typestr)) for col, typestr in type_info)
+            con.execute(f"DROP VIEW IF EXISTS {name}")
 
     def _get_temp_view_definition(
         self,

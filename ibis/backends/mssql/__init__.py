@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import atexit
 import contextlib
-from typing import Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
 
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
-from ibis.backends.mssql.datatypes import _FieldDescription, _type_from_result_set_info
+from ibis.backends.mssql.datatypes import _type_from_result_set_info
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
 
 
 class Backend(BaseAlchemyBackend):
@@ -52,17 +54,12 @@ class Backend(BaseAlchemyBackend):
             finally:
                 bind.execute(f"SET DATEFIRST {previous_datefirst}")
 
-    def _get_schema_using_query(self, query):
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as bind:
-            result = bind.execute(
+            for column in bind.execute(
                 f"EXEC sp_describe_first_result_set @tsql = N'{query}';"
-            )
-            result_set_info: list[_FieldDescription] = result.mappings().fetchall()
-        fields = [
-            (column['name'], _type_from_result_set_info(column))
-            for column in result_set_info
-        ]
-        return sch.Schema.from_tuples(fields)
+            ).mappings():
+                yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
         self,

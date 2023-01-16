@@ -8,7 +8,6 @@ import sqlalchemy as sa
 import toolz
 
 import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.trino.compiler import TrinoSQLCompiler
@@ -61,8 +60,3 @@ class Backend(BaseAlchemyBackend):
             for name, type in toolz.pluck(["Column Name", "Type"], rows):
                 ibis_type = parse(type)
                 yield name, ibis_type(nullable=True)
-
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a DuckDB SQL string."""
-        pairs = self._metadata(query)
-        return sch.Schema.from_tuples(pairs)
