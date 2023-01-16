@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import contextlib
 import getpass
+import warnings
 from operator import methodcaller
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
@@ -372,13 +373,38 @@ class BaseAlchemyBackend(BaseSQLBackend):
             util.log(query_str)
 
     def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        autoload: bool = True,
-        **kwargs: Any,
+        self, name: str, schema: str | None = None, autoload: bool = True, **kwargs: Any
     ) -> sa.Table:
-        return sa.Table(name, self.meta, schema=schema, autoload=autoload)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="Did not recognize type", category=sa.exc.SAWarning
+            )
+            table = sa.Table(name, self.meta, schema=schema, autoload=autoload)
+            nulltype_cols = frozenset(
+                col.name for col in table.c if isinstance(col.type, sa.types.NullType)
+            )
+
+            if not nulltype_cols:
+                return table
+            return self._handle_failed_column_type_inference(table, nulltype_cols)
+
+    def _handle_failed_column_type_inference(
+        self, table: sa.Table, nulltype_cols: Iterable[str]
+    ) -> sa.Table:
+        """Handle cases where SQLAlchemy cannot infer the column types of `table`."""
+
+        self.inspector.reflect_table(table, table.columns)
+        quoted_name = self.con.dialect.identifier_preparer.quote(table.name)
+
+        for colname, type in self._metadata(quoted_name):
+            if colname in nulltype_cols:
+                # replace null types discovered by sqlalchemy with non null
+                # types
+                table.append_column(
+                    sa.Column(colname, to_sqla_type(type), nullable=type.nullable),
+                    replace_existing=True,
+                )
+        return table
 
     def _sqla_table_to_expr(self, table: sa.Table) -> ir.Table:
         schema = self._schemas.get(table.name)

@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
-from typing import TYPE_CHECKING, Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
-from ibis.backends.mssql.datatypes import _type_from_result_set_info
+from ibis.backends.mssql.datatypes import _FieldDescription, _type_from_result_set_info
 
 if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
+    pass
 
 
 class Backend(BaseAlchemyBackend):
@@ -54,12 +53,20 @@ class Backend(BaseAlchemyBackend):
             finally:
                 bind.execute(f"SET DATEFIRST {previous_datefirst}")
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+    def _metadata(self, query):
+        if query in self.list_tables():
+            query = f"SELECT * FROM [{query}]"
+
         with self.begin() as bind:
-            for column in bind.execute(
-                f"EXEC sp_describe_first_result_set @tsql = N'{query}';"
-            ).mappings():
-                yield column["name"], _type_from_result_set_info(column)
+            result_set_info: list[_FieldDescription] = (
+                bind.execute(f"EXEC sp_describe_first_result_set @tsql = N'{query}';")
+                .mappings()
+                .fetchall()
+            )
+        return [
+            (column['name'], _type_from_result_set_info(column))
+            for column in result_set_info
+        ]
 
     def _get_temp_view_definition(
         self,
@@ -67,12 +74,3 @@ class Backend(BaseAlchemyBackend):
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         return f"CREATE OR ALTER VIEW {name} AS {definition}"
-
-    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        query = f"DROP VIEW IF EXISTS {name}"
-
-        def drop(self, raw_name: str, query: str):
-            self.con.execute(query)
-            self._temp_views.discard(raw_name)
-
-        atexit.register(drop, self, raw_name, query)

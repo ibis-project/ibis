@@ -14,7 +14,6 @@ import toolz
 
 import ibis.expr.datatypes as dt
 from ibis import util
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 
 if TYPE_CHECKING:
     import duckdb
@@ -371,22 +370,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         return self._read(table_name)
 
     def _read(self, table_name):
-
         _table = self.table(table_name)
-        with warnings.catch_warnings():
-            # don't fail or warn if duckdb-engine fails to discover types
-            # mostly (tinyint)
-            warnings.filterwarnings(
-                "ignore",
-                message="Did not recognize type",
-                category=sa.exc.SAWarning,
-            )
-            # We don't rely on index reflection, ignore this warning
-            warnings.filterwarnings(
-                "ignore",
-                message="duckdb-engine doesn't yet support reflection on indices",
-            )
-            self.inspector.reflect_table(_table.op().sqla_table, _table.columns)
         return self.table(table_name)
 
     def to_pyarrow_batches(
@@ -476,48 +460,15 @@ SELECT * FROM read_csv({', '.join(args)})"""
         self.con.execute("register", (table_op.name, df))
 
     def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        **kwargs: Any,
+        self, name: str, schema: str | None = None, **kwargs: Any
     ) -> sa.Table:
         with warnings.catch_warnings():
-            # don't fail or warn if duckdb-engine fails to discover types
-            warnings.filterwarnings(
-                "ignore",
-                message="Did not recognize type",
-                category=sa.exc.SAWarning,
-            )
             # We don't rely on index reflection, ignore this warning
             warnings.filterwarnings(
                 "ignore",
                 message="duckdb-engine doesn't yet support reflection on indices",
             )
-
-            table = super()._get_sqla_table(name, schema, **kwargs)
-
-        nulltype_cols = frozenset(
-            col.name for col in table.c if isinstance(col.type, sa.types.NullType)
-        )
-
-        if not nulltype_cols:
-            return table
-
-        quoted_name = self.con.dialect.identifier_preparer.quote(name)
-
-        for colname, type in self._metadata(quoted_name):
-            if colname in nulltype_cols:
-                # replace null types discovered by sqlalchemy with non null
-                # types
-                table.append_column(
-                    sa.Column(
-                        colname,
-                        to_sqla_type(type),
-                        nullable=type.nullable,
-                    ),
-                    replace_existing=True,
-                )
-        return table
+            return super()._get_sqla_table(name, schema, **kwargs)
 
     def _get_temp_view_definition(
         self,
