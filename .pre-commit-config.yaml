@@ -22,13 +22,13 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.216
+    rev: v0.0.223
     hooks:
       - id: ruff
         # exclude a file (if configured to do so), even if it's passed in explicitly
         args: ["--force-exclude"]
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/pre-commit-hooks
