@@ -49,8 +49,16 @@ class Backend(BaseAlchemyBackend):
             port=port,
             database=database,
         )
-        connect_args.setdefault("experimental_python_types", True)
-        super().do_connect(sa.create_engine(url, connect_args=connect_args))
+        connect_args.setdefault("timezone", "UTC")
+        try:
+            super().do_connect(
+                sa.create_engine(
+                    url,
+                    connect_args={**connect_args, "experimental_python_types": True},
+                )
+            )
+        except TypeError:
+            super().do_connect(sa.create_engine(url, connect_args=connect_args))
         self._meta = sa.MetaData(bind=self.con, schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
