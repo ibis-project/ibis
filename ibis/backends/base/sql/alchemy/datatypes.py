@@ -296,7 +296,7 @@ if geospatial_supported:
 
     @dt.dtype.register(Dialect, (ga.Geometry, ga.types._GISType))
     def ga_geometry(_, gatype, nullable=True):
-        t = gatype.geometry_type
+        t = gatype.geometry_type.upper()
         if t == 'POINT':
             return dt.Point(nullable=nullable)
         if t == 'LINESTRING':
@@ -309,8 +309,8 @@ if geospatial_supported:
             return dt.MultiPoint(nullable=nullable)
         if t == 'MULTIPOLYGON':
             return dt.MultiPolygon(nullable=nullable)
-        if t == 'GEOMETRY':
-            return dt.Geometry(nullable=nullable)
+        if t in ('GEOMETRY', 'GEOGRAPHY'):
+            return getattr(dt, gatype.name.lower())(nullable=nullable)
         else:
             raise ValueError(f"Unrecognized geometry type: {t}")
 
