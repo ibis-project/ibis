@@ -377,6 +377,7 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLR2004", # forces everything to be a constant
   "RET504",
   "RET505",
   "RET506",
