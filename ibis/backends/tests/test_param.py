@@ -58,7 +58,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark", "snowflake"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
@@ -84,17 +84,7 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        # TODO: duckdb maps are tricky because they are multimaps
-        "duckdb",
-        "impala",
-        "pyspark",
-        "snowflake",
-        "polars",
-        "trino",
-    ]
+    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars", "trino"]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],

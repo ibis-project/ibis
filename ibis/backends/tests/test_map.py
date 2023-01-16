@@ -124,12 +124,16 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notyet(["snowflake"])
-def test_map_construction(con, alltypes, df):
+def test_map_construct_dict(con):
     expr = ibis.map(['a', 'b'], [1, 2])
     result = con.execute(expr.name('tmp'))
     assert result == {'a': 1, 'b': 2}
 
+
+@pytest.mark.notimpl(
+    ["snowflake"], reason="unclear how to implement two arrays -> object construction"
+)
+def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = con.execute(expr)
     expected = df.apply(lambda row: {row['string_col']: row['int_col']}, axis=1)

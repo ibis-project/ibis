@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import itertools
+import json
 
 import numpy as np
 import sqlalchemy as sa
-from snowflake.sqlalchemy.custom_types import VARIANT
+from snowflake.sqlalchemy import VARIANT
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import (
@@ -52,7 +53,7 @@ def _literal(t, op):
         return sa.func.array_construct(*value)
     elif dtype.is_map():
         return sa.func.object_construct_keep_null(
-            *zip(itertools.chain.from_iterable(value.items()))
+            *itertools.chain.from_iterable(value.items())
         )
     return _postgres_literal(t, op)
 
@@ -110,6 +111,17 @@ def _array_slice(t, op):
         stop = sa.func.array_size(arg)
 
     return sa.func.array_slice(t.translate(op.arg), start, stop)
+
+
+def _map(_, op):
+    if not (
+        isinstance(keys := op.keys, ops.Literal)
+        and isinstance(values := op.values, ops.Literal)
+    ):
+        raise TypeError("Both keys and values of an `ibis.map` call must be literals")
+
+    obj = dict(zip(keys.value, values.value))
+    return sa.func.to_object(sa.func.parse_json(json.dumps(obj, separators=",:")))
 
 
 _SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
@@ -201,7 +213,7 @@ operation_registry.update(
         ops.ArrayColumn: lambda t, op: sa.func.array_construct(
             *map(t.translate, op.cols)
         ),
-        ops.ArraySlice: _array_slice,
+        ops.Map: _map,
     }
 )
 
