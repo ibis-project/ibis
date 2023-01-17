@@ -95,7 +95,6 @@ def _extract_url_query(t, op):
     return sa.func.nullif(sa.func.as_varchar(r), "")
 
 
-<<<<<<< HEAD
 def _array_slice(t, op):
     arg = t.translate(op.arg)
 
@@ -123,6 +122,8 @@ def _map(_, op):
         *itertools.chain.from_iterable(zip(keys.value, values.value))
     )
 
+
+_TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
 _SF_NEG_INF = sa.func.to_double("-Inf")
@@ -234,6 +235,9 @@ operation_registry.update(
             1,
         ),
         ops.TimestampFromYMDHMS: fixed_arity(sa.func.timestamp_from_parts, 6),
+        ops.TimestampFromUNIX: lambda t, op: sa.func.to_timestamp(
+            t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit]
+        ),
     }
 )
 
@@ -256,7 +260,6 @@ _invalid_operations = {
     # ibis.expr.operations.temporal
     ops.IntervalFromInteger,
     ops.TimestampDiff,
-    ops.TimestampFromUNIX,
 }
 
 operation_registry = {
