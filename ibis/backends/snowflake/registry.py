@@ -233,6 +233,7 @@ operation_registry.update(
             ),
             1,
         ),
+        ops.TimestampFromYMDHMS: fixed_arity(sa.func.timestamp_from_parts, 6),
     }
 )
 
@@ -256,7 +257,6 @@ _invalid_operations = {
     ops.IntervalFromInteger,
     ops.TimestampDiff,
     ops.TimestampFromUNIX,
-    ops.TimestampFromYMDHMS,
 }
 
 operation_registry = {
