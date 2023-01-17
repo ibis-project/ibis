@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
-from ibis.backends.mssql.datatypes import _FieldDescription, _type_from_result_set_info
+from ibis.backends.mssql.datatypes import _type_from_result_set_info
 
 if TYPE_CHECKING:
     pass
@@ -46,27 +46,22 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_datefirst = bind.execute('SELECT @@DATEFIRST').scalar()
-            bind.execute('SET DATEFIRST 1')
+            previous_datefirst = bind.execute(sa.text('SELECT @@DATEFIRST')).scalar()
+            bind.execute(sa.text('SET DATEFIRST 1'))
             try:
                 yield bind
             finally:
-                bind.execute(f"SET DATEFIRST {previous_datefirst}")
+                bind.execute(sa.text(f"SET DATEFIRST {previous_datefirst}"))
 
     def _metadata(self, query):
         if query in self.list_tables():
             query = f"SELECT * FROM [{query}]"
 
         with self.begin() as bind:
-            result_set_info: list[_FieldDescription] = (
-                bind.execute(f"EXEC sp_describe_first_result_set @tsql = N'{query}';")
-                .mappings()
-                .fetchall()
-            )
-        return [
-            (column['name'], _type_from_result_set_info(column))
-            for column in result_set_info
-        ]
+            for column in bind.execute(
+                sa.text(f"EXEC sp_describe_first_result_set @tsql = N'{query}';")
+            ).mappings():
+                yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
         self,

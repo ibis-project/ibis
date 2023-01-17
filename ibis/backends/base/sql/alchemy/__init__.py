@@ -96,7 +96,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
         self._inspector = sa.inspect(self.con)
-        self.meta = sa.MetaData(bind=self.con)
+        self.meta = sa.MetaData()
         self._schemas: dict[str, sch.Schema] = {}
         self._temp_views: set[str] = set()
 
@@ -279,7 +279,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             )
 
         t = self._get_sqla_table(table_name, schema=database, autoload=False)
-        t.drop(checkfirst=force)
+        with self.begin() as bind:
+            t.drop(bind=bind, checkfirst=force)
 
         assert not self.inspector.has_table(
             table_name
@@ -343,7 +344,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         database: str | None = None,
     ) -> None:
         t = self._get_sqla_table(table_name, schema=database)
-        t.delete().execute()
+        with self.begin() as con:
+            con.execute(t.delete())
 
     def schema(self, name: str) -> sch.Schema:
         """Get an ibis schema from the current database for the table `name`.
@@ -380,7 +382,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
             )
-            table = sa.Table(name, self.meta, schema=schema, autoload=autoload)
+            table = sa.Table(
+                name,
+                self.meta,
+                schema=schema,
+                autoload_with=self.con if autoload else None,
+            )
             nulltype_cols = frozenset(
                 col.name for col in table.c if isinstance(col.type, sa.types.NullType)
             )
@@ -416,6 +423,20 @@ class BaseAlchemyBackend(BaseSQLBackend):
             schema=schema,
         )
         return self.table_expr_class(node)
+
+    def raw_sql(self, query) -> None:
+        """Execute a query string.
+
+        !!! warning "The returned cursor object must be **manually** released."
+
+        Parameters
+        ----------
+        query
+            DDL or DML statement
+        """
+        return self.con.connect().execute(
+            sa.text(query) if isinstance(query, str) else query
+        )
 
     def table(
         self,
@@ -577,7 +598,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
     ):
         if compile_kwargs is None:
             compile_kwargs = {}
-        compiled = definition.compile(compile_kwargs=compile_kwargs)
+        compiled = definition.compile(
+            dialect=self.con.dialect, compile_kwargs=compile_kwargs
+        )
         lines = self._get_temp_view_definition(name, definition=compiled)
         return lines, compiled.params
 
@@ -589,7 +612,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         lines, params = self._get_compiled_statement(definition, name)
         with self.begin() as con:
             for line in lines:
-                con.execute(line, **params)
+                con.exec_driver_sql(line, parameters=params)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
 

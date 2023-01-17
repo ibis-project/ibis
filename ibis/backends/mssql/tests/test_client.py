@@ -1,4 +1,5 @@
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -68,10 +69,13 @@ def test_get_schema_from_query(con, server_type, expected_type):
     name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
     expected_schema = ibis.schema(dict(x=expected_type))
     try:
-        con.raw_sql(f"CREATE TABLE {name} (x {server_type})")
+        with con.begin() as c:
+            c.execute(sa.text(f"CREATE TABLE {name} (x {server_type})"))
+        expected_schema = ibis.schema(dict(x=expected_type))
         result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
         t = con.table(raw_name)
         assert t.schema() == expected_schema
         assert result_schema == expected_schema
     finally:
-        con.raw_sql(f"DROP TABLE IF EXISTS {name}")
+        with con.begin() as c:
+            c.execute(sa.text(f"DROP TABLE IF EXISTS {name}"))

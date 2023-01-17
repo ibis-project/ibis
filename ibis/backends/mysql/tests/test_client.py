@@ -1,4 +1,5 @@
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -62,7 +63,8 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
     name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
-    con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
+    with con.begin() as c:
+        c.execute(sa.text(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})"))
     expected_schema = ibis.schema(dict(x=expected_type))
     t = con.table(raw_name)
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
@@ -76,6 +78,7 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
 )
 def test_blob_type(con, coltype):
     tmp = f"tmp_{ibis.util.guid()}"
-    con.raw_sql(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
+    with con.begin() as c:
+        c.execute(sa.text(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})"))
     t = con.table(tmp)
     assert t.schema() == ibis.schema({"a": dt.binary})

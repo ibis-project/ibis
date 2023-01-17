@@ -9,6 +9,7 @@ from sqlalchemy.dialects.mssql.base import MSDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.engine.default import DefaultDialect
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import UserDefinedType
@@ -424,8 +425,12 @@ def sa_struct(dialect, satype, nullable=True):
 
 
 @sch.infer.register((sa.Table, sa.sql.TableClause))
-def schema_from_table(table: sa.Table, schema: sch.Schema | None = None) -> sch.Schema:
-    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
+def schema_from_table(
+    table: sa.Table,
+    schema: sch.Schema | None = None,
+    dialect: sa.engine.interfaces.Dialect | None = None,
+) -> sch.Schema:
+    """Retrieve an ibis schema from a SQLAlchemy `Table`.
 
     Parameters
     ----------
@@ -433,6 +438,8 @@ def schema_from_table(table: sa.Table, schema: sch.Schema | None = None) -> sch.
         Table whose schema to infer
     schema
         Schema to pull types from
+    dialect
+        Optional sqlalchemy dialect
 
     Returns
     -------
@@ -446,7 +453,7 @@ def schema_from_table(table: sa.Table, schema: sch.Schema | None = None) -> sch.
             dtype = dt.dtype(schema[name])
         else:
             dtype = dt.dtype(
-                getattr(table.bind, 'dialect', Dialect()),
+                dialect or getattr(table.bind, "dialect", DefaultDialect()),
                 column.type,
                 nullable=column.nullable,
             )

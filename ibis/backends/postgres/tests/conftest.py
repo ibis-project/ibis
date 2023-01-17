@@ -90,7 +90,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 with data_dir.joinpath(f'{table}.csv').open('r') as file:
                     cur.copy_expert(sql=sql, file=file)
 
-        engine.execute('VACUUM FULL ANALYZE')
+            con.execute(sa.text("VACUUM FULL ANALYZE"))
 
     @staticmethod
     def connect(data_directory: Path):

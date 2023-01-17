@@ -72,10 +72,8 @@ def _typeof(t, op):
     # select pg_typeof('thing') returns unknown so we have to check the child's
     # type for nullness
     return sa.case(
-        [
-            ((typ == 'unknown') & (op.arg.output_dtype != dt.null), 'text'),
-            ((typ == 'unknown') & (op.arg.output_dtype == dt.null), 'null'),
-        ],
+        ((typ == 'unknown') & (op.arg.output_dtype != dt.null), 'text'),
+        ((typ == 'unknown') & (op.arg.output_dtype == dt.null), 'null'),
         else_=typ,
     )
 
@@ -264,7 +262,7 @@ def _regex_extract(arg, pattern, index):
     index = index + 1
     does_match = sa.func.textregexeq(arg, pattern)
     matches = sa.func.regexp_match(arg, pattern, type_=pg.ARRAY(sa.TEXT))
-    return sa.case([(does_match, matches[index])], else_=None)
+    return sa.case((does_match, matches[index]), else_=None)
 
 
 def _array_repeat(t, op):
@@ -351,7 +349,7 @@ def _mod(t, op):
 
 
 def _neg_idx_to_pos(array, idx):
-    return sa.case([(idx < 0, sa.func.cardinality(array) + idx)], else_=idx)
+    return sa.case((idx < 0, sa.func.cardinality(array) + idx), else_=idx)
 
 
 def _array_slice(*, index_converter, array_length):

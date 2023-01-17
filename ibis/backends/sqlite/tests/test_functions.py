@@ -665,14 +665,14 @@ def test_compile_with_named_table():
     t = ibis.table([('a', 'string')], name='t')
     result = ibis.sqlite.compile(t.a)
     st = sa.table('t', sa.column('a', sa.String)).alias('t0')
-    assert str(result) == str(sa.select([st.c.a]))
+    assert str(result) == str(sa.select(st.c.a))
 
 
 def test_compile_with_unnamed_table():
     t = ibis.table([('a', 'string')])
     result = ibis.sqlite.compile(t.a)
     st = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
-    assert str(result) == str(sa.select([st.c.a]))
+    assert str(result) == str(sa.select(st.c.a))
 
 
 def test_compile_with_multiple_unnamed_tables():
@@ -683,7 +683,7 @@ def test_compile_with_multiple_unnamed_tables():
     sqla_t = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
     sqla_s = sa.table(s.op().name, sa.column('b', sa.String)).alias('t1')
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
-    expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
+    expected = sa.select(sqla_t.c.a, sqla_s.c.b).select_from(sqla_join)
     assert str(result) == str(expected)
 
 
@@ -695,7 +695,7 @@ def test_compile_with_one_unnamed_table():
     sqla_t = sa.table(t.op().name, sa.column('a', sa.String)).alias('t0')
     sqla_s = sa.table('s', sa.column('b', sa.String)).alias('t1')
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
-    expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
+    expected = sa.select(sqla_t.c.a, sqla_s.c.b).select_from(sqla_join)
     assert str(result) == str(expected)
 
 

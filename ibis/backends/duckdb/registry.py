@@ -117,20 +117,16 @@ def _neg_idx_to_pos(array, idx):
 
 def _regex_extract(string, pattern, index):
     result = sa.case(
-        [
-            (
-                sa.func.regexp_matches(string, pattern),
-                sa.func.regexp_extract(
-                    string,
-                    pattern,
-                    # DuckDB requires the index to be a constant so we compile
-                    # the value and inline it using sa.text
-                    sa.text(
-                        str(index.compile(compile_kwargs=dict(literal_binds=True)))
-                    ),
-                ),
-            )
-        ],
+        (
+            sa.func.regexp_matches(string, pattern),
+            sa.func.regexp_extract(
+                string,
+                pattern,
+                # DuckDB requires the index to be a constant so we compile
+                # the value and inline it using sa.text
+                sa.text(str(index.compile(compile_kwargs=dict(literal_binds=True)))),
+            ),
+        ),
         else_="",
     )
     return result

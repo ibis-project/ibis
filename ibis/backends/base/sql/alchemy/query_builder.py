@@ -228,10 +228,8 @@ class AlchemySelect(Select):
         else:
             clauses = to_select
 
-        if self.exists:
-            result = sa.exists(clauses)
-        else:
-            result = sa.select(clauses)
+        result_func = sa.exists if self.exists else sa.select
+        result = result_func(*clauses)
 
         if self.distinct:
             result = result.distinct()

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 
 import ibis
 
@@ -18,18 +19,22 @@ def test_read_parquet(data_directory):
 
 
 def test_temp_directory(tmp_path):
-    query = "SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'"
+    query = sa.text("SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'")
 
     # 1. in-memory + no temp_directory specified
     con = ibis.duckdb.connect()
-    [(value,)] = con.con.execute(query).fetchall()
-    assert value  # we don't care what the specific value is
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
+        assert value  # we don't care what the specific value is
 
     temp_directory = Path(tempfile.gettempdir()) / "duckdb"
 
     # 2. in-memory + temp_directory specified
     con = ibis.duckdb.connect(temp_directory=temp_directory)
-    [(value,)] = con.con.execute(query).fetchall()
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
     assert value == str(temp_directory)
 
     # 3. on-disk + no temp_directory specified
@@ -38,7 +43,9 @@ def test_temp_directory(tmp_path):
 
     # 4. on-disk + temp_directory specified
     con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
-    [(value,)] = con.con.execute(query).fetchall()
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
     assert value == str(temp_directory)
 
 

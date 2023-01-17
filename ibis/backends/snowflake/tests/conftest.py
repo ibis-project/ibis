@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
@@ -21,9 +22,11 @@ def copy_into(con, data_dir: Path, table: str) -> None:
     stage = "ibis_testing_stage"
     csv = f"{table}.csv"
     src = data_dir / csv
-    con.execute(f"PUT file://{src.absolute()} @{stage}/{csv}")
+    con.execute(sa.text(f"PUT file://{src.absolute()} @{stage}/{csv}"))
     con.execute(
-        f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"
+        sa.text(
+            f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"
+        )
     )
 
 
@@ -54,15 +57,15 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         con = TestConf.connect(data_dir)
 
-        with con.con.begin() as con:
-            con.execute("USE WAREHOUSE ibis_testing")
-            con.execute(f"DROP DATABASE IF EXISTS {database}")
-            con.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
-            con.execute(f"CREATE SCHEMA IF NOT EXISTS {database}.ibis_testing")
-            con.execute(f"USE SCHEMA {database}.ibis_testing")
+        with con.begin() as con:
+            con.execute(sa.text("USE WAREHOUSE ibis_testing"))
+            con.execute(sa.text(f"DROP DATABASE IF EXISTS {database}"))
+            con.execute(sa.text(f"CREATE DATABASE IF NOT EXISTS {database}"))
+            con.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {database}.ibis_testing"))
+            con.execute(sa.text(f"USE SCHEMA {database}.ibis_testing"))
 
             for stmt in filter(None, map(str.strip, schema.split(';'))):
-                con.execute(stmt)
+                con.execute(sa.text(stmt))
 
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x

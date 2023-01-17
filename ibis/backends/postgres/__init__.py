@@ -106,24 +106,25 @@ class Backend(BaseAlchemyBackend):
         super().do_connect(sa.create_engine(alchemy_url))
 
     def list_databases(self, like=None):
-        # http://dba.stackexchange.com/a/1304/58517
-        databases = [
-            row.datname
-            for row in self.con.execute(
-                'SELECT datname FROM pg_database WHERE NOT datistemplate'
-            )
-        ]
+        with self.begin() as con:
+            # http://dba.stackexchange.com/a/1304/58517
+            databases = [
+                row.datname
+                for row in con.execute(
+                    sa.text('SELECT datname FROM pg_database WHERE NOT datistemplate')
+                )
+            ]
         return self._filter_with_like(databases, like)
 
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute('SHOW TIMEZONE').scalar()
-            bind.execute('SET TIMEZONE = UTC')
+            previous_timezone = bind.execute(sa.text('SHOW TIMEZONE')).scalar()
+            bind.execute(sa.text('SET TIMEZONE = UTC'))
             try:
                 yield bind
             finally:
-                bind.execute(f"SET TIMEZONE = '{previous_timezone}'")
+                bind.execute(sa.text(f"SET TIMEZONE = '{previous_timezone}'"))
 
     def udf(
         self,
@@ -188,10 +189,10 @@ WHERE attrelid = {raw_name!r}::regclass
 ORDER BY attnum
 """
         with self.begin() as con:
-            con.execute(f"CREATE TEMPORARY VIEW {name} AS {query}")
-            type_info = con.execute(type_info_sql)
+            con.execute(sa.text(f"CREATE TEMPORARY VIEW {name} AS {query}"))
+            type_info = con.execute(sa.text(type_info_sql))
             yield from ((col, _get_type(typestr)) for col, typestr in type_info)
-            con.execute(f"DROP VIEW IF EXISTS {name}")
+            con.execute(sa.text(f"DROP VIEW IF EXISTS {name}"))
 
     def _get_temp_view_definition(
         self,

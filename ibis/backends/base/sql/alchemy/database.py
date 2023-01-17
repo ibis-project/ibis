@@ -22,7 +22,7 @@ class AlchemyTable(ops.DatabaseTable):
         if name is None:
             name = sqla_table.name
         if schema is None:
-            schema = sch.infer(sqla_table, schema=schema)
+            schema = sch.infer(sqla_table, schema=schema, dialect=source.con.dialect)
         super().__init__(name=name, schema=schema, sqla_table=sqla_table, source=source)
 
     # TODO(kszucs): remove this

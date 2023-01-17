@@ -132,15 +132,15 @@ class Backend(BaseAlchemyBackend):
                 poolclass=sa.pool.SingletonThreadPool if in_memory else None,
             )
         )
-        self._meta = sa.MetaData(bind=self.con)
+        self._meta = sa.MetaData()
         self._extensions = set()
 
     def _load_extensions(self, extensions):
         for extension in extensions:
             if extension not in self._extensions:
                 with self.begin() as con:
-                    con.execute(f"INSTALL '{extension}'")
-                    con.execute(f"LOAD '{extension}'")
+                    con.execute(sa.text(f"INSTALL '{extension}'"))
+                    con.execute(sa.text(f"LOAD '{extension}'"))
                 self._extensions.add(extension)
 
     def register(
@@ -252,8 +252,8 @@ SELECT * FROM read_csv({', '.join(args)})"""
         if any(source.startswith(("http://", "https://")) for source in source_list):
             self._load_extensions(["httpfs"])
 
-        with self.begin() as bind:
-            bind.execute(sql)
+        with self.begin() as con:
+            con.execute(sa.text(sql))
         return self._read(table_name)
 
     def read_parquet(
@@ -295,7 +295,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
             # We don't create a view since DuckDB special cases Arrow Datasets
             # so if we also create a view we end up with both a "lazy table"
             # and a view with the same name
-            with self.con.begin() as con:
+            with self.begin() as con:
                 # DuckDB normally auto-detects Arrow Datasets that are defined
                 # in local variables but the `dataset` variable won't be local
                 # by the time we execute against this so we register it
@@ -313,7 +313,8 @@ SELECT * FROM read_csv({', '.join(args)})"""
             sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
             SELECT * FROM read_parquet({dataset})"""
 
-            self.con.execute(sql)
+            with self.begin() as con:
+                con.execute(sa.text(sql))
 
         return self._read(table_name)
 
@@ -336,7 +337,8 @@ SELECT * FROM read_csv({', '.join(args)})"""
             The just-registered table
         """
         table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
-        self.con.execute("register", (table_name, dataframe))
+        with self.begin() as con:
+            con.connection.register(table_name, dataframe)
 
         return self._read(table_name)
 
@@ -365,7 +367,8 @@ SELECT * FROM read_csv({', '.join(args)})"""
             f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
             f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
         )
-        self.con.execute(sql)
+        with self.begin() as con:
+            con.execute(sa.text(sql))
 
         return self._read(table_name)
 
@@ -408,8 +411,9 @@ SELECT * FROM read_csv({', '.join(args)})"""
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        cursor = self.raw_sql(sql)
-        table = cursor.cursor.fetch_arrow_table()
+        with self.begin() as con:
+            cursor = con.execute(sql)
+            table = cursor.cursor.fetch_arrow_table()
 
         if isinstance(expr, ir.Table):
             return table
@@ -448,16 +452,19 @@ SELECT * FROM read_csv({', '.join(args)})"""
         return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        for name, type, null in toolz.pluck(
-            ["column_name", "column_type", "null"],
-            self.con.execute(f"DESCRIBE {query}"),
-        ):
-            ibis_type = parse(type)
-            yield name, ibis_type(nullable=null.lower() == "yes")
+        with self.begin() as con:
+            rows = con.execute(sa.text(f"DESCRIBE {query}"))
+
+            for name, type, null in toolz.pluck(
+                ["column_name", "column_type", "null"], rows.mappings()
+            ):
+                ibis_type = parse(type)
+                yield name, ibis_type(nullable=null.lower() == "yes")
 
     def _register_in_memory_table(self, table_op):
         df = table_op.data.to_frame()
-        self.con.execute("register", (table_op.name, df))
+        with self.begin() as con:
+            con.connection.register(table_op.name, df)
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **kwargs: Any

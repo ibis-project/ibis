@@ -1040,16 +1040,10 @@ def test_array_concat_mixed_types(array_types):
 
 @pytest.fixture
 def t(con, guid):
-    con.raw_sql(
-        """
-        CREATE TABLE "{}" (
-          id SERIAL PRIMARY KEY,
-          name TEXT
+    with con.begin() as c:
+        c.execute(
+            sa.text(f"CREATE TABLE \"{guid}\" (id SERIAL PRIMARY KEY, name TEXT)")
         )
-        """.format(
-            guid
-        )
-    )
     return con.table(guid)
 
 
@@ -1058,33 +1052,28 @@ def s(con, t, guid, guid2):
     assert t.op().name == guid
     assert t.op().name != guid2
 
-    con.raw_sql(
-        """
-        CREATE TABLE "{}" (
-          id SERIAL PRIMARY KEY,
-          left_t_id INTEGER REFERENCES "{}",
-          cost DOUBLE PRECISION
+    with con.begin() as c:
+        c.execute(
+            sa.text(
+                f"""
+            CREATE TABLE \"{guid2}\" (
+              id SERIAL PRIMARY KEY,
+              left_t_id INTEGER REFERENCES "{guid}",
+              cost DOUBLE PRECISION
+            )
+            """
+            )
         )
-        """.format(
-            guid2, guid
-        )
-    )
     return con.table(guid2)
 
 
 @pytest.fixture
 def trunc(con, guid):
-    con.raw_sql(
-        """
-        CREATE TABLE "{}" (
-          id SERIAL PRIMARY KEY,
-          name TEXT
+    with con.begin() as c:
+        c.execute(
+            sa.text(f"CREATE TABLE \"{guid}\" (id SERIAL PRIMARY KEY, name TEXT)")
         )
-        """.format(
-            guid
-        )
-    )
-    con.raw_sql(f"""INSERT INTO "{guid}" (name) VALUES ('a'), ('b'), ('c')""")
+        c.execute(sa.text(f"INSERT INTO \"{guid}\" (name) VALUES ('a'), ('b'), ('c')"))
     return con.table(guid)
 
 
@@ -1093,11 +1082,11 @@ def test_semi_join(t, s):
     expr = t.semi_join(s, t.id == s.id)
     result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     base = (
-        sa.select([t_a.c.id, t_a.c.name])
-        .where(sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id)))
+        sa.select(t_a.c.id, t_a.c.name)
+        .where(sa.exists(sa.select(1).where(t_a.c.id == s_a.c.id)))
         .subquery()
     )
-    expected = sa.select([base.c.id, base.c.name])
+    expected = sa.select(base.c.id, base.c.name)
     assert str(result) == str(expected)
 
 
@@ -1106,11 +1095,11 @@ def test_anti_join(t, s):
     expr = t.anti_join(s, t.id == s.id)
     result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     base = (
-        sa.select([t_a.c.id, t_a.c.name])
-        .where(~sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id)))
+        sa.select(t_a.c.id, t_a.c.name)
+        .where(~sa.exists(sa.select(1).where(t_a.c.id == s_a.c.id)))
         .subquery()
     )
-    expected = sa.select([base.c.id, base.c.name])
+    expected = sa.select(base.c.id, base.c.name)
     assert str(result) == str(expected)
 
 
@@ -1325,10 +1314,10 @@ def test_timestamp_with_timezone_select(tzone_compute, tz):
 
 
 def test_timestamp_type_accepts_all_timezones(con):
-    assert all(
-        dt.Timestamp(row.name).timezone == row.name
-        for row in con.con.execute('SELECT name FROM pg_timezone_names')
-    )
+    query = 'SELECT name FROM pg_timezone_names'
+    with con.begin() as c:
+        cur = c.execute(sa.text(query)).fetchall()
+    assert all(dt.Timestamp(row.name).timezone == row.name for row in cur)
 
 
 @pytest.mark.parametrize(
@@ -1426,7 +1415,9 @@ def test_string_to_binary_cast(con):
         f"SELECT decode(string_col, 'escape') AS \"{name}\" "
         "FROM functional_alltypes LIMIT 10"
     )
-    raw_data = [row[0][0] for row in con.raw_sql(sql_string).fetchall()]
+    with con.begin() as c:
+        cur = c.execute(sa.text(sql_string))
+        raw_data = [row[0][0] for row in cur]
     expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
 
@@ -1441,8 +1432,7 @@ def test_string_to_binary_round_trip(con):
         f"\"{name}\""
         "FROM functional_alltypes LIMIT 10"
     )
-    expected = pd.Series(
-        [row[0][0] for row in con.raw_sql(sql_string).fetchall()],
-        name=name,
-    )
+    with con.begin() as c:
+        cur = c.execute(sa.text(sql_string))
+        expected = pd.Series([row[0][0] for row in cur], name=name)
     tm.assert_series_equal(result, expected)

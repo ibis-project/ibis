@@ -112,26 +112,17 @@ class BaseSQLBackend(BaseBackend):
     def _get_schema_using_query(self, query):
         raise NotImplementedError(f"Backend {self.name} does not support .sql()")
 
-    def raw_sql(self, query: str) -> Any:
+    def raw_sql(self, query: str):
         """Execute a query string.
 
-        Could have unexpected results if the query modifies the behavior of
-        the session in a way unknown to Ibis; be careful.
+        !!! warning "The returned cursor object must be **manually** released if results are returned."
 
         Parameters
         ----------
         query
-            DML or DDL statement
-
-        Returns
-        -------
-        Any
-            Backend cursor
+            DDL or DML statement
         """
-        # TODO `self.con` is assumed to be defined in subclasses, but there
-        # is nothing that enforces it. We should find a way to make sure
-        # `self.con` is always a DBAPI2 connection, or raise an error
-        cursor = self.con.execute(query)  # type: ignore
+        cursor = self.con.execute(query)
         if cursor:
             return cursor
         cursor.release()
