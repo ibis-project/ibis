@@ -124,7 +124,7 @@ def test_sqla_schema_conversion(con):
 )
 def test_comparisons(con, functional_alltypes, sa_functional_alltypes, op):
     expr = op(functional_alltypes.double_col, 5).name("tmp")
-    expected = sa.select([op(sa_functional_alltypes.c.double_col, L(5)).label("tmp")])
+    expected = sa.select(op(sa_functional_alltypes.c.double_col, L(5)).label("tmp"))
     _check(expr, expected)
 
 
@@ -149,14 +149,14 @@ def test_boolean_conjunction(
     expected_fn,
 ):
     expr = expr_fn(functional_alltypes.double_col).name('tmp')
-    expected = sa.select([expr_fn(sa_functional_alltypes.c.double_col).label("tmp")])
+    expected = sa.select(expr_fn(sa_functional_alltypes.c.double_col).label("tmp"))
     _check(expr, expected)
 
 
 def test_between(con, functional_alltypes, sa_functional_alltypes):
     expr = functional_alltypes.double_col.between(5, 10).name("tmp")
     expected = sa.select(
-        [sa_functional_alltypes.c.double_col.between(L(5), L(10)).label("tmp")]
+        sa_functional_alltypes.c.double_col.between(L(5), L(10)).label("tmp")
     )
     _check(expr, expected)
 
@@ -176,16 +176,14 @@ def test_isnull_notnull(
     expected_fn,
 ):
     expr = expr_fn(functional_alltypes.double_col).name("tmp")
-    expected = sa.select(
-        [expected_fn(sa_functional_alltypes.c.double_col).label("tmp")]
-    )
+    expected = sa.select(expected_fn(sa_functional_alltypes.c.double_col).label("tmp"))
     _check(expr, expected)
 
 
 def test_negate(sa_functional_alltypes, functional_alltypes):
     expr = -(functional_alltypes.double_col > 0)
     expected = sa.select(
-        [sql.not_(sa_functional_alltypes.c.double_col > L(0)).label("tmp")]
+        sql.not_(sa_functional_alltypes.c.double_col > L(0)).label("tmp")
     )
     _check(expr.name('tmp'), expected)
 
@@ -205,20 +203,18 @@ def test_coalesce(sa_functional_alltypes, functional_alltypes):
 
     expr = ibis.coalesce(v2, v1, v3).name("tmp")
     expected = sa.select(
-        [
-            sa.func.coalesce(
-                sa.case([(sd > L(30), sd)], else_=null),
-                null,
-                sf,
-            ).label("tmp")
-        ]
+        sa.func.coalesce(
+            sa.case((sd > L(30), sd), else_=null),
+            null,
+            sf,
+        ).label("tmp")
     )
     _check(expr, expected)
 
 
 def test_named_expr(sa_functional_alltypes, functional_alltypes):
     expr = functional_alltypes[(functional_alltypes.double_col * 2).name('foo')]
-    expected = sa.select([(sa_functional_alltypes.c.double_col * L(2)).label('foo')])
+    expected = sa.select((sa_functional_alltypes.c.double_col * L(2)).label('foo'))
     _check(expr, expected)
 
 
@@ -250,13 +246,13 @@ def test_named_expr(sa_functional_alltypes, functional_alltypes):
         ),
         (
             lambda r, n: r.inner_join(n, r.r_regionkey == n.n_regionkey).projection(n),
-            lambda rt, nt: sa.select([nt]).select_from(
+            lambda rt, nt: sa.select(nt).select_from(
                 rt.join(nt, rt.c.r_regionkey == nt.c.n_regionkey)
             ),
         ),
         (
             lambda r, n: r.left_join(n, r.r_regionkey == n.n_regionkey).projection(n),
-            lambda rt, nt: sa.select([nt]).select_from(
+            lambda rt, nt: sa.select(nt).select_from(
                 rt.join(
                     nt,
                     rt.c.r_regionkey == nt.c.n_regionkey,
@@ -266,7 +262,7 @@ def test_named_expr(sa_functional_alltypes, functional_alltypes):
         ),
         (
             lambda r, n: r.outer_join(n, r.r_regionkey == n.n_regionkey).projection(n),
-            lambda rt, nt: sa.select([nt]).select_from(
+            lambda rt, nt: sa.select(nt).select_from(
                 rt.outerjoin(
                     nt,
                     rt.c.r_regionkey == nt.c.n_regionkey,
@@ -305,7 +301,7 @@ def test_join_just_materialized(con, nation, region, customer):
         ct, nt.c.n_nationkey == ct.c.c_nationkey
     )
 
-    expected = sa.select([sqla_joined])
+    expected = sa.select(sqla_joined)
 
     _check(joined, expected)
 
@@ -327,15 +323,11 @@ def test_simple_case(sa_alltypes, simple_case):
     st = sa_alltypes
     expr = simple_case.name("tmp")
     expected = sa.select(
-        [
-            sa.case(
-                [
-                    (st.c.g == L('foo'), L('bar')),
-                    (st.c.g == L('baz'), L('qux')),
-                ],
-                else_='default',
-            ).label("tmp")
-        ]
+        sa.case(
+            (st.c.g == L('foo'), L('bar')),
+            (st.c.g == L('baz'), L('qux')),
+            else_='default',
+        ).label("tmp")
     )
     _check(expr, expected)
 
@@ -344,15 +336,11 @@ def test_searched_case(sa_alltypes, search_case):
     st = sa_alltypes.alias("t0")
     expr = search_case.name("tmp")
     expected = sa.select(
-        [
-            sa.case(
-                [
-                    (st.c.f > L(0), st.c.d * L(2)),
-                    (st.c.c < L(0), st.c.a * L(2)),
-                ],
-                else_=sa.cast(sa.null(), sa.BIGINT),
-            ).label("tmp")
-        ]
+        sa.case(
+            (st.c.f > L(0), st.c.d * L(2)),
+            (st.c.c < L(0), st.c.a * L(2)),
+            else_=sa.cast(sa.null(), sa.BIGINT),
+        ).label("tmp")
     )
     _check(expr, expected)
 
@@ -361,7 +349,7 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
     t1 = star1
     expr = t1.filter([t1.f > 0, t1.c < t1.f * 2])
     st = sa_star1.alias("t0")
-    expected = sa.select([st]).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
+    expected = sa.select(st).where(sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2))))
     _check(expr, expected)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
@@ -372,14 +360,14 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
     [
         (
             lambda t: t.aggregate([t['f'].sum().name('total')], [t['foo_id']]),
-            lambda st: sa.select([st.c.foo_id, F.sum(st.c.f).label('total')]).group_by(
+            lambda st: sa.select(st.c.foo_id, F.sum(st.c.f).label('total')).group_by(
                 st.c.foo_id
             ),
         ),
         (
             lambda t: t.aggregate([t['f'].sum().name('total')], ['foo_id', 'bar_id']),
             lambda st: sa.select(
-                [st.c.foo_id, st.c.bar_id, F.sum(st.c.f).label('total')]
+                st.c.foo_id, st.c.bar_id, F.sum(st.c.f).label('total')
             ).group_by(st.c.foo_id, st.c.bar_id),
         ),
         (
@@ -389,7 +377,7 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
                 having=[t.f.sum() > 10],
             ),
             lambda st: (
-                sa.select([st.c.foo_id, F.sum(st.c.f).label("total")])
+                sa.select(st.c.foo_id, F.sum(st.c.f).label("total"))
                 .group_by(st.c.foo_id)
                 .having(F.sum(st.c.f).label("total") > L(10))
             ),
@@ -401,7 +389,7 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
                 having=[t.count() > 100],
             ),
             lambda st: (
-                sa.select([st.c.foo_id, F.sum(st.c.f).label("total")])
+                sa.select(st.c.foo_id, F.sum(st.c.f).label("total"))
                 .group_by(st.c.foo_id)
                 .having(F.count() > L(100))
             ),
@@ -420,22 +408,22 @@ def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
     [
         pytest.param(
             lambda t: t.order_by("f"),
-            lambda b: sa.select([b]).order_by(b.c.f.asc()),
+            lambda b: sa.select(b).order_by(b.c.f.asc()),
             id="order_by",
         ),
         pytest.param(
             lambda t: t.order_by(("f", 0)),
-            lambda b: sa.select([b]).order_by(b.c.f.desc()),
+            lambda b: sa.select(b).order_by(b.c.f.desc()),
             id="order_by_ascending",
         ),
         pytest.param(
             lambda t: t.order_by(["c", ("f", 0)]),
-            lambda b: sa.select([b]).order_by(b.c.c.asc(), b.c.f.desc()),
+            lambda b: sa.select(b).order_by(b.c.c.asc(), b.c.f.desc()),
             id="order_by_mixed",
         ),
         pytest.param(
             lambda t: t.order_by(ibis.random()),
-            lambda b: sa.select([b]).order_by(sa.func.random().asc()),
+            lambda b: sa.select(b).order_by(sa.func.random().asc()),
             id="order_by_random",
         ),
     ],
@@ -459,21 +447,21 @@ def test_order_by(con, star1, sa_star1, expr_fn, expected_fn):
 )
 def test_limit(star1, sa_star1, expr_fn, expected_fn):
     expr = expr_fn(star1)
-    expected = expected_fn(sa.select([sa_star1.alias("t0")]))
+    expected = expected_fn(sa.select(sa_star1.alias("t0")))
     _check(expr, expected)
 
 
 def test_limit_filter(con, star1, sa_star1):
     expr = star1[star1.f > 0].limit(10)
     expected = sa_star1.alias("t0")
-    expected = sa.select([expected]).where(expected.c.f > L(0)).limit(10)
+    expected = sa.select(expected).where(expected.c.f > L(0)).limit(10)
     _check(expr, expected)
 
 
 def test_limit_subquery(con, star1, sa_star1):
     expr = star1.limit(10)[lambda x: x.f > 0]
-    expected = sa.select([sa_star1.alias("t1")]).limit(10).alias("t0")
-    expected = sa.select([expected]).where(expected.c.f > 0)
+    expected = sa.select(sa_star1.alias("t1")).limit(10).alias("t0")
+    expected = sa.select(expected).where(expected.c.f > 0)
     _check(expr, expected)
 
 
@@ -489,11 +477,11 @@ def test_cte_factor_distinct_but_equal(con, sa_alltypes, snapshot):
     #
 
     t2 = sa_alltypes.alias('t2')
-    t0 = sa.select([t2.c.g, F.sum(t2.c.f).label('metric')]).group_by(t2.c.g).cte('t0')
+    t0 = sa.select(t2.c.g, F.sum(t2.c.f).label('metric')).group_by(t2.c.g).cte('t0')
 
     t1 = t0.alias('t1')
     table_set = t0.join(t1, t0.c.g == t1.c.g)
-    stmt = sa.select([t0]).select_from(table_set)
+    stmt = sa.select(t0).select_from(table_set)
 
     _check(expr, stmt)
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -508,7 +496,7 @@ def test_self_reference_join(star1, sa_star1, snapshot):
     t1 = sa_star1.alias('t1')
 
     table_set = t0.join(t1, t0.c.foo_id == t1.c.bar_id)
-    expected = sa.select([t0]).select_from(table_set)
+    expected = sa.select(t0).select_from(table_set)
     _check(expr, expected)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -524,10 +512,10 @@ def test_self_reference_in_not_exists(con, sa_functional_alltypes, snapshot):
     s1 = sa_functional_alltypes.alias('t0')
     s2 = sa_functional_alltypes.alias('t1')
 
-    cond = sa.exists([L(1)]).select_from(s1).where(s1.c.string_col == s2.c.string_col)
+    cond = sa.exists(L(1)).select_from(s1).where(s1.c.string_col == s2.c.string_col)
 
-    ex_semi = sa.select([s1]).where(cond)
-    ex_anti = sa.select([s1]).where(~cond)
+    ex_semi = sa.select(s1).where(cond)
+    ex_anti = sa.select(s1).where(~cond)
 
     _check(semi, ex_semi)
     snapshot.assert_match(to_sql(semi), "semi.sql")
@@ -542,8 +530,8 @@ def test_where_uncorrelated_subquery(con, foo, bar, snapshot):
     foo = con.meta.tables["foo"].alias("t0")
     bar = con.meta.tables["bar"]
 
-    subq = sa.select([bar.c.job])
-    stmt = sa.select([foo]).where(foo.c.job.in_(subq))
+    subq = sa.select(bar.c.job)
+    stmt = sa.select(foo).where(foo.c.job.in_(subq))
     _check(expr, stmt)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -558,14 +546,12 @@ def test_where_correlated_subquery(con, foo, snapshot):
     foo = con.meta.tables["foo"]
     t0 = foo.alias('t0')
     t1 = foo.alias('t1')
-    subq = sa.select([F.avg(t1.c.y).label("Mean(y)")]).where(
-        t0.c.dept_id == t1.c.dept_id
-    )
+    subq = sa.select(F.avg(t1.c.y).label("Mean(y)")).where(t0.c.dept_id == t1.c.dept_id)
     # For versions of SQLAlchemy where scalar_subquery exists,
     # it should be used (otherwise, a deprecation warning is raised)
     if hasattr(subq, 'scalar_subquery'):
         subq = subq.scalar_subquery()
-    stmt = sa.select([t0]).where(t0.c.y > subq)
+    stmt = sa.select(t0).where(t0.c.y > subq)
     _check(expr, stmt)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -581,13 +567,13 @@ def test_subquery_aliased(con, star1, star2, snapshot):
     s2 = con.meta.tables["star2"].alias("t1")
 
     agged = (
-        sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
+        sa.select(s1.c.foo_id, F.sum(s1.c.f).label('total'))
         .group_by(s1.c.foo_id)
         .alias('t0')
     )
 
     joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
-    expected = sa.select([agged, s2.c.value1]).select_from(joined)
+    expected = sa.select(agged, s2.c.value1).select_from(joined)
 
     _check(expr, expected)
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -604,21 +590,21 @@ def test_lower_projection_sort_key(con, star1, star2, snapshot):
     t3 = con.meta.tables["star2"].alias("t3")
 
     t2 = (
-        sa.select([t4.c.foo_id, F.sum(t4.c.f).label('total')])
+        sa.select(t4.c.foo_id, F.sum(t4.c.f).label('total'))
         .group_by(t4.c.foo_id)
         .alias('t2')
     )
     t1 = (
-        sa.select([t2.c.foo_id, t2.c.total, t3.c.value1])
+        sa.select(t2.c.foo_id, t2.c.total, t3.c.value1)
         .select_from(t2.join(t3, t2.c.foo_id == t3.c.foo_id))
         .alias('t1')
     )
     t0 = (
-        sa.select([t1.c.foo_id, t1.c.total, t1.c.value1])
+        sa.select(t1.c.foo_id, t1.c.total, t1.c.value1)
         .where(t1.c.total > L(100))
         .alias('t0')
     )
-    expected = sa.select([t0.c.foo_id, t0.c.total, t0.c.value1]).order_by(
+    expected = sa.select(t0.c.foo_id, t0.c.total, t0.c.value1).order_by(
         t0.c.total.desc()
     )
 
@@ -640,13 +626,13 @@ def test_exists(con, foo_t, bar_t, snapshot):
     t1 = con.meta.tables["foo_t"].alias("t0")
     t2 = con.meta.tables["bar_t"].alias("t1")
 
-    cond1 = sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1)
-    ex1 = sa.select([t1]).where(cond1)
+    cond1 = sa.exists(L(1)).where(t1.c.key1 == t2.c.key1)
+    ex1 = sa.select(t1).where(cond1)
 
-    cond2 = sa.exists([L(1)]).where(
+    cond2 = sa.exists(L(1)).where(
         sql.and_(t1.c.key1 == t2.c.key1, t2.c.key2 == L('foo'))
     )
-    ex2 = sa.select([t1]).where(cond2)
+    ex2 = sa.select(t1).where(cond2)
 
     _check(e1, ex1)
     snapshot.assert_match(to_sql(e1), "e1.sql")
@@ -664,8 +650,8 @@ def test_not_exists(con, not_exists, snapshot):
     t1 = con.meta.tables["foo_t"].alias("t0")
     t2 = con.meta.tables["bar_t"].alias("t1")
 
-    expected = sa.select([t1]).where(
-        sa.not_(sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1))
+    expected = sa.select(t1).where(
+        sa.not_(sa.exists(L(1)).where(t1.c.key1 == t2.c.key1))
     )
 
     _check(expr, expected)
@@ -675,28 +661,26 @@ def test_not_exists(con, not_exists, snapshot):
 @pytest.mark.parametrize(
     ("expr_fn", "expected_fn"),
     [
-        (lambda t: t.distinct(), lambda sat: sa.select([sat]).distinct()),
+        (lambda t: t.distinct(), lambda sat: sa.select(sat).distinct()),
         (
             lambda t: t['string_col', 'int_col'].distinct(),
-            lambda sat: sa.select([sat.c.string_col, sat.c.int_col]).distinct(),
+            lambda sat: sa.select(sat.c.string_col, sat.c.int_col).distinct(),
         ),
         (
             lambda t: t[t.string_col].distinct(),
-            lambda sat: sa.select([sat.c.string_col.distinct()]),
+            lambda sat: sa.select(sat.c.string_col.distinct()),
         ),
         (
             lambda t: t.int_col.nunique().name('nunique'),
-            lambda sat: sa.select([F.count(sat.c.int_col.distinct()).label('nunique')]),
+            lambda sat: sa.select(F.count(sat.c.int_col.distinct()).label('nunique')),
         ),
         (
             lambda t: t.group_by('string_col').aggregate(
                 t.int_col.nunique().name('nunique')
             ),
             lambda sat: sa.select(
-                [
-                    sat.c.string_col,
-                    F.count(sat.c.int_col.distinct()).label('nunique'),
-                ]
+                sat.c.string_col,
+                F.count(sat.c.int_col.distinct()).label('nunique'),
             ).group_by(sat.c.string_col),
         ),
     ],
@@ -726,13 +710,13 @@ def test_sort_aggregation_translation_failure(
 
     sat = sa_functional_alltypes.alias("t1")
     base = (
-        sa.select([sat.c.string_col, F.max(sat.c.double_col).label('foo')]).group_by(
+        sa.select(sat.c.string_col, F.max(sat.c.double_col).label('foo')).group_by(
             sat.c.string_col
         )
     ).alias('t0')
 
     ex = (
-        sa.select([base.c.string_col, base.c.foo])
+        sa.select(base.c.string_col, base.c.foo)
         .select_from(base)
         .order_by(sa.desc('foo'))
     )
@@ -779,7 +763,7 @@ def test_where_correlated_subquery_with_join():
     partsupp_t2 = partsupp.alias("t2")
 
     t0 = (
-        sa.select([part_t1.c.p_partkey, partsupp_t2.c.ps_supplycost])
+        sa.select(part_t1.c.p_partkey, partsupp_t2.c.ps_supplycost)
         .select_from(
             part_t1.join(
                 partsupp_t2,
@@ -792,7 +776,7 @@ def test_where_correlated_subquery_with_join():
     partsupp_t2 = partsupp.alias("t2")
     supplier_t3 = supplier.alias("t3")
     t1 = (
-        sa.select([partsupp_t2.c.ps_partkey, partsupp_t2.c.ps_supplycost])
+        sa.select(partsupp_t2.c.ps_partkey, partsupp_t2.c.ps_supplycost)
         .select_from(
             partsupp_t2.join(
                 supplier_t3,
@@ -802,12 +786,12 @@ def test_where_correlated_subquery_with_join():
         .alias("t1")
     )
     ex = (
-        sa.select([t0.c.p_partkey, t0.c.ps_supplycost])
+        sa.select(t0.c.p_partkey, t0.c.ps_supplycost)
         .select_from(t0)
         .where(
             t0.c.ps_supplycost
             == (
-                sa.select([sa.func.min(t1.c.ps_supplycost).label("Min(ps_supplycost)")])
+                sa.select(sa.func.min(t1.c.ps_supplycost).label("Min(ps_supplycost)"))
                 .select_from(t1)
                 .where(t1.c.ps_partkey == t0.c.p_partkey)
                 .scalar_subquery()
@@ -830,13 +814,11 @@ def test_mutate_filter_join_no_cross_join():
         "person", sa.column("person_id"), sa.column("birth_datetime")
     ).alias("t1")
     t0 = sa.select(
-        [
-            person.c.person_id,
-            person.c.birth_datetime,
-            sa.literal(400).label("age"),
-        ]
+        person.c.person_id,
+        person.c.birth_datetime,
+        sa.literal(400).label("age"),
     ).alias("t0")
-    ex = sa.select([t0.c.person_id]).where(t0.c.age <= 40)
+    ex = sa.select(t0.c.person_id).where(t0.c.age <= 40)
     _check(expr, ex)
 
 
@@ -852,43 +834,32 @@ def test_filter_group_by_agg_with_same_name():
     t1 = sa.table("t", sa.column("int_col"), sa.column("bigint_col")).alias("t1")
     t0 = (
         sa.select(
-            [
-                t1.c.int_col.label("int_col"),
-                sa.func.sum(t1.c.bigint_col).label("bigint_col"),
-            ]
+            t1.c.int_col.label("int_col"),
+            sa.func.sum(t1.c.bigint_col).label("bigint_col"),
         )
         .group_by(t1.c.int_col)
         .alias("t0")
     )
-    ex = sa.select([t0]).where(t0.c.bigint_col == 60)
+    ex = sa.select(t0).where(t0.c.bigint_col == 60)
     _check(expr, ex)
 
 
 @pytest.fixture
 def person():
     return ibis.table(
-        dict(id="string", personal="string", family="string"),
-        name="person",
+        dict(id="string", personal="string", family="string"), name="person"
     )
 
 
 @pytest.fixture
 def visited():
-    return ibis.table(
-        dict(id="int32", site="string", dated="string"),
-        name="visited",
-    )
+    return ibis.table(dict(id="int32", site="string", dated="string"), name="visited")
 
 
 @pytest.fixture
 def survey():
     return ibis.table(
-        dict(
-            taken="int32",
-            person="string",
-            quant="string",
-            reading="float32",
-        ),
+        dict(taken="int32", person="string", quant="string", reading="float32"),
         name="survey",
     )
 
@@ -908,18 +879,16 @@ def test_no_cross_join(person, visited, survey):
 
     from_ = t0.join(t1, t0.c.id == t1.c.person).join(t2, t2.c.id == t1.c.taken)
     ex = sa.select(
-        [
-            t0.c.id.label("id_x"),
-            t0.c.personal,
-            t0.c.family,
-            t1.c.taken,
-            t1.c.person,
-            t1.c.quant,
-            t1.c.reading,
-            t2.c.id.label("id_y"),
-            t2.c.site,
-            t2.c.dated,
-        ]
+        t0.c.id.label("id_x"),
+        t0.c.personal,
+        t0.c.family,
+        t1.c.taken,
+        t1.c.person,
+        t1.c.quant,
+        t1.c.reading,
+        t2.c.id.label("id_y"),
+        t2.c.site,
+        t2.c.dated,
     ).select_from(from_)
     _check(expr, ex)
 

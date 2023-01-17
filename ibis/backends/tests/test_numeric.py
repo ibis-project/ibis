@@ -524,19 +524,18 @@ def test_sa_default_numeric_precision_and_scale(
     sqla_types = []
     ibis_types = []
     for name, t, ibis_type in typespec:
-        sqla_type = sa.Column(name, t, nullable=True)
-        sqla_types.append(sqla_type)
+        sqla_types.append(sa.Column(name, t, nullable=True))
         ibis_types.append((name, ibis_type(nullable=True)))
 
     # Create a table with the numeric types.
     table_name = 'test_sa_default_param_decimal'
-    engine = con.con
-    table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
-    table.create(bind=engine, checkfirst=True)
+    table = sa.Table(table_name, sa.MetaData(), *sqla_types)
+    with con.begin() as bind:
+        table.create(bind=bind, checkfirst=True)
 
     try:
         # Check that we can correctly recover the default precision and scale.
-        schema = schema_from_table(table)
+        schema = schema_from_table(table, dialect=con.con.dialect)
         expected = ibis.schema(ibis_types)
 
         assert_equal(schema, expected)

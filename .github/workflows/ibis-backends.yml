@@ -35,6 +35,8 @@ jobs:
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    env:
+      SQLALCHEMY_WARN_20: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -286,6 +288,8 @@ jobs:
   test_backends_min_version:
     name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    env:
+      SQLALCHEMY_WARN_20: "1"
     strategy:
       fail-fast: false
       matrix:

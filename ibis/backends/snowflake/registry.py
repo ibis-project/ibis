@@ -65,16 +65,14 @@ def _round(t, op):
 
 def _day_of_week_name(arg):
     return sa.case(
+        ("Sun", "Sunday"),
+        ("Mon", "Monday"),
+        ("Tue", "Tuesday"),
+        ("Wed", "Wednesday"),
+        ("Thu", "Thursday"),
+        ("Fri", "Friday"),
+        ("Sat", "Saturday"),
         value=sa.func.dayname(arg),
-        whens=[
-            ("Sun", "Sunday"),
-            ("Mon", "Monday"),
-            ("Tue", "Tuesday"),
-            ("Wed", "Wednesday"),
-            ("Thu", "Thursday"),
-            ("Fri", "Friday"),
-            ("Sat", "Saturday"),
-        ],
         else_=None,
     )
 

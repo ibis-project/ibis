@@ -8,21 +8,22 @@ import ibis
 import ibis.expr.datatypes as dt
 
 pytest.importorskip("psycopg2")
-pytest.importorskip("sqlalchemy")
+sa = pytest.importorskip("sqlalchemy")
 
 from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf  # noqa: E402
 
 
 @pytest.fixture(scope='session')
 def next_serial(con):
-    serial_proxy = con.con.execute("SELECT nextval('test_sequence') as value;")
-    return serial_proxy.fetchone()['value']
+    with con.begin() as c:
+        return c.execute(sa.text("SELECT nextval('test_sequence') as value")).scalar()
 
 
 @pytest.fixture(scope='session')
 def test_schema(con, next_serial):
     schema_name = f'udf_test_{next_serial}'
-    con.con.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name};")
+    with con.begin() as c:
+        c.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
     return schema_name
 
 
@@ -77,15 +78,16 @@ $$;""".format(
 
 @pytest.fixture(scope='session')
 def con_for_udf(con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf):
-    with con.con.begin() as c:
-        c.execute(sql_table_setup)
-        c.execute(sql_define_udf)
-        c.execute(sql_define_py_udf)
+    with con.begin() as c:
+        c.execute(sa.text(sql_table_setup))
+        c.execute(sa.text(sql_define_udf))
+        c.execute(sa.text(sql_define_py_udf))
     try:
         yield con
     finally:
         # teardown
-        con.con.execute(f"DROP SCHEMA IF EXISTS {test_schema} CASCADE")
+        with con.begin() as c:
+            c.execute(sa.text(f"DROP SCHEMA IF EXISTS {test_schema} CASCADE"))
 
 
 @pytest.fixture

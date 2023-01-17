@@ -27,6 +27,8 @@ IBIS_TEST_TRINO_DB = os.environ.get(
     os.environ.get('TRINO_DATABASE', 'memory'),
 )
 
+sa = pytest.importorskip("sqlalchemy")
+
 
 class TestConf(BackendTest, RoundAwayFromZero):
     # trino rounds half to even for double precision and half away from zero
@@ -72,8 +74,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 source = f"postgresql.public.{table}"
                 dest = f"memory.default.{table}"
                 with con.begin() as c:
-                    c.execute(f"DROP TABLE IF EXISTS {dest}")
-                    c.execute(f"CREATE TABLE {dest} AS SELECT * FROM {source}")
+                    c.execute(sa.text(f"DROP TABLE IF EXISTS {dest}"))
+                    c.execute(sa.text(f"CREATE TABLE {dest} AS SELECT * FROM {source}"))
 
         selects = []
         for row in struct_types.abc:
@@ -87,15 +89,19 @@ class TestConf(BackendTest, RoundAwayFromZero):
             selects.append(f"SELECT {datarow} AS abc")
 
         with con.begin() as c:
-            c.execute("DROP TABLE IF EXISTS struct")
-            c.execute(f"CREATE TABLE struct AS {' UNION ALL '.join(selects)}")
-            c.execute("DROP TABLE IF EXISTS map")
-            c.execute("CREATE TABLE map (kv MAP<VARCHAR, BIGINT>)")
+            c.execute(sa.text("DROP TABLE IF EXISTS struct"))
+            c.execute(sa.text(f"CREATE TABLE struct AS {' UNION ALL '.join(selects)}"))
+            c.execute(sa.text("DROP TABLE IF EXISTS map"))
+            c.execute(sa.text("CREATE TABLE map (kv MAP<VARCHAR, BIGINT>)"))
             c.execute(
-                "INSERT INTO map VALUES (MAP(ARRAY['a', 'b', 'c'], ARRAY[1, 2, 3]))"
+                sa.text(
+                    "INSERT INTO map VALUES (MAP(ARRAY['a', 'b', 'c'], ARRAY[1, 2, 3]))"
+                )
             )
             c.execute(
-                "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
+                sa.text(
+                    "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
+                )
             )
 
     @staticmethod

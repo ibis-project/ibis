@@ -369,7 +369,8 @@ def test_insert_from_memtable(alchemy_con):
         assert len(table.execute()) == 6
         assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
     finally:
-        alchemy_con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        with alchemy_con.begin() as con:
+            con.execute(sa.text(f"DROP TABLE IF EXISTS {table_name}"))
         assert table_name not in alchemy_con.list_tables()
 
 
@@ -393,27 +394,25 @@ def test_list_databases(alchemy_con):
 def test_in_memory(alchemy_backend):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
     table_name = f"t{guid()[:6]}"
-    con.raw_sql(f"CREATE TABLE {table_name} (x int)")
+    with con.begin() as c:
+        c.execute(sa.text(f"CREATE TABLE {table_name} (x int)"))
     try:
         assert table_name in con.list_tables()
     finally:
-        con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        with con.begin() as c:
+            c.execute(sa.text(f"DROP TABLE IF EXISTS {table_name}"))
         assert table_name not in con.list_tables()
 
 
-@pytest.mark.parametrize(
-    "coltype",
-    [dt.uint8, dt.uint16, dt.uint32, dt.uint64],
-    ids=["uint8", "uint16", "uint32", "uint64"],
-)
+@pytest.mark.parametrize("typ", [dt.uint8, dt.uint16, dt.uint32, dt.uint64], ids=str)
 @pytest.mark.notyet(
     ["postgres", "mysql", "sqlite"],
     raises=TypeError,
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
-def test_unsigned_integer_type(alchemy_con, coltype):
+def test_unsigned_integer_type(alchemy_con, typ):
     tname = f"t{guid()[:6]}"
-    alchemy_con.create_table(tname, schema=ibis.schema(dict(a=coltype)), force=True)
+    alchemy_con.create_table(tname, schema=ibis.schema(dict(a=typ)), force=True)
     try:
         assert tname in alchemy_con.list_tables()
     finally:

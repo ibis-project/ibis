@@ -138,8 +138,8 @@ def recreate_database(
 
     if url.database is not None:
         with engine.begin() as conn:
-            conn.execute(f'DROP DATABASE IF EXISTS {database}')
-            conn.execute(f'CREATE DATABASE {database}')
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS {database}'))
+            conn.execute(sa.text(f'CREATE DATABASE {database}'))
 
 
 def init_database(
@@ -181,7 +181,7 @@ def init_database(
     if schema:
         with engine.begin() as conn:
             for stmt in filter(None, map(str.strip, schema.read().split(';'))):
-                conn.execute(stmt)
+                conn.exec_driver_sql(stmt)
 
     return engine
 

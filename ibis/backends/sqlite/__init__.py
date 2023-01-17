@@ -18,7 +18,7 @@ import datetime
 import sqlite3
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Any, Iterator
 
 import sqlalchemy as sa
 import toolz
@@ -185,12 +185,14 @@ class Backend(BaseAlchemyBackend):
         quoted_name = self.con.dialect.identifier_preparer.quote(name)
         self.raw_sql(f"ATTACH DATABASE {str(path)!r} AS {quoted_name}")
 
-    def _get_sqla_table(self, name, schema=None, autoload=True):
+    def _get_sqla_table(
+        self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
+    ) -> sa.Table:
         return sa.Table(
             name,
             self.meta,
             schema=schema or self.current_database,
-            autoload=autoload,
+            autoload_with=self.con if autoload else None,
         )
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
@@ -225,21 +227,21 @@ class Backend(BaseAlchemyBackend):
 
         with self.begin() as con:
             # create a view that should only be visible in this transaction
-            con.execute(f"CREATE TEMPORARY VIEW {view} AS {query}")
+            con.execute(sa.text(f"CREATE TEMPORARY VIEW {view} AS {query}"))
 
             # extract table info from the view
-            table_info = con.execute(f"PRAGMA table_info({view})")
+            table_info = con.execute(sa.text(f"PRAGMA table_info({view})"))
 
             # get names and not nullables
             names, notnulls, raw_types = zip(
-                *toolz.pluck(["name", "notnull", "type"], table_info)
+                *toolz.pluck(["name", "notnull", "type"], table_info.mappings())
             )
 
             # get the type of the first row if no affinity was returned in
             # `raw_types`; assume that reflects the rest of the rows
             type_queries = ", ".join(map("typeof({})".format, names))
             single_row_types = con.execute(
-                f"SELECT {type_queries} FROM {view} LIMIT 1"
+                sa.text(f"SELECT {type_queries} FROM {view} LIMIT 1")
             ).fetchone()
             for name, notnull, raw_typ, typ in zip(
                 names, notnulls, raw_types, single_row_types
@@ -248,7 +250,7 @@ class Backend(BaseAlchemyBackend):
                 yield name, ibis_type(nullable=not notnull)
 
             # drop the view when we're done with it
-            con.execute(f"DROP VIEW IF EXISTS {view}")
+            con.execute(sa.text(f"DROP VIEW IF EXISTS {view}"))
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a SQLite SQL string."""

@@ -194,7 +194,8 @@ $$;
         internal_name=python_func.__name__,
         args=', '.join(parameter_names),
     )
-    client.con.execute(formatted_sql)
+    with client.begin() as con:
+        con.execute(sa.text(formatted_sql))
     return existing_udf(
         name=internal_name,
         input_types=in_types,

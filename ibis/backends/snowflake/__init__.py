@@ -54,8 +54,8 @@ class Backend(BaseAlchemyBackend):
 
     @property
     def version(self) -> str:
-        [(version,)] = self.con.execute("SELECT CURRENT_VERSION()").fetchall()
-        return version
+        with self.begin() as con:
+            return con.execute("SELECT CURRENT_VERSION()").scalar()
 
     def do_connect(
         self,
@@ -87,12 +87,12 @@ class Backend(BaseAlchemyBackend):
         inspected = self.inspector.get_columns(name, schema)
         cols = []
         identifier = name if not schema else schema + "." + name
-        for (colname, *_), colinfo in zip(
-            self.con.execute(f"DESCRIBE TABLE {identifier}"), inspected
-        ):
-            del colinfo["name"]
-            colinfo["type_"] = colinfo.pop("type")
-            cols.append(sa.Column(colname, **colinfo, quote=True))
+        with self.begin() as con:
+            cur = con.execute(sa.text(f"DESCRIBE TABLE {identifier}"))
+            for (colname, *_), colinfo in zip(cur, inspected):
+                del colinfo["name"]
+                colinfo["type_"] = colinfo.pop("type")
+                cols.append(sa.Column(colname, **colinfo, quote=True))
         return sa.Table(
             name,
             self.meta,
@@ -122,20 +122,23 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as bind:
-            result = bind.execute(f"SELECT * FROM ({query}) t0 LIMIT 0")
-            info_rows = bind.execute(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
+            result = bind.execute(sa.text(f"SELECT * FROM ({query}) t0 LIMIT 0"))
+            info_rows = bind.execute(
+                sa.text(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
+            )
 
             for name, raw_type, null in toolz.pluck(
-                ["name", "type", "null?"], info_rows
+                ["name", "type", "null?"], info_rows.mappings()
             ):
                 typ = parse(raw_type)
                 yield name, typ(nullable=null.upper() == "Y")
 
     def list_databases(self, like=None) -> list[str]:
-        databases = [
-            row.database_name
-            for row in self.con.execute(
-                'select database_name from information_schema.databases'
-            )
-        ]
+        with self.begin() as con:
+            databases = [
+                row.database_name
+                for row in con.execute(
+                    sa.text('SELECT database_name FROM information_schema.databases')
+                )
+            ]
         return self._filter_with_like(databases, like)

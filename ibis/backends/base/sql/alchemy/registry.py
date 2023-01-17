@@ -267,7 +267,7 @@ def _translate_case(t, cases, results, default):
     whens = zip(case_args, result_args)
     default = t.translate(default)
 
-    return sa.case(list(whens), else_=default)
+    return sa.case(*whens, else_=default)
 
 
 def _negate(t, op):
@@ -410,7 +410,7 @@ def reduction(sa_func):
 def _zero_if_null(t, op):
     sa_arg = t.translate(op.arg)
     return sa.case(
-        [(sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.output_dtype)))],
+        (sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.output_dtype))),
         else_=sa_arg,
     )
 
@@ -606,7 +606,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Clip: _clip(min_func=sa.func.least, max_func=sa.func.greatest),
     ops.Where: fixed_arity(
         lambda predicate, value_if_true, value_if_false: sa.case(
-            [(predicate, value_if_true)],
+            (predicate, value_if_true),
             else_=value_if_false,
         ),
         3,

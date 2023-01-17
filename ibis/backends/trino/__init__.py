@@ -58,13 +58,15 @@ class Backend(BaseAlchemyBackend):
             )
         except TypeError:
             super().do_connect(sa.create_engine(url, connect_args=connect_args))
-        self._meta = sa.MetaData(bind=self.con, schema=schema)
+        self._meta = sa.MetaData(schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
         with self.con.begin() as con:
-            con.execute(f"PREPARE {tmpname} FROM {query}")
-            rows = list(con.execute(f"DESCRIBE OUTPUT {tmpname}"))
-            for name, type in toolz.pluck(["Column Name", "Type"], rows):
+            con.execute(sa.text(f"PREPARE {tmpname} FROM {query}"))
+            for name, type in toolz.pluck(
+                ["Column Name", "Type"],
+                con.execute(sa.text(f"DESCRIBE OUTPUT {tmpname}")).mappings(),
+            ):
                 ibis_type = parse(type)
                 yield name, ibis_type(nullable=True)
