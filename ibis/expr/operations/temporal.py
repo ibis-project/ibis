@@ -254,7 +254,6 @@ class TimestampFromYMDHMS(Value):
 @public
 class TimestampFromUNIX(Value):
     arg = rlz.any
-    # Only pandas-based backends support 'ns'
     unit = rlz.isin({'s', 'ms', 'us', 'ns'})
 
     output_dtype = dt.timestamp
