@@ -27,7 +27,7 @@ MYSQL_TYPES = [
     ("date", dt.date),
     ("time", dt.time),
     ("datetime", dt.timestamp),
-    ("year", dt.int16),
+    ("year", dt.int8),
     ("char(32)", dt.string),
     ("char byte", dt.binary),
     ("varchar(42)", dt.string),
@@ -64,7 +64,9 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
     # don't need to explicitly drop the table
     con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
     expected_schema = ibis.schema(dict(x=expected_type))
+    t = con.table(raw_name)
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+    assert t.schema() == expected_schema
     assert result_schema == expected_schema
 
 

@@ -66,7 +66,7 @@ CREATE TABLE functional_alltypes (
     double_col DOUBLE,
     date_string_col TEXT,
     string_col TEXT,
-    timestamp_col TIMESTAMP,
+    timestamp_col DATETIME,
     year INTEGER,
     month INTEGER
 ) DEFAULT CHARACTER SET = utf8;

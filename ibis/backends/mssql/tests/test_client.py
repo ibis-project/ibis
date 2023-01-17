@@ -3,6 +3,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 DB_TYPES = [
     # Exact numbers
@@ -44,18 +45,23 @@ DB_TYPES = [
     ('IMAGE', dt.binary),
     # Other data types
     ('UNIQUEIDENTIFIER', dt.uuid),
-    ('GEOMETRY', dt.geometry),
-    ('GEOGRAPHY', dt.geography),
     ('TIMESTAMP', dt.binary(nullable=False)),
 ]
 
 
+skipif_no_geospatial_deps = pytest.mark.skipif(
+    not geospatial_supported, reason="geospatial dependencies not installed"
+)
+
+
 @pytest.mark.parametrize(
     ("server_type", "expected_type"),
-    [
-        param(server_type, ibis_type, id=server_type)
-        for server_type, ibis_type in DB_TYPES
+    DB_TYPES
+    + [
+        param("GEOMETRY", dt.geometry, marks=[skipif_no_geospatial_deps]),
+        param("GEOGRAPHY", dt.geography, marks=[skipif_no_geospatial_deps]),
     ],
+    ids=str,
 )
 def test_get_schema_from_query(con, server_type, expected_type):
     raw_name = f"tmp_{ibis.util.guid()}"

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
+import re
 import warnings
 from typing import Iterable, Literal
 
@@ -121,8 +121,14 @@ class Backend(BaseAlchemyBackend):
                     warnings.warn(f"Couldn't reset MySQL timezone: {str(e)}")
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self.con.begin() as con:
-            result = con.execute(f"SELECT * FROM ({query}) _ LIMIT 0")
+        if (
+            re.search(r"^\s*SELECT\s", query, flags=re.MULTILINE | re.IGNORECASE)
+            is not None
+        ):
+            query = f"({query})"
+
+        with self.begin() as con:
+            result = con.execute(f"SELECT * FROM {query} _ LIMIT 0")
             cursor = result.cursor
             yield from (
                 (field.name, _type_from_cursor_info(descr, field))
@@ -135,15 +141,6 @@ class Backend(BaseAlchemyBackend):
         definition: sa.sql.compiler.Compiled,
     ) -> str:
         return f"CREATE OR REPLACE VIEW {name} AS {definition}"
-
-    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        query = f"DROP VIEW IF EXISTS {name}"
-
-        def drop(self, raw_name: str, query: str):
-            self.con.execute(query)
-            self._temp_views.discard(raw_name)
-
-        atexit.register(drop, self, raw_name, query)
 
 
 # TODO(kszucs): unsigned integers
