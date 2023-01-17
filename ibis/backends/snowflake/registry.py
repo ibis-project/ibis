@@ -227,6 +227,12 @@ operation_registry.update(
         ops.RegexExtract: fixed_arity(sa.func.regexp_substr, 3),
         ops.RegexSearch: fixed_arity(lambda left, right: left.op('REGEXP')(right), 2),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.ExtractMillisecond: fixed_arity(
+            lambda arg: sa.cast(
+                sa.extract("epoch_millisecond", arg) % 1000, sa.SMALLINT
+            ),
+            1,
+        ),
     }
 )
 
@@ -247,7 +253,6 @@ _invalid_operations = {
     # ibis.expr.operations.structs
     ops.StructField,
     # ibis.expr.operations.temporal
-    ops.ExtractMillisecond,
     ops.IntervalFromInteger,
     ops.TimestampDiff,
     ops.TimestampFromUNIX,
