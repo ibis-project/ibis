@@ -781,7 +781,7 @@ def test_date_literal(con):
     assert result.strftime('%Y-%m-%d') == '2022-02-04'
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
 @pytest.mark.notyet(["clickhouse", "impala"])
 def test_timestamp_literal(con):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
@@ -821,6 +821,20 @@ def test_date_column_from_ymd(con, alltypes, df):
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.date.astype('datetime64[ns]')
+    tm.assert_series_equal(golden, result.timestamp_col)
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["clickhouse", "impala"])
+def test_timestamp_column_from_ymdhms(con, alltypes, df):
+    c = alltypes.timestamp_col
+    expr = ibis.timestamp(
+        c.year(), c.month(), c.day(), c.hour(), c.minute(), c.second()
+    )
+    tbl = alltypes[expr.name('timestamp_col')]
+    result = con.execute(tbl)
+
+    golden = df.timestamp_col.dt.floor("s").astype('datetime64[ns]')
     tm.assert_series_equal(golden, result.timestamp_col)
 
 

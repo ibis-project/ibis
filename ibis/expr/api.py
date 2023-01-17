@@ -585,6 +585,7 @@ def timestamp(
 @timestamp.register(np.floating)
 @timestamp.register(int)
 @timestamp.register(float)
+@timestamp.register(ir.IntegerValue)
 def _timestamp_from_ymdhms(
     value, *args, timezone: str | None = None
 ) -> ir.TimestampScalar:
