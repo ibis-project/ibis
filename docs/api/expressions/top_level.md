@@ -15,6 +15,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.date
 ::: ibis.desc
 ::: ibis.difference
+::: ibis.get_backend
 ::: ibis.greatest
 ::: ibis.ifelse
 ::: ibis.intersect

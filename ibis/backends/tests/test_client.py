@@ -862,3 +862,16 @@ def test_has_operation_no_geo(con):
     """
     for op in [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion]:
         assert not con.has_operation(op)
+
+
+def test_get_backend(con, alltypes, monkeypatch):
+    assert ibis.get_backend(alltypes) is con
+    assert ibis.get_backend(alltypes.id.min()) is con
+
+    with pytest.raises(com.IbisError, match="contains unbound tables"):
+        ibis.get_backend(ibis.table({"x": "int"}))
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    assert ibis.get_backend() is con
+    expr = ibis.literal(1) + 2
+    assert ibis.get_backend(expr) is con
