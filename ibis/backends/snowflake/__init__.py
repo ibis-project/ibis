@@ -55,15 +55,10 @@ class Backend(BaseAlchemyBackend):
     @property
     def version(self) -> str:
         with self.begin() as con:
-            return con.execute("SELECT CURRENT_VERSION()").scalar()
+            return con.exec_driver_sql("SELECT CURRENT_VERSION()").scalar()
 
     def do_connect(
-        self,
-        user: str,
-        password: str,
-        account: str,
-        database: str,
-        **kwargs,
+        self, user: str, password: str, account: str, database: str, **kwargs: Any
     ):
         dbparams = dict(zip(("database", "schema"), database.split("/", 1)))
         if dbparams.get("schema") is None:
@@ -71,13 +66,7 @@ class Backend(BaseAlchemyBackend):
                 "Schema must be non-None. Pass the schema as part of the "
                 f"database e.g., {dbparams['database']}/my_schema"
             )
-        url = URL(
-            account=account,
-            user=user,
-            password=password,
-            **dbparams,
-            **kwargs,
-        )
+        url = URL(account=account, user=user, password=password, **dbparams, **kwargs)
         self.database_name = dbparams["database"]
         return super().do_connect(sa.create_engine(url))
 
@@ -88,11 +77,11 @@ class Backend(BaseAlchemyBackend):
         cols = []
         identifier = name if not schema else schema + "." + name
         with self.begin() as con:
-            cur = con.execute(sa.text(f"DESCRIBE TABLE {identifier}"))
-            for (colname, *_), colinfo in zip(cur, inspected):
-                del colinfo["name"]
+            cur = con.execute(sa.text(f"DESCRIBE TABLE {identifier}")).mappings()
+            for colname, colinfo in zip(toolz.pluck("name", cur), inspected):
+                colinfo["name"] = colname
                 colinfo["type_"] = colinfo.pop("type")
-                cols.append(sa.Column(colname, **colinfo, quote=True))
+                cols.append(sa.Column(**colinfo, quote=True))
         return sa.Table(
             name,
             self.meta,
@@ -139,6 +128,6 @@ class Backend(BaseAlchemyBackend):
                 row.database_name
                 for row in con.execute(
                     sa.text('SELECT database_name FROM information_schema.databases')
-                )
+                ).mappings()
             ]
         return self._filter_with_like(databases, like)
