@@ -59,8 +59,9 @@ class DatabaseTable(PhysicalTable):
     schema = rlz.instance_of(sch.Schema)
     source = rlz.client
 
+    @util.deprecated(instead=".copy(name=new_name)", version="4.1")
     def change_name(self, new_name):
-        return type(self)(new_name, self.args[1], self.source)
+        return self.copy(name=new_name)
 
 
 @public

@@ -382,7 +382,7 @@ class ImpalaTable(ir.Table):
         statement = RenameTable(self._qualified_name, new_name, new_database=database)
         self._client.raw_sql(statement)
 
-        op = self.op().change_name(statement.new_qualified_name)
+        op = self.op().copy(name=statement.new_qualified_name)
         return type(self)(op)
 
     @property
