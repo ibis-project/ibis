@@ -40,7 +40,11 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
         ops.Lead,
     )
     _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
-    _ignore_cast_types = (dt.Map, dt.Array)
+
+    def cast(self, sa_expr, ibis_type: dt.DataType):
+        if ibis_type.is_array() or ibis_type.is_map() or ibis_type.is_struct():
+            return sa.type_coerce(sa_expr, self.get_sqla_type(ibis_type))
+        return super().cast(sa_expr, ibis_type)
 
 
 class SnowflakeCompiler(AlchemyCompiler):
