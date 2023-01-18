@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.backends.bigquery.datatypes import UDF_CONTEXT, ibis_type_to_bigquery_type
+from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type, spread_type
 from ibis.backends.bigquery.operations import BigQueryUDFNode
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.udf.validate import validate_output_type
@@ -254,6 +254,16 @@ return {f.__name__}({args});\
         """;
         '''
         validate_output_type(output_type)
+        if any(
+            type_ == dt.int64
+            for param_type in params.values()
+            for type_ in spread_type(param_type)
+        ) or any(type_ == dt.int64 for type_ in spread_type(output_type)):
+            raise TypeError(
+                "BigQuery does not support INT64 as an argument type or a return type "
+                "for UDFs. Replace INT64 with FLOAT64 in your UDF signature and "
+                "cast all INT64 inputs to FLOAT64."
+            )
 
         if libraries is None:
             libraries = []
@@ -276,11 +286,11 @@ return {f.__name__}({args});\
         bigquery_signature = ", ".join(
             "{name} {type}".format(
                 name=name,
-                type=ibis_type_to_bigquery_type(dt.dtype(type_), UDF_CONTEXT),
+                type=ibis_type_to_bigquery_type(dt.dtype(type_)),
             )
             for name, type_ in params.items()
         )
-        return_type = ibis_type_to_bigquery_type(dt.dtype(output_type), UDF_CONTEXT)
+        return_type = ibis_type_to_bigquery_type(dt.dtype(output_type))
         libraries_opts = (
             f"\nOPTIONS (\n    library={repr(list(libraries))}\n)" if libraries else ""
         )
