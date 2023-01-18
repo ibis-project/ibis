@@ -51,7 +51,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres", "snowflake", "bigquery"])
+@pytest.mark.notimpl(["postgres", "bigquery"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]
@@ -62,7 +62,7 @@ def test_literal(con, field):
     tm.assert_series_equal(result, expected.astype(dtype))
 
 
-@pytest.mark.notimpl(["postgres", "snowflake"])
+@pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
