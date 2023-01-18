@@ -214,6 +214,7 @@ operation_registry.update(
             *map(t.translate, op.cols)
         ),
         ops.ArraySlice: _array_slice,
+        ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.Map: _map,
     }
 )
@@ -231,7 +232,6 @@ _invalid_operations = {
     # ibis.expr.operations.reductions
     ops.All,
     ops.Any,
-    ops.ArrayCollect,
     ops.BitAnd,
     ops.BitOr,
     ops.BitXor,
