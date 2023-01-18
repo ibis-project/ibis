@@ -160,7 +160,7 @@ class PySparkTable(ir.Table):
         statement = ddl.RenameTable(self._qualified_name, new_name)
         self._client.raw_sql(statement.compile())
 
-        op = self.op().change_name(new_qualified_name)
+        op = self.op().copy(name=new_qualified_name)
         return type(self)(op)
 
     def alter(self, tbl_properties: Mapping[str, str] | None = None) -> Any:
