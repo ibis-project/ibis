@@ -636,7 +636,7 @@ def _bit_agg(func):
     def _translate(op, **kw):
         arg = translate_val(op.arg, **kw)
         if not isinstance((type := op.arg.output_dtype), dt.UnsignedInteger):
-            nbits = type._nbytes * 8
+            nbits = type.nbytes * 8
             arg = f"reinterpretAsUInt{nbits}({arg})"
 
         if (where := op.where) is not None:
