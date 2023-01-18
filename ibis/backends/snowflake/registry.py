@@ -123,6 +123,12 @@ def _map(_, op):
     )
 
 
+def _nth_value(t, op):
+    if not isinstance(nth := op.nth, ops.Literal):
+        raise TypeError(f"`nth` argument must be a literal Python int, got {type(nth)}")
+    return sa.func.nth_value(t.translate(op.arg), nth.value + 1)
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -241,6 +247,7 @@ operation_registry.update(
             sa.func.parse_json(sa.func.get(t.translate(op.arg), op.field)),
             t.get_sqla_type(op.output_dtype),
         ),
+        ops.NthValue: _nth_value,
     }
 )
 
@@ -250,7 +257,6 @@ _invalid_operations = {
     ops.CumulativeAny,
     ops.CumulativeOp,
     ops.NTile,
-    ops.NthValue,
     # ibis.expr.operations.array
     ops.ArrayRepeat,
     ops.Unnest,
