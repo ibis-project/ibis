@@ -45,7 +45,6 @@ class AlchemyExprTranslator(ExprTranslator):
     integer_to_timestamp = sa.func.to_timestamp
     native_json_type = True
     _always_quote_columns = False
-    _ignore_cast_types = ()
 
     _require_order_by = (
         ops.DenseRank,
@@ -88,6 +87,9 @@ class AlchemyExprTranslator(ExprTranslator):
             sa_args = tuple(map(self.translate, argtuple))
 
         return sa_func(*sa_args)
+
+    def cast(self, sa_expr, ibis_type: dt.DataType):
+        return sa.cast(sa_expr, self.get_sqla_type(ibis_type))
 
 
 rewrites = AlchemyExprTranslator.rewrites

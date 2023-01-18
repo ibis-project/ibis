@@ -163,18 +163,18 @@ def _exists_subquery(t, op):
 def _cast(t, op):
     arg = op.arg
     typ = op.to
+    arg_dtype = arg.output_dtype
 
     sa_arg = t.translate(arg)
-    sa_type = t.get_sqla_type(typ)
 
-    if isinstance(arg, ir.CategoryValue) and typ == dt.int32:
+    if arg_dtype.is_category() and typ.is_int32():
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if arg.output_dtype.is_integer() and isinstance(sa_type, sa.DateTime):
+    if arg_dtype.is_integer() and typ.is_timestamp():
         return t.integer_to_timestamp(sa_arg)
 
-    if arg.output_dtype.is_binary() and typ.is_string():
+    if arg_dtype.is_binary() and typ.is_string():
         return sa.func.encode(sa_arg, 'escape')
 
     if typ.is_binary():
@@ -185,10 +185,7 @@ def _cast(t, op):
     if typ.is_json() and not t.native_json_type:
         return sa_arg
 
-    ignore_cast_types = t._ignore_cast_types
-    if ignore_cast_types and isinstance(typ, ignore_cast_types):
-        return sa_arg
-    return sa.cast(sa_arg, sa_type)
+    return t.cast(sa_arg, typ)
 
 
 def _contains(func):
