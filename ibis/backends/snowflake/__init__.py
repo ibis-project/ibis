@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import contextlib
+import json
 from typing import TYPE_CHECKING, Any, Iterable
 
 import snowflake.connector as sfc
 import sqlalchemy as sa
 import toolz
+from snowflake.connector.constants import PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT
+from snowflake.connector.converter import SnowflakeConverter as _BaseSnowflakeConverter
 from snowflake.sqlalchemy import URL
 
 import ibis.expr.datatypes as dt
@@ -21,8 +24,6 @@ from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
     import pandas as pd
-
-    import ibis.expr.datatypes as dt
 
 
 _NATIVE_ARROW = True
@@ -44,6 +45,13 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
 
 class SnowflakeCompiler(AlchemyCompiler):
     translator_class = SnowflakeExprTranslator
+
+
+class _SnowFlakeConverter(_BaseSnowflakeConverter):
+    def _VARIANT_to_python(self, _):
+        return json.loads
+
+    _ARRAY_to_python = _OBJECT_to_python = _VARIANT_to_python
 
 
 class Backend(BaseAlchemyBackend):
@@ -70,7 +78,18 @@ class Backend(BaseAlchemyBackend):
             )
         url = URL(account=account, user=user, password=password, **dbparams, **kwargs)
         self.database_name = dbparams["database"]
-        return super().do_connect(sa.create_engine(url))
+        return super().do_connect(
+            sa.create_engine(
+                url,
+                connect_args={
+                    "converter_class": _SnowFlakeConverter,
+                    "session_parameters": {
+                        PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
+                        "STRICT_JSON_OUTPUT": "TRUE",
+                    },
+                },
+            )
+        )
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **_: Any
