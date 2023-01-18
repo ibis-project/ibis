@@ -49,6 +49,23 @@ def test_udf_determinism(snapshot, determinism):
     snapshot.assert_match(sql, "out.sql")
 
 
+def test_udf_sql(snapshot):
+    _udf_name_cache.clear()
+
+    format_t = udf.sql(
+        "format_t",
+        params={'input': dt.string},
+        output_type=dt.double,
+        sql_expression="FORMAT('%T', input)",
+    )
+
+    s = ibis.literal("abcd")
+    expr = format_t(s)
+
+    sql = ibis.bigquery.compile(expr)
+    snapshot.assert_match(sql, "out.sql")
+
+
 @pytest.mark.parametrize(
     ("argument_type", "return_type"),
     [

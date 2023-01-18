@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import inspect
 import itertools
-from typing import Callable, Iterable, Mapping
+from typing import Callable, Iterable, Literal, Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -84,7 +84,7 @@ class _BigQueryUDF:
         >>> @udf.python(input_type=[dt.double], output_type=dt.double)
         ... def add_one(x):
         ...     return x + 1
-        >>> print(add_one.js)
+        >>> print(add_one.sql)
         CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
         LANGUAGE js AS """
@@ -106,7 +106,7 @@ class _BigQueryUDF:
         ...     for value in gen(start, stop):
         ...         result.append(value)
         ...     return result
-        >>> print(my_range.js)
+        >>> print(my_range.sql)
         CREATE TEMPORARY FUNCTION my_range_0(start FLOAT64, stop FLOAT64)
         RETURNS ARRAY<FLOAT64>
         LANGUAGE js AS """
@@ -147,7 +147,7 @@ class _BigQueryUDF:
         ...             return 2 * (self.width + self.height)
         ...
         ...     return Rectangle(width, height)
-        >>> print(my_rectangle.js)
+        >>> print(my_rectangle.sql)
         CREATE TEMPORARY FUNCTION my_rectangle_0(width FLOAT64, height FLOAT64)
         RETURNS STRUCT<width FLOAT64, height FLOAT64>
         LANGUAGE js AS """
@@ -246,7 +246,7 @@ return {f.__name__}({args});\
         ...     output_type=dt.double,
         ...     body="return x + 1"
         ... )
-        >>> print(add_one.js)
+        >>> print(add_one.sql)
         CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
         RETURNS FLOAT64
         LANGUAGE js AS """
@@ -272,7 +272,7 @@ return {f.__name__}({args});\
 
         udf_node_fields["output_dtype"] = output_type
         udf_node_fields["output_shape"] = rlz.shape_like("args")
-        udf_node_fields["__slots__"] = ("js",)
+        udf_node_fields["__slots__"] = ("sql",)
 
         udf_node = _create_udf_node(name, udf_node_fields)
 
@@ -299,7 +299,7 @@ return {f.__name__}({args});\
             False: 'NOT DETERMINISTIC\n',
             None: '',
         }.get(determinism)
-        js = f'''\
+        sql_code = f'''\
 CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
 RETURNS {return_type}
 {determinism_formatted}LANGUAGE js AS """
@@ -308,7 +308,7 @@ RETURNS {return_type}
 
         def wrapped(*args, **kwargs):
             node = udf_node(*args, **kwargs)
-            object.__setattr__(node, "js", js)
+            object.__setattr__(node, "sql", sql_code)
             return node.to_expr()
 
         wrapped.__signature__ = inspect.Signature(
@@ -320,8 +320,90 @@ RETURNS {return_type}
             ]
         )
         wrapped.__name__ = name
-        wrapped.js = js
+        wrapped.sql = sql_code
         return wrapped
+
+    @staticmethod
+    def sql(
+        name: str,
+        params: Mapping[str, dt.DataType | Literal["ANY TYPE"]],
+        output_type: dt.DataType,
+        sql_expression: str,
+    ) -> Callable:
+        """Define a SQL UDF for BigQuery.
+
+        Parameters
+        ----------
+        name:
+            The name of the function.
+        params
+            Mapping of names and types of parameters
+        output_type
+            Return type of the UDF.
+        sql_expression
+            The SQL expression that defines the function.
+
+        Returns
+        -------
+        Callable
+            The wrapped user-defined function.
+
+        Examples
+        --------
+        >>> from ibis.backends.bigquery import udf
+        >>> import ibis.expr.datatypes as dt
+        >>> add_one = udf.sql(
+        ...    name="add_one",
+        ...    params={'x': dt.double},
+        ...    output_type=dt.double,
+        ...    sql_expression="x + 1"
+        ... )
+        >>> print(add_one.sql)
+        CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
+        RETURNS FLOAT64
+        AS (x + 1)
+        """
+        validate_output_type(output_type)
+        udf_node_fields = {
+            name: rlz.any if type_ == "ANY TYPE" else rlz.value(type_)
+            for name, type_ in params.items()
+        }
+
+        return_type = ibis_type_to_bigquery_type(dt.dtype(output_type))
+
+        udf_node_fields["output_dtype"] = output_type
+        udf_node_fields["output_shape"] = rlz.shape_like("args")
+        udf_node_fields["__slots__"] = ("sql",)
+
+        udf_node = _create_udf_node(name, udf_node_fields)
+
+        from ibis.backends.bigquery.compiler import compiles
+
+        @compiles(udf_node)
+        def compiles_udf_node(t, op):
+            args_formatted = ", ".join(map(t.translate, op.args))
+            return f"{udf_node.__name__}({args_formatted})"
+
+        bigquery_signature = ", ".join(
+            "{name} {type}".format(
+                name=name,
+                type="ANY TYPE"
+                if type_ == "ANY TYPE"
+                else ibis_type_to_bigquery_type(dt.dtype(type_)),
+            )
+            for name, type_ in params.items()
+        )
+        sql_code = f'''\
+CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
+RETURNS {return_type}
+AS ({sql_expression});'''
+
+        def wrapper(*args, **kwargs):
+            node = udf_node(*args, **kwargs)
+            object.__setattr__(node, "sql", sql_code)
+            return node.to_expr()
+
+        return wrapper
 
 
 udf = _BigQueryUDF()
