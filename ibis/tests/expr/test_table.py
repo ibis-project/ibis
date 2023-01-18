@@ -1473,10 +1473,7 @@ def test_multiple_db_different_backends():
     backend2_table = con2.table('alltypes')
 
     expr = backend1_table.union(backend2_table)
-    with pytest.raises(
-        ValueError,
-        match=re.compile("multiple backends", flags=re.IGNORECASE),
-    ):
+    with pytest.raises(com.IbisError, match="Multiple backends"):
         expr.compile()
 
 

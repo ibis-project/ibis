@@ -227,8 +227,7 @@ class Expr(Immutable):
                     "assign a backend instance to "
                     "`ibis.options.default_backend`."
                 )
-            if (default := options.default_backend) is None and use_default:
-                default = _default_backend()
+            default = _default_backend() if use_default else None
             if default is None:
                 raise IbisError(
                     'Expression depends on no backends, and found no default'
@@ -236,7 +235,7 @@ class Expr(Immutable):
             return default
 
         if len(backends) > 1:
-            raise ValueError('Multiple backends found')
+            raise IbisError('Multiple backends found for this expression')
 
         return backends[0]
 
