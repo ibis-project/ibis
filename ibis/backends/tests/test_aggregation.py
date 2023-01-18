@@ -495,15 +495,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 mark.notimpl(
-                    [
-                        "dask",
-                        "impala",
-                        "mysql",
-                        "snowflake",
-                        "sqlite",
-                        "datafusion",
-                        "mssql",
-                    ]
+                    ["dask", "impala", "mysql", "sqlite", "datafusion", "mssql"]
                 )
             ],
         ),
