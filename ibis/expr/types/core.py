@@ -329,7 +329,7 @@ class Expr(Immutable):
         results
             RecordBatchReader
         """
-        return self._find_backend().to_pyarrow_batches(
+        return self._find_backend(use_default=True).to_pyarrow_batches(
             self,
             params=params,
             limit=limit,
@@ -365,7 +365,7 @@ class Expr(Immutable):
         Table
             A pyarrow table holding the results of the executed expression.
         """
-        return self._find_backend().to_pyarrow(
+        return self._find_backend(use_default=True).to_pyarrow(
             self, params=params, limit=limit, **kwargs
         )
 
