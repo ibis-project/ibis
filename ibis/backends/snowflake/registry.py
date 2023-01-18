@@ -215,6 +215,7 @@ operation_registry.update(
         ),
         ops.ArraySlice: _array_slice,
         ops.ArrayCollect: reduction(sa.func.array_agg),
+        ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Map: _map,
     }
 )
@@ -243,7 +244,6 @@ _invalid_operations = {
     ops.RegexExtract,
     ops.RegexReplace,
     ops.RegexSearch,
-    ops.StringSplit,
     # ibis.expr.operations.structs
     ops.StructField,
     # ibis.expr.operations.temporal

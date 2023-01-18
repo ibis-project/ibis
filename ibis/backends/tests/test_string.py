@@ -339,15 +339,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str.split('/'),
             id='split',
             marks=pytest.mark.notimpl(
-                [
-                    "dask",
-                    "datafusion",
-                    "impala",
-                    "mysql",
-                    "sqlite",
-                    "snowflake",
-                    "mssql",
-                ]
+                ["dask", "datafusion", "impala", "mysql", "sqlite", "mssql"]
             ),
         ),
         param(

@@ -143,7 +143,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "polars", "dask", "datafusion", "sqlite", "snowflake", "impala", "mssql"]
+    ["mysql", "polars", "dask", "datafusion", "sqlite", "impala", "mssql"]
 )
 def test_scalar_param_date(backend, alltypes, value, dtype):
     param = ibis.param(dtype)
