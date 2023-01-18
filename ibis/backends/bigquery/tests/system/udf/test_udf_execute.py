@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -142,3 +143,30 @@ def test_udf_with_len(client):
 
     assert client.execute(my_str_len("aaa")) == 3
     assert client.execute(my_array_len(["aaa", "bb"])) == 2
+
+
+@pytest.mark.parametrize(
+    ("argument_type",),
+    [
+        param(
+            dt.string,
+            id="string",
+        ),
+        param(
+            "ANY TYPE",
+            id="string",
+        ),
+    ],
+)
+def test_udf_sql(client, argument_type):
+    format_t = udf.sql(
+        "format_t",
+        params={'input': argument_type},
+        output_type=dt.string,
+        sql_expression="FORMAT('%T', input)",
+    )
+
+    s = ibis.literal("abcd")
+    expr = format_t(s)
+
+    client.execute(expr)
