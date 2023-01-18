@@ -49,7 +49,7 @@ def _literal(t, op):
         return sa.func.date_from_parts(value.year, value.month, value.day)
     elif dtype.is_array():
         return sa.func.array_construct(*value)
-    elif dtype.is_map():
+    elif dtype.is_map() or dtype.is_struct():
         return sa.func.object_construct_keep_null(
             *itertools.chain.from_iterable(value.items())
         )
@@ -118,7 +118,7 @@ def _map(_, op):
     ):
         raise TypeError("Both keys and values of an `ibis.map` call must be literals")
 
-    return sa.object_construct_keep_null(
+    return sa.func.object_construct_keep_null(
         *itertools.chain.from_iterable(zip(keys.value, values.value))
     )
 
@@ -132,7 +132,6 @@ _SF_NAN = sa.func.to_double("NaN")
 operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
-        ops.StructField: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
         ops.MapKeys: unary(sa.func.object_keys),
         ops.MapGet: fixed_arity(
@@ -238,6 +237,10 @@ operation_registry.update(
         ops.TimestampFromUNIX: lambda t, op: sa.func.to_timestamp(
             t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit]
         ),
+        ops.StructField: lambda t, op: sa.cast(
+            sa.func.parse_json(sa.func.get(t.translate(op.arg), op.field)),
+            t.get_sqla_type(op.output_dtype),
+        ),
     }
 )
 
@@ -255,8 +258,6 @@ _invalid_operations = {
     ops.MultiQuantile,
     # ibis.expr.operations.strings
     ops.FindInSet,
-    # ibis.expr.operations.structs
-    ops.StructField,
     # ibis.expr.operations.temporal
     ops.IntervalFromInteger,
     ops.TimestampDiff,
