@@ -88,28 +88,19 @@ def calc_zscore(s):
             id='last',
         ),
         param(
-            lambda t, win: t.float_col.nth(3).over(win),
-            lambda t: t.float_col.apply(
+            lambda t, win: t.double_col.nth(3).over(win),
+            lambda t: t.double_col.apply(
                 lambda s: pd.concat(
                     [
-                        pd.Series(np.nan, index=s.index[:3], dtype="float32"),
-                        pd.Series(
-                            s.iloc[3],
-                            index=s.index[3:],
-                            dtype="float32",
-                        ),
+                        pd.Series(np.nan, index=s.index[:3], dtype="float64"),
+                        pd.Series(s.iloc[3], index=s.index[3:], dtype="float64"),
                     ]
                 )
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["pandas", "snowflake"]),
+                pytest.mark.notimpl(["pandas"]),
                 pytest.mark.notyet(["impala", "mssql"]),
-                pytest.mark.broken(
-                    "bigquery",
-                    strict=False,
-                    reason="output types is float64 instead of the expected float32",
-                ),
             ],
         ),
         param(
