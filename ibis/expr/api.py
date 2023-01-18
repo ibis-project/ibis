@@ -20,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import connect
+from ibis.backends.base import BaseBackend, connect
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
@@ -118,6 +118,7 @@ __all__ = (
     'geo_y',
     'geo_y_max',
     'geo_y_min',
+    'get_backend',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -867,6 +868,27 @@ def read_parquet(sources: str | Path, **kwargs: Any) -> ir.Table:
 
     con = _default_backend()
     return con.read_parquet(sources, **kwargs)
+
+
+def get_backend(expr: Expr | None = None) -> BaseBackend:
+    """Get the current Ibis backend to use for a given expression.
+
+    Parameters
+    ----------
+    expr
+        An expression to get the backend from. If not passed, the default
+        backend is returned.
+
+    Returns
+    -------
+    BaseBackend
+        The Ibis backend.
+    """
+    if expr is None:
+        from ibis.config import _default_backend
+
+        return _default_backend()
+    return expr._find_backend(use_default=True)
 
 
 e = ops.E().to_expr()
