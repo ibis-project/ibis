@@ -90,7 +90,7 @@ def can_cast_to_differently_signed_integer_type(
 @castable.register(dt.SignedInteger, dt.SignedInteger)
 @castable.register(dt.UnsignedInteger, dt.UnsignedInteger)
 def can_cast_integers(source: dt.Integer, target: dt.Integer, **kwargs) -> bool:
-    return target._nbytes >= source._nbytes
+    return target.nbytes >= source.nbytes
 
 
 @castable.register(dt.Floating, dt.Floating)
@@ -98,7 +98,7 @@ def can_cast_floats(
     source: dt.Floating, target: dt.Floating, upcast: bool = False, **kwargs
 ) -> bool:
     if upcast:
-        return target._nbytes >= source._nbytes
+        return target.nbytes >= source.nbytes
 
     # double -> float must be allowed because
     # float literals are inferred as doubles

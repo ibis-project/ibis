@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numbers
+from abc import abstractmethod
 from typing import Any, Iterable, Mapping, NamedTuple
 
 import numpy as np
@@ -238,16 +239,16 @@ class Primitive(DataType, Singleton):
 
 
 @public
+class Variadic(DataType):
+    """Values with unknown size."""
+
+
+@public
 class Null(Primitive):
     """Null values."""
 
     scalar = ir.NullScalar
     column = ir.NullColumn
-
-
-@public
-class Variadic(DataType):
-    """Values with unknown size."""
 
 
 @public
@@ -279,11 +280,9 @@ class Integer(Primitive, Numeric):
     column = ir.IntegerColumn
 
     @property
-    def _nbytes(self) -> int:
+    @abstractmethod
+    def nbytes(self) -> int:
         """Return the number of bytes used to store values of this type."""
-        raise TypeError(
-            "Cannot determine the size in bytes of an abstract integer type."
-        )
 
 
 @public
@@ -366,7 +365,7 @@ class SignedInteger(Integer):
 
     @property
     def bounds(self):
-        exp = self._nbytes * 8 - 1
+        exp = self.nbytes * 8 - 1
         upper = (1 << exp) - 1
         return Bounds(lower=~upper, upper=upper)
 
@@ -382,7 +381,7 @@ class UnsignedInteger(Integer):
 
     @property
     def bounds(self):
-        exp = self._nbytes * 8 - 1
+        exp = self.nbytes * 8 - 1
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
 
@@ -400,87 +399,86 @@ class Floating(Primitive, Numeric):
         return float64
 
     @property
-    def _nbytes(self) -> int:
-        raise TypeError(
-            "Cannot determine the size in bytes of an abstract floating point type."
-        )
+    @abstractmethod
+    def nbytes(self) -> int:  # pragma: no cover
+        ...
 
 
 @public
 class Int8(SignedInteger):
     """Signed 8-bit integers."""
 
-    _nbytes = 1
+    nbytes = 1
 
 
 @public
 class Int16(SignedInteger):
     """Signed 16-bit integers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class Int32(SignedInteger):
     """Signed 32-bit integers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class Int64(SignedInteger):
     """Signed 64-bit integers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
 class UInt8(UnsignedInteger):
     """Unsigned 8-bit integers."""
 
-    _nbytes = 1
+    nbytes = 1
 
 
 @public
 class UInt16(UnsignedInteger):
     """Unsigned 16-bit integers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class UInt32(UnsignedInteger):
     """Unsigned 32-bit integers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class UInt64(UnsignedInteger):
     """Unsigned 64-bit integers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
 class Float16(Floating):
     """16-bit floating point numbers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class Float32(Floating):
     """32-bit floating point numbers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class Float64(Floating):
     """64-bit floating point numbers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
