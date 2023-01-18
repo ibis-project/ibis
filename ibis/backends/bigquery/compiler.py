@@ -22,7 +22,7 @@ class BigQueryUDFDefinition(sql_compiler.DDL):
 
     def compile(self):
         """Generate UDF string from definition."""
-        return self.expr.op().js
+        return self.expr.op().sql
 
 
 class BigQueryUnion(sql_compiler.Union):
