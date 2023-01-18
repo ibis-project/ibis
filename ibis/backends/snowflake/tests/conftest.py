@@ -11,7 +11,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 if TYPE_CHECKING:
@@ -19,14 +19,13 @@ if TYPE_CHECKING:
 
 
 def copy_into(con, data_dir: Path, table: str) -> None:
-    stage = "ibis_testing_stage"
+    stage = "ibis_testing"
     csv = f"{table}.csv"
-    src = data_dir / csv
-    con.execute(sa.text(f"PUT file://{src.absolute()} @{stage}/{csv}"))
-    con.execute(
-        sa.text(
-            f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"
-        )
+    con.exec_driver_sql(
+        f"PUT file://{data_dir.joinpath(csv).absolute()} @{stage}/{csv}"
+    )
+    con.exec_driver_sql(
+        f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_testing)"
     )
 
 
@@ -36,10 +35,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def _load_data(
-        data_dir,
-        script_dir,
-        database: str = "ibis_testing",
-        **_: Any,
+        data_dir, script_dir, database: str = "ibis_testing", **_: Any
     ) -> None:
         """Load test data into a Snowflake backend instance.
 
@@ -53,26 +49,24 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         pytest.importorskip("snowflake.connector")
         pytest.importorskip("snowflake.sqlalchemy")
-        schema = (script_dir / 'schema' / 'snowflake.sql').read_text()
 
-        con = TestConf.connect(data_dir)
+        if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
+            pytest.skip("SNOWFLAKE_URL environment variable is not defined")
 
-        with con.begin() as con:
-            con.execute(sa.text("USE WAREHOUSE ibis_testing"))
-            con.execute(sa.text(f"DROP DATABASE IF EXISTS {database}"))
-            con.execute(sa.text(f"CREATE DATABASE IF NOT EXISTS {database}"))
-            con.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {database}.ibis_testing"))
-            con.execute(sa.text(f"USE SCHEMA {database}.ibis_testing"))
+        with script_dir.joinpath('schema', 'snowflake.sql').open() as schema:
+            con = init_database(
+                url=sa.engine.make_url(snowflake_url).set(database=""),
+                database=database,
+                schema=schema,
+            )
 
-            for stmt in filter(None, map(str.strip, schema.split(';'))):
-                con.execute(sa.text(stmt))
-
+        with con.begin() as c:
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:
                 for result in concurrent.futures.as_completed(
                     map(
-                        partial(exe.submit, partial(copy_into, con, data_dir)),
+                        partial(exe.submit, partial(copy_into, c, data_dir)),
                         TEST_TABLES,
                     )
                 ):

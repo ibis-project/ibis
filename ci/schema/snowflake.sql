@@ -1,10 +1,16 @@
-CREATE OR REPLACE FILE FORMAT ibis_csv_fmt
+USE WAREHOUSE ibis_testing;
+DROP DATABASE IF EXISTS ibis_testing;
+CREATE DATABASE IF NOT EXISTS ibis_testing;
+CREATE SCHEMA IF NOT EXISTS ibis_testing.ibis_testing;
+USE SCHEMA ibis_testing.ibis_testing;
+
+CREATE OR REPLACE FILE FORMAT ibis_testing
     type = 'CSV'
     field_delimiter = ','
     skip_header = 1
     field_optionally_enclosed_by = '"';
 
-CREATE OR REPLACE STAGE ibis_testing_stage file_format = ibis_csv_fmt;
+CREATE OR REPLACE STAGE ibis_testing file_format = ibis_testing;
 
 CREATE OR REPLACE TABLE diamonds (
     "carat" FLOAT,
