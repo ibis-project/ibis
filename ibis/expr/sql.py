@@ -233,7 +233,7 @@ def convert_binary(binary, catalog):
         # expr is a table expression
         assert len(expr.columns) == 1
         name = expr.columns[0]
-        expr = expr.get_column(name)
+        expr = expr[name]
 
     return op(this, expr)
 
