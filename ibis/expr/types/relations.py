@@ -115,7 +115,7 @@ class Table(Expr, JupyterMixin):
         from ibis.expr.types.logical import BooleanValue
 
         if isinstance(what, (str, int)):
-            return self.get_column(what)
+            return ops.TableColumn(self, what).to_expr()
 
         if isinstance(what, slice):
             step = what.step
@@ -154,7 +154,7 @@ class Table(Expr, JupyterMixin):
 
     def __getattr__(self, key):
         with contextlib.suppress(com.IbisTypeError):
-            return self.get_column(key)
+            return ops.TableColumn(self, key).to_expr()
 
         # Handle deprecated `groupby` and `sort_by` methods
         if key == "groupby":
@@ -210,21 +210,21 @@ class Table(Expr, JupyterMixin):
         else:
             return expr
 
+    @util.deprecated(
+        version="5.0", instead="use a list comprehension and attribute/getitem syntax"
+    )
     def get_columns(self, iterable: Iterable[str]) -> list[Column]:
         """Get multiple columns from the table.
+
+        Parameters
+        ----------
+        iterable
+            An iterable of column names
 
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(
-        ...    [
-        ...        ('a', 'int64'),
-        ...        ('b', 'string'),
-        ...        ('c', 'timestamp'),
-        ...        ('d', 'float'),
-        ...    ],
-        ...    name='t'
-        ... )
+        >>> table = ibis.table(dict(a='int64', b='string', c='timestamp', d='float'))
         >>> a, b, c = table.get_columns(['a', 'b', 'c'])
 
         Returns
@@ -232,10 +232,16 @@ class Table(Expr, JupyterMixin):
         list[ir.Column]
             List of column expressions
         """
-        return [self.get_column(x) for x in iterable]
+        return list(map(self.get_column, iterable))
 
+    @util.deprecated(version="5.0", instead="use t.<name> or t[name]")
     def get_column(self, name: str) -> Column:
         """Get a reference to a single column from the table.
+
+        Parameters
+        ----------
+        name
+            A column name
 
         Returns
         -------
