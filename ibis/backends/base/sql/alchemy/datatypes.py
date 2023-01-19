@@ -426,6 +426,20 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
     return dt.Timestamp(timezone=timezone, nullable=nullable)
 
 
+@dt.dtype.register(MSDialect, mssql.DATETIMEOFFSET)
+def _datetimeoffset(_, sa_type, nullable=True):
+    if (prec := sa_type.precision) is None:
+        prec = 7
+    return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.DATETIME2)
+def _datetime2(_, sa_type, nullable=True):
+    if (prec := sa_type.precision) is None:
+        prec = 7
+    return dt.Timestamp(scale=prec, nullable=nullable)
+
+
 @dt.dtype.register(PGDialect, sa.ARRAY)
 def sa_pg_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions

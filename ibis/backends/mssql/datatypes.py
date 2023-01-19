@@ -29,6 +29,10 @@ def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
         typ = partial(typ, precision=col["precision"], scale=col['scale'])
     elif typename in ("GEOMETRY", "GEOGRAPHY"):
         typ = partial(typ, geotype=typename.lower())
+    elif typename == 'DATETIME2':
+        typ = partial(typ, scale=col["scale"])
+    elif typename == 'DATETIMEOFFSET':
+        typ = partial(typ, scale=col["scale"], timezone="UTC")
     elif typename == 'FLOAT':
         if col['precision'] <= 24:
             typ = dt.Float32
@@ -98,3 +102,13 @@ _MSSQL_TYPE_MAP = {
 @to_sqla_type.register(mssql.dialect, tuple(_MSSQL_TYPE_MAP.keys()))
 def _simple_types(_, itype):
     return _MSSQL_TYPE_MAP[type(itype)]
+
+
+@to_sqla_type.register(mssql.dialect, dt.Timestamp)
+def _datetime(_, itype):
+    if (precision := itype.scale) is None:
+        precision = 7
+    if itype.timezone is not None:
+        return mssql.DATETIMEOFFSET(precision=precision)
+    else:
+        return mssql.DATETIME2(precision=precision)
