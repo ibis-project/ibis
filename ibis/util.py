@@ -402,22 +402,30 @@ def flatten_iterable(iterable):
             yield item
 
 
-def deprecated_msg(name, *, instead, version=''):
-    msg = f'`{name}` is deprecated'
-    if version:
-        msg += f' as of v{version}'
+def deprecated_msg(name, *, instead, as_of="", removed_in=""):
+    msg = f"`{name}` is deprecated"
 
+    msgs = []
+
+    if as_of:
+        msgs.append(f"as of v{as_of}")
+
+    if removed_in:
+        msgs.append(f"removed in v{removed_in}")
+
+    if msgs:
+        msg += f" {', '.join(msgs)}"
     msg += f'; {instead}'
     return msg
 
 
-def warn_deprecated(name, *, instead, version='', stacklevel=1):
+def warn_deprecated(name, *, instead, as_of="", removed_in="", stacklevel=1):
     """Warn about deprecated usage.
 
     The message includes a stacktrace and what to do instead.
     """
 
-    msg = deprecated_msg(name, instead=instead, version=version)
+    msg = deprecated_msg(name, instead=instead, as_of=as_of, removed_in=removed_in)
     warnings.warn(msg, FutureWarning, stacklevel=stacklevel + 1)
 
 
@@ -448,18 +456,24 @@ def append_admonition(
     return docstr
 
 
-def deprecated(*, instead, version=''):
-    """Decorate to warn of deprecated usage, with stacktrace, and what to do instead."""
+def deprecated(*, instead: str, as_of: str = "", removed_in: str = ""):
+    """Decorate to warn of deprecated usage and what to do instead."""
 
     def decorator(func):
-        msg = deprecated_msg(func.__qualname__, instead=instead, version=version)
+        msg = deprecated_msg(
+            func.__qualname__, instead=instead, as_of=as_of, removed_in=removed_in
+        )
 
         func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             warn_deprecated(
-                func.__qualname__, instead=instead, version=version, stacklevel=2
+                func.__qualname__,
+                instead=instead,
+                as_of=as_of,
+                removed_in=removed_in,
+                stacklevel=2,
             )
             return func(*args, **kwargs)
 

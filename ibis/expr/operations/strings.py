@@ -4,9 +4,9 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+from ibis import util
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
-from ibis.util import deprecated
 
 
 @public
@@ -245,7 +245,9 @@ class ParseURL(Value):
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
 
-    @deprecated(version="4.0", instead="use ExtractURLField and its subclasses")
+    @util.deprecated(
+        as_of="4.0", removed_in="5.0", instead="use ExtractURLField and its subclasses"
+    )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
