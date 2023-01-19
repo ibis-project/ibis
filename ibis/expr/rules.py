@@ -134,11 +134,16 @@ def sort_key_from(table_ref, key, **kwargs):
     else:
         key, order = key, True
 
-    key = one_of(
-        (function_of(table_ref), column_from(table_ref), any),
-        key,
-        **kwargs,
-    )
+    if isinstance(key, (str, int)):
+        # Actual str/int keys must refer to columns in the table, we don't want
+        # to fallback to converting them to expressions with ibis.literal
+        key = column_from(table_ref, key, **kwargs)
+    else:
+        key = one_of(
+            (function_of(table_ref), column_from(table_ref), any),
+            key,
+            **kwargs,
+        )
 
     if isinstance(order, str):
         order = order.lower()
