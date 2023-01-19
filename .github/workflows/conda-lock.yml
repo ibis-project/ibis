@@ -35,7 +35,7 @@ jobs:
           condarc-file: ci/conda-lock/condarc
 
       - name: install conda-lock
-        run: mamba install conda-lock
+        run: mamba install 'conda-lock>=1.4'
 
       - name: generate lock file
         run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
