@@ -38,7 +38,8 @@ conda lock \
   --filename-template "${template}" \
   --filter-extras \
   --mamba \
-  "${extras[@]}" -e clickhouse
+  --category dev --category test --category docs \
+  "${extras[@]}" -e clickhouse -e datafusion
 
 conda lock \
   --file pyproject.toml \
@@ -49,4 +50,5 @@ conda lock \
   --filename-template "${template}" \
   --filter-extras \
   --mamba \
+  --category dev --category test --category docs \
   "${extras[@]}"
