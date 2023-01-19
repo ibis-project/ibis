@@ -463,7 +463,7 @@ def test_temporal_binop_pandas_timedelta(
 
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
-@pytest.mark.notimpl(["bigquery", "mssql"])
+@pytest.mark.notimpl(["bigquery"])
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
 
@@ -490,7 +490,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
         "ne",
     ],
 )
-@pytest.mark.notimpl(["bigquery", "mssql"])
+@pytest.mark.notimpl(["bigquery"])
 def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
     ts = np.datetime64('2010-03-02 00:00:00.000123')
 
@@ -993,21 +993,12 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.broken(
-                    [
-                        "clickhouse",
-                        "duckdb",
-                        "impala",
-                        "mssql",
-                        "postgres",
-                        "pyspark",
-                        "sqlite",
-                        "trino",
-                    ],
+                    ["clickhouse", "duckdb", "impala", "pyspark", "trino"],
                     reason="drivers appear to truncate nanos",
                 ),
                 pytest.mark.notyet(
-                    ["bigquery"],
-                    reason="bigquery doesn't support nanosecond timestamps",
+                    ["bigquery", "mssql", "postgres", "sqlite"],
+                    reason="doesn't support nanoseconds",
                 ),
             ],
         ),

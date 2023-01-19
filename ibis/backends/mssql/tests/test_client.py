@@ -28,8 +28,8 @@ DB_TYPES = [
     # Date and time
     ('DATE', dt.date),
     ('TIME', dt.time),
-    ('DATETIME2', dt.timestamp),
-    ('DATETIMEOFFSET', dt.timestamp),
+    ('DATETIME2', dt.timestamp(scale=7)),
+    ('DATETIMEOFFSET', dt.timestamp(scale=7, timezone="UTC")),
     ('SMALLDATETIME', dt.timestamp),
     ('DATETIME', dt.timestamp),
     # Characters strings
@@ -54,6 +54,10 @@ skipif_no_geospatial_deps = pytest.mark.skipif(
     not geospatial_supported, reason="geospatial dependencies not installed"
 )
 
+broken_sqlalchemy_autoload = pytest.mark.xfail(
+    reason="scale not inferred by sqlalchemy autoload"
+)
+
 
 @pytest.mark.parametrize(
     ("server_type", "expected_type"),
@@ -61,6 +65,16 @@ skipif_no_geospatial_deps = pytest.mark.skipif(
     + [
         param("GEOMETRY", dt.geometry, marks=[skipif_no_geospatial_deps]),
         param("GEOGRAPHY", dt.geography, marks=[skipif_no_geospatial_deps]),
+    ]
+    + [
+        param(
+            'DATETIME2(4)', dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]
+        ),
+        param(
+            'DATETIMEOFFSET(5)',
+            dt.timestamp(scale=5, timezone="UTC"),
+            marks=[broken_sqlalchemy_autoload],
+        ),
     ],
     ids=str,
 )
@@ -73,9 +87,9 @@ def test_get_schema_from_query(con, server_type, expected_type):
             c.execute(sa.text(f"CREATE TABLE {name} (x {server_type})"))
         expected_schema = ibis.schema(dict(x=expected_type))
         result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+        assert result_schema == expected_schema
         t = con.table(raw_name)
         assert t.schema() == expected_schema
-        assert result_schema == expected_schema
     finally:
         with con.begin() as c:
             c.execute(sa.text(f"DROP TABLE IF EXISTS {name}"))
