@@ -559,8 +559,6 @@ operation_registry.update(
         ops.DayOfWeekName: fixed_arity(
             lambda arg: sa.func.trim(sa.func.to_char(arg, 'Day')), 1
         ),
-        # now is in the timezone of the server, but we want UTC
-        ops.TimestampNow: lambda *_: sa.func.timezone('UTC', sa.func.now()),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
@@ -582,5 +580,8 @@ operation_registry.update(
         ops.Mode: _mode,
         ops.Quantile: _quantile,
         ops.MultiQuantile: _quantile,
+        ops.TimestampNow: lambda t, op: sa.literal_column(
+            "CURRENT_TIMESTAMP", type_=t.get_sqla_type(op.output_dtype)
+        ),
     }
 )
