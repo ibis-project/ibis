@@ -211,7 +211,9 @@ class Table(Expr, JupyterMixin):
             return expr
 
     @util.deprecated(
-        version="5.0", instead="use a list comprehension and attribute/getitem syntax"
+        as_of="4.1",
+        removed_in="5.0",
+        instead="use a list comprehension and attribute/getitem syntax",
     )
     def get_columns(self, iterable: Iterable[str]) -> list[Column]:
         """Get multiple columns from the table.
@@ -234,7 +236,7 @@ class Table(Expr, JupyterMixin):
         """
         return list(map(self.get_column, iterable))
 
-    @util.deprecated(version="5.0", instead="use t.<name> or t[name]")
+    @util.deprecated(as_of="4.1", removed_in="5.0", instead="use t.<name> or t[name]")
     def get_column(self, name: str) -> Column:
         """Get a reference to a single column from the table.
 

@@ -4,17 +4,15 @@ import functools
 import operator
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
-from ibis.util import deprecated
-
-if TYPE_CHECKING:
-    from ibis.expr import types as ir
-
 from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+
+if TYPE_CHECKING:
+    from ibis.expr import types as ir
 
 
 @public
@@ -637,8 +635,9 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
-    @deprecated(
-        version='4.0',
+    @util.deprecated(
+        as_of='4.0',
+        removed_in='5.0',
         instead=(
             'use .protocol(), .authroity(), .userinfo(), .host(), .file(), .path(), .query(), or .fragment().'
         ),

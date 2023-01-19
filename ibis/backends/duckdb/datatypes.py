@@ -155,8 +155,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
 
 
 @util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}",
-    version="4.0",
+    instead=f"use {parse.__module__}.{parse.__name__}", as_of="4.0", removed_in="5.0"
 )
 def parse_type(*args, **kwargs):
     return parse(*args, **kwargs)
