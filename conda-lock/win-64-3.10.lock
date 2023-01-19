@@ -153,7 +153,7 @@ https://conda.anaconda.org/conda-forge/noarch/pathspec-0.10.3-pyhd8ed1ab_0.conda
 https://conda.anaconda.org/conda-forge/noarch/pickleshare-0.7.5-py_1003.tar.bz2#415f0ebb6198cc2801c73438a9fb5761
 https://conda.anaconda.org/conda-forge/noarch/pkgutil-resolve-name-1.3.10-pyhd8ed1ab_0.tar.bz2#89e3c7cdde7d3aaa2aee933b604dd07f
 https://conda.anaconda.org/conda-forge/noarch/pluggy-1.0.0-pyhd8ed1ab_5.tar.bz2#7d301a0d25f424d96175f810935f0da9
-https://conda.anaconda.org/conda-forge/win-64/pprintpp-0.4.0-py310h5588dad_5.tar.bz2#c25edf781e4c2c3f4fc46d4de7f6ae24
+https://conda.anaconda.org/conda-forge/noarch/pprintpp-0.4.0-pyhd8ed1ab_5.conda#3c9f3f3f7e0a9f0b2fd9d0e2064729ba
 https://conda.anaconda.org/conda-forge/noarch/prometheus_client-0.15.0-pyhd8ed1ab_0.tar.bz2#b260ed41427dbbe70537b3030c643b2e
 https://conda.anaconda.org/conda-forge/win-64/psutil-5.9.4-py310h8d17308_0.tar.bz2#88bc28b36cb3ede7866f569c65f8a691
 https://conda.anaconda.org/conda-forge/win-64/pthread-stubs-0.4-hcd874cb_1001.tar.bz2#a1f820480193ea83582b13249a7e7bd9
@@ -386,7 +386,7 @@ https://conda.anaconda.org/conda-forge/win-64/graphviz-7.0.6-h51cb2cd_0.conda#13
 https://conda.anaconda.org/conda-forge/noarch/mkdocs-material-9.0.1-pyhd8ed1ab_0.conda#eb6166c4ba7da4250e7063753f01af43
 https://conda.anaconda.org/conda-forge/noarch/mkdocstrings-python-0.8.3-pyhd8ed1ab_0.conda#d7596b7fe476b9c66ef8d00e3505ab83
 https://conda.anaconda.org/conda-forge/noarch/nbconvert-core-7.2.8-pyhd8ed1ab_0.conda#252899fe1f90aeb0c3391ff32a5035f1
-https://conda.anaconda.org/conda-forge/win-64/pandas-1.5.2-py310h1c4a608_2.conda#e8bdd2f2676576f2b16285420b4c3a10
+https://conda.anaconda.org/conda-forge/win-64/pandas-1.5.3-py310h1c4a608_0.conda#9804d59dd8ea7d363ac2ccbba29c950c
 https://conda.anaconda.org/conda-forge/win-64/polars-0.15.14-py310h87d50f1_0.conda#5646ad936d87ae015a89ad786d0dadd0
 https://conda.anaconda.org/conda-forge/noarch/pooch-1.6.0-pyhd8ed1ab_0.tar.bz2#6429e1d1091c51f626b5dcfdd38bf429
 https://conda.anaconda.org/conda-forge/noarch/requests-oauthlib-1.3.1-pyhd8ed1ab_0.tar.bz2#61b279f051eef9c89d58f4d813e75e04
