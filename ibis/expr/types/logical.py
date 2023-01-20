@@ -78,23 +78,35 @@ class BooleanScalar(NumericScalar, BooleanValue):
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
     def any(self, where: BooleanValue | None = None) -> BooleanValue:
+        """Return whether at least one element is `True`.
+
+        Parameters
+        ----------
+        where
+            Optional filter for the aggregation
+        """
         import ibis.expr.analysis as an
 
         return an._make_any(self, ops.Any, where=where)
 
     def notany(self, where: BooleanValue | None = None) -> BooleanValue:
+        """Return whether no elements are `True`."""
         import ibis.expr.analysis as an
 
         return an._make_any(self, ops.NotAny, where=where)
 
     def all(self, where: BooleanValue | None = None) -> BooleanScalar:
+        """Return whether all elements are `True`."""
         return ops.All(self, where=where).to_expr()
 
     def notall(self, where: BooleanValue | None = None) -> BooleanScalar:
+        """Return whether not all elements are `True`."""
         return ops.NotAll(self, where=where).to_expr()
 
     def cumany(self) -> BooleanColumn:
+        """Accumulate the `any` aggregate."""
         return ops.CumulativeAny(self).to_expr()
 
     def cumall(self) -> BooleanColumn:
+        """Accumulate the `all` aggregate."""
         return ops.CumulativeAll(self).to_expr()

@@ -62,53 +62,11 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    """Compute position of first element within each equal-value group in sorted order.
-
-    Equivalent to SQL's `RANK()`.
-
-    Examples
-    --------
-    values   ranks
-    1        0
-    1        0
-    2        2
-    2        2
-    2        2
-    3        5
-
-    Returns
-    -------
-    Int64Column
-        The min rank
-    """
-
     arg = rlz.column(rlz.any)
 
 
 @public
 class DenseRank(RankBase):
-    """Position of first element within each group of equal values.
-
-    Values are returned in sorted order and duplicate values are ignored.
-
-    Equivalent to SQL's `DENSE_RANK()`.
-
-    Examples
-    --------
-    values   ranks
-    1        0
-    1        0
-    2        1
-    2        1
-    2        1
-    3        2
-
-    Returns
-    -------
-    IntegerColumn
-        The rank
-    """
-
     arg = rlz.column(rlz.any)
 
 
@@ -168,11 +126,6 @@ class CumulativeMean(CumulativeOp):
 
 @public
 class CumulativeMax(CumulativeOp):
-    """Cumulative max.
-
-    Requires an order window.
-    """
-
     arg = rlz.column(rlz.any)
     output_dtype = rlz.dtype_like("arg")
 

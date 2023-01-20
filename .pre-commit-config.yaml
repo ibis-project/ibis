@@ -26,7 +26,7 @@ repos:
     hooks:
       - id: ruff
         # exclude a file (if configured to do so), even if it's passed in explicitly
-        args: ["--force-exclude", "--fix"]
+        args: ["--force-exclude"]
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.29.0
     hooks:

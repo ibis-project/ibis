@@ -85,6 +85,7 @@ class GroupedTable:
             return GroupedArray(col, self)
 
     def aggregate(self, metrics=None, **kwds):
+        """Compute aggregates over a group by."""
         return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
 
     agg = aggregate
@@ -290,6 +291,13 @@ class GroupedArray:
     group_concat = _group_agg_dispatch('group_concat')
 
     def summary(self, exact_nunique=False):
+        """Summarize a column.
+
+        Parameters
+        ----------
+        exact_nunique
+            Whether to compute an exact count distinct.
+        """
         metric = self.arr.summary(exact_nunique=exact_nunique)
         return self.parent.aggregate(metric)
 
@@ -297,7 +305,3 @@ class GroupedArray:
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch('mean')
     sum = _group_agg_dispatch('sum')
-
-    def summary(self, exact_nunique=False):
-        metric = self.arr.summary(exact_nunique=exact_nunique)
-        return self.parent.aggregate(metric)
