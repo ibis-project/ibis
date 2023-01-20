@@ -466,6 +466,7 @@ class NumericColumn(Column, NumericValue):
         return ops.Mean(self, where=where).to_expr()
 
     def cummean(self) -> NumericColumn:
+        """Return the cumulative mean of the input."""
         return ops.CumulativeMean(self).to_expr()
 
     def sum(
@@ -487,6 +488,7 @@ class NumericColumn(Column, NumericValue):
         return ops.Sum(self, where=where).to_expr()
 
     def cumsum(self) -> NumericColumn:
+        """Return the cumulative sum of the input."""
         return ops.CumulativeSum(self).to_expr()
 
     def bucket(

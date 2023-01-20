@@ -93,7 +93,23 @@ class Table(Expr, JupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def as_table(self):
+    def as_table(self) -> Table:
+        """Promote the expression to a table.
+
+        This method is a no-op for table expressions.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="int"), name="t")
+        >>> s = t.as_table()
+        >>> t is s
+        True
+        """
         return self
 
     def __contains__(self, name):
@@ -254,6 +270,7 @@ class Table(Expr, JupyterMixin):
 
     @property
     def columns(self):
+        """The list of columns in this table."""
         return list(self._arg.schema.names)
 
     def schema(self) -> sch.Schema:

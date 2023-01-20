@@ -391,6 +391,12 @@ ignore = [
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
+show-source = true
+fix = true
+# don't delete print statements
+# don't remove unused imports
+# don't remove unused noqa
+unfixable = ["T201", "F401", "RUF100"]
 
 [tool.ruff.per-file-ignores]
 "*test*.py" = ["D"] # ignore all docstring lints in tests

@@ -64,6 +64,25 @@ class Expr(Immutable):
         return fmt(self)
 
     def equals(self, other):
+        """Return whether this expression is _structurally_ equivalent to `other`.
+
+        If you want to produce an equality expression, use `==` syntax.
+
+        Parameters
+        ----------
+        other
+            Another expression
+
+        Examples
+        --------
+        >>> t1 = ibis.table(dict(a="int"), name="t")
+        >>> t2 = ibis.table(dict(a="int"), name="t")
+        >>> t1.equals(t2)
+        True
+        >>> v = ibis.table(dict(a="string"), name="v")
+        >>> t1.equals(v)
+        False
+        """
         if not isinstance(other, Expr):
             raise TypeError(
                 f"invalid equality comparison between Expr and {type(other)}"
@@ -76,9 +95,11 @@ class Expr(Immutable):
     __nonzero__ = __bool__
 
     def has_name(self):
+        """Check whether this expression has an explicit name."""
         return isinstance(self._arg, ops.Named)
 
     def get_name(self):
+        """Return the name of this expression."""
         return self._arg.name
 
     def _repr_png_(self) -> bytes | None:
@@ -172,7 +193,7 @@ class Expr(Immutable):
         else:
             return f(self, *args, **kwargs)
 
-    def op(self) -> ops.Node:
+    def op(self) -> ops.Node:  # noqa: D102
         return self._arg
 
     def _find_backends(self) -> tuple[list[BaseBackend], bool]:

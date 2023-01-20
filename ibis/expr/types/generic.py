@@ -59,7 +59,8 @@ class Value(Expr):
         return op.to_expr()
 
     # TODO(kszucs): should rename to dtype
-    def type(self):
+    def type(self) -> dt.DataType:
+        """Return the [DataType] of this expression."""
         return self.op().output_dtype
 
     def hash(self, how: str = "fnv") -> ir.IntegerValue:
@@ -482,11 +483,25 @@ class Value(Expr):
         return ops.SortKey(self, ascending=False).to_expr()
 
     @util.deprecated(as_of="4.1", removed_in="5.0", instead="use `.as_table()`")
-    def to_projection(self) -> ir.Table:
+    def to_projection(self) -> ir.Table:  # noqa: D102
         return self.as_table()
 
     def as_table(self) -> ir.Table:
-        """Promote this value expression to a projection."""
+        """Promote the expression to a table.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().name("len").as_table()
+        >>> expected = t.select(len=t.a.length())
+        >>> expr.equals(expected)
+        True
+        """
         from ibis.expr.analysis import find_immediate_parent_tables
 
         roots = find_immediate_parent_tables(self.op())
@@ -510,6 +525,29 @@ class Scalar(Value):
         return console.render(repr(self.execute()), options=options)
 
     def as_table(self) -> ir.Table:
+        """Promote the scalar expression to a table.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        Promote an aggregation to a table
+
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().sum().name("len").as_table()
+        >>> isinstance(expr, ir.Table)
+        True
+
+        Promote a literal value to a table
+
+        >>> import ibis.expr.types as ir
+        >>> lit = ibis.literal(1).name("a").as_table()
+        >>> isinstance(lit, ir.Table)
+        True
+        """
         from ibis.expr.analysis import (
             find_first_base_table,
             is_scalar_reduction,
@@ -779,29 +817,79 @@ class Column(Value, JupyterMixin):
         )
 
     def first(self) -> Column:
+        """Return the first value of a column.
+
+        Equivalent to SQL's `FIRST_VALUE` window function.
+        """
         return ops.FirstValue(self).to_expr()
 
     def last(self) -> Column:
+        """Return the last value of a column.
+
+        Equivalent to SQL's `LAST_VALUE` window function.
+        """
         return ops.LastValue(self).to_expr()
 
-    def rank(self) -> Column:
+    def rank(self) -> ir.IntegerColumn:
+        """Compute position of first element within each equal-value group in sorted order.
+
+        Equivalent to SQL's `RANK()` window function.
+
+        Examples
+        --------
+        values   ranks
+        1        0
+        1        0
+        2        2
+        2        2
+        2        2
+        3        5
+
+        Returns
+        -------
+        Int64Column
+            The min rank
+        """
         return ops.MinRank(self).to_expr()
 
-    def dense_rank(self) -> Column:
+    def dense_rank(self) -> ir.IntegerColumn:
+        """Position of first element within each group of equal values.
+
+        Values are returned in sorted order and duplicate values are ignored.
+
+        Equivalent to SQL's `DENSE_RANK()`.
+
+        Examples
+        --------
+        values   ranks
+        1        0
+        1        0
+        2        1
+        2        1
+        2        1
+        3        2
+
+        Returns
+        -------
+        IntegerColumn
+            The rank
+        """
         return ops.DenseRank(self).to_expr()
 
     def percent_rank(self) -> Column:
+        """Return the relative rank of the values in the column."""
         return ops.PercentRank(self).to_expr()
 
     def cume_dist(self) -> Column:
-        import ibis.expr.operations as ops
-
+        """Return the cumulative distribution over a window."""
         return ops.CumeDist(self).to_expr()
 
     def cummin(self) -> Column:
+        """Return the cumulative min over a window."""
         return ops.CumulativeMin(self).to_expr()
 
     def cummax(self) -> Column:
+        """Return the cumulative max over a window."""
         return ops.CumulativeMax(self).to_expr()
 
     def lag(
@@ -809,6 +897,15 @@ class Column(Value, JupyterMixin):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
+        """Return the row located at `offset` rows **before** the current row.
+
+        Parameters
+        ----------
+        offset
+            Index of row to select
+        default
+            Value used if no row exists at `offset`
+        """
         return ops.Lag(self, offset, default).to_expr()
 
     def lead(
@@ -816,9 +913,25 @@ class Column(Value, JupyterMixin):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
+        """Return the row located at `offset` rows **after** the current row.
+
+        Parameters
+        ----------
+        offset
+            Index of row to select
+        default
+            Value used if no row exists at `offset`
+        """
         return ops.Lead(self, offset, default).to_expr()
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+        """Return the integer number of a partitioning of the column values.
+
+        Parameters
+        ----------
+        buckets
+            Number of buckets to partition into
+        """
         return ops.NTile(self, buckets).to_expr()
 
     def nth(self, n: int | ir.IntegerValue) -> Column:
