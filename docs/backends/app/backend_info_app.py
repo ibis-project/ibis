@@ -10,7 +10,7 @@ import streamlit as st
 st.set_page_config(layout='wide')
 
 
-@st.cache
+@st.cache(ttl=3600)
 def load_ops_data():
     response = requests.get(
         'https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv'
