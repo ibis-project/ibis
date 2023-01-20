@@ -43,12 +43,10 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_datefirst = bind.execute(sa.text('SELECT @@DATEFIRST')).scalar()
+            prev = bind.execute(sa.text('SELECT @@DATEFIRST')).scalar()
             bind.execute(sa.text('SET DATEFIRST 1'))
-            try:
-                yield bind
-            finally:
-                bind.execute(sa.text(f"SET DATEFIRST {previous_datefirst}"))
+            yield bind
+            bind.execute(sa.text("SET DATEFIRST :prev").bindparams(prev=prev))
 
     def _metadata(self, query):
         if query in self.list_tables():

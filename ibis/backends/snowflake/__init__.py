@@ -93,19 +93,17 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = (
+            prev = (
                 bind.execute(sa.text("SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION"))
                 .mappings()
                 .fetchone()
                 .value
             )
             bind.execute(sa.text("ALTER SESSION SET TIMEZONE = 'UTC'"))
-            try:
-                yield bind
-            finally:
-                bind.execute(
-                    sa.text(f"ALTER SESSION SET TIMEZONE = {previous_timezone!r}")
-                )
+            yield bind
+            bind.execute(
+                sa.text("ALTER SESSION SET TIMEZONE = :prev").bindparams(prev=prev)
+            )
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **_: Any

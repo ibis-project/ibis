@@ -119,12 +119,10 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute(sa.text('SHOW TIMEZONE')).scalar()
+            prev = bind.execute(sa.text('SHOW TIMEZONE')).scalar()
             bind.execute(sa.text('SET TIMEZONE = UTC'))
-            try:
-                yield bind
-            finally:
-                bind.execute(sa.text(f"SET TIMEZONE = '{previous_timezone}'"))
+            yield bind
+            bind.execute(sa.text("SET TIMEZONE = :prev").bindparams(prev=prev))
 
     def udf(
         self,

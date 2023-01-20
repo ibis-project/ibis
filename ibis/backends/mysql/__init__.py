@@ -106,23 +106,19 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute(
-                sa.text('SELECT @@session.time_zone')
-            ).scalar()
+            prev = bind.execute(sa.text('SELECT @@session.time_zone')).scalar()
             try:
                 bind.execute(sa.text("SET @@session.time_zone = 'UTC'"))
             except Exception as e:  # noqa: BLE001
-                warnings.warn(f"Couldn't set MySQL timezone: {str(e)}")
+                warnings.warn(f"Couldn't set MySQL timezone: {e}")
 
+            yield bind
             try:
-                yield bind
-            finally:
-                try:
-                    bind.execute(
-                        sa.text(f"SET @@session.time_zone = '{previous_timezone}'")
-                    )
-                except Exception as e:  # noqa: BLE001
-                    warnings.warn(sa.text(f"Couldn't reset MySQL timezone: {str(e)}"))
+                bind.execute(
+                    sa.text("SET @@session.time_zone = :prev").bindparams(prev=prev)
+                )
+            except Exception as e:  # noqa: BLE001
+                warnings.warn(sa.text(f"Couldn't reset MySQL timezone: {e}"))
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         if (
