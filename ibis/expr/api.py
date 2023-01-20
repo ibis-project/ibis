@@ -147,6 +147,7 @@ __all__ = (
     'schema',
     'Schema',
     'sequence',
+    'set_backend',
     'show_sql',
     'to_sql',
     'struct',
@@ -869,6 +870,40 @@ def read_parquet(sources: str | Path, **kwargs: Any) -> ir.Table:
 
     con = _default_backend()
     return con.read_parquet(sources, **kwargs)
+
+
+def set_backend(backend: str | BaseBackend) -> None:
+    """Set the default Ibis backend.
+
+    Parameters
+    ----------
+    backend
+        May be a backend name or URL, or an existing backend instance.
+
+    Examples
+    --------
+    May pass the backend as a name:
+    >>> ibis.set_backend("polars")
+
+    Or as a URI:
+    >>> ibis.set_backend("postgres://user:password@hostname:5432")
+
+    Or as an existing backend instance:
+    >>> ibis.set_backend(ibis.duckdb.connect())
+    """
+    import ibis
+
+    if isinstance(backend, str) and backend.isidentifier():
+        try:
+            backend_type = getattr(ibis, backend)
+        except AttributeError:
+            pass
+        else:
+            backend = backend_type.connect()
+    if isinstance(backend, str):
+        backend = ibis.connect(backend)
+
+    ibis.options.default_backend = backend
 
 
 def get_backend(expr: Expr | None = None) -> BaseBackend:
