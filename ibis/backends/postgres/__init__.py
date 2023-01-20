@@ -198,4 +198,4 @@ ORDER BY attnum"""
         name: str,
         definition: sa.sql.compiler.Compiled,
     ) -> str:
-        yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
