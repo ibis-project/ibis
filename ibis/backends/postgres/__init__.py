@@ -181,14 +181,15 @@ SELECT
   attname,
   format_type(atttypid, atttypmod) AS type
 FROM pg_attribute
-WHERE attrelid = {raw_name!r}::regclass
+WHERE attrelid = CAST(:raw_name AS regclass)
   AND attnum > 0
   AND NOT attisdropped
-ORDER BY attnum
-"""
+ORDER BY attnum"""
         with self.begin() as con:
             con.execute(sa.text(f"CREATE TEMPORARY VIEW {name} AS {query}"))
-            type_info = con.execute(sa.text(type_info_sql))
+            type_info = con.execute(
+                sa.text(type_info_sql).bindparams(raw_name=raw_name)
+            )
             yield from ((col, _get_type(typestr)) for col, typestr in type_info)
             con.execute(sa.text(f"DROP VIEW IF EXISTS {name}"))
 
