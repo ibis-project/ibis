@@ -154,7 +154,7 @@ class BaseSQLBackend(BaseBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return an iterator of pyarrow record batches.
 
@@ -172,31 +172,25 @@ class BaseSQLBackend(BaseBackend):
             Mapping of scalar parameter expressions to value.
         chunk_size
             Maximum number of rows in each returned record batch.
-        kwargs
-            Keyword arguments
 
         Returns
         -------
-        results
-            RecordBatchReader
+        RecordBatchReader
+            Collection of pyarrow `RecordBatch`s.
         """
         pa = self._import_pyarrow()
 
-        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
-
-        schema = self._table_or_column_schema(expr)
-
-        def _batches():
+        schema = expr.as_table().schema()
+        array_type = schema.as_struct().to_pyarrow()
+        arrays = (
+            pa.array(map(tuple, batch), type=array_type)
             for batch in self._cursor_batches(
                 expr, params=params, limit=limit, chunk_size=chunk_size
-            ):
-                struct_array = pa.array(
-                    map(tuple, batch),
-                    type=ibis_to_pyarrow_struct(schema),
-                )
-                yield pa.RecordBatch.from_struct_array(struct_array)
+            )
+        )
+        batches = map(pa.RecordBatch.from_struct_array, arrays)
 
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
     def execute(
         self,

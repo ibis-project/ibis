@@ -303,21 +303,16 @@ class Backend(BaseBackend):
         """
         pa = self._import_pyarrow()
 
-        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
-
-        schema = self._table_or_column_schema(expr)
-
-        def _batches():
+        schema = expr.as_table().schema()
+        array_type = schema.as_struct().to_pyarrow()
+        batches = (
+            pa.RecordBatch.from_struct_array(pa.array(batch, type=array_type))
             for batch in self._cursor_batches(
                 expr, params=params, limit=limit, chunk_size=chunk_size
-            ):
-                struct_array = pa.array(
-                    map(tuple, batch),
-                    type=ibis_to_pyarrow_struct(schema),
-                )
-                yield pa.RecordBatch.from_struct_array(struct_array)
+            )
+        )
 
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
     def _cursor_batches(
         self,
