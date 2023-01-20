@@ -20,18 +20,16 @@ from typing import (
     MutableMapping,
 )
 
-if TYPE_CHECKING:
-    import pandas as pd
-    import pyarrow as pa
-
-    import ibis.expr.schema as sch
-
 import ibis
 import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -223,16 +221,6 @@ class ResultHandler:
         else:
             return pyarrow
 
-    @staticmethod
-    def _table_or_column_schema(expr: ir.Expr) -> sch.Schema:
-        from ibis.backends.pyarrow.datatypes import sch
-
-        if isinstance(expr, ir.Table):
-            return expr.schema()
-        else:
-            # ColumnExpr has no schema method, define single-column schema
-            return sch.schema([(expr.get_name(), expr.type())])
-
     @util.experimental
     def to_pyarrow(
         self,
@@ -275,7 +263,7 @@ class ResultHandler:
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
             # iterator and a pyarrow schema
-            schema = self._table_or_column_schema(expr)
+            schema = expr.as_table().schema()
             table = pa.Table.from_batches([], schema=schema.to_pyarrow())
 
         if isinstance(expr, ir.Table):
