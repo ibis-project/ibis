@@ -25,6 +25,12 @@ pytest -m core
     or any specific backends (`ibis/backends`) this material isn't necessary to
     follow to make a pull request.
 
+First, we need to download example data to run the tests successfully:
+
+```sh
+just download-data
+```
+
 To run the tests for a specific backend (e.g. sqlite):
 
 ```sh
@@ -48,14 +54,6 @@ If anything seems amiss with a backend, you can of course test it locally:
 ```sh
 export PGPASSWORD=postgres
 psql -t -A -h localhost -U postgres -d ibis_testing -c "select 'success'"
-```
-
-## Download Test Data
-
-Backends need to be populated with test data to run the tests successfully:
-
-```sh
-just download-data
 ```
 
 ## Writing the commit
