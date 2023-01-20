@@ -878,6 +878,57 @@ def test_get_backend(con, alltypes, monkeypatch):
     assert ibis.get_backend(expr) is con
 
 
+def test_set_backend(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    ibis.set_backend(con)
+    assert ibis.get_backend() is con
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        param("duckdb", marks=mark.duckdb, id="duckdb"),
+        param("polars", marks=mark.polars, id="polars"),
+        param("sqlite", marks=mark.sqlite, id="sqlite"),
+    ],
+)
+def test_set_backend_name(name, monkeypatch):
+    # Don't need to test with all backends, only checking that things are
+    # plumbed through correctly.
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    ibis.set_backend(name)
+    assert ibis.get_backend().name == name
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(
+            "clickhouse://default@localhost:9000/ibis_testing",
+            marks=mark.clickhouse,
+            id="clickhouse",
+        ),
+        param(
+            "mysql://ibis:ibis@localhost:3306/ibis_testing",
+            marks=mark.mysql,
+            id="mysql",
+        ),
+        param(
+            "postgres://postgres:postgres@localhost:5432/ibis_testing",
+            marks=mark.postgres,
+            id="postgres",
+        ),
+    ],
+)
+def test_set_backend_url(url, monkeypatch):
+    # Don't need to test with all backends, only checking that things are
+    # plumbed through correctly.
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    name = url.split("://")[0]
+    ibis.set_backend(url)
+    assert ibis.get_backend().name == name
+
+
 @pytest.mark.notyet(
     [
         "bigquery",

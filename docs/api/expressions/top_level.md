@@ -36,6 +36,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.read_parquet
 ::: ibis.row_number
 ::: ibis.schema
+::: ibis.set_backend
 ::: ibis.struct
 ::: ibis.table
 ::: ibis.time
