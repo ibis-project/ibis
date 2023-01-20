@@ -6,9 +6,10 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
+# lock dependencies without updating existing versions
 lock:
     poetry lock --no-update
-    poetry export --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+    poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
 
 # show all backends
 @list-backends:
@@ -64,9 +65,20 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
 up *backends:
     docker compose up --wait {{ backends }}
 
+# stop and remove containers -> clean up dangling volumes -> start backends
+reup *backends:
+    just down {{ backends }}
+    docker system prune --force --volumes
+    just up {{ backends }}
+
 # stop and remove containers; clean up networks and volumes
-down:
-    docker compose down --volumes --remove-orphans
+down *backends:
+    #!/usr/bin/env bash
+    if [ -z "{{ backends }}" ]; then
+        docker compose down --volumes --remove-orphans
+    else
+        docker compose rm {{ backends }} --force --stop --volumes
+    fi
 
 # run the benchmark suite
 bench +args='ibis/tests/benchmarks':
