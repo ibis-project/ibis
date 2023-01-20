@@ -993,7 +993,7 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.broken(
-                    ["clickhouse", "duckdb", "impala", "pyspark", "trino"],
+                    ["clickhouse", "duckdb", "impala", "pyspark", "trino", "snowflake"],
                     reason="drivers appear to truncate nanos",
                 ),
                 pytest.mark.notyet(
