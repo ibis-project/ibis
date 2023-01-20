@@ -396,11 +396,13 @@ def _literal(t, op):
     elif dtype.is_geospatial():
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
-    elif isinstance(value, tuple):
+    elif dtype.is_array():
         return sa.literal_column(
             str(pg.array(value).compile(compile_kwargs=dict(literal_binds=True))),
             type_=t.get_sqla_type(dtype),
         )
+    elif dtype.is_map():
+        return pg.hstore(pg.array(list(value.keys())), pg.array(list(value.values())))
     else:
         return sa.literal(value)
 
@@ -585,5 +587,17 @@ operation_registry.update(
         ops.TimestampNow: lambda t, op: sa.literal_column(
             "CURRENT_TIMESTAMP", type_=t.get_sqla_type(op.output_dtype)
         ),
+        ops.MapGet: fixed_arity(
+            lambda arg, key, default: sa.case(
+                (arg.has_key(key), arg[key]), else_=default
+            ),
+            3,
+        ),
+        ops.MapContains: fixed_arity(pg.HSTORE.Comparator.has_key, 2),
+        ops.MapKeys: unary(pg.HSTORE.Comparator.keys),
+        ops.MapValues: unary(pg.HSTORE.Comparator.vals),
+        ops.MapMerge: fixed_arity(operator.add, 2),
+        ops.MapLength: unary(lambda arg: sa.func.cardinality(arg.keys())),
+        ops.Map: fixed_arity(pg.hstore, 2),
     }
 )

@@ -268,6 +268,14 @@ _invalid_operations = {
     ops.Translate,
     # ibis.expr.operations.temporal
     ops.TimestampDiff,
+    # ibis.expr.operations.maps
+    ops.MapGet,
+    ops.MapContains,
+    ops.MapKeys,
+    ops.MapValues,
+    ops.MapMerge,
+    ops.MapLength,
+    ops.Map,
 }
 
 operation_registry = {

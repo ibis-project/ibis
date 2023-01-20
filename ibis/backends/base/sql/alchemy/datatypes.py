@@ -172,6 +172,13 @@ def _pg_array(dialect, itype):
     return sa.ARRAY(to_sqla_type(dialect, itype))
 
 
+@to_sqla_type.register(PGDialect, dt.Map)
+def _pg_map(dialect, itype):
+    if not (itype.key_type.is_string() and itype.value_type.is_string()):
+        raise TypeError(f"PostgreSQL only supports map<string, string>, got: {itype}")
+    return postgresql.HSTORE
+
+
 @to_sqla_type.register(Dialect, dt.Struct)
 def _struct(dialect, itype):
     return StructType(
@@ -292,6 +299,11 @@ def sa_uuid(_, satype, nullable=True):
 @dt.dtype.register(PGDialect, postgresql.MACADDR)
 def sa_macaddr(_, satype, nullable=True):
     return dt.MACADDR(nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.HSTORE)
+def sa_hstore(_, satype, nullable=True):
+    return dt.Map(dt.string, dt.string, nullable=nullable)
 
 
 @dt.dtype.register(PGDialect, postgresql.INET)

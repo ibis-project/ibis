@@ -88,7 +88,7 @@ def test_scalar_param_struct(con):
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
 )
-@pytest.mark.notyet(["bigquery", "postgres"])
+@pytest.mark.notyet(["bigquery"])
 def test_scalar_param_map(con):
     value = {'a': 'ghi', 'b': 'def', 'c': 'abc'}
     param = ibis.param(dt.Map(dt.string, dt.string))
