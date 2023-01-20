@@ -34,7 +34,9 @@ class Backend(BaseBackend):
         super().__init__(*args, **kwargs)
         self._tables = dict()
 
-    def do_connect(self, tables: MutableMapping[str, pl.LazyFrame]) -> None:
+    def do_connect(
+        self, tables: MutableMapping[str, pl.LazyFrame] | None = None
+    ) -> None:
         """Construct a client from a dictionary of `polars.LazyFrame`s.
 
         Parameters
@@ -42,6 +44,8 @@ class Backend(BaseBackend):
         tables
             Mutable mapping of string table names to polars LazyFrames.
         """
+        if not tables:
+            tables = {}
         self._tables.update(tables)
 
     @property
