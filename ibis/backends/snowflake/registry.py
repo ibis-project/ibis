@@ -231,7 +231,7 @@ operation_registry.update(
         ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
         ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
         ops.RegexExtract: fixed_arity(sa.func.regexp_substr, 3),
-        ops.RegexSearch: fixed_arity(lambda left, right: left.op('REGEXP')(right), 2),
+        ops.RegexSearch: fixed_arity(sa.sql.operators.custom_op("REGEXP"), 2),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: sa.cast(
@@ -244,8 +244,7 @@ operation_registry.update(
             t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit]
         ),
         ops.StructField: lambda t, op: sa.cast(
-            sa.func.parse_json(sa.func.get(t.translate(op.arg), op.field)),
-            t.get_sqla_type(op.output_dtype),
+            sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.output_dtype)
         ),
         ops.NthValue: _nth_value,
     }
