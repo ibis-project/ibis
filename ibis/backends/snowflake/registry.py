@@ -129,6 +129,18 @@ def _nth_value(t, op):
     return sa.func.nth_value(t.translate(op.arg), nth.value + 1)
 
 
+def _arbitrary(t, op):
+    if op.how != "first":
+        raise ValueError(
+            "Snowflake only supports the `first` option for `.arbitrary()`"
+        )
+
+    # we can't use any_value here because it respects nulls
+    #
+    # yes it's slower, but it's also consistent with every other backend
+    return t._reduction(sa.func.min, op)
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -247,6 +259,7 @@ operation_registry.update(
             sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.output_dtype)
         ),
         ops.NthValue: _nth_value,
+        ops.Arbitrary: _arbitrary,
     }
 )
 
