@@ -43,8 +43,8 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            prev = bind.execute(sa.text('SELECT @@DATEFIRST')).scalar()
-            bind.execute(sa.text('SET DATEFIRST 1'))
+            prev = bind.exec_driver_sql("SELECT @@DATEFIRST").scalar()
+            bind.exec_driver_sql("SET DATEFIRST 1")
             yield bind
             bind.execute(sa.text("SET DATEFIRST :prev").bindparams(prev=prev))
 
@@ -53,8 +53,8 @@ class Backend(BaseAlchemyBackend):
             query = f"SELECT * FROM [{query}]"
 
         with self.begin() as bind:
-            for column in bind.execute(
-                sa.text(f"EXEC sp_describe_first_result_set @tsql = N'{query}';")
+            for column in bind.exec_driver_sql(
+                f"EXEC sp_describe_first_result_set @tsql = N'{query}'"
             ).mappings():
                 yield column["name"], _type_from_result_set_info(column)
 

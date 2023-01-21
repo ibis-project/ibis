@@ -94,12 +94,12 @@ class Backend(BaseAlchemyBackend):
     def begin(self):
         with super().begin() as bind:
             prev = (
-                bind.execute(sa.text("SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION"))
+                bind.exec_driver_sql("SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION")
                 .mappings()
                 .fetchone()
                 .value
             )
-            bind.execute(sa.text("ALTER SESSION SET TIMEZONE = 'UTC'"))
+            bind.exec_driver_sql("ALTER SESSION SET TIMEZONE = 'UTC'")
             yield bind
             bind.execute(
                 sa.text("ALTER SESSION SET TIMEZONE = :prev").bindparams(prev=prev)
@@ -112,7 +112,7 @@ class Backend(BaseAlchemyBackend):
         cols = []
         identifier = name if not schema else schema + "." + name
         with self.begin() as con:
-            cur = con.execute(sa.text(f"DESCRIBE TABLE {identifier}")).mappings()
+            cur = con.exec_driver_sql(f"DESCRIBE TABLE {identifier}").mappings()
             for colname, colinfo in zip(toolz.pluck("name", cur), inspected):
                 colinfo["name"] = colname
                 colinfo["type_"] = colinfo.pop("type")
@@ -146,10 +146,8 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as bind:
-            result = bind.execute(sa.text(f"SELECT * FROM ({query}) t0 LIMIT 0"))
-            info_rows = bind.execute(
-                sa.text(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
-            )
+            result = bind.exec_driver_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
+            info_rows = bind.exec_driver_sql(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
 
             for name, raw_type, null in toolz.pluck(
                 ["name", "type", "null?"], info_rows.mappings()
@@ -159,10 +157,10 @@ class Backend(BaseAlchemyBackend):
 
     def list_databases(self, like=None) -> list[str]:
         with self.begin() as con:
-            databases = [
-                row.database_name
-                for row in con.execute(
-                    sa.text('SELECT database_name FROM information_schema.databases')
-                ).mappings()
-            ]
+            databases = toolz.pluck(
+                "database_name",
+                con.exec_driver_sql(
+                    'SELECT database_name FROM information_schema.databases'
+                ).mappings(),
+            )
         return self._filter_with_like(databases, like)

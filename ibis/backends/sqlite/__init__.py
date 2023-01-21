@@ -182,7 +182,8 @@ class Backend(BaseAlchemyBackend):
         >>> con1.attach("new", "new.db")
         >>> con1.list_tables(database="new")
         """
-        self.raw_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
+        with self.begin() as con:
+            con.exec_driver_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
@@ -226,10 +227,10 @@ class Backend(BaseAlchemyBackend):
 
         with self.begin() as con:
             # create a view that should only be visible in this transaction
-            con.execute(sa.text(f"CREATE TEMPORARY VIEW {view} AS {query}"))
+            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {view} AS {query}")
 
             # extract table info from the view
-            table_info = con.execute(sa.text(f"PRAGMA table_info({view})"))
+            table_info = con.exec_driver_sql(f"PRAGMA table_info({view})")
 
             # get names and not nullables
             names, notnulls, raw_types = zip(
@@ -239,8 +240,8 @@ class Backend(BaseAlchemyBackend):
             # get the type of the first row if no affinity was returned in
             # `raw_types`; assume that reflects the rest of the rows
             type_queries = ", ".join(map("typeof({})".format, names))
-            single_row_types = con.execute(
-                sa.text(f"SELECT {type_queries} FROM {view} LIMIT 1")
+            single_row_types = con.exec_driver_sql(
+                f"SELECT {type_queries} FROM {view} LIMIT 1"
             ).fetchone()
             for name, notnull, raw_typ, typ in zip(
                 names, notnulls, raw_types, single_row_types
@@ -249,7 +250,7 @@ class Backend(BaseAlchemyBackend):
                 yield name, ibis_type(nullable=not notnull)
 
             # drop the view when we're done with it
-            con.execute(sa.text(f"DROP VIEW IF EXISTS {view}"))
+            con.exec_driver_sql(f"DROP VIEW IF EXISTS {view}")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a SQLite SQL string."""

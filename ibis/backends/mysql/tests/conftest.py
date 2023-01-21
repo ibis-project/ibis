@@ -93,7 +93,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                         "LINES TERMINATED BY '\\n'",
                         "IGNORE 1 LINES",
                     ]
-                    con.execute(sa.text("\n".join(lines)))
+                    con.exec_driver_sql("\n".join(lines))
 
     @staticmethod
     def connect(_: Path):

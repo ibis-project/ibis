@@ -217,12 +217,9 @@ def test_create_and_drop_table(con, temp_table, params):
     ],
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
-    raw_name = ibis.util.guid()
-    name = con._quote(raw_name)
+    name = con._quote(ibis.util.guid())
     with con.begin() as c:
-        c.execute(
-            sa.text(f"CREATE TEMPORARY TABLE {name} (x {pg_type}, y {pg_type}[])")
-        )
+        c.exec_driver_sql(f"CREATE TEMP TABLE {name} (x {pg_type}, y {pg_type}[])")
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema

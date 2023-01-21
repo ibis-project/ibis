@@ -1,5 +1,4 @@
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -64,21 +63,26 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
     with con.begin() as c:
-        c.execute(sa.text(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})"))
-    expected_schema = ibis.schema(dict(x=expected_type))
-    t = con.table(raw_name)
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert t.schema() == expected_schema
-    assert result_schema == expected_schema
+        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
+    try:
+        expected_schema = ibis.schema(dict(x=expected_type))
+        t = con.table(raw_name)
+        result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+        assert t.schema() == expected_schema
+        assert result_schema == expected_schema
+    finally:
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE {name}")
 
 
-@pytest.mark.parametrize(
-    "coltype",
-    ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"],
-)
+@pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
 def test_blob_type(con, coltype):
     tmp = f"tmp_{ibis.util.guid()}"
     with con.begin() as c:
-        c.execute(sa.text(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})"))
-    t = con.table(tmp)
-    assert t.schema() == ibis.schema({"a": dt.binary})
+        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
+    try:
+        t = con.table(tmp)
+        assert t.schema() == ibis.schema({"a": dt.binary})
+    finally:
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE {tmp}")

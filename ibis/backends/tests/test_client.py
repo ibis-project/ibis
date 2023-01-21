@@ -371,7 +371,7 @@ def test_insert_from_memtable(alchemy_con):
         assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
     finally:
         with alchemy_con.begin() as con:
-            con.execute(sa.text(f"DROP TABLE IF EXISTS {table_name}"))
+            con.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
         assert table_name not in alchemy_con.list_tables()
 
 
@@ -396,12 +396,12 @@ def test_in_memory(alchemy_backend):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
     table_name = f"t{guid()[:6]}"
     with con.begin() as c:
-        c.execute(sa.text(f"CREATE TABLE {table_name} (x int)"))
+        c.exec_driver_sql(f"CREATE TABLE {table_name} (x int)")
     try:
         assert table_name in con.list_tables()
     finally:
         with con.begin() as c:
-            c.execute(sa.text(f"DROP TABLE IF EXISTS {table_name}"))
+            c.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
         assert table_name not in con.list_tables()
 
 
