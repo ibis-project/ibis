@@ -32,12 +32,15 @@ def infer(value: Any) -> dt.DataType:
     raise InputTypeError(value)
 
 
+# TODO(kszucs): support NamedTuples and dataclasses instead of OrderedDict
+# which should trigger infer_map instead
 @infer.register(collections.OrderedDict)
 def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
     """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
-    return dt.Struct(list(value.keys()), list(map(infer, value.values())))
+    fields = {name: infer(val) for name, val in value.items()}
+    return dt.Struct(fields)
 
 
 @infer.register(collections.abc.Mapping)
@@ -51,7 +54,7 @@ def infer_map(value: Mapping[Any, Any]) -> dt.Map:
             highest_precedence(map(infer, value.values())),
         )
     except IbisTypeError:
-        return dt.Struct.from_dict(toolz.valmap(infer, value, factory=type(value)))
+        return dt.Struct(toolz.valmap(infer, value, factory=type(value)))
 
 
 @infer.register((list, tuple))

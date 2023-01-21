@@ -6,8 +6,8 @@ import pyspark.sql.types as pt
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 from ibis.backends.base.sql.registry import sql_type_names
-from ibis.expr.schema import Schema
 
 _sql_type_names = dict(sql_type_names, date='date')
 
@@ -72,10 +72,11 @@ def _spark_map(spark_dtype_obj, nullable=True):
 
 @dt.dtype.register(pt.StructType)
 def _spark_struct(spark_dtype_obj, nullable=True):
-    names = spark_dtype_obj.names
-    fields = spark_dtype_obj.fields
-    ibis_types = [dt.dtype(f.dataType, nullable=f.nullable) for f in fields]
-    return dt.Struct(names, ibis_types, nullable=nullable)
+    fields = {
+        n: dt.dtype(f.dataType, nullable=f.nullable)
+        for n, f in zip(spark_dtype_obj.names, spark_dtype_obj.fields)
+    }
+    return dt.Struct(fields, nullable=nullable)
 
 
 _IBIS_DTYPE_TO_SPARK_DTYPE = {v: k for k, v in _SPARK_DTYPE_TO_IBIS_DTYPE.items()}
@@ -122,10 +123,17 @@ def _map(ibis_dtype_obj):
 
 
 @spark_dtype.register(dt.Struct)
-@spark_dtype.register(Schema)
 def _struct(ibis_dtype_obj):
     fields = [
         pt.StructField(n, spark_dtype(t), t.nullable)
-        for n, t in zip(ibis_dtype_obj.names, ibis_dtype_obj.types)
+        for n, t in ibis_dtype_obj.fields.items()
+    ]
+    return pt.StructType(fields)
+
+
+@spark_dtype.register(sch.Schema)
+def _schema(ibis_schem_obj):
+    fields = [
+        pt.StructField(n, spark_dtype(t), t.nullable) for n, t in ibis_schem_obj.items()
     ]
     return pt.StructType(fields)

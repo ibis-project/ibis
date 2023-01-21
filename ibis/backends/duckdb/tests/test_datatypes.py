@@ -49,7 +49,7 @@ EXPECTED_SCHEMA = dict(
     P=dt.string,
     Q=dt.Array(dt.int32),
     R=dt.Map(dt.string, dt.int64),
-    S=dt.Struct.from_dict(
+    S=dt.Struct(
         dict(
             a=dt.int32,
             b=dt.string,
