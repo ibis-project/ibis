@@ -136,9 +136,7 @@ class Backend(BaseAlchemyBackend):
             )
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
 
