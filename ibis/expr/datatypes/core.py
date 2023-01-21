@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numbers
 from abc import abstractmethod
-from typing import Any, Iterable, Mapping, NamedTuple
+from typing import Any, Iterable, NamedTuple
 
 import numpy as np
 from multipledispatch import Dispatcher
