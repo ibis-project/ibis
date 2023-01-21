@@ -260,6 +260,9 @@ operation_registry.update(
         ),
         ops.NthValue: _nth_value,
         ops.Arbitrary: _arbitrary,
+        ops.StructColumn: lambda t, op: sa.func.object_construct_keep_null(
+            *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
+        ),
     }
 )
 
