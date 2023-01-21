@@ -649,38 +649,6 @@ class Struct(DataType):
     column = ir.StructColumn
 
     @classmethod
-    def __create__(cls, names, types=None, nullable=True):
-        if types is None:
-            fields = names
-        else:
-            warn_deprecated(
-                "Struct(names, types)",
-                as_of="4.1",
-                removed_in="5.0",
-                instead=(
-                    "construct a Struct type using a mapping of names to types instead: "
-                    "Struct(dict(zip(names, types)))"
-                ),
-            )
-            if len(names) != len(types):
-                raise IbisTypeError(
-                    'Struct datatype names and types must have the same length'
-                )
-            fields = dict(zip(names, types))
-
-        return super().__create__(fields=fields, nullable=nullable)
-
-    def __reduce__(self):
-        return (self.__class__, (self.fields, None, self.nullable))
-
-    def copy(self, fields=None, nullable=None):
-        if fields is None:
-            fields = self.fields
-        if nullable is None:
-            nullable = self.nullable
-        return type(self)(fields, nullable=nullable)
-
-    @classmethod
     def from_tuples(
         cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
     ) -> Struct:
@@ -699,40 +667,6 @@ class Struct(DataType):
             Struct data type instance
         """
         return cls(dict(pairs), nullable=nullable)
-
-    @classmethod
-    @deprecated(
-        as_of="4.1",
-        removed_in="5.0",
-        instead="directly construct a Struct type instead",
-    )
-    def from_dict(
-        cls, pairs: Mapping[str, str | DataType], nullable: bool = True
-    ) -> Struct:
-        """Construct a `Struct` type from a [`dict`][dict].
-
-        Parameters
-        ----------
-        pairs
-            A [`dict`][dict] of `field: type`
-        nullable
-            Whether the type is nullable
-
-        Returns
-        -------
-        Struct
-            Struct data type instance
-        """
-        return cls(pairs, nullable=nullable)
-
-    @property
-    @deprecated(
-        as_of="4.1",
-        removed_in="5.0",
-        instead="use struct_type.fields attribute instead",
-    )
-    def pairs(self) -> Mapping[str, DataType]:
-        return self.fields
 
     @attribute.default
     def names(self) -> tuple[str, ...]:
