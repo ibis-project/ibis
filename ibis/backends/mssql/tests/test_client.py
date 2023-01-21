@@ -80,7 +80,7 @@ broken_sqlalchemy_autoload = pytest.mark.xfail(
 )
 def test_get_schema_from_query(con, server_type, expected_type):
     raw_name = f"tmp_{ibis.util.guid()}"
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    name = con._quote(raw_name)
     expected_schema = ibis.schema(dict(x=expected_type))
     try:
         with con.begin() as c:

@@ -576,6 +576,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The given obj is of type {type(obj).__name__} ."
             )
 
+    def _quote(self, name: str) -> str:
+        """Quote an identifier."""
+        return self.con.dialect.identifier_preparer.quote(name)
+
     def _get_temp_view_definition(
         self,
         name: str,
@@ -613,7 +617,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         raw_name = view.name
         if raw_name not in self._temp_views and raw_name in self.list_tables():
             raise ValueError(f"{raw_name} already exists as a table or view")
-        name = self.con.dialect.identifier_preparer.quote_identifier(view.name)
+        name = self._quote(raw_name)
         lines, params = self._get_compiled_statement(definition, name)
         with self.begin() as con:
             for line in lines:
