@@ -1,5 +1,5 @@
 conda-lock/*.lock linguist-generated=true
 flake.lock linguist-generated=true
 poetry.lock linguist-generated=true
-requirements.txt linguist-generated=true
+./requirements.txt linguist-generated=true
 docs/**/*.ipynb linguist-generated=true
