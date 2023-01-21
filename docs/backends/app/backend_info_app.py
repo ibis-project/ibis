@@ -1,98 +1,131 @@
-import contextlib
-import csv
-from enum import Enum
+import datetime
 from pathlib import Path
+from typing import List, Optional
 
 import pandas as pd
-import requests
+import sqlglot
 import streamlit as st
+
+import ibis
+from ibis import _
+from ibis.backends import duckdb
+
+ONE_HOUR_IN_SECONDS = datetime.timedelta(hours=1).total_seconds()
 
 st.set_page_config(layout='wide')
 
+# Track all queries. We display them at the bottom of the page.
+ibis.options.verbose = True
+sql_queries = []
+ibis.options.verbose_log = lambda sql: sql_queries.append(sql)
 
-@st.cache(ttl=3600)
-def load_ops_data():
-    response = requests.get(
-        'https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv'
+
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def support_matrix_df():
+    backend: duckdb.Backend = ibis.connect('duckdb://')
+    support_matrix = (
+        backend.read_csv(
+            'https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv'
+        )
+        .relabel({'FullOperation': 'full_operation'})
+        .mutate(
+            short_operation=_.full_operation.split(".")[4],
+            operation_category=_.full_operation.split(".")[3],
+        )
     )
-    response.raise_for_status()
-    reader = csv.DictReader(response.text.splitlines())
-
-    data = [
-        {k: v if k == "FullOperation" else v == "True" for k, v in row.items()}
-        for row in reader
-    ]
-    for row in data:
-        row['ShortOperation'] = row['FullOperation'].rsplit(".")[4]
-        row['OpCategory'] = row['FullOperation'].rsplit(".")[3]
-    return data
+    return support_matrix.execute()
 
 
-ops_data = load_ops_data()
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def backends_info_df():
+    return pd.DataFrame(
+        {
+            "bigquery": ["string", "sql"],
+            "clickhouse": ["string", "sql"],
+            'dask': ["dataframe"],
+            "datafusion": ["dataframe"],
+            "duckdb": ["sqlalchemy", "sql"],
+            "impala": ["string", "sql"],
+            "mssql": ["sqlalchemy", "sql"],
+            "mysql": ["sqlalchemy", "sql"],
+            "pandas": ["dataframe"],
+            "polars": ["dataframe"],
+            "postgres": ["sqlalchemy", "sql"],
+            "pyspark": ["dataframe"],
+            "snowflake": ["sqlalchemy", "sql"],
+            "sqlite": ["sqlalchemy", "sql"],
+            "trino": ["sqlalchemy", "sql"],
+        }.items(),
+        columns=['backend_name', 'categories'],
+    )
 
 
-class BackendCategory(Enum):
-    string = "STRING"
-    sqlalchemy = "SQLALCHEMY"
-    dataframe = "DATAFRAME"
-    sql = "SQL"
+backend_info_table = ibis.memtable(backends_info_df())
+support_matrix_table = ibis.memtable(support_matrix_df())
 
 
-BACKENDS = {
-    "bigquery": [BackendCategory.string, BackendCategory.sql],
-    "clickhouse": [BackendCategory.string, BackendCategory.sql],
-    'dask': [BackendCategory.dataframe],
-    "datafusion": [BackendCategory.dataframe],
-    "duckdb": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "impala": [BackendCategory.string, BackendCategory.sql],
-    "mssql": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "mysql": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "pandas": [BackendCategory.dataframe],
-    "polars": [BackendCategory.dataframe],
-    "postgres": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "pyspark": [BackendCategory.dataframe],
-    "snowflake": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "sqlite": [BackendCategory.sqlalchemy, BackendCategory.sql],
-    "trino": [BackendCategory.sqlalchemy, BackendCategory.sql],
-}
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def get_all_backend_categories():
+    return (
+        backend_info_table.select(category=_.categories.unnest())
+        .distinct()
+        .order_by('category')['category']
+        .execute()
+        .tolist()
+    )
+
+
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def get_all_operation_categories():
+    return (
+        support_matrix_table.select(_.operation_category)
+        .distinct()['operation_category']
+        .execute()
+        .tolist()
+    )
+
+
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def get_backend_names(categories: Optional[List[str]] = None):
+    backend_expr = backend_info_table.mutate(category=_.categories.unnest())
+    if categories:
+        backend_expr = backend_expr.filter(_.category.isin(categories))
+    return (
+        backend_expr.select(_.backend_name).distinct().backend_name.execute().tolist()
+    )
 
 
 def get_selected_backend_name():
-    all_categories_names = [cat.name for cat in iter(BackendCategory)]
+    backend_categories = get_all_backend_categories()
     selected_categories_names = st.sidebar.multiselect(
         'Backend category',
-        options=sorted(all_categories_names),
+        options=backend_categories,
         default=None,
     )
-    selected_categories = [
-        getattr(BackendCategory, name) for name in selected_categories_names
-    ]
-
-    selected_backend_names = {
-        backend_name
-        for backend_name, backend_types in BACKENDS.items()
-        if any(cat in backend_types for cat in selected_categories)
-    }
-    if not selected_backend_names:
-        selected_backend_names = list(BACKENDS.keys())
-    return selected_backend_names
+    if not selected_categories_names:
+        return get_backend_names()
+    return get_backend_names(selected_categories_names)
 
 
-def get_selected_operation_categories(all_ops_categories):
+def get_selected_operation_categories():
+    all_ops_categories = get_all_operation_categories()
+
     selected_ops_categories = st.sidebar.multiselect(
         'Operation category',
         options=sorted(all_ops_categories),
         default=None,
     )
     if not selected_ops_categories:
-        return all_ops_categories
+        selected_ops_categories = all_ops_categories
+    show_geospatial = st.sidebar.checkbox('Include Geospatial ops', value=True)
+    if not show_geospatial and 'geospatial' in selected_ops_categories:
+        selected_ops_categories.remove("geospatial")
     return selected_ops_categories
 
 
-all_ops_categories = {row['OpCategory'] for row in ops_data}
 current_backend_names = get_selected_backend_name()
-current_ops_categories = get_selected_operation_categories(all_ops_categories)
-show_geospatial = st.sidebar.checkbox('Include Geospatial ops', value=True)
+current_ops_categories = get_selected_operation_categories()
+
 hide_supported_by_all_backends = st.sidebar.selectbox(
     'Operation compatibility',
     ['Show all', 'Show supported by all backends', 'Hide supported by all backends'],
@@ -100,27 +133,41 @@ hide_supported_by_all_backends = st.sidebar.selectbox(
 )
 show_full_ops_name = st.sidebar.checkbox('Show full operation name', False)
 
-df = pd.DataFrame(ops_data)
-if show_full_ops_name:
-    df = df.set_index("FullOperation")
-else:
-    df = df.set_index("ShortOperation")
-df = df.sort_index()
+# Start ibis expression
+table_expr = support_matrix_table
 
-# Show only selected operation
-if not show_geospatial:
-    with contextlib.suppress(ValueError):
-        current_ops_categories.remove("geospatial")
-df = df[df['OpCategory'].isin(current_ops_categories)]
+# Add index to result
+if show_full_ops_name:
+    table_expr = table_expr.mutate(index=_.full_operation)
+else:
+    table_expr = table_expr.mutate(index=_.short_operation)
+table_expr = table_expr.order_by(_.index)
+
+# Filter operations by selected categories
+table_expr = table_expr.filter(_.operation_category.isin(current_ops_categories))
+
+# Filter operation by compatibility
+supported_backend_count = sum(
+    getattr(table_expr, backend_name).ifelse(1, 0)
+    for backend_name in current_backend_names
+)
+if hide_supported_by_all_backends == 'Show supported by all backends':
+    table_expr = table_expr.filter(
+        supported_backend_count == len(current_backend_names)
+    )
+elif hide_supported_by_all_backends == 'Hide supported by all backends':
+    table_expr = table_expr.filter(
+        supported_backend_count != len(current_backend_names)
+    )
 
 # Show only selected backend
-df = df[list(current_backend_names)]
+table_expr = table_expr[current_backend_names + ["index"]]
 
-if hide_supported_by_all_backends == 'Show supported by all backends':
-    df = df[df.sum(1) == len(df.columns)]
-elif hide_supported_by_all_backends == 'Hide supported by all backends':
-    df = df[df.sum(1) != len(df.columns)]
+# Execute query
+df = table_expr.execute()
+df = df.set_index('index')
 
+# Display result
 all_visible_ops_count = len(df.index)
 if all_visible_ops_count:
     # Compute coverage
@@ -133,9 +180,19 @@ if all_visible_ops_count:
     )
 
     table = pd.concat([coverage, df.replace({True: "✔", False: "🚫"})])
-    st.table(table)
+    st.dataframe(table)
 else:
     st.write("No data")
+
+with st.expander("SQL queries"):
+    for sql_query in sql_queries:
+        pretty_sql_query = sqlglot.transpile(
+            sql_query, read='duckdb', write='duckdb', pretty=True
+        )[0]
+        st.code(
+            pretty_sql_query,
+            language='sql',
+        )
 
 with st.expander("Source code"):
     st.code(Path(__file__).read_text())
