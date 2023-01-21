@@ -106,7 +106,7 @@ class StructValue(Value):
     @property
     def fields(self) -> Mapping[str, dt.DataType]:
         """Return a mapping from field name to field type of the struct."""
-        return util.frozendict(self.type().pairs)
+        return util.frozendict(self.type().fields)
 
     def lift(self) -> ir.Table:
         """Project the fields of `self` into a table.

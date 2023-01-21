@@ -175,7 +175,7 @@ def _pg_array(dialect, itype):
 @to_sqla_type.register(Dialect, dt.Struct)
 def _struct(dialect, itype):
     return StructType(
-        [(name, to_sqla_type(dialect, type)) for name, type in itype.pairs.items()]
+        [(name, to_sqla_type(dialect, type)) for name, type in itype.fields.items()]
     )
 
 
