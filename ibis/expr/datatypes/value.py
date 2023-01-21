@@ -306,7 +306,7 @@ def normalize(typ, value):
         return frozendict({k: normalize(typ.value_type, v) for k, v in value.items()})
     elif typ.is_struct():
         return frozendict(
-            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.pairs}
+            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.fields}
         )
     elif typ.is_geospatial():
         if isinstance(value, (tuple, list)):

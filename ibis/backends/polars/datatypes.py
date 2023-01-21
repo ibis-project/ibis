@@ -54,7 +54,7 @@ def from_ibis_interval(dtype):
 def from_ibis_struct(dtype):
     fields = [
         pl.Field(name=name, dtype=to_polars_type(dtype))
-        for name, dtype in dtype.pairs.items()
+        for name, dtype in dtype.fields.items()
     ]
     return pl.Struct(fields)
 

@@ -141,13 +141,6 @@ def test_struct_with_string_types():
     )
 
 
-def test_struct_from_dict():
-    with pytest.warns():
-        result = dt.Struct.from_dict({'b': 'int64', 'a': dt.float64})
-
-    assert result == dt.Struct({'b': dt.int64, 'a': dt.float64})
-
-
 @pytest.mark.parametrize(
     'case',
     [

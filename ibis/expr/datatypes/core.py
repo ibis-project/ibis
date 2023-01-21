@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numbers
 from abc import abstractmethod
-from typing import Any, Iterable, Mapping, NamedTuple
+from typing import Any, Iterable, NamedTuple
 
 import numpy as np
 from multipledispatch import Dispatcher
@@ -668,17 +668,6 @@ class Struct(DataType):
         return cls(dict(pairs), nullable=nullable)
 
     @property
-    def pairs(self) -> Mapping[str, DataType]:
-        """Return a mapping from names to data type instances.
-
-        Returns
-        -------
-        Mapping[str, DataType]
-            Mapping of field name to data type
-        """
-        return self.fields
-
-    @property
     def names(self) -> tuple[str, ...]:
         return tuple(self.fields.keys())
 
@@ -687,11 +676,11 @@ class Struct(DataType):
         return tuple(self.fields.values())
 
     def __getitem__(self, key: str) -> DataType:
-        return self.pairs[key]
+        return self.fields[key]
 
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
-            self.name, list(self.pairs.items()), self.nullable
+            self.name, list(self.fields.items()), self.nullable
         )
 
     @property

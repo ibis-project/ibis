@@ -51,7 +51,7 @@ def from_ibis_interval(dtype: dt.Interval):
 @to_pyarrow_type.register
 def from_ibis_struct(dtype: dt.Struct):
     return pa.struct(
-        pa.field(name, to_pyarrow_type(typ)) for name, typ in dtype.pairs.items()
+        pa.field(name, to_pyarrow_type(typ)) for name, typ in dtype.fields.items()
     )
 
 
