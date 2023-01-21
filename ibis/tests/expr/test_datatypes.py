@@ -9,7 +9,6 @@ import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common.exceptions import IbisTypeError
 
 
 def test_validate_type():
@@ -140,21 +139,6 @@ def test_struct_with_string_types():
             ('d', dt.int8),
         ]
     )
-
-
-def test_struct_from_dict():
-    with pytest.warns(FutureWarning):
-        result = dt.Struct.from_dict({'b': 'int64', 'a': dt.float64})
-
-    assert result == dt.Struct({'b': dt.int64, 'a': dt.float64})
-
-
-def test_struct_names_and_types_legth_must_match():
-    with pytest.raises(IbisTypeError), pytest.warns(FutureWarning):
-        dt.Struct(names=["a", "b"], types=["int", "str", "float"])
-
-    dtype = dt.Struct({"a": "int", "b": "str"})
-    assert isinstance(dtype, dt.Struct)
 
 
 @pytest.mark.parametrize(
