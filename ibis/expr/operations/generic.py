@@ -35,7 +35,11 @@ class TableColumn(Value, Named):
             name = table.schema.name_at_position(name)
 
         if name not in table.schema:
-            raise com.IbisTypeError(f"value {name!r} is not a field in {table.schema}")
+            columns_formatted = ', '.join(map(repr, table.schema.names))
+            raise com.IbisTypeError(
+                f"Column {name!r} is not found in table. "
+                f"Existing columns: {columns_formatted}."
+            )
 
         super().__init__(table=table, name=name)
 

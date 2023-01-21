@@ -956,12 +956,14 @@ class Table(Expr, JupyterMixin):
 
         if isinstance(replacements, collections.abc.Mapping):
             for col, val in replacements.items():
-                try:
-                    col_type = schema[col]
-                except KeyError:
+                if col not in schema:
+                    columns_formatted = ', '.join(map(repr, schema.names))
                     raise com.IbisTypeError(
-                        f'{col!r} is not a field in {schema}.'
+                        f"Column {col!r} is not found in table. "
+                        f"Existing columns: {columns_formatted}."
                     ) from None
+
+                col_type = schema[col]
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not dt.castable(val_type, col_type):
                     raise com.IbisTypeError(

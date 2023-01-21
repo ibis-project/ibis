@@ -345,7 +345,9 @@ def test_select_filter_mutate(backend, alltypes, df):
 
 
 def test_table_fillna_invalid(alltypes):
-    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
+    with pytest.raises(
+        com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
+    ):
         alltypes.fillna({'invalid_col': 0.0})
 
     with pytest.raises(
@@ -412,7 +414,9 @@ def test_mutate_rename(alltypes):
 
 
 def test_dropna_invalid(alltypes):
-    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
+    with pytest.raises(
+        com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
+    ):
         alltypes.dropna(subset=['invalid_col'])
 
     with pytest.raises(ValueError, match=r".*is not in.*"):
