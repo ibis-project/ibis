@@ -218,7 +218,7 @@ def test_create_and_drop_table(con, temp_table, params):
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
     raw_name = ibis.util.guid()
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    name = con._quote(raw_name)
     with con.begin() as c:
         c.execute(
             sa.text(f"CREATE TEMPORARY TABLE {name} (x {pg_type}, y {pg_type}[])")

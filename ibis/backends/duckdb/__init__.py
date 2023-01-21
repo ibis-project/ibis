@@ -42,10 +42,6 @@ def normalize_filenames(source_list):
     return list(map(util.normalize_filename, source_list))
 
 
-def _quote(name: str):
-    return _dialect.identifier_preparer.quote(name)
-
-
 def _format_kwargs(kwargs):
     return (
         f"{k}='{v}'" if isinstance(v, str) else f"{k}={v!r}" for k, v in kwargs.items()
@@ -237,7 +233,7 @@ class Backend(BaseAlchemyBackend):
         if not table_name:
             table_name = f"ibis_read_csv_{next(csv_n)}"
 
-        quoted_table_name = _quote(table_name)
+        quoted_table_name = self._quote(table_name)
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
@@ -309,7 +305,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
             dataset = str(source_list)
             table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
 
-            quoted_table_name = _quote(table_name)
+            quoted_table_name = self._quote(table_name)
             sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
             SELECT * FROM read_parquet({dataset})"""
 
@@ -362,7 +358,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
                 "`table_name` is required when registering a postgres table"
             )
         self._load_extensions(["postgres_scanner"])
-        quoted_table_name = _quote(table_name)
+        quoted_table_name = self._quote(table_name)
         sql = (
             f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
             f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"

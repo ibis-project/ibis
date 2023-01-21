@@ -60,7 +60,7 @@ MYSQL_TYPES = [
 )
 def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    name = con._quote(raw_name)
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
     with con.begin() as c:

@@ -175,7 +175,7 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         raw_name = util.guid()
-        name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
+        name = self._quote(raw_name)
         type_info_sql = f"""\
 SELECT
   attname,

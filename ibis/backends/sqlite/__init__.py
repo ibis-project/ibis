@@ -182,8 +182,7 @@ class Backend(BaseAlchemyBackend):
         >>> con1.attach("new", "new.db")
         >>> con1.list_tables(database="new")
         """
-        quoted_name = self.con.dialect.identifier_preparer.quote(name)
-        self.raw_sql(f"ATTACH DATABASE {str(path)!r} AS {quoted_name}")
+        self.raw_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
