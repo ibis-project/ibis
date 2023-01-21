@@ -581,9 +581,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return self.con.dialect.identifier_preparer.quote(name)
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         raise NotImplementedError(
             f"The {self.name} backend does not implement temporary view creation"
@@ -593,8 +591,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         query = f"DROP VIEW IF EXISTS {name}"
 
         def drop(self, raw_name: str, query: str):
-            with self.con.begin() as con:
-                con.execute(query)
+            with self.begin() as con:
+                con.exec_driver_sql(query)
             self._temp_views.discard(raw_name)
 
         atexit.register(drop, self, raw_name, query)

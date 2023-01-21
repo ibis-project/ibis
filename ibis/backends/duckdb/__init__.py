@@ -474,9 +474,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
             return super()._get_sqla_table(name, schema, **kwargs)
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 

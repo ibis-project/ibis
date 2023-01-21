@@ -176,7 +176,7 @@ class Backend(BaseAlchemyBackend):
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         raw_name = util.guid()
         name = self._quote(raw_name)
-        type_info_sql = f"""\
+        type_info_sql = """\
 SELECT
   attname,
   format_type(atttypid, atttypmod) AS type
@@ -194,8 +194,6 @@ ORDER BY attnum"""
             con.execute(sa.text(f"DROP VIEW IF EXISTS {name}"))
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE VIEW {name} AS {definition}"

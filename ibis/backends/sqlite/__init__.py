@@ -256,9 +256,7 @@ class Backend(BaseAlchemyBackend):
         return sch.Schema.from_tuples(self._metadata(query))
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"DROP VIEW IF EXISTS {name}"
         yield f"CREATE VIEW {name} AS {definition}"

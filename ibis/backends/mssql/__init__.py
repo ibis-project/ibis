@@ -59,8 +59,6 @@ class Backend(BaseAlchemyBackend):
                 yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR ALTER VIEW {name} AS {definition}"
