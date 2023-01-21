@@ -390,7 +390,7 @@ class Backend(BaseAlchemyBackend):
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        cursor = self.raw_sql(sql)
+        cursor = self.con.connect().execute(sql)
 
         reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
         return IbisRecordBatchReader(reader, cursor)
