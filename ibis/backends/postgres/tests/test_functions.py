@@ -1041,8 +1041,8 @@ def test_array_concat_mixed_types(array_types):
 @pytest.fixture
 def t(con, guid):
     with con.begin() as c:
-        c.execute(
-            sa.text(f"CREATE TABLE \"{guid}\" (id SERIAL PRIMARY KEY, name TEXT)")
+        c.exec_driver_sql(
+            f"CREATE TABLE {con._quote(guid)} (id SERIAL PRIMARY KEY, name TEXT)"
         )
     return con.table(guid)
 
@@ -1053,27 +1053,24 @@ def s(con, t, guid, guid2):
     assert t.op().name != guid2
 
     with con.begin() as c:
-        c.execute(
-            sa.text(
-                f"""
-            CREATE TABLE \"{guid2}\" (
+        c.exec_driver_sql(
+            f"""
+            CREATE TABLE {con._quote(guid2)} (
               id SERIAL PRIMARY KEY,
-              left_t_id INTEGER REFERENCES "{guid}",
+              left_t_id INTEGER REFERENCES {con._quote(guid)},
               cost DOUBLE PRECISION
             )
             """
-            )
         )
     return con.table(guid2)
 
 
 @pytest.fixture
 def trunc(con, guid):
+    quoted = con._quote(guid)
     with con.begin() as c:
-        c.execute(
-            sa.text(f"CREATE TABLE \"{guid}\" (id SERIAL PRIMARY KEY, name TEXT)")
-        )
-        c.execute(sa.text(f"INSERT INTO \"{guid}\" (name) VALUES ('a'), ('b'), ('c')"))
+        c.exec_driver_sql(f"CREATE TABLE {quoted} (id SERIAL PRIMARY KEY, name TEXT)")
+        c.exec_driver_sql(f"INSERT INTO {quoted} (name) VALUES ('a'), ('b'), ('c')")
     return con.table(guid)
 
 
@@ -1314,9 +1311,8 @@ def test_timestamp_with_timezone_select(tzone_compute, tz):
 
 
 def test_timestamp_type_accepts_all_timezones(con):
-    query = 'SELECT name FROM pg_timezone_names'
     with con.begin() as c:
-        cur = c.execute(sa.text(query)).fetchall()
+        cur = c.exec_driver_sql("SELECT name FROM pg_timezone_names").fetchall()
     assert all(dt.Timestamp(row.name).timezone == row.name for row in cur)
 
 
@@ -1416,7 +1412,7 @@ def test_string_to_binary_cast(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.execute(sa.text(sql_string))
+        cur = c.exec_driver_sql(sql_string)
         raw_data = [row[0][0] for row in cur]
     expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
@@ -1433,6 +1429,6 @@ def test_string_to_binary_round_trip(con):
         "FROM functional_alltypes LIMIT 10"
     )
     with con.begin() as c:
-        cur = c.execute(sa.text(sql_string))
+        cur = c.exec_driver_sql(sql_string)
         expected = pd.Series([row[0][0] for row in cur], name=name)
     tm.assert_series_equal(result, expected)

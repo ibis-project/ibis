@@ -137,9 +137,9 @@ def recreate_database(
     engine = sa.create_engine(url.set(database=""), **kwargs)
 
     if url.database is not None:
-        with engine.begin() as conn:
-            conn.execute(sa.text(f'DROP DATABASE IF EXISTS {database}'))
-            conn.execute(sa.text(f'CREATE DATABASE {database}'))
+        with engine.begin() as con:
+            con.exec_driver_sql(f"DROP DATABASE IF EXISTS {database}")
+            con.exec_driver_sql(f"CREATE DATABASE {database}")
 
 
 def init_database(
@@ -147,6 +147,7 @@ def init_database(
     database: str,
     schema: TextIO | None = None,
     recreate: bool = True,
+    isolation_level: str = "AUTOCOMMIT",
     **kwargs: Any,
 ) -> sa.engine.Engine:
     """Initialise `database` at `url` with `schema`.
@@ -163,20 +164,23 @@ def init_database(
         File object containing schema to use
     recreate : bool
         If true, drop the database if it exists
+    isolation_level : str
+        Transaction isolation_level
 
     Returns
     -------
-    sa.engine.Engine for the database created
+    sa.engine.Engine
+        SQLAlchemy engine object
     """
     if recreate:
-        recreate_database(url, database, **kwargs)
+        recreate_database(url, database, isolation_level=isolation_level, **kwargs)
 
     try:
         url.database = database
     except AttributeError:
         url = url.set(database=database)
 
-    engine = sa.create_engine(url, **kwargs)
+    engine = sa.create_engine(url, isolation_level=isolation_level, **kwargs)
 
     if schema:
         with engine.begin() as conn:

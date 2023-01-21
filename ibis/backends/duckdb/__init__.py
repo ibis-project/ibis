@@ -141,8 +141,8 @@ class Backend(BaseAlchemyBackend):
         for extension in extensions:
             if extension not in self._extensions:
                 with self.begin() as con:
-                    con.execute(sa.text(f"INSTALL '{extension}'"))
-                    con.execute(sa.text(f"LOAD '{extension}'"))
+                    con.exec_driver_sql(f"INSTALL '{extension}'")
+                    con.exec_driver_sql(f"LOAD '{extension}'")
                 self._extensions.add(extension)
 
     def register(
@@ -449,7 +449,7 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:
-            rows = con.execute(sa.text(f"DESCRIBE {query}"))
+            rows = con.exec_driver_sql(f"DESCRIBE {query}")
 
             for name, type, null in toolz.pluck(
                 ["column_name", "column_type", "null"], rows.mappings()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import os
 from pathlib import Path
 from typing import Any, Generator
@@ -8,9 +9,10 @@ import pandas as pd
 import pytest
 
 import ibis
-from ibis.backends.conftest import _random_identifier
+from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import struct_types
+from ibis.util import consume
 
 TRINO_USER = os.environ.get(
     'IBIS_TEST_TRINO_USER', os.environ.get('TRINO_USER', 'user')
@@ -74,8 +76,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 source = f"postgresql.public.{table}"
                 dest = f"memory.default.{table}"
                 with con.begin() as c:
-                    c.execute(sa.text(f"DROP TABLE IF EXISTS {dest}"))
-                    c.execute(sa.text(f"CREATE TABLE {dest} AS SELECT * FROM {source}"))
+                    c.exec_driver_sql(f"DROP VIEW IF EXISTS {dest}")
+                    c.exec_driver_sql(f"CREATE VIEW {dest} AS SELECT * FROM {source}")
 
         selects = []
         for row in struct_types.abc:
@@ -88,35 +90,15 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 datarow = f"CAST(ROW({datarow}) AS ROW(a DOUBLE, b VARCHAR, c BIGINT))"
             selects.append(f"SELECT {datarow} AS abc")
 
+        lines = itertools.chain(
+            [
+                "DROP VIEW IF EXISTS struct",
+                f"CREATE VIEW struct AS {' UNION ALL '.join(selects)}",
+            ],
+            Path(script_dir, "schema", "trino.sql").read_text().split(";"),
+        )
         with con.begin() as c:
-            c.execute(sa.text("DROP TABLE IF EXISTS struct"))
-            c.execute(sa.text(f"CREATE TABLE struct AS {' UNION ALL '.join(selects)}"))
-            c.execute(sa.text("DROP TABLE IF EXISTS map"))
-            c.execute(sa.text("CREATE TABLE map (kv MAP<VARCHAR, BIGINT>)"))
-            c.execute(
-                sa.text(
-                    "INSERT INTO map VALUES (MAP(ARRAY['a', 'b', 'c'], ARRAY[1, 2, 3]))"
-                )
-            )
-            c.execute(
-                sa.text(
-                    "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
-                )
-            )
-            c.execute(sa.text("DROP TABLE IF EXISTS ts"))
-            c.execute(
-                sa.text(
-                    "CREATE TABLE ts (x TIMESTAMP(3), y TIMESTAMP(6), z TIMESTAMP(9))"
-                )
-            )
-            c.execute(
-                sa.text(
-                    "INSERT INTO ts VALUES "
-                    "(TIMESTAMP '2023-01-07 13:20:05.561', "
-                    " TIMESTAMP '2023-01-07 13:20:05.561021', "
-                    " TIMESTAMP '2023-01-07 13:20:05.561000231')"
-                )
-            )
+            consume(map(c.exec_driver_sql, filter(None, map(str.strip, lines))))
 
     @staticmethod
     def connect(data_directory: Path):
@@ -129,33 +111,19 @@ class TestConf(BackendTest, RoundAwayFromZero):
             schema="default",
         )
 
+    def _remap_column_names(self, table_name: str) -> dict[str, str]:
+        table = self.connection.table(table_name)
+        return table.relabel(
+            dict(zip(table.schema().names, TEST_TABLES[table_name].names))
+        )
+
     @property
     def batting(self):
-        b = self.connection.table("batting")
-        b = b.relabel(
-            {
-                "yearid": "yearID",
-                "lgid": "lgID",
-                "playerid": "playerID",
-                "teamid": "teamID",
-                "rbi": "RBI",
-                "g": "G",
-            }
-        )
-        return b
+        return self._remap_column_names("batting")
 
     @property
     def awards_players(self):
-        a = self.connection.table("awards_players")
-        a = a.relabel(
-            {
-                "yearid": "yearID",
-                "lgid": "lgID",
-                "playerid": "playerID",
-                "awardid": "awardID",
-            }
-        )
-        return a
+        return self._remap_column_names("awards_players")
 
 
 @pytest.fixture(scope='session')

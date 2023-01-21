@@ -197,7 +197,7 @@ $$;
         args=', '.join(parameter_names),
     )
     with client.begin() as con:
-        con.execute(sa.text(formatted_sql))
+        con.exec_driver_sql(formatted_sql)
     return existing_udf(
         name=internal_name,
         input_types=in_types,

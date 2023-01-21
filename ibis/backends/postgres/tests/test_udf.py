@@ -6,6 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.util import guid
 
 pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
@@ -14,17 +15,13 @@ from ibis.backends.postgres.udf import PostgresUDFError, existing_udf, udf  # no
 
 
 @pytest.fixture(scope='session')
-def next_serial(con):
+def test_schema(con):
+    schema_name = f'udf_test_{guid()}'
     with con.begin() as c:
-        return c.execute(sa.text("SELECT nextval('test_sequence') as value")).scalar()
-
-
-@pytest.fixture(scope='session')
-def test_schema(con, next_serial):
-    schema_name = f'udf_test_{next_serial}'
+        c.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
+    yield schema_name
     with con.begin() as c:
-        c.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
-    return schema_name
+        c.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
 
 
 @pytest.fixture(scope='session')
@@ -34,60 +31,51 @@ def table_name():
 
 @pytest.fixture(scope='session')
 def sql_table_setup(test_schema, table_name):
-    return """DROP TABLE IF EXISTS {schema}.{table_name};
-CREATE TABLE {schema}.{table_name} (
+    return f"""\
+DROP TABLE IF EXISTS {test_schema}.{table_name};
+CREATE TABLE {test_schema}.{table_name} (
     user_id integer,
     user_name varchar,
     name_length integer
 );
-INSERT INTO {schema}.{table_name} VALUES
+INSERT INTO {test_schema}.{table_name} VALUES
 (1, 'Raj', 3),
 (2, 'Judy', 4),
-(3, 'Jonathan', 8)
-;
-""".format(
-        schema=test_schema, table_name=table_name
-    )
+(3, 'Jonathan', 8)"""
 
 
 @pytest.fixture(scope='session')
 def sql_define_py_udf(test_schema):
-    return """CREATE OR REPLACE FUNCTION {schema}.pylen(x varchar)
+    return f"""\
+CREATE OR REPLACE FUNCTION {test_schema}.pylen(x varchar)
 RETURNS integer
 LANGUAGE plpython3u
 AS
 $$
 return len(x)
-$$;""".format(
-        schema=test_schema
-    )
+$$"""
 
 
 @pytest.fixture(scope='session')
 def sql_define_udf(test_schema):
-    return """CREATE OR REPLACE FUNCTION {schema}.custom_len(x varchar)
+    return f"""\
+CREATE OR REPLACE FUNCTION {test_schema}.custom_len(x varchar)
 RETURNS integer
 LANGUAGE SQL
 AS
 $$
 SELECT length(x);
-$$;""".format(
-        schema=test_schema
-    )
+$$"""
 
 
 @pytest.fixture(scope='session')
-def con_for_udf(con, test_schema, sql_table_setup, sql_define_udf, sql_define_py_udf):
+@pytest.mark.usefixtures("test_schema")
+def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf):
     with con.begin() as c:
-        c.execute(sa.text(sql_table_setup))
-        c.execute(sa.text(sql_define_udf))
-        c.execute(sa.text(sql_define_py_udf))
-    try:
-        yield con
-    finally:
-        # teardown
-        with con.begin() as c:
-            c.execute(sa.text(f"DROP SCHEMA IF EXISTS {test_schema} CASCADE"))
+        c.exec_driver_sql(sql_table_setup)
+        c.exec_driver_sql(sql_define_udf)
+        c.exec_driver_sql(sql_define_py_udf)
+    yield con
 
 
 @pytest.fixture

@@ -110,19 +110,18 @@ class Backend(BaseAlchemyBackend):
             # http://dba.stackexchange.com/a/1304/58517
             databases = [
                 row.datname
-                for row in con.execute(
-                    sa.text('SELECT datname FROM pg_database WHERE NOT datistemplate')
-                )
+                for row in con.exec_driver_sql(
+                    "SELECT datname FROM pg_database WHERE NOT datistemplate"
+                ).mappings()
             ]
         return self._filter_with_like(databases, like)
 
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            prev = bind.execute(sa.text('SHOW TIMEZONE')).scalar()
-            bind.execute(sa.text('SET TIMEZONE = UTC'))
+            # LOCAL takes effect for the current transaction only
+            bind.exec_driver_sql("SET LOCAL TIMEZONE = UTC")
             yield bind
-            bind.execute(sa.text("SET TIMEZONE = :prev").bindparams(prev=prev))
 
     def udf(
         self,
@@ -186,12 +185,12 @@ WHERE attrelid = CAST(:raw_name AS regclass)
   AND NOT attisdropped
 ORDER BY attnum"""
         with self.begin() as con:
-            con.execute(sa.text(f"CREATE TEMPORARY VIEW {name} AS {query}"))
+            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
             type_info = con.execute(
                 sa.text(type_info_sql).bindparams(raw_name=raw_name)
             )
             yield from ((col, _get_type(typestr)) for col, typestr in type_info)
-            con.execute(sa.text(f"DROP VIEW IF EXISTS {name}"))
+            con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

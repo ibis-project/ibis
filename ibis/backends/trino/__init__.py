@@ -62,11 +62,12 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
-        with self.con.begin() as con:
-            con.execute(sa.text(f"PREPARE {tmpname} FROM {query}"))
+        with self.begin() as con:
+            con.exec_driver_sql(f"PREPARE {tmpname} FROM {query}")
             for name, type in toolz.pluck(
                 ["Column Name", "Type"],
-                con.execute(sa.text(f"DESCRIBE OUTPUT {tmpname}")).mappings(),
+                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings(),
             ):
                 ibis_type = parse(type)
                 yield name, ibis_type(nullable=True)
+            con.exec_driver_sql(f"DEALLOCATE PREPARE {tmpname}")
