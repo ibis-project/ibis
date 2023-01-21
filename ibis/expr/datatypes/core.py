@@ -14,10 +14,10 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
     all_of,
+    frozendict_of,
     instance_of,
     isin,
     map_to,
-    tuple_of,
     validator,
 )
 
@@ -642,18 +642,10 @@ class Category(DataType):
 class Struct(DataType):
     """Structured values."""
 
-    names = tuple_of(instance_of(str))
-    types = tuple_of(datatype)
+    fields = frozendict_of(instance_of(str), datatype)
 
     scalar = ir.StructScalar
     column = ir.StructColumn
-
-    def __init__(self, names, types, **kwargs):
-        if len(names) != len(types):
-            raise IbisTypeError(
-                'Struct datatype names and types must have the same length'
-            )
-        super().__init__(names=names, types=types, **kwargs)
 
     @classmethod
     def from_tuples(
@@ -673,29 +665,7 @@ class Struct(DataType):
         Struct
             Struct data type instance
         """
-        names, types = zip(*pairs)
-        return cls(names, types, nullable=nullable)
-
-    @classmethod
-    def from_dict(
-        cls, pairs: Mapping[str, str | DataType], nullable: bool = True
-    ) -> Struct:
-        """Construct a `Struct` type from a [`dict`][dict].
-
-        Parameters
-        ----------
-        pairs
-            A [`dict`][dict] of `field: type`
-        nullable
-            Whether the type is nullable
-
-        Returns
-        -------
-        Struct
-            Struct data type instance
-        """
-        names, types = pairs.keys(), pairs.values()
-        return cls(names, types, nullable=nullable)
+        return cls(dict(pairs), nullable=nullable)
 
     @property
     def pairs(self) -> Mapping[str, DataType]:
@@ -706,7 +676,15 @@ class Struct(DataType):
         Mapping[str, DataType]
             Mapping of field name to data type
         """
-        return dict(zip(self.names, self.types))
+        return self.fields
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        return tuple(self.fields.keys())
+
+    @property
+    def types(self) -> tuple[DataType, ...]:
+        return tuple(self.fields.values())
 
     def __getitem__(self, key: str) -> DataType:
         return self.pairs[key]

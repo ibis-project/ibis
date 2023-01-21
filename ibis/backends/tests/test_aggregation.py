@@ -183,7 +183,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 
     @reduction(
         input_type=[dt.double],
-        output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double]),
+        output_type=dt.Struct({'mean': dt.double, 'std': dt.double}),
     )
     def mean_and_std(v):
         return v.mean(), v.std()

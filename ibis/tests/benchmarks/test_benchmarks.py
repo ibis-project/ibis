@@ -534,9 +534,7 @@ def test_op_args(benchmark):
 def test_complex_datatype_parse(benchmark):
     type_str = "array<struct<a: array<string>, b: map<string, array<int64>>>>"
     expected = dt.Array(
-        dt.Struct.from_dict(
-            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
-        )
+        dt.Struct(dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))))
     )
     assert dt.parse(type_str) == expected
     benchmark(dt.parse, type_str)
@@ -546,9 +544,7 @@ def test_complex_datatype_parse(benchmark):
 @pytest.mark.parametrize("func", [str, hash])
 def test_complex_datatype_builtins(benchmark, func):
     datatype = dt.Array(
-        dt.Struct.from_dict(
-            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
-        )
+        dt.Struct(dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))))
     )
     benchmark(func, datatype)
 
@@ -574,7 +570,7 @@ def test_large_expr_equals(benchmark, tpc_h02):
         ),
         pytest.param(
             dt.Array(
-                dt.Struct.from_dict(
+                dt.Struct(
                     dict(
                         a=dt.Array(dt.string),
                         b=dt.Map(dt.string, dt.Array(dt.int64)),
