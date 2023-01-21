@@ -162,3 +162,9 @@ def test_html_escape(with_graphviz):
     # representation. If an error is thrown, _repr_png_ returns None.
     expr = ibis.table([('<a & b>', ibis.expr.datatypes.Array('string'))])
     assert expr._repr_png_() is not None
+
+    expr = ibis.array([1, 2, 3])
+    assert expr._repr_png_() is not None
+
+    expr = ibis.array([1, 2, 3]).name("COL")
+    assert expr._repr_png_() is not None
