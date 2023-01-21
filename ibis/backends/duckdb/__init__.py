@@ -381,9 +381,25 @@ class Backend(BaseAlchemyBackend):
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        # TODO: duckdb seems to not care about the `chunk_size` argument
-        # and returns batches in 1024 row chunks
-        _ = self._import_pyarrow()
+        """Return a stream of record batches.
+
+        The returned `RecordBatchReader` contains a cursor with an unbounded lifetime.
+
+        For analytics use cases this is usually nothing to fret about. In some cases you
+        may need to explicit release the cursor.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression
+        params
+            Bound parameters
+        limit
+            Limit the result to this number of rows
+        chunk_size
+            !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
+        """
+        self._import_pyarrow()
 
         from ibis.backends.duckdb.pyarrow import IbisRecordBatchReader
 
