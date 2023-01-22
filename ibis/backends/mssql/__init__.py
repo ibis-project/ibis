@@ -52,10 +52,11 @@ class Backend(BaseAlchemyBackend):
         if query in self.list_tables():
             query = f"SELECT * FROM [{query}]"
 
+        query = sa.text("EXEC sp_describe_first_result_set @tsql = :query").bindparams(
+            query=query
+        )
         with self.begin() as bind:
-            for column in bind.exec_driver_sql(
-                f"EXEC sp_describe_first_result_set @tsql = N'{query}'"
-            ).mappings():
+            for column in bind.execute(query).mappings():
                 yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
