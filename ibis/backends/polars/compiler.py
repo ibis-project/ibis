@@ -72,22 +72,26 @@ def _make_duration(value, dtype):
 
 @translate.register(ops.Literal)
 def literal(op):
-    if op.dtype.is_array():
-        value = pl.Series("", op.value)
-        typ = to_polars_type(op.dtype)
+    value = op.value
+    dtype = op.dtype
+
+    if dtype.is_array():
+        value = pl.Series("", value)
+        typ = to_polars_type(dtype)
         return pl.lit(value, dtype=typ).list()
-    elif op.dtype.is_struct():
+    elif dtype.is_struct():
         values = [
-            pl.lit(v, dtype=to_polars_type(op.dtype[k])).alias(k)
-            for k, v in op.value.items()
+            pl.lit(v, dtype=to_polars_type(dtype[k])).alias(k) for k, v in value.items()
         ]
         return pl.struct(values)
-    elif op.dtype.is_interval():
-        return _make_duration(op.value, op.dtype)
-    elif op.dtype.is_null():
-        return pl.lit(op.value)
+    elif dtype.is_interval():
+        return _make_duration(value, dtype)
+    elif dtype.is_null():
+        return pl.lit(value)
+    elif dtype.is_binary():
+        raise NotImplementedError("Binary literals do not work in polars")
     else:
-        typ = to_polars_type(op.dtype)
+        typ = to_polars_type(dtype)
         return pl.lit(op.value, dtype=typ)
 
 
