@@ -26,11 +26,12 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
 
-# counters for in-memory, parquet, and csv reads
+# counters for in-memory, parquet, csv, and json reads
 # used if no table name is specified
 pd_n = itertools.count(0)
 pa_n = itertools.count(0)
 csv_n = itertools.count(0)
+json_n = itertools.count(0)
 
 
 def normalize_filenames(source_list):
@@ -207,6 +208,55 @@ class Backend(BaseAlchemyBackend):
             f"Cannot infer appropriate read function for input, "
             f"please call one of {msg} directly"
         )
+
+    def read_json(
+        self,
+        source_list: str | list[str] | tuple[str],
+        table_name: str | None = None,
+        **kwargs,
+    ) -> ir.Table:
+        """Read newline-delimited JSON into an ibis table.
+
+        Parameters
+        ----------
+        source_list
+            File or list of files
+        table_name
+            Optional table name
+        kwargs
+            Additional keyword arguments passed to DuckDB's `read_json_objects` function
+
+        Returns
+        -------
+        Table
+            An ibis table expression
+        """
+        if not table_name:
+            table_name = f"ibis_read_json_{next(json_n)}"
+
+        source_list = normalize_filenames(source_list)
+
+        objects = (
+            sa.func.read_json_objects(
+                sa.func.list_value(*source_list), _format_kwargs(kwargs)
+            )
+            .table_valued("raw")
+            .render_derived()
+        )
+        # read a single row out to get the schema, assumes the first row is representative
+        json_structure_query = sa.select(sa.func.json_structure(objects.c.raw)).limit(1)
+
+        with self.begin() as con:
+            json_structure = con.execute(json_structure_query).scalar()
+            data = sa.select(sa.literal_column("s.*")).select_from(
+                sa.select(
+                    sa.func.json_transform(objects.c.raw, json_structure).label("s")
+                ).subquery()
+            )
+            view = _create_view(sa.table(table_name), data, or_replace=True)
+            con.execute(view)
+
+        return self.table(table_name)
 
     def read_csv(
         self,

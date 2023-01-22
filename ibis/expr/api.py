@@ -47,6 +47,7 @@ from ibis.expr.window import (
     trailing_window,
     window,
 )
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -142,6 +143,7 @@ __all__ = (
     'random',
     'range_window',
     'read_csv',
+    'read_json',
     'read_parquet',
     'row_number',
     'rows_with_max_lookback',
@@ -820,7 +822,7 @@ def row_number() -> ir.IntegerColumn:
     return ops.RowNumber().to_expr()
 
 
-def read_csv(sources: str | Path, **kwargs: Any) -> ir.Table:
+def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
     """Lazily load a CSV or set of CSVs.
 
     Parameters
@@ -847,7 +849,33 @@ def read_csv(sources: str | Path, **kwargs: Any) -> ir.Table:
     return con.read_csv(sources, **kwargs)
 
 
-def read_parquet(sources: str | Path, **kwargs: Any) -> ir.Table:
+@experimental
+def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+    """Lazily load newline-delimited JSON data.
+
+    Parameters
+    ----------
+    sources
+        A filesystem path or URL or list of same.
+    kwargs
+        DuckDB-specific keyword arguments for the file type.
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> t = ibis.read_json("data.json")
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.read_json(sources, **kwargs)
+
+
+def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
     """Lazily load a parquet file or set of parquet files.
 
     Parameters
