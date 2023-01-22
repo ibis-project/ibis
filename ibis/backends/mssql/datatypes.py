@@ -2,6 +2,7 @@ from functools import partial
 from typing import Optional, TypedDict
 
 from sqlalchemy.dialects import mssql
+from sqlalchemy.dialects.mssql.base import MSDialect
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import to_sqla_type
@@ -112,3 +113,47 @@ def _datetime(_, itype):
         return mssql.DATETIMEOFFSET(precision=precision)
     else:
         return mssql.DATETIME2(precision=precision)
+
+
+@dt.dtype.register(MSDialect, mssql.TINYINT)
+def sa_mysql_tinyint(_, satype, nullable=True):
+    return dt.Int8(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.BIT)
+def sa_mssql_bit(_, satype, nullable=True):
+    return dt.Boolean(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.MONEY)
+def sa_bigint(_, satype, nullable=True):
+    return dt.Int64(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.SMALLMONEY)
+def sa_mssql_smallmoney(_, satype, nullable=True):
+    return dt.Int32(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.UNIQUEIDENTIFIER)
+def sa_mssql_uuid(_, satype, nullable=True):
+    return dt.UUID(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, (mssql.BINARY, mssql.TIMESTAMP))
+def sa_mssql_binary(_, satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.DATETIMEOFFSET)
+def _datetimeoffset(_, sa_type, nullable=True):
+    if (prec := sa_type.precision) is None:
+        prec = 7
+    return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
+
+
+@dt.dtype.register(MSDialect, mssql.DATETIME2)
+def _datetime2(_, sa_type, nullable=True):
+    if (prec := sa_type.precision) is None:
+        prec = 7
+    return dt.Timestamp(scale=prec, nullable=nullable)
