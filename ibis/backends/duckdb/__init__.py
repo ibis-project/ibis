@@ -141,8 +141,9 @@ class Backend(BaseAlchemyBackend):
         for extension in extensions:
             if extension not in self._extensions:
                 with self.begin() as con:
-                    con.exec_driver_sql(f"INSTALL '{extension}'")
-                    con.exec_driver_sql(f"LOAD '{extension}'")
+                    c = con.connection
+                    c.install_extension(extension)
+                    c.load_extension(extension)
                 self._extensions.add(extension)
 
     def register(
