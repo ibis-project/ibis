@@ -1,14 +1,15 @@
 import datetime
+import tempfile
 from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
+import requests
 import sqlglot
 import streamlit as st
 
 import ibis
 from ibis import _
-from ibis.backends import duckdb
 
 ONE_HOUR_IN_SECONDS = datetime.timedelta(hours=1).total_seconds()
 
@@ -22,18 +23,22 @@ ibis.options.verbose_log = lambda sql: sql_queries.append(sql)
 
 @st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
 def support_matrix_df():
-    backend: duckdb.Backend = ibis.connect('duckdb://')
-    support_matrix = (
-        backend.read_csv(
-            'https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv'
-        )
-        .relabel({'FullOperation': 'full_operation'})
-        .mutate(
-            short_operation=_.full_operation.split(".")[4],
-            operation_category=_.full_operation.split(".")[3],
-        )
+    resp = requests.get(
+        "https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv"
     )
-    return support_matrix.execute()
+    resp.raise_for_status()
+
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(resp.content)
+        return (
+            ibis.read_csv(f.name)
+            .relabel({'FullOperation': 'full_operation'})
+            .mutate(
+                short_operation=_.full_operation.split(".")[-1],
+                operation_category=_.full_operation.split(".")[-2],
+            )
+            .execute()
+        )
 
 
 @st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
