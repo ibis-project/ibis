@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import collections
-from typing import TYPE_CHECKING, Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Iterable
 
 from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import instance_of, tuple_of, validator
+from ibis.common.validators import frozendict_of, instance_of, validator
 from ibis.util import indent
 
 if TYPE_CHECKING:
@@ -43,30 +42,12 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Concrete):
+class Schema(Concrete, collections.abc.Mapping):
     """An object for holding table schema information."""
 
-    names = tuple_of(instance_of(str))
-    """A sequence of [`str`][str] indicating the name of each column."""
-    types = tuple_of(datatype)
-    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
+    fields = frozendict_of(instance_of(str), datatype)
+    """A mapping of [`str`][str] and [DataType][ibis.expr.datatypes.DataType] objects
     representing type of each column."""
-
-    def __init__(self, names, types):
-        if len(names) != len(types):
-            raise IntegrityError('Schema names and types must have the same length')
-        super().__init__(names=names, types=types)
-
-    @attribute.default
-    def _name_locs(self) -> dict[str, int]:
-        # validate unique field names
-        name_locs = {v: i for i, v in enumerate(self.names)}
-        if len(name_locs) < len(self.names):
-            duplicate_names = list(self.names)
-            for v in name_locs:
-                duplicate_names.remove(v)
-            raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
-        return name_locs
 
     def __repr__(self) -> str:
         space = 2 + max(map(len, self.names), default=0)
@@ -81,16 +62,21 @@ class Schema(Concrete):
         )
 
     def __len__(self) -> int:
-        return len(self.names)
+        return len(self.fields)
 
     def __iter__(self) -> Iterable[str]:
-        return iter(self.names)
-
-    def __contains__(self, name: str) -> bool:
-        return name in self._name_locs
+        return iter(self.fields)
 
     def __getitem__(self, name: str) -> dt.DataType:
-        return self.types[self._name_locs[name]]
+        return self.fields[name]
+
+    @property
+    def names(self):
+        return tuple(self.keys())
+
+    @property
+    def types(self):
+        return tuple(self.values())
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
@@ -115,46 +101,46 @@ class Schema(Concrete):
             )
         return self.__cached_equals__(other)
 
-    def delete(self, names_to_delete: Iterable[str]) -> Schema:
-        """Remove `names_to_delete` names from `self`.
+    # def delete(self, names_to_delete: Iterable[str]) -> Schema:
+    #     """Remove `names_to_delete` names from `self`.
 
-        Parameters
-        ----------
-        names_to_delete
-            Iterable of `str` to remove from the schema.
+    #     Parameters
+    #     ----------
+    #     names_to_delete
+    #         Iterable of `str` to remove from the schema.
 
-        Examples
-        --------
-        >>> import ibis
-        >>> sch = ibis.schema({"a": "int", "b": "string"})
-        >>> sch.delete({"a"})
-        ibis.Schema {
-          b  string
-        }
-        """
-        for name in names_to_delete:
-            if name not in self:
-                raise KeyError(name)
+    #     Examples
+    #     --------
+    #     >>> import ibis
+    #     >>> sch = ibis.schema({"a": "int", "b": "string"})
+    #     >>> sch.delete({"a"})
+    #     ibis.Schema {
+    #       b  string
+    #     }
+    #     """
+    #     for name in names_to_delete:
+    #         if name not in self:
+    #             raise KeyError(name)
 
-        new_names, new_types = [], []
-        for name, type_ in zip(self.names, self.types):
-            if name in names_to_delete:
-                continue
-            new_names.append(name)
-            new_types.append(type_)
+    #     new_names, new_types = [], []
+    #     for name, type_ in zip(self.names, self.types):
+    #         if name in names_to_delete:
+    #             continue
+    #         new_names.append(name)
+    #         new_types.append(type_)
 
-        return self.__class__(new_names, new_types)
+    #     return self.__class__(new_names, new_types)
 
     @classmethod
     def from_tuples(
         cls,
-        values: Iterable[tuple[str, str | dt.DataType]],
+        pairs: Iterable[tuple[str, str | dt.DataType]],
     ) -> Schema:
         """Construct a `Schema` from an iterable of pairs.
 
         Parameters
         ----------
-        values
+        pairs
             An iterable of pairs of name and type.
 
         Returns
@@ -171,37 +157,7 @@ class Schema(Concrete):
           b  string
         }
         """
-        if not isinstance(values, (list, tuple)):
-            values = list(values)
-
-        names, types = zip(*values) if values else ([], [])
-        return cls(names, types)
-
-    @classmethod
-    def from_dict(cls, dictionary: Mapping[str, str | dt.DataType]) -> Schema:
-        """Construct a `Schema` from a `Mapping`.
-
-        Parameters
-        ----------
-        dictionary
-            Mapping from which to construct a `Schema` instance.
-
-        Returns
-        -------
-        Schema
-            A new schema
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.Schema.from_dict({"a": "int", "b": "string"})
-        ibis.Schema {
-          a  int64
-          b  string
-        }
-        """
-        names, types = zip(*dictionary.items()) if dictionary else ([], [])
-        return cls(names, types)
+        return cls(dict(pairs))
 
     def to_pandas(self):
         """Return the equivalent pandas datatypes."""
@@ -252,24 +208,11 @@ class Schema(Concrete):
           d  int16
         }
         """
-        return self.__class__(self.names + schema.names, self.types + schema.types)
-
-    def items(self) -> Iterator[tuple[str, dt.DataType]]:
-        """Return an iterator of pairs of names and types.
-
-        Returns
-        -------
-        Iterator[tuple[str, dt.DataType]]
-            Iterator of schema components
-
-        Examples
-        --------
-        >>> import ibis
-        >>> sch = ibis.Schema.from_dict({"a": "int", "b": "string"})
-        >>> list(sch.items())
-        [('a', Int64(nullable=True)), ('b', String(nullable=True))]
-        """
-        return zip(self.names, self.types)
+        # if duplicates := set(self.names) & set(schema.names):
+        #     raise ValueError(
+        #         f'Cannot append schema with duplicate field names: {duplicates}'
+        #     )
+        return self.__class__({**self.fields, **schema.fields})
 
     def name_at_position(self, i: int) -> str:
         """Return the name of a schema column at position `i`.
@@ -408,7 +351,7 @@ def identity(s):
 
 @schema.register(collections.abc.Mapping)
 def schema_from_mapping(d):
-    return Schema.from_dict(d)
+    return Schema(d)
 
 
 @schema.register(collections.abc.Iterable)
@@ -418,4 +361,18 @@ def schema_from_pairs(lst):
 
 @schema.register(collections.abc.Iterable, collections.abc.Iterable)
 def schema_from_names_types(names, types):
-    return Schema(names, types)
+    # validate lengths of names and types are the same
+    if len(names) != len(types):
+        raise IntegrityError('Schema names and types must have the same length')
+
+    # validate unique field names
+    name_locs = {v: i for i, v in enumerate(names)}
+    if len(name_locs) < len(names):
+        duplicate_names = list(names)
+        for v in name_locs:
+            duplicate_names.remove(v)
+        raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
+
+    # construct the schema
+    fields = dict(zip(names, types))
+    return Schema(fields)

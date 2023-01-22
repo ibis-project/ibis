@@ -100,7 +100,7 @@ def get_col(sa_table, op: ops.TableColumn) -> sa.sql.ColumnClause:
     #
     # however, in ibis we have already deduplicated column names so we can
     # refer to the name by position
-    colindex = op.table.schema._name_locs[colname]
+    colindex = op.table.schema.names.index(colname)
     return cols[colindex]
 
 

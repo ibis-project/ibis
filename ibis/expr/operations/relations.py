@@ -311,23 +311,20 @@ class Projection(TableNode):
     @attribute.default
     def schema(self):
         # Resolve schema and initialize
-
         if not self.selections:
             return self.table.schema
 
-        types = []
-        names = []
-
-        for projection in self.selections:
-            if isinstance(projection, Value):
-                names.append(projection.name)
-                types.append(projection.output_dtype)
-            elif isinstance(projection, TableNode):
-                schema = projection.schema
+        names, types = [], []
+        for value in self.selections:
+            if isinstance(value, Value):
+                names.append(value.name)
+                types.append(value.output_dtype)
+            elif isinstance(value, TableNode):
+                schema = value.schema
                 names.extend(schema.names)
                 types.extend(schema.types)
 
-        return sch.Schema(names, types)
+        return sch.schema(names, types)
 
 
 @public
@@ -470,14 +467,11 @@ class Aggregation(TableNode):
 
     @attribute.default
     def schema(self):
-        names = []
-        types = []
-
-        for e in self.by + self.metrics:
-            names.append(e.name)
-            types.append(e.output_dtype)
-
-        return sch.Schema(names, types)
+        names, types = [], []
+        for value in self.by + self.metrics:
+            names.append(value.name)
+            types.append(value.output_dtype)
+        return sch.schema(names, types)
 
     def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents

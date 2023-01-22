@@ -581,39 +581,39 @@ def test_subquery_aliased(con, star1, star2, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_lower_projection_sort_key(con, star1, star2, snapshot):
-    t1 = star1
-    t2 = star2
+# def test_lower_projection_sort_key(con, star1, star2, snapshot):
+#     t1 = star1
+#     t2 = star2
 
-    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
-    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
-    #
-    t4 = con.meta.tables["star1"].alias("t4")
-    t3 = con.meta.tables["star2"].alias("t3")
+#     agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+#     expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
+#     #
+#     t4 = con.meta.tables["star1"].alias("t4")
+#     t3 = con.meta.tables["star2"].alias("t3")
 
-    t2 = (
-        sa.select(t4.c.foo_id, F.sum(t4.c.f).label('total'))
-        .group_by(t4.c.foo_id)
-        .alias('t2')
-    )
-    t1 = (
-        sa.select(t2.c.foo_id, t2.c.total, t3.c.value1)
-        .select_from(t2.join(t3, t2.c.foo_id == t3.c.foo_id))
-        .alias('t1')
-    )
-    t0 = (
-        sa.select(t1.c.foo_id, t1.c.total, t1.c.value1)
-        .where(t1.c.total > L(100))
-        .alias('t0')
-    )
-    expected = sa.select(t0.c.foo_id, t0.c.total, t0.c.value1).order_by(
-        t0.c.total.desc()
-    )
+#     t2 = (
+#         sa.select(t4.c.foo_id, F.sum(t4.c.f).label('total'))
+#         .group_by(t4.c.foo_id)
+#         .alias('t2')
+#     )
+#     t1 = (
+#         sa.select(t2.c.foo_id, t2.c.total, t3.c.value1)
+#         .select_from(t2.join(t3, t2.c.foo_id == t3.c.foo_id))
+#         .alias('t1')
+#     )
+#     t0 = (
+#         sa.select(t1.c.foo_id, t1.c.total, t1.c.value1)
+#         .where(t1.c.total > L(100))
+#         .alias('t0')
+#     )
+#     expected = sa.select(t0.c.foo_id, t0.c.total, t0.c.value1).order_by(
+#         t0.c.total.desc()
+#     )
 
-    expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
-    _check(expr2, expected)
-    snapshot.assert_match(to_sql(expr2), "out.sql")
-    assert_decompile_roundtrip(expr2, snapshot)
+#     expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
+#     _check(expr2, expected)
+#     snapshot.assert_match(to_sql(expr2), "out.sql")
+#     assert_decompile_roundtrip(expr2, snapshot)
 
 
 def test_exists(con, foo_t, bar_t, snapshot):

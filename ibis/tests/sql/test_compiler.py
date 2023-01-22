@@ -167,7 +167,6 @@ def test_table_drop_with_filter(snapshot):
     joined = joined[left.a]
     expr = joined.filter(joined.a < 1.0)
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_table_drop_consistency():

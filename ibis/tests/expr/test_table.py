@@ -873,9 +873,8 @@ def test_equijoin_schema_merge():
     pred = table1['key1'] == table2['key2']
     join_types = ['inner_join', 'left_join', 'outer_join']
 
-    ex_schema = api.Schema(
-        ['key1', 'value1', 'key2', 'stuff'],
-        ['string', 'double', 'string', 'int32'],
+    ex_schema = api.schema(
+        {'key1': 'string', 'value1': 'double', 'key2': 'string', 'stuff': 'int32'}
     )
 
     for fname in join_types:
@@ -937,7 +936,7 @@ def test_self_join(table):
 
     # Try aggregating on top of joined
     aggregated = joined.aggregate([metric], by=[left['g']])
-    ex_schema = api.Schema(['g', 'metric'], ['string', 'double'])
+    ex_schema = api.schema({'g': 'string', 'metric': 'double'})
     assert_equal(aggregated.schema(), ex_schema)
 
 
@@ -1010,7 +1009,7 @@ def test_cross_join(table):
     scalar_aggs = table.aggregate(metrics)
 
     joined = table.cross_join(scalar_aggs)
-    agg_schema = api.Schema(['sum_a', 'mean_b'], ['int64', 'double'])
+    agg_schema = api.schema({'sum_a': 'int64', 'mean_b': 'double'})
     ex_schema = table.schema().append(agg_schema)
     assert_equal(joined.schema(), ex_schema)
 

@@ -138,9 +138,9 @@ def test_whole_schema():
 
 def test_schema_names_and_types_length_must_match():
     with pytest.raises(IntegrityError):
-        sch.Schema(names=["a", "b"], types=["int", "str", "float"])
+        sch.schema(["a", "b"], ["int", "str", "float"])
 
-    schema = sch.Schema(names=["a", "b"], types=["int", "str"])
+    schema = sch.schema(["a", "b"], ["int", "str"])
     assert isinstance(schema, sch.Schema)
 
 
