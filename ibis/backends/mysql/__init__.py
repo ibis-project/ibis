@@ -8,7 +8,6 @@ import warnings
 from typing import Iterable, Literal
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -138,26 +137,3 @@ class Backend(BaseAlchemyBackend):
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
-
-
-# TODO(kszucs): unsigned integers
-
-
-@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
-def mysql_double(satype, nullable=True):
-    return dt.Float64(nullable=nullable)
-
-
-@dt.dtype.register(mysql.FLOAT)
-def mysql_float(satype, nullable=True):
-    return dt.Float32(nullable=nullable)
-
-
-@dt.dtype.register(mysql.TINYINT)
-def mysql_tinyint(satype, nullable=True):
-    return dt.Int8(nullable=nullable)
-
-
-@dt.dtype.register(mysql.BLOB)
-def mysql_blob(satype, nullable=True):
-    return dt.Binary(nullable=nullable)

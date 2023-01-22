@@ -1,73 +1,185 @@
 from __future__ import annotations
 
-import ibis.backends.duckdb.datatypes as ddb
+import parsy
+import sqlalchemy as sa
+import toolz
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects.postgresql.base import PGDialect
+
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.common.parsing import (
+    COMMA,
+    LBRACKET,
+    LPAREN,
+    PRECISION,
+    RBRACKET,
+    RPAREN,
+    SCALE,
+    spaceless,
+    spaceless_string,
+)
+
+_BRACKETS = "[]"
+
+
+def _parse_numeric(
+    text: str, default_decimal_parameters: tuple[int | None, int | None] = (None, None)
+) -> dt.DataType:
+    @parsy.generate
+    def decimal():
+        yield spaceless_string("decimal", "numeric")
+        prec_scale = (
+            yield LPAREN.then(
+                parsy.seq(PRECISION.skip(COMMA), SCALE).combine(
+                    lambda prec, scale: (prec, scale)
+                )
+            )
+            .skip(RPAREN)
+            .optional()
+        ) or default_decimal_parameters
+        return dt.Decimal(*prec_scale)
+
+    @parsy.generate
+    def brackets():
+        yield spaceless(LBRACKET)
+        yield spaceless(RBRACKET)
+
+    @parsy.generate
+    def pg_array():
+        value_type = yield decimal
+        n = len((yield brackets.at_least(1)))
+        return toolz.nth(n, toolz.iterate(dt.Array, value_type))
+
+    ty = pg_array | decimal
+    return ty.parse(text)
 
 
 def _get_type(typestr: str) -> dt.DataType:
-    try:
-        return _type_mapping[typestr]
-    except KeyError:
-        return ddb.parse(typestr)
+    is_array = typestr.endswith(_BRACKETS)
+    if (typ := _type_mapping.get(typestr.replace(_BRACKETS, ""))) is not None:
+        return dt.Array(typ) if is_array else typ
+    return _parse_numeric(typestr)
 
 
 _type_mapping = {
-    "boolean": dt.bool,
-    "boolean[]": dt.Array(dt.bool),
-    "bytea": dt.binary,
-    "bytea[]": dt.Array(dt.binary),
-    "character(1)": dt.string,
-    "character(1)[]": dt.Array(dt.string),
     "bigint": dt.int64,
-    "bigint[]": dt.Array(dt.int64),
-    "smallint": dt.int16,
-    "smallint[]": dt.Array(dt.int16),
-    "integer": dt.int32,
-    "integer[]": dt.Array(dt.int32),
-    "text": dt.string,
-    "text[]": dt.Array(dt.string),
-    "json": dt.json,
-    "json[]": dt.Array(dt.json),
-    "point": dt.point,
-    "point[]": dt.Array(dt.point),
-    "polygon": dt.polygon,
-    "polygon[]": dt.Array(dt.polygon),
-    "line": dt.linestring,
-    "line[]": dt.Array(dt.linestring),
-    "real": dt.float32,
-    "real[]": dt.Array(dt.float32),
-    "double precision": dt.float64,
-    "double precision[]": dt.Array(dt.float64),
-    "macaddr8": dt.macaddr,
-    "macaddr8[]": dt.Array(dt.macaddr),
-    "macaddr": dt.macaddr,
-    "macaddr[]": dt.Array(dt.macaddr),
-    "inet": dt.inet,
-    "inet[]": dt.Array(dt.inet),
-    "character": dt.string,
-    "character[]": dt.Array(dt.string),
+    "boolean": dt.bool,
+    "bytea": dt.binary,
     "character varying": dt.string,
-    "character varying[]": dt.Array(dt.string),
+    "character": dt.string,
+    "character(1)": dt.string,
     "date": dt.date,
-    "date[]": dt.Array(dt.date),
-    "time without time zone": dt.time,
-    "time without time zone[]": dt.Array(dt.time),
-    "timestamp without time zone": dt.timestamp,
-    "timestamp without time zone[]": dt.Array(dt.timestamp),
-    "timestamp with time zone": dt.Timestamp("UTC"),
-    "timestamp with time zone[]": dt.Array(dt.Timestamp("UTC")),
-    "interval": dt.interval,
-    "interval[]": dt.Array(dt.interval),
-    # NB: this isn"t correct, but we try not to fail
-    "time with time zone": "time",
-    "numeric": dt.decimal,
-    "numeric[]": dt.Array(dt.decimal),
-    "uuid": dt.uuid,
-    "uuid[]": dt.Array(dt.uuid),
-    "jsonb": dt.json,
-    "jsonb[]": dt.Array(dt.json),
-    "geometry": dt.geometry,
-    "geometry[]": dt.Array(dt.geometry),
+    "double precision": dt.float64,
     "geography": dt.geography,
-    "geography[]": dt.Array(dt.geography),
+    "geometry": dt.geometry,
+    "inet": dt.inet,
+    "integer": dt.int32,
+    "interval": dt.interval,
+    "json": dt.json,
+    "jsonb": dt.json,
+    "line": dt.linestring,
+    "macaddr": dt.macaddr,
+    "macaddr8": dt.macaddr,
+    "numeric": dt.decimal,
+    "point": dt.point,
+    "polygon": dt.polygon,
+    "real": dt.float32,
+    "smallint": dt.int16,
+    "text": dt.string,
+    # NB: this isn't correct because we're losing the "with time zone"
+    # information (ibis doesn't have time type that is time-zone aware), but we
+    # try to do _something_ here instead of failing
+    "time with time zone": dt.time,
+    "time without time zone": dt.time,
+    "timestamp with time zone": dt.Timestamp("UTC"),
+    "timestamp without time zone": dt.timestamp,
+    "uuid": dt.uuid,
 }
+
+
+@to_sqla_type.register(PGDialect, dt.Array)
+def _pg_array(dialect, itype):
+    # Unwrap the array element type because sqlalchemy doesn't allow arrays of
+    # arrays. This doesn't affect the underlying data.
+    while itype.is_array():
+        itype = itype.value_type
+    return sa.ARRAY(to_sqla_type(dialect, itype))
+
+
+@to_sqla_type.register(PGDialect, dt.Map)
+def _pg_map(dialect, itype):
+    if not (itype.key_type.is_string() and itype.value_type.is_string()):
+        raise TypeError(f"PostgreSQL only supports map<string, string>, got: {itype}")
+    return postgresql.HSTORE
+
+
+@dt.dtype.register(PGDialect, postgresql.DOUBLE_PRECISION)
+def sa_double(_, satype, nullable=True):
+    return dt.Float64(nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.UUID)
+def sa_uuid(_, satype, nullable=True):
+    return dt.UUID(nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.MACADDR)
+def sa_macaddr(_, satype, nullable=True):
+    return dt.MACADDR(nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.HSTORE)
+def sa_hstore(_, satype, nullable=True):
+    return dt.Map(dt.string, dt.string, nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.INET)
+def sa_inet(_, satype, nullable=True):
+    return dt.INET(nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.JSONB)
+def sa_json(_, satype, nullable=True):
+    return dt.JSON(nullable=nullable)
+
+
+_POSTGRES_FIELD_TO_IBIS_UNIT = {
+    "YEAR": "Y",
+    "MONTH": "M",
+    "DAY": "D",
+    "HOUR": "h",
+    "MINUTE": "m",
+    "SECOND": "s",
+    "YEAR TO MONTH": "M",
+    "DAY TO HOUR": "h",
+    "DAY TO MINUTE": "m",
+    "DAY TO SECOND": "s",
+    "HOUR TO MINUTE": "m",
+    "HOUR TO SECOND": "s",
+    "MINUTE TO SECOND": "s",
+}
+
+
+@dt.dtype.register(PGDialect, postgresql.INTERVAL)
+def sa_postgres_interval(_, satype, nullable=True):
+    field = satype.fields.upper()
+    if (unit := _POSTGRES_FIELD_TO_IBIS_UNIT.get(field, None)) is None:
+        raise ValueError(f"Unknown PostgreSQL interval field {field!r}")
+    elif unit in {"Y", "M"}:
+        raise ValueError(
+            "Variable length intervals are not yet supported with PostgreSQL"
+        )
+    return dt.Interval(unit=unit, nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, sa.ARRAY)
+def sa_pg_array(dialect, satype, nullable=True):
+    dimensions = satype.dimensions
+    if dimensions is not None and dimensions != 1:
+        raise NotImplementedError(
+            f"Nested array types not yet supported for {dialect.name} dialect"
+        )
+
+    value_dtype = dt.dtype(dialect, satype.item_type)
+    return dt.Array(value_dtype, nullable=nullable)

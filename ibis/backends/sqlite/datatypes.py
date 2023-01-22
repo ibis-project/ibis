@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import sqlalchemy as sa
+from sqlalchemy.dialects import sqlite
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+
 import ibis.expr.datatypes as dt
 
 
@@ -36,3 +40,13 @@ def parse(text: str) -> dt.DataType:
 
     # 5. Otherwise, the affinity is NUMERIC.
     return dt.decimal
+
+
+@dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
+def sa_numeric(_, satype, nullable=True):
+    return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
+
+
+@dt.dtype.register(SQLiteDialect, sa.REAL)
+def sa_double(_, satype, nullable=True):
+    return dt.Float64(nullable=nullable)
