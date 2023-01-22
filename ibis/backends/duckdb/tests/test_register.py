@@ -18,6 +18,19 @@ def test_read_parquet(data_directory):
     assert t.count().execute()
 
 
+def test_read_json(data_directory, tmp_path):
+    pqt = ibis.read_parquet(data_directory / "functional_alltypes.parquet")
+
+    path = tmp_path.joinpath("ft.json")
+    path.write_text(pqt.execute().to_json(orient="records", lines=True))
+
+    jst = ibis.read_json(path)
+
+    nrows = pqt.count().execute()
+    assert nrows
+    assert nrows == jst.count().execute()
+
+
 def test_temp_directory(tmp_path):
     query = sa.text("SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'")
 
