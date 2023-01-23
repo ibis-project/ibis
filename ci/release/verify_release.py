@@ -54,7 +54,7 @@ def find_invalid_removed_ins(
     ]
 
 
-def main(next_ver: v.Version, root: str) -> int:
+def main(next_ver: v.Version, root: Path) -> int:
     pyfiles = root.rglob("*.py")
     find_invalid = partial(find_invalid_removed_ins, next_ver)
 
