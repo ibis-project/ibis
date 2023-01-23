@@ -49,7 +49,7 @@ db-dtypes = { version = ">=0.3,<2", optional = true }
 duckdb = { version = ">=0.3.3,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
-GeoAlchemy2 = { version = ">=0.6.3,<1", optional = true }
+GeoAlchemy2 = { version = ">=0.6.3,<1,!=0.13.0", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
 google-cloud-bigquery = { version = ">=3,<4", optional = true }
 google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
@@ -60,7 +60,7 @@ polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=2,<11", optional = true }
 pymssql = { version = ">=2.2.5,<3", optional = true }
-pydata-google-auth = { version = "^1.4.0", optional = true }
+pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
@@ -380,6 +380,7 @@ ignore = [
   "D202", # blank lines after function docstring
   "D203", # blank line before class docstring
   "D213", # Multi-line docstring summary should start at the second line
+  "D401", # Imperative mood
   "D402", # First line should not be the function's signature
   "E501",
   "E731",
@@ -390,6 +391,7 @@ ignore = [
   "RET506",
   "RET507",
   "RET508",
+  "RUF005", # splat instead of concat
   "SIM102", # nested ifs
   "SIM108", # convert everything to ternary operator
   "SIM117", # nested withs
@@ -398,8 +400,6 @@ ignore = [
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
-show-source = true
-fix = true
 # none of these codes will be automatically fixed by ruff
 unfixable = [
   "T201", # print statements

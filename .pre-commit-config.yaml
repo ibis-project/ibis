@@ -14,7 +14,7 @@ default_stages:
   - commit
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.22
+    rev: v1.6.23
     hooks:
       - id: actionlint
   - repo: https://github.com/psf/black
@@ -22,11 +22,10 @@ repos:
     hooks:
       - id: black
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.223
+    rev: v0.0.231
     hooks:
       - id: ruff
-        # exclude a file (if configured to do so), even if it's passed in explicitly
-        args: ["--force-exclude"]
+        args: ["--fix", "--show-source"]
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.29.0
     hooks:

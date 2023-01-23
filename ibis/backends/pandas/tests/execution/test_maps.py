@@ -55,9 +55,7 @@ def test_map_values_expr(t):
     expr = t.map_of_complex_values.values()
     result = expr.execute().map(safe_sorter)
     expected = pd.Series(
-        [None, np.array([[1, 2, 3], []], dtype='object'), np.array([])],
-        dtype='object',
-        name='map_of_complex_values',
+        [None, [[1, 2, 3], []], []], dtype='object', name='map_of_complex_values'
     )
     tm.assert_series_equal(result, expected)
 

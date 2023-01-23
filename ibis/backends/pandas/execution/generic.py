@@ -1399,7 +1399,7 @@ def execute_table_array_view(op, _, **kwargs):
 
 @execute_node.register(ops.ZeroIfNull, pd.Series)
 def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
+    zero = op.arg.output_dtype.to_pandas().type(0)
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
@@ -1409,5 +1409,5 @@ def execute_zero_if_null_series(op, data, **kwargs):
 )
 def execute_zero_if_null_scalar(op, data, **kwargs):
     if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
+        return op.arg.output_dtype.to_pandas().type(0)
     return data

@@ -11,4 +11,7 @@ self: super: {
 
   # No macOS 12 wheel available as of 2023-01-09
   debugpy = super.debugpy.override { preferWheel = !self.pkgs.stdenv.isDarwin; };
+
+  # No macOS 12 wheel available as of 2023-01-24 for 1.4.46
+  sqlalchemy = super.sqlalchemy.override { preferWheel = !self.pkgs.stdenv.isDarwin; };
 }
