@@ -1064,7 +1064,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['snowflake', 'impala'],
+                    ['impala'],
                     "No translation rule for <class 'ibis.expr.operations.temporal.DateFromYMD'>",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1112,14 +1112,6 @@ def test_exists(batting, awards_players, method_name):
                 "duckdb": "TIMESTAMP",
                 "postgres": "timestamp with time zone",
             },
-            marks=[
-                pytest.mark.broken(
-                    ['snowflake'],
-                    '(snowflake.connector.errors.ProgrammingError) '
-                    '002140 (42601): SQL compilation error: Unknown functions NOW, TIMEZONE',
-                    raises=ProgrammingError,
-                ),
-            ],
             id="timestamp",
         ),
         param(
