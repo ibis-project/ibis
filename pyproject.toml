@@ -393,11 +393,14 @@ exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
 show-source = true
 fix = true
-# don't delete print statements
-# don't remove unused imports
-# don't remove unused noqa
-# don't remove unused variables
-unfixable = ["T201", "F401", "RUF100", "F841"]
+# none of these codes will be automatically fixed by ruff
+unfixable = [
+  "T201", # print statements
+  "F401", # unused imports
+  "RUF100", # unused noqa comments
+  "F841", # unused variables
+
+]
 
 [tool.ruff.per-file-ignores]
 "*test*.py" = ["D"] # ignore all docstring lints in tests
