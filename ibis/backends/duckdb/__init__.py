@@ -26,8 +26,6 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
 
-_dialect = sa.dialects.postgresql.dialect()
-
 # counters for in-memory, parquet, and csv reads
 # used if no table name is specified
 pd_n = itertools.count(0)
@@ -42,10 +40,18 @@ def normalize_filenames(source_list):
     return list(map(util.normalize_filename, source_list))
 
 
-def _format_kwargs(kwargs):
-    return (
-        f"{k}='{v}'" if isinstance(v, str) else f"{k}={v!r}" for k, v in kwargs.items()
-    )
+def _create_view(*args, **kwargs):
+    import sqlalchemy_views as sav
+
+    return sav.CreateView(*args, **kwargs)
+
+
+def _format_kwargs(kwargs: Mapping[str, Any]):
+    bindparams, pieces = [], []
+    for name, value in kwargs.items():
+        bindparams.append(sa.bindparam(name, value))
+        pieces.append(f"{name} = :{name}")
+    return sa.text(", ".join(pieces)).bindparams(*bindparams)
 
 
 class Backend(BaseAlchemyBackend):
@@ -189,14 +195,13 @@ class Backend(BaseAlchemyBackend):
         elif first.startswith(("postgres://", "postgresql://")):
             return self.read_postgres(source, table_name=table_name, **kwargs)
         else:
-            self._register_failure()
-            return None
+            self._register_failure()  # noqa: RET503
 
     def _register_failure(self):
         import inspect
 
         msg = ", ".join(
-            m[0] for m in inspect.getmembers(self) if m[0].startswith("read_")
+            name for name, _ in inspect.getmembers(self) if name.startswith("read_")
         )
         raise ValueError(
             f"Cannot infer appropriate read function for input, "
@@ -219,7 +224,7 @@ class Backend(BaseAlchemyBackend):
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/data/csv for more information.
 
@@ -233,24 +238,19 @@ class Backend(BaseAlchemyBackend):
         if not table_name:
             table_name = f"ibis_read_csv_{next(csv_n)}"
 
-        quoted_table_name = self._quote(table_name)
-
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
-        args = [
-            str(source_list),
-            f"auto_detect={kwargs.pop('auto_detect', 'columns' not in kwargs)}",
-            *_format_kwargs(kwargs),
-        ]
-        sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
-SELECT * FROM read_csv({', '.join(args)})"""
-
         if any(source.startswith(("http://", "https://")) for source in source_list):
             self._load_extensions(["httpfs"])
 
+        kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
+        )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
-            con.execute(sa.text(sql))
-        return self._read(table_name)
+            con.execute(view)
+        return self.table(table_name)
 
     def read_parquet(
         self,
@@ -268,7 +268,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/data/parquet for more information.
 
@@ -302,17 +302,20 @@ SELECT * FROM read_csv({', '.join(args)})"""
                 source.startswith(("http://", "https://")) for source in source_list
             ):
                 self._load_extensions(["httpfs"])
-            dataset = str(source_list)
-            table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
 
-            quoted_table_name = self._quote(table_name)
-            sql = f"""CREATE OR REPLACE VIEW {quoted_table_name} AS
-            SELECT * FROM read_parquet({dataset})"""
+            if table_name is None:
+                table_name = f"ibis_read_parquet_{next(pa_n)}"
 
+            source = sa.select(sa.literal_column("*")).select_from(
+                sa.func.read_parquet(
+                    sa.func.list_value(*source_list), _format_kwargs(kwargs)
+                )
+            )
+            view = _create_view(sa.table(table_name), source, or_replace=True)
             with self.begin() as con:
-                con.execute(sa.text(sql))
+                con.execute(view)
 
-        return self._read(table_name)
+        return self.table(table_name)
 
     def read_in_memory(
         self, dataframe: pd.DataFrame | pa.Table, table_name: str | None = None
@@ -336,9 +339,9 @@ SELECT * FROM read_csv({', '.join(args)})"""
         with self.begin() as con:
             con.connection.register(table_name, dataframe)
 
-        return self._read(table_name)
+        return self.table(table_name)
 
-    def read_postgres(self, uri, table_name=None):
+    def read_postgres(self, uri, table_name: str | None = None, schema: str = "public"):
         """Register a table from a postgres instance into a DuckDB table.
 
         Parameters
@@ -347,6 +350,8 @@ SELECT * FROM read_csv({', '.join(args)})"""
             The postgres URI in form 'postgres://user:password@host:port'
         table_name
             The table to read
+        schema
+            PostgreSQL schema where `table_name` resides
 
         Returns
         -------
@@ -358,18 +363,13 @@ SELECT * FROM read_csv({', '.join(args)})"""
                 "`table_name` is required when registering a postgres table"
             )
         self._load_extensions(["postgres_scanner"])
-        quoted_table_name = self._quote(table_name)
-        sql = (
-            f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
-            f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.postgres_scan_pushdown(uri, schema, table_name)
         )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
-            con.execute(sa.text(sql))
+            con.execute(view)
 
-        return self._read(table_name)
-
-    def _read(self, table_name):
-        _table = self.table(table_name)
         return self.table(table_name)
 
     def to_pyarrow_batches(
@@ -379,7 +379,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.ipc.RecordBatchReader:
         # TODO: duckdb seems to not care about the `chunk_size` argument
         # and returns batches in 1024 row chunks
@@ -401,7 +401,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.Table:
         pa = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)

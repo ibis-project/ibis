@@ -4829,6 +4829,21 @@ pymysql = ["pymysql", "pymysql (<1)"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
+name = "sqlalchemy-views"
+version = "0.3.1"
+description = "Adds CreateView and DropView constructs to SQLAlchemy"
+category = "main"
+optional = true
+python-versions = "*"
+files = [
+    {file = "sqlalchemy-views-0.3.1.tar.gz", hash = "sha256:5aeaaa3be005ead283e4fe189dd65d2c9ccfdf0212e19d6647b8589332d7e31e"},
+    {file = "sqlalchemy_views-0.3.1-py3-none-any.whl", hash = "sha256:de2b714274b3f32da8a496571848ff75ae3c9cb5145195e402fa1bb896dd400f"},
+]
+
+[package.dependencies]
+sqlalchemy = ">=1.0.0"
+
+[[package]]
 name = "sqlglot"
 version = "10.5.0"
 description = "An easily customizable SQL parser and transpiler"
@@ -5280,7 +5295,7 @@ clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
-duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
+duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy", "sqlalchemy-views"]
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql"]
@@ -5297,4 +5312,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "efc1f25044e5242bdf7bb484839f225104ca3648583b4c549343a1b15a0eb2be"
+content-hash = "3d844fa943083d74facd756a0df4fd31ca9e32ce9a74b57a182cd640e7d1a369"
