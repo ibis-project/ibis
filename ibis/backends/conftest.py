@@ -138,8 +138,7 @@ def recreate_database(
 
     if url.database is not None:
         with engine.begin() as conn:
-            conn.execute(sa.text(f'DROP DATABASE IF EXISTS {database}'))
-            conn.execute(sa.text(f'CREATE DATABASE {database}'))
+            conn.execute(sa.text(f'CREATE DATABASE IF NOT EXISTS {database}'))
 
 
 def init_database(
