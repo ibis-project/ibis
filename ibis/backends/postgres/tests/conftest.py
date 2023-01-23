@@ -74,6 +74,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 database=database,
                 schema=schema,
                 isolation_level='AUTOCOMMIT',
+                recreate=False,
             )
 
         tables = list(TEST_TABLES) + ['geo']

@@ -80,6 +80,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 database=database,
                 schema=schema,
                 isolation_level="AUTOCOMMIT",
+                recreate=False,
             )
             with engine.begin() as con:
                 for table in TEST_TABLES:
