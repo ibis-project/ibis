@@ -212,7 +212,7 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
 
 @pytest.fixture
 def tmptable(con):
-    name = guid()
+    name = f"tmp_{guid()}"
     yield name
 
     # some backends don't implement drop
