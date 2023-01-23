@@ -77,6 +77,11 @@ def test_tables_accessor_tab_completion(con):
     assert 'functional_alltypes' in keys
 
 
+def test_tables_accessor_repr(con):
+    result = repr(con.tables)
+    assert '- functional_alltypes' in result
+
+
 @pytest.mark.parametrize(
     "expr_fn",
     [
