@@ -396,10 +396,12 @@ fix = true
 # don't delete print statements
 # don't remove unused imports
 # don't remove unused noqa
-unfixable = ["T201", "F401", "RUF100"]
+# don't remove unused variables
+unfixable = ["T201", "F401", "RUF100", "F841"]
 
 [tool.ruff.per-file-ignores]
 "*test*.py" = ["D"] # ignore all docstring lints in tests
+"ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.black]
 line_length = 88
