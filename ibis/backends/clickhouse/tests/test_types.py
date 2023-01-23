@@ -161,7 +161,7 @@ def test_columns_types_with_additional_argument(con):
         param("Decimal(10, 3)", dt.Decimal(10, 3, nullable=False), id="decimal"),
         param(
             "Tuple(a String, b Array(Nullable(Float64)))",
-            dt.Struct.from_dict(
+            dt.Struct(
                 dict(
                     a=dt.String(nullable=False),
                     b=dt.Array(dt.float64, nullable=False),
@@ -172,7 +172,7 @@ def test_columns_types_with_additional_argument(con):
         ),
         param(
             "Tuple(String, Array(Nullable(Float64)))",
-            dt.Struct.from_dict(
+            dt.Struct(
                 dict(
                     f0=dt.String(nullable=False),
                     f1=dt.Array(dt.float64, nullable=False),
@@ -183,7 +183,7 @@ def test_columns_types_with_additional_argument(con):
         ),
         param(
             "Tuple(a String, Array(Nullable(Float64)))",
-            dt.Struct.from_dict(
+            dt.Struct(
                 dict(
                     a=dt.String(nullable=False),
                     f1=dt.Array(dt.float64, nullable=False),
@@ -194,7 +194,7 @@ def test_columns_types_with_additional_argument(con):
         ),
         param(
             "Nested(a String, b Array(Nullable(Float64)))",
-            dt.Struct.from_dict(
+            dt.Struct(
                 dict(
                     a=dt.Array(dt.String(nullable=False), nullable=False),
                     b=dt.Array(dt.Array(dt.float64, nullable=False), nullable=False),

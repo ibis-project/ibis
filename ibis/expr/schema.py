@@ -216,7 +216,7 @@ class Schema(Concrete):
         return ibis_to_pyarrow_schema(self)
 
     def as_struct(self) -> dt.Struct:
-        return dt.Struct(self.names, self.types)
+        return dt.Struct(dict(self.items()))
 
     def __gt__(self, other: Schema) -> bool:
         """Return whether `self` is a strict superset of `other`."""

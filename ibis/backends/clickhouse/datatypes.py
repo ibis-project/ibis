@@ -260,7 +260,7 @@ def _(ty: dt.Map) -> str:
 @serialize_raw.register(dt.Struct)
 def _(ty: dt.Struct) -> str:
     fields = ", ".join(
-        f"{name} {serialize(field_ty)}" for name, field_ty in ty.pairs.items()
+        f"{name} {serialize(field_ty)}" for name, field_ty in ty.fields.items()
     )
     return f"Tuple({fields})"
 

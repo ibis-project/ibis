@@ -48,13 +48,13 @@ def struct(
     """
     import ibis.expr.operations as ops
 
-    items = dict(value)
-    values = items.values()
-    if any(isinstance(value, Value) for value in values):
-        return ops.StructColumn(
-            names=tuple(items.keys()), values=tuple(values)
-        ).to_expr()
-    return literal(collections.OrderedDict(items), type=type)
+    fields = dict(value)
+    if any(isinstance(value, Value) for value in fields.values()):
+        names = tuple(fields.keys())
+        values = tuple(fields.values())
+        return ops.StructColumn(names=names, values=values).to_expr()
+    else:
+        return literal(collections.OrderedDict(fields), type=type)
 
 
 @public
@@ -106,7 +106,7 @@ class StructValue(Value):
     @property
     def fields(self) -> Mapping[str, dt.DataType]:
         """Return a mapping from field name to field type of the struct."""
-        return util.frozendict(self.type().pairs)
+        return util.frozendict(self.type().fields)
 
     def lift(self) -> ir.Table:
         """Project the fields of `self` into a table.

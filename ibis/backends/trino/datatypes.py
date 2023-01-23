@@ -173,7 +173,7 @@ def _string(_, itype):
 @to_sqla_type.register(TrinoDialect, dt.Struct)
 def _struct(dialect, itype):
     return ROW(
-        [(name, to_sqla_type(dialect, typ)) for name, typ in itype.pairs.items()]
+        [(name, to_sqla_type(dialect, typ)) for name, typ in itype.fields.items()]
     )
 
 
