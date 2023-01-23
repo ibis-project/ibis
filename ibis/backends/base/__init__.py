@@ -510,6 +510,23 @@ class BaseBackend(abc.ABC, ResultHandler):
             The list of the table names that match the pattern `like`.
         """
 
+    @abc.abstractmethod
+    def table(self, name: str, database: str | None = None) -> ir.Table:
+        """Construct a table expression.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+
     @functools.cached_property
     def tables(self):
         """An accessor for tables in the database.
