@@ -204,6 +204,12 @@ class TablesAccessor(collections.abc.Mapping):
         )
         return list(o)
 
+    def __repr__(self) -> str:
+        tables = self._backend.list_tables()
+        rows = ["Tables", "------"]
+        rows.extend(f"- {name}" for name in sorted(tables))
+        return "\n".join(rows)
+
     def _ipython_key_completions_(self) -> list[str]:
         return self._backend.list_tables()
 
