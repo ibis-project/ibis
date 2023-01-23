@@ -100,7 +100,8 @@ def struct_dtypes(
     num_fields = draw(num_fields)
     names = draw(st.lists(st.text(), min_size=num_fields, max_size=num_fields))
     types = draw(st.lists(item_strategy, min_size=num_fields, max_size=num_fields))
-    return dt.Struct(names, types, nullable=draw(nullable))
+    fields = dict(zip(names, types))
+    return dt.Struct(fields, nullable=draw(nullable))
 
 
 point_dtype = st.builds(dt.Point, nullable=nullable)

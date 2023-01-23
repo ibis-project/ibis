@@ -14,12 +14,13 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
     all_of,
+    frozendict_of,
     instance_of,
     isin,
     map_to,
-    tuple_of,
     validator,
 )
+from ibis.util import deprecated, warn_deprecated
 
 dtype = Dispatcher('dtype')
 
@@ -642,18 +643,42 @@ class Category(DataType):
 class Struct(DataType):
     """Structured values."""
 
-    names = tuple_of(instance_of(str))
-    types = tuple_of(datatype)
+    fields = frozendict_of(instance_of(str), datatype)
 
     scalar = ir.StructScalar
     column = ir.StructColumn
 
-    def __init__(self, names, types, **kwargs):
-        if len(names) != len(types):
-            raise IbisTypeError(
-                'Struct datatype names and types must have the same length'
+    @classmethod
+    def __create__(cls, names, types=None, nullable=True):
+        if types is None:
+            fields = names
+        else:
+            warn_deprecated(
+                "Struct(names, types)",
+                as_of="4.1",
+                removed_in="5.0",
+                instead=(
+                    "construct a Struct type using a mapping of names to types instead: "
+                    "Struct(dict(zip(names, types)))"
+                ),
             )
-        super().__init__(names=names, types=types, **kwargs)
+            if len(names) != len(types):
+                raise IbisTypeError(
+                    'Struct datatype names and types must have the same length'
+                )
+            fields = dict(zip(names, types))
+
+        return super().__create__(fields=fields, nullable=nullable)
+
+    def __reduce__(self):
+        return (self.__class__, (self.fields, None, self.nullable))
+
+    def copy(self, fields=None, nullable=None):
+        if fields is None:
+            fields = self.fields
+        if nullable is None:
+            nullable = self.nullable
+        return type(self)(fields, nullable=nullable)
 
     @classmethod
     def from_tuples(
@@ -673,10 +698,14 @@ class Struct(DataType):
         Struct
             Struct data type instance
         """
-        names, types = zip(*pairs)
-        return cls(names, types, nullable=nullable)
+        return cls(dict(pairs), nullable=nullable)
 
     @classmethod
+    @deprecated(
+        as_of="4.1",
+        removed_in="5.0",
+        instead="directly construct a Struct type instead",
+    )
     def from_dict(
         cls, pairs: Mapping[str, str | DataType], nullable: bool = True
     ) -> Struct:
@@ -694,26 +723,33 @@ class Struct(DataType):
         Struct
             Struct data type instance
         """
-        names, types = pairs.keys(), pairs.values()
-        return cls(names, types, nullable=nullable)
+        return cls(pairs, nullable=nullable)
 
     @property
+    @deprecated(
+        as_of="4.1",
+        removed_in="5.0",
+        instead="use struct_type.fields attribute instead",
+    )
     def pairs(self) -> Mapping[str, DataType]:
-        """Return a mapping from names to data type instances.
+        return self.fields
 
-        Returns
-        -------
-        Mapping[str, DataType]
-            Mapping of field name to data type
-        """
-        return dict(zip(self.names, self.types))
+    @property
+    def names(self) -> tuple[str, ...]:
+        """Return the names of the struct's fields."""
+        return tuple(self.fields.keys())
+
+    @property
+    def types(self) -> tuple[DataType, ...]:
+        """Return the types of the struct's fields."""
+        return tuple(self.fields.values())
 
     def __getitem__(self, key: str) -> DataType:
-        return self.pairs[key]
+        return self.fields[key]
 
     def __repr__(self) -> str:
         return '{}({}, nullable={})'.format(
-            self.name, list(self.pairs.items()), self.nullable
+            self.name, list(self.fields.items()), self.nullable
         )
 
     @property

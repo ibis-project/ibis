@@ -455,7 +455,7 @@ SELECT * FROM read_csv({', '.join(args)})"""
                 ["column_name", "column_type", "null"], rows.mappings()
             ):
                 ibis_type = parse(type)
-                yield name, ibis_type(nullable=null.lower() == "yes")
+                yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
     def _register_in_memory_table(self, table_op):
         df = table_op.data.to_frame()

@@ -143,16 +143,17 @@ def test_struct_with_string_types():
 
 
 def test_struct_from_dict():
-    result = dt.Struct.from_dict({'b': 'int64', 'a': dt.float64})
+    with pytest.warns(FutureWarning):
+        result = dt.Struct.from_dict({'b': 'int64', 'a': dt.float64})
 
-    assert result == dt.Struct(names=['b', 'a'], types=[dt.int64, dt.float64])
+    assert result == dt.Struct({'b': dt.int64, 'a': dt.float64})
 
 
 def test_struct_names_and_types_legth_must_match():
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(IbisTypeError), pytest.warns(FutureWarning):
         dt.Struct(names=["a", "b"], types=["int", "str", "float"])
 
-    dtype = dt.Struct(names=["a", "b"], types=["int", "str"])
+    dtype = dt.Struct({"a": "int", "b": "str"})
     assert isinstance(dtype, dt.Struct)
 
 
@@ -619,7 +620,7 @@ def test_is_signed_integer():
 
 
 def test_is_struct():
-    assert dt.Struct.from_dict({"a": dt.string}).is_struct()
+    assert dt.Struct({"a": dt.string}).is_struct()
 
 
 def test_is_unsigned_integer():
