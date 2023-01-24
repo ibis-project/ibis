@@ -51,7 +51,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres", "bigquery"])
+@pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]

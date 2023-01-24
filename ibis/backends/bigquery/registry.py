@@ -239,6 +239,12 @@ def _literal(translator, op):
             return "FROM_BASE64('{}')".format(
                 base64.b64encode(value).decode(encoding="utf-8")
             )
+        elif dtype.is_struct():
+            cols = (
+                f'{translator.translate(ops.Literal(op.value[name], dtype=type_))} AS {name}'
+                for name, type_ in zip(dtype.names, dtype.types)
+            )
+            return "STRUCT({})".format(", ".join(cols))
 
     try:
         return literal(translator, op)
