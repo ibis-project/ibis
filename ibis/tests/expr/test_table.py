@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import _
 from ibis import literal as L
@@ -363,7 +364,7 @@ def test_filter_fusion_distinct_table_objects(con):
 
 def test_column_relabel(table):
     table = api.table({"x": "int32", "y": "string", "z": "double"})
-    sol = api.schema({"x_1": "int32", "y_1": "string", "z": "double"})
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
 
     # Using a mapping
     res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
@@ -873,7 +874,7 @@ def test_equijoin_schema_merge():
     pred = table1['key1'] == table2['key2']
     join_types = ['inner_join', 'left_join', 'outer_join']
 
-    ex_schema = api.Schema(
+    ex_schema = sch.schema(
         ['key1', 'value1', 'key2', 'stuff'],
         ['string', 'double', 'string', 'int32'],
     )
@@ -937,7 +938,7 @@ def test_self_join(table):
 
     # Try aggregating on top of joined
     aggregated = joined.aggregate([metric], by=[left['g']])
-    ex_schema = api.Schema(['g', 'metric'], ['string', 'double'])
+    ex_schema = api.Schema({'g': 'string', 'metric': 'double'})
     assert_equal(aggregated.schema(), ex_schema)
 
 
@@ -1010,7 +1011,7 @@ def test_cross_join(table):
     scalar_aggs = table.aggregate(metrics)
 
     joined = table.cross_join(scalar_aggs)
-    agg_schema = api.Schema(['sum_a', 'mean_b'], ['int64', 'double'])
+    agg_schema = api.Schema({'sum_a': 'int64', 'mean_b': 'double'})
     ex_schema = table.schema().append(agg_schema)
     assert_equal(joined.schema(), ex_schema)
 

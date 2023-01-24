@@ -34,7 +34,7 @@ class TableNode(Node):
     @property
     @abstractmethod
     def schema(self) -> sch.Schema:
-        """Return a schema."""
+        ...
 
     def to_expr(self):
         import ibis.expr.types as ir
@@ -311,13 +311,10 @@ class Projection(TableNode):
     @attribute.default
     def schema(self):
         # Resolve schema and initialize
-
         if not self.selections:
             return self.table.schema
 
-        types = []
-        names = []
-
+        types, names = [], []
         for projection in self.selections:
             if isinstance(projection, Value):
                 names.append(projection.name)
@@ -327,7 +324,7 @@ class Projection(TableNode):
                 names.extend(schema.names)
                 types.extend(schema.types)
 
-        return sch.Schema(names, types)
+        return sch.schema(names, types)
 
 
 @public
@@ -391,7 +388,7 @@ class DummyTable(TableNode):
 
     @property
     def schema(self):
-        return sch.Schema.from_dict({op.name: op.output_dtype for op in self.values})
+        return sch.Schema({op.name: op.output_dtype for op in self.values})
 
 
 @public
@@ -470,14 +467,11 @@ class Aggregation(TableNode):
 
     @attribute.default
     def schema(self):
-        names = []
-        types = []
-
-        for e in self.by + self.metrics:
-            names.append(e.name)
-            types.append(e.output_dtype)
-
-        return sch.Schema(names, types)
+        names, types = [], []
+        for value in self.by + self.metrics:
+            names.append(value.name)
+            types.append(value.output_dtype)
+        return sch.schema(names, types)
 
     def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents

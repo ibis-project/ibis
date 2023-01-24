@@ -172,7 +172,8 @@ def schema(draw, item_strategy=primitive_dtypes, max_size=20):
         st.lists(st.text(), min_size=num_fields, max_size=num_fields, unique=True)
     )
     types = draw(st.lists(item_strategy, min_size=num_fields, max_size=num_fields))
-    return sch.Schema(names, types)
+    fields = dict(zip(names, types))
+    return sch.Schema(fields)
 
 
 all_schema = schema(all_dtypes)

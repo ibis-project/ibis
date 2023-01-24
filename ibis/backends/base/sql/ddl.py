@@ -238,9 +238,8 @@ class CreateTableWithSchema(CreateTable):
             main_schema = self.schema
             part_schema = self.partition
             if not isinstance(part_schema, sch.Schema):
-                part_schema = sch.Schema(
-                    part_schema, [self.schema[name] for name in part_schema]
-                )
+                part_fields = {name: self.schema[name] for name in part_schema}
+                part_schema = sch.Schema(part_fields)
 
             to_delete = []
             for name in self.partition:

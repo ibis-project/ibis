@@ -137,11 +137,15 @@ def test_whole_schema():
 
 
 def test_schema_names_and_types_length_must_match():
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError), pytest.warns(FutureWarning):
         sch.Schema(names=["a", "b"], types=["int", "str", "float"])
 
-    schema = sch.Schema(names=["a", "b"], types=["int", "str"])
+    with pytest.warns(FutureWarning):
+        schema = sch.Schema(names=["a", "b"], types=["int", "str"])
+
     assert isinstance(schema, sch.Schema)
+    assert schema.names == ("a", "b")
+    assert schema.types == (dt.int64, dt.string)
 
 
 def test_schema_subset():
@@ -209,3 +213,10 @@ def test_api_accepts_schema_objects():
 def test_names_types():
     s = ibis.schema(names=["a"], types=["array<float64>"])
     assert s == ibis.schema(dict(a="array<float64>"))
+
+
+def test_schema_delete():
+    s1 = ibis.schema({"a": "int64", "b": "string", "c": "float64", "d": "int64"})
+    s2 = s1.delete(["b", "d"])
+
+    assert s2 == ibis.schema({"a": "int64", "c": "float64"})
