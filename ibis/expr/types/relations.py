@@ -26,6 +26,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
+from ibis.expr.selectors import Selector
 from ibis.expr.types.core import Expr
 
 if TYPE_CHECKING:
@@ -718,7 +719,10 @@ class Table(Expr, JupyterMixin):
 
         exprs = list(
             itertools.chain(
-                itertools.chain.from_iterable(map(util.promote_list, exprs)),
+                itertools.chain.from_iterable(
+                    util.promote_list(e.expand(self) if isinstance(e, Selector) else e)
+                    for e in exprs
+                ),
                 (
                     self._ensure_expr(expr).name(name)
                     for name, expr in named_exprs.items()

@@ -21,6 +21,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, connect
+from ibis.expr import selectors
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
@@ -146,6 +147,7 @@ __all__ = (
     'rows_with_max_lookback',
     'schema',
     'Schema',
+    'selectors',
     'sequence',
     'set_backend',
     'show_sql',
