@@ -23,6 +23,7 @@
             * [Timestamps + Dates + Times](api/expressions/timestamps.md)
             * [Collections](api/expressions/collections.md)
             * [Geospatial](api/expressions/geospatial.md)
+        * [Column Selectors](api/selectors.md)
         * [Data Types](api/datatypes.md)
         * [Schemas](api/schemas.md)
         * [Backend Interfaces](api/backends/)
