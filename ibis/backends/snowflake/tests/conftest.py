@@ -58,6 +58,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 url=sa.engine.make_url(snowflake_url).set(database=""),
                 database=database,
                 schema=schema,
+                isolation_level=None,
             )
 
         with con.begin() as c:
