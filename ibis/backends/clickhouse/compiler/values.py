@@ -277,7 +277,7 @@ def _string_find(op, **kw):
 
     arg = translate_val(op.arg, **kw)
     substr = translate_val(op.substr, **kw)
-    return f"position({substr} IN {arg}) - 1"
+    return f"locate({arg}, {substr}) - 1"
 
 
 @translate_val.register(ops.RegexExtract)
@@ -747,7 +747,7 @@ def _scalar_param(op, params: Mapping[ops.Node, Any], **kw):
 def _string_contains(op, **kw):
     haystack = translate_val(op.haystack, **kw)
     needle = translate_val(op.needle, **kw)
-    return f"position({needle} IN {haystack}) > 0"
+    return f"locate({haystack}, {needle}) > 0"
 
 
 def contains(op_string: Literal["IN", "NOT IN"]) -> str:
