@@ -216,8 +216,8 @@ class Backend(BaseSQLBackend):
     def _get_schema_using_query(self, query):
         job_config = bq.QueryJobConfig(dry_run=True, use_query_cache=False)
         job = self.client.query(query, job_config=job_config)
-        names, ibis_types = self._adapt_types(job.schema)
-        return sch.Schema(names, ibis_types)
+        fields = self._adapt_types(job.schema)
+        return sch.Schema(fields)
 
     def _get_table_schema(self, qualified_name):
         dataset, table = qualified_name.rsplit(".", 1)
@@ -225,13 +225,7 @@ class Backend(BaseSQLBackend):
         return self.get_schema(table, database=dataset)
 
     def _adapt_types(self, descr):
-        names = []
-        adapted_types = []
-        for col in descr:
-            names.append(col.name)
-            typename = bigquery_field_to_ibis_dtype(col)
-            adapted_types.append(typename)
-        return names, adapted_types
+        return {col.name: bigquery_field_to_ibis_dtype(col) for col in descr}
 
     def _execute(self, stmt, results=True, query_parameters=None):
         job_config = bq.job.QueryJobConfig()
