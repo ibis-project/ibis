@@ -253,7 +253,7 @@ def test_large_compile():
         pass
 
     names = [f"col_{i}" for i in range(num_columns)]
-    schema = ibis.Schema(names, ["string"] * num_columns)
+    schema = ibis.Schema(dict.fromkeys(names, "string"))
     ibis_client = MockBackend()
     table = ops.SQLQueryResult("select * from t", schema, ibis_client).to_expr()
     for _ in range(num_joins):  # noqa: F402

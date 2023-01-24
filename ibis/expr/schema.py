@@ -56,7 +56,7 @@ class Schema(Concrete):
             return super().__create__(fields=names)
         else:
             warn_deprecated(
-                "Struct(names, types)",
+                "Schema(names, types)",
                 as_of="4.1",
                 removed_in="5.0",
                 instead=(
