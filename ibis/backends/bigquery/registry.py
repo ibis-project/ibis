@@ -484,6 +484,11 @@ def _nullifzero(t, op):
     return f"NULLIF({t.translate(op.arg)}, {casted})"
 
 
+def _zeroifnull(t, op):
+    casted = bigquery_cast('0', op.output_dtype)
+    return f"COALESCE({t.translate(op.arg)}, {casted})"
+
+
 def _array_agg(t, op):
     arg = op.arg
     if (where := op.where) is not None:
@@ -567,6 +572,7 @@ OPERATION_REGISTRY = {
     ops.IfNull: fixed_arity("IFNULL", 2),
     ops.NullIf: fixed_arity("NULLIF", 2),
     ops.NullIfZero: _nullifzero,
+    ops.ZeroIfNull: _zeroifnull,
     ops.NotAny: bigquery_compile_notany,
     ops.NotAll: bigquery_compile_notall,
     # Reductions
