@@ -14,6 +14,7 @@ from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.util import experimental
+from rich.jupyter import JupyterMixin
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -21,6 +22,15 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
     from ibis.expr.typing import TimeContext
+
+
+class _FixedTextJupyterMixin(JupyterMixin):
+    """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+    def _repr_mimebundle_(self, *args, **kwargs):
+        bundle = super()._repr_mimebundle_(*args, **kwargs)
+        bundle["text/plain"] = bundle["text/plain"].rstrip()
+        return bundle
 
 
 # TODO(kszucs): consider to subclass from Annotable with a single _arg field

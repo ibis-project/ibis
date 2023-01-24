@@ -18,7 +18,6 @@ from typing import (
 )
 
 from public import public
-from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
@@ -27,7 +26,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.expr.selectors import Selector
-from ibis.expr.types.core import Expr
+from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
     import ibis.expr.schema as sch
@@ -85,7 +84,7 @@ def _regular_join_method(
 
 
 @public
-class Table(Expr, JupyterMixin):
+class Table(Expr, _FixedTextJupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
