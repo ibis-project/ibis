@@ -403,8 +403,7 @@ class ImpalaTable(ir.Table):
                 break
             partition_fields.append((x, name_to_type[x]))
 
-        pnames, ptypes = zip(*partition_fields)
-        return sch.Schema(pnames, ptypes)
+        return sch.Schema(dict(partition_fields))
 
     def add_partition(self, spec, location=None):
         """Add a new table partition.

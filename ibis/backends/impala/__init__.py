@@ -489,10 +489,11 @@ class Backend(BaseSQLBackend):
 
         # only pull out the first two columns which are names and types
         pairs = [row[:2] for row in self.con.fetchall(query)]
-
         names, types = zip(*pairs)
+
         ibis_types = [udf.parse_type(type.lower()) for type in types]
-        return sch.Schema(names, ibis_types)
+        ibis_fields = dict(zip(names, ibis_types))
+        return sch.Schema(ibis_fields)
 
     @property
     def client_options(self):
@@ -1003,10 +1004,10 @@ class Backend(BaseSQLBackend):
         cur = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
         # resets the state of the cursor and closes operation
         cur.fetchall()
-        names, ibis_types = self._adapt_types(cur.description)
+        ibis_fields = self._adapt_types(cur.description)
         cur.release()
 
-        return sch.Schema(names, ibis_types)
+        return sch.Schema(ibis_fields)
 
     def create_function(self, func, name=None, database=None):
         """Create a function within Impala.
@@ -1334,7 +1335,7 @@ class Backend(BaseSQLBackend):
                 adapted_types.append(dt.Decimal(precision, scale))
             else:
                 adapted_types.append(typename)
-        return names, adapted_types
+        return dict(zip(names, adapted_types))
 
     def write_dataframe(
         self,

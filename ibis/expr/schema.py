@@ -9,8 +9,8 @@ import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import instance_of, tuple_of, validator
-from ibis.util import indent
+from ibis.common.validators import frozendict_of, instance_of, validator
+from ibis.util import deprecated, indent, warn_deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -46,16 +46,33 @@ def datatype(arg, **kwargs):
 class Schema(Concrete):
     """An object for holding table schema information."""
 
-    names = tuple_of(instance_of(str))
-    """A sequence of [`str`][str] indicating the name of each column."""
-    types = tuple_of(datatype)
-    """A sequence of [DataType][ibis.expr.datatypes.DataType] objects
-    representing type of each column."""
+    fields = frozendict_of(instance_of(str), datatype)
+    """A mapping of [`str`][str] to [`DataType`][ibis.expr.datatypes.DataType] objects
+    representing the type of each column."""
 
-    def __init__(self, names, types):
-        if len(names) != len(types):
-            raise IntegrityError('Schema names and types must have the same length')
-        super().__init__(names=names, types=types)
+    @classmethod
+    def __create__(cls, names, types=None):
+        if types is None:
+            return super().__create__(fields=names)
+        else:
+            warn_deprecated(
+                "Struct(names, types)",
+                as_of="4.1",
+                removed_in="5.0",
+                instead=(
+                    "construct a Schema using a mapping of names to types instead: "
+                    "Schema(dict(zip(names, types)))"
+                ),
+            )
+            return schema(names, types)
+
+    def __reduce__(self):
+        return (self.__class__, (self.fields, None))
+
+    def copy(self, fields=None):
+        if fields is None:
+            fields = self.fields
+        return type(self)(fields)
 
     @attribute.default
     def _name_locs(self) -> dict[str, int]:
@@ -74,7 +91,7 @@ class Schema(Concrete):
             indent(
                 ''.join(
                     f'\n{name.ljust(space)}{str(type)}'
-                    for name, type in zip(self.names, self.types)
+                    for name, type in self.fields.items()
                 ),
                 2,
             )
@@ -87,10 +104,18 @@ class Schema(Concrete):
         return iter(self.names)
 
     def __contains__(self, name: str) -> bool:
-        return name in self._name_locs
+        return name in self.fields
 
     def __getitem__(self, name: str) -> dt.DataType:
-        return self.types[self._name_locs[name]]
+        return self.fields[name]
+
+    @property
+    def names(self):
+        return tuple(self.fields.keys())
+
+    @property
+    def types(self):
+        return tuple(self.fields.values())
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
@@ -136,14 +161,10 @@ class Schema(Concrete):
             if name not in self:
                 raise KeyError(name)
 
-        new_names, new_types = [], []
-        for name, type_ in zip(self.names, self.types):
-            if name in names_to_delete:
-                continue
-            new_names.append(name)
-            new_types.append(type_)
+        delete = frozenset(names_to_delete)
+        fields = {k: v for k, v in self.fields.items() if k not in delete}
 
-        return self.__class__(new_names, new_types)
+        return self.__class__(fields)
 
     @classmethod
     def from_tuples(
@@ -171,13 +192,14 @@ class Schema(Concrete):
           b  string
         }
         """
-        if not isinstance(values, (list, tuple)):
-            values = list(values)
-
-        names, types = zip(*values) if values else ([], [])
-        return cls(names, types)
+        return cls(dict(values))
 
     @classmethod
+    @deprecated(
+        as_of="4.1",
+        removed_in="5.0",
+        instead="directly construct a Schema instead",
+    )
     def from_dict(cls, dictionary: Mapping[str, str | dt.DataType]) -> Schema:
         """Construct a `Schema` from a `Mapping`.
 
@@ -200,8 +222,7 @@ class Schema(Concrete):
           b  string
         }
         """
-        names, types = zip(*dictionary.items()) if dictionary else ([], [])
-        return cls(names, types)
+        return cls(dictionary)
 
     def to_pandas(self):
         """Return the equivalent pandas datatypes."""
@@ -226,12 +247,12 @@ class Schema(Concrete):
         """Return whether `self` is a superset of or equal to `other`."""
         return set(self.items()) >= set(other.items())
 
-    def append(self, schema: Schema) -> Schema:
+    def append(self, other: Schema) -> Schema:
         """Append `schema` to `self`.
 
         Parameters
         ----------
-        schema
+        other
             Schema instance to append to `self`.
 
         Returns
@@ -252,7 +273,9 @@ class Schema(Concrete):
           d  int16
         }
         """
-        return self.__class__(self.names + schema.names, self.types + schema.types)
+        if duplicates := self.fields.keys() & other.fields.keys():
+            raise IntegrityError(f'Duplicate column name(s): {duplicates}')
+        return self.__class__({**self.fields, **other.fields})
 
     def items(self) -> Iterator[tuple[str, dt.DataType]]:
         """Return an iterator of pairs of names and types.
@@ -408,7 +431,7 @@ def identity(s):
 
 @schema.register(collections.abc.Mapping)
 def schema_from_mapping(d):
-    return Schema.from_dict(d)
+    return Schema(d)
 
 
 @schema.register(collections.abc.Iterable)
@@ -418,4 +441,18 @@ def schema_from_pairs(lst):
 
 @schema.register(collections.abc.Iterable, collections.abc.Iterable)
 def schema_from_names_types(names, types):
-    return Schema(names, types)
+    # validate lengths of names and types are the same
+    if len(names) != len(types):
+        raise IntegrityError('Schema names and types must have the same length')
+
+    # validate unique field names
+    name_locs = {v: i for i, v in enumerate(names)}
+    if len(name_locs) < len(names):
+        duplicate_names = list(names)
+        for v in name_locs:
+            duplicate_names.remove(v)
+        raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
+
+    # construct the schema
+    fields = dict(zip(names, types))
+    return Schema(fields)
