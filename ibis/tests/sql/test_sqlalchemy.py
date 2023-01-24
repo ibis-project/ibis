@@ -1101,7 +1101,7 @@ def test_tpc_h11(h11):
 
 def test_to_sqla_type_array_of_non_primitive():
     result = to_sqla_type(DefaultDialect(), dt.Array(dt.Struct(dict(a="int"))))
-    [(result_name, result_type)] = result.value_type.pairs
+    [(result_name, result_type)] = result.value_type.fields
     expected_name = "a"
     expected_type = sa.BigInteger()
     assert result_name == expected_name

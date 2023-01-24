@@ -48,7 +48,7 @@ def bigquery_field_to_ibis_dtype(field):
         assert fields, "RECORD fields are empty"
         names = [el.name for el in fields]
         ibis_types = list(map(dt.dtype, fields))
-        ibis_type = dt.Struct(names, ibis_types)
+        ibis_type = dt.Struct(dict(zip(names, ibis_types)))
     else:
         ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
         ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
@@ -119,7 +119,7 @@ def bigquery_param(dtype, value, name):
 
 @bigquery_param.register
 def bq_param_struct(dtype: dt.Struct, value, name):
-    fields = dtype.pairs
+    fields = dtype.fields
     field_params = [bigquery_param(fields[k], v, k) for k, v in value.items()]
     result = bq.StructQueryParameter(name, *field_params)
     return result
