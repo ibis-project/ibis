@@ -147,7 +147,7 @@ def init_database(
     database: str,
     schema: TextIO | None = None,
     recreate: bool = True,
-    isolation_level: str = "AUTOCOMMIT",
+    isolation_level: str | None = "AUTOCOMMIT",
     **kwargs: Any,
 ) -> sa.engine.Engine:
     """Initialise `database` at `url` with `schema`.
@@ -172,15 +172,18 @@ def init_database(
     sa.engine.Engine
         SQLAlchemy engine object
     """
+    if isolation_level is not None:
+        kwargs["isolation_level"] = isolation_level
+
     if recreate:
-        recreate_database(url, database, isolation_level=isolation_level, **kwargs)
+        recreate_database(url, database, **kwargs)
 
     try:
         url.database = database
     except AttributeError:
         url = url.set(database=database)
 
-    engine = sa.create_engine(url, isolation_level=isolation_level, **kwargs)
+    engine = sa.create_engine(url, **kwargs)
 
     if schema:
         with engine.begin() as conn:
