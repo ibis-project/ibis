@@ -49,7 +49,7 @@ def _(typ: dt.Struct) -> Mapping[str, Any]:
     return {
         "field_type": "RECORD",
         "mode": "NULLABLE" if typ.nullable else "REQUIRED",
-        "fields": ibis_schema_to_bq_schema(ibis.schema(typ.pairs)),
+        "fields": ibis_schema_to_bq_schema(ibis.schema(typ.fields)),
     }
 
 

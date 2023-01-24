@@ -42,7 +42,7 @@ def trans_struct(t):
     return "STRUCT<{}>".format(
         ", ".join(
             f"{name} {ibis_type_to_bigquery_type(dt.dtype(type_))}"
-            for name, type_ in zip(t.names, t.types)
+            for name, type_ in t.fields.items()
         )
     )
 

@@ -119,7 +119,7 @@ def bigquery_param(dtype, value, name):
 
 @bigquery_param.register
 def bq_param_struct(dtype: dt.Struct, value, name):
-    fields = dtype.pairs
+    fields = dtype.fields
     field_params = [bigquery_param(fields[k], v, k) for k, v in value.items()]
     result = bq.StructQueryParameter(name, *field_params)
     return result
