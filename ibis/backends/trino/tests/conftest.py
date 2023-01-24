@@ -69,16 +69,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         con = TestConf.connect(data_dir)
 
-        # mirror the existing tables
-        unsupported_memory_tables = {"intervals", "not_supported_intervals"}
-        for table in pgcon.list_tables():
-            if table not in unsupported_memory_tables:
-                source = f"postgresql.public.{table}"
-                dest = f"memory.default.{table}"
-                with con.begin() as c:
-                    c.exec_driver_sql(f"DROP VIEW IF EXISTS {dest}")
-                    c.exec_driver_sql(f"CREATE VIEW {dest} AS SELECT * FROM {source}")
-
         selects = []
         for row in struct_types.abc:
             if pd.isna(row):
@@ -90,13 +80,28 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 datarow = f"CAST(ROW({datarow}) AS ROW(a DOUBLE, b VARCHAR, c BIGINT))"
             selects.append(f"SELECT {datarow} AS abc")
 
-        lines = itertools.chain(
-            [
-                "DROP VIEW IF EXISTS struct",
-                f"CREATE VIEW struct AS {' UNION ALL '.join(selects)}",
-            ],
-            Path(script_dir, "schema", "trino.sql").read_text().split(";"),
+        # mirror the existing tables except for intervals which are not supported
+        # and maps which we do natively in trino, because trino has more extensive
+        # map support
+        unsupported_memory_tables = {"intervals", "not_supported_intervals", "map"}
+        lines = []
+        for table in frozenset(pgcon.list_tables()) - unsupported_memory_tables:
+            dest = f"memory.default.{table}"
+            lines.append(f"DROP VIEW IF EXISTS {dest}")
+            lines.append(
+                f"CREATE VIEW {dest} AS SELECT * FROM postgresql.public.{table}"
+            )
+
+        lines.extend(
+            itertools.chain(
+                [
+                    "DROP VIEW IF EXISTS struct",
+                    f"CREATE VIEW struct AS {' UNION ALL '.join(selects)}",
+                ],
+                Path(script_dir, "schema", "trino.sql").read_text().split(";"),
+            )
         )
+
         with con.begin() as c:
             consume(map(c.exec_driver_sql, filter(None, map(str.strip, lines))))
 
