@@ -644,7 +644,7 @@ def test_logical_negation_column(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -654,7 +654,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.min_version(
     dask="2022.01.1",
     reason="unsupported operation with later versions of pandas",
