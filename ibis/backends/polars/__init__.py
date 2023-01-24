@@ -42,7 +42,7 @@ class Backend(BaseBackend):
         Parameters
         ----------
         tables
-            Mutable mapping of string table names to polars LazyFrames.
+            An optional mapping of string table names to polars LazyFrames.
         """
         if not tables:
             tables = {}
