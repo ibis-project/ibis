@@ -30,14 +30,14 @@ class Backend(BasePandasBackend):
 
     def do_connect(
         self,
-        dictionary: MutableMapping[str, dd.DataFrame],
+        dictionary: MutableMapping[str, dd.DataFrame] | None = None,
     ) -> None:
         """Construct a Dask backend client from a dictionary of data sources.
 
         Parameters
         ----------
         dictionary
-            Mapping from `str` table names to Dask DataFrames.
+            An optional mapping from `str` table names to Dask DataFrames.
 
         Examples
         --------
@@ -51,6 +51,9 @@ class Backend(BasePandasBackend):
         """
         # register dispatchers
         from ibis.backends.dask import udf  # noqa: F401
+
+        if dictionary is None:
+            dictionary = {}
 
         for k, v in dictionary.items():
             if not isinstance(v, (dd.DataFrame, pd.DataFrame)):

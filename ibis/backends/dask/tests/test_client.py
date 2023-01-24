@@ -37,6 +37,11 @@ def table(client):
     return client.table('df')
 
 
+def test_connect_no_args():
+    con = ibis.dask.connect()
+    assert dict(con.tables) == {}
+
+
 def test_client_table(table):
     assert isinstance(table.op(), ibis.expr.operations.DatabaseTable)
     assert isinstance(table.op(), DaskTable)
