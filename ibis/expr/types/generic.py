@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 from public import public
-from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
@@ -11,7 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.grounds import Singleton
-from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -570,7 +569,7 @@ class Scalar(Value):
 
 
 @public
-class Column(Value, JupyterMixin):
+class Column(Value, _FixedTextJupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
