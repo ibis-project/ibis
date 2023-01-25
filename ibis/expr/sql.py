@@ -384,10 +384,23 @@ def to_sql(expr: ir.Expr, dialect: str | None = None) -> SQLString:
 
     compiled = backend.compile(expr)
     try:
-        sql = str(compiled.compile(compile_kwargs={"literal_binds": True}))
-    except (AttributeError, TypeError):
+        import sqlalchemy as sa
+
+        dialect_class = sa.dialects.registry.load(
+            backend.compiler.translator_class._dialect_name
+        )
+        # translate using question-mark-style bound parameter syntax for all
+        # backends, since sqlglot only supports qmark style
+        sql = compiled.compile(
+            dialect=dialect_class(paramstyle="qmark"),
+            compile_kwargs=dict(literal_binds=True),
+        )
+    except (ImportError, AttributeError, TypeError):
+        # ImportError is caught in case the dialect isn't installed. While it's
+        # probably rare that someone is trying to compile an X-backend
+        # expression and doesn't have the driver installed, we don't need to
+        # fail when showing its SQL
         sql = compiled
 
-    assert isinstance(sql, str), f"expected `str`, got `{sql.__class__.__name__}`"
-    (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
+    (pretty,) = sg.transpile(str(sql), read=read, write=write, pretty=True)
     return SQLString(pretty)

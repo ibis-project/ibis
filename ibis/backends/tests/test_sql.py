@@ -14,12 +14,12 @@ pytest.importorskip("sqlglot")
 @mark.never(
     ["dask", "pandas"],
     reason="Dask and Pandas are not SQL backends",
-    raises=(NotImplementedError, AssertionError),
+    raises=(NotImplementedError, ValueError),
 )
 @mark.notimpl(
     ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
-    raises=(exc.OperationNotDefinedError, NotImplementedError, AssertionError),
+    raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
 @mark.notimpl(["mssql"], raises=ValueError, reason="no sqlglot dialect for mssql")
 def test_table(con):
@@ -63,7 +63,7 @@ no_struct_literals = mark.notimpl(
 )
 not_sql = mark.never(
     ["pandas", "dask"],
-    raises=(exc.IbisError, NotImplementedError, AssertionError),
+    raises=(exc.IbisError, NotImplementedError, ValueError),
     reason="Not a SQL backend",
 )
 no_sql_extraction = mark.notimpl(
@@ -87,6 +87,4 @@ no_sql_extraction = mark.notimpl(
 @not_sql
 @no_sql_extraction
 def test_literal(backend, expr):
-    buf = io.StringIO()
-    ibis.show_sql(expr, dialect=backend.name(), file=buf)
-    assert buf.getvalue()
+    assert ibis.to_sql(expr, dialect=backend.name())
