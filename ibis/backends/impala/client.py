@@ -73,9 +73,6 @@ class ImpalaConnection:
         """Close all idle Impyla connections."""
         self.pool.dispose()
 
-    def set_database(self, name):
-        self.database = name
-
     def disable_codegen(self, disabled=True):
         self.options["DISABLE_CODEGEN"] = str(int(disabled))
 
@@ -114,10 +111,6 @@ class ImpalaConnection:
         wrapper = ImpalaCursor(cursor, con, self.database, self.options.copy())
         wrapper.set_options()
         return wrapper
-
-    @util.deprecated(instead="", as_of="4.0", removed_in="5.0")
-    def ping(self):  # pragma: no cover
-        self.pool.connect()._cursor.ping()
 
     def release(self, cur):  # pragma: no cover
         pass

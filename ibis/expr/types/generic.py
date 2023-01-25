@@ -481,10 +481,6 @@ class Value(Expr):
         """Sort an expression descending."""
         return ops.SortKey(self, ascending=False).to_expr()
 
-    @util.deprecated(as_of="4.1", removed_in="5.0", instead="use `.as_table()`")
-    def to_projection(self) -> ir.Table:  # noqa: D102
-        return self.as_table()
-
     def as_table(self) -> ir.Table:
         """Promote the expression to a table.
 

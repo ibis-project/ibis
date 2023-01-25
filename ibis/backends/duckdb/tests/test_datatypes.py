@@ -2,7 +2,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.duckdb.datatypes import parse, parse_type
+from ibis.backends.duckdb.datatypes import parse
 
 EXPECTED_SCHEMA = dict(
     a=dt.int64,
@@ -129,8 +129,3 @@ EXPECTED_SCHEMA = dict(
 def test_parser(column, type):
     ty = parse(type)
     assert ty == EXPECTED_SCHEMA[column]
-
-
-def test_parse_type_warns():
-    with pytest.warns(FutureWarning):
-        parse_type("BIGINT")

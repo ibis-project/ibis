@@ -29,7 +29,6 @@ backend.
     options:
       heading_level: 3
       members:
-        - set_database
         - create_database
         - drop_database
         - list_databases

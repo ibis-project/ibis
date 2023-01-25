@@ -375,24 +375,3 @@ def _rewrite_cast(op):
 @rewrites(ops.StringContains)
 def _rewrite_string_contains(op):
     return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
-
-
-NEW_EXTRACT_URL_OPERATION = {
-    "PROTOCOL": ops.ExtractProtocol,
-    "AUTHORITY": ops.ExtractAuthority,
-    "USERINFO": ops.ExtractUserInfo,
-    "HOST": ops.ExtractHost,
-    "FILE": ops.ExtractFile,
-    "PATH": ops.ExtractPath,
-    "REF": ops.ExtractFragment,
-}
-
-
-@rewrites(ops.ParseURL)
-def _rewrite_string_contains(op):
-    extract = op.extract
-    if extract == 'QUERY':
-        return ops.ExtractQuery(op.arg, op.key)
-    if (new_op := NEW_EXTRACT_URL_OPERATION.get(extract)) is not None:
-        return new_op(op.arg)
-    raise ValueError(f"{extract!r} is not supported")

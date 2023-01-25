@@ -269,7 +269,6 @@ filterwarnings = [
   # ibis
   "ignore:`BaseBackend.database` is deprecated:FutureWarning",
   "ignore:`Backend.database` is deprecated:FutureWarning",
-  "ignore:`Backend.set_database` is deprecated:FutureWarning",
   # ibis on postgres + windows
   "ignore:locale specific date formats:UserWarning",
   # shapely
