@@ -181,7 +181,7 @@ class Join(TableNode):
     @property
     def schema(self):
         # For joins retaining both table schemas, merge them together here
-        return self.left.schema.append(self.right.schema)
+        return self.left.schema.merge(self.right.schema)
 
 
 @public

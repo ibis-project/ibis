@@ -241,13 +241,13 @@ class CreateTableWithSchema(CreateTable):
                 part_fields = {name: self.schema[name] for name in part_schema}
                 part_schema = sch.Schema(part_fields)
 
-            to_delete = []
-            for name in self.partition:
-                if name in self.schema:
-                    to_delete.append(name)
-
-            if len(to_delete):
-                main_schema = main_schema.delete(to_delete)
+            to_delete = {name for name in self.partition if name in self.schema}
+            fields = {
+                name: dtype
+                for name, dtype in main_schema.items()
+                if name not in to_delete
+            }
+            main_schema = sch.Schema(fields)
 
             yield format_schema(main_schema)
             yield f'PARTITIONED BY {format_schema(part_schema)}'

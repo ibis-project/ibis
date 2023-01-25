@@ -74,17 +74,6 @@ class Schema(Concrete):
             fields = self.fields
         return type(self)(fields)
 
-    @attribute.default
-    def _name_locs(self) -> dict[str, int]:
-        # validate unique field names
-        name_locs = {v: i for i, v in enumerate(self.names)}
-        if len(name_locs) < len(self.names):
-            duplicate_names = list(self.names)
-            for v in name_locs:
-                duplicate_names.remove(v)
-            raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
-        return name_locs
-
     def __repr__(self) -> str:
         space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
@@ -109,13 +98,17 @@ class Schema(Concrete):
     def __getitem__(self, name: str) -> dt.DataType:
         return self.fields[name]
 
-    @property
+    @attribute.default
     def names(self):
         return tuple(self.fields.keys())
 
-    @property
+    @attribute.default
     def types(self):
         return tuple(self.fields.values())
+
+    @attribute.default
+    def _name_locs(self) -> dict[str, int]:
+        return {v: i for i, v in enumerate(self.names)}
 
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
@@ -140,6 +133,11 @@ class Schema(Concrete):
             )
         return self.__cached_equals__(other)
 
+    @deprecated(
+        as_of="4.1",
+        removed_in="5.0",
+        instead="construct a new Schema without the undesired names instead",
+    )
     def delete(self, names_to_delete: Iterable[str]) -> Schema:
         """Remove `names_to_delete` names from `self`.
 
@@ -247,8 +245,14 @@ class Schema(Concrete):
         """Return whether `self` is a superset of or equal to `other`."""
         return set(self.items()) >= set(other.items())
 
+    @deprecated(as_of="4.1", removed_in="5.0", instead="use Schema.merge() instead")
     def append(self, other: Schema) -> Schema:
-        """Append `schema` to `self`.
+        return self.merge(other)
+
+    def merge(self, other: Schema) -> Schema:
+        """Merge `other` to `self`.
+
+        Raise an `IntegrityError` if there are duplicate column names.
 
         Parameters
         ----------
@@ -265,7 +269,7 @@ class Schema(Concrete):
         >>> import ibis
         >>> first = ibis.Schema.from_dict({"a": "int", "b": "string"})
         >>> second = ibis.Schema.from_dict({"c": "float", "d": "int16"})
-        >>> first.append(second)
+        >>> first.merge(second)
         ibis.Schema {
           a  int64
           b  string

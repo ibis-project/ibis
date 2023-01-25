@@ -9,7 +9,7 @@ from multipledispatch import Dispatcher
 from public import public
 
 import ibis.expr.types as ir
-from ibis.common.annotations import optional
+from ibis.common.annotations import attribute, optional
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
@@ -734,12 +734,12 @@ class Struct(DataType):
     def pairs(self) -> Mapping[str, DataType]:
         return self.fields
 
-    @property
+    @attribute.default
     def names(self) -> tuple[str, ...]:
         """Return the names of the struct's fields."""
         return tuple(self.fields.keys())
 
-    @property
+    @attribute.default
     def types(self) -> tuple[DataType, ...]:
         """Return the types of the struct's fields."""
         return tuple(self.fields.values())
