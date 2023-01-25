@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import TYPE_CHECKING, Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Iterable, Iterator
 
 from multipledispatch import Dispatcher
 
@@ -10,7 +10,7 @@ from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.validators import frozendict_of, instance_of, validator
-from ibis.util import deprecated, indent, warn_deprecated
+from ibis.util import indent
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -49,30 +49,6 @@ class Schema(Concrete):
     fields = frozendict_of(instance_of(str), datatype)
     """A mapping of [`str`][str] to [`DataType`][ibis.expr.datatypes.DataType] objects
     representing the type of each column."""
-
-    @classmethod
-    def __create__(cls, names, types=None):
-        if types is None:
-            return super().__create__(fields=names)
-        else:
-            warn_deprecated(
-                "Schema(names, types)",
-                as_of="4.1",
-                removed_in="5.0",
-                instead=(
-                    "construct a Schema using a mapping of names to types instead: "
-                    "Schema(dict(zip(names, types)))"
-                ),
-            )
-            return schema(names, types)
-
-    def __reduce__(self):
-        return (self.__class__, (self.fields, None))
-
-    def copy(self, fields=None):
-        if fields is None:
-            fields = self.fields
-        return type(self)(fields)
 
     def __repr__(self) -> str:
         space = 2 + max(map(len, self.names), default=0)
@@ -133,37 +109,6 @@ class Schema(Concrete):
             )
         return self.__cached_equals__(other)
 
-    @deprecated(
-        as_of="4.1",
-        removed_in="5.0",
-        instead="construct a new Schema without the undesired names instead",
-    )
-    def delete(self, names_to_delete: Iterable[str]) -> Schema:
-        """Remove `names_to_delete` names from `self`.
-
-        Parameters
-        ----------
-        names_to_delete
-            Iterable of `str` to remove from the schema.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> sch = ibis.schema({"a": "int", "b": "string"})
-        >>> sch.delete({"a"})
-        ibis.Schema {
-          b  string
-        }
-        """
-        for name in names_to_delete:
-            if name not in self:
-                raise KeyError(name)
-
-        delete = frozenset(names_to_delete)
-        fields = {k: v for k, v in self.fields.items() if k not in delete}
-
-        return self.__class__(fields)
-
     @classmethod
     def from_tuples(
         cls,
@@ -192,36 +137,6 @@ class Schema(Concrete):
         """
         return cls(dict(values))
 
-    @classmethod
-    @deprecated(
-        as_of="4.1",
-        removed_in="5.0",
-        instead="directly construct a Schema instead",
-    )
-    def from_dict(cls, dictionary: Mapping[str, str | dt.DataType]) -> Schema:
-        """Construct a `Schema` from a `Mapping`.
-
-        Parameters
-        ----------
-        dictionary
-            Mapping from which to construct a `Schema` instance.
-
-        Returns
-        -------
-        Schema
-            A new schema
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.Schema.from_dict({"a": "int", "b": "string"})
-        ibis.Schema {
-          a  int64
-          b  string
-        }
-        """
-        return cls(dictionary)
-
     def to_pandas(self):
         """Return the equivalent pandas datatypes."""
         from ibis.backends.pandas.client import ibis_schema_to_pandas
@@ -244,10 +159,6 @@ class Schema(Concrete):
     def __ge__(self, other: Schema) -> bool:
         """Return whether `self` is a superset of or equal to `other`."""
         return set(self.items()) >= set(other.items())
-
-    @deprecated(as_of="4.1", removed_in="5.0", instead="use Schema.merge() instead")
-    def append(self, other: Schema) -> Schema:
-        return self.merge(other)
 
     def merge(self, other: Schema) -> Schema:
         """Merge `other` to `self`.
