@@ -141,6 +141,45 @@ def test_struct_with_string_types():
     )
 
 
+def test_struct_mapping_api():
+    s = dt.Struct(
+        {
+            'a': 'map<double, string>',
+            'b': 'array<map<string, array<int32>>>',
+            'c': 'array<string>',
+            'd': 'int8',
+        }
+    )
+
+    assert s['a'] == dt.Map(dt.double, dt.string)
+    assert s['b'] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
+    assert s['c'] == dt.Array(dt.string)
+    assert s['d'] == dt.int8
+
+    assert 'a' in s
+    assert 'e' not in s
+    assert len(s) == 4
+    assert tuple(s) == s.names
+    assert tuple(s.keys()) == s.names
+    assert tuple(s.values()) == s.types
+    assert tuple(s.items()) == tuple(zip(s.names, s.types))
+
+    s1 = s.copy()
+    s2 = dt.Struct(
+        {
+            'a': 'map<double, string>',
+            'b': 'array<map<string, array<int32>>>',
+            'c': 'array<string>',
+        }
+    )
+    assert s == s1
+    assert s != s2
+
+    # doesn't support item assignment
+    with pytest.raises(TypeError):
+        s['e'] = dt.int8
+
+
 @pytest.mark.parametrize(
     'case',
     [
