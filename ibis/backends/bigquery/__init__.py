@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
 import google.cloud.bigquery as bq
+import pandas as pd
 import pydata_google_auth
 from google.api_core.exceptions import NotFound
 from pydata_google_auth import cache
@@ -24,6 +25,7 @@ from ibis.backends.bigquery.client import (
     BigQueryTable,
     bigquery_field_to_ibis_dtype,
     bigquery_param,
+    ibis_schema_to_bigquery_schema,
     parse_project_and_dataset,
     rename_partitioned_column,
 )
@@ -435,6 +437,31 @@ class Backend(BaseSQLBackend):
     def version(self):
         return bq.__version__
 
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | ir.Table | None = None,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+    ) -> None:
+        if obj is not None:
+            raise NotImplementedError(
+                "Parameter obj is not supported for create_table method in BigQuery backend"
+            )
+        if schema is None:
+            raise ValueError("Schema is required")
+
+        table_id = self._fully_qualified_name(name, database)
+        bigquery_schema = ibis_schema_to_bigquery_schema(schema)
+        table = bq.Table(table_id, schema=bigquery_schema)
+        self.client.create_table(table)
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        table_id = self._fully_qualified_name(name, database)
+        self.client.delete_table(table_id, not_found_ok=not force)
+
 
 def compile(expr, params=None, **kwargs):
     """Compile an expression for BigQuery."""
@@ -514,7 +541,6 @@ def connect(
 
 
 __all__ = [
-    "__version__",
     "Backend",
     "compile",
     "connect",
