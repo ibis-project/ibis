@@ -6,6 +6,7 @@ import functools
 import itertools
 import sys
 import warnings
+from keyword import iskeyword
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -204,7 +205,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 
     def __dir__(self):
-        return sorted(frozenset(dir(type(self)) + self.columns))
+        out = set(dir(type(self)))
+        out.update(c for c in self.columns if c.isidentifier() and not iskeyword(c))
+        return sorted(out)
 
     def _ipython_key_completions_(self) -> list[str]:
         return self.columns
