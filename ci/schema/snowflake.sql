@@ -1,8 +1,3 @@
-DROP DATABASE IF EXISTS ibis_testing;
-CREATE DATABASE IF NOT EXISTS ibis_testing;
-CREATE SCHEMA IF NOT EXISTS ibis_testing.ibis_testing;
-USE SCHEMA ibis_testing.ibis_testing;
-
 CREATE OR REPLACE FILE FORMAT ibis_testing
     type = 'CSV'
     field_delimiter = ','
@@ -11,7 +6,7 @@ CREATE OR REPLACE FILE FORMAT ibis_testing
 
 CREATE OR REPLACE STAGE ibis_testing file_format = ibis_testing;
 
-CREATE OR REPLACE TABLE diamonds (
+CREATE TEMP TABLE diamonds (
     "carat" FLOAT,
     "cut" TEXT,
     "color" TEXT,
@@ -24,7 +19,7 @@ CREATE OR REPLACE TABLE diamonds (
     "z" FLOAT
 );
 
-CREATE OR REPLACE TABLE batting (
+CREATE TEMP TABLE batting (
     "playerID" TEXT,
     "yearID" BIGINT,
     "stint" BIGINT,
@@ -49,7 +44,7 @@ CREATE OR REPLACE TABLE batting (
     "GIDP" BIGINT
 );
 
-CREATE OR REPLACE TABLE awards_players (
+CREATE TEMP TABLE awards_players (
     "playerID" TEXT,
     "awardID" TEXT,
     "yearID" BIGINT,
@@ -58,7 +53,7 @@ CREATE OR REPLACE TABLE awards_players (
     "notes" TEXT
 );
 
-CREATE OR REPLACE TABLE functional_alltypes (
+CREATE TEMP TABLE functional_alltypes (
     "index" BIGINT,
     "Unnamed: 0" BIGINT,
     "id" INTEGER,
@@ -76,7 +71,7 @@ CREATE OR REPLACE TABLE functional_alltypes (
     "month" INTEGER
 );
 
-CREATE OR REPLACE TABLE array_types (
+CREATE TEMP TABLE array_types (
     "x" ARRAY,
     "y" ARRAY,
     "z" ARRAY,
@@ -93,14 +88,14 @@ INSERT INTO array_types ("x", "y", "z", "grouper", "scalar_column", "multi_dim")
     SELECT [2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0, NULL UNION
     SELECT [4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]];
 
-CREATE OR REPLACE TABLE map ("kv" OBJECT);
+CREATE TEMP TABLE map ("kv" OBJECT);
 
 INSERT INTO map ("kv")
     SELECT object_construct('a', 1, 'b', 2, 'c', 3) UNION
     SELECT object_construct('d', 4, 'e', 5, 'c', 6);
 
 
-CREATE OR REPLACE TABLE struct ("abc" OBJECT);
+CREATE TEMP TABLE struct ("abc" OBJECT);
 
 INSERT INTO struct ("abc")
     SELECT {'a': 1.0, 'b': 'banana', 'c': 2} UNION
@@ -111,7 +106,7 @@ INSERT INTO struct ("abc")
     SELECT NULL UNION
     SELECT {'a': 3.0, 'b': 'orange', 'c': NULL};
 
-CREATE OR REPLACE TABLE json_t ("js" VARIANT);
+CREATE TEMP TABLE json_t ("js" VARIANT);
 
 INSERT INTO json_t ("js")
     SELECT parse_json('{"a": [1,2,3,4], "b": 1}') UNION
@@ -121,7 +116,7 @@ INSERT INTO json_t ("js")
     SELECT parse_json('[42,47,55]') UNION
     SELECT parse_json('[]');
 
-CREATE OR REPLACE TABLE win ("g" TEXT, "x" BIGINT, "y" BIGINT);
+CREATE TEMP TABLE win ("g" TEXT, "x" BIGINT, "y" BIGINT);
 INSERT INTO win VALUES
     ('a', 0, 3),
     ('a', 1, 2),
