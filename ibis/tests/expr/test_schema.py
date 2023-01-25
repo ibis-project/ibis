@@ -212,3 +212,27 @@ def test_api_accepts_schema_objects():
 def test_names_types():
     s = ibis.schema(names=["a"], types=["array<float64>"])
     assert s == ibis.schema(dict(a="array<float64>"))
+
+
+def test_schema_mapping_api():
+    s = sch.Schema(
+        {
+            'a': 'map<double, string>',
+            'b': 'array<map<string, array<int32>>>',
+            'c': 'array<string>',
+            'd': 'int8',
+        }
+    )
+
+    assert s['a'] == dt.Map(dt.double, dt.string)
+    assert s['b'] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
+    assert s['c'] == dt.Array(dt.string)
+    assert s['d'] == dt.int8
+
+    assert 'a' in s
+    assert 'e' not in s
+    assert len(s) == 4
+    assert tuple(s) == s.names
+    assert tuple(s.keys()) == s.names
+    assert tuple(s.values()) == s.types
+    assert tuple(s.items()) == tuple(zip(s.names, s.types))

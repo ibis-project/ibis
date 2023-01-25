@@ -671,12 +671,12 @@ class Struct(DataType, Mapping):
     @attribute.default
     def names(self) -> tuple[str, ...]:
         """Return the names of the struct's fields."""
-        return tuple(self.fields.keys())
+        return tuple(self.keys())
 
     @attribute.default
     def types(self) -> tuple[DataType, ...]:
         """Return the types of the struct's fields."""
-        return tuple(self.fields.values())
+        return tuple(self.values())
 
     def __len__(self) -> int:
         return len(self.fields)
@@ -688,9 +688,7 @@ class Struct(DataType, Mapping):
         return self.fields[key]
 
     def __repr__(self) -> str:
-        return '{}({}, nullable={})'.format(
-            self.name, list(self.fields.items()), self.nullable
-        )
+        return f"'{self.name}({list(self.items())}, nullable={self.nullable})"
 
     @property
     def _pretty_piece(self) -> str:
