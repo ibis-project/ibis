@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numbers
 from abc import abstractmethod
+from collections.abc import Iterator, Mapping
 from typing import Any, Iterable, NamedTuple
 
 import numpy as np
@@ -639,7 +640,7 @@ class Category(DataType):
 
 
 @public
-class Struct(DataType):
+class Struct(DataType, Mapping):
     """Structured values."""
 
     fields = frozendict_of(instance_of(str), datatype)
@@ -676,6 +677,12 @@ class Struct(DataType):
     def types(self) -> tuple[DataType, ...]:
         """Return the types of the struct's fields."""
         return tuple(self.fields.values())
+
+    def __len__(self) -> int:
+        return len(self.fields)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.fields)
 
     def __getitem__(self, key: str) -> DataType:
         return self.fields[key]
