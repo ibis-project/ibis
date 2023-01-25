@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import collections
-from typing import TYPE_CHECKING, Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING
 
 from multipledispatch import Dispatcher
 
@@ -43,7 +43,7 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Concrete):
+class Schema(Concrete, Mapping):
     """An object for holding table schema information."""
 
     fields = frozendict_of(instance_of(str), datatype)
@@ -55,32 +55,28 @@ class Schema(Concrete):
         return "ibis.Schema {{{}\n}}".format(
             indent(
                 ''.join(
-                    f'\n{name.ljust(space)}{str(type)}'
-                    for name, type in self.fields.items()
+                    f'\n{name.ljust(space)}{str(type)}' for name, type in self.items()
                 ),
                 2,
             )
         )
 
     def __len__(self) -> int:
-        return len(self.names)
+        return len(self.fields)
 
-    def __iter__(self) -> Iterable[str]:
-        return iter(self.names)
-
-    def __contains__(self, name: str) -> bool:
-        return name in self.fields
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.fields)
 
     def __getitem__(self, name: str) -> dt.DataType:
         return self.fields[name]
 
     @attribute.default
     def names(self):
-        return tuple(self.fields.keys())
+        return tuple(self.keys())
 
     @attribute.default
     def types(self):
-        return tuple(self.fields.values())
+        return tuple(self.values())
 
     @attribute.default
     def _name_locs(self) -> dict[str, int]:
@@ -150,7 +146,7 @@ class Schema(Concrete):
         return ibis_to_pyarrow_schema(self)
 
     def as_struct(self) -> dt.Struct:
-        return dt.Struct(dict(self.items()))
+        return dt.Struct(self)
 
     def __gt__(self, other: Schema) -> bool:
         """Return whether `self` is a strict superset of `other`."""
@@ -188,26 +184,9 @@ class Schema(Concrete):
           d  int16
         }
         """
-        if duplicates := self.fields.keys() & other.fields.keys():
+        if duplicates := self.keys() & other.keys():
             raise IntegrityError(f'Duplicate column name(s): {duplicates}')
-        return self.__class__({**self.fields, **other.fields})
-
-    def items(self) -> Iterator[tuple[str, dt.DataType]]:
-        """Return an iterator of pairs of names and types.
-
-        Returns
-        -------
-        Iterator[tuple[str, dt.DataType]]
-            Iterator of schema components
-
-        Examples
-        --------
-        >>> import ibis
-        >>> sch = ibis.Schema.from_dict({"a": "int", "b": "string"})
-        >>> list(sch.items())
-        [('a', Int64(nullable=True)), ('b', String(nullable=True))]
-        """
-        return zip(self.names, self.types)
+        return self.__class__({**self, **other})
 
     def name_at_position(self, i: int) -> str:
         """Return the name of a schema column at position `i`.
@@ -344,17 +323,17 @@ def identity(s):
     return s
 
 
-@schema.register(collections.abc.Mapping)
+@schema.register(Mapping)
 def schema_from_mapping(d):
     return Schema(d)
 
 
-@schema.register(collections.abc.Iterable)
+@schema.register(Iterable)
 def schema_from_pairs(lst):
     return Schema.from_tuples(lst)
 
 
-@schema.register(collections.abc.Iterable, collections.abc.Iterable)
+@schema.register(Iterable, Iterable)
 def schema_from_names_types(names, types):
     # validate lengths of names and types are the same
     if len(names) != len(types):
