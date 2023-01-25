@@ -41,10 +41,15 @@ def test_struct_getattr():
         expr.bad
 
 
-def test_struct_field_dir():
-    t = ibis.table([('struct_col', 'struct<my_field: string>')])
-    assert 'struct_col' in dir(t)
-    assert 'my_field' in dir(t.struct_col)
+def test_struct_tab_completion():
+    t = ibis.table([('struct_col', 'struct<my_field: string, for: int64>')])
+    # Only valid python identifiers in getattr completions
+    attrs = dir(t.struct_col)
+    assert "my_field" in attrs
+    assert "for" not in attrs
+    # All fields in getitem completions
+    items = t.struct_col._ipython_key_completions_()
+    assert {"my_field", "for"}.issubset(items)
 
 
 def test_struct_pickle():
