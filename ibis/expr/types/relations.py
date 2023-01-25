@@ -230,48 +230,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             return expr
 
-    @util.deprecated(
-        as_of="4.1",
-        removed_in="5.0",
-        instead="use a list comprehension and attribute/getitem syntax",
-    )
-    def get_columns(self, iterable: Iterable[str]) -> list[Column]:
-        """Get multiple columns from the table.
-
-        Parameters
-        ----------
-        iterable
-            An iterable of column names
-
-        Examples
-        --------
-        >>> import ibis
-        >>> table = ibis.table(dict(a='int64', b='string', c='timestamp', d='float'))
-        >>> a, b, c = table.get_columns(['a', 'b', 'c'])
-
-        Returns
-        -------
-        list[ir.Column]
-            List of column expressions
-        """
-        return list(map(self.get_column, iterable))
-
-    @util.deprecated(as_of="4.1", removed_in="5.0", instead="use t.<name> or t[name]")
-    def get_column(self, name: str) -> Column:
-        """Get a reference to a single column from the table.
-
-        Parameters
-        ----------
-        name
-            A column name
-
-        Returns
-        -------
-        Column
-            A column named `name`.
-        """
-        return ops.TableColumn(self, name).to_expr()
-
     @property
     def columns(self):
         """The list of columns in this table."""

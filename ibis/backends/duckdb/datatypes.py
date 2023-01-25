@@ -7,7 +7,6 @@ from duckdb_engine import Dialect as DuckDBDialect
 from sqlalchemy.dialects import postgresql
 
 import ibis.expr.datatypes as dt
-from ibis import util
 from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
@@ -137,13 +136,6 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     non_pg_array_type = primitive | decimal | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
-
-
-@util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}", as_of="4.0", removed_in="5.0"
-)
-def parse_type(*args, **kwargs):
-    return parse(*args, **kwargs)
 
 
 @to_sqla_type.register(DuckDBDialect, dt.UUID)

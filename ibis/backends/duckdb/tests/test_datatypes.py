@@ -78,10 +78,3 @@ from ibis.backends.duckdb.datatypes import parse
 def test_parser(typ, expected):
     ty = parse(typ)
     assert ty == expected
-
-
-def test_parse_type_warns():
-    from ibis.backends.duckdb.datatypes import parse_type
-
-    with pytest.warns(FutureWarning):
-        parse_type("BIGINT")

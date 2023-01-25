@@ -313,7 +313,6 @@ def tmp_db(env, con, test_data_db):
     try:
         yield tmp_db
     finally:
-        con.set_database(test_data_db)
         with contextlib.suppress(impala.error.HiveServer2Error):
             # The database can be dropped by another process during tear down
             # in the middle of dropping this one if tests are running in
@@ -353,7 +352,6 @@ def temp_database(con, test_data_db):
     try:
         yield name
     finally:
-        con.set_database(test_data_db)
         con.drop_database(name, force=True)
 
 
