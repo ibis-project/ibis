@@ -333,6 +333,11 @@ def schema_from_pairs(lst):
     return Schema.from_tuples(lst)
 
 
+@schema.register(type)
+def schema_from_class(cls):
+    return Schema(dt.dtype(cls))
+
+
 @schema.register(Iterable, Iterable)
 def schema_from_names_types(names, types):
     # validate lengths of names and types are the same

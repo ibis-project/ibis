@@ -168,7 +168,7 @@ def can_cast_struct(source, target, **kwargs):
 
 @castable.register(dt.Array, dt.Array)
 @castable.register(dt.Set, dt.Set)
-def can_cast_variadic(
+def can_cast_array_or_set(
     source: dt.Array | dt.Set, target: dt.Array | dt.Set, **kwargs
 ) -> bool:
     return castable(source.value_type, target.value_type)
