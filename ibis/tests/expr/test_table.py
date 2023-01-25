@@ -87,12 +87,20 @@ def test_getitem_column_select(table):
         assert isinstance(col, Column)
 
 
+def test_table_tab_completion():
+    table = ibis.table({"a": "int", "b": "int", "for": "int", "with spaces": "int"})
+    # Only valid python identifiers in getattr tab completion
+    attrs = set(dir(table))
+    assert {"a", "b"}.issubset(attrs)
+    assert {"for", "with spaces"}.isdisjoint(attrs)
+    # All columns in getitem tab completion
+    items = set(table._ipython_key_completions_())
+    assert items.issuperset(table.columns)
+
+
 def test_getitem_attribute(table):
     result = table.a
     assert_equal(result, table['a'])
-
-    assert 'a' in dir(table)
-    assert 'a' in table._ipython_key_completions_()
 
     # Project and add a name that conflicts with a Table built-in
     # attribute
