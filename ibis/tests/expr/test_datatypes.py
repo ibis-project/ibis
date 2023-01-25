@@ -1,6 +1,13 @@
+from __future__ import annotations
+
 import datetime
+import decimal
 import enum
+import sys
+import uuid
 from collections import OrderedDict
+from dataclasses import dataclass
+from typing import Dict, List, NamedTuple, Set, Tuple
 
 import pandas as pd
 import parsy
@@ -50,6 +57,291 @@ def test_validate_type():
 )
 def test_dtype(spec, expected):
     assert dt.dtype(spec) == expected
+
+
+@pytest.mark.parametrize(
+    ('klass', 'expected'),
+    [
+        (dt.Int16, dt.int16),
+        (dt.Int32, dt.int32),
+        (dt.Int64, dt.int64),
+        (dt.UInt8, dt.uint8),
+        (dt.UInt16, dt.uint16),
+        (dt.UInt32, dt.uint32),
+        (dt.UInt64, dt.uint64),
+        (dt.Float32, dt.float32),
+        (dt.Float64, dt.float64),
+        (dt.String, dt.string),
+        (dt.Binary, dt.binary),
+        (dt.Boolean, dt.boolean),
+        (dt.Date, dt.date),
+        (dt.Time, dt.time),
+        (dt.Timestamp, dt.timestamp),
+        (dt.Interval, dt.interval),
+        (dt.Decimal, dt.decimal),
+    ],
+)
+def test_dtype_from_classes(klass, expected):
+    assert dt.dtype(klass) == expected
+
+
+class FooStruct:
+    a: dt.int16
+    b: dt.int32
+    c: dt.int64
+    d: dt.uint8
+    e: dt.uint16
+    f: dt.uint32
+    g: dt.uint64
+    h: dt.float32
+    i: dt.float64
+    j: dt.string
+    k: dt.binary
+    l: dt.boolean  # noqa: E741
+    m: dt.date
+    n: dt.time
+    o: dt.timestamp
+    oa: dt.Timestamp('UTC')  # noqa: F821
+    ob: dt.Timestamp('UTC', 6)  # noqa: F821
+    p: dt.interval
+    pa: dt.Interval('s')
+    pb: dt.Interval('s', dt.int16)
+    q: dt.decimal
+    qa: dt.Decimal(12, 2)
+    r: dt.Array(dt.int16)
+    s: dt.Map(dt.string, dt.int16)
+    t: dt.Set(dt.int16)
+
+
+class BarStruct:
+    a: dt.Int16
+    b: dt.Int32
+    c: dt.Int64
+    d: dt.UInt8
+    e: dt.UInt16
+    f: dt.UInt32
+    g: dt.UInt64
+    h: dt.Float32
+    i: dt.Float64
+    j: dt.String
+    k: dt.Binary
+    l: dt.Boolean  # noqa: E741
+    m: dt.Date
+    n: dt.Time
+    o: dt.Timestamp
+    oa: dt.Timestamp['UTC']  # noqa: F821
+    ob: dt.Timestamp['UTC', 6]  # noqa: F821
+    p: dt.Interval
+    pa: dt.Interval['s']
+    pb: dt.Interval['s', dt.Int16]
+    q: dt.Decimal
+    qa: dt.Decimal[12, 2]
+    r: dt.Array[dt.Int16]
+    s: dt.Map[dt.String, dt.Int16]
+    t: dt.Set[dt.Int16]
+
+
+baz_struct = dt.Struct(
+    {
+        'a': dt.int16,
+        'b': dt.int32,
+        'c': dt.int64,
+        'd': dt.uint8,
+        'e': dt.uint16,
+        'f': dt.uint32,
+        'g': dt.uint64,
+        'h': dt.float32,
+        'i': dt.float64,
+        'j': dt.string,
+        'k': dt.binary,
+        'l': dt.boolean,
+        'm': dt.date,
+        'n': dt.time,
+        'o': dt.timestamp,
+        'oa': dt.Timestamp('UTC'),
+        'ob': dt.Timestamp('UTC', 6),
+        'p': dt.interval,
+        'pa': dt.Interval('s'),
+        'pb': dt.Interval('s', dt.int16),
+        'q': dt.decimal,
+        'qa': dt.Decimal(12, 2),
+        'r': dt.Array(dt.int16),
+        's': dt.Map(dt.string, dt.int16),
+        't': dt.Set(dt.int16),
+    }
+)
+
+
+class MyInt(int):
+    pass
+
+
+class MyFloat(float):
+    pass
+
+
+class MyStr(str):
+    pass
+
+
+class MyBytes(bytes):
+    pass
+
+
+class MyList(list):
+    pass
+
+
+class MyTuple(list):
+    pass
+
+
+class MySet(set):
+    pass
+
+
+class MyDict(dict):
+    pass
+
+
+class MyStruct:
+    a: str
+    b: int
+    c: float
+
+
+class PyStruct:
+    a: int
+    b: float
+    c: str
+    ca: MyStr
+    d: bytes
+    da: MyBytes
+    e: bool
+    f: datetime.date
+    g: datetime.time
+    h: datetime.datetime
+    i: datetime.timedelta
+    j: decimal.Decimal
+    k: List[int]  # noqa: UP006
+    l: Dict[str, int]  # noqa: UP006, E741
+    m: Set[int]  # noqa: UP006
+    n: Tuple[str]  # noqa: UP006
+    o: uuid.UUID
+    p: type(None)
+    q: MyStruct
+
+
+class PyStruct2:
+    ka: list[int]
+    kb: MyList[int]
+    la: dict[str, int]
+    lb: MyDict[str, int]
+    ma: set[int]
+    mb: MySet[int]
+    na: tuple[str]
+    nb: MyTuple[str]
+
+
+py_struct = dt.Struct(
+    {
+        'a': dt.int64,
+        'b': dt.float64,
+        'c': dt.string,
+        'ca': dt.string,
+        'd': dt.binary,
+        'da': dt.binary,
+        'e': dt.boolean,
+        'f': dt.date,
+        'g': dt.time,
+        'h': dt.timestamp,
+        'i': dt.interval,
+        'j': dt.decimal,
+        'k': dt.Array(dt.int64),
+        'l': dt.Map(dt.string, dt.int64),
+        'm': dt.Set(dt.int64),
+        'n': dt.Array(dt.string),
+        'o': dt.UUID,
+        'p': dt.null,
+        'q': dt.Struct(
+            {
+                'a': dt.string,
+                'b': dt.int64,
+                'c': dt.float64,
+            }
+        ),
+    }
+)
+py_struct_2 = dt.Struct(
+    {
+        'ka': dt.Array(dt.int64),
+        'kb': dt.Array(dt.int64),
+        'la': dt.Map(dt.string, dt.int64),
+        'lb': dt.Map(dt.string, dt.int64),
+        'ma': dt.Set(dt.int64),
+        'mb': dt.Set(dt.int64),
+        'na': dt.Array(dt.string),
+        'nb': dt.Array(dt.string),
+    }
+)
+
+
+class FooNamedTuple(NamedTuple):
+    a: str
+    b: int
+    c: float
+
+
+@dataclass
+class FooDataClass:
+    a: str
+    b: int
+    c: float = 0.1
+
+
+@pytest.mark.parametrize(
+    ('hint', 'expected'),
+    [
+        (dt.Interval, dt.Interval()),
+        (dt.Array[dt.Null], dt.Array(dt.Null())),
+        (dt.Set[dt.Null], dt.Set(dt.Null())),
+        (dt.Map[dt.Null, dt.Null], dt.Map(dt.Null(), dt.Null())),
+        (dt.Timestamp['UTC'], dt.Timestamp(timezone='UTC')),
+        (dt.Timestamp['UTC', 6], dt.Timestamp(timezone='UTC', scale=6)),
+        (dt.Interval['s'], dt.Interval('s')),
+        (dt.Interval['s', dt.Int16], dt.Interval('s', dt.Int16())),
+        (dt.Decimal[12, 2], dt.Decimal(12, 2)),
+        (
+            dt.Struct['a' : dt.Int16, 'b' : dt.Int32],
+            dt.Struct({'a': dt.Int16(), 'b': dt.Int32()}),
+        ),
+        (FooStruct, baz_struct),
+        (BarStruct, baz_struct),
+        (PyStruct, py_struct),
+        (FooNamedTuple, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
+        (FooDataClass, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
+    ],
+)
+def test_dtype_from_typehints(hint, expected):
+    assert dt.dtype(hint) == expected
+
+
+@pytest.mark.parametrize(('hint', 'expected'), [(PyStruct2, py_struct_2)])
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
+def test_dtype_from_newer_typehints(hint, expected):
+    assert dt.dtype(hint) == expected
+
+
+def test_dtype_from_additional_struct_typehints():
+    class A:
+        nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})  # noqa: F821
+
+    class B:
+        nested: dt.Struct['a' : dt.Int16, 'b' : dt.Int32]  # noqa: F821
+
+    expected = dt.Struct({'nested': dt.Struct({'a': dt.Int16(), 'b': dt.Int32()})})
+    assert dt.dtype(A) == expected
+    assert dt.dtype(B) == expected
 
 
 def test_array_with_string_value_type():
@@ -594,6 +886,7 @@ def get_leaf_classes(op):
         dt.Temporal,
         dt.UnsignedInteger,
         dt.Variadic,
+        dt.Parametric,
     },
 )
 def test_is_methods(dtype_class):

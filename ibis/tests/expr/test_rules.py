@@ -27,6 +27,9 @@ similar_table = ibis.table(
         (dt.int32, dt.int32),
         ('int64', dt.int64),
         ('array<string>', dt.Array(dt.string)),
+        (int, dt.int64),
+        (float, dt.float64),
+        ([float], dt.Array(dt.float64)),
     ],
 )
 def test_valid_datatype(value, expected):
@@ -38,8 +41,6 @@ def test_valid_datatype(value, expected):
     [
         ('exception', parsy.ParseError),
         ('array<cat>', parsy.ParseError),
-        (int, IbisTypeError),
-        ([float], IbisTypeError),
     ],
 )
 def test_invalid_datatype(value, expected):
