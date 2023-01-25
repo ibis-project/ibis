@@ -712,6 +712,14 @@ _invalid_operations = {
     ops.FindInSet,
     ops.DateDiff,
     ops.TimestampDiff,
+    ops.ExtractAuthority,
+    ops.ExtractFile,
+    ops.ExtractFragment,
+    ops.ExtractHost,
+    ops.ExtractPath,
+    ops.ExtractProtocol,
+    ops.ExtractQuery,
+    ops.ExtractUserInfo,
 }
 
 OPERATION_REGISTRY = {
