@@ -3,7 +3,6 @@ from __future__ import annotations
 import parsy as p
 import toolz
 
-from ibis import util
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -152,10 +151,3 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     non_pg_array_type = primitive | decimal | list_array | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
-
-
-@util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}", as_of="4.0", removed_in="5.0"
-)
-def parse_type(*args, **kwargs):
-    return parse(*args, **kwargs)

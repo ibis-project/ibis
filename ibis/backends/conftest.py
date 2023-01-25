@@ -673,7 +673,7 @@ def current_data_db(ddl_con) -> str:
 
 
 @pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend, current_data_db: str) -> str:
+def alternate_current_database(ddl_con, ddl_backend) -> str:
     """Create a temporary database and yield its name. Drops the created
     database upon completion.
 
@@ -693,7 +693,6 @@ def alternate_current_database(ddl_con, ddl_backend, current_data_db: str) -> st
     try:
         yield name
     finally:
-        ddl_con.set_database(current_data_db)
         ddl_con.drop_database(name, force=True)
 
 

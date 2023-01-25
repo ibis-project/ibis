@@ -635,51 +635,6 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
-    @util.deprecated(
-        as_of='4.0',
-        removed_in='5.0',
-        instead=(
-            'use .protocol(), .authroity(), .userinfo(), .host(), .file(), .path(), .query(), or .fragment().'
-        ),
-    )
-    def parse_url(
-        self,
-        extract: Literal[
-            "PROTOCOL",
-            "AUTHORITY",
-            "USERINFO",
-            "HOST",
-            "FILE",
-            "PATH",
-            "QUERY",
-            "REF",
-        ],
-        key: str | None = None,
-    ) -> StringValue:
-        """Parse a URL and extract its components.
-
-        `key` can be used to extract query values when `extract == 'QUERY'`
-
-        Parameters
-        ----------
-        extract
-            Component of URL to extract
-        key
-            Query component to extract
-
-        Examples
-        --------
-        >>> import ibis
-        >>> url = ibis.literal("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10")
-        >>> result = url.parse_url('QUERY', 'v')  # kEuEcWfewf
-
-        Returns
-        -------
-        StringValue
-            Extracted string value
-        """
-        return ops.ParseURL(self, extract, key).to_expr()
-
     def protocol(self):
         """Parse a URL and extract protocol.
 

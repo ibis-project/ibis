@@ -13,7 +13,6 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -157,12 +156,6 @@ class Backend(BaseSQLBackend):
     @property
     def version(self):
         return pyspark.__version__
-
-    @util.deprecated(
-        as_of="2.0", removed_in="5.0", instead="use a new connection to the database"
-    )
-    def set_database(self, name):
-        self._catalog.setCurrentDatabase(name)
 
     @property
     def current_database(self):

@@ -380,15 +380,6 @@ class Backend(BaseSQLBackend):
         tuples = cur.fetchall()
         return list(map(operator.itemgetter(0), tuples))
 
-    @util.deprecated(
-        as_of="2.0", removed_in="5.0", instead="use a new connection to the database"
-    )
-    def set_database(self, name):
-        # XXX The parent `Client` has a generic method that calls this same
-        # method in the backend. But for whatever reason calling this code from
-        # that method doesn't seem to work. Maybe `con` is a copy?
-        self.con.set_database(name)
-
     @property
     def current_database(self):
         # XXX The parent `Client` has a generic method that calls this same
