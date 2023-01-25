@@ -190,6 +190,7 @@ snowflake-connector-python[pandas]==2.9.0 ; python_version >= "3.8" and python_v
 snowflake-sqlalchemy[pandas]==1.4.4 ; python_version >= "3.8" and python_version < "4.0"
 sortedcontainers==2.4.0 ; python_version >= "3.8" and python_version < "4.0"
 soupsieve==2.3.2.post1 ; python_version >= "3.8" and python_version < "4"
+sqlalchemy-views==0.3.1 ; python_version >= "3.8" and python_version < "4.0"
 sqlalchemy==1.4.46 ; python_version >= "3.8" and python_version < "4.0"
 sqlglot==10.5.6 ; python_version >= "3.8" and python_version < "4.0"
 stack-data==0.6.2 ; python_version >= "3.8" and python_version < "4.0"

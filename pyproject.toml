@@ -159,6 +159,7 @@ all = [
   "snowflake-connector-python",
   "snowflake-sqlalchemy",
   "sqlalchemy",
+  "sqlalchemy-views",
   "trino"
 ]
 bigquery = [
