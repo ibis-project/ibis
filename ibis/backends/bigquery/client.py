@@ -72,6 +72,23 @@ def bigquery_schema(table):
     return sch.schema(fields)
 
 
+def ibis_schema_to_bigquery_schema(schema: sch.Schema):
+    return [
+        (
+            bq.SchemaField(
+                name,
+                ibis_type_to_bigquery_type(type_),
+                mode='NULLABLE' if type_.nullable else 'REQUIRED',
+            )
+            if not type_.is_array()
+            else bq.SchemaField(
+                name, ibis_type_to_bigquery_type(type_.value_type), mode='REPEATED'
+            )
+        )
+        for name, type_ in schema.items()
+    ]
+
+
 class BigQueryCursor:
     """BigQuery cursor.
 

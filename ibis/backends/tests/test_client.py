@@ -103,14 +103,26 @@ def test_sql(backend, con):
     assert len(result) == 10
 
 
-@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
+backend_type_mapping = {
+    "bigquery": {
+        # backend only implements int64
+        dt.int32: dt.int64
+    }
+}
+
+
+@mark.notimpl(["clickhouse", "datafusion", "polars"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
-    t = con.table(temp_table)
+    new_table = con.table(temp_table)
+    backend_mapping = backend_type_mapping.get(con.name, dict())
 
-    for k, i_type in t.schema().items():
-        assert new_schema[k] == i_type
+    for column_name, column_type in new_table.schema().items():
+        assert (
+            backend_mapping.get(new_schema[column_name], new_schema[column_name])
+            == column_type
+        )
 
 
 @mark.notimpl(
