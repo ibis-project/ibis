@@ -20,7 +20,6 @@ from ibis.common.validators import (
     map_to,
     validator,
 )
-from ibis.util import deprecated, warn_deprecated
 
 dtype = Dispatcher('dtype')
 
