@@ -269,29 +269,20 @@ def _array_repeat(t, op):
     arg = t.translate(op.arg)
     times = t.translate(op.times)
 
+    array_length = sa.func.cardinality(arg)
     array = sa.sql.elements.Grouping(arg) if isinstance(op.arg, ops.Literal) else arg
 
-    # We still need to prefix the table name to the column name in the final
-    # query, so make sure the column knows its origin
-    array.table = arg.table
-
-    array_length = sa.func.cardinality(array)
-
     # sequence from 1 to the total number of elements desired in steps of 1.
-    # the call to greatest isn't necessary, but it provides clearer intent
-    # rather than depending on the implicit postgres generate_series behavior
-    start = step = 1
-    stop = sa.func.greatest(times, 0) * array_length
-    series = sa.func.generate_series(start, stop, step).alias()
-    series_column = sa.column(series.name, type_=sa.INTEGER)
+    series = sa.func.generate_series(1, times * array_length).table_valued()
 
     # if our current index modulo the array's length is a multiple of the
     # array's length, then the index is the array's length
-    index_expression = series_column % array_length
-    index = sa.func.coalesce(sa.func.nullif(index_expression, 0), array_length)
+    index = sa.func.coalesce(
+        sa.func.nullif(series.column % array_length, 0), array_length
+    )
 
     # tie it all together in a scalar subquery and collapse that into an ARRAY
-    return sa.func.array(sa.select(array[index]).select_from(series).scalar_subquery())
+    return sa.func.array(sa.select(array[index]).scalar_subquery())
 
 
 def _table_column(t, op):
@@ -397,12 +388,9 @@ def _literal(t, op):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
     elif dtype.is_array():
-        return sa.literal_column(
-            str(pg.array(value).compile(compile_kwargs=dict(literal_binds=True))),
-            type_=t.get_sqla_type(dtype),
-        )
+        return pg.array(value)
     elif dtype.is_map():
-        return pg.hstore(pg.array(list(value.keys())), pg.array(list(value.values())))
+        return pg.hstore(list(value.keys()), list(value.values()))
     else:
         return sa.literal(value)
 
