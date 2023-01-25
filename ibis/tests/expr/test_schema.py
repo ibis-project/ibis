@@ -217,6 +217,7 @@ def test_names_types():
 
 def test_schema_delete():
     s1 = ibis.schema({"a": "int64", "b": "string", "c": "float64", "d": "int64"})
-    s2 = s1.delete(["b", "d"])
+    with pytest.warns(FutureWarning):
+        s2 = s1.delete(["b", "d"])
 
     assert s2 == ibis.schema({"a": "int64", "c": "float64"})

@@ -497,8 +497,12 @@ def impala_create_test_database(con, env):
 
 
 PARQUET_SCHEMAS = {
-    'functional_alltypes': TEST_TABLES["functional_alltypes"].delete(
-        ["index", "Unnamed: 0"]
+    "functional_alltypes": ibis.schema(
+        {
+            name: dtype
+            for name, dtype in TEST_TABLES["functional_alltypes"].items()
+            if name not in {"index", "Unnamed: 0"}
+        }
     ),
     "tpch_region": ibis.schema(
         [
