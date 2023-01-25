@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import itertools
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from public import public
@@ -60,7 +61,14 @@ def struct(
 @public
 class StructValue(Value):
     def __dir__(self):
-        return sorted(frozenset(itertools.chain(dir(type(self)), self.type().names)))
+        out = set(dir(type(self)))
+        out.update(
+            c for c in self.type().names if c.isidentifier() and not iskeyword(c)
+        )
+        return sorted(out)
+
+    def _ipython_key_completions_(self) -> list[str]:
+        return sorted(self.type().names)
 
     def __getitem__(self, name: str) -> ir.Value:
         """Extract the `name` field from this struct.
