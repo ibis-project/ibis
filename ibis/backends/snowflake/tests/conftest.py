@@ -11,8 +11,9 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, init_database
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.util import consume
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
@@ -53,15 +54,21 @@ class TestConf(BackendTest, RoundAwayFromZero):
         if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
             pytest.skip("SNOWFLAKE_URL environment variable is not defined")
 
-        with script_dir.joinpath('schema', 'snowflake.sql').open() as schema:
-            con = init_database(
-                url=sa.engine.make_url(snowflake_url).set(database=""),
-                database=database,
-                schema=schema,
-                isolation_level=None,
-            )
+        url = sa.engine.make_url(snowflake_url).set(database="")
+        con = sa.create_engine(url)
+
+        dbschema = f"ibis_testing.{url.username}"
+
+        stmts = [
+            "CREATE DATABASE IF NOT EXISTS ibis_testing",
+            f"CREATE SCHEMA IF NOT EXISTS {dbschema}",
+            f"USE SCHEMA {dbschema}",
+            *script_dir.joinpath("schema", "snowflake.sql").read_text().split(";"),
+        ]
 
         with con.begin() as c:
+            consume(map(c.exec_driver_sql, filter(None, map(str.strip, stmts))))
+
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:
