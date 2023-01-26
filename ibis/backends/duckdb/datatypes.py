@@ -60,14 +60,15 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("real", "float4", "float").result(float32)
         | spaceless_string("smallint", "int2", "short").result(int16)
         | spaceless_string(
-            "timestamp with time zone",
-            "timestamp_tz",
-            "timestamp_sec",
-            "timestamp_ms",
-            "timestamp_ns",
-            "timestamp",
-            "datetime",
+            "timestamp with time zone", "timestamp_tz", "datetime"
         ).result(Timestamp(timezone="UTC"))
+        | spaceless_string("timestamp_sec", "timestamp_s").result(
+            Timestamp(timezone="UTC", scale=0)
+        )
+        | spaceless_string("timestamp_ms").result(Timestamp(timezone="UTC", scale=3))
+        | spaceless_string("timestamp_us").result(Timestamp(timezone="UTC", scale=6))
+        | spaceless_string("timestamp_ns").result(Timestamp(timezone="UTC", scale=9))
+        | spaceless_string("timestamp").result(Timestamp(timezone="UTC"))
         | spaceless_string("date").result(date)
         | spaceless_string("time").result(time)
         | spaceless_string("tinyint", "int1").result(int8)
@@ -77,13 +78,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("uinteger").result(uint32)
         | spaceless_string("utinyint").result(uint8)
         | spaceless_string("uuid").result(uuid)
-        | spaceless_string(
-            "varchar",
-            "char",
-            "bpchar",
-            "text",
-            "string",
-        ).result(string)
+        | spaceless_string("varchar", "char", "bpchar", "text", "string").result(string)
         | spaceless_string("json").result(json)
     )
 
