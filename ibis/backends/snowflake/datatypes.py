@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import parsy as p
 import sqlalchemy as sa
 from snowflake.sqlalchemy import (
     ARRAY,
@@ -20,122 +19,28 @@ from ibis.backends.base.sql.alchemy import to_sqla_type
 if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
 
-from ibis.common.parsing import (
-    COMMA,
-    LPAREN,
-    NUMBER,
-    PRECISION,
-    RPAREN,
-    SCALE,
-    spaceless_string,
-)
-from ibis.expr.datatypes import (
-    Array,
-    Decimal,
-    Map,
-    Timestamp,
-    binary,
-    boolean,
-    date,
-    float64,
-    int64,
-    json,
-    string,
-    time,
-)
+_SNOWFLAKE_TYPES = {
+    "FIXED": dt.int64,
+    "REAL": dt.float64,
+    "TEXT": dt.string,
+    "DATE": dt.date,
+    "TIMESTAMP": dt.timestamp,
+    "VARIANT": dt.json,
+    "TIMESTAMP_LTZ": dt.timestamp,
+    "TIMESTAMP_TZ": dt.Timestamp("UTC"),
+    "TIMESTAMP_NTZ": dt.timestamp,
+    "OBJECT": dt.Map(dt.string, dt.json),
+    "ARRAY": dt.Array(dt.json),
+    "BINARY": dt.binary,
+    "TIME": dt.time,
+    "BOOLEAN": dt.boolean,
+}
 
 
-def parse(text: str, default_decimal_parameters=(38, 0)) -> DataType:
+def parse(text: str) -> DataType:
     """Parse a Snowflake type into an ibis data type."""
 
-    @p.generate
-    def varchar():
-        yield spaceless_string(
-            "varchar",
-            "char varying",
-            "character",
-            "char",
-            "nchar varying",
-            "nchar",
-            "string",
-            "text",
-            "nvarchar2",
-            "nvarchar",
-        )
-        yield optional_parend_number
-        return string
-
-    @p.generate
-    def optional_parend_number():
-        yield LPAREN.then(NUMBER).then(RPAREN).optional()
-
-    @p.generate
-    def decimal():
-        yield spaceless_string("number", "decimal", "numeric")
-        prec_scale = (
-            yield LPAREN.then(
-                p.seq(PRECISION.skip(COMMA), SCALE).combine(
-                    lambda prec, scale: (prec, scale)
-                )
-            )
-            .skip(RPAREN)
-            .optional()
-        ) or default_decimal_parameters
-        prec, scale = prec_scale
-        if scale == 0:
-            return int64
-        return Decimal(prec, scale)
-
-    @p.generate
-    def timestamp_ntz():
-        yield spaceless_string("timestamp_ntz")
-        yield optional_parend_number
-        return Timestamp()
-
-    @p.generate
-    def timestamp_ltz_tz():
-        yield spaceless_string("timestamp_ltz", "timestamp_tz")
-        yield optional_parend_number
-        return Timestamp(timezone="UTC")
-
-    @p.generate
-    def timestamp():
-        yield spaceless_string("timestamp")
-        yield optional_parend_number
-        return Timestamp()
-
-    ty = (
-        spaceless_string("boolean").result(boolean)
-        | spaceless_string("binary", "varbinary").result(binary)
-        | spaceless_string(
-            "double precision",
-            "double",
-            "float8",
-            "float4",
-            "float",
-            "real",
-        ).result(float64)
-        | spaceless_string(
-            "integer",
-            "int",
-            "bigint",
-            "smallint",
-            "tinyint",
-            "byteint",
-        ).result(int64)
-        | spaceless_string("datetime").result(Timestamp())
-        | spaceless_string("date").result(date)
-        | timestamp_ntz
-        | timestamp_ltz_tz
-        | timestamp
-        | spaceless_string("time").result(time)
-        | spaceless_string("object").result(Map(string, json))
-        | spaceless_string("array").result(Array(json))
-        | spaceless_string("variant").result(json)
-        | varchar
-        | decimal
-    )
-    return ty.parse(text)
+    return _SNOWFLAKE_TYPES[text]
 
 
 @dt.dtype.register(SnowflakeDialect, (TIMESTAMP_LTZ, TIMESTAMP_TZ))
