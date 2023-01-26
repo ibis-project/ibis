@@ -370,7 +370,7 @@ def test_filter_fusion_distinct_table_objects(con):
     assert_equal(expr, expr4)
 
 
-def test_column_relabel(table):
+def test_column_relabel():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
     sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
 
@@ -385,6 +385,23 @@ def test_column_relabel(table):
     # Mapping with unknown columns errors
     with pytest.raises(KeyError, match="is not an existing column"):
         table.relabel({"missing": "oops"})
+
+
+def test_relabel_snake_case():
+    cases = [
+        ("cola", "cola"),
+        ("ColB", "col_b"),
+        ("colC", "col_c"),
+        ("col-d", "col_d"),
+        ("col_e", "col_e"),
+        (" Column F ", "column_f"),
+        ("Column G-with-hyphens", "column_g_with_hyphens"),
+        ("Col H notCamelCase", "col_h_notcamelcase"),
+    ]
+    t = ibis.table({c: "int" for c, _ in cases})
+    res = t.relabel("snake_case")
+    sol = t.relabel(dict(cases))
+    assert_equal(res, sol)
 
 
 def test_limit(table):

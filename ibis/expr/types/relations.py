@@ -4,6 +4,7 @@ import collections
 import contextlib
 import functools
 import itertools
+import re
 import sys
 import warnings
 from keyword import iskeyword
@@ -744,7 +745,10 @@ class Table(Expr, _FixedTextJupyterMixin):
     projection = select
 
     def relabel(
-        self, substitutions: Mapping[str, str] | Callable[[str], str | None]
+        self,
+        substitutions: Mapping[str, str]
+        | Callable[[str], str | None]
+        | Literal["snake_case"],
     ) -> Table:
         """Rename columns in the table.
 
@@ -753,7 +757,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         substitutions
             A mapping or function from old to new column names. If a column
             isn't in the mapping (or if the callable returns None) it is left
-            with its original name.
+            with its original name. May also pass the string ``"snake_case"``,
+            which will relabel all columns to use a ``snake_case`` naming
+            convention.
 
         Returns
         -------
@@ -764,6 +770,19 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if isinstance(substitutions, Mapping):
             rename = substitutions.get
+        elif substitutions == "snake_case":
+
+            def rename(c):
+                c = c.strip()
+                if " " in c:
+                    # Handle "space case possibly with-hyphens"
+                    return "_".join(c.lower().split()).replace("-", "_")
+                # Handle PascalCase, camelCase, and kebab-case
+                c = re.sub(r"([A-Z]+)([A-Z][a-z])", r'\1_\2', c)
+                c = re.sub(r"([a-z\d])([A-Z])", r'\1_\2', c)
+                c = c.replace("-", "_")
+                return c.lower()
+
         else:
             rename = substitutions
 
