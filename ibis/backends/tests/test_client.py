@@ -33,12 +33,15 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
         con.load_data(temp_table_name, data, if_exists="append")
         result = temporary.execute()
         assert len(result) == len(data.index)
-        tm.assert_frame_equal(result, data)
+        tm.assert_frame_equal(
+            result.sort_values(result.columns[0]).reset_index(drop=True),
+            data.sort_values(result.columns[0]).reset_index(drop=True),
+        )
 
     return temporary
 
 
-@pytest.mark.notimpl(["snowflake"])
+@pytest.mark.notimpl(["snowflake", "trino"])
 def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     sch = ibis.schema(
         [
@@ -291,7 +294,10 @@ def test_insert_no_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, test_employee_data_2)
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        test_employee_data_2.sort_values("first_name").reset_index(drop=True),
+    )
 
 
 def test_insert_overwrite_from_dataframe(
@@ -308,10 +314,13 @@ def test_insert_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, test_employee_data_2)
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        test_employee_data_2.sort_values("first_name").reset_index(drop=True),
+    )
 
 
-def test_insert_no_overwite_from_expr(
+def test_insert_no_overwrite_from_expr(
     alchemy_con,
     employee_empty_temp_table,
     employee_data_2_temp_table,
@@ -326,7 +335,10 @@ def test_insert_no_overwite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, from_table.execute())
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        from_table.execute().sort_values("first_name").reset_index(drop=True),
+    )
 
 
 def test_insert_overwrite_from_expr(
@@ -344,9 +356,15 @@ def test_insert_overwrite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, from_table.execute())
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        from_table.execute().sort_values("first_name").reset_index(drop=True),
+    )
 
 
+@pytest.mark.notyet(
+    ["trino"], reason="memory connector doesn't allow writing to tables"
+)
 def test_insert_overwrite_from_list(
     alchemy_con,
     employee_data_1_temp_table,
@@ -389,20 +407,25 @@ def test_insert_from_memtable(alchemy_con):
 
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
-    TEST_DATABASES = {
+    test_databases = {
         "sqlite": {"main"},
         "postgres": {"postgres", "ibis_testing"},
+        "mssql": {"INFORMATION_SCHEMA"},
         "mysql": {"ibis_testing", "information_schema"},
         "duckdb": {"information_schema", "main", "temp"},
         "snowflake": {"IBIS_TESTING"},
+        "trino": {"default"},
     }
-    assert TEST_DATABASES[alchemy_con.name] <= set(alchemy_con.list_databases())
+    assert test_databases[alchemy_con.name] <= set(alchemy_con.list_databases())
 
 
 @pytest.mark.never(
-    ["bigquery", "postgres", "mysql", "snowflake"],
-    reason="postgres and mysql do not support in-memory tables",
+    ["bigquery", "postgres", "mssql", "mysql", "snowflake"],
+    reason="backend does not support client-side in-memory tables",
     raises=(sa.exc.OperationalError, TypeError),
+)
+@pytest.mark.notyet(
+    ["trino"], reason="memory connector doesn't allow writing to tables"
 )
 def test_in_memory(alchemy_backend):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
@@ -417,15 +440,18 @@ def test_in_memory(alchemy_backend):
         assert table_name not in con.list_tables()
 
 
-@pytest.mark.parametrize("typ", [dt.uint8, dt.uint16, dt.uint32, dt.uint64], ids=str)
 @pytest.mark.notyet(
     ["postgres", "mysql", "sqlite"],
     raises=TypeError,
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
-def test_unsigned_integer_type(alchemy_con, typ):
+def test_unsigned_integer_type(alchemy_con):
     tname = f"t{guid()[:6]}"
-    alchemy_con.create_table(tname, schema=ibis.schema(dict(a=typ)), force=True)
+    alchemy_con.create_table(
+        tname,
+        schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
+        force=True,
+    )
     try:
         assert tname in alchemy_con.list_tables()
     finally:
