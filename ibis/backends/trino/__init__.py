@@ -64,10 +64,11 @@ class Backend(BaseAlchemyBackend):
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
         with self.begin() as con:
             con.exec_driver_sql(f"PREPARE {tmpname} FROM {query}")
-            for name, type in toolz.pluck(
-                ["Column Name", "Type"],
-                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings(),
-            ):
-                ibis_type = parse(type)
-                yield name, ibis_type(nullable=True)
+            type_info = (
+                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings().fetchall()
+            )
             con.exec_driver_sql(f"DEALLOCATE PREPARE {tmpname}")
+
+        for name, type in toolz.pluck(["Column Name", "Type"], type_info):
+            ibis_type = parse(type)
+            yield name, ibis_type(nullable=True)

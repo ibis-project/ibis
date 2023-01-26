@@ -56,8 +56,10 @@ class Backend(BaseAlchemyBackend):
             query=query
         )
         with self.begin() as bind:
-            for column in bind.execute(query).mappings():
-                yield column["name"], _type_from_result_set_info(column)
+            columns = bind.execute(query).mappings().fetchall()
+
+        for column in columns:
+            yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

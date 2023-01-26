@@ -129,9 +129,10 @@ class Backend(BaseAlchemyBackend):
         with self.begin() as con:
             result = con.exec_driver_sql(f"SELECT * FROM {query} _ LIMIT 0")
             cursor = result.cursor
+            fields = cursor._result.fields
             yield from (
                 (field.name, _type_from_cursor_info(descr, field))
-                for descr, field in zip(cursor.description, cursor._result.fields)
+                for descr, field in zip(cursor.description, fields)
             )
 
     def _get_temp_view_definition(

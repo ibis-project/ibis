@@ -108,12 +108,10 @@ class Backend(BaseAlchemyBackend):
     def list_databases(self, like=None):
         with self.begin() as con:
             # http://dba.stackexchange.com/a/1304/58517
-            databases = [
-                row.datname
-                for row in con.exec_driver_sql(
-                    "SELECT datname FROM pg_database WHERE NOT datistemplate"
-                ).mappings()
-            ]
+            databases = con.exec_driver_sql(
+                "SELECT datname FROM pg_database WHERE NOT datistemplate"
+            ).scalars()
+
         return self._filter_with_like(databases, like)
 
     @contextlib.contextmanager
@@ -173,24 +171,24 @@ class Backend(BaseAlchemyBackend):
         )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        raw_name = util.guid()
-        name = self._quote(raw_name)
-        type_info_sql = """\
+        name = util.guid()
+        quoted_name = self._quote(name)
+        type_info_query = sa.text(
+            """\
 SELECT
   attname,
   format_type(atttypid, atttypmod) AS type
 FROM pg_attribute
-WHERE attrelid = CAST(:raw_name AS regclass)
+WHERE attrelid = CAST(:name AS regclass)
   AND attnum > 0
   AND NOT attisdropped
 ORDER BY attnum"""
+        ).bindparams(name=name)
         with self.begin() as con:
-            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
-            type_info = con.execute(
-                sa.text(type_info_sql).bindparams(raw_name=raw_name)
-            )
-            yield from ((col, _get_type(typestr)) for col, typestr in type_info)
-            con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
+            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {quoted_name} AS {query}")
+            type_info = con.execute(type_info_query).fetchall()
+            con.exec_driver_sql(f"DROP VIEW IF EXISTS {quoted_name}")
+        yield from ((col, _get_type(typestr)) for col, typestr in type_info)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

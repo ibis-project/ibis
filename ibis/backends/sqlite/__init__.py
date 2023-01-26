@@ -234,7 +234,9 @@ class Backend(BaseAlchemyBackend):
 
             # get names and not nullables
             names, notnulls, raw_types = zip(
-                *toolz.pluck(["name", "notnull", "type"], table_info.mappings())
+                *toolz.pluck(
+                    ["name", "notnull", "type"], table_info.mappings().fetchall()
+                )
             )
 
             # get the type of the first row if no affinity was returned in
@@ -242,15 +244,16 @@ class Backend(BaseAlchemyBackend):
             type_queries = ", ".join(map("typeof({})".format, names))
             single_row_types = con.exec_driver_sql(
                 f"SELECT {type_queries} FROM {view} LIMIT 1"
-            ).fetchone()
-            for name, notnull, raw_typ, typ in zip(
-                names, notnulls, raw_types, single_row_types
-            ):
-                ibis_type = parse(raw_typ or typ)
-                yield name, ibis_type(nullable=not notnull)
+            ).one()
 
             # drop the view when we're done with it
             con.exec_driver_sql(f"DROP VIEW IF EXISTS {view}")
+
+        for name, notnull, raw_typ, typ in zip(
+            names, notnulls, raw_types, single_row_types
+        ):
+            ibis_type = parse(raw_typ or typ)
+            yield name, ibis_type(nullable=not notnull)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a SQLite SQL string."""

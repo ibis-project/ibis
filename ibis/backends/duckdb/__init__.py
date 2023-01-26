@@ -516,13 +516,12 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:
-            rows = con.exec_driver_sql(f"DESCRIBE {query}")
-
-            for name, type, null in toolz.pluck(
-                ["column_name", "column_type", "null"], rows.mappings()
-            ):
-                ibis_type = parse(type)
-                yield name, ibis_type.copy(nullable=null.lower() == "yes")
+            type_info = con.exec_driver_sql(f"DESCRIBE {query}").mappings().fetchall()
+        for name, type, null in toolz.pluck(
+            ["column_name", "column_type", "null"], type_info
+        ):
+            ibis_type = parse(type)
+            yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
     def _register_in_memory_table(self, table_op):
         df = table_op.data.to_frame()
