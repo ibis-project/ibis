@@ -470,11 +470,7 @@ def _setup_backend(
     scope='session',
 )
 def ddl_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
-    """Set up the backends that are SQL-based.
-
-    (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark,
-    impala)
-    """
+    """Set up the backends that are SQL-based."""
     return _setup_backend(
         request, data_directory, script_directory, tmp_path_factory, worker_id
     )
@@ -488,17 +484,14 @@ def ddl_con(ddl_backend):
 
 @pytest.fixture(
     params=_get_backends_to_test(
-        keep=("sqlite", "postgres", "mysql", "duckdb", "snowflake")
+        keep=("duckdb", "mssql", "mysql", "postgres", "snowflake", "sqlite", "trino")
     ),
     scope='session',
 )
 def alchemy_backend(
     request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
-    """Set up the SQLAlchemy-based backends.
-
-    (sqlite, mysql, postgres, duckdb)
-    """
+    """Set up the SQLAlchemy-based backends."""
     return _setup_backend(
         request, data_directory, script_directory, tmp_path_factory, worker_id
     )
