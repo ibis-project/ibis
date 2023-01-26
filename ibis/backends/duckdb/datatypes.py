@@ -7,11 +7,9 @@ from ibis import util
 from ibis.common.parsing import (
     COMMA,
     FIELD,
-    LANGLE,
     LBRACKET,
     LPAREN,
     PRECISION,
-    RANGLE,
     RBRACKET,
     RPAREN,
     SCALE,
@@ -104,19 +102,6 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         return Decimal(*prec_scale)
 
     @p.generate
-    def angle_type():
-        yield LANGLE
-        value_type = yield ty
-        yield RANGLE
-        return value_type
-
-    @p.generate
-    def list_array():
-        yield spaceless_string("list")
-        value_type = yield angle_type
-        return Array(value_type)
-
-    @p.generate
     def brackets():
         yield spaceless(LBRACKET)
         yield spaceless(RBRACKET)
@@ -130,11 +115,11 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield LANGLE
+        yield LPAREN
         key_type = yield primitive
         yield COMMA
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return Map(key_type, value_type)
 
     field = spaceless(FIELD)
@@ -149,7 +134,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         yield RPAREN
         return Struct.from_tuples(field_names_types)
 
-    non_pg_array_type = primitive | decimal | list_array | map | struct
+    non_pg_array_type = primitive | decimal | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
 
