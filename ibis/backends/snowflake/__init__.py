@@ -7,7 +7,10 @@ from typing import TYPE_CHECKING, Any, Iterable
 import snowflake.connector as sfc
 import sqlalchemy as sa
 import toolz
-from snowflake.connector.constants import PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT
+from snowflake.connector.constants import (
+    FIELD_ID_TO_NAME,
+    PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT,
+)
 from snowflake.connector.converter import SnowflakeConverter as _BaseSnowflakeConverter
 from snowflake.sqlalchemy import URL
 
@@ -145,22 +148,19 @@ class Backend(BaseAlchemyBackend):
         return super().fetch_from_cursor(cursor, schema)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self.begin() as bind:
-            result = bind.exec_driver_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
-            info_rows = bind.exec_driver_sql(f"DESCRIBE RESULT {result.cursor.sfqid!r}")
+        with self.begin() as con, con.connection.cursor() as cur:
+            result = cur.describe(query)
 
-            for name, raw_type, null in toolz.pluck(
-                ["name", "type", "null?"], info_rows.mappings()
-            ):
-                typ = parse(raw_type)
-                yield name, typ(nullable=null.upper() == "Y")
+        for name, type_code, _, _, precision, scale, is_nullable in result:
+            if precision is not None and scale is not None:
+                typ = dt.Decimal(precision=precision, scale=scale, nullable=is_nullable)
+            else:
+                typ = parse(FIELD_ID_TO_NAME[type_code]).copy(nullable=is_nullable)
+            yield name, typ
 
     def list_databases(self, like=None) -> list[str]:
         with self.begin() as con:
-            databases = toolz.pluck(
-                "database_name",
-                con.exec_driver_sql(
-                    'SELECT database_name FROM information_schema.databases'
-                ).mappings(),
-            )
+            databases = con.exec_driver_sql(
+                "SELECT database_name FROM information_schema.databases"
+            ).scalars()
         return self._filter_with_like(databases, like)
