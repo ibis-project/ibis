@@ -9,6 +9,7 @@
 }:
 let
   backends = [ "dask" "datafusion" "duckdb" "pandas" "polars" "sqlite" ];
+  markers = lib.concatStringsSep " or " (backends ++ [ "core" ]);
 in
 poetry2nix.mkPoetryApplication rec {
   python = python3;
@@ -25,6 +26,7 @@ poetry2nix.mkPoetryApplication rec {
 
   buildInputs = [ graphviz-nox sqlite ];
   checkInputs = buildInputs;
+  nativeCheckInputs = checkInputs;
 
   preCheck = ''
     set -euo pipefail
@@ -39,10 +41,7 @@ poetry2nix.mkPoetryApplication rec {
 
     runHook preCheck
 
-    pytest \
-      --numprocesses "$NIX_BUILD_CORES" \
-      --dist loadgroup \
-      -m '${lib.concatStringsSep " or " backends} or core'
+    pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup
 
     runHook postCheck
   '';
