@@ -441,7 +441,7 @@ def test_in_memory(alchemy_backend):
 
 
 @pytest.mark.notyet(
-    ["postgres", "mysql", "sqlite"],
+    ["mssql", "mysql", "postgres", "snowflake", "sqlite", "trino"],
     raises=TypeError,
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
