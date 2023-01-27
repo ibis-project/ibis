@@ -1,4 +1,5 @@
 import datetime
+import os
 import tempfile
 from pathlib import Path
 from typing import List, Optional
@@ -21,10 +22,67 @@ sql_queries = []
 ibis.options.verbose_log = lambda sql: sql_queries.append(sql)
 
 
+def get_single_query_param(key: str, default=None):
+    query_param_list = st.experimental_get_query_params().get(key)
+    if query_param_list:
+        return query_param_list[0]
+    return default
+
+
+def github_paginated_request(url):
+    next_url = url
+    resources = []
+    headers = {
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Accept': 'application/vnd.github+json',
+    }
+    # On Streamlit Cloud, token should be stored as secret.
+    # See:
+    # https://docs.streamlit.io/streamlit-community-cloud/get-started/deploy-an-app/connect-to-data-sources/secrets-management
+    github_token = os.environ.get('GITHUB_TOKEN')
+    if github_token:
+        headers['Authorization'] = f'Bearer {github_token}'
+    with requests.Session() as session:
+        while next_url is not None:
+            resp = session.get(next_url, headers=headers)
+            resp.raise_for_status()
+            resources.extend(resp.json())
+            next_url = resp.links.get('next', {}).get('url')
+    return resources
+
+
 @st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
-def support_matrix_df():
+def ibis_versions_with_raw_data_list():
+    releases = github_paginated_request(
+        'https://api.github.com/repos/ibis-project/ibis/releases'
+    )
+    versions = (release['name'] for release in releases)
+    versions = (
+        version
+        for version in versions
+        if version.startswith("4.") and version != '4.0.0'
+    )
+    return list(versions) + ['dev']
+
+
+ibis_versions_with_raw_data = ibis_versions_with_raw_data_list()
+
+query_ibis_version = get_single_query_param('version', 'dev')
+
+try:
+    ibis_version_index = ibis_versions_with_raw_data.index(query_ibis_version)
+except ValueError:
+    ibis_version_index = ibis_versions_with_raw_data.index('dev')
+
+current_ibis_version = st.sidebar.selectbox(
+    "Ibis version", ibis_versions_with_raw_data, ibis_version_index
+)
+
+
+@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+def support_matrix_df(ibis_version: str):
     resp = requests.get(
-        "https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv"
+        f"https://ibis-project.org/docs/{ibis_version}/backends/raw_support_matrix.csv"
     )
     resp.raise_for_status()
 
@@ -66,7 +124,7 @@ def backends_info_df():
 
 
 backend_info_table = ibis.memtable(backends_info_df())
-support_matrix_table = ibis.memtable(support_matrix_df())
+support_matrix_table = ibis.memtable(support_matrix_df(current_ibis_version))
 
 
 @st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
