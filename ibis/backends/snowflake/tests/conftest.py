@@ -47,9 +47,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
         script_dir
             Location of scripts defining schemas
         """
+        from ibis.backends.snowflake import _handle_pyarrow_warning
 
-        pytest.importorskip("snowflake.connector")
-        pytest.importorskip("snowflake.sqlalchemy")
+        with _handle_pyarrow_warning(action="ignore"):
+            pytest.importorskip("snowflake.connector")
+            pytest.importorskip("snowflake.sqlalchemy")
 
         if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
             pytest.skip("SNOWFLAKE_URL environment variable is not defined")
