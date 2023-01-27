@@ -423,15 +423,16 @@ def pytest_runtest_call(item):
             continue
 
         provided_reason = kwargs.pop("reason", None)
-        spec = kwargs.pop(backend)
-        module = importlib.import_module(backend)
-        version = getattr(module, "__version__", None)
-        assert version is not None, f"{backend} module has no __version__ attribute"
-        condition = Requirement(f"{backend}{spec}").specifier.contains(version)
-        reason = f"{backend} backend test fails with {backend}{spec}"
+        specs = kwargs.pop(backend)
+        failing_specs = []
+        for spec in specs:
+            req = Requirement(spec)
+            if req.specifier.contains(importlib.import_module(req.name).__version__):
+                failing_specs.append(spec)
+        reason = f"{backend} backend test fails with {backend}{specs}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
-        if condition:
+        if failing_specs:
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
