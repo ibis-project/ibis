@@ -56,9 +56,16 @@ def from_pandas_categorical(_):
     return dt.Category()
 
 
-@dt.dtype.register(pd.core.arrays.string_.StringDtype)
-def from_pandas_string(_):
-    return dt.String()
+@dt.dtype.register(pd.core.dtypes.base.ExtensionDtype)
+def from_pandas_extension_dtype(t):
+    return getattr(dt, t.__class__.__name__.replace("Dtype", "").lower())
+
+
+@dt.dtype.register(pd.core.arrays.arrow.dtype.ArrowDtype)
+def from_pandas_arrow_extension_dtype(t):
+    import ibis.backends.pyarrow.datatypes as _  # noqa: F401
+
+    return dt.dtype(t.pyarrow_dtype)
 
 
 @sch.schema.register(pd.Series)
