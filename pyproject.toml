@@ -74,7 +74,7 @@ shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # also, we don't support arbitrarily old versions of this library
 snowflake-connector-python = { version = ">=2.7.10,<3", optional = true }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
-sqlalchemy = { version = ">=1.4,<2", optional = true }
+sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
@@ -99,7 +99,7 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 hypothesis = ">=6.58.0,<7"
-sqlalchemy = ">=1.4,<2.0"
+sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
 griffe = ">=0.25.3,<1"
@@ -283,7 +283,7 @@ markers = [
   "hdfs: Hadoop file system tests",
   "min_version: backend tests that require a specific version of a dependency to pass",
   "min_server_version: backend tests that require a specific version of a backend's server to pass",
-  "xfail_version: backend tests that for a specific version of a backend",
+  "xfail_version: backend tests that for a specific version of a dependency",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",
   "never: tests for functionality that a backend is likely to never implement",
