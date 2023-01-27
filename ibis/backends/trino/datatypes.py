@@ -80,6 +80,11 @@ def sa_trino_double(_, satype, nullable=True):
     return dt.Float64(nullable=nullable)
 
 
+@dt.dtype.register(TrinoDialect, sa.REAL)
+def sa_trino_real(_, satype, nullable=True):
+    return dt.Float32(nullable=nullable)
+
+
 @dt.dtype.register(TrinoDialect, sa.ARRAY)
 def sa_trino_array(dialect, satype, nullable=True):
     value_dtype = dt.dtype(dialect, satype.item_type)
@@ -174,3 +179,19 @@ def compiles_map(typ, compiler, **kw):
 @dt.dtype.register(TrinoDialect, sa.NUMERIC)
 def sa_trino_numeric(_, satype, nullable=True):
     return dt.Decimal(satype.precision or 18, satype.scale or 3, nullable=nullable)
+
+
+@to_sqla_type.register(TrinoDialect, dt.Float64)
+def _double(*_):
+    return DOUBLE()
+
+
+@to_sqla_type.register(TrinoDialect, dt.Float32)
+def _real(*_):
+    return sa.REAL()
+
+
+@compiles(DOUBLE, "trino")
+@compiles(sa.REAL, "trino")
+def _floating(element, compiler, **kw):
+    return type(element).__name__.upper()
