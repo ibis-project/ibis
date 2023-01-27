@@ -58,7 +58,7 @@ impyla = { version = ">=0.17,<1", optional = true }
 lz4 = { version = ">=3.1.10,<5", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pyarrow = { version = ">=2,<11", optional = true }
+pyarrow = { version = ">=2,<12", optional = true }
 pymssql = { version = ">=2.2.5,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
