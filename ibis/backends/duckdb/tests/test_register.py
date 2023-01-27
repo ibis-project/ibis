@@ -2,6 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -109,3 +110,56 @@ def test_register_sqlite(data_directory):
     path = data_directory / "ibis_testing.db"
     ft = con.register(f"sqlite://{path}", "functional_alltypes")
     assert ft.count().execute()
+
+
+def test_memtable_with_nullable_dtypes():
+    data = pd.DataFrame(
+        {
+            "a": pd.Series(["a", None, "c"], dtype="string"),
+            "b": pd.Series([None, 1, 2], dtype="Int8"),
+            "c": pd.Series([0, None, 2], dtype="Int16"),
+            "d": pd.Series([0, 1, None], dtype="Int32"),
+            "e": pd.Series([None, None, -1], dtype="Int64"),
+            "f": pd.Series([None, 1, 2], dtype="UInt8"),
+            "g": pd.Series([0, None, 2], dtype="UInt16"),
+            "h": pd.Series([0, 1, None], dtype="UInt32"),
+            "i": pd.Series([None, None, 42], dtype="UInt64"),
+            "j": pd.Series([None, False, True], dtype="boolean"),
+        }
+    )
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
+
+
+def test_memtable_with_nullable_pyarrow_string():
+    pytest.importorskip("pyarrow")
+    data = pd.DataFrame({"a": pd.Series(["a", None, "c"], dtype="string[pyarrow]")})
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
+
+
+@pytest.mark.xfail(
+    raises=duckdb.NotImplementedException,
+    reason="DuckDB only supports the `string[pyarrow]` pandas dtype",
+)
+def test_memtable_with_nullable_pyarrow_not_string():
+    pytest.importorskip("pyarrow")
+
+    data = pd.DataFrame(
+        {
+            "b": pd.Series([None, 1, 2], dtype="int8[pyarrow]"),
+            "c": pd.Series([0, None, 2], dtype="int16[pyarrow]"),
+            "d": pd.Series([0, 1, None], dtype="int32[pyarrow]"),
+            "e": pd.Series([None, None, -1], dtype="int64[pyarrow]"),
+            "f": pd.Series([None, 1, 2], dtype="uint8[pyarrow]"),
+            "g": pd.Series([0, None, 2], dtype="uint16[pyarrow]"),
+            "h": pd.Series([0, 1, None], dtype="uint32[pyarrow]"),
+            "i": pd.Series([None, None, 42], dtype="uint64[pyarrow]"),
+            "j": pd.Series([None, False, True], dtype="boolean[pyarrow]"),
+        }
+    )
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
