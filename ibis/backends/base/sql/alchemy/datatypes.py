@@ -5,6 +5,7 @@ from typing import Mapping
 import sqlalchemy as sa
 import sqlalchemy.types as sat
 from multipledispatch import Dispatcher
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine.default import DefaultDialect
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.ext.compiler import compiles
@@ -103,6 +104,17 @@ def compile_uint(element, compiler, **kw):
     )
 
 
+try:
+    UUID = sa.UUID
+except AttributeError:
+    pass
+else:
+
+    @compiles(UUID, "default")
+    def compiles_uuid(element, compiler, **kw):
+        return "UUID"
+
+
 # TODO(cleanup)
 ibis_type_to_sqla = {
     dt.Null: sat.NullType,
@@ -171,6 +183,14 @@ def _map(dialect, itype):
     )
 
 
+@to_sqla_type.register(Dialect, dt.UUID)
+def _uuid(dialect, itype):
+    try:
+        return sa.UUID()
+    except AttributeError:
+        return postgresql.UUID()
+
+
 @dt.dtype.register(Dialect, sat.NullType)
 def sa_null(_, satype, nullable=True):
     return dt.null
@@ -179,6 +199,17 @@ def sa_null(_, satype, nullable=True):
 @dt.dtype.register(Dialect, sat.Boolean)
 def sa_boolean(_, satype, nullable=True):
     return dt.Boolean(nullable=nullable)
+
+
+try:
+    UUID = sa.UUID
+except AttributeError:
+    pass
+else:
+
+    @dt.dtype.register(Dialect, UUID)
+    def sa_uuid(_, satype, nullable=True):
+        return dt.UUID(nullable=nullable)
 
 
 _FLOAT_PREC_TO_TYPE = {

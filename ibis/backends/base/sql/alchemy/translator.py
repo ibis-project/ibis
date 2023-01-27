@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import operator
 
 import sqlalchemy as sa
 
@@ -112,10 +113,9 @@ rewrites = AlchemyExprTranslator.rewrites
 
 @rewrites(ops.NullIfZero)
 def _nullifzero(op):
-    # TODO(kszucs): avoid rountripping to expr then back to op
-    expr = op.arg.to_expr()
-    new_expr = (expr == 0).ifelse(ibis.NA, expr)
-    return new_expr.op()
+    arg = op.arg
+    condition = ops.Equals(arg, ops.Literal(0, dtype=op.arg.output_dtype))
+    return ops.Where(condition, ibis.NA, arg)
 
 
 # TODO This was previously implemented with the legacy `@compiles` decorator.
@@ -126,10 +126,10 @@ def _true_divide(t, op):
     if all(arg.output_dtype.is_integer() for arg in op.args):
         # TODO(kszucs): this should be done in the rewrite phase
         right, left = op.right.to_expr(), op.left.to_expr()
-        new_expr = left.div(right.cast('double'))
+        new_expr = left.div(right.cast(dt.double))
         return t.translate(new_expr.op())
 
-    return fixed_arity(lambda x, y: x / y, 2)(t, op)
+    return fixed_arity(operator.truediv, 2)(t, op)
 
 
 AlchemyExprTranslator._registry[ops.Divide] = _true_divide

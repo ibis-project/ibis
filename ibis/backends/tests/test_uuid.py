@@ -9,33 +9,32 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
-TEST_UUID = "08f48812-7948-4718-96c7-27fa6a398db6"
+RAW_TEST_UUID = "08f48812-7948-4718-96c7-27fa6a398db6"
+TEST_UUID = uuid.UUID(RAW_TEST_UUID)
+
+SQLALCHEMY2 = vparse(sqlalchemy.__version__) >= vparse("2")
 
 UUID_BACKEND_TYPE = {
     'bigquery': 'STRING',
     'duckdb': "UUID",
     'sqlite': "text",
     'snowflake': 'VARCHAR',
-    'trino': 'uuid',
+    'trino': 'varchar(32)' if SQLALCHEMY2 else 'uuid',
     "postgres": "uuid",
 }
 
 # TODO(krzysztof-kwitt): Should we unify it?
 UUID_EXPECTED_VALUES = {
-    'pandas': uuid.UUID(TEST_UUID),
-    'bigquery': TEST_UUID,
-    'duckdb': uuid.UUID(TEST_UUID),
-    'sqlite': TEST_UUID,
-    'snowflake': TEST_UUID,
-    'trino': TEST_UUID,
-    "postgres": uuid.UUID(TEST_UUID),
-    'mysql': TEST_UUID
-    if vparse(sqlalchemy.__version__) < vparse("2.0.0")
-    else uuid.UUID(TEST_UUID),
-    'mssql': TEST_UUID
-    if vparse(sqlalchemy.__version__) < vparse("2.0.0")
-    else uuid.UUID(TEST_UUID),
-    'dask': uuid.UUID(TEST_UUID),
+    'pandas': TEST_UUID,
+    'bigquery': RAW_TEST_UUID,
+    'duckdb': TEST_UUID,
+    'sqlite': RAW_TEST_UUID,
+    'snowflake': RAW_TEST_UUID,
+    'trino': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
+    "postgres": TEST_UUID,
+    'mysql': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
+    'mssql': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
+    'dask': TEST_UUID,
 }
 
 
@@ -55,7 +54,7 @@ UUID_EXPECTED_VALUES = {
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
 
-    expr = ibis.literal(TEST_UUID, type=dt.uuid)
+    expr = ibis.literal(RAW_TEST_UUID, type=dt.uuid)
     result = con.execute(expr)
 
     assert result == UUID_EXPECTED_VALUES[backend_name]

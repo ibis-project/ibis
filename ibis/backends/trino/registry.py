@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+from trino.sqlalchemy.datatype import DOUBLE
 
 import ibis
 import ibis.common.exceptions as com
@@ -31,6 +32,10 @@ def _literal(t, op):
         return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))
     elif dtype.is_map():
         return sa.func.map(_array(t, value.keys()), _array(t, value.values()))
+    elif dtype.is_float64():
+        return sa.literal(float(value), type_=DOUBLE())
+    elif dtype.is_integer():
+        return sa.literal(int(value), type_=t.get_sqla_type(dtype))
     return _alchemy_literal(t, op)
 
 
@@ -94,7 +99,7 @@ def _timestamp_from_unix(t, op):
     arg = t.translate(arg)
 
     if unit == "ms":
-        return sa.func.from_unixtime(arg / 1_000)
+        return sa.func.from_unixtime(sa.func.floor(arg / 1_000))
     elif unit == "s":
         return sa.func.from_unixtime(arg)
     elif unit == "us":
@@ -102,7 +107,7 @@ def _timestamp_from_unix(t, op):
     elif unit == "ns":
         return sa.func.from_unixtime_nanos(arg - (arg % 1_000_000_000))
     else:
-        raise ValueError(f"{unit!r} unit is not supported!")
+        raise ValueError(f"{unit!r} unit is not supported")
 
 
 def _neg_idx_to_pos(array, idx):
