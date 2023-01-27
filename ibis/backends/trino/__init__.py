@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Iterator
 
 import sqlalchemy as sa
@@ -49,15 +50,24 @@ class Backend(BaseAlchemyBackend):
             database=database,
         )
         connect_args.setdefault("timezone", "UTC")
-        try:
-            super().do_connect(
-                sa.create_engine(
-                    url,
-                    connect_args={**connect_args, "experimental_python_types": True},
-                )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"The dbapi\(\) classmethod on dialect classes has been renamed",
+                category=sa.exc.SADeprecationWarning,
             )
-        except TypeError:
-            super().do_connect(sa.create_engine(url, connect_args=connect_args))
+            try:
+                super().do_connect(
+                    sa.create_engine(
+                        url,
+                        connect_args={
+                            **connect_args,
+                            "experimental_python_types": True,
+                        },
+                    )
+                )
+            except TypeError:
+                super().do_connect(sa.create_engine(url, connect_args=connect_args))
         self._meta = sa.MetaData(schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
