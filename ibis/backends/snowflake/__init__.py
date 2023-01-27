@@ -2,17 +2,11 @@ from __future__ import annotations
 
 import contextlib
 import json
+import warnings
 from typing import TYPE_CHECKING, Any, Iterable
 
-import snowflake.connector as sfc
 import sqlalchemy as sa
 import toolz
-from snowflake.connector.constants import (
-    FIELD_ID_TO_NAME,
-    PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT,
-)
-from snowflake.connector.converter import SnowflakeConverter as _BaseSnowflakeConverter
-from snowflake.sqlalchemy import URL
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -22,14 +16,43 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.snowflake.datatypes import parse
-from ibis.backends.snowflake.registry import operation_registry
+
+
+@contextlib.contextmanager
+def _handle_pyarrow_warning(*, action: str):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            action,
+            message="You have an incompatible version of 'pyarrow' installed",
+            category=UserWarning,
+        )
+        yield
+
+
+with _handle_pyarrow_warning(action="error"):
+    try:
+        import snowflake.connector  # noqa: F401
+    except UserWarning:
+        _NATIVE_ARROW = False
+    else:
+        _NATIVE_ARROW = True
+
+
+with _handle_pyarrow_warning(action="ignore"):
+    from snowflake.connector.constants import (
+        FIELD_ID_TO_NAME,
+        PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT,
+    )
+    from snowflake.connector.converter import (
+        SnowflakeConverter as _BaseSnowflakeConverter,
+    )
+    from snowflake.sqlalchemy import URL
+
+from ibis.backends.snowflake.datatypes import parse  # noqa: E402
+from ibis.backends.snowflake.registry import operation_registry  # noqa: E402
 
 if TYPE_CHECKING:
     import pandas as pd
-
-
-_NATIVE_ARROW = True
 
 
 class SnowflakeExprTranslator(AlchemyExprTranslator):
@@ -130,22 +153,16 @@ class Backend(BaseAlchemyBackend):
         )
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        global _NATIVE_ARROW
+        if not _NATIVE_ARROW:
+            return super().fetch_from_cursor(cursor, schema)
 
-        if _NATIVE_ARROW:
-            try:
-                table = cursor.cursor.fetch_arrow_all()
-            except sfc.NotSupportedError:
-                _NATIVE_ARROW = False
-            else:
-                if table is None:
-                    import pandas as pd
+        if (table := cursor.cursor.fetch_arrow_all()) is None:
+            import pandas as pd
 
-                    df = pd.DataFrame(columns=schema.names)
-                else:
-                    df = table.to_pandas(timestamp_as_object=True)
-                return schema.apply_to(df)
-        return super().fetch_from_cursor(cursor, schema)
+            df = pd.DataFrame(columns=schema.names)
+        else:
+            df = table.to_pandas(timestamp_as_object=True)
+        return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as con, con.connection.cursor() as cur:
