@@ -111,6 +111,8 @@ class BigQueryCompiler(sql_compiler.Compiler):
     intersect_class = BigQueryIntersection
     difference_class = BigQueryDifference
 
+    support_values_syntax_in_select = False
+
     @staticmethod
     def _generate_setup_queries(expr, context):
         """Generate DDL for temporary resources."""

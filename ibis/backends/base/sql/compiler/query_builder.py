@@ -80,8 +80,12 @@ class TableSetFormatter:
             )
             for row in op.data.to_frame().itertuples(index=False)
         )
-        rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
-        return f"(VALUES {rows})"
+        if self.context.compiler.support_values_syntax_in_select:
+            rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
+            return f"(VALUES {rows})"
+        else:
+            rows = "UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
+            return f"({rows})"
 
     def _format_table(self, op):
         # TODO: This could probably go in a class and be significantly nicer
@@ -488,6 +492,7 @@ class Compiler:
     difference_class = Difference
 
     cheap_in_memory_tables = False
+    support_values_syntax_in_select = True
 
     @classmethod
     def make_context(cls, params=None):
