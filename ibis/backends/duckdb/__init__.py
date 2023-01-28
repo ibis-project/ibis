@@ -47,6 +47,12 @@ def _create_view(*args, **kwargs):
     return sav.CreateView(*args, **kwargs)
 
 
+def _drop_view(*args, **kwargs):
+    import sqlalchemy_views as sav
+
+    return sav.DropView(*args, **kwargs)
+
+
 def _format_kwargs(kwargs: Mapping[str, Any]):
     bindparams, pieces = [], []
     for name, value in kwargs.items():
@@ -588,3 +594,19 @@ class Backend(BaseAlchemyBackend):
         return super()._get_compiled_statement(
             view, definition, compile_kwargs={"literal_binds": True}
         )
+
+    def create_view(
+        self, name: str, expr: ir.Table, database: str | None = None
+    ) -> None:
+        source = self.compile(expr)
+        view = _create_view(sa.table(name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+
+    def drop_view(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        view = _drop_view(sa.table(name), if_exists=not force)
+
+        with self.begin() as con:
+            con.execute(view)

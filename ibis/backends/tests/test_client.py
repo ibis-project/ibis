@@ -183,7 +183,6 @@ def test_nullable_input_output(con, temp_table):
         "bigquery",
         "clickhouse",
         "datafusion",
-        "duckdb",
         "mysql",
         "postgres",
         "sqlite",
