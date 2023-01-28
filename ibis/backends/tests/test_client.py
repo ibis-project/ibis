@@ -692,7 +692,7 @@ def test_deprecated_path_argument(backend_name, tmp_path):
     ],
 )
 @pytest.mark.notyet(
-    ["mysql", "sqlite"],
+    ["mysql"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
@@ -703,7 +703,7 @@ def test_in_memory_table(backend, con, expr, expected):
 
 
 @pytest.mark.notyet(
-    ["mysql", "sqlite"],
+    ["mysql"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
@@ -717,7 +717,7 @@ def test_filter_memory_table(backend, con):
 
 
 @pytest.mark.notyet(
-    ["mysql", "sqlite"],
+    ["mysql"],
     reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
     raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
 )
