@@ -687,22 +687,12 @@ def test_deprecated_path_argument(backend_name, tmp_path):
         ),
     ],
 )
-@pytest.mark.notyet(
-    ["mysql"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_in_memory_table(backend, con, expr, expected):
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["mysql"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_filter_memory_table(backend, con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
@@ -712,11 +702,6 @@ def test_filter_memory_table(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["mysql"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_agg_memory_table(con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
