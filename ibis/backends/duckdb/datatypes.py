@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import parsy as p
+import sqlalchemy as sa
 import toolz
 from duckdb_engine import Dialect as DuckDBDialect
 from sqlalchemy.dialects import postgresql
@@ -148,3 +149,8 @@ def parse_type(*args, **kwargs):
 @to_sqla_type.register(DuckDBDialect, dt.UUID)
 def sa_duckdb_uuid(_, itype):
     return postgresql.UUID
+
+
+@to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))
+def sa_duckdb_macaddr(_, itype):
+    return sa.TEXT()
