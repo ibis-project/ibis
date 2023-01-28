@@ -1160,11 +1160,6 @@ def test_exists(batting, awards_players, method_name):
                     raises=ProgrammingError,
                 ),
                 pytest.mark.broken(
-                    ['sqlite'],
-                    "(sqlite3.InterfaceError) Error binding parameter 0 - probably unsupported type.",
-                    raises=sqlalchemy.exc.InterfaceError,
-                ),
-                pytest.mark.broken(
                     ['clickhouse'],
                     "<class 'ibis.expr.operations.generic.Literal'>",
                     raises=NotImplementedError,

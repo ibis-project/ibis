@@ -190,8 +190,11 @@ def _string_join(t, op):
 
 
 def _literal(t, op):
-    if op.output_dtype.is_array():
-        raise NotImplementedError(f"Unsupported type: {op.output_dtype!r}")
+    dtype = op.output_dtype
+    if dtype.is_array():
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
+    if dtype.is_uuid():
+        return sa.literal(str(op.value))
     return base_literal(t, op)
 
 
