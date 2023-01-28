@@ -225,6 +225,8 @@ def _literal(translator, op):
             return f"CAST('{prefix}inf' AS FLOAT64)"
         else:
             return f"{ibis_type_to_bigquery_type(dtype)} '{op.value}'"
+    elif dtype.is_uuid():
+        return translator.translate(ops.Literal(str(op.value), dtype=dt.str))
 
     if isinstance(dtype, dt.Numeric):
         value = op.value
@@ -261,7 +263,7 @@ def _literal(translator, op):
     except NotImplementedError:
         if isinstance(dtype, dt.Array):
             return _array_literal_format(op)
-        raise NotImplementedError(type(op).__name__)
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
 
 def _arbitrary(translator, op):

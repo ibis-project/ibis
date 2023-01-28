@@ -1133,17 +1133,13 @@ def test_exists(batting, awards_players, method_name):
         param(
             ibis.literal("08f48812-7948-4718-96c7-27fa6a398db6", type=dt.uuid),
             {
+                'bigquery': 'STRING',
                 'duckdb': "UUID",
                 'sqlite': "text",
                 'trino': 'uuid',
                 "postgres": "uuid",
             },
             marks=[
-                pytest.mark.broken(
-                    ['bigquery'],
-                    'Cannot create literal for UUID(nullable=True) type.',
-                    raises=NotImplementedError,
-                ),
                 pytest.mark.broken(
                     ['snowflake'],
                     '(snowflake.connector.errors.ProgrammingError) 252004: Failed processing pyformat-parameters: 255001: Binding data in type (uuid) is not supported.',
