@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import parsy as p
 import toolz
+from duckdb_engine import Dialect as DuckDBDialect
+from sqlalchemy.dialects import postgresql
 
+import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -139,3 +143,8 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
 )
 def parse_type(*args, **kwargs):
     return parse(*args, **kwargs)
+
+
+@to_sqla_type.register(DuckDBDialect, dt.UUID)
+def sa_duckdb_uuid(_, itype):
+    return postgresql.UUID
