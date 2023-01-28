@@ -129,10 +129,6 @@ builtin_array = toolz.compose(
         ["mysql", "sqlite"],
         reason="array types are unsupported",
     ),
-    pytest.mark.never(
-        ["snowflake"],
-        reason="snowflake has an extremely specialized way of implementing arrays",
-    ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion", "dask"]),
     duckdb_0_4_0,
@@ -142,8 +138,7 @@ unnest = toolz.compose(
     builtin_array,
     pytest.mark.notimpl(["pandas"]),
     pytest.mark.notyet(
-        ["bigquery", "snowflake", "trino"],
-        reason="doesn't support unnest in SELECT position",
+        ["bigquery"], reason="doesn't support unnest in SELECT position"
     ),
 )
 
@@ -152,6 +147,10 @@ unnest = toolz.compose(
 @pytest.mark.never(
     ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
+)
+@pytest.mark.never(
+    ["snowflake"],
+    reason="snowflake has an extremely specialized way of implementing arrays",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
 def test_array_discovery_postgres(con):
@@ -170,6 +169,10 @@ def test_array_discovery_postgres(con):
 
 
 @builtin_array
+@pytest.mark.never(
+    ["snowflake"],
+    reason="snowflake has an extremely specialized way of implementing arrays",
+)
 @pytest.mark.never(
     ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
     reason="backend supports nullable nested types",
@@ -202,6 +205,10 @@ def test_array_discovery_clickhouse(con):
     reason="trino supports nested arrays, but not with the postgres connector",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
+@pytest.mark.never(
+    ["snowflake"],
+    reason="snowflake has an extremely specialized way of implementing arrays",
+)
 def test_array_discovery_desired(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -259,7 +266,7 @@ def test_unnest_simple(con):
         .astype("float64")
         .rename("tmp")
     )
-    expr = array_types.x.unnest()
+    expr = array_types.x.cast("!array<float64>").unnest()
     result = expr.execute().rename("tmp")
     tm.assert_series_equal(result, expected)
 
@@ -291,26 +298,24 @@ def test_unnest_complex(con):
 
 
 @unnest
-@pytest.mark.never(
-    "pyspark",
-    reason="pyspark throws away nulls in collect_list",
-)
-@pytest.mark.never(
-    "clickhouse",
-    reason="clickhouse throws away nulls in groupArray",
-)
+@pytest.mark.never("pyspark", reason="pyspark throws away nulls in collect_list")
+@pytest.mark.never("clickhouse", reason="clickhouse throws away nulls in groupArray")
 @pytest.mark.notimpl("polars")
 def test_unnest_idempotent(con):
     array_types = con.table("array_types")
     df = array_types.execute()
     expr = (
-        array_types.select(["scalar_column", array_types.x.unnest().name("x")])
+        array_types.select(
+            ["scalar_column", array_types.x.cast("!array<int64>").unnest().name("x")]
+        )
         .group_by("scalar_column")
         .aggregate(x=lambda t: t.x.collect())
         .order_by("scalar_column")
     )
     result = expr.execute()
-    expected = df[["scalar_column", "x"]]
+    expected = (
+        df[["scalar_column", "x"]].sort_values("scalar_column").reset_index(drop=True)
+    )
     tm.assert_frame_equal(result, expected)
 
 
@@ -320,7 +325,9 @@ def test_unnest_no_nulls(con):
     array_types = con.table("array_types")
     df = array_types.execute()
     expr = (
-        array_types.select(["scalar_column", array_types.x.unnest().name("y")])
+        array_types.select(
+            ["scalar_column", array_types.x.cast("!array<int64>").unnest().name("y")]
+        )
         .filter(lambda t: t.y.notnull())
         .group_by("scalar_column")
         .aggregate(x=lambda t: t.y.collect())

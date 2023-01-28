@@ -131,6 +131,31 @@ def _arbitrary(t, op):
     return t._reduction(sa.func.min, op)
 
 
+class flatten(GenericFunction):
+    def __init__(self, arg, *, type: sa.types.TypeEngine) -> None:
+        super().__init__(arg)
+        self.type = sqltypes.TableValueType(sa.Column("value", type))
+
+
+@compiles(flatten, "snowflake")
+def compiles_flatten(element, compiler, **kw):
+    arg = compiler.function_argspec(element, **kw)
+    return f"FLATTEN(INPUT => {arg}, MODE => 'ARRAY')"
+
+
+def _unnest(t, op):
+    arg = t.translate(op.arg)
+    # HACK: https://community.snowflake.com/s/question/0D50Z000086MVhnSAG/has-anyone-found-a-way-to-unnest-an-array-without-loosing-the-null-values
+    sep = util.guid()
+    sqla_type = t.get_sqla_type(op.output_dtype)
+    col = (
+        flatten(sa.func.split(sa.func.array_to_string(arg, sep), sep), type=sqla_type)
+        .lateral()
+        .c["value"]
+    )
+    return sa.cast(sa.func.nullif(col, ""), type_=sqla_type)
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -259,6 +284,13 @@ operation_registry.update(
         ops.StructColumn: lambda t, op: sa.func.object_construct_keep_null(
             *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
         ),
+        ops.Unnest: unary(
+            lambda arg: (
+                sa.func.table(sa.func.flatten(arg))
+                .table_valued("value")
+                .columns["value"]
+            )
+        ),
     }
 )
 
@@ -270,7 +302,6 @@ _invalid_operations = {
     ops.NTile,
     # ibis.expr.operations.array
     ops.ArrayRepeat,
-    ops.Unnest,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     # ibis.expr.operations.strings

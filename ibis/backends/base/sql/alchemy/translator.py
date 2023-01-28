@@ -58,6 +58,8 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _dialect_name = "default"
 
+    supports_unnest_in_select = True
+
     @functools.cached_property
     def dialect(self) -> sa.engine.interfaces.Dialect:
         if (name := self._dialect_name) == "default":

@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import Counter
-from typing import Iterator, Mapping
+from typing import Iterable, Iterator, Mapping
 
 import toolz
 
@@ -867,3 +867,13 @@ def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
         return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
 
     return g.traverse(finder, node, filter=ops.Node)
+
+
+def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
+    def finder(node):
+        return (
+            isinstance(node, ops.Value),
+            find_first_base_table(node) if isinstance(node, ops.Unnest) else None,
+        )
+
+    return g.traverse(finder, nodes, filter=ops.Node)

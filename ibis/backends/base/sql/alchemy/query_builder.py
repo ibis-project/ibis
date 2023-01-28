@@ -3,8 +3,10 @@ from __future__ import annotations
 import functools
 
 import sqlalchemy as sa
+import toolz
 from sqlalchemy import sql
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
 from ibis.backends.base.sql.alchemy.translator import (
@@ -207,20 +209,21 @@ class AlchemySelect(Select):
     def _add_select(self, table_set):
         to_select = []
 
+        context = self.context
+        select_set = self.select_set
+
         has_select_star = False
-        for op in self.select_set:
+        for op in select_set:
             if isinstance(op, ops.Value):
                 arg = self._translate(op, named=True)
             elif isinstance(op, ops.TableNode):
+                arg = context.get_ref(op)
                 if op.equals(self.table_set):
-                    cached_table = self.context.get_ref(op)
-                    if cached_table is None:
-                        has_select_star = True
+                    if has_select_star := arg is None:
                         continue
                     else:
                         arg = table_set
                 else:
-                    arg = self.context.get_ref(op)
                     if arg is None:
                         raise ValueError(op)
             else:
@@ -242,10 +245,28 @@ class AlchemySelect(Select):
         if self.distinct:
             result = result.distinct()
 
-        # if we're SELECT *-ing or there's no table_set (e.g., SELECT 1) then
-        # we can return early
-        if has_select_star or table_set is None:
+        # only process unnest if the backend doesn't support SELECT UNNEST(...)
+        unnest_children = []
+        if not self.translator_class.supports_unnest_in_select:
+            unnest_children.extend(
+                map(
+                    context.get_ref,
+                    toolz.unique(an.find_toplevel_unnest_children(select_set)),
+                )
+            )
+
+        # if we're SELECT *-ing or there's no table_set (e.g., SELECT 1) *and*
+        # there are no unnest operations then we can return early
+        if (has_select_star or table_set is None) and not unnest_children:
             return result
+
+        if unnest_children:
+            # get all the unnests plus the current froms of the result selection
+            # and build up the cross join
+            table_set = functools.reduce(
+                functools.partial(sa.sql.FromClause.join, onclause=True),
+                toolz.unique(toolz.concatv(unnest_children, result.get_final_froms())),
+            )
 
         return result.select_from(table_set)
 

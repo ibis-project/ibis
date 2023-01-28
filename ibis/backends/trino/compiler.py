@@ -23,6 +23,7 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
         ops.Lead,
     )
     _dialect_name = "trino"
+    supports_unnest_in_select = False
 
 
 rewrites = TrinoSQLExprTranslator.rewrites

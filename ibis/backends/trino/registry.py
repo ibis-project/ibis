@@ -147,6 +147,12 @@ def _round(t, op):
     return sa.func.round(arg)
 
 
+def _unnest(t, op):
+    arg = op.arg
+    name = arg.name
+    return sa.func.unnest(t.translate(arg)).table_valued(name).render_derived().c[name]
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -300,6 +306,7 @@ operation_registry.update(
             )
         ),
         ops.TypeOf: unary(sa.func.typeof),
+        ops.Unnest: _unnest,
     }
 )
 
