@@ -1268,13 +1268,8 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric[]",
             },
             marks=[
-                pytest.mark.broken(
-                    ['sqlite'],
-                    "(sqlite3.InterfaceError) Error binding parameter 0 - probably unsupported type.",
-                    raises=sqlalchemy.exc.InterfaceError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
+                pytest.mark.notimpl(
+                    ['sqlite', 'impala'],
                     "Unsupported type: Array(value_type=Float64(nullable=True), nullable=True)",
                     raises=NotImplementedError,
                 ),
@@ -1292,13 +1287,8 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text[]",
             },
             marks=[
-                pytest.mark.broken(
-                    ['sqlite'],
-                    "(sqlite3.InterfaceError) Error binding parameter 0 - probably unsupported type.",
-                    raises=sqlalchemy.exc.InterfaceError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
+                pytest.mark.notimpl(
+                    ['sqlite', 'impala'],
                     "Unsupported type: Array(value_type=String(nullable=True), nullable=True)",
                     raises=NotImplementedError,
                 ),
