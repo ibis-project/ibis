@@ -1138,6 +1138,7 @@ def test_exists(batting, awards_players, method_name):
         param(
             ibis.literal("08f48812-7948-4718-96c7-27fa6a398db6", type=dt.uuid),
             {
+                'duckdb': "UUID",
                 'sqlite': "text",
                 'trino': 'uuid',
                 "postgres": "uuid",
@@ -1149,7 +1150,7 @@ def test_exists(batting, awards_players, method_name):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
-                    ['duckdb', 'polars'],
+                    ['polars'],
                     "<class 'ibis.expr.datatypes.core.UUID'>",
                     raises=KeyError,
                 ),
