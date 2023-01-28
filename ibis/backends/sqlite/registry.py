@@ -20,7 +20,11 @@ from ibis.backends.base.sql.alchemy import (
     varargs,
     variance_reduction,
 )
-from ibis.backends.base.sql.alchemy.registry import _clip, _gen_string_find
+from ibis.backends.base.sql.alchemy.registry import (
+    _clip,
+    _gen_string_find,
+)
+from ibis.backends.base.sql.alchemy.registry import _literal as base_literal
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -185,6 +189,12 @@ def _string_join(t, op):
     )
 
 
+def _literal(t, op):
+    if op.output_dtype.is_array():
+        raise NotImplementedError(f"Unsupported type: {op.output_dtype!r}")
+    return base_literal(t, op)
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -305,5 +315,6 @@ operation_registry.update(
         ops.Pi: fixed_arity(sa.func._ibis_sqlite_pi, 0),
         ops.E: fixed_arity(sa.func._ibis_sqlite_e, 0),
         ops.TypeOf: unary(sa.func.typeof),
+        ops.Literal: _literal,
     }
 )

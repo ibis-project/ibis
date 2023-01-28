@@ -38,14 +38,14 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         mark.never(
-            ["mysql", "sqlite", "mssql"],
+            ["mysql", "mssql"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
         mark.notyet(
-            ["impala"],
+            ["impala", "sqlite"],
             raises=NotImplementedError,
-            reason="Impala hasn't implemented array literals",
+            reason="backends hasn't implemented array literals",
         ),
         mark.notimpl(
             ["trino"], reason="Cannot render array literals", raises=sa.exc.CompileError
