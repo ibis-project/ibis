@@ -1145,11 +1145,6 @@ def test_exists(batting, awards_players, method_name):
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
-                    ['polars'],
-                    "<class 'ibis.expr.datatypes.core.UUID'>",
-                    raises=KeyError,
-                ),
-                pytest.mark.broken(
                     ['snowflake'],
                     '(snowflake.connector.errors.ProgrammingError) 252004: Failed processing pyformat-parameters: 255001: Binding data in type (uuid) is not supported.',
                     raises=ProgrammingError,
@@ -1174,13 +1169,6 @@ def test_exists(batting, awards_players, method_name):
                 "impala": 'STRING',
                 "postgres": "text",
             },
-            marks=[
-                pytest.mark.broken(
-                    ['polars'],
-                    "<class 'ibis.expr.datatypes.core.MACADDR'>",
-                    raises=KeyError,
-                ),
-            ],
             id="macaddr",
         ),
         param(
@@ -1195,13 +1183,6 @@ def test_exists(batting, awards_players, method_name):
                 'trino': 'varchar(9)',
                 "postgres": "text",
             },
-            marks=[
-                pytest.mark.broken(
-                    ['polars'],
-                    "<class 'ibis.expr.datatypes.core.INET'>",
-                    raises=KeyError,
-                ),
-            ],
             id="inet",
         ),
         param(
@@ -1226,11 +1207,6 @@ def test_exists(batting, awards_players, method_name):
                     "Code: 46. DB::Exception: Unknown function Decimal: "
                     "While processing toTypeName(Decimal('1.2')).",
                     raises=ClickhouseDriverOperationalError,
-                ),
-                pytest.mark.broken(
-                    ['polars'],
-                    "could not convert value '1.2' as a Literal",
-                    raises=ValueError,
                 ),
                 pytest.mark.broken(
                     ['impala'],
