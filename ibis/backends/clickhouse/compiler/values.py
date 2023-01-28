@@ -454,7 +454,7 @@ def _literal(op, **kw):
         fields = ", ".join(f"{value} as `{key}`" for key, value in op.value.items())
         return f"tuple({fields})"
     else:
-        raise NotImplementedError(type(op))
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
 
 def _array_literal_values(op):

@@ -1036,12 +1036,7 @@ def test_exists(batting, awards_players, method_name):
                     raises=sqlalchemy.exc.StatementError,
                 ),
                 pytest.mark.broken(
-                    ['clickhouse'],
-                    "<class 'ibis.expr.operations.generic.Literal'>",
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
+                    ['clickhouse', 'impala'],
                     "Unsupported type: Binary(nullable=True)",
                     raises=NotImplementedError,
                 ),
@@ -1160,12 +1155,7 @@ def test_exists(batting, awards_players, method_name):
                     raises=ProgrammingError,
                 ),
                 pytest.mark.broken(
-                    ['clickhouse'],
-                    "<class 'ibis.expr.operations.generic.Literal'>",
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
+                    ['clickhouse', 'impala'],
                     "Unsupported type: UUID(nullable=True)",
                     raises=NotImplementedError,
                 ),
