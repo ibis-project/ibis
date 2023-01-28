@@ -252,6 +252,11 @@ operation_registry.update(
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
         ops.TypeOf: unary(sa.func.typeof),
+        ops.Capitalize: unary(
+            lambda arg: sa.func.concat(
+                sa.func.upper(sa.func.substring(arg, 1, 2)), sa.func.substring(arg, 2)
+            )
+        ),
         ops.IntervalAdd: fixed_arity(operator.add, 2),
         ops.IntervalSubtract: fixed_arity(operator.sub, 2),
     }
@@ -265,7 +270,6 @@ _invalid_operations = {
     ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.strings
-    ops.Capitalize,
     ops.Translate,
     # ibis.expr.operations.maps
     ops.MapGet,
