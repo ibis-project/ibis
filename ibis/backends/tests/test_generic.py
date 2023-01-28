@@ -1182,6 +1182,7 @@ def test_exists(batting, awards_players, method_name):
             {
                 'bigquery': "STRING",
                 'clickhouse': "String",
+                'duckdb': 'VARCHAR',
                 'snowflake': "VARCHAR",
                 'sqlite': "text",
                 'trino': 'varchar(17)',
@@ -1190,7 +1191,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['duckdb', 'polars'],
+                    ['polars'],
                     "<class 'ibis.expr.datatypes.core.MACADDR'>",
                     raises=KeyError,
                 ),
@@ -1202,6 +1203,7 @@ def test_exists(batting, awards_players, method_name):
             {
                 'bigquery': "STRING",
                 'clickhouse': "IPv4",
+                'duckdb': 'VARCHAR',
                 'impala': 'STRING',
                 'snowflake': "VARCHAR",
                 'sqlite': "text",
@@ -1210,7 +1212,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['duckdb', 'polars'],
+                    ['polars'],
                     "<class 'ibis.expr.datatypes.core.INET'>",
                     raises=KeyError,
                 ),
