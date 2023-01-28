@@ -78,12 +78,9 @@ def _literal(t, op):
     dtype = op.output_dtype
     sqla_type = t.get_sqla_type(dtype)
     value = op.value
-
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
-    elif dtype.is_set() or (
-        isinstance(value, collections.abc.Sequence) and not isinstance(value, str)
-    ):
+    elif dtype.is_set() or dtype.is_array():
         return sa.cast(sa.func.list_value(*value), sqla_type)
     elif isinstance(value, np.ndarray):
         return sa.cast(sa.func.list_value(*value.tolist()), sqla_type)
