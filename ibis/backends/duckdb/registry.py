@@ -80,7 +80,7 @@ def _literal(t, op):
     value = op.value
 
     if dtype.is_interval():
-        return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
+        return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_set() or (
         isinstance(value, collections.abc.Sequence) and not isinstance(value, str)
     ):
@@ -220,7 +220,6 @@ operation_registry.update(
             )
         ),
         ops.TableColumn: _table_column,
-        ops.TimestampDiff: fixed_arity(sa.func.age, 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampNow: fixed_arity(
             # duckdb 0.6.0 changes now to be a tiemstamp with time zone force
@@ -253,6 +252,8 @@ operation_registry.update(
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
         ops.TypeOf: unary(sa.func.typeof),
+        ops.IntervalAdd: fixed_arity(operator.add, 2),
+        ops.IntervalSubtract: fixed_arity(operator.sub, 2),
     }
 )
 
@@ -266,8 +267,6 @@ _invalid_operations = {
     # ibis.expr.operations.strings
     ops.Capitalize,
     ops.Translate,
-    # ibis.expr.operations.temporal
-    ops.TimestampDiff,
     # ibis.expr.operations.maps
     ops.MapGet,
     ops.MapContains,

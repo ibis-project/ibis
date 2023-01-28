@@ -360,7 +360,6 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                     "bigquery",
                     "clickhouse",
                     "dask",
-                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -393,7 +392,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ).dt.floor("s"),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.notimpl(["bigquery", "duckdb", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["bigquery", "pyspark", "snowflake"]),
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
