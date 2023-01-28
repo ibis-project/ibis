@@ -216,6 +216,16 @@ def _log(translator, op):
 
 def _literal(translator, op):
     dtype = op.output_dtype
+    if dtype.is_decimal():
+        value = op.value
+        if value.is_nan():
+            return "CAST('NaN' AS FLOAT64)"
+        if value.is_infinite():
+            prefix = "-" * value.is_signed()
+            return f"CAST('{prefix}inf' AS FLOAT64)"
+        else:
+            return f"{ibis_type_to_bigquery_type(dtype)} '{op.value}'"
+
     if isinstance(dtype, dt.Numeric):
         value = op.value
         if not np.isfinite(value):

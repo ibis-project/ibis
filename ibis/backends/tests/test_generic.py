@@ -1188,7 +1188,7 @@ def test_exists(batting, awards_players, method_name):
         param(
             ibis.literal(decimal.Decimal("1.2"), type=dt.decimal),
             {
-                'bigquery': "INT64",
+                'bigquery': "NUMERIC",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -1196,12 +1196,6 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
-                    ['bigquery'],
-                    "ufunc 'isfinite' not supported for the input types, and the inputs could not be "
-                    "safely coerced to any supported types according to the casting rule ''safe''",
-                    raises=TypeError,
-                ),
                 pytest.mark.broken(
                     ['clickhouse'],
                     "Code: 46. DB::Exception: Unknown function Decimal: "
@@ -1219,6 +1213,166 @@ def test_exists(batting, awards_players, method_name):
                 ),
             ],
             id="decimal",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("Infinity"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Code: 46. DB::Exception: Unknown function Decimal: "
+                    "While processing toTypeName(Decimal('Infinity')).",
+                    raises=ClickhouseDriverOperationalError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('Infinity')) AS `TypeOf(Decimal('Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity+",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("-Infinity"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Code: 46. DB::Exception: Unknown function Decimal: "
+                    "While processing toTypeName(Decimal('-Infinity')).",
+                    raises=ClickhouseDriverOperationalError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('-Infinity')) AS `TypeOf(Decimal('-Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value -inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'-Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity+",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("NaN"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "null",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Code: 46. DB::Exception: Unknown function Decimal: "
+                    "While processing toTypeName(Decimal('NaN')).",
+                    raises=ClickhouseDriverOperationalError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('NaN')) AS `TypeOf(Decimal('NaN'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    '(duckdb.InvalidInputException) Invalid Input Error: Attempting '
+                    'to execute an unsuccessful or closed pending query result'
+                    'Error: Invalid Input Error: Type DOUBLE with value nan can\'t be '
+                    'cast because the value is out of range for the destination type INT64',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'NaN\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-NaN",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
+            {
+                'bigquery': "BIGNUMERIC",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Code: 46. DB::Exception: Unknown function Decimal: "
+                    "While processing toTypeName(Decimal('1.1')).",
+                    raises=ClickhouseDriverOperationalError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-big",
         ),
         param(
             ibis.array([1.0, 2.0, 3.0]),

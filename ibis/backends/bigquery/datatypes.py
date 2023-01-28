@@ -66,7 +66,7 @@ def trans_type(t):
 
 @ibis_type_to_bigquery_type.register(dt.Decimal)
 def trans_numeric(t):
-    if (t.precision, t.scale) != (38, 9):
+    if (t.precision, t.scale) not in [(38, 9), (None, None)]:
         raise TypeError(
             "BigQuery only supports decimal types with precision of 38 and "
             "scale of 9"
