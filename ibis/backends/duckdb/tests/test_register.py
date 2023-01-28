@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 
@@ -62,19 +63,49 @@ def test_temp_directory(tmp_path):
     assert value == str(temp_directory)
 
 
-# Skipping this to avoid CI shenanigans for the moment but it passes
-# as of 2023-01-05
-@pytest.mark.skipif(True, reason="avoiding CI shenanigans")
-def test_read_postgres():
-    con = ibis.postgres.connect(
-        host="localhost", port=5432, user="postgres", password="postgres"
-    )
+@pytest.fixture(scope="session")
+def pgurl():  # pragma: no cover
+    pgcon = ibis.postgres.connect(user="postgres", password="postgres")
     df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
     s = ibis.schema(dict(x="float64", y="str"))
 
-    con.create_table("duckdb_test", df, s)
+    pgcon.create_table("duckdb_test", df, s, force=True)
+    yield pgcon.con.url
+    pgcon.drop_table("duckdb_test", force=True)
 
+
+@pytest.mark.skipif(
+    os.environ.get("DUCKDB_POSTGRES") is None, reason="avoiding CI shenanigans"
+)
+def test_read_postgres(pgurl):  # pragma: no cover
     con = ibis.duckdb.connect()
-    uri = "postgres://postgres:postgres@localhost:5432"
-    table = con.read_postgres(uri, "duckdb_test")
+    table = con.read_postgres(
+        f"postgres://{pgurl.username}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
+        table_name="duckdb_test",
+    )
     assert table.count().execute()
+
+
+def test_read_sqlite(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+    ft = con.read_sqlite(path, table_name="functional_alltypes")
+    assert ft.count().execute()
+
+    with pytest.raises(ValueError):
+        con.read_sqlite(path)
+
+
+def test_read_sqlite_no_table_name(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+
+    with pytest.raises(ValueError):
+        con.read_sqlite(path)
+
+
+def test_register_sqlite(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+    ft = con.register(f"sqlite://{path}", "functional_alltypes")
+    assert ft.count().execute()

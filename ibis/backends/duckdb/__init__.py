@@ -196,6 +196,10 @@ class Backend(BaseAlchemyBackend):
             return self.read_csv(source, table_name=table_name, **kwargs)
         elif first.startswith(("postgres://", "postgresql://")):
             return self.read_postgres(source, table_name=table_name, **kwargs)
+        elif first.startswith("sqlite://"):
+            return self.read_sqlite(
+                first[len("sqlite://") :], table_name=table_name, **kwargs
+            )
         else:
             self._register_failure()  # noqa: RET503
 
@@ -416,6 +420,40 @@ class Backend(BaseAlchemyBackend):
         self._load_extensions(["postgres_scanner"])
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.postgres_scan_pushdown(uri, schema, table_name)
+        )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+
+        return self.table(table_name)
+
+    def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+        """Register a table from a SQLite database into a DuckDB table.
+
+        Parameters
+        ----------
+        path
+            The path to the SQLite database
+        table_name
+            The table to read
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.connect("duckdb://")
+        >>> t = con.read_sqlite("ci/ibis-testing-data/ibis_testing.db")
+        >>> t.head().execute()
+        """
+        if table_name is None:
+            raise ValueError("`table_name` is required when registering a sqlite table")
+        self._load_extensions(["sqlite"])
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.sqlite_scan(str(path), table_name)
         )
         view = _create_view(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
