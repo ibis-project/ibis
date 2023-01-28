@@ -1019,17 +1019,13 @@ def test_exists(batting, awards_players, method_name):
             {
                 'bigquery': "BYTES",
                 'clickhouse': 'String',
+                'duckdb': 'BLOB',
                 'snowflake': "BINARY",
                 'sqlite': "blob",
                 'trino': 'STRING',
                 "postgres": "bytea",
             },
             marks=[
-                pytest.mark.broken(
-                    ['duckdb'],
-                    "Conversion Error: Unimplemented type for cast (TINYINT[] -> BLOB)",
-                    raises=DuckDBConversionException,
-                ),
                 pytest.mark.broken(
                     ['polars'],
                     "ValueError: could not convert value \"b'A'\" as a Literal",
