@@ -120,8 +120,22 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             else:
                 # this has horrendous performance for medium to large tables
                 # should we warn?
-                rows = list(ref_op.data.to_frame().itertuples(index=False))
-                result = sa.values(*columns, name=ref_op.name).data(rows)
+                if self.context.compiler.support_values_syntax_in_select:
+                    rows = list(ref_op.data.to_frame().itertuples(index=False))
+                    result = sa.values(*columns, name=ref_op.name).data(rows)
+                else:
+                    raw_rows = (
+                        sa.select(
+                            *(
+                                translator.translate(ops.Literal(val, dtype=type_))
+                                for val, name, type_ in zip(
+                                    row, op.schema.names, op.schema.types
+                                )
+                            )
+                        )
+                        for row in op.data.to_frame().itertuples(index=False)
+                    )
+                    result = sa.union_all(*raw_rows).alias(ref_op.name)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):

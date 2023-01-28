@@ -66,6 +66,7 @@ def day_of_week_name(op):
 
 class SQLiteCompiler(AlchemyCompiler):
     translator_class = SQLiteExprTranslator
+    support_values_syntax_in_select = False
 
 
 @to_sqla_type.register(sqlite.dialect, (dt.Float32, dt.Float64))

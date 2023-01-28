@@ -231,8 +231,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
         # if in memory tables aren't cheap then try to pull out their data
         # FIXME: queries that *select* from in memory tables are still broken
         # for mysql/sqlite/postgres because the generated SQL is wrong
-        if not self.compiler.cheap_in_memory_tables and isinstance(
-            expr.op(), ops.InMemoryTable
+        if (
+            not self.compiler.cheap_in_memory_tables
+            and self.compiler.support_values_syntax_in_select
+            and isinstance(expr.op(), ops.InMemoryTable)
         ):
             (from_,) = compiled.get_final_froms()
             (rows,) = from_._data
