@@ -1375,6 +1375,40 @@ def test_exists(batting, awards_players, method_name):
             id="decimal-big",
         ),
         param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
+            {
+                'bigquery': "BIGNUMERIC",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Code: 46. DB::Exception: Unknown function Decimal: "
+                    "While processing toTypeName(Decimal('1.2')).",
+                    raises=ClickhouseDriverOperationalError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.2')) AS `TypeOf(Decimal('1.2'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-big",
+        ),
+        param(
             ibis.array([1.0, 2.0, 3.0]),
             {
                 'clickhouse': "Array(Float64)",

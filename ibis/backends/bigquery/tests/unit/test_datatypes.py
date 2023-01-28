@@ -49,7 +49,8 @@ def test_no_ambiguities():
         param(
             "array<struct<a: string>>", "ARRAY<STRUCT<a STRING>>", id="array<struct>"
         ),
-        param(dt.Decimal(38, 9), "NUMERIC", id="decimal"),
+        param(dt.Decimal(38, 9), "NUMERIC", id="decimal-numeric"),
+        param(dt.Decimal(76, 38), "BIGNUMERIC", id="decimal-bignumeric"),
     ],
 )
 def test_simple(datatype, expected):
