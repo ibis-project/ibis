@@ -444,17 +444,22 @@ class Backend(BaseSQLBackend):
         schema: ibis.Schema | None = None,
         database: str | None = None,
     ) -> None:
-        if obj is not None:
-            raise NotImplementedError(
-                "Parameter obj is not supported for create_table method in BigQuery backend"
-            )
-        if schema is None:
-            raise ValueError("Schema is required")
-
-        table_id = self._fully_qualified_name(name, database)
-        bigquery_schema = ibis_schema_to_bigquery_schema(schema)
-        table = bq.Table(table_id, schema=bigquery_schema)
-        self.client.create_table(table)
+        if obj is None and schema is None:
+            raise ValueError("The schema or obj parameter is required")
+        if schema is not None:
+            table_id = self._fully_qualified_name(name, database)
+            bigquery_schema = ibis_schema_to_bigquery_schema(schema)
+            table = bq.Table(table_id, schema=bigquery_schema)
+            self.client.create_table(table)
+        else:
+            project_id, dataset = self._parse_project_and_dataset(database)
+            if isinstance(obj, pd.DataFrame):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+            sql_select = self.compile(table)
+            table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
+            self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False

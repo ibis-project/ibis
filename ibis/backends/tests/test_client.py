@@ -731,9 +731,7 @@ def test_agg_memory_table(con):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["bigquery", "clickhouse", "dask", "datafusion", "pandas", "polars"]
-)
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars"])
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
