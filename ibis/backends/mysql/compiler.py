@@ -26,6 +26,7 @@ rewrites = MySQLExprTranslator.rewrites
 
 class MySQLCompiler(AlchemyCompiler):
     translator_class = MySQLExprTranslator
+    support_values_syntax_in_select = False
 
 
 _MYSQL_TYPE_MAP = {
