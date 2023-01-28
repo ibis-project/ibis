@@ -1136,15 +1136,11 @@ def test_exists(batting, awards_players, method_name):
                 'bigquery': 'STRING',
                 'duckdb': "UUID",
                 'sqlite': "text",
+                'snowflake': 'VARCHAR',
                 'trino': 'uuid',
                 "postgres": "uuid",
             },
             marks=[
-                pytest.mark.broken(
-                    ['snowflake'],
-                    '(snowflake.connector.errors.ProgrammingError) 252004: Failed processing pyformat-parameters: 255001: Binding data in type (uuid) is not supported.',
-                    raises=ProgrammingError,
-                ),
                 pytest.mark.broken(
                     ['clickhouse', 'impala'],
                     "Unsupported type: UUID(nullable=True)",

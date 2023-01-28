@@ -53,6 +53,8 @@ def _literal(t, op):
         return sa.func.object_construct_keep_null(
             *itertools.chain.from_iterable(value.items())
         )
+    elif dtype.is_uuid():
+        return sa.literal(str(value))
     return _postgres_literal(t, op)
 
 
