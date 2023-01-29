@@ -41,7 +41,7 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     return temporary
 
 
-@pytest.mark.notimpl(["snowflake", "trino"])
+@pytest.mark.notimpl(["snowflake"])
 def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     sch = ibis.schema(
         [
@@ -62,7 +62,12 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     )
     alchemy_con.create_table(alchemy_temp_table, schema=sch)
     alchemy_con.load_data(alchemy_temp_table, df, if_exists='append')
-    result = alchemy_con.table(alchemy_temp_table).execute()
+    result = (
+        alchemy_con.table(alchemy_temp_table)
+        .execute()
+        .sort_values("first_name")
+        .reset_index(drop=True)
+    )
 
     alchemy_backend.assert_frame_equal(df, result)
 
