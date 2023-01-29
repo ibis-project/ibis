@@ -8,5 +8,5 @@ FROM (
   WHERE
     t0.int_col > 0
   GROUP BY
-    t0.string_col
+    1
 ) AS t1

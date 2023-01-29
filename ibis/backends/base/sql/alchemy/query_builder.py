@@ -251,13 +251,18 @@ class AlchemySelect(Select):
 
     def _add_group_by(self, fragment):
         # GROUP BY and HAVING
-        if not len(self.group_by):
+        nkeys = len(self.group_by)
+        if not nkeys:
             return fragment
 
-        group_keys = [self._translate(arg) for arg in self.group_by]
+        if self.context.compiler.supports_indexed_grouping_keys:
+            group_keys = map(sa.literal_column, map(str, range(1, nkeys + 1)))
+        else:
+            group_keys = map(self._translate, self.group_by)
+
         fragment = fragment.group_by(*group_keys)
 
-        if len(self.having) > 0:
+        if self.having:
             having_args = [self._translate(arg) for arg in self.having]
             having_clause = functools.reduce(sql.and_, having_args)
             fragment = fragment.having(having_clause)
@@ -265,7 +270,7 @@ class AlchemySelect(Select):
         return fragment
 
     def _add_where(self, fragment):
-        if not len(self.where):
+        if not self.where:
             return fragment
 
         args = [self._translate(pred, permit_subquery=True) for pred in self.where]
@@ -273,7 +278,7 @@ class AlchemySelect(Select):
         return fragment.where(clause)
 
     def _add_order_by(self, fragment):
-        if not len(self.order_by):
+        if not self.order_by:
             return fragment
 
         clauses = []
@@ -357,6 +362,8 @@ class AlchemyCompiler(Compiler):
     union_class = AlchemyUnion
     intersect_class = AlchemyIntersection
     difference_class = AlchemyDifference
+
+    supports_indexed_grouping_keys = True
 
     @classmethod
     def to_sql(cls, expr, context=None, params=None, exists=False):

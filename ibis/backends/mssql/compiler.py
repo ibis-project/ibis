@@ -28,3 +28,5 @@ rewrites = MsSqlExprTranslator.rewrites
 
 class MsSqlCompiler(AlchemyCompiler):
     translator_class = MsSqlExprTranslator
+
+    supports_indexed_grouping_keys = False

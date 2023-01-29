@@ -358,51 +358,33 @@ def test_where_simple_comparisons(sa_star1, star1, snapshot):
 
 
 @pytest.mark.parametrize(
-    ("expr_fn", "expected_fn"),
+    "expr_fn",
     [
-        (
-            lambda t: t.aggregate([t['f'].sum().name('total')], [t['foo_id']]),
-            lambda st: sa.select(st.c.foo_id, F.sum(st.c.f).label('total')).group_by(
-                st.c.foo_id
-            ),
+        param(
+            lambda t: t.agg([t['f'].sum().name('total')], [t['foo_id']]),
+            id="single_key",
         ),
-        (
-            lambda t: t.aggregate([t['f'].sum().name('total')], ['foo_id', 'bar_id']),
-            lambda st: sa.select(
-                st.c.foo_id, st.c.bar_id, F.sum(st.c.f).label('total')
-            ).group_by(st.c.foo_id, st.c.bar_id),
+        param(
+            lambda t: t.agg([t['f'].sum().name('total')], ['foo_id', 'bar_id']),
+            id="two_keys",
         ),
-        (
-            lambda t: t.aggregate(
-                [t.f.sum().name("total")],
-                by=["foo_id"],
-                having=[t.f.sum() > 10],
+        param(
+            lambda t: t.agg(
+                [t.f.sum().name("total")], by=["foo_id"], having=[t.f.sum() > 10]
             ),
-            lambda st: (
-                sa.select(st.c.foo_id, F.sum(st.c.f).label("total"))
-                .group_by(st.c.foo_id)
-                .having(F.sum(st.c.f).label("total") > L(10))
-            ),
+            id="having_sum",
         ),
-        (
-            lambda t: t.aggregate(
-                [t.f.sum().name("total")],
-                by=["foo_id"],
-                having=[t.count() > 100],
+        param(
+            lambda t: t.agg(
+                [t.f.sum().name("total")], by=["foo_id"], having=[t.count() > 100]
             ),
-            lambda st: (
-                sa.select(st.c.foo_id, F.sum(st.c.f).label("total"))
-                .group_by(st.c.foo_id)
-                .having(F.count() > L(100))
-            ),
+            id="having_count",
         ),
     ],
 )
-def test_aggregate(con, star1, sa_star1, expr_fn, expected_fn):
-    st = sa_star1.alias('t0')
+def test_aggregate(star1, expr_fn, snapshot):
     expr = expr_fn(star1)
-    expected = expected_fn(st)
-    _check(expr, expected)
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 @pytest.mark.parametrize(
@@ -479,7 +461,11 @@ def test_cte_factor_distinct_but_equal(con, sa_alltypes, snapshot):
     #
 
     t2 = sa_alltypes.alias('t2')
-    t0 = sa.select(t2.c.g, F.sum(t2.c.f).label('metric')).group_by(t2.c.g).cte('t0')
+    t0 = (
+        sa.select(t2.c.g, F.sum(t2.c.f).label('metric'))
+        .group_by(sa.literal_column("1"))
+        .cte('t0')
+    )
 
     t1 = t0.alias('t1')
     table_set = t0.join(t1, t0.c.g == t1.c.g)
@@ -570,7 +556,7 @@ def test_subquery_aliased(con, star1, star2, snapshot):
 
     agged = (
         sa.select(s1.c.foo_id, F.sum(s1.c.f).label('total'))
-        .group_by(s1.c.foo_id)
+        .group_by(sa.literal_column("1"))
         .alias('t0')
     )
 
@@ -581,37 +567,14 @@ def test_subquery_aliased(con, star1, star2, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_lower_projection_sort_key(con, star1, star2, snapshot):
+def test_lower_projection_sort_key(star1, star2, snapshot):
     t1 = star1
     t2 = star2
 
     agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
     expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
-    #
-    t4 = con.meta.tables["star1"].alias("t4")
-    t3 = con.meta.tables["star2"].alias("t3")
-
-    t2 = (
-        sa.select(t4.c.foo_id, F.sum(t4.c.f).label('total'))
-        .group_by(t4.c.foo_id)
-        .alias('t2')
-    )
-    t1 = (
-        sa.select(t2.c.foo_id, t2.c.total, t3.c.value1)
-        .select_from(t2.join(t3, t2.c.foo_id == t3.c.foo_id))
-        .alias('t1')
-    )
-    t0 = (
-        sa.select(t1.c.foo_id, t1.c.total, t1.c.value1)
-        .where(t1.c.total > L(100))
-        .alias('t0')
-    )
-    expected = sa.select(t0.c.foo_id, t0.c.total, t0.c.value1).order_by(
-        t0.c.total.desc()
-    )
 
     expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
-    _check(expr2, expected)
     snapshot.assert_match(to_sql(expr2), "out.sql")
     assert_decompile_roundtrip(expr2, snapshot)
 
@@ -661,41 +624,27 @@ def test_not_exists(con, not_exists, snapshot):
 
 
 @pytest.mark.parametrize(
-    ("expr_fn", "expected_fn"),
+    "expr_fn",
     [
-        (lambda t: t.distinct(), lambda sat: sa.select(sat).distinct()),
-        (
-            lambda t: t['string_col', 'int_col'].distinct(),
-            lambda sat: sa.select(sat.c.string_col, sat.c.int_col).distinct(),
+        param(lambda t: t.distinct(), id="table_distinct"),
+        param(
+            lambda t: t['string_col', 'int_col'].distinct(), id="projection_distinct"
         ),
-        (
-            lambda t: t[t.string_col].distinct(),
-            lambda sat: sa.select(sat.c.string_col.distinct()),
+        param(
+            lambda t: t[t.string_col].distinct(), id="single_column_projection_distinct"
         ),
-        (
-            lambda t: t.int_col.nunique().name('nunique'),
-            lambda sat: sa.select(F.count(sat.c.int_col.distinct()).label('nunique')),
-        ),
-        (
+        param(lambda t: t.int_col.nunique().name('nunique'), id="count_distinct"),
+        param(
             lambda t: t.group_by('string_col').aggregate(
                 t.int_col.nunique().name('nunique')
             ),
-            lambda sat: sa.select(
-                sat.c.string_col,
-                F.count(sat.c.int_col.distinct()).label('nunique'),
-            ).group_by(sat.c.string_col),
+            id="group_by_count_distinct",
         ),
     ],
 )
-def test_distinct(
-    sa_functional_alltypes,
-    functional_alltypes,
-    expr_fn,
-    expected_fn,
-):
+def test_distinct(functional_alltypes, expr_fn, snapshot):
     expr = expr_fn(functional_alltypes)
-    expected = expected_fn(sa_functional_alltypes)
-    _check(expr, expected)
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_sort_aggregation_translation_failure(
@@ -713,7 +662,7 @@ def test_sort_aggregation_translation_failure(
     sat = sa_functional_alltypes.alias("t1")
     base = (
         sa.select(sat.c.string_col, F.max(sat.c.double_col).label('foo')).group_by(
-            sat.c.string_col
+            sa.literal_column("1")
         )
     ).alias('t0')
 
@@ -824,7 +773,7 @@ def test_mutate_filter_join_no_cross_join():
     _check(expr, ex)
 
 
-def test_filter_group_by_agg_with_same_name():
+def test_filter_group_by_agg_with_same_name(snapshot):
     # GH 2907
     t = ibis.table([("int_col", "int32"), ("bigint_col", "int64")], name="t")
     expr = (
@@ -832,18 +781,7 @@ def test_filter_group_by_agg_with_same_name():
         .aggregate(bigint_col=lambda t: t.bigint_col.sum())
         .filter(lambda t: t.bigint_col == 60)
     )
-
-    t1 = sa.table("t", sa.column("int_col"), sa.column("bigint_col")).alias("t1")
-    t0 = (
-        sa.select(
-            t1.c.int_col.label("int_col"),
-            sa.func.sum(t1.c.bigint_col).label("bigint_col"),
-        )
-        .group_by(t1.c.int_col)
-        .alias("t0")
-    )
-    ex = sa.select(t0).where(t0.c.bigint_col == 60)
-    _check(expr, ex)
+    snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 @pytest.fixture
@@ -1075,7 +1013,7 @@ def test_tpc_h11(h11):
             )
         )
         .where(t4.c.n_name == NATION)
-        .group_by(t2.c.ps_partkey)
+        .group_by(sa.literal_column("1"))
     ).alias("t1")
 
     anon_1 = (
@@ -1109,7 +1047,7 @@ def test_to_sqla_type_array_of_non_primitive():
     assert isinstance(result, ArrayType)
 
 
-def test_no_cart_join(con, snapshot):
+def test_no_cart_join(snapshot):
     facts = ibis.table(dict(product_id="!int32"), name="facts")
     products = ibis.table(
         dict(
@@ -1134,7 +1072,7 @@ def test_no_cart_join(con, snapshot):
     agg = gb.aggregate(n=ibis.literal(1))
     ob = agg.order_by(products.ancestor_node_sort_order)
 
-    out = str(con.compile(ob).compile(compile_kwargs=dict(literal_binds=True)))
+    out = to_sql(ob)
     snapshot.assert_match(out, "out.sql")
 
 
