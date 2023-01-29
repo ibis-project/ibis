@@ -468,9 +468,8 @@ class Backend(BaseSQLBackend):
 
         return self.raw_sql(statement.compile())
 
-    def _register_in_memory_table(self, table_op):
-        spark_df = self.compile(table_op.to_expr())
-        spark_df.createOrReplaceTempView(table_op.name)
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self.compile(op.to_expr()).createOrReplaceTempView(op.name)
 
     def create_view(
         self,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -44,6 +45,9 @@ _ibis_dtypes = toolz.valmap(
         dt.Struct: np.object_,
     },
 )
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 
 @dt.dtype.register(DatetimeTZDtype)
@@ -196,19 +200,24 @@ def convert_json_to_series(in_, out, col: pd.Series):
 class DataFrameProxy(Immutable, util.ToFrame):
     __slots__ = ('_df', '_hash')
 
-    def __init__(self, df):
+    def __init__(self, df: pd.DataFrame) -> None:
         object.__setattr__(self, "_df", df)
         object.__setattr__(self, "_hash", hash((type(df), id(df))))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self._hash
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         df_repr = util.indent(repr(self._df), spaces=2)
         return f"{self.__class__.__name__}:\n{df_repr}"
 
-    def to_frame(self):
+    def to_frame(self) -> pd.DataFrame:
         return self._df
+
+    def to_pyarrow(self) -> pa.Table:
+        import pyarrow as pa
+
+        return pa.Table.from_pandas(self._df)
 
 
 class PandasInMemoryTable(ops.InMemoryTable):

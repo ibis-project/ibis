@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.operations as ops
 
@@ -506,12 +507,19 @@ def experimental(func):
 
 
 class ToFrame(abc.ABC):
-    """Interface for in-memory objects that can be converted to a DataFrame."""
+    """Interface for in-memory objects that can be converted to an in-memory structure.
+
+    Supports pandas DataFrames and PyArrow Tables.
+    """
 
     __slots__ = ()
 
     @abc.abstractmethod
-    def to_frame(self) -> pd.DataFrame:
+    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
+        ...
+
+    @abc.abstractmethod
+    def to_pyarrow(self) -> pa.Table:  # pragma: no cover
         ...
 
 
