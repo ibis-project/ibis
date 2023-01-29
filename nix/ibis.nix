@@ -41,7 +41,11 @@ poetry2nix.mkPoetryApplication rec {
 
     runHook preCheck
 
-    pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup
+    # the sqlite-on-duckdb tests try to download the sqlite_scanner extension
+    # but network usage is not allowed in the sandbox
+    pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup \
+      --deselect=ibis/backends/duckdb/tests/test_register.py::test_read_sqlite \
+      --deselect=ibis/backends/duckdb/tests/test_register.py::test_register_sqlite \
 
     runHook postCheck
   '';
