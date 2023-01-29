@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Mapping
 
 import sqlalchemy as sa
 import sqlalchemy.types as sat
@@ -28,17 +28,17 @@ def compiles_array(element, compiler, **kw):
 
 
 class StructType(sat.UserDefinedType):
-    def __init__(
-        self,
-        pairs: Iterable[tuple[str, sat.TypeEngine]],
-    ):
-        self.pairs = [(name, sat.to_instance(type)) for name, type in pairs]
+    def __init__(self, fields: Mapping[str, sat.TypeEngine]) -> None:
+        self.fields = {
+            name: sat.to_instance(type) for name, type in dict(fields).items()
+        }
 
 
 @compiles(StructType, "default")
 def compiles_struct(element, compiler, **kw):
     content = ", ".join(
-        f"{field} {compiler.process(typ, **kw)}" for field, typ in element.pairs
+        f"{field} {compiler.process(typ, **kw)}"
+        for field, typ in element.fields.items()
     )
     return f"STRUCT({content})"
 
@@ -173,7 +173,7 @@ def _array(dialect, itype):
 @to_sqla_type.register(Dialect, dt.Struct)
 def _struct(dialect, itype):
     return StructType(
-        [(name, to_sqla_type(dialect, type)) for name, type in itype.fields.items()]
+        {name: to_sqla_type(dialect, type) for name, type in itype.fields.items()}
     )
 
 
@@ -304,8 +304,10 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
 
 @dt.dtype.register(Dialect, StructType)
 def sa_struct(dialect, satype, nullable=True):
-    pairs = [(name, dt.dtype(dialect, typ)) for name, typ in satype.pairs]
-    return dt.Struct.from_tuples(pairs, nullable=nullable)
+    return dt.Struct(
+        {name: dt.dtype(dialect, typ) for name, typ in satype.fields.items()},
+        nullable=nullable,
+    )
 
 
 @dt.dtype.register(Dialect, ArrayType)
