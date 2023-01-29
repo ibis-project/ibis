@@ -1912,3 +1912,13 @@ def compile_quantile(t, op, **kwargs):
     return compile_aggregator(
         t, op, fn=F.percentile_approx, where_excludes=("quantile",), **kwargs
     )
+
+
+@compiles(ops.ArgMin)
+def compile_argmin(t, op, **kwargs):
+    return compile_aggregator(t, op, fn=F.min_by, **kwargs)
+
+
+@compiles(ops.ArgMax)
+def compile_argmax(t, op, **kwargs):
+    return compile_aggregator(t, op, fn=F.max_by, **kwargs)
