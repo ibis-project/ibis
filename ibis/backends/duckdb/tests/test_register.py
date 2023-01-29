@@ -1,4 +1,5 @@
 import os
+import platform
 import tempfile
 from pathlib import Path
 
@@ -132,6 +133,7 @@ def test_memtable_with_nullable_dtypes():
     assert len(res) == len(data)
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Test segfaults on windows")
 def test_memtable_with_nullable_pyarrow_string():
     pytest.importorskip("pyarrow")
     data = pd.DataFrame({"a": pd.Series(["a", None, "c"], dtype="string[pyarrow]")})
