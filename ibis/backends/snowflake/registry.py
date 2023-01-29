@@ -4,8 +4,13 @@ import itertools
 
 import numpy as np
 import sqlalchemy as sa
+from snowflake.sqlalchemy import ARRAY
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import sqltypes
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     geospatial_functions,
@@ -260,7 +265,11 @@ operation_registry.update(
             *map(t.translate, op.cols)
         ),
         ops.ArraySlice: _array_slice,
-        ops.ArrayCollect: reduction(sa.func.array_agg),
+        ops.ArrayCollect: reduction(
+            lambda arg: sa.func.array_agg(
+                sa.func.ifnull(arg, sa.func.parse_json("null")), type_=ARRAY
+            )
+        ),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Map: _map,
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
@@ -294,13 +303,7 @@ operation_registry.update(
         ops.StructColumn: lambda t, op: sa.func.object_construct_keep_null(
             *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
         ),
-        ops.Unnest: unary(
-            lambda arg: (
-                sa.func.table(sa.func.flatten(arg))
-                .table_valued("value")
-                .columns["value"]
-            )
-        ),
+        ops.Unnest: _unnest,
     }
 )
 
