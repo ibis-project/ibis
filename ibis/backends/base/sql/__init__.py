@@ -248,10 +248,10 @@ class BaseSQLBackend(BaseBackend):
 
         return result
 
-    def _register_in_memory_table(self, table_op):
-        raise NotImplementedError
+    def _register_in_memory_table(self, _: ops.InMemoryTable) -> None:
+        raise NotImplementedError(self.name)
 
-    def _register_in_memory_tables(self, expr):
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         if self.compiler.cheap_in_memory_tables:
             for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)

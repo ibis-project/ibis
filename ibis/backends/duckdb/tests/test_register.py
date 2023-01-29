@@ -2,7 +2,6 @@ import os
 import tempfile
 from pathlib import Path
 
-import duckdb
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -140,10 +139,6 @@ def test_memtable_with_nullable_pyarrow_string():
     assert len(res) == len(data)
 
 
-@pytest.mark.xfail(
-    raises=duckdb.NotImplementedException,
-    reason="DuckDB only supports the `string[pyarrow]` pandas dtype",
-)
 def test_memtable_with_nullable_pyarrow_not_string():
     pytest.importorskip("pyarrow")
 

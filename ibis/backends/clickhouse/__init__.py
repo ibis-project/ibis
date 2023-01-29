@@ -92,8 +92,8 @@ class Backend(BaseBackend):
         super().__init__(*args, **kwargs)
         self._external_tables = external_tables or {}
 
-    def _register_in_memory_table(self, table_op):
-        self._external_tables[table_op.name] = table_op.data.to_frame()
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self._external_tables[op.name] = op.data.to_frame()
 
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.

@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+    import ibis.expr.operations as ops
+
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
@@ -562,10 +564,13 @@ class Backend(BaseAlchemyBackend):
                 ibis_type = parse(type)
                 yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
-    def _register_in_memory_table(self, table_op):
-        df = table_op.data.to_frame()
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # in theory we could use pandas dataframes, but when using dataframes
+        # with pyarrow datatypes later reads of this data segfault
+        name = op.name
+        table = op.data.to_pyarrow()
         with self.begin() as con:
-            con.connection.register(table_op.name, df)
+            con.connection.register(name, table)
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **kwargs: Any
