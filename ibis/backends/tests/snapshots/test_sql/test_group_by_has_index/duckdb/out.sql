@@ -1,34 +1,20 @@
 SELECT
-  CASE
-    WHEN (
-      t0.continent = CAST('NA' AS TEXT)
-    )
-    THEN CAST('North America' AS TEXT)
-    WHEN (
-      t0.continent = CAST('SA' AS TEXT)
-    )
-    THEN CAST('South America' AS TEXT)
-    WHEN (
-      t0.continent = CAST('EU' AS TEXT)
-    )
-    THEN CAST('Europe' AS TEXT)
-    WHEN (
-      t0.continent = CAST('AF' AS TEXT)
-    )
-    THEN CAST('Africa' AS TEXT)
-    WHEN (
-      t0.continent = CAST('AS' AS TEXT)
-    )
-    THEN CAST('Asia' AS TEXT)
-    WHEN (
-      t0.continent = CAST('OC' AS TEXT)
-    )
-    THEN CAST('Oceania' AS TEXT)
-    WHEN (
-      t0.continent = CAST('AN' AS TEXT)
-    )
-    THEN CAST('Antarctica' AS TEXT)
-    ELSE CAST('Unknown continent' AS TEXT)
+  CASE t0.continent
+    WHEN 'NA'
+    THEN 'North America'
+    WHEN 'SA'
+    THEN 'South America'
+    WHEN 'EU'
+    THEN 'Europe'
+    WHEN 'AF'
+    THEN 'Africa'
+    WHEN 'AS'
+    THEN 'Asia'
+    WHEN 'OC'
+    THEN 'Oceania'
+    WHEN 'AN'
+    THEN 'Antarctica'
+    ELSE 'Unknown continent'
   END AS cont,
   SUM(t0.population) AS total_pop
 FROM countries AS t0

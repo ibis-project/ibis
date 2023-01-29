@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-import collections
-import numbers
 import operator
+from typing import Any, Mapping
 
 import numpy as np
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import unary
+from ibis.backends.base.sql.alchemy.datatypes import StructType
 from ibis.backends.base.sql.alchemy.registry import (
     _table_column,
     geospatial_functions,
@@ -74,36 +76,59 @@ def _timestamp_from_unix(t, op):
         raise ValueError(f"`{unit}` unit is not supported!")
 
 
+class struct_pack(GenericFunction):
+    def __init__(self, values: Mapping[str, Any], *, type: StructType) -> None:
+        super().__init__()
+        self.values = values
+        self.type = type
+
+
+@compiles(struct_pack, "duckdb")
+def compiles_struct_pack(element, compiler, **kw):
+    args = ", ".join(
+        "{key} := {value}".format(key=key, value=compiler.process(value, **kw))
+        for key, value in element.values.items()
+    )
+    return f"struct_pack({args})"
+
+
 def _literal(t, op):
     dtype = op.output_dtype
     sqla_type = t.get_sqla_type(dtype)
+
     value = op.value
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_set() or dtype.is_array():
-        return sa.cast(sa.func.list_value(*value), sqla_type)
-    elif isinstance(value, np.ndarray):
-        return sa.cast(sa.func.list_value(*value.tolist()), sqla_type)
-    elif isinstance(value, (numbers.Real, np.floating)) and np.isnan(value):
-        return sa.cast(sa.literal("NaN"), sqla_type)
-    elif isinstance(value, collections.abc.Mapping):
-        if dtype.is_struct():
-            placeholders = ", ".join(
-                f"{key} := :v{i}" for i, key in enumerate(value.keys())
-            )
-            text = sa.text(f"struct_pack({placeholders})")
-            bound_text = text.bindparams(
-                *(sa.bindparam(f"v{i:d}", val) for i, val in enumerate(value.values()))
-            )
-            name = op.name if isinstance(op, ops.Named) else "tmp"
-            params = {name: t.get_sqla_type(dtype)}
-            return bound_text.columns(**params).scalar_subquery()
+        values = value.tolist() if isinstance(value, np.ndarray) else value
+        return sa.cast(sa.func.list_value(*values), sqla_type)
+    elif dtype.is_floating():
+        if not np.isfinite(value):
+            if np.isnan(value):
+                value = "NaN"
+            else:
+                assert np.isinf(value), "value is neither finite, nan nor infinite"
+                prefix = "-" * (value < 0)
+                value = f"{prefix}Inf"
+        return sa.cast(sa.literal(value), sqla_type)
+    elif dtype.is_struct():
+        return struct_pack(
+            {
+                key: t.translate(ops.Literal(val, dtype=dtype[key]))
+                for key, val in value.items()
+            },
+            type=sqla_type,
+        )
+    elif dtype.is_string():
+        return sa.literal(value)
+    elif dtype.is_map():
         raise NotImplementedError(
             f"Ibis dtype `{dtype}` with mapping type "
             f"`{type(value).__name__}` isn't yet supported with the duckdb "
             "backend"
         )
-    return sa.cast(sa.literal(value), sqla_type)
+    else:
+        return sa.cast(sa.literal(value), sqla_type)
 
 
 def _neg_idx_to_pos(array, idx):
@@ -164,13 +189,9 @@ def _string_agg(t, op):
 
 
 def _struct_column(t, op):
-    compile_kwargs = dict(literal_binds=True)
-    translated_pairs = (
-        (name, t.translate(value).compile(compile_kwargs=compile_kwargs))
-        for name, value in zip(op.names, op.values)
-    )
-    return sa.func.struct_pack(
-        *(sa.text(f"{name} := {value}") for name, value in translated_pairs)
+    return struct_pack(
+        dict(zip(op.names, map(t.translate, op.values))),
+        type=t.get_sqla_type(op.output_dtype),
     )
 
 

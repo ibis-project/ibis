@@ -326,8 +326,9 @@ def test_simple_case(sa_alltypes, simple_case):
     expr = simple_case.name("tmp")
     expected = sa.select(
         sa.case(
-            (st.c.g == L('foo'), L('bar')),
-            (st.c.g == L('baz'), L('qux')),
+            (L('foo'), L('bar')),
+            (L('baz'), L('qux')),
+            value=st.c.g,
             else_='default',
         ).label("tmp")
     )
@@ -1039,7 +1040,7 @@ def test_tpc_h11(h11):
 
 def test_to_sqla_type_array_of_non_primitive():
     result = to_sqla_type(DefaultDialect(), dt.Array(dt.Struct(dict(a="int"))))
-    [(result_name, result_type)] = result.value_type.pairs
+    [(result_name, result_type)] = result.value_type.fields.items()
     expected_name = "a"
     expected_type = sa.BigInteger()
     assert result_name == expected_name

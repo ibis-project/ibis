@@ -253,22 +253,19 @@ def _floor_divide(t, op):
 
 
 def _simple_case(t, op):
-    cases = [ops.Equals(op.base, case) for case in op.cases]
-    return _translate_case(t, cases, op.results, op.default)
+    return _translate_case(t, op, value=t.translate(op.base))
 
 
 def _searched_case(t, op):
-    return _translate_case(t, op.cases, op.results, op.default)
+    return _translate_case(t, op, value=None)
 
 
-def _translate_case(t, cases, results, default):
-    case_args = [t.translate(arg) for arg in cases]
-    result_args = [t.translate(arg) for arg in results]
-
-    whens = zip(case_args, result_args)
-    default = t.translate(default)
-
-    return sa.case(*whens, else_=default)
+def _translate_case(t, op, *, value):
+    return sa.case(
+        *zip(map(t.translate, op.cases), map(t.translate, op.results)),
+        value=value,
+        else_=t.translate(op.default),
+    )
 
 
 def _negate(t, op):
