@@ -88,3 +88,29 @@ no_sql_extraction = mark.notimpl(
 @no_sql_extraction
 def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
+@pytest.mark.notyet(["mssql"], reason="sqlglot doesn't support an mssql dialect")
+def test_group_by_has_index(backend, snapshot):
+    countries = ibis.table(
+        dict(continent="string", population="int64"), name="countries"
+    )
+    expr = countries.group_by(
+        cont=(
+            _.continent.case()
+            .when("NA", "North America")
+            .when("SA", "South America")
+            .when("EU", "Europe")
+            .when("AF", "Africa")
+            .when("AS", "Asia")
+            .when("OC", "Oceania")
+            .when("AN", "Antarctica")
+            .else_("Unknown continent")
+            .end()
+        )
+    ).agg(total_pop=_.population.sum())
+    sql = str(ibis.to_sql(expr, dialect=backend.name()))
+    snapshot.assert_match(sql, "out.sql")

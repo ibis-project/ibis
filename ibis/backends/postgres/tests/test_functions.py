@@ -526,11 +526,8 @@ def test_category_label(alltypes, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    ('distinct', 'union'),
-    [(True, 'UNION'), (False, 'UNION ALL')],
-)
-def test_union_cte(alltypes, distinct, union):
+@pytest.mark.parametrize("distinct", [True, False])
+def test_union_cte(alltypes, distinct, snapshot):
     t = alltypes
     expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
     expr2 = expr1.view()
@@ -542,22 +539,7 @@ def test_union_cte(alltypes, distinct, union):
             expr.compile().compile(compile_kwargs={'literal_binds': True})
         ).splitlines()
     )
-    expected = (
-        "WITH anon_1 AS "
-        "(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric "
-        "FROM functional_alltypes AS t0 GROUP BY t0.string_col), "
-        "anon_2 AS "
-        "(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric "
-        "FROM functional_alltypes AS t0 GROUP BY t0.string_col), "
-        "anon_3 AS "
-        "(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric "
-        "FROM functional_alltypes AS t0 GROUP BY t0.string_col) "
-        "SELECT anon_1.string_col, anon_1.metric "
-        f"FROM anon_1 {union} SELECT anon_2.string_col, anon_2.metric "
-        f"FROM anon_2 {union} SELECT anon_3.string_col, anon_3.metric "
-        "FROM anon_3"
-    )
-    assert str(result) == expected
+    snapshot.assert_match(result, "out.sql")
 
 
 @pytest.mark.parametrize(

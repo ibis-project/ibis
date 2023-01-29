@@ -6,5 +6,5 @@ FROM (
     COUNT(*) AS count
   FROM functional_alltypes AS t0
   GROUP BY
-    t0.string_col
+    1
 ) AS t1
