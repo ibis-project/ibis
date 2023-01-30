@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -65,11 +66,20 @@ def from_pandas_extension_dtype(t):
     return getattr(dt, t.__class__.__name__.replace("Dtype", "").lower())
 
 
-@dt.dtype.register(pd.core.arrays.arrow.dtype.ArrowDtype)
-def from_pandas_arrow_extension_dtype(t):
-    import ibis.backends.pyarrow.datatypes as _  # noqa: F401
+try:
+    _arrow_dtype_class = pd.ArrowDtype
+except AttributeError:
+    warnings.warn(
+        f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
+        "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
+    )
+else:
 
-    return dt.dtype(t.pyarrow_dtype)
+    @dt.dtype.register(_arrow_dtype_class)
+    def from_pandas_arrow_extension_dtype(t):
+        import ibis.backends.pyarrow.datatypes as _  # noqa: F401
+
+        return dt.dtype(t.pyarrow_dtype)
 
 
 @sch.schema.register(pd.Series)
