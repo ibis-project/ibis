@@ -380,6 +380,7 @@ def main_execute(
     ValueError
         * If no data are bound to the input expression
     """
+    import ibis.expr.types as ir
 
     if scope is None:
         scope = Scope()
@@ -396,7 +397,7 @@ def main_execute(
 
     # TODO: make expresions hashable so that we can get rid of these .op()
     # calls everywhere
-    params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+    params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
     scope = scope.merge_scope(Scope(params, timecontext))
     return execute_with_scope(
         node,

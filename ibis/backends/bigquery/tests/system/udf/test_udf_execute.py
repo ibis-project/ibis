@@ -109,7 +109,7 @@ def test_multiple_calls_has_one_definition(client):
     add = expr.op()
 
     # generated javascript is identical
-    assert add.left.op().sql == add.right.op().sql
+    assert add.left.sql == add.right.sql
     assert client.execute(expr) == 8.0
 
 

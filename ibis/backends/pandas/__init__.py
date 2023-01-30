@@ -233,6 +233,8 @@ class Backend(BasePandasBackend):
         if params is None:
             params = {}
         else:
-            params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+            params = {
+                k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()
+            }
 
         return execute_and_reset(node, params=params, **kwargs)

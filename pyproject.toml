@@ -223,64 +223,42 @@ filterwarnings = [
   "error",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
-  # poetry
-  "ignore:distutils Version classes are deprecated:DeprecationWarning",
-  # geopandas warning
-  "ignore:The distutils package is deprecated:DeprecationWarning",
   # dask
   "ignore:index is deprecated and will be removed in a future release:FutureWarning",
-  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
-  'ignore:The Index\._get_attributes_dict method is deprecated:DeprecationWarning',
-  'ignore:\nYou did not provide metadata:UserWarning',
   "ignore:`meta` is not specified:UserWarning",
+  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
+  "ignore:Possible nested set at position:FutureWarning",
+  'ignore:\s+You did not provide metadata:UserWarning',
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
-  "ignore:This pattern is interpreted as a regular expression, and has match groups:UserWarning",
   "ignore:The default dtype for empty Series will be 'object':FutureWarning",
-  "ignore:the `interpolation=` argument to percentile was renamed to `method=`:DeprecationWarning",
-  "ignore:Explicitly passing `name=None`:FutureWarning",
   # pandas 1.5.x
   "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
   'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
   'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
-  # the warning suggestion to simply remove the argument in the call isn't correct
-  "ignore:The 'check_less_precise' keyword in testing:FutureWarning",
   # numpy
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
-  # sqlalchemy: most of these can be removed once we have a lower bound of sqlalchemy 1.4
-  'ignore:Dialect .+ does \*not\* support Decimal:',
-  "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
-  'ignore:Dialect .+ will not make use of SQL compilation caching:',
-  "ignore:UserDefinedType .* will not produce a cache key because:",
   # duckdb-engine
-  'ignore:The URL\.__to_string__ method is deprecated:',
+  'ignore:Dialect .+ does \*not\* support Decimal:',
+  "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # ibis
-  "ignore:`BaseBackend.database` is deprecated:FutureWarning",
-  "ignore:`Backend.database` is deprecated:FutureWarning",
+  'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
   # ibis on postgres + windows
   "ignore:locale specific date formats:UserWarning",
-  # shapely
-  "ignore:The array interface is deprecated:",
-  "ignore:Iteration over multi-part geometries is deprecated:",
-  "ignore:__len__ for multi-part geometries is deprecated:",
-  "ignore:An exception was ignored while fetching the attribute `__array_interface__`:DeprecationWarning",
-  # thrift by way of impyla
-  "ignore: PY_SSIZE_T_CLEAN will be required for '#' formats:DeprecationWarning",
   # spark
+  "ignore:distutils Version classes are deprecated:DeprecationWarning",
+  "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
   "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
   "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
-  # findspec
-  "ignore: _SixMetaPathImporter.find_spec()",
-  # duckdb-engine
-  "ignore:duckdb-engine doesn't yet support reflection on indices:",
-  # snowflake
-  "ignore:`Node.op` is deprecated:FutureWarning",
+  # sqlalchemy
+  "ignore:Class ST_.+ will not make use of SQL compilation caching:",
+  "ignore:UserDefinedType Geometry:",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [

@@ -82,9 +82,7 @@ def test_geo_buffer(geotable, gdf):
     expected = pd.Series(
         [linestring.buffer(1.0).area for linestring in gdf.geo_linestring]
     )
-    tm.assert_series_equal(
-        result.area, expected, check_names=False, check_less_precise=2
-    )
+    assert pytest.approx(result.area, abs=1e-1) == expected
 
 
 def test_geo_contains(geotable):
@@ -273,7 +271,7 @@ def test_geo_difference(geotable, gdf):
             for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
         ]
     )
-    tm.assert_series_equal(result, expected, check_names=False, check_less_precise=2)
+    assert pytest.approx(result, abs=1e-1) == expected
 
 
 def test_geo_intersection(geotable, gdf):
@@ -289,7 +287,7 @@ def test_geo_intersection(geotable, gdf):
             for linestring, point in zip(gdf.geo_linestring, gdf.geo_point)
         ]
     )
-    tm.assert_series_equal(result, expected, check_names=False, check_less_precise=2)
+    assert pytest.approx(result, abs=1e-1) == expected
 
 
 def test_geo_unary_union(geotable, gdf):
