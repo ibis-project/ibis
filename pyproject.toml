@@ -378,6 +378,7 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLR0913", # too many arguments
   "PLR2004", # forces everything to be a constant
   "RET504",
   "RET505",
@@ -403,7 +404,10 @@ unfixable = [
 ]
 
 [tool.ruff.per-file-ignores]
-"*test*.py" = ["D"] # ignore all docstring lints in tests
+"*test*.py" = [
+  "D", # ignore all docstring lints in tests
+
+]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.black]

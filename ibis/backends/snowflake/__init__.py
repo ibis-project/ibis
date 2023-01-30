@@ -31,7 +31,7 @@ def _handle_pyarrow_warning(*, action: str):
 
 with _handle_pyarrow_warning(action="error"):
     try:
-        import pyarrow  # noqa: F401
+        import pyarrow  # noqa: F401, ICN001
     except ImportError:
         _NATIVE_ARROW = False
     else:

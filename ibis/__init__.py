@@ -9,8 +9,15 @@ from ibis.expr import api
 from ibis.expr import types as ir
 from ibis.expr.api import *  # noqa: F403
 
-__all__ = ['api', 'ir', 'util', 'BaseBackend', 'IbisError', 'options']
-__all__ += api.__all__
+__all__ = [  # noqa: PLE0604
+    'api',
+    'ir',
+    'util',
+    'BaseBackend',
+    'IbisError',
+    'options',
+    *api.__all__,
+]
 
 __version__ = "4.1.0"
 
