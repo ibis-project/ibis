@@ -77,7 +77,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             methodcaller('millisecond'),
             359,
             id='millisecond',
-            marks=[pytest.mark.notimpl(["clickhouse", "pyspark"])],
+            marks=[pytest.mark.notimpl(["pyspark"])],
         ),
         param(
             lambda x: x.day_of_week.index(),
