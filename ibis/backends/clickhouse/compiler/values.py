@@ -416,7 +416,7 @@ def _literal(op, **kw):
         precision = dtype.precision
         if precision is None or not 1 <= precision <= 76:
             raise NotImplementedError(
-                f'Unsupported precision. Supported values: [1 : 76]. Current value: {precision !r}'
+                f'Unsupported precision. Supported values: [1 : 76]. Current value: {precision!r}'
             )
 
         if 1 <= precision <= 9:
