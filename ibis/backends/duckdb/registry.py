@@ -85,8 +85,9 @@ class struct_pack(GenericFunction):
 
 @compiles(struct_pack, "duckdb")
 def compiles_struct_pack(element, compiler, **kw):
+    quote = compiler.preparer.quote
     args = ", ".join(
-        "{key} := {value}".format(key=key, value=compiler.process(value, **kw))
+        "{key} := {value}".format(key=quote(key), value=compiler.process(value, **kw))
         for key, value in element.values.items()
     )
     return f"struct_pack({args})"
