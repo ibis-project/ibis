@@ -412,6 +412,22 @@ def _literal(op, **kw):
     elif dtype.is_string():
         quoted = value.replace("'", "''").replace("\\", "\\\\")
         return f"'{quoted}'"
+    elif dtype.is_decimal():
+        precision = dtype.precision
+        if precision is None or not 1 <= precision <= 76:
+            raise NotImplementedError(
+                f'Unsupported precision. Supported values: [1 : 76]. Current value: {precision !r}'
+            )
+
+        if 1 <= precision <= 9:
+            type_name = 'Decimal32'
+        elif 10 <= precision <= 18:
+            type_name = 'Decimal64'
+        elif 19 <= precision <= 38:
+            type_name = 'Decimal128'
+        else:
+            type_name = 'Decimal256'
+        return f"to{type_name}({str(value)}, {dtype.scale})"
     elif dtype.is_numeric():
         return repr(value)
     elif dtype.is_interval():

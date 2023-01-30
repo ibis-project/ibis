@@ -1180,9 +1180,8 @@ def test_exists(batting, awards_players, method_name):
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('1.2')).",
-                    raises=ClickhouseDriverOperationalError,
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ['impala'],
@@ -1209,9 +1208,8 @@ def test_exists(batting, awards_players, method_name):
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('Infinity')).",
-                    raises=ClickhouseDriverOperationalError,
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ['impala'],
@@ -1250,9 +1248,8 @@ def test_exists(batting, awards_players, method_name):
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('-Infinity')).",
-                    raises=ClickhouseDriverOperationalError,
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ['impala'],
@@ -1291,9 +1288,8 @@ def test_exists(batting, awards_players, method_name):
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('NaN')).",
-                    raises=ClickhouseDriverOperationalError,
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ['impala'],
@@ -1323,22 +1319,17 @@ def test_exists(batting, awards_players, method_name):
             id="decimal-NaN",
         ),
         param(
-            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(38, 9)),
             {
-                'bigquery': "BIGNUMERIC",
+                'bigquery': "NUMERIC",
+                'clickhouse': 'Decimal(38, 9)',
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
-                "duckdb": "DECIMAL(18,3)",
+                "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
-                    ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('1.1')).",
-                    raises=ClickhouseDriverOperationalError,
-                ),
                 pytest.mark.broken(
                     ['impala'],
                     "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
@@ -1348,18 +1339,14 @@ def test_exists(batting, awards_players, method_name):
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
                 ),
-                pytest.mark.broken(
-                    ['duckdb'],
-                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
-                    raises=sqlalchemy.exc.ProgrammingError,
-                ),
             ],
-            id="decimal-big",
+            id="decimal-small",
         ),
         param(
             ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
             {
                 'bigquery': "BIGNUMERIC",
+                'clickhouse': 'Decimal(76, 38)',
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -1367,12 +1354,6 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
-                    ['clickhouse'],
-                    "Code: 46. DB::Exception: Unknown function Decimal: "
-                    "While processing toTypeName(Decimal('1.2')).",
-                    raises=ClickhouseDriverOperationalError,
-                ),
                 pytest.mark.broken(
                     ['impala'],
                     "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
