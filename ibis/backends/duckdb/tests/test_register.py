@@ -158,3 +158,9 @@ def test_memtable_with_nullable_pyarrow_not_string():
     expr = ibis.memtable(data)
     res = expr.execute()
     assert len(res) == len(data)
+
+
+def test_set_temp_dir(tmp_path):
+    path = tmp_path / "foo" / "bar"
+    ibis.duckdb.connect(temp_directory=path)
+    assert path.exists()

@@ -130,10 +130,12 @@ class Backend(BaseAlchemyBackend):
             if temp_directory is None:
                 temp_directory = (
                     Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-                    / "duckdb"
+                    / "ibis-duckdb"
+                    / str(os.getpid())
                 )
 
         if temp_directory is not None:
+            Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
         super().do_connect(
