@@ -185,7 +185,6 @@ def test_nullable_input_output(con, temp_table):
 
 @mark.notimpl(
     [
-        "bigquery",
         "clickhouse",
         "datafusion",
         "mysql",

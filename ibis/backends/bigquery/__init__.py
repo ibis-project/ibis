@@ -467,6 +467,20 @@ class Backend(BaseSQLBackend):
         table_id = self._fully_qualified_name(name, database)
         self.client.delete_table(table_id, not_found_ok=not force)
 
+    def create_view(
+        self, name: str, expr: ir.Table, database: str | None = None
+    ) -> None:
+        table_id = self._fully_qualified_name(name, database)
+        sql_select = self.compile(expr)
+        table = bq.Table(table_id)
+        table.view_query = sql_select
+        self.client.create_table(table)
+
+    def drop_view(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        self.drop_table(name=name, database=database, force=force)
+
 
 def compile(expr, params=None, **kwargs):
     """Compile an expression for BigQuery."""
