@@ -9,6 +9,7 @@ import toolz
 
 import ibis.common.graph as lin
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base.sql import compiler as sql_compiler
 from ibis.backends.bigquery import operations, registry, rewrites
 
@@ -22,7 +23,8 @@ class BigQueryUDFDefinition(sql_compiler.DDL):
 
     def compile(self):
         """Generate UDF string from definition."""
-        return self.expr.op().sql
+        op = expr.op() if isinstance(expr := self.expr, ir.Expr) else expr
+        return op.sql
 
 
 class BigQueryUnion(sql_compiler.Union):
@@ -121,7 +123,12 @@ class BigQueryCompiler(sql_compiler.Compiler):
 
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
-        return list(toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
+        def key(x):
+            expr = x.expr
+            op = expr.op() if isinstance(expr, ir.Expr) else expr
+            return op.__class__.__name__
+
+        return list(toolz.unique(queries, key=key))
 
 
 # Register custom UDFs

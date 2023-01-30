@@ -105,7 +105,7 @@ class Backend(BasePandasBackend):
             Dask graph.
         """
         params = {
-            k.op() if hasattr(k, "op") else k: v
+            k.op() if isinstance(k, ir.Expr) else k: v
             for k, v in ({} if params is None else params).items()
         }
 
