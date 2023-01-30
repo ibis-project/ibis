@@ -773,7 +773,7 @@ def test_now_from_projection(alltypes):
 
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["impala"])
 def test_date_literal(con):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -781,7 +781,7 @@ def test_date_literal(con):
 
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["impala"])
 def test_timestamp_literal(con):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
@@ -810,7 +810,7 @@ def test_time_literal(con):
 
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["impala"])
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -824,7 +824,7 @@ def test_date_column_from_ymd(con, alltypes, df):
 
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["impala"])
 def test_timestamp_column_from_ymdhms(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(

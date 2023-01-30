@@ -1044,9 +1044,10 @@ def test_exists(batting, awards_players, method_name):
             id="binary",
         ),
         param(
-            ibis.date(12, 12, 12),
+            ibis.date(2022, 12, 12),
             {
                 'bigquery': "DATE",
+                'clickhouse': 'Date',
                 'snowflake': 'DATE',
                 'sqlite': "text",
                 'trino': 'date',
@@ -1055,7 +1056,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['clickhouse', 'impala'],
+                    ['impala'],
                     "No translation rule for <class 'ibis.expr.operations.temporal.DateFromYMD'>",
                     raises=com.OperationNotDefinedError,
                 ),
