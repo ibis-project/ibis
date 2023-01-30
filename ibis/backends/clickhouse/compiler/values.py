@@ -561,6 +561,44 @@ def _truncate(op, **kw):
     return f"{converter}({arg})"
 
 
+@translate_val.register(ops.DateFromYMD)
+def _date_from_ymd(op, **kw):
+    y = translate_val(op.year, **kw)
+    m = translate_val(op.month, **kw)
+    d = translate_val(op.day, **kw)
+    return (
+        f"toDate(concat("
+        f"toString({y}), '-', "
+        f"leftPad(toString({m}), 2, '0'), '-', "
+        f"leftPad(toString({d}), 2, '0')"
+        f"))"
+    )
+
+
+@translate_val.register(ops.TimestampFromYMDHMS)
+def _timestamp_from_ymdhms(op, **kw):
+    y = translate_val(op.year, **kw)
+    m = translate_val(op.month, **kw)
+    d = translate_val(op.day, **kw)
+    h = translate_val(op.hours, **kw)
+    min = translate_val(op.minutes, **kw)
+    s = translate_val(op.seconds, **kw)
+    timezone_arg = ''
+    if timezone := op.output_dtype.timezone:
+        timezone_arg = f', {timezone}'
+
+    return (
+        f"toDateTime("
+        f"concat(toString({y}), '-', "
+        f"leftPad(toString({m}), 2, '0'), '-', "
+        f"leftPad(toString({d}), 2, '0'), ' ', "
+        f"leftPad(toString({h}), 2, '0'), ':', "
+        f"leftPad(toString({min}), 2, '0'), ':', "
+        f"leftPad(toString({s}), 2, '0')"
+        f"), {timezone_arg})"
+    )
+
+
 @translate_val.register(ops.ExistsSubquery)
 @translate_val.register(ops.NotExistsSubquery)
 def _exists_subquery(op, **kw):
