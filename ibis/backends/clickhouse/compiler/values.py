@@ -25,7 +25,7 @@ from ibis.backends.clickhouse.datatypes import serialize
 @functools.singledispatch
 def translate_val(op, **_):
     """Translate a value expression into sqlglot."""
-    raise NotImplementedError(type(op))
+    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate_val.register(dt.DataType)

@@ -1055,14 +1055,9 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['impala'],
+                    ['clickhouse', 'impala'],
                     "No translation rule for <class 'ibis.expr.operations.temporal.DateFromYMD'>",
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(
-                    ['clickhouse'],
-                    "<class 'ibis.expr.operations.temporal.DateFromYMD'>",
-                    raises=NotImplementedError,
                 ),
             ],
             id="date",
@@ -1079,12 +1074,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['clickhouse'],
-                    "<class 'ibis.expr.operations.temporal.TimeFromHMS'>",
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
+                    ['clickhouse', 'impala'],
                     "No translation rule for <class 'ibis.expr.operations.temporal.TimeFromHMS'>",
                     raises=com.OperationNotDefinedError,
                 ),
