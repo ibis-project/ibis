@@ -13,6 +13,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.coalesce
 ::: ibis.cumulative_window
 ::: ibis.date
+::: ibis.deferred
 ::: ibis.desc
 ::: ibis.difference
 ::: ibis.get_backend
