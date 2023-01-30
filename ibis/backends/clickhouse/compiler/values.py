@@ -1085,6 +1085,12 @@ for _op, _name in _simple_ops.items():
 del _fmt, _name, _op
 
 
+@translate_val.register(ops.ExtractMillisecond)
+def _extract_millisecond(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"substring(formatDateTime({arg}, '%f'), 1, 3)"
+
+
 @translate_val.register
 def _sort_key(op: ops.SortKey, **kw):
     arg = translate_val(op.expr, **kw)

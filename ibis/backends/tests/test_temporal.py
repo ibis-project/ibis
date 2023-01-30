@@ -98,7 +98,7 @@ def test_timestamp_extract_literal(con, func, expected):
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion", "clickhouse"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
@@ -863,7 +863,7 @@ def test_date_column_from_iso(con, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["clickhouse", "pyspark"])
+@pytest.mark.notyet(["pyspark"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
