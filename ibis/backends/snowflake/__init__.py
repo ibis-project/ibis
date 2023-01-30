@@ -31,11 +31,16 @@ def _handle_pyarrow_warning(*, action: str):
 
 with _handle_pyarrow_warning(action="error"):
     try:
-        import snowflake.connector  # noqa: F401
-    except UserWarning:
+        import pyarrow  # noqa: F401
+    except ImportError:
         _NATIVE_ARROW = False
     else:
-        _NATIVE_ARROW = True
+        try:
+            import snowflake.connector  # noqa: F401
+        except UserWarning:
+            _NATIVE_ARROW = False
+        else:
+            _NATIVE_ARROW = True
 
 
 with _handle_pyarrow_warning(action="ignore"):
