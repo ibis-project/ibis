@@ -219,7 +219,7 @@ class ResultHandler:
     @staticmethod
     def _import_pyarrow():
         try:
-            import pyarrow
+            import pyarrow  # noqa: ICN001
         except ImportError:
             raise ModuleNotFoundError(
                 "Exporting to arrow formats requires `pyarrow` but it is not installed"
