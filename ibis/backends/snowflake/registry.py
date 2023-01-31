@@ -113,18 +113,6 @@ def _array_slice(t, op):
     return sa.func.array_slice(t.translate(op.arg), start, stop)
 
 
-def _map(_, op):
-    if not (
-        isinstance(keys := op.keys, ops.Literal)
-        and isinstance(values := op.values, ops.Literal)
-    ):
-        raise TypeError("Both keys and values of an `ibis.map` call must be literals")
-
-    return sa.func.object_construct_keep_null(
-        *itertools.chain.from_iterable(zip(keys.value, values.value))
-    )
-
-
 def _nth_value(t, op):
     if not isinstance(nth := op.nth, ops.Literal):
         raise TypeError(f"`nth` argument must be a literal Python int, got {type(nth)}")
@@ -153,7 +141,9 @@ operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
+        ops.Map: fixed_arity(sa.func.ibis_udfs.public.object_from_arrays, 2),
         ops.MapKeys: unary(sa.func.object_keys),
+        ops.MapValues: unary(sa.func.ibis_udfs.public.object_values),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(
                 sa.func.get(arg, key), sa.func.to_variant(default)
@@ -166,6 +156,7 @@ operation_registry.update(
             ),
             2,
         ),
+        ops.MapMerge: fixed_arity(sa.func.ibis_udfs.public.object_merge, 2),
         ops.MapLength: unary(lambda arg: sa.func.array_size(sa.func.object_keys(arg))),
         ops.BitwiseAnd: fixed_arity(sa.func.bitand, 2),
         ops.BitwiseNot: unary(sa.func.bitnot),
@@ -237,7 +228,6 @@ operation_registry.update(
         ops.ArraySlice: _array_slice,
         ops.ArrayCollect: reduction(sa.func.array_agg),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
-        ops.Map: _map,
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
         ops.All: reduction(sa.func.booland_agg),
         ops.NotAll: reduction(lambda arg: ~sa.func.booland_agg(arg)),
