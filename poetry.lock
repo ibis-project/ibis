@@ -2689,14 +2689,14 @@ files = [
 
 [[package]]
 name = "mkdocs-table-reader-plugin"
-version = "1.2"
+version = "2.0"
 description = "MkDocs plugin to directly insert tables from files into markdown."
 category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "mkdocs-table-reader-plugin-1.2.tar.gz", hash = "sha256:7a15949aca8d877d3d72e1245d0e28f4cbd90def64256afe6041c4580a98a690"},
-    {file = "mkdocs_table_reader_plugin-1.2-py3-none-any.whl", hash = "sha256:aac8ae904cab5e748e02ec756879c3e85379c25eff5bb823690a4a3fa5a34d37"},
+    {file = "mkdocs-table-reader-plugin-2.0.tar.gz", hash = "sha256:cb2f5ca1b666e4a7452d196810558ba815f597de01822686c2208d57cb21f9d2"},
+    {file = "mkdocs_table_reader_plugin-2.0-py3-none-any.whl", hash = "sha256:c3d3b063a19e5a619f6062cb5963bd3d04c1f4e4f5d4ff75d9e33f3e79a1d535"},
 ]
 
 [package.dependencies]
@@ -5281,4 +5281,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "700213d6cdc6ce8a0b0f45bb6a81740b9710533ff5e1c1fc3b7dce8971cc5de5"
+content-hash = "eeb6c3aefc7b4ba86b6a47deae1bfa09cb9d98a86c3a3128b614b0caee2f93e9"

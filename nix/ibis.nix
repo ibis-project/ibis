@@ -31,6 +31,9 @@ poetry2nix.mkPoetryApplication rec {
   preCheck = ''
     set -euo pipefail
 
+    HOME="$(mktemp -d)"
+    export HOME
+
     ${rsync}/bin/rsync \
       --chmod=Du+rwx,Fu+rw --archive --delete \
       "${ibisTestingData}/" $PWD/ci/ibis-testing-data
@@ -44,8 +47,7 @@ poetry2nix.mkPoetryApplication rec {
     # the sqlite-on-duckdb tests try to download the sqlite_scanner extension
     # but network usage is not allowed in the sandbox
     pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup \
-      --deselect=ibis/backends/duckdb/tests/test_register.py::test_read_sqlite \
-      --deselect=ibis/backends/duckdb/tests/test_register.py::test_register_sqlite \
+      --deselect=ibis/backends/duckdb/tests/test_register.py::test_{read,register}_sqlite \
 
     runHook postCheck
   '';
