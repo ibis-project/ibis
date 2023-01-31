@@ -388,6 +388,7 @@ ignore = [
   "SIM108", # convert everything to ternary operator
   "SIM117", # nested withs
   "SIM118", # remove .keys() calls from dictionaries
+  "SIM300", # yoda conditions
 
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]

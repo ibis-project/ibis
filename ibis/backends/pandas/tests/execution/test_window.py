@@ -238,9 +238,9 @@ def test_players(players, players_df):
 
 
 def test_batting_filter_mean(batting, batting_df):
-    expr = batting[batting.G.mean() < batting.G]
+    expr = batting[batting.G > batting.G.mean()]
     result = expr.execute()
-    expected = batting_df[batting_df.G.mean() < batting_df.G].reset_index(drop=True)
+    expected = batting_df[batting_df.G > batting_df.G.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 

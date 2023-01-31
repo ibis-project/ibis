@@ -134,7 +134,7 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
         ("val", "int64"),
     ]
     table = ibis.table(schema, name="unbound_table")
-    table = table[ibis.date("2017-01-01") > table.PARTITIONTIME]
+    table = table[table.PARTITIONTIME < ibis.date("2017-01-01")]
     table = table.mutate(file_date=table.file_date.cast("date"))
     table = table[table.file_date < ibis.date("2017-01-01")]
     table = table.mutate(XYZ=table.val * 2)
