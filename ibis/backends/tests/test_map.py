@@ -39,7 +39,6 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ['1', '2'])
 
 
-@pytest.mark.notimpl(["snowflake"], reason="snowflake doesn't implement map values")
 def test_literal_map_values(con):
     mapping = ibis.literal({'1': 'a', '2': 'b'})
     expr = mapping.values().name('tmp')
@@ -80,7 +79,6 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notyet(["snowflake"])
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
@@ -92,7 +90,6 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
     backend.assert_series_equal(result, series)
 
 
-@pytest.mark.notyet(["snowflake"])
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
 def test_map_column_contains_key_column(alltypes):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
@@ -100,7 +97,6 @@ def test_map_column_contains_key_column(alltypes):
     assert result.all()
 
 
-@pytest.mark.notyet(["snowflake"])
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
 def test_literal_map_merge(con):
     a = ibis.literal({'a': 0, 'b': 2})
@@ -154,9 +150,6 @@ def test_map_construct_dict(con, keys, values):
     assert result == dict(zip(keys, values))
 
 
-@pytest.mark.notimpl(
-    ["snowflake"], reason="unclear how to implement two arrays -> object construction"
-)
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))

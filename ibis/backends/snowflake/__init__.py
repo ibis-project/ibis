@@ -51,7 +51,7 @@ with _handle_pyarrow_warning(action="ignore"):
     from snowflake.connector.converter import (
         SnowflakeConverter as _BaseSnowflakeConverter,
     )
-    from snowflake.sqlalchemy import URL
+    from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
 from ibis.backends.snowflake.datatypes import parse  # noqa: E402
 from ibis.backends.snowflake.registry import operation_registry  # noqa: E402
@@ -84,6 +84,38 @@ class _SnowFlakeConverter(_BaseSnowflakeConverter):
     _ARRAY_to_python = _OBJECT_to_python = _VARIANT_to_python
 
 
+_SNOWFLAKE_MAP_UDFS = {
+    "ibis_udfs.public.object_merge": {
+        "inputs": {"obj1": OBJECT, "obj2": OBJECT},
+        "returns": OBJECT,
+        "source": "return Object.assign(obj1, obj2)",
+    },
+    "ibis_udfs.public.object_values": {
+        "inputs": {"obj": OBJECT},
+        "returns": ARRAY,
+        "source": "return Object.values(obj)",
+    },
+    "ibis_udfs.public.object_from_arrays": {
+        "inputs": {"ks": ARRAY, "vs": ARRAY},
+        "returns": OBJECT,
+        "source": "return Object.assign(...ks.map((k, i) => ({[k]: vs[i]})))",
+    },
+}
+
+
+def _make_udf(name, defn, *, quote) -> str:
+    signature = ", ".join(
+        f'{quote(argname)} {sa.types.to_instance(typ)}'
+        for argname, typ in defn["inputs"].items()
+    )
+    return f"""\
+CREATE FUNCTION IF NOT EXISTS {name}({signature})
+RETURNS {sa.types.to_instance(defn["returns"])}
+LANGUAGE JAVASCRIPT
+AS
+$$ {defn["source"]} $$"""
+
+
 class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
@@ -108,18 +140,37 @@ class Backend(BaseAlchemyBackend):
             )
         url = URL(account=account, user=user, password=password, **dbparams, **kwargs)
         self.database_name = dbparams["database"]
-        return super().do_connect(
-            sa.create_engine(
-                url,
-                connect_args={
-                    "converter_class": _SnowFlakeConverter,
-                    "session_parameters": {
-                        PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
-                        "STRICT_JSON_OUTPUT": "TRUE",
-                    },
+        engine = sa.create_engine(
+            url,
+            connect_args={
+                "converter_class": _SnowFlakeConverter,
+                "session_parameters": {
+                    PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
+                    "STRICT_JSON_OUTPUT": "TRUE",
                 },
-            )
+            },
         )
+
+        @sa.event.listens_for(engine, "connect")
+        def connect(dbapi_connection, connection_record):
+            """Register UDFs on a `"connect"` event."""
+            dialect = engine.dialect
+            quote = dialect.preparer(dialect).quote_identifier
+            with dbapi_connection.cursor() as cur:
+                (database, schema) = cur.execute(
+                    "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+                ).fetchone()
+                try:
+                    cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
+                    for name, defn in _SNOWFLAKE_MAP_UDFS.items():
+                        cur.execute(_make_udf(name, defn, quote=quote))
+                    cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
+                except Exception as e:  # noqa: BLE001
+                    warnings.warn(
+                        f"Unable to create map UDFs, some functionality will not work: {e}"
+                    )
+
+        return super().do_connect(engine)
 
     @contextlib.contextmanager
     def begin(self):
