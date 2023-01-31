@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
 
 import polars as pl
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
@@ -241,15 +242,14 @@ class Backend(BaseBackend):
             issubclass(operation, op_impl) for op_impl in op_classes
         )
 
-    def compile(
-        self,
-        expr: ir.Expr,
-        params: Mapping[ir.Expr, object] = None,
-        **kwargs: Any,
-    ):
+    def compile(self, expr: ir.Expr, params: Mapping[ir.Expr, object] = None, **_: Any):
         node = expr.op()
         if params:
-            node = node.replace({p.op(): v for p, v in params.items()})
+            replacements = {}
+            for p, v in params.items():
+                op = p.op() if isinstance(p, ir.Expr) else p
+                replacements[op] = ibis.literal(v, type=op.output_dtype).op()
+            node = node.replace(replacements)
             expr = node.to_expr()
 
         if isinstance(expr, ir.Table):

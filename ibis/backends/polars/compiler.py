@@ -181,7 +181,7 @@ def selection(op):
     if op.sort_keys:
         by = [key.name for key in op.sort_keys]
         reverse = [key.descending for key in op.sort_keys]
-        lf = lf.sort(by, reverse)
+        lf = lf.sort(by, reverse=reverse)
 
     return lf
 
@@ -802,7 +802,10 @@ def array_collect(op):
 @translate.register(ops.Unnest)
 def unnest(op):
     arg = translate(op.arg)
-    return arg.explode()
+    try:
+        return arg.arr.explode()
+    except AttributeError:
+        return arg.explode()
 
 
 _date_methods = {
@@ -904,9 +907,11 @@ def comparison(op):
 
 @translate.register(ops.Between)
 def between(op):
-    arg = translate(op.arg)
-    lower = translate(op.lower_bound)
-    upper = translate(op.upper_bound)
+    op_arg = op.arg
+    arg = translate(op_arg)
+    dtype = op_arg.output_dtype
+    lower = translate(ops.Cast(op.lower_bound, dtype))
+    upper = translate(ops.Cast(op.upper_bound, dtype))
     return arg.is_between(lower, upper, closed="both")
 
 
