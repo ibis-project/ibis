@@ -979,7 +979,7 @@ def test_agg_sort(alltypes):
 
 
 @pytest.mark.xfail_version(polars="==0.14.31", reason="projection of scalars is broken")
-@pytest.mark.xfail_version(polars="==0.15.*", reason="projection of scalars is broken")
+@pytest.mark.xfail_version(polars=">=0.16", reason="projection of scalars is broken")
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
