@@ -46,7 +46,6 @@ plugins:
   - gen-files:
       scripts:
         - gen_matrix.py
-  - table-reader
   - macros
   - mkdocstrings:
       enable_inventory: true

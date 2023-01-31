@@ -1,21 +1,19 @@
 from __future__ import annotations
 
-import io
 from pathlib import Path
 
 import mkdocs_gen_files
 import pandas as pd
-import tomli
 
 import ibis
 import ibis.expr.operations as ops
 
 
 def get_backends():
-    pyproject = tomli.loads(Path("pyproject.toml").read_text())
-    backends = pyproject["tool"]["poetry"]["plugins"]["ibis.backends"]
-    del backends["spark"]
-    return [(backend, getattr(ibis, backend)) for backend in sorted(backends.keys())]
+    entry_points = sorted(
+        name for ep in ibis.util.backend_entry_points() if (name := ep.name) != "spark"
+    )
+    return [(backend, getattr(ibis, backend)) for backend in entry_points]
 
 
 def get_leaf_classes(op):
@@ -45,15 +43,8 @@ def main():
 
     df = pd.DataFrame(support).set_index("operation").sort_index()
 
-    file_path = Path("backends", "raw_support_matrix.csv")
-    local_path = Path(__file__).parent / "docs" / file_path
-
-    buf = io.StringIO()
-    df.to_csv(buf, index_label="FullOperation")
-
-    local_path.write_text(buf.getvalue())
-    with mkdocs_gen_files.open(file_path, "w") as f:
-        f.write(buf.getvalue())
+    with mkdocs_gen_files.open(Path("backends", "raw_support_matrix.csv"), "w") as f:
+        df.to_csv(f, index_label="FullOperation")
 
 
 main()
