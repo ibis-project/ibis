@@ -100,14 +100,14 @@ def make_argidx_params(marks):
     marks = pytest.mark.notyet(marks)
     return [
         param(
-            lambda t: t.timestamp_col.argmin(t.int_col),
-            lambda s: s.timestamp_col.iloc[s.int_col.argmin()],
+            lambda t: t.timestamp_col.argmin(t.id),
+            lambda s: s.timestamp_col.iloc[s.id.argmin()],
             id='argmin',
             marks=marks,
         ),
         param(
-            lambda t: t.double_col.argmax(t.int_col),
-            lambda s: s.double_col.iloc[s.int_col.argmax()],
+            lambda t: t.double_col.argmax(t.id),
+            lambda s: s.double_col.iloc[s.id.argmax()],
             id='argmax',
             marks=marks,
         ),
