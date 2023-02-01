@@ -132,6 +132,12 @@ def infer_enum(_: enum.Enum) -> dt.String:
     return dt.string
 
 
+@infer.register(decimal.Decimal)
+def infer_decimal(value: decimal.Decimal) -> dt.Decimal:
+    """Infer the [`Decimal`][ibis.expr.datatypes.Decimal] type of `value`."""
+    return dt.decimal
+
+
 @infer.register(bool)
 def infer_boolean(value: bool) -> dt.Boolean:
     return dt.boolean
