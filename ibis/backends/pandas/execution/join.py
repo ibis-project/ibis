@@ -7,6 +7,7 @@ import ibis.expr.operations as ops
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import constants
+from ibis.common.exceptions import UnsupportedOperationError
 
 
 def _compute_join_column(column, **kwargs):
@@ -102,7 +103,7 @@ def execute_join(op, left, right, predicates, **kwargs):
     try:
         how = constants.JOIN_TYPES[op_type]
     except KeyError:
-        raise NotImplementedError(f'{op_type.__name__} not supported')
+        raise UnsupportedOperationError(f'{op_type.__name__} not supported')
 
     left_on, right_on = _construct_join_predicate_columns(op, predicates, **kwargs)
 

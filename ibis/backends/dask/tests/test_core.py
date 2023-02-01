@@ -76,8 +76,8 @@ def test_missing_data_on_custom_client():
     con = MyBackend()
     t = con.table('t')
     with pytest.raises(
-        NotImplementedError,
-        match='Could not find signature for execute_node: <DatabaseTable, MyBackend>',
+        com.OperationNotDefinedError,
+        match="Operation 'DatabaseTable' is not implemented for this backend",
     ):
         con.execute(t)
 
@@ -112,4 +112,4 @@ def test_scope_look_up():
 def test_new_dispatcher():
     types = (ops.TableColumn, dd.DataFrame)
     assert execute_node.dispatch(*types) is not None
-    assert pandas_execute_node.dispatch(*types) is None
+    assert pandas_execute_node.dispatch(*types).__name__ == 'raise_unknown_op'

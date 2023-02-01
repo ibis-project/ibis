@@ -31,7 +31,10 @@ _to_pyarrow_types = {
 
 @functools.singledispatch
 def to_pyarrow_type(dtype: dt.DataType):
-    return _to_pyarrow_types[dtype.__class__]
+    arrow_type = _to_pyarrow_types.get(dtype.__class__)
+    if not arrow_type:
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
+    return arrow_type
 
 
 @to_pyarrow_type.register(dt.Array)

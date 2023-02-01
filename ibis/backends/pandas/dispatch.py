@@ -20,9 +20,9 @@ execute_node = TraceTwoLevelDispatcher(
 )
 
 
-@execute_node.register(ops.Node)
-def raise_unknown_op(node, **kwargs):
-    raise NotImplementedError(
+@execute_node.register(ops.Node, [object])
+def raise_unknown_op(node, *args, **kwargs):
+    raise com.OperationNotDefinedError(
         f"Operation {type(node).__name__!r} is not implemented for this backend"
     )
 

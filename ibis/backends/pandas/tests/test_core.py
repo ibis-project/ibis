@@ -93,8 +93,8 @@ def test_missing_data_on_custom_client():
     con = MyBackend()
     t = con.table('t')
     with pytest.raises(
-        NotImplementedError,
-        match=('Could not find signature for execute_node: <DatabaseTable, MyBackend>'),
+        com.OperationNotDefinedError,
+        match="Operation 'DatabaseTable' is not implemented for this backend",
     ):
         con.execute(t)
 

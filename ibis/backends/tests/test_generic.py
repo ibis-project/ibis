@@ -796,6 +796,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "null",
             },
             id="null",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(False, type=dt.boolean),
@@ -810,6 +817,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "boolean",
             },
             id="boolean",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.int8),
@@ -824,6 +838,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="int8",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.int16),
@@ -838,6 +859,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="int16",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.int32),
@@ -852,6 +880,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="int32",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.int64),
@@ -866,6 +901,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="int64",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.uint8),
@@ -880,6 +922,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="uint8",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.uint16),
@@ -894,6 +943,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="uint16",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.uint32),
@@ -908,6 +964,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="uint32",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.uint64),
@@ -922,6 +985,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "integer",
             },
             id="uint64",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.float16),
@@ -936,10 +1006,10 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ['polars'],
-                    "<class 'ibis.expr.datatypes.core.Float16'>",
-                    raises=KeyError,
+                    "NotImplementedError: Unsupported type: Float16(nullable=True)",
+                    raises=NotImplementedError,
                 ),
             ],
             id="float16",
@@ -957,6 +1027,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric",
             },
             id="float32",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(1, type=dt.float64),
@@ -971,6 +1048,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "numeric",
             },
             id="float64",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal("STRING", type=dt.string),
@@ -985,6 +1069,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text",
             },
             id="string",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal("STRI'NG", type=dt.string),
@@ -999,6 +1090,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text",
             },
             id="string-quote1",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal("STRI\"NG", type=dt.string),
@@ -1013,6 +1111,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text",
             },
             id="string-quote2",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.literal(b"A", type=dt.binary),
@@ -1036,7 +1141,7 @@ def test_exists(batting, awards_players, method_name):
                     raises=sqlalchemy.exc.StatementError,
                 ),
                 pytest.mark.broken(
-                    ['clickhouse', 'impala'],
+                    ['clickhouse', 'impala', 'polars'],
                     "Unsupported type: Binary(nullable=True)",
                     raises=NotImplementedError,
                 ),
@@ -1060,6 +1165,11 @@ def test_exists(batting, awards_players, method_name):
                     "No translation rule for <class 'ibis.expr.operations.temporal.DateFromYMD'>",
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="date",
         ),
@@ -1079,6 +1189,11 @@ def test_exists(batting, awards_players, method_name):
                     "No translation rule for <class 'ibis.expr.operations.temporal.TimeFromHMS'>",
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    "No translation rule for <class 'ibis.expr.operations.temporal.TimeFromHMS'>",
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="time",
         ),
@@ -1095,6 +1210,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "timestamp with time zone",
             },
             id="timestamp",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                )
+            ],
         ),
         param(
             ibis.interval(1, unit="s"),
@@ -1118,6 +1240,11 @@ def test_exists(batting, awards_players, method_name):
                     'AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` '
                     'Encountered: ) Expected: +',
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="interval",
         ),
@@ -1133,7 +1260,7 @@ def test_exists(batting, awards_players, method_name):
             },
             marks=[
                 pytest.mark.broken(
-                    ['clickhouse', 'impala'],
+                    ['clickhouse', 'impala', 'polars'],
                     "Unsupported type: UUID(nullable=True)",
                     raises=NotImplementedError,
                 ),
@@ -1157,6 +1284,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text",
             },
             id="macaddr",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: MACADDR(nullable=True)',
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(
             ibis.literal("127.0.0.1", type=dt.inet),
@@ -1171,6 +1305,13 @@ def test_exists(batting, awards_players, method_name):
                 "postgres": "text",
             },
             id="inet",
+            marks=[
+                pytest.mark.notimpl(
+                    ['polars'],
+                    "Unsupported type: INET(nullable=True)",
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(
             ibis.literal(decimal.Decimal("1.2"), type=dt.decimal),
@@ -1196,6 +1337,11 @@ def test_exists(batting, awards_players, method_name):
                     "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: Decimal(precision=None, scale=None, nullable=True)',
+                    raises=NotImplementedError,
                 ),
             ],
             id="decimal",
@@ -1237,6 +1383,11 @@ def test_exists(batting, awards_players, method_name):
                     'query_id=20230128_024107_01084_y8zm3)',
                     raises=sqlalchemy.exc.ProgrammingError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: Decimal(precision=None, scale=None, nullable=True)',
+                    raises=NotImplementedError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -1276,6 +1427,11 @@ def test_exists(batting, awards_players, method_name):
                     'message="line 1:51: \'-Infinity\' is not a valid decimal literal", '
                     'query_id=20230128_024107_01084_y8zm3)',
                     raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: Decimal(precision=None, scale=None, nullable=True)',
+                    raises=NotImplementedError,
                 ),
             ],
             id="decimal-infinity+",
@@ -1320,6 +1476,11 @@ def test_exists(batting, awards_players, method_name):
                     'query_id=20230128_024107_01084_y8zm3)',
                     raises=sqlalchemy.exc.ProgrammingError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: Decimal(precision=None, scale=None, nullable=True)',
+                    raises=NotImplementedError,
+                ),
             ],
             id="decimal-NaN",
         ),
@@ -1343,6 +1504,11 @@ def test_exists(batting, awards_players, method_name):
                     "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'Unsupported type: Decimal(precision=38, scale=9, nullable=True)',
+                    raises=NotImplementedError,
                 ),
             ],
             id="decimal-small",
@@ -1373,6 +1539,11 @@ def test_exists(batting, awards_players, method_name):
                     "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
                     raises=sqlalchemy.exc.ProgrammingError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    "Unsupported type: Decimal(precision=76, scale=38, nullable=True)",
+                    raises=NotImplementedError,
+                ),
             ],
             id="decimal-big",
         ),
@@ -1391,6 +1562,11 @@ def test_exists(batting, awards_players, method_name):
                     ['sqlite', 'impala'],
                     "Unsupported type: Array(value_type=Float64(nullable=True), nullable=True)",
                     raises=NotImplementedError,
+                ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
             id="array<float>",
@@ -1411,6 +1587,11 @@ def test_exists(batting, awards_players, method_name):
                     "Unsupported type: Array(value_type=String(nullable=True), nullable=True)",
                     raises=NotImplementedError,
                 ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    'TypeOf not supported',
+                    raises=com.OperationNotDefinedError,
+                ),
             ],
             id="array<string>",
         ),
@@ -1426,10 +1607,9 @@ def test_exists(batting, awards_players, method_name):
         "mssql",
         "mysql",
         "pandas",
-        "polars",
         "pyspark",
     ],
-    raises=(NotImplementedError, com.OperationNotDefinedError),
+    raises=com.OperationNotDefinedError,
 )
 def test_typeof(backend, con, ibis_op, expected_values):
     expr = ibis_op.typeof()

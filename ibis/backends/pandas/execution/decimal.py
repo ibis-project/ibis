@@ -10,6 +10,7 @@ import pandas as pd
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas.dispatch import execute_node
+from ibis.common.exceptions import OperationNotDefinedError
 
 
 @execute_node.register(ops.Ln, decimal.Decimal)
@@ -66,7 +67,7 @@ def execute_decimal_unary(op, data, **kwargs):
     if function is None:
         math_function = getattr(math, operation_name, None)
         if math_function is None:
-            raise NotImplementedError(f'{op_type.__name__} not supported')
+            raise OperationNotDefinedError(f'{op_type.__name__} not supported')
         function = lambda x: decimal.Decimal(math_function(x))
     try:
         return function(data)
