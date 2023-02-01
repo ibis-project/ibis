@@ -113,8 +113,18 @@ def can_cast_decimals(source: dt.Decimal, target: dt.Decimal, **kwargs) -> bool:
     target_sc = target.scale
     source_sc = source.scale
     return (
-        target_prec is None or (source_prec is not None and target_prec >= source_prec)
-    ) and (target_sc is None or (source_sc is not None and target_sc >= source_sc))
+        # If either sides precision and scale are both `None`, return `True`.
+        target_prec is None
+        and target_sc is None
+        or source_prec is None
+        and source_sc is None
+        # Otherwise, return `True` unless we are downcasting precision or scale.
+        or (
+            target_prec is None
+            or (source_prec is not None and target_prec >= source_prec)
+        )
+        and (target_sc is None or (source_sc is not None and target_sc >= source_sc))
+    )
 
 
 @castable.register(dt.Interval, dt.Interval)
