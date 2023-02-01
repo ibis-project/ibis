@@ -36,9 +36,7 @@ def to_polars_type(dtype):
     try:
         return _to_polars_types[dtype.__class__]  # else return  pl.Object?
     except KeyError:
-        raise NotImplementedError(
-            f"Translation to polars dtype not implemented for {dtype}"
-        )
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
 
 @to_polars_type.register(dt.Timestamp)

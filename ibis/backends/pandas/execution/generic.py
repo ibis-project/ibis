@@ -201,7 +201,7 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
     if func is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
     return func(data)
 
 
@@ -888,7 +888,7 @@ def _execute_binary_op_impl(op, left, right, **_):
     try:
         operation = constants.BINARY_OPERATIONS[op_type]
     except KeyError:
-        raise NotImplementedError(
+        raise com.OperationNotDefinedError(
             f'Binary operation {op_type.__name__} not implemented'
         )
     else:

@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
+from ibis.common.exceptions import OperationNotDefinedError
 
 TIMESTAMP = "2022-03-13 06:59:10.467417"
 
@@ -97,7 +98,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         param(
             'double',
             float,
-            marks=pytest.mark.xfail(raises=NotImplementedError),
+            marks=pytest.mark.xfail(raises=OperationNotDefinedError),
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
@@ -121,7 +122,7 @@ def test_cast_timestamp_scalar_naive(to, expected):
         param(
             'double',
             float,
-            marks=pytest.mark.xfail(raises=NotImplementedError),
+            marks=pytest.mark.xfail(raises=OperationNotDefinedError),
         ),
         (
             dt.Timestamp('America/Los_Angeles'),

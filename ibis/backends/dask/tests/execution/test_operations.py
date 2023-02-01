@@ -9,6 +9,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import OperationNotDefinedError
 
 da = pytest.importorskip("dask.array")
 dd = pytest.importorskip("dask.dataframe")
@@ -818,7 +819,7 @@ def test_round(t, df):
 
 
 @pytest.mark.xfail(
-    raises=NotImplementedError,
+    raises=OperationNotDefinedError,
     reason="MultiQuantile is not implemented for the dask backend",
 )
 def test_quantile_group_by(batting, batting_df):

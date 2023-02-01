@@ -11,6 +11,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import OperationNotDefinedError
 
 dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
@@ -142,7 +143,7 @@ def test_round_decimal_with_negative_places(t, df):
 
 
 @pytest.mark.xfail(
-    raises=NotImplementedError,
+    raises=OperationNotDefinedError,
     reason='TODO - arrays - #2553'
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )
@@ -202,7 +203,7 @@ def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
 
 
 @pytest.mark.xfail(
-    raises=NotImplementedError,
+    raises=OperationNotDefinedError,
     reason='TODO - arrays - #2553'
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )

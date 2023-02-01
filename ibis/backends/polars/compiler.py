@@ -89,7 +89,7 @@ def literal(op):
     elif dtype.is_null():
         return pl.lit(value)
     elif dtype.is_binary():
-        raise NotImplementedError("Binary literals do not work in polars")
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
     else:
         typ = to_polars_type(dtype)
         return pl.lit(op.value, dtype=typ)
@@ -414,7 +414,7 @@ def string_unary(op):
     arg = translate(op.arg)
     func = _string_unary.get(type(op))
     if func is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
 
     method = getattr(arg.str, func)
     return method()
@@ -881,7 +881,7 @@ def unary(op):
     arg = translate(op.arg)
     func = _unary.get(type(op))
     if func is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
     return func(arg)
 
 
@@ -901,7 +901,7 @@ def comparison(op):
     right = translate(op.right)
     func = _comparisons.get(type(op))
     if func is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 
@@ -928,7 +928,7 @@ _bitwise_binops = {
 def bitwise_binops(op):
     ufunc = _bitwise_binops.get(type(op))
     if ufunc is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
     left = translate(op.left)
     right = translate(op.right)
 
@@ -968,7 +968,7 @@ def binop(op):
     right = translate(op.right)
     func = _binops.get(type(op))
     if func is None:
-        raise NotImplementedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 
