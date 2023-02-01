@@ -1,3 +1,4 @@
+import contextlib
 import decimal
 import math
 import operator
@@ -6,10 +7,12 @@ from operator import and_, lshift, or_, rshift, xor
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy.exc
 from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import _
 from ibis import literal as L
 from ibis.expr import datatypes as dt
@@ -17,8 +20,568 @@ from ibis.tests.util import assert_equal
 
 try:
     import duckdb
+
+    DuckDBConversionException = duckdb.ConversionException
 except ImportError:
     duckdb = None
+    DuckDBConversionException = None
+
+
+try:
+    import clickhouse_driver
+
+    ClickhouseDriverOperationalError = clickhouse_driver.dbapi.errors.OperationalError
+except ImportError:
+    ClickhouseDriverOperationalError = None
+
+try:
+    from py4j.protocol import Py4JError
+except ImportError:
+    Py4JError = None
+
+try:
+    from pyarrow import ArrowTypeError
+except ImportError:
+    ArrowTypeError = None
+
+
+@pytest.mark.parametrize(
+    ("expr", "expected_types"),
+    [
+        param(
+            ibis.literal(1, type=dt.int8),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "SMALLINT",
+                "postgres": "integer",
+            },
+            id="int8",
+        ),
+        param(
+            ibis.literal(1, type=dt.int16),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "SMALLINT",
+                "postgres": "integer",
+            },
+            id="int16",
+        ),
+        param(
+            ibis.literal(1, type=dt.int32),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "INTEGER",
+                "postgres": "integer",
+            },
+            id="int32",
+        ),
+        param(
+            ibis.literal(1, type=dt.int64),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "BIGINT",
+                "postgres": "integer",
+            },
+            id="int64",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint8),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UTINYINT",
+                "postgres": "integer",
+            },
+            id="uint8",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint16),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "USMALLINT",
+                "postgres": "integer",
+            },
+            id="uint16",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint32),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UINTEGER",
+                "postgres": "integer",
+            },
+            id="uint32",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint64),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UBIGINT",
+                "postgres": "integer",
+            },
+            id="uint64",
+        ),
+        param(
+            ibis.literal(1, type=dt.float16),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "FLOAT",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['polars'],
+                    "Unsupported type: Float16(nullable=True)",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['datafusion'],
+                    "Expected np.float16 instance",
+                    raises=ArrowTypeError,
+                ),
+            ],
+            id="float16",
+        ),
+        param(
+            ibis.literal(1, type=dt.float32),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "FLOAT",
+                "postgres": "numeric",
+            },
+            id="float32",
+        ),
+        param(
+            ibis.literal(1, type=dt.float64),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "DOUBLE",
+                "postgres": "numeric",
+            },
+            id="float64",
+        ),
+    ],
+)
+def test_numeric_literal(con, backend, expr, expected_types):
+    result = con.execute(expr)
+    assert result == 1
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == expected_types[backend_name]
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected_result', "expected_types"),
+    [
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.decimal),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': decimal.Decimal('1.1'),
+                'snowflake': '1.1',
+                'sqlite': 1.1,
+                'trino': 1.1,
+                'dask': decimal.Decimal('1.1'),
+                "duckdb": decimal.Decimal('1.1'),
+                "postgres": 1.1,
+                'pandas': decimal.Decimal("1.1"),
+                'pyspark': decimal.Decimal("1.1"),
+                'mysql': 1.1,
+                'mssql': 1.1,
+            },
+            {
+                'bigquery': "NUMERIC",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+            ],
+            id="default",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(38, 9)),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': decimal.Decimal('1.1'),
+                'snowflake': '1.1',
+                'sqlite': 1.1,
+                'trino': 1.1,
+                "duckdb": decimal.Decimal('1.100000000'),
+                "postgres": 1.1,
+                'pandas': decimal.Decimal("1.1"),
+                'pyspark': decimal.Decimal("1.1"),
+                'mysql': 1.1,
+                'clickhouse': decimal.Decimal("1.1"),
+                'dask': decimal.Decimal('1.1'),
+                'mssql': 1.1,
+            },
+            {
+                'bigquery': "NUMERIC",
+                'clickhouse': 'Decimal(38, 9)',
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(38,9)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+            ],
+            id="decimal-small",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': decimal.Decimal('1.1'),
+                'snowflake': '1.1',
+                'sqlite': 1.1,
+                'trino': 1.1,
+                'dask': decimal.Decimal('1.1'),
+                "postgres": 1.1,
+                'pandas': decimal.Decimal("1.1"),
+                'pyspark': decimal.Decimal("1.1"),
+                'mysql': 1.1,
+                'clickhouse': decimal.Decimal(
+                    '1.10000000000000003193790845333396190208'
+                ),
+                'mssql': 1.1,
+            },
+            {
+                'bigquery': "BIGNUMERIC",
+                'clickhouse': 'Decimal(76, 38)',
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.2')) AS `TypeOf(Decimal('1.2'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-big",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("Infinity"), type=dt.decimal),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': float('inf'),
+                'snowflake': 'Infinity',
+                'sqlite': float('inf'),
+                "postgres": float('nan'),
+                'pandas': decimal.Decimal("Infinity"),
+                'dask': decimal.Decimal('Infinity'),
+            },
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('Infinity')) AS `TypeOf(Decimal('Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['pyspark'],
+                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
+                    raises=Py4JError,
+                ),
+                pytest.mark.broken(
+                    ['mysql'],
+                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'Infinity' in 'field list'\")"
+                    "[SQL: SELECT %(param_1)s AS `Decimal('Infinity')`]",
+                    raises=sqlalchemy.exc.OperationalError,
+                ),
+                pytest.mark.broken(
+                    ['mssql'],
+                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
+                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
+                    "Check messages from the SQL Server\n\")"
+                    "[SQL: SELECT %(param_1)s AS [Decimal('Infinity')]]",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity+",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("-Infinity"), type=dt.decimal),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': float('-inf'),
+                'snowflake': '-Infinity',
+                'sqlite': float('-inf'),
+                "postgres": float('nan'),
+                'pandas': decimal.Decimal("-Infinity"),
+                'dask': decimal.Decimal('-Infinity'),
+            },
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('-Infinity')) AS `TypeOf(Decimal('-Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value -inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'-Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['pyspark'],
+                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
+                    raises=Py4JError,
+                ),
+                pytest.mark.broken(
+                    ['mysql'],
+                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'Infinity' in 'field list'\")"
+                    "[SQL: SELECT %(param_1)s AS `Decimal('-Infinity')`]",
+                    raises=sqlalchemy.exc.OperationalError,
+                ),
+                pytest.mark.broken(
+                    ['mssql'],
+                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'Infinity'."
+                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
+                    "Check messages from the SQL Server\n\")"
+                    "[SQL: SELECT %(param_1)s AS [Decimal('-Infinity')]]",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity-",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("NaN"), type=dt.decimal),
+            # TODO(krzysztof-kwitt): Should we unify it?
+            {
+                'bigquery': float('nan'),
+                'snowflake': 'NaN',
+                'sqlite': None,
+                "postgres": float('nan'),
+                'pandas': decimal.Decimal('NaN'),
+                'dask': decimal.Decimal('NaN'),
+            },
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "null",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('NaN')) AS `TypeOf(Decimal('NaN'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    '(duckdb.InvalidInputException) Invalid Input Error: Attempting '
+                    'to execute an unsuccessful or closed pending query result'
+                    'Error: Invalid Input Error: Type DOUBLE with value nan can\'t be '
+                    'cast because the value is out of range for the destination type INT64',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'NaN\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['pyspark'],
+                    "An error occurred while calling z:org.apache.spark.sql.functions.lit.",
+                    raises=Py4JError,
+                ),
+                pytest.mark.broken(
+                    ['mysql'],
+                    "(pymysql.err.OperationalError) (1054, \"Unknown column 'NaN' in 'field list'\")"
+                    "[SQL: SELECT %(param_1)s AS `Decimal('NaN')`]",
+                    raises=sqlalchemy.exc.OperationalError,
+                ),
+                pytest.mark.broken(
+                    ['mssql'],
+                    "(pymssql._pymssql.ProgrammingError) (207, b\"Invalid column name 'NaN'."
+                    "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
+                    "Check messages from the SQL Server\n\")"
+                    "[SQL: SELECT %(param_1)s AS [Decimal('NaN')]]",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-NaN",
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    ['polars', 'datafusion'],
+    "Unsupported type",
+    raises=NotImplementedError,
+)
+def test_decimal_literal(con, backend, expr, expected_types, expected_result):
+    backend_name = backend.name()
+
+    result = con.execute(expr)
+    current_expected_result = expected_result[backend_name]
+    if type(current_expected_result) in (float, decimal.Decimal) and math.isnan(
+        current_expected_result
+    ):
+        assert math.isnan(result) and type(result) == type(current_expected_result)
+    else:
+        assert result == current_expected_result
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        assert con.execute(expr.typeof()) == expected_types[backend_name]
 
 
 @pytest.mark.parametrize(

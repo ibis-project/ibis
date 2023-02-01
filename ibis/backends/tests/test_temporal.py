@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy.exc
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
 
@@ -772,22 +774,134 @@ def test_now_from_projection(alltypes):
     tm.assert_series_equal(ts.dt.year, year_expected)
 
 
+DATE_BACKEND_TYPES = {
+    'bigquery': "DATE",
+    'clickhouse': 'Date',
+    'snowflake': 'DATE',
+    'sqlite': "text",
+    'trino': 'date',
+    "duckdb": "DATE",
+    "postgres": "date",
+}
+
+
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
 @pytest.mark.notyet(["impala"])
-def test_date_literal(con):
+def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
     assert result.strftime('%Y-%m-%d') == '2022-02-04'
 
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == DATE_BACKEND_TYPES[backend_name]
+
+
+TIMESTAMP_BACKEND_TYPES = {
+    'bigquery': "DATETIME",
+    'clickhouse': 'DateTime',
+    'impala': 'TIMESTAMP',
+    'snowflake': 'TIMESTAMP_NTZ',
+    'sqlite': "text",
+    'trino': 'timestamp(3) with time zone',
+    "duckdb": "TIMESTAMP",
+    "postgres": "timestamp without time zone",
+}
+
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
 @pytest.mark.notyet(["impala"])
-def test_timestamp_literal(con):
+def test_timestamp_literal(con, backend):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
     if not isinstance(result, str):
         result = result.strftime('%Y-%m-%d %H:%M:%S%Z')
     assert result == '2022-02-04 16:20:00'
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == TIMESTAMP_BACKEND_TYPES[backend_name]
+
+
+TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
+    'bigquery': "DATETIME",
+    'clickhouse': 'Nullable(DateTime64(3))',
+    'impala': 'TIMESTAMP',
+    'snowflake': 'TIMESTAMP_NTZ',
+    'sqlite': "text",
+    'trino': 'timestamp(3) with time zone',
+    "duckdb": "TIMESTAMP",
+    "postgres": "timestamp with time zone",
+}
+
+
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "mysql", "dask", "pyspark", 'duckdb', 'sqlite']
+)
+@pytest.mark.notyet(["impala"])
+@pytest.mark.parametrize(
+    ('timezone', 'expected_result'),
+    [
+        param(
+            'Europe/London',
+            '2022-02-04 16:20:00GMT',
+            id="name",
+            marks=[
+                pytest.mark.broken(
+                    ['mssql'],
+                    "bytes' object has no attribute 'strftime",
+                    raises=AttributeError,
+                ),
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    'clickhouse_driver.dbapi.errors.OperationalError: Code: 62.'
+                    'DB::Exception: Syntax error: failed at position 340 (\'/\') (line 16, col 38): '
+                    '/ London))). Expected one of: token, Comma. ',
+                ),
+            ],
+        ),
+        param(
+            'PST8PDT',
+            '2022-02-04 08:20:00PST',
+            # The time zone for Berkeley, California.
+            id="iso",
+            marks=[
+                pytest.mark.broken(
+                    ['mssql'],
+                    "bytes' object has no attribute 'strftime",
+                    raises=AttributeError,
+                )
+            ],
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    ['bigquery'],
+    "BigQuery does not support timestamps with timezones",
+    raises=TypeError,
+)
+def test_timestamp_with_timezone_literal(con, backend, timezone, expected_result):
+    expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
+    result = con.execute(expr)
+    if not isinstance(result, str):
+        result = result.strftime('%Y-%m-%d %H:%M:%S%Z')
+    assert result == expected_result
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert (
+            con.execute(expr.typeof()) == TIMESTAMP_TIMEZONE_BACKEND_TYPES[backend_name]
+        )
+
+
+TIME_BACKEND_TYPES = {
+    'bigquery': "TIME",
+    'snowflake': "TIME",
+    'sqlite': "text",
+    'trino': 'time(3)',
+    "duckdb": "TIME",
+    "postgres": "time without time zone",
+}
 
 
 @pytest.mark.notimpl(
@@ -801,12 +915,69 @@ def test_timestamp_literal(con):
     ]
 )
 @pytest.mark.notyet(["clickhouse", "impala"])
-def test_time_literal(con):
+def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
     with contextlib.suppress(AttributeError):
         result = result.to_pytimedelta()
     assert str(result) == '16:20:00'
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == TIME_BACKEND_TYPES[backend_name]
+
+
+INTERVAL_BACKEND_TYPES = {
+    'bigquery': "INTERVAL",
+    'clickhouse': 'IntervalSecond',
+    'sqlite': "integer",
+    'trino': 'integer',
+    "duckdb": "INTERVAL",
+    "postgres": "interval",
+}
+
+
+@pytest.mark.broken(
+    ['snowflake'],
+    '(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:'
+    "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
+    raises=sqlalchemy.exc.ProgrammingError,
+)
+@pytest.mark.broken(
+    ['impala'],
+    'AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` '
+    'Encountered: ) Expected: +',
+)
+@pytest.mark.broken(
+    ['pyspark'],
+    "Invalid argument, not a string or column: 1000000000 of type <class 'int'>. For column literals, "
+    "use 'lit', 'array', 'struct' or 'create_map' function.",
+    raises=TypeError,
+)
+@pytest.mark.broken(
+    ['datafusion'],
+    "Exception: This feature is not implemented: Can't create a scalar from array of type \"Duration(Second)\"",
+    raises=Exception,
+)
+@pytest.mark.broken(
+    ['mysql'],
+    "The backend implementation is broken. "
+    "If SQLAlchemy < 2 is installed, test fails with the following exception:"
+    "AttributeError: 'TextClause' object has no attribute 'label'"
+    "If SQLAlchemy >=2 is installed, test fails with the following exception:"
+    "NotImplementedError",
+)
+@pytest.mark.broken(
+    ['bigquery'], "Could not convert object to NumPy timedelta", raises=ValueError
+)
+def test_interval_literal(con, backend):
+    expr = ibis.interval(1, unit="s")
+    result = con.execute(expr)
+    assert str(result) == '0 days 00:00:01'
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
 @pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])

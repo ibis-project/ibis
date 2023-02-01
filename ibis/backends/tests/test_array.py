@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 import numpy as np
@@ -8,6 +9,7 @@ import toolz
 from packaging.version import parse as parse_version
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
@@ -35,7 +37,17 @@ def test_array_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-def test_array_scalar(con):
+ARRAY_BACKEND_TYPES = {
+    'clickhouse': "Array(Float64)",
+    'snowflake': "ARRAY",
+    'trino': 'array(double)',
+    "bigquery": "ARRAY",
+    "duckdb": "DOUBLE[]",
+    "postgres": "numeric[]",
+}
+
+
+def test_array_scalar(con, backend):
     expr = ibis.array([1.0, 2.0, 3.0])
     assert isinstance(expr, ir.ArrayScalar)
 
@@ -45,6 +57,10 @@ def test_array_scalar(con):
     # This does not check whether `result` is an np.array or a list,
     # because it varies across backends and backend configurations
     assert np.array_equal(result, expected)
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
 @pytest.mark.notimpl(["polars", "datafusion", "snowflake"])
