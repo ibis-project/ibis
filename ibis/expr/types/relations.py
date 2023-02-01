@@ -31,9 +31,10 @@ from ibis.expr.selectors import Selector
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
-    from ibis.expr.types.generic import Column
     from ibis.expr.types.groupby import GroupedTable
 
 
@@ -1360,6 +1361,16 @@ class Table(Expr, _FixedTextJupyterMixin):
             query=query,
         )
         return op.to_expr()
+
+    def to_pandas(self, **kwargs) -> pd.DataFrame:
+        """Convert a table expression to a pandas DataFrame.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+        """
+        return self.execute(**kwargs)
 
 
 def _resolve_predicates(

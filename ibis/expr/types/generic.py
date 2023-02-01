@@ -8,11 +8,12 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis import util
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     import ibis.expr.types as ir
     import ibis.expr.window as win
 
@@ -508,6 +509,16 @@ class Value(Expr):
             )
         table = roots[0].to_expr()
         return table.select(self)
+
+    def to_pandas(self, **kwargs) -> pd.Series:
+        """Convert a column expression to a pandas Series or scalar object.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+        """
+        return self.execute(**kwargs)
 
 
 @public

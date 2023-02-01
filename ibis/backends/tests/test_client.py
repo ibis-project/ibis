@@ -27,11 +27,11 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     con.drop_table(temp_table_name, force=True)
     con.create_table(temp_table_name, schema=schema)
     temporary = con.table(temp_table_name)
-    assert temporary.execute().empty
+    assert temporary.to_pandas().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
         con.load_data(temp_table_name, data, if_exists="append")
-        result = temporary.execute()
+        result = temporary.to_pandas()
         assert len(result) == len(data.index)
         tm.assert_frame_equal(
             result.sort_values(result.columns[0]).reset_index(drop=True),
