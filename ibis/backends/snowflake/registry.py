@@ -136,13 +136,13 @@ def _arbitrary(t, op):
     return t._reduction(sa.func.min, op)
 
 
-class flatten(GenericFunction):
+class _flatten(GenericFunction):
     def __init__(self, arg, *, type: sa.types.TypeEngine) -> None:
         super().__init__(arg)
         self.type = sqltypes.TableValueType(sa.Column("value", type))
 
 
-@compiles(flatten, "snowflake")
+@compiles(_flatten, "snowflake")
 def compiles_flatten(element, compiler, **kw):
     arg = compiler.function_argspec(element, **kw)
     return f"FLATTEN(INPUT => {arg}, MODE => 'ARRAY')"
@@ -154,7 +154,7 @@ def _unnest(t, op):
     sep = util.guid()
     sqla_type = t.get_sqla_type(op.output_dtype)
     col = (
-        flatten(sa.func.split(sa.func.array_to_string(arg, sep), sep), type=sqla_type)
+        _flatten(sa.func.split(sa.func.array_to_string(arg, sep), sep), type=sqla_type)
         .lateral()
         .c["value"]
     )
