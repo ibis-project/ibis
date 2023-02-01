@@ -6,8 +6,6 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-import sqlalchemy as sa
-
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -46,6 +44,8 @@ class BaseSQLBackend(BaseBackend):
         BaseBackend
             A backend instance
         """
+        import sqlalchemy as sa
+
         url = sa.engine.make_url(url)
 
         kwargs = {}
