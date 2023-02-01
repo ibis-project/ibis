@@ -1,9 +1,69 @@
+import contextlib
+
 import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import OperationNotDefinedError
+
+
+@pytest.mark.parametrize(
+    ("text_value", "expected_types"),
+    [
+        param(
+            "STRING",
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(6)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string",
+        ),
+        param(
+            "STRI'NG",
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(7)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string-quote1",
+        ),
+        param(
+            "STRI\"NG",
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(7)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string-quote2",
+        ),
+    ],
+)
+def test_string_literal(con, backend, text_value, expected_types):
+    expr = ibis.literal(text_value)
+    result = con.execute(expr)
+    assert result == text_value
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        backend_name = backend.name()
+        assert con.execute(expr.typeof()) == expected_types[backend_name]
 
 
 def is_text_type(x):
