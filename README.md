@@ -52,21 +52,21 @@ Ibis aims to be a future-proof solution to interacting with data using Python an
 
 Ibis acts as a universal frontend to the following systems:
 
-- [Apache Impala](https://ibis-project.org/docs/latest/backends/Impala/)
-- [ClickHouse](https://ibis-project.org/docs/latest/backends/ClickHouse/)
-- [Dask](https://ibis-project.org/docs/latest/backends/Dask/)
-- [DuckDB](https://ibis-project.org/docs/latest/backends/DuckDB/)
-- [Google BigQuery](https://ibis-project.org/docs/dev/backends/BigQuery/)
+- [Apache Impala](https://ibis-project.org/backends/Impala/)
+- [ClickHouse](https://ibis-project.org/backends/ClickHouse/)
+- [Dask](https://ibis-project.org/backends/Dask/)
+- [DuckDB](https://ibis-project.org/backends/DuckDB/)
+- [Google BigQuery](https://ibis-project.org/backends/BigQuery/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
-- [MySQL](https://ibis-project.org/docs/latest/backends/MySQL/)
-- [Microsoft SQL Server](https://ibis-project.org/dev/latest/backends/MSSQL/)
-- [Pandas](https://ibis-project.org/docs/latest/backends/Pandas/)
-- [Polars](https://ibis-project.org/docs/dev/backends/Polars/)
-- [PostgreSQL](https://ibis-project.org/docs/latest/backends/PostgreSQL/)
-- [PySpark](https://ibis-project.org/docs/latest/backends/PySpark/)
-- [Snowflake](https://ibis-project.org/docs/dev/backends/Snowflake) (experimental)
-- [SQLite](https://ibis-project.org/docs/latest/backends/SQLite/)
-- [Trino](https://ibis-project.org/docs/dev/backends/Trino/) (experimental)
+- [MySQL](https://ibis-project.org/backends/MySQL/)
+- [Microsoft SQL Server](https://ibis-project.org/backends/MSSQL/)
+- [Pandas](https://ibis-project.org/backends/Pandas/)
+- [Polars](https://ibis-project.org/backends/Polars/)
+- [PostgreSQL](https://ibis-project.org/backends/PostgreSQL/)
+- [PySpark](https://ibis-project.org/backends/PySpark/)
+- [Snowflake](https://ibis-project.org/backends/Snowflake) (experimental)
+- [SQLite](https://ibis-project.org/backends/SQLite/)
+- [Trino](https://ibis-project.org/backends/Trino/) (experimental)
 
 The list of supported backends is continuously growing. Anyone can get involved
 in adding new ones! Learn more about contributing to ibis in our contributing
@@ -103,12 +103,12 @@ conda install ibis-postgres -c conda-forge
 ## Getting Started with Ibis
 
 You can find a number of [helpful
-tutorials](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
+tutorials](https://ibis-project.org/tutorial/01-Introduction-to-Ibis/)
 on the Ibis website:
 
-- [Introduction to Ibis](https://ibis-project.org/docs/latest/tutorial/01-Introduction-to-Ibis/)
-- [Aggregating and Joining Data](https://ibis-project.org/docs/latest/tutorial/02-Aggregates-Joins/)
-- [Creating and Inserting Data](https://ibis-project.org/docs/latest/tutorial/05-IO-Create-Insert-External-Data/)
+- [Introduction to Ibis](https://ibis-project.org/tutorial/01-Introduction-to-Ibis/)
+- [Aggregating and Joining Data](https://ibis-project.org/tutorial/02-Aggregates-Joins/)
+- [Creating and Inserting Data](https://ibis-project.org/tutorial/05-IO-Create-Insert-External-Data/)
 
 You can also get started analyzing any dataset, anywhere with just a few lines of Ibis code.
 Here’s an example of how to use Ibis with an SQLite database.

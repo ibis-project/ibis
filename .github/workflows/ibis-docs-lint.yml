@@ -189,7 +189,7 @@ jobs:
       - name: build and push dev docs
         run: |
           nix develop --ignore-environment -c \
-            mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
+            mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}'
 
   simulate_release:
     runs-on: ubuntu-latest
