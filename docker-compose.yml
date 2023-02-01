@@ -10,6 +10,39 @@ services:
       - 9000:9000
     networks:
       - clickhouse
+  dremio:
+    build:
+      context: .
+      dockerfile: ./docker/dremio/Dockerfile
+    image: ibis-dremio
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9047"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    ports:
+      - 9047:9047
+      - 32010:32010
+      - 31010:31010
+      - 45678:45678
+    networks:
+      - dremio
+    volumes:
+      - $PWD/ci/ibis-testing-data:/data/ibis
+  dremio-init:
+    depends_on:
+      dremio:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: ./docker/dremio/init/Dockerfile
+    image: ibis-dremio-init
+    entrypoint: "/init/init.sh"
+    networks:
+      - dremio
+    volumes:
+      - $PWD/docker/dremio/init:/init
   impala:
     depends_on:
       - impala-postgres
@@ -175,6 +208,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
 networks:
+  dremio:
   impala:
   mysql:
   mssql:

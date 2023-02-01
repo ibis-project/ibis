@@ -243,6 +243,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': decimal.Decimal('1.1'),
+                'dremio': decimal.Decimal('1.1'),
                 'snowflake': '1.1',
                 'sqlite': 1.1,
                 'trino': 1.1,
@@ -256,6 +257,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 'bigquery': "NUMERIC",
+                'dremio': "DECIMAL",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -286,6 +288,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': decimal.Decimal('1.1'),
+                'dremio': decimal.Decimal('1.1'),
                 'snowflake': '1.1',
                 'sqlite': 1.1,
                 'trino': 1.1,
@@ -301,6 +304,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 'bigquery': "NUMERIC",
                 'clickhouse': 'Decimal(38, 9)',
+                'dremio': "DECIMAL",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -326,6 +330,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': decimal.Decimal('1.1'),
+                'dremio': decimal.Decimal('1.1'),
                 'snowflake': '1.1',
                 'sqlite': 1.1,
                 'trino': 1.1,
@@ -342,6 +347,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 'bigquery': "BIGNUMERIC",
                 'clickhouse': 'Decimal(76, 38)',
+                'dremio': "DECIMAL",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -372,6 +378,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': float('inf'),
+                'dremio': float('inf'),
                 'snowflake': 'Infinity',
                 'sqlite': float('inf'),
                 "postgres": float('nan'),
@@ -381,6 +388,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 'bigquery': "FLOAT64",
+                'dremio': "DOUBLE",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -433,6 +441,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': float('-inf'),
+                'dremio': float('-inf'),
                 'snowflake': '-Infinity',
                 'sqlite': float('-inf'),
                 "postgres": float('nan'),
@@ -442,6 +451,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 'bigquery': "FLOAT64",
+                'dremio': "DOUBLE",
                 'snowflake': "VARCHAR",
                 'sqlite': "real",
                 'trino': 'decimal(2,1)',
@@ -494,6 +504,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             # TODO(krzysztof-kwitt): Should we unify it?
             {
                 'bigquery': float('nan'),
+                'dremio': float('nan'),
                 'snowflake': 'NaN',
                 'sqlite': None,
                 "postgres": float('nan'),
@@ -503,6 +514,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
             },
             {
                 'bigquery': "FLOAT64",
+                'dremio': "DOUBLE",
                 'snowflake': "VARCHAR",
                 'sqlite': "null",
                 'trino': 'decimal(2,1)',
@@ -1072,6 +1084,7 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(
     [
         "datafusion",
+        "dremio",
         "duckdb",
         "mysql",
         "pyspark",
@@ -1145,6 +1158,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "clickhouse",
         "dask",
         "datafusion",
+        "dremio",
         "impala",
         "pandas",
         "pyspark",
@@ -1261,7 +1275,14 @@ pyspark_no_bitshift = pytest.mark.notyet(
 )
 
 
-@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    "op",
+    [
+        param(and_, marks=pytest.mark.notimpl(["dremio"])),
+        param(or_, marks=pytest.mark.notimpl(["dremio"])),
+        param(xor),
+    ],
+)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -1323,8 +1344,8 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 @pytest.mark.parametrize(
     "op",
     [
-        param(and_),
-        param(or_),
+        param(and_, marks=pytest.mark.notimpl(["dremio"])),
+        param(or_, marks=pytest.mark.notimpl(["dremio"])),
         param(xor),
         param(lshift, marks=pyspark_no_bitshift),
         param(rshift, marks=pyspark_no_bitshift),

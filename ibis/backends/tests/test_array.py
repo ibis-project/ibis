@@ -20,6 +20,7 @@ except ImportError:
 
 pytestmark = [
     pytest.mark.never(["sqlite", "mysql", "mssql"], reason="No array support"),
+    pytest.mark.notyet(["dremio"]),
     pytest.mark.notyet(["impala"], reason="No array support"),
 ]
 

@@ -126,6 +126,7 @@ all = [
   "dask",
   "datafusion",
   "db-dtypes",
+  "dremio",
   "duckdb",
   "duckdb-engine",
   "fsspec",
@@ -161,6 +162,11 @@ bigquery = [
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
+dremio = [
+  "adbc-driver-flightsql",
+  "adbc-driver-manager",
+  "pyarrow",
+]
 duckdb = [
   "duckdb",
   "duckdb-engine",
@@ -188,6 +194,7 @@ bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
+dremio = "ibis.backends.dremio"
 duckdb = "ibis.backends.duckdb"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
@@ -292,6 +299,7 @@ markers = [
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
+  "dremio: Dremio tests",
   "duckdb: DuckDB tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",

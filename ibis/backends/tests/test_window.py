@@ -9,6 +9,8 @@ import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.udf.vectorized import analytic, reduction
 
+pytestmark = [pytest.mark.notyet(["dremio"], reason="not yet supported by backend")]
+
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):

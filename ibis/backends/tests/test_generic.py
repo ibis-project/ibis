@@ -798,6 +798,7 @@ def test_int_column(alltypes):
 
 
 @pytest.mark.notimpl(["datafusion"])
+@pytest.mark.never(["dremio"], reason="backend only implements int32/int64")
 @pytest.mark.never(
     ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
 )

@@ -465,6 +465,13 @@ jobs:
         python-version:
           - "3.10"
         backend:
+          - name: dremio
+            title: Dremio OSS
+            services:
+              - dremio
+              - dremio-init
+            extras:
+              - dremio
           - name: mssql
             title: MS SQL Server
             services:

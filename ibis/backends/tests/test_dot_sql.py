@@ -5,7 +5,9 @@ from pytest import param
 import ibis
 from ibis import _, util
 
-table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "clickhouse", "impala"])
+table_dot_sql_notimpl = pytest.mark.notimpl(
+    ["bigquery", "clickhouse", "dremio", "impala"]
+)
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake"],
