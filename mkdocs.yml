@@ -34,7 +34,6 @@ theme:
   custom_dir: docs/overrides
 plugins:
   - search
-  - mike
   - autorefs
   - git-revision-date-localized
   - exclude:
@@ -119,9 +118,8 @@ markdown_extensions:
       permalink: true
       permalink_title: "Anchor link to this section for reference"
 extra:
-  version:
-    provider: mike
   project_name: "ibis"
+  # maybe version goes here?
   team:
     - name: "Maintainers"
       members:
