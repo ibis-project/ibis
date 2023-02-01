@@ -380,7 +380,7 @@ def _literal(t, op):
     value = op.value
 
     if dtype.is_interval():
-        return sa.text(f"INTERVAL '{value} {dtype.resolution}'")
+        return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_set():
         return list(map(sa.literal, value))
     # geo spatial data type
