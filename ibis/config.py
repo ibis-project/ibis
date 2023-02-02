@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional
 from public import public
 from typing_extensions import Annotated
 
+import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable
 from ibis.common.validators import min_
 
@@ -174,7 +175,26 @@ def _default_backend() -> Any:
     try:
         import duckdb as _  # noqa: F401
     except ImportError:
-        return None
+        raise com.IbisError(
+            """\
+You have used a function that relies on the default backend, but the default
+backend (DuckDB) is not installed.
+
+You may specify an alternate backend to use, e.g.
+
+ibis.set_backend("polars")
+
+or to install the DuckDB backend, run:
+
+    pip install 'ibis-framework[duckdb]'
+
+or
+
+    conda install -c conda-forge ibis-framework
+
+For more information on available backends, visit https://ibis-project.org/install
+"""
+        )
 
     import ibis
 

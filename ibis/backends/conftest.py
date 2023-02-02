@@ -4,6 +4,7 @@ import contextlib
 import importlib
 import importlib.metadata
 import platform
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, TextIO
@@ -730,3 +731,13 @@ def test_employee_data_2():
     )
 
     return df2
+
+
+@pytest.fixture
+def no_duckdb(backend, monkeypatch):
+    monkeypatch.setitem(sys.modules, "duckdb", None)
+
+
+@pytest.fixture
+def no_pyarrow(backend, monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyarrow", None)

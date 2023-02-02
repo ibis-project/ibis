@@ -770,8 +770,19 @@ def test_default_backend_no_duckdb(backend):
     # run this twice to ensure that we hit the optimizations in
     # `_default_backend`
     for _ in range(2):
-        with pytest.raises(com.IbisError, match="Expression depends on no backends"):
+        with pytest.raises(
+            com.IbisError,
+            match="You have used a function that relies on the default backend",
+        ):
             expr.execute()
+
+
+def test_default_backend_no_duckdb_read_parquet(no_duckdb):
+    with pytest.raises(
+        com.IbisError,
+        match="You have used a function that relies on the default backend",
+    ):
+        ibis.read_parquet("foo.parquet")
 
 
 @pytest.mark.duckdb

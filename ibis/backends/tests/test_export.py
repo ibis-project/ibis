@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 from pytest import param
 
@@ -7,29 +5,6 @@ pa = pytest.importorskip("pyarrow")
 
 # Adds `to_pyarrow` to created schema objects
 from ibis.backends.pyarrow.datatypes import sch as _  # noqa: F401, E402
-
-
-class PackageDiscarder:
-    def __init__(self):
-        self.pkgnames = []
-
-    def find_spec(self, fullname, path, target=None):
-        if fullname in self.pkgnames:
-            raise ImportError(fullname)
-
-
-@pytest.fixture
-@pytest.mark.usefixtures("backend")
-def no_pyarrow():
-    _pyarrow = sys.modules.pop('pyarrow', None)
-    d = PackageDiscarder()
-    d.pkgnames.append('pyarrow')
-    sys.meta_path.insert(0, d)
-    yield
-    sys.meta_path.remove(d)
-    if _pyarrow is not None:
-        sys.modules["pyarrow"] = _pyarrow
-
 
 limit = [
     param(
