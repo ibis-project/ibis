@@ -103,19 +103,6 @@ def compile_uint(element, compiler, **kw):
     )
 
 
-def table_from_schema(name, meta, schema, database: str | None = None):
-    # Convert Ibis schema to SQLA table
-    columns = []
-
-    dialect = getattr(meta.bind, "dialect", _DEFAULT_DIALECT)
-    for colname, dtype in zip(schema.names, schema.types):
-        satype = to_sqla_type(dialect, dtype)
-        column = sa.Column(colname, satype, nullable=dtype.nullable)
-        columns.append(column)
-
-    return sa.Table(name, meta, *columns, schema=database)
-
-
 # TODO(cleanup)
 ibis_type_to_sqla = {
     dt.Null: sat.NullType,
@@ -339,14 +326,13 @@ def schema_from_table(
     """
     schema = schema if schema is not None else {}
     pairs = []
-    for name, column in zip(table.columns.keys(), table.columns):
+    if dialect is None:
+        dialect = _DEFAULT_DIALECT
+    for column in table.columns:
+        name = column.name
         if name in schema:
             dtype = dt.dtype(schema[name])
         else:
-            dtype = dt.dtype(
-                dialect or getattr(table.bind, "dialect", DefaultDialect()),
-                column.type,
-                nullable=column.nullable,
-            )
+            dtype = dt.dtype(dialect, column.type, nullable=column.nullable)
         pairs.append((name, dtype))
     return sch.schema(pairs)

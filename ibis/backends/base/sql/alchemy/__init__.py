@@ -17,11 +17,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy.database import AlchemyDatabase, AlchemyTable
-from ibis.backends.base.sql.alchemy.datatypes import (
-    schema_from_table,
-    table_from_schema,
-    to_sqla_type,
-)
+from ibis.backends.base.sql.alchemy.datatypes import schema_from_table, to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 from ibis.backends.base.sql.alchemy.registry import (
@@ -63,7 +59,6 @@ __all__ = (
     'get_sqla_table',
     'to_sqla_type',
     'schema_from_table',
-    'table_from_schema',
     'varargs',
 )
 
