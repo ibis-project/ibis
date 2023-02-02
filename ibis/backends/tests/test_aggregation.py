@@ -958,9 +958,6 @@ def test_agg_sort(alltypes):
 @pytest.mark.xfail_version(
     polars=["polars==0.14.31"], reason="projection of scalars is broken"
 )
-@pytest.mark.xfail_version(
-    polars=["polars>=0.15"], reason="projection of scalars is broken"
-)
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
@@ -988,3 +985,10 @@ def test_column_summary(alltypes):
     expr = alltypes.aggregate(bool_col_summary)
     result = expr.execute()
     assert result.shape == (1, 7)
+
+
+def test_agg_name_in_output_column(alltypes):
+    query = alltypes.aggregate([alltypes.int_col.min(), alltypes.int_col.max()])
+    df = query.execute()
+    assert "min" in df.columns[0].lower()
+    assert "max" in df.columns[1].lower()

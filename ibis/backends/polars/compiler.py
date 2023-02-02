@@ -212,7 +212,7 @@ def aggregation(op):
         lf = lf.select
 
     if op.metrics:
-        metrics = [translate(arg) for arg in op.metrics]
+        metrics = [translate(arg).alias(arg.name) for arg in op.metrics]
         lf = lf(metrics)
 
     return lf
