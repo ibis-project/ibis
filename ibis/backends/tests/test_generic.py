@@ -1137,6 +1137,10 @@ def test_exists(batting, awards_players, method_name):
                     "Unsupported type: UUID(nullable=True)",
                     raises=NotImplementedError,
                 ),
+                pytest.mark.xfail_version(
+                    trino=["sqlalchemy>=2,<3"],
+                    reason="dialect fails to handle UUID correctly",
+                ),
             ],
             id="uuid",
         ),
