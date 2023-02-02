@@ -814,9 +814,7 @@ def test_time_literal(con):
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
-    tbl = alltypes[
-        expr.name('timestamp_col'),
-    ]
+    tbl = alltypes[expr.name('timestamp_col')]
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.date.astype('datetime64[ns]')
