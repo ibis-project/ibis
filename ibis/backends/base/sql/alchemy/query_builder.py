@@ -264,7 +264,7 @@ class AlchemySelect(Select):
             # get all the unnests plus the current froms of the result selection
             # and build up the cross join
             table_set = functools.reduce(
-                functools.partial(sa.sql.FromClause.join, onclause=True),
+                functools.partial(sa.sql.FromClause.join, onclause=sa.true()),
                 toolz.unique(toolz.concatv(unnest_children, result.get_final_froms())),
             )
 
