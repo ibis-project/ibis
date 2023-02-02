@@ -826,12 +826,16 @@ def row_number() -> ir.IntegerColumn:
 def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
     """Lazily load a CSV or set of CSVs.
 
+    This function delegates to the `read_csv` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
+
     Parameters
     ----------
     sources
         A filesystem path or URL or list of same.  Supports CSV and TSV files.
     kwargs
-        DuckDB-specific keyword arguments for the file type.
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, please refer to:
 
         * CSV/TSV: https://duckdb.org/docs/data/csv#parameters.
 
@@ -854,12 +858,16 @@ def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Ta
 def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
     """Lazily load newline-delimited JSON data.
 
+    This function delegates to the `read_json` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
+
     Parameters
     ----------
     sources
         A filesystem path or URL or list of same.
     kwargs
-        DuckDB-specific keyword arguments for the file type.
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, there are no valid keywork arguments.
 
     Returns
     -------
@@ -879,12 +887,16 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
 def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
     """Lazily load a parquet file or set of parquet files.
 
+    This function delegates to the `read_parquet` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
+
     Parameters
     ----------
     sources
         A filesystem path or URL or list of same.
     kwargs
-        DuckDB-specific keyword arguments for the file type.
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, please refer to:
 
         * Parquet: https://duckdb.org/docs/data/parquet
 
