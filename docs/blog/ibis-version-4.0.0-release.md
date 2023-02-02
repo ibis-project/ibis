@@ -13,7 +13,7 @@ Let’s talk about some of the new changes 4.0 brings for Ibis users.
 
 ## Backends
 
-Ibis 4.0 brings [Polars](https://ibis-project.org/backends/Polars/), [Snowflake](https://ibis-project.org/backends/Snowflake/), and [Trino](https://ibis-project.org/4.0.0/backends/Trino/) into an already-impressive stock of supported backends.
+Ibis 4.0 brings [Polars](https://ibis-project.org/backends/Polars/), [Snowflake](https://ibis-project.org/backends/Snowflake/), and [Trino](https://ibis-project.org/backends/Trino/) into an already-impressive stock of supported backends.
 The [Polars](https://www.pola.rs/) backend adds another way for users to work locally with DataFrames.
 The [Snowflake](https://www.snowflake.com/en/) and [Trino](https://trino.io/) backends add a free and familiar python API to popular data warehouses.
 

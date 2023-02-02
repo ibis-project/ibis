@@ -45,6 +45,7 @@ plugins:
   - gen-files:
       scripts:
         - gen_matrix.py
+        - gen_redirects.py
   - macros
   - mkdocstrings:
       enable_inventory: true
