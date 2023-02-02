@@ -87,7 +87,6 @@ argidx_not_grouped_marks = [
     "datafusion",
     "impala",
     "mysql",
-    "postgres",
     "sqlite",
     "polars",
     "mssql",
@@ -311,15 +310,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
             marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "mysql",
-                    "postgres",
-                    "sqlite",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                ]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
             ),
         ),
         param(
@@ -327,15 +318,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
             id='argmax',
             marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "mysql",
-                    "postgres",
-                    "sqlite",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                ]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
             ),
         ),
         param(

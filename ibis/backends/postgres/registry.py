@@ -459,6 +459,22 @@ def _binary_variance_reduction(func):
     return variance_compiler
 
 
+def _arg_min_max(sort_func):
+    def translate(t, op: ops.ArgMin | ops.ArgMax) -> str:
+        arg = t.translate(op.arg)
+        key = t.translate(op.key)
+
+        conditions = [arg != sa.null(), key != sa.null()]
+
+        agg = sa.func.array_agg(pg.aggregate_order_by(arg, sort_func(key)))
+
+        if (where := op.where) is not None:
+            conditions.append(t.translate(where))
+        return agg.filter(sa.and_(*conditions))[1]
+
+    return translate
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -587,5 +603,7 @@ operation_registry.update(
         ops.MapMerge: fixed_arity(operator.add, 2),
         ops.MapLength: unary(lambda arg: sa.func.cardinality(arg.keys())),
         ops.Map: fixed_arity(pg.hstore, 2),
+        ops.ArgMin: _arg_min_max(sa.asc),
+        ops.ArgMax: _arg_min_max(sa.desc),
     }
 )
