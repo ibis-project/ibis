@@ -25,7 +25,7 @@ repos:
     rev: v0.0.238
     hooks:
       - id: ruff
-        args: ["--show-source"]
+        args: ["--show-source", "--fix"]
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.29.0
     hooks:
