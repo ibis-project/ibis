@@ -13,7 +13,7 @@ This guide on sessionization is inspired by [_The Expressions API in Polars is A
 
 ## Sessionizing Logs on a Cadence
 
-For this example, we use an activity log from the online game "World of Warcraft" with more than 10 million records for 37,354 unique players [made available](https://www.kaggle.com/datasets/mylesoneill/warcraft-avatar-history?select=wowah_data.csv) under the CC0 / Public Domain license. A copy of the data can be found at `https://storage.googleapis.com/ibis-tutorial-data/wowah_data/wowah_data_raw.parquet` (75 MB) under the parquet format to reduce load times. You can use `ibis.read_parquet` to quickly get it into a table expression via the default `DuckDB` backend. 
+For this example, we use an activity log from the online game "World of Warcraft" with more than 10 million records for 37,354 unique players [made available](https://www.kaggle.com/datasets/mylesoneill/warcraft-avatar-history?select=wowah_data.csv) under the CC0 / Public Domain license. A copy of the data can be found at `https://storage.googleapis.com/ibis-tutorial-data/wowah_data/wowah_data_raw.parquet` (75 MB) under the parquet format to reduce load times. You can use `ibis.read_parquet` to quickly get it into a table expression via the default `DuckDB` backend.
 
 This data contains the following fields:
 
