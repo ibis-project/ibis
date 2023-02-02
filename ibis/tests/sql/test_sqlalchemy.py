@@ -934,7 +934,7 @@ def test_multi_join():
         .select_from(t3.join(t4, onclause=t3.c.x3 == t4.c.x4))
         .alias("t2")
     )
-    ex = sa.select(t0.c.x1, t0.c.y1, t1.c.x2, t2.c.x3, t2.c.y2, t2.c.x4,).select_from(
+    ex = sa.select(t0.c.x1, t0.c.y1, t1.c.x2, t2.c.x3, t2.c.y2, t2.c.x4).select_from(
         t0.join(t1, onclause=t0.c.x1 == t1.c.x2).join(t2, onclause=t0.c.y1 == t2.c.y2)
     )
     _check(expr, ex)
