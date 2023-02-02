@@ -214,8 +214,7 @@ class TablesAccessor(collections.abc.Mapping):
         return self._backend.list_tables()
 
 
-# should have a better name
-class ResultHandler:
+class _FileIOHandler:
     @staticmethod
     def _import_pyarrow():
         try:
@@ -322,8 +321,56 @@ class ResultHandler:
         """
         raise NotImplementedError
 
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current backend.
 
-class BaseBackend(abc.ABC, ResultHandler):
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of parquet data."
+        )
+
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current backend.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of CSV data."
+        )
+
+
+class BaseBackend(abc.ABC, _FileIOHandler):
     """Base backend class.
 
     All Ibis backends must subclass this class and implement all the
