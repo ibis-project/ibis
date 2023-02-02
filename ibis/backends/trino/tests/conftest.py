@@ -65,6 +65,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
             user=PG_USER,
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
+            schema="public",
         )
 
         con = TestConf.connect(data_dir)

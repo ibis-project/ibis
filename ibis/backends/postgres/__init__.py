@@ -28,6 +28,7 @@ class Backend(BaseAlchemyBackend):
         password: str | None = None,
         port: int = 5432,
         database: str | None = None,
+        schema: str | None = None,
         url: str | None = None,
         driver: Literal["psycopg2"] = "psycopg2",
     ) -> None:
@@ -45,6 +46,8 @@ class Backend(BaseAlchemyBackend):
             Port number
         database
             Database to connect to
+        schema
+            PostgreSQL schema to use. If `None`, use the default `search_path`.
         url
             SQLAlchemy connection string.
 
@@ -93,6 +96,7 @@ class Backend(BaseAlchemyBackend):
         """
         if driver != 'psycopg2':
             raise NotImplementedError('psycopg2 is currently the only supported driver')
+
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -103,7 +107,11 @@ class Backend(BaseAlchemyBackend):
             driver=f'postgresql+{driver}',
         )
         self.database_name = alchemy_url.database
-        super().do_connect(sa.create_engine(alchemy_url))
+
+        connect_args = {}
+        if schema is not None:
+            connect_args["options"] = f"-csearch_path={schema}"
+        super().do_connect(sa.create_engine(alchemy_url, connect_args=connect_args))
 
     def list_databases(self, like=None):
         with self.begin() as con:
