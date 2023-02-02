@@ -35,7 +35,7 @@ rich = ">=12.4.4,<14"
 sqlglot = ">=10.4.3,<11"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
-black = { version = ">=22.1.0,<23", optional = true }
+black = { version = ">=22.1.0,<24", optional = true }
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
   "numpy"
@@ -79,13 +79,13 @@ sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
-black = ">=22.1.0,<23"
+black = ">=22.1.0,<24"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
-black = ">=22.1.0,<23"
+black = ">=22.1.0,<24"
 filelock = ">=3.7.0,<4"
 packaging = ">=21.3,<24"
 pytest = ">=7.0.0,<8"
