@@ -4,7 +4,7 @@ Suppose you have entities (users, objects, actions, etc) that have event logs th
 
 You might be interested in partitioning these logs by something called **sessions**, which can be defined as groups of consecutive event records without long interruptions for a given entity.
 
-In the case of a user portal, it might be grouping the navigation events that result in completing a task or or buying a product.
+In the case of a user portal, it might be grouping the navigation events that result in completing a task or buying a product.
 For online games, it might be a the grouping of activity events of a given user playing the game while remaining logged in.
 
 Sessionization can also be useful on longer time scales, for instance to reconstruct active subscription data from a raw payment or activity log, so as to model customer churn.
