@@ -799,27 +799,54 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Count(self, where).to_expr()
 
-    def value_counts(self, metric_name: str = "count") -> ir.Table:
+    def value_counts(self) -> ir.Table:
         """Compute a frequency table.
-
-        Parameters
-        ----------
-        metric_name
-            Output column name of the `count()` metric
 
         Returns
         -------
         Table
             Frequency table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"chars": char} for char in "aabcddd")
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ chars  ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ a      │
+        │ a      │
+        │ b      │
+        │ c      │
+        │ d      │
+        │ d      │
+        │ d      │
+        └────────┘
+        >>> t.chars.value_counts()
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ chars  ┃ chars_count ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ int64       │
+        ├────────┼─────────────┤
+        │ a      │           2 │
+        │ b      │           1 │
+        │ c      │           1 │
+        │ d      │           3 │
+        └────────┴─────────────┘
         """
         from ibis.expr.analysis import find_first_base_table
 
+        name = self.get_name()
         return (
             find_first_base_table(self.op())
             .to_expr()
             .select(self)
-            .group_by(self.get_name())
-            .agg(**{metric_name: lambda t: t.count()})
+            .group_by(name)
+            .agg(**{f"{name}_count": lambda t: t.count()})
         )
 
     def first(self) -> Column:
