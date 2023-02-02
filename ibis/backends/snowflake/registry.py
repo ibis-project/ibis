@@ -294,6 +294,8 @@ operation_registry.update(
             *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
         ),
         ops.Unnest: _unnest,
+        ops.ArgMin: reduction(sa.func.min_by),
+        ops.ArgMax: reduction(sa.func.max_by),
     }
 )
 
