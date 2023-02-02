@@ -548,7 +548,7 @@ def test_value_counts(t, df):
         df.compute()
         .dup_strings.value_counts()
         .reset_index()
-        .rename(columns={'dup_strings': 'count'})
+        .rename(columns={'dup_strings': 'dup_strings_count'})
         .rename(columns={'index': 'dup_strings'})
         .sort_values(['dup_strings'])
         .reset_index(drop=True)
