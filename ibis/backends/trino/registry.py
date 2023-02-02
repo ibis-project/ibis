@@ -153,11 +153,26 @@ def _unnest(t, op):
     return sa.func.unnest(t.translate(arg)).table_valued(name).render_derived().c[name]
 
 
+def _where(t, op):
+    if_ = getattr(sa.func, "if")
+    return if_(
+        t.translate(op.bool_expr),
+        t.translate(op.true_expr),
+        t.translate(op.false_null_expr),
+        type_=t.get_sqla_type(op.output_dtype),
+    )
+
+
+def _cot(t, op):
+    arg = t.translate(op.arg)
+    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
+
+
 operation_registry.update(
     {
         # conditional expressions
         # static checks are not happy with using "if" as a property
-        ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
+        ops.Where: _where,
         # boolean reductions
         ops.Any: reduction(sa.func.bool_or),
         ops.All: reduction(sa.func.bool_and),
@@ -294,7 +309,7 @@ operation_registry.update(
             )
         ),
         ops.ExtractQuery: _extract_url_query,
-        ops.Cot: unary(lambda arg: 1.0 / sa.func.tan(arg)),
+        ops.Cot: _cot,
         ops.Round: _round,
         ops.Pi: fixed_arity(sa.func.pi, 0),
         ops.E: fixed_arity(sa.func.e, 0),
