@@ -15,14 +15,12 @@
 from __future__ import annotations
 
 import pytest
+import sqlalchemy as sa
 
 import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyTable,
-    table_from_schema,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyTable, to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import _DEFAULT_DIALECT
 from ibis.expr.schema import Schema
 
 MOCK_TABLES = {
@@ -413,6 +411,18 @@ class MockBackend(BaseSQLBackend):
         ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
+
+
+def table_from_schema(name, meta, schema, *, database: str | None = None):
+    # Convert Ibis schema to SQLA table
+    columns = []
+
+    for colname, dtype in zip(schema.names, schema.types):
+        satype = to_sqla_type(_DEFAULT_DIALECT, dtype)
+        column = sa.Column(colname, satype, nullable=dtype.nullable)
+        columns.append(column)
+
+    return sa.Table(name, meta, *columns, schema=database)
 
 
 class MockAlchemyBackend(MockBackend):
