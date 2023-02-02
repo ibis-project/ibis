@@ -89,7 +89,6 @@ argidx_not_grouped_marks = [
     "mysql",
     "postgres",
     "sqlite",
-    "snowflake",
     "polars",
     "mssql",
 ]
@@ -317,7 +316,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "mysql",
                     "postgres",
                     "sqlite",
-                    "snowflake",
                     "polars",
                     "datafusion",
                     "mssql",
@@ -334,7 +332,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "mysql",
                     "postgres",
                     "sqlite",
-                    "snowflake",
                     "polars",
                     "datafusion",
                     "mssql",
