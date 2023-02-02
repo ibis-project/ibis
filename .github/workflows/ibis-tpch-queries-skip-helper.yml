@@ -1,0 +1,29 @@
+name: TPC-H
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
+    branches:
+      - master
+      - "*.x.x"
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  tpch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
