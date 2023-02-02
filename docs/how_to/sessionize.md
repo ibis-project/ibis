@@ -4,10 +4,10 @@ Suppose you have entities (users, objects, actions, etc) that have event logs th
 
 You might be interested in partitioning these logs by something called **sessions**, which can be defined as groups of consecutive event records without long interruptions for a given entity.
 
-In the case of a user portal, it might be the grouping the navigation events to completing a task or or buy a product.
+In the case of a user portal, it might be grouping the navigation events that result in completing a task or or buying a product.
 For online games, it might be a the grouping of activity events of a given user playing the game while remaining logged in.
 
-Sessionization can also be useful on longer time scales, for instance to reconstruct active subscription data from a raw paiement or activity log, so as to model customer churn.
+Sessionization can also be useful on longer time scales, for instance to reconstruct active subscription data from a raw payment or activity log, so as to model customer churn.
 
 This guide on sessionization is inspired by [_The Expressions API in Polars is Amazing_](https://www.pola.rs/posts/the-expressions-api-in-polars-is-amazing/), a blog post in the [Polars](https://www.pola.rs/) community demonstrating the strength of Polars expressions.
 
@@ -74,6 +74,6 @@ sessionized = (
 )
 ```
 
-Calling `ibis.show_sql(sessionized)` displays the nested SQL query and can be used to confirm that this Ibis expression does not rely on any join operation.
+Calling `ibis.show_sql(sessionized)` displays the SQL query and can be used to confirm that this Ibis expression does not rely on any join operations.
 
 Calling `sessionized.execute()` should complete in less than a minute, depending on the speed of the internet connection to download the data and the number of CPU cores available to parallelize the processing of this nested query.
