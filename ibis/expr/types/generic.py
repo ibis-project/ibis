@@ -319,13 +319,29 @@ class Value(Expr):
 
         return expr.else_(else_ if else_ is not None else self).end()
 
-    def over(self, window) -> Value:
+    def over(
+        self,
+        window=None,
+        *,
+        rows=None,
+        range=None,
+        group_by=None,
+        order_by=None,
+    ) -> Value:
         """Construct a window expression.
 
         Parameters
         ----------
         window
             Window specification
+        rows
+            Whether to use the `ROWS` window clause
+        range
+            Whether to use the `RANGE` window clause
+        group_by
+            Grouping key
+        order_by
+            Ordering key
 
         Returns
         -------
@@ -336,13 +352,19 @@ class Value(Expr):
         import ibis.expr.builders as bl
         import ibis.expr.deferred as de
 
-        op = self.op()
+        if window is None:
+            window = ibis.window(
+                rows=rows,
+                range=range,
+                group_by=group_by,
+                order_by=order_by,
+            )
 
         def bind(table):
             frame = window.bind(table)
-            node = ops.WindowFunction(self, frame)
-            return node.to_expr()
+            return ops.WindowFunction(self, frame).to_expr()
 
+        op = self.op()
         if isinstance(op, ops.Alias):
             return op.arg.to_expr().over(window).name(op.name)
         elif isinstance(op, ops.WindowFunction):
