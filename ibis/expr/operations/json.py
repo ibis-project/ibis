@@ -14,3 +14,19 @@ class JSONGetItem(Value):
 
     output_dtype = dt.json
     output_shape = rlz.shape_like("args")
+
+
+@public
+class ToJSONArray(Value):
+    arg = rlz.json
+
+    output_dtype = dt.Array(dt.json)
+    output_shape = rlz.shape_like("arg")
+
+
+@public
+class ToJSONMap(Value):
+    arg = rlz.json
+
+    output_dtype = dt.Map(dt.string, dt.json)
+    output_shape = rlz.shape_like("arg")

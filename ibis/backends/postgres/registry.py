@@ -605,5 +605,18 @@ operation_registry.update(
         ops.Map: fixed_arity(pg.hstore, 2),
         ops.ArgMin: _arg_min_max(sa.asc),
         ops.ArgMax: _arg_min_max(sa.desc),
+        ops.ToJSONArray: unary(
+            lambda arg: sa.case(
+                (
+                    sa.func.json_typeof(arg) == "array",
+                    sa.func.array(
+                        sa.select(
+                            sa.func.json_array_elements(arg).column_valued()
+                        ).scalar_subquery()
+                    ),
+                ),
+                else_=sa.null(),
+            )
+        ),
     }
 )

@@ -296,6 +296,8 @@ operation_registry.update(
         ops.Unnest: _unnest,
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
+        ops.ToJSONArray: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
+        ops.ToJSONMap: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
     }
 )
 
