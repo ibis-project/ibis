@@ -2,28 +2,18 @@ name: Nix
 
 on:
   push:
-    paths:
-      - "**/*.nix"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "flake.lock"
-      - "nix/**"
-      - "!docs/**"
-      - "!mkdocs.yml"
-      - "!**/*.md"
+    paths-ignore:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
   pull_request:
-    paths:
-      - "**/*.nix"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "flake.lock"
-      - "nix/**"
-      - "!docs/**"
-      - "!mkdocs.yml"
-      - "!**/*.md"
+    paths-ignore:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
@@ -69,7 +59,6 @@ jobs:
           version='${{ matrix.python-version }}'
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
-      # build the whole dev shell when pushing to upstream, so that the cachix cache is populated
       - name: nix build devShell
         if: github.event_name == 'push'
         run: |

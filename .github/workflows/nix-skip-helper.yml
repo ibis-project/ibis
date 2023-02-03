@@ -5,22 +5,18 @@ name: Nix
 
 on:
   push:
-    paths-ignore:
-      - "**/*.nix"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "flake.lock"
-      - "nix/**"
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
   pull_request:
-    paths-ignore:
-      - "**/*.nix"
-      - "pyproject.toml"
-      - "poetry.lock"
-      - "flake.lock"
-      - "nix/**"
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "**/*.md"
     branches:
       - master
       - "*.x.x"
