@@ -1,8 +1,9 @@
-import contextlib
 import os
 import platform
 import re
 import string
+import subprocess
+import sys
 
 import numpy as np
 import pandas as pd
@@ -753,36 +754,50 @@ def test_default_backend_option():
         ibis.options.default_backend = orig
 
 
-def test_default_backend_no_duckdb(backend):
-    # backend is used to ensure that this test runs in CI in the setting
-    # where only the dependencies for a a given backend are installed
+# backend is used to ensure that this test runs in CI in the setting
+# where only the dependencies for a given backend are installed
+@pytest.mark.usefixtures("backend")
+def test_default_backend_no_duckdb():
+    script = """\
+import sys
+sys.modules["duckdb"] = None
 
-    # if duckdb is available then this test won't fail and so we skip it
-    with contextlib.suppress(ImportError):
-        import duckdb  # noqa: F401
+import ibis
 
-        pytest.skip("duckdb is installed; it will be used as the default backend")
+t = ibis.memtable([{'a': 1}, {'a': 2}, {'a': 3}])
+t.execute()"""
 
-    df = pd.DataFrame({'a': [1, 2, 3]})
-    t = ibis.memtable(df)
-    expr = t.a.sum()
-
-    # run this twice to ensure that we hit the optimizations in
-    # `_default_backend`
-    for _ in range(2):
-        with pytest.raises(
-            com.IbisError,
-            match="You have used a function that relies on the default backend",
-        ):
-            expr.execute()
+    args = [sys.executable, "-c", script]
+    with pytest.raises(subprocess.CalledProcessError) as e:
+        subprocess.check_output(args, stderr=subprocess.STDOUT, universal_newlines=True)
+    assert (
+        re.search(
+            "You have used a function that relies on the default backend",
+            e.value.output,
+        )
+        is not None
+    )
 
 
-def test_default_backend_no_duckdb_read_parquet(no_duckdb):
-    with pytest.raises(
-        com.IbisError,
-        match="You have used a function that relies on the default backend",
-    ):
-        ibis.read_parquet("foo.parquet")
+@pytest.mark.usefixtures("backend")
+def test_default_backend_no_duckdb_read_parquet():
+    script = """\
+import sys
+sys.modules["duckdb"] = None
+
+import ibis
+ibis.read_parquet("foo.parquet")"""
+
+    args = [sys.executable, "-c", script]
+    with pytest.raises(subprocess.CalledProcessError) as e:
+        subprocess.check_output(args, stderr=subprocess.STDOUT, universal_newlines=True)
+    assert (
+        re.search(
+            "You have used a function that relies on the default backend",
+            e.value.output,
+        )
+        is not None
+    )
 
 
 @pytest.mark.duckdb

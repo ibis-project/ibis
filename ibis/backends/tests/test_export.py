@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 from pytest import param
 
@@ -150,6 +152,7 @@ def test_to_pyarrow_batches_borked_types(batting):
     assert len(batch) == 42
 
 
-def test_no_pyarrow_message(awards_players, no_pyarrow):
+def test_no_pyarrow_message(awards_players, monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyarrow", None)
     with pytest.raises(ModuleNotFoundError, match="requires `pyarrow` but"):
         awards_players.to_pyarrow()
