@@ -23,9 +23,7 @@ ibis.options.verbose_log = lambda sql: sql_queries.append(sql)
 
 @st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
 def support_matrix_df():
-    resp = requests.get(
-        "https://ibis-project.org/docs/dev/backends/raw_support_matrix.csv"
-    )
+    resp = requests.get("https://ibis-project.org/backends/raw_support_matrix.csv")
     resp.raise_for_status()
 
     with tempfile.NamedTemporaryFile() as f:
