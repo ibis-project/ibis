@@ -773,7 +773,7 @@ class Map(Variadic, Parametric):
 
 
 @public
-class JSON(String):
+class JSON(Variadic):
     """JSON values."""
 
     scalar = ir.JSONScalar

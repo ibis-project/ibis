@@ -54,6 +54,8 @@ def can_cast_subtype(source: dt.DataType, target: dt.DataType, **kwargs) -> bool
 @castable.register(dt.Integer, (dt.Floating, dt.Decimal))
 @castable.register(dt.Floating, dt.Decimal)
 @castable.register((dt.Date, dt.Timestamp), (dt.Date, dt.Timestamp))
+@castable.register(dt.String, dt.JSON)
+@castable.register(dt.JSON, dt.String)
 def can_cast_any(source: dt.DataType, target: dt.DataType, **kwargs) -> bool:
     return True
 
