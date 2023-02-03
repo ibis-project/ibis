@@ -4,9 +4,10 @@ import itertools
 
 import numpy as np
 import sqlalchemy as sa
-from snowflake.sqlalchemy import ARRAY
+from snowflake.sqlalchemy import ARRAY, OBJECT, VARIANT
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import sqltypes
+from sqlalchemy.sql.elements import Cast
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
@@ -134,6 +135,29 @@ def _arbitrary(t, op):
     #
     # yes it's slower, but it's also consistent with every other backend
     return t._reduction(sa.func.min, op)
+
+
+@compiles(Cast, "snowflake")
+def compiles_cast(element, compiler, **kw):
+    arg = compiler.process(element.clause, **kw)
+    typ = compiler.process(element.type)
+    if typ in ("OBJECT", "ARRAY"):
+        return f"IFF(IS_{typ}({arg}), {arg}, NULL)"
+    return compiler.visit_cast(element, **kw)
+
+
+@compiles(sa.Text, "snowflake")
+@compiles(sa.TEXT, "snowflake")
+@compiles(sa.VARCHAR, "snowflake")
+def compiles_string(element, compiler, **kw):
+    return "VARCHAR"
+
+
+@compiles(OBJECT, "snowflake")
+@compiles(ARRAY, "snowflake")
+@compiles(VARIANT, "snowflake")
+def compiles_object_type(element, compiler, **kw):
+    return type(element).__name__.upper()
 
 
 class _flatten(GenericFunction):
