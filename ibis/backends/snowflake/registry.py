@@ -139,14 +139,13 @@ def _arbitrary(t, op):
 
 @compiles(Cast, "snowflake")
 def compiles_cast(element, compiler, **kw):
-    arg = compiler.process(element.clause, **kw)
-    typ = compiler.process(element.type)
+    typ = compiler.visit_typeclause(element, **kw)
     if typ in ("OBJECT", "ARRAY"):
+        arg = compiler.process(element.clause, **kw)
         return f"IFF(IS_{typ}({arg}), {arg}, NULL)"
     return compiler.visit_cast(element, **kw)
 
 
-@compiles(sa.Text, "snowflake")
 @compiles(sa.TEXT, "snowflake")
 @compiles(sa.VARCHAR, "snowflake")
 def compiles_string(element, compiler, **kw):
@@ -195,9 +194,26 @@ operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
-        ops.Map: fixed_arity(sa.func.ibis_udfs.public.object_from_arrays, 2),
-        ops.MapKeys: unary(sa.func.object_keys),
-        ops.MapValues: unary(sa.func.ibis_udfs.public.object_values),
+        ops.Map: fixed_arity(
+            lambda keys, values: sa.func.iff(
+                sa.func.is_array(keys) & sa.func.is_array(values),
+                sa.func.ibis_udfs.public.object_from_arrays(keys, values),
+                sa.null(),
+            ),
+            2,
+        ),
+        ops.MapKeys: unary(
+            lambda arg: sa.func.iff(
+                sa.func.is_object(arg), sa.func.object_keys(arg), sa.null()
+            )
+        ),
+        ops.MapValues: unary(
+            lambda arg: sa.func.iff(
+                sa.func.is_object(arg),
+                sa.func.ibis_udfs.public.object_values(arg),
+                sa.null(),
+            )
+        ),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(
                 sa.func.get(arg, key), sa.func.to_variant(default)
@@ -206,12 +222,26 @@ operation_registry.update(
         ),
         ops.MapContains: fixed_arity(
             lambda arg, key: sa.func.array_contains(
-                sa.func.to_variant(key), sa.func.object_keys(arg)
+                sa.func.to_variant(key),
+                sa.func.iff(
+                    sa.func.is_object(arg), sa.func.object_keys(arg), sa.null()
+                ),
             ),
             2,
         ),
-        ops.MapMerge: fixed_arity(sa.func.ibis_udfs.public.object_merge, 2),
-        ops.MapLength: unary(lambda arg: sa.func.array_size(sa.func.object_keys(arg))),
+        ops.MapMerge: fixed_arity(
+            lambda a, b: sa.func.iff(
+                sa.func.is_object(a) & sa.func.is_object(b),
+                sa.func.ibis_udfs.public.object_merge(a, b),
+                sa.null(),
+            ),
+            2,
+        ),
+        ops.MapLength: unary(
+            lambda arg: sa.func.array_size(
+                sa.func.iff(sa.func.is_object(arg), sa.func.object_keys(arg), sa.null())
+            )
+        ),
         ops.BitwiseAnd: fixed_arity(sa.func.bitand, 2),
         ops.BitwiseNot: unary(sa.func.bitnot),
         ops.BitwiseOr: fixed_arity(sa.func.bitor, 2),
